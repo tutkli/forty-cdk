@@ -1,0 +1,195 @@
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+  signal,
+} from '@angular/core';
+import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+
+import {
+  type ListNavigationAction,
+  moveIndex,
+  type WritingDirection,
+} from '../_internal/keyboard-navigation';
+import { injectRovingTabindex } from '../_internal/roving-tabindex';
+import { injectTypeahead } from '../_internal/typeahead';
+import {
+  FOR_LISTBOX_CONTEXT,
+  ForListboxContext,
+  ForListboxOptionHandle,
+} from './listbox-context';
+
+/**
+ * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
+ * Implements `FormValueControl<string[]>` from `@angular/forms/signals` for
+ * `[formField]` auto-wiring.
+ *
+ * Selection is always modeled as `readonly string[]`:
+ * - In single mode (`multiple=false`, default), the array has 0 or 1 element.
+ * - In multi mode, any number of items can be selected.
+ *
+ * v1 keyboard supports the recommended APG model: arrows + Home/End for
+ * focus movement, Space/Enter (via native `<button>` activation) to select
+ * or toggle, plus typeahead. Range-selection modifiers (Shift+Arrow, Ctrl+A,
+ * Ctrl+Shift+Home/End) are deferred to a follow-up.
+ */
+@Directive({
+  selector: '[forListbox]',
+  exportAs: 'forListbox',
+  host: {
+    role: 'listbox',
+    '[attr.aria-orientation]': 'orientation()',
+    '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
+    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-readonly]': 'readonly() ? "true" : null',
+    '[attr.aria-required]': 'required() ? "true" : null',
+    '[attr.aria-invalid]': 'invalid() ? "true" : null',
+    '[attr.aria-busy]': 'pending() ? "true" : null',
+    '[attr.data-orientation]': 'orientation()',
+    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '(focusout)': 'onFocusOut($event)',
+  },
+  providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],
+})
+export class ForListbox implements FormValueControl<string[]>, ForListboxContext {
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /** Two-way bindable. Selected option values. Single-mode keeps 0 or 1 element. */
+  readonly value = model<string[]>([]);
+
+  readonly multiple = input(false, { transform: booleanAttribute });
+
+  readonly orientation = input<'vertical' | 'horizontal'>('vertical');
+  readonly dir = input<WritingDirection>('ltr');
+
+  /**
+   * Single-mode only: when true, arrow nav also selects the focused option.
+   * APG calls this optional and recommends caution — leave off unless your
+   * UX truly benefits from selection following focus. Default `false`.
+   */
+  readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
+
+  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly readonly = input(false, { transform: booleanAttribute });
+  readonly required = input(false, { transform: booleanAttribute });
+  readonly invalid = input(false, { transform: booleanAttribute });
+  readonly pending = input(false, { transform: booleanAttribute });
+  readonly name = input<string>('');
+  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
+  readonly touched = model<boolean>(false);
+
+  readonly roving = injectRovingTabindex();
+  readonly #typeahead = injectTypeahead();
+
+  readonly #options = signal<readonly ForListboxOptionHandle[]>([]);
+
+  readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
+    for (const o of this.#options()) {
+      if (!o.disabled()) {
+        return o.host;
+      }
+    }
+    return null;
+  });
+
+  isSelected(v: string): boolean {
+    return this.value().includes(v);
+  }
+
+  activate(v: string): void {
+    if (this.disabled() || this.readonly()) {
+      return;
+    }
+    if (this.multiple()) {
+      const current = this.value();
+      const next = current.includes(v)
+        ? current.filter((x) => x !== v)
+        : [...current, v];
+      this.value.set(next);
+    } else {
+      // Single-mode: idempotent select (no deselect on click of selected).
+      this.value.set([v]);
+    }
+  }
+
+  navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
+    if (this.disabled()) {
+      return;
+    }
+    const options = this.#options();
+    if (options.length === 0) {
+      return;
+    }
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
+      loop: true,
+      isDisabled: (i) => options[i]!.disabled(),
+    });
+    if (next === null) {
+      return;
+    }
+    const target = options[next];
+    if (!target) {
+      return;
+    }
+    target.host.focus();
+    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
+      this.value.set([readSignalSafe(target.value) ?? '']);
+    }
+  }
+
+  handleTypeahead(event: KeyboardEvent): boolean {
+    if (!this.#typeahead.handle(event)) {
+      return false;
+    }
+    const buffer = this.#typeahead.buffer().toLowerCase();
+    if (!buffer) {
+      return true;
+    }
+    const options = this.#options();
+    const match = options.find((o) => {
+      if (o.disabled()) {
+        return false;
+      }
+      const text = (o.host.textContent ?? '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
+    if (match) {
+      match.host.focus();
+    }
+    return true;
+  }
+
+  isFirstEnabledOption(el: HTMLElement): boolean {
+    return this.#firstEnabledHost() === el;
+  }
+
+  registerOption(handle: ForListboxOptionHandle): void {
+    this.#options.update((arr) => [...arr, handle]);
+  }
+
+  unregisterOption(handle: ForListboxOptionHandle): void {
+    this.#options.update((arr) => arr.filter((h) => h !== handle));
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget as HTMLElement | null;
+    if (next && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    this.touched.set(true);
+  }
+}
+
+/** Defensive read for an `input.required` signal that may not yet be bound. */
+function readSignalSafe<T>(s: { (): T }): T | null {
+  try {
+    return s();
+  } catch {
+    return null;
+  }
+}
