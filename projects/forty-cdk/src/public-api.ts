@@ -15,3 +15,4 @@ export * from './lib/radio-group';
 export * from './lib/tabs';
 export * from './lib/listbox';
 export * from './lib/tooltip';
+export * from './lib/dialog';

@@ -1,0 +1,406 @@
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock';
+import { renderHost } from '../../test-utils/render';
+import { ForDialog } from './dialog';
+import { ForDialogBackdrop } from './dialog-backdrop';
+import { ForDialogClose } from './dialog-close';
+import { ForDialogDescription } from './dialog-description';
+import { ForDialogTitle } from './dialog-title';
+
+@Component({
+  imports: [
+    ForDialog,
+    ForDialogTitle,
+    ForDialogDescription,
+    ForDialogClose,
+    ForDialogBackdrop,
+  ],
+  template: `
+    <button #trigger type="button" (click)="open.set(true)">Open</button>
+    <div
+      forDialog
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      [alert]="alert()"
+    >
+      <div forDialogBackdrop></div>
+      <h2 forDialogTitle>Confirm action</h2>
+      <p forDialogDescription>This cannot be undone.</p>
+      <button id="ok" type="button">OK</button>
+      <button id="cancel" forDialogClose>Cancel</button>
+    </div>
+  `,
+})
+class DialogHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  readonly alert = signal(false);
+}
+
+@Component({
+  imports: [ForDialog],
+  template: `
+    <button (click)="open.set(true)">Open</button>
+    <div forDialog [(open)]="open" [ariaLabel]="'Quick prompt'"></div>
+  `,
+})
+class AriaLabelHost {
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForDialog, ForDialogClose],
+  template: `
+    <div forDialog [(open)]="a">
+      <button forDialogClose>close A</button>
+    </div>
+    <div forDialog [(open)]="b">
+      <button forDialogClose>close B</button>
+    </div>
+  `,
+})
+class StackedDialogsHost {
+  readonly a = signal(false);
+  readonly b = signal(false);
+}
+
+async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  fixture.detectChanges();
+}
+
+describe('ForDialog (declarative)', () => {
+  afterEach(() => {
+    _resetBodyScrollLockForTesting();
+    document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
+  });
+
+  describe('a11y baseline', () => {
+    it('sets role=dialog, aria-modal, and ties labelledby/describedby to title/description', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      const title = dialog.querySelector<HTMLElement>('[forDialogTitle]')!;
+      const desc = dialog.querySelector<HTMLElement>('[forDialogDescription]')!;
+
+      expect(dialog.getAttribute('role')).toBe('dialog');
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(dialog.getAttribute('aria-describedby')).toBe(desc.id);
+    });
+
+    it('switches role to alertdialog when alert=true', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.alert.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.getAttribute('role')).toBe('alertdialog');
+    });
+
+    it('honors a manual ariaLabel when no title is rendered', async () => {
+      const r = renderHost(AriaLabelHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.getAttribute('aria-label')).toBe('Quick prompt');
+      expect(dialog.hasAttribute('aria-labelledby')).toBe(false);
+    });
+  });
+
+  describe('initial state', () => {
+    it('renders hidden when open is false', async () => {
+      const r = renderHost(DialogHost);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.hasAttribute('hidden')).toBe(true);
+      expect(dialog.getAttribute('data-state')).toBe('closed');
+    });
+
+    it('portals the dialog to document.body', async () => {
+      const r = renderHost(DialogHost);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.parentElement).toBe(document.body);
+    });
+  });
+
+  describe('open/close via [(open)]', () => {
+    it('removes hidden and sets data-state=open on open', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.hasAttribute('hidden')).toBe(false);
+      expect(dialog.getAttribute('data-state')).toBe('open');
+    });
+
+    it('moves focus into the dialog on open (first focusable)', async () => {
+      const r = renderHost(DialogHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('ok');
+    });
+
+    it('returns focus to the previous element on close', async () => {
+      const r = renderHost(DialogHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(trigger);
+    });
+  });
+
+  describe('Escape key', () => {
+    it('closes a dismissible dialog', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('is ignored when dismissible=false', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('ForDialogClose', () => {
+    it('closes the dialog when clicked', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const closeBtn = document.querySelector<HTMLButtonElement>('#cancel')!;
+      closeBtn.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('closes regardless of dismissible (close button is always honored)', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const closeBtn = document.querySelector<HTMLButtonElement>('#cancel')!;
+      closeBtn.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('ForDialogBackdrop', () => {
+    it('closes the dialog on direct click when dismissible', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      // Simulate a direct click on the backdrop element.
+      const event = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
+      backdrop.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('does NOT close on click bubbled from a child element', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      const child = document.createElement('div');
+      backdrop.appendChild(child);
+
+      const event = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: child, configurable: true });
+      backdrop.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('is ignored when dismissible=false', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      const event = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
+      backdrop.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('is portaled to body alongside the dialog', async () => {
+      const r = renderHost(DialogHost);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      expect(backdrop.parentElement).toBe(document.body);
+    });
+  });
+
+  describe('focus trap', () => {
+    it('cycles forward from the last focusable to the first', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cancel = document.querySelector<HTMLButtonElement>('#cancel')!;
+      cancel.focus();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+
+      expect(document.activeElement?.id).toBe('ok');
+    });
+
+    it('cycles backward on Shift+Tab from the first to the last', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const ok = document.querySelector<HTMLButtonElement>('#ok')!;
+      ok.focus();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }),
+      );
+
+      expect(document.activeElement?.id).toBe('cancel');
+    });
+  });
+
+  describe('body scroll lock', () => {
+    it('locks body overflow while open and restores on close', async () => {
+      document.body.style.overflow = 'auto';
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.body.style.overflow).toBe('hidden');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(document.body.style.overflow).toBe('auto');
+    });
+  });
+
+  describe('stacked dialogs', () => {
+    it('keeps body locked until the last dialog closes', async () => {
+      const r = renderHost(StackedDialogsHost);
+      r.instance.a.set(true);
+      r.instance.b.set(true);
+      await flush(r.fixture);
+
+      expect(document.body.style.overflow).toBe('hidden');
+
+      r.instance.a.set(false);
+      await flush(r.fixture);
+      expect(document.body.style.overflow).toBe('hidden');
+
+      r.instance.b.set(false);
+      await flush(r.fixture);
+      expect(document.body.style.overflow).toBe('');
+    });
+  });
+
+  describe('used outside [forDialog]', () => {
+    function expectThrows(host: new (...args: unknown[]) => unknown, regex: RegExp): void {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(host as never)).toThrow(regex);
+    }
+
+    it('throws from ForDialogTitle', () => {
+      @Component({
+        imports: [ForDialogTitle],
+        template: `<h2 forDialogTitle></h2>`,
+      })
+      class Orphan {}
+      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogTitle/);
+    });
+
+    it('throws from ForDialogDescription', () => {
+      @Component({
+        imports: [ForDialogDescription],
+        template: `<p forDialogDescription></p>`,
+      })
+      class Orphan {}
+      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogDescription/);
+    });
+
+    it('throws from ForDialogClose', () => {
+      @Component({
+        imports: [ForDialogClose],
+        template: `<button forDialogClose></button>`,
+      })
+      class Orphan {}
+      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogClose/);
+    });
+
+    it('throws from ForDialogBackdrop', () => {
+      @Component({
+        imports: [ForDialogBackdrop],
+        template: `<div forDialogBackdrop></div>`,
+      })
+      class Orphan {}
+      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogBackdrop/);
+    });
+  });
+
+  describe('zoneless reactivity', () => {
+    it('reflects open writes after detectChanges without Zone.js', async () => {
+      const r = renderHost(DialogHost);
+      const dialog = () => document.querySelector<HTMLElement>('[forDialog]')!;
+      await flush(r.fixture);
+      expect(dialog().hasAttribute('hidden')).toBe(true);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(dialog().hasAttribute('hidden')).toBe(false);
+    });
+  });
+});
