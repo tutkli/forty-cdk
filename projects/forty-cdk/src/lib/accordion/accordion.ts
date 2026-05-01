@@ -7,6 +7,7 @@ import {
   model,
 } from '@angular/core';
 
+import { type ListNavigationAction, moveIndex } from '../_internal/keyboard-navigation';
 import { FOR_ACCORDION_CONTEXT, ForAccordionContext } from './accordion-context';
 
 /**
@@ -85,32 +86,23 @@ export class ForAccordion implements ForAccordionContext {
     return this.multiple() || this.collapsible();
   }
 
-  focusByOffset(
-    currentTrigger: HTMLElement,
-    target: 'next' | 'prev' | 'first' | 'last',
-  ): void {
+  focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void {
     const triggers = Array.from(
       this.#host.nativeElement.querySelectorAll<HTMLElement>('[forAccordionTrigger]'),
-    ).filter((el) => !el.hasAttribute('disabled'));
-
+    );
     if (triggers.length === 0) {
       return;
     }
-
-    let nextIndex: number;
-    if (target === 'first') {
-      nextIndex = 0;
-    } else if (target === 'last') {
-      nextIndex = triggers.length - 1;
-    } else {
-      const currentIndex = triggers.indexOf(currentTrigger);
-      if (currentIndex === -1) {
-        return;
-      }
-      const offset = target === 'next' ? 1 : -1;
-      nextIndex = (currentIndex + offset + triggers.length) % triggers.length;
+    const currentIndex = triggers.indexOf(currentTrigger);
+    if (currentIndex === -1 && action !== 'first' && action !== 'last') {
+      return;
     }
-
-    triggers[nextIndex]?.focus();
+    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
+      loop: true,
+      isDisabled: (i) => triggers[i]?.hasAttribute('disabled') ?? false,
+    });
+    if (next !== null) {
+      triggers[next]?.focus();
+    }
   }
 }

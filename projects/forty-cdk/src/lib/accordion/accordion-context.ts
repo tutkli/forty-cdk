@@ -1,5 +1,7 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 
+import type { ListNavigationAction } from '../_internal/keyboard-navigation';
+
 /**
  * Coordination contract owned by the `ForAccordion` root.
  * Items derive their state from this context; triggers route clicks and
@@ -17,10 +19,7 @@ export interface ForAccordionContext {
    * triggers are skipped. `currentTrigger` is the element from which the
    * keyboard event originated.
    */
-  focusByOffset(
-    currentTrigger: HTMLElement,
-    target: 'next' | 'prev' | 'first' | 'last',
-  ): void;
+  focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void;
 }
 
 /**

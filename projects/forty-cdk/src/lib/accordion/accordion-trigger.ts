@@ -1,5 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
+import { resolveListNavigation } from '../_internal/keyboard-navigation';
 import {
   injectAccordionContext,
   injectAccordionItemContext,
@@ -45,25 +46,11 @@ export class ForAccordionTrigger {
   });
 
   protected onKeyDown(event: KeyboardEvent): void {
-    const el = this.#host.nativeElement;
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.#parent.focusByOffset(el, 'next');
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.#parent.focusByOffset(el, 'prev');
-        break;
-      case 'Home':
-        event.preventDefault();
-        this.#parent.focusByOffset(el, 'first');
-        break;
-      case 'End':
-        event.preventDefault();
-        this.#parent.focusByOffset(el, 'last');
-        break;
-      default:
+    const action = resolveListNavigation(event, { orientation: 'vertical' });
+    if (!action) {
+      return;
     }
+    event.preventDefault();
+    this.#parent.focusByOffset(this.#host.nativeElement, action);
   }
 }
