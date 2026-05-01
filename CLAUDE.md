@@ -56,7 +56,7 @@ accordion/
 
 **Test utilities** (render helpers, keyboard/focus helpers) live in `projects/forty-cdk/src/test-utils/` and must NOT be re-exported from `public-api.ts`.
 
-**Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. Each primitive must be importable in isolation. Don't add aggregating barrels that would force consumers to pull the whole library.
+**Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. The library ships a single entry point (`forty-cdk`) and relies on `"sideEffects": false` + standalone directives so tree-shakers drop unused primitives. Importing only `ForDisclosure` must not pull in `ForAccordion`. Per-primitive secondary entry points (`forty-cdk/disclosure`, etc.) are deliberately deferred until there's real evidence consumers' bundles need them — the cost in ng-packagr complexity (esp. cross-entry imports for `_internal/`) is not worth it on day one.
 
 ## Non-negotiable rules
 
