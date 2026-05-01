@@ -6,5 +6,31 @@
   },
   "newProjectRoot": "projects",
   "projects": {
+    "forty-cdk": {
+      "projectType": "library",
+      "root": "projects/forty-cdk",
+      "sourceRoot": "projects/forty-cdk/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/forty-cdk/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/forty-cdk/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/forty-cdk/tsconfig.spec.json"
+          }
+        }
+      }
+    }
   }
 }
