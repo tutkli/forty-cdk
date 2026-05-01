@@ -4,10 +4,14 @@
   "peerDependencies": {
     "@angular/common": "^21.2.0",
     "@angular/core": "^21.2.0",
-    "@angular/forms": "^21.2.0"
+    "@angular/forms": "^21.2.0",
+    "@floating-ui/dom": "^1.6.0"
   },
   "peerDependenciesMeta": {
     "@angular/forms": {
+      "optional": true
+    },
+    "@floating-ui/dom": {
       "optional": true
     }
   },
