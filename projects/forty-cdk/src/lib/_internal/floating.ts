@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -17,6 +16,8 @@ import {
   type Placement,
   shift,
 } from '@floating-ui/dom';
+
+import { injectPortal } from './portal';
 
 const PLACEMENT_OPPOSITE: Record<'top' | 'right' | 'bottom' | 'left', string> = {
   top: 'bottom',
@@ -88,35 +89,21 @@ export interface FloatingConfig {
  */
 export function injectFloating(config: FloatingConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const destroyRef = inject(DestroyRef);
   const el = host.nativeElement;
 
   if (config.portal !== false) {
-    afterNextRender(() => {
-      // Move out of any clipping / transform ancestor so `position: fixed`
-      // math is uncontaminated.
-      if (el.parentNode !== document.body) {
-        document.body.appendChild(el);
-      }
-      // Baseline styles required for transform-based positioning. Set
-      // imperatively so consumer host bindings don't have to remember.
-      Object.assign(el.style, {
-        position: 'fixed',
-        left: '0',
-        top: '0',
-      });
-    });
-
-    destroyRef.onDestroy(() => el.remove());
-  } else {
-    afterNextRender(() => {
-      Object.assign(el.style, {
-        position: 'fixed',
-        left: '0',
-        top: '0',
-      });
-    });
+    injectPortal();
   }
+
+  afterNextRender(() => {
+    // Baseline styles required for transform-based positioning. Set
+    // imperatively so consumer host bindings don't have to remember.
+    Object.assign(el.style, {
+      position: 'fixed',
+      left: '0',
+      top: '0',
+    });
+  });
 
   const shiftPadding = config.shiftPadding ?? 8;
 
