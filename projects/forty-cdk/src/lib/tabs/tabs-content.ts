@@ -1,0 +1,47 @@
+import {
+  computed,
+  DestroyRef,
+  Directive,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+
+import { IdGenerator } from '../_internal/id-generator';
+import { injectTabsContext } from './tabs-context';
+
+/**
+ * Panel for one tab. Hidden via the native `hidden` attribute when not
+ * selected. APG: when the panel does not contain focusable content, it must
+ * itself be focusable so SR users can read it. We always set `tabindex=0` for
+ * v1 — refine later if a `[interactiveContent]` opt-out is justified.
+ */
+@Directive({
+  selector: '[forTabsContent]',
+  exportAs: 'forTabsContent',
+  host: {
+    role: 'tabpanel',
+    tabindex: '0',
+    '[id]': 'id()',
+    '[attr.aria-labelledby]': 'labelledBy()',
+    '[attr.data-state]': 'selected() ? "active" : "inactive"',
+    '[attr.hidden]': 'selected() ? null : ""',
+  },
+})
+export class ForTabsContent {
+  readonly #group = injectTabsContext('ForTabsContent');
+  readonly #idGen = inject(IdGenerator);
+
+  readonly value = input.required<string>();
+
+  readonly id = signal(this.#idGen.next('for-tabs-content'));
+
+  readonly selected = computed(() => this.#group.isSelected(this.value()));
+  protected readonly labelledBy = computed(() => this.#group.triggerIdFor(this.value()));
+
+  constructor() {
+    const handle = { id: this.id, value: this.value };
+    this.#group.registerContent(handle);
+    inject(DestroyRef).onDestroy(() => this.#group.unregisterContent(handle));
+  }
+}
