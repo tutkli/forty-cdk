@@ -1,0 +1,242 @@
+import {
+  booleanAttribute,
+  Directive,
+  inject,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
+import type { Placement, ReferenceElement, VirtualElement } from '@floating-ui/dom';
+
+import { Collection } from '../_internal/collection/collection';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
+import {
+  type ListNavigationAction,
+  moveIndex,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTypeahead } from '../_internal/typeahead/typeahead';
+import {
+  FOR_MENU_CONTEXT,
+  type ForMenuCloseReason,
+  type ForMenuContext,
+  type ForMenuItemHandle,
+} from '../menu/menu-context';
+
+/**
+ * Headless implementation of a right-click / `Shift+F10` menu (variant of
+ * the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)).
+ * Apply on a wrapper that contains a `[forContextMenuTrigger]` and an
+ * `@if`-mounted `[forMenuContent]`.
+ *
+ * The menu is positioned at the pointer location at the time of the
+ * `contextmenu` event — implemented via floating-ui's virtual element so
+ * placement / flip / shift middleware still apply normally. Selecting an
+ * item, Escape, or any outside interaction closes.
+ *
+ * ```html
+ * <div forContextMenu [(open)]="open">
+ *   <div forContextMenuTrigger class="region">Right-click here</div>
+ *   @if (open()) {
+ *     <div forMenuContent (close)="open.set(false)">…</div>
+ *   }
+ * </div>
+ * ```
+ */
+@Directive({
+  selector: '[forContextMenu]',
+  exportAs: 'forContextMenu',
+  host: {
+    '[attr.data-state]': 'open() ? "open" : "closed"',
+    '[attr.data-disabled]': 'disabled() ? "" : null',
+  },
+  providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu }],
+})
+export class ForContextMenu implements ForMenuContext {
+  readonly #idGen = inject(IdGenerator);
+  readonly #typeahead = injectTypeahead();
+  readonly #items = new Collection<ForMenuItemHandle>();
+
+  readonly open = model<boolean>(false);
+
+  /** Floating-ui placement relative to the pointer. Default `'bottom-start'` (right-of, below). */
+  readonly placement = input<Placement>('bottom-start');
+  readonly offset = input<number>(0);
+  readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
+   * When true, the contextmenu event is allowed to fall through to the
+   * native browser menu. Useful for letting the OS-provided context menu
+   * appear on certain regions while keeping the directive mounted.
+   */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  readonly dismissible = input(true, { transform: booleanAttribute });
+  readonly returnFocus = input(true, { transform: booleanAttribute });
+  readonly ariaLabel = input<string | null>(null);
+
+  readonly escapeKeyDown = output<KeyboardEvent>();
+  readonly pointerDownOutside = output<PointerEvent>();
+  readonly focusOutside = output<FocusEvent>();
+  readonly interactOutside = output<PointerEvent | FocusEvent>();
+
+  readonly triggerId = signal(this.#idGen.next('for-context-menu-trigger'));
+  readonly contentId = signal(this.#idGen.next('for-context-menu-content'));
+
+  readonly #initialFocus = signal<'first' | 'last'>('first');
+  readonly initialFocus = this.#initialFocus.asReadonly();
+
+  readonly #triggerEl = signal<HTMLElement | null>(null);
+  readonly trigger = this.#triggerEl.asReadonly();
+
+  readonly #anchor = signal<ReferenceElement | null>(null);
+  readonly anchor = this.#anchor.asReadonly();
+
+  /**
+   * ContextMenu exempts nothing — a left-click on the right-click region
+   * while the menu is open should close it like any other outside click.
+   */
+  readonly dismissableExemptions = signal<readonly HTMLElement[]>([]).asReadonly();
+
+  setInitialFocus(target: 'first' | 'last'): void {
+    this.#initialFocus.set(target);
+  }
+
+  /** Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates. */
+  setVirtualAnchor(x: number, y: number): void {
+    const virtual: VirtualElement = {
+      getBoundingClientRect: () => ({
+        x,
+        y,
+        width: 0,
+        height: 0,
+        top: y,
+        left: x,
+        right: x,
+        bottom: y,
+        toJSON() {
+          return this;
+        },
+      }),
+    };
+    this.#anchor.set(virtual);
+  }
+
+  registerTrigger(el: HTMLElement): void {
+    this.#triggerEl.set(el);
+  }
+  unregisterTrigger(el: HTMLElement): void {
+    if (this.#triggerEl() === el) {
+      this.#triggerEl.set(null);
+    }
+  }
+
+  registerItem(handle: ForMenuItemHandle): void {
+    this.#items.register(handle);
+  }
+  unregisterItem(handle: ForMenuItemHandle): void {
+    this.#items.unregister(handle);
+  }
+
+  navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
+    const items = this.#items.items();
+    if (items.length === 0) {
+      return;
+    }
+    const currentIndex = items.findIndex((i) => i.host === currentItem);
+    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
+      loop: this.loop(),
+      isDisabled: (i) => items[i]!.disabled(),
+    });
+    if (next === null) {
+      return;
+    }
+    items[next]?.host.focus();
+  }
+
+  handleTypeahead(event: KeyboardEvent): void {
+    if (!this.#typeahead.handle(event)) {
+      return;
+    }
+    const buffer = this.#typeahead.buffer().toLowerCase();
+    if (!buffer) {
+      return;
+    }
+    const items = this.#items.items();
+    const match = items.find((i) => {
+      if (i.disabled()) {
+        return false;
+      }
+      const text = (i.host.textContent ?? '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
+    match?.host.focus();
+  }
+
+  focusFirstEnabledItem(): boolean {
+    const target = this.#items.items().find((i) => !i.disabled());
+    if (!target) {
+      return false;
+    }
+    target.host.focus();
+    return true;
+  }
+
+  focusLastEnabledItem(): boolean {
+    const items = this.#items.items();
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      if (item && !item.disabled()) {
+        item.host.focus();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  toggle(initialFocus: 'first' | 'last' = 'first'): void {
+    if (this.disabled()) {
+      return;
+    }
+    if (this.open()) {
+      this.closeMenu('programmatic');
+    } else {
+      this.openMenu(initialFocus);
+    }
+  }
+
+  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.#initialFocus.set(initialFocus);
+    this.open.set(true);
+  }
+
+  closeMenu(_reason: ForMenuCloseReason): void {
+    this.open.set(false);
+  }
+
+  emitEscapeKeyDown(event: KeyboardEvent): void {
+    this.escapeKeyDown.emit(event);
+    if (!event.defaultPrevented && this.dismissible()) {
+      event.stopPropagation();
+      this.closeMenu('escape');
+    }
+  }
+
+  emitPointerDownOutside(event: PointerEvent): void {
+    this.pointerDownOutside.emit(event);
+  }
+
+  emitFocusOutside(event: FocusEvent): void {
+    this.focusOutside.emit(event);
+  }
+
+  emitInteractOutside(event: PointerEvent | FocusEvent): void {
+    this.interactOutside.emit(event);
+    if (!event.defaultPrevented && this.dismissible()) {
+      this.closeMenu('pointerDownOutside');
+    }
+  }
+}

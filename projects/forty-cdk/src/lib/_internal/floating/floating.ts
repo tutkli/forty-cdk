@@ -14,6 +14,7 @@ import {
   type Middleware,
   offset,
   type Placement,
+  type ReferenceElement,
   shift,
 } from '@floating-ui/dom';
 
@@ -28,11 +29,12 @@ const PLACEMENT_OPPOSITE: Record<'top' | 'right' | 'bottom' | 'left', string> = 
 
 export interface FloatingConfig {
   /**
-   * The anchor element. Reactive — should emit `null` until the reference
-   * directive has registered itself, then the actual `HTMLElement`.
-   * Positioning is skipped while `null`.
+   * The anchor. Either a real DOM element (e.g. a button trigger) or a
+   * floating-ui `VirtualElement` (e.g. for context menus that anchor at the
+   * pointer position). Reactive — should emit `null` until the anchor is
+   * available; positioning is skipped while `null`.
    */
-  readonly reference: Signal<HTMLElement | null>;
+  readonly reference: Signal<ReferenceElement | null>;
 
   /**
    * Whether the floating element is currently visible. `autoUpdate` is
