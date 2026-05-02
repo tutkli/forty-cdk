@@ -5,6 +5,7 @@ import { renderHost } from '../../test-utils/render';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
+import { ForTooltipProvider } from './tooltip-provider';
 import { ForTooltipTrigger } from './tooltip-trigger';
 
 @Component({
@@ -456,6 +457,67 @@ describe('ForTooltip', () => {
       await flushAsync(r.fixture);
 
       expect(r.instance.emitted).toEqual([]);
+    });
+  });
+
+  describe('ForTooltipProvider', () => {
+    @Component({
+      imports: [ForTooltipProvider, ForTooltip, ForTooltipTrigger, ForTooltipContent],
+      template: `
+        <div forTooltipProvider [skipDelayDuration]="skip()">
+          <div forTooltip [(open)]="aOpen" [openDelay]="500" [closeDelay]="0">
+            <button type="button" forTooltipTrigger>A</button>
+            <div forTooltipContent>A</div>
+          </div>
+          <div forTooltip [(open)]="bOpen" [openDelay]="500" [closeDelay]="0">
+            <button type="button" forTooltipTrigger>B</button>
+            <div forTooltipContent>B</div>
+          </div>
+        </div>
+      `,
+    })
+    class ProviderHost {
+      readonly aOpen = signal(false);
+      readonly bOpen = signal(false);
+      readonly skip = signal(300);
+    }
+
+    it('opens the second tooltip instantly while a peer just closed (skip-delay window)', async () => {
+      const r = renderHost(ProviderHost);
+      r.instance.skip.set(1000);
+      await flushAsync(r.fixture);
+
+      const triggers = r.queryAll<HTMLButtonElement>('button');
+      const triggerA = triggers[0]!;
+      const triggerB = triggers[1]!;
+
+      // Open A via its own logic (with delay 500), then close it via
+      // pointer-leave so the tooltip's internal close path runs and
+      // notifies the provider to start the skip-delay window.
+      r.instance.aOpen.set(true);
+      await flushAsync(r.fixture);
+      triggerA.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      await flushAsync(r.fixture);
+      expect(r.instance.aOpen()).toBe(false);
+
+      triggerB.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flushAsync(r.fixture);
+
+      expect(r.instance.bOpen()).toBe(true);
+    });
+
+    it('does not skip the delay when no peer has recently closed', async () => {
+      const r = renderHost(ProviderHost);
+      await flushAsync(r.fixture);
+
+      const triggers = r.queryAll<HTMLButtonElement>('button');
+      const triggerA = triggers[0]!;
+      triggerA.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flushAsync(r.fixture);
+
+      // Without a prior close, the provider's skip flag is false → the
+      // tooltip waits for its full openDelay (500ms) before opening.
+      expect(r.instance.aOpen()).toBe(false);
     });
   });
 

@@ -15,6 +15,7 @@ import {
   ForTooltipContext,
   TooltipScheduleReason,
 } from './tooltip-context';
+import { ForTooltipProvider } from './tooltip-provider';
 
 /**
  * Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).
@@ -80,6 +81,7 @@ export class ForTooltip implements ForTooltipContext {
   readonly arrow = this.#arrowEl.asReadonly();
 
   #pendingTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly #provider = inject(ForTooltipProvider, { optional: true });
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancelPending());
@@ -113,7 +115,11 @@ export class ForTooltip implements ForTooltipContext {
     if (this.open()) {
       return;
     }
-    const delay = Math.max(0, this.openDelay());
+    // Skip the open delay if a peer tooltip just closed within the
+    // provider's skipDelayDuration window — keeps toolbar-style tooltips
+    // from feeling sluggish on cursor movement between targets.
+    const baseDelay = this.#provider?.skipDelay() ? 0 : this.openDelay();
+    const delay = Math.max(0, baseDelay);
     if (delay === 0) {
       this.open.set(true);
       return;
@@ -130,18 +136,23 @@ export class ForTooltip implements ForTooltipContext {
       return;
     }
     if (reason === 'escape') {
-      this.open.set(false);
+      this.#close();
       return;
     }
     const delay = Math.max(0, this.closeDelay());
     if (delay === 0) {
-      this.open.set(false);
+      this.#close();
       return;
     }
     this.#pendingTimer = setTimeout(() => {
       this.#pendingTimer = null;
-      this.open.set(false);
+      this.#close();
     }, delay);
+  }
+
+  #close(): void {
+    this.open.set(false);
+    this.#provider?.startSkipDelay();
   }
 
   cancelPending(): void {
