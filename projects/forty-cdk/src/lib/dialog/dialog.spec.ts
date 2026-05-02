@@ -346,6 +346,24 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
       expect(document.body.style.overflow).toBe('');
     });
+
+    it('Escape closes only the topmost dialog (not the one underneath)', async () => {
+      const r = renderHost(StackedDialogsHost);
+      r.instance.a.set(true);
+      r.instance.b.set(true);
+      await flush(r.fixture);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.a()).toBe(true);
+      expect(r.instance.b()).toBe(false);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.a()).toBe(false);
+    });
   });
 
   describe('used outside [forDialog]', () => {

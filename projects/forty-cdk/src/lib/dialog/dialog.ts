@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock';
+import { injectDismissableLayer } from '../_internal/dismissable-layer';
 import { injectFocusTrap } from '../_internal/focus-trap';
 import { injectPortal } from '../_internal/portal';
 import {
@@ -99,6 +100,7 @@ export class ForDialog implements ForDialogContext {
   });
 
   readonly #focusTrap = injectFocusTrap();
+  readonly #dismissable = injectDismissableLayer();
 
   constructor() {
     injectPortal();
@@ -125,17 +127,18 @@ export class ForDialog implements ForDialogContext {
         }
       }
 
-      const onKeyDown = (event: KeyboardEvent): void => {
-        if (event.key === 'Escape' && this.dismissible()) {
-          event.preventDefault();
-          event.stopPropagation();
-          this.requestClose('escape');
-        }
-      };
-      document.addEventListener('keydown', onKeyDown);
+      this.#dismissable.activate({
+        onEscapeKeyDown: (event) => {
+          if (this.dismissible()) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.requestClose('escape');
+          }
+        },
+      });
 
       onCleanup(() => {
-        document.removeEventListener('keydown', onKeyDown);
+        this.#dismissable.deactivate();
         if (isModal) {
           this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
           unlockBodyScroll();
