@@ -13,6 +13,7 @@ import { injectDisclosureContext } from './disclosure-context';
   host: {
     '[id]': 'ctx.contentId()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
     '[attr.hidden]': 'ctx.open() ? null : ""',
   },
 })

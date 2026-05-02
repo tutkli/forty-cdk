@@ -143,6 +143,27 @@ describe('ForDisclosure', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
+
+    it('propagates data-disabled to trigger and content', () => {
+      const { fixture, query, flush } = renderHost(DisclosureHost);
+      fixture.componentInstance.isDisabled.set(true);
+      flush();
+
+      const trigger = query<HTMLButtonElement>('button')!;
+      const content = query<HTMLElement>('section')!;
+      const root = query<HTMLElement>('[forDisclosure]')!;
+
+      expect(root.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(content.getAttribute('data-disabled')).toBe('');
+
+      fixture.componentInstance.isDisabled.set(false);
+      flush();
+
+      expect(root.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.hasAttribute('data-disabled')).toBe(false);
+      expect(content.hasAttribute('data-disabled')).toBe(false);
+    });
   });
 
   describe('used outside [forDisclosure]', () => {

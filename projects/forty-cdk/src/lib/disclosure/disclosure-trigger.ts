@@ -15,6 +15,7 @@ import { injectDisclosureContext } from './disclosure-context';
     '[attr.aria-controls]': 'ctx.contentId()',
     '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
     '(click)': 'ctx.toggle()',
   },
 })
