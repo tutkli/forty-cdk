@@ -70,7 +70,6 @@ describe('ForDisclosure', () => {
       const root = query<HTMLElement>('[forDisclosure]')!;
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(content.hasAttribute('hidden')).toBe(true);
       expect(content.getAttribute('data-state')).toBe('closed');
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(root.getAttribute('data-state')).toBe('closed');
@@ -87,7 +86,6 @@ describe('ForDisclosure', () => {
       flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(content.hasAttribute('hidden')).toBe(false);
       expect(content.getAttribute('data-state')).toBe('open');
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
@@ -95,7 +93,6 @@ describe('ForDisclosure', () => {
       flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(content.hasAttribute('hidden')).toBe(true);
       expect(content.getAttribute('data-state')).toBe('closed');
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
@@ -111,7 +108,7 @@ describe('ForDisclosure', () => {
       flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(content.hasAttribute('hidden')).toBe(false);
+      expect(content.getAttribute('data-state')).toBe('open');
     });
 
     it('writes back to the host signal when the trigger is clicked', () => {

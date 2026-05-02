@@ -3,9 +3,10 @@ import { Directive } from '@angular/core';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**
- * Disclosed content panel for a `ForDisclosure`. Hidden via the native
- * `hidden` attribute when closed; the consumer styles transitions off
- * `data-state="open|closed"` if needed.
+ * Disclosed content panel for a `ForDisclosure`. The directive does not
+ * manage DOM presence — wrap with `@if (open())` so the panel mounts and
+ * unmounts with the disclosure state, and use `animate.enter` /
+ * `animate.leave` for transitions if desired.
  */
 @Directive({
   selector: '[forDisclosureContent]',
@@ -14,7 +15,6 @@ import { injectDisclosureContext } from './disclosure-context';
     '[id]': 'ctx.contentId()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
-    '[attr.hidden]': 'ctx.open() ? null : ""',
   },
 })
 export class ForDisclosureContent {
