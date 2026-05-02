@@ -7,6 +7,7 @@ import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
 import { ForListboxOption } from './listbox-option';
+import { ForListboxOptionIndicator } from './listbox-option-indicator';
 
 const LISTBOX_IMPORTS = [ForListbox, ForListboxOption] as const;
 const GROUP_IMPORTS = [
@@ -529,6 +530,59 @@ describe('ForListbox', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/listbox\] ForListboxGroupLabel must be used inside a \[forListboxGroup\] element\./,
+      );
+    });
+  });
+
+  describe('ForListboxOptionIndicator', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS, ForListboxOptionIndicator],
+      template: `
+        <ul forListbox [(value)]="picked" [multiple]="true">
+          <li>
+            <button type="button" forListboxOption value="a" data-test-id="opt-a">
+              A <span forListboxOptionIndicator data-ind="a"></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" forListboxOption value="b" data-test-id="opt-b">
+              B <span forListboxOptionIndicator data-ind="b"></span>
+            </button>
+          </li>
+        </ul>
+      `,
+    })
+    class IndicatorHost {
+      readonly picked = signal<string[]>([]);
+    }
+
+    it('hides indicators while no option is selected', () => {
+      const { el } = renderHost(IndicatorHost);
+      const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
+      expect(Array.from(inds).every((n) => n.hasAttribute('hidden'))).toBe(true);
+    });
+
+    it('reflects per-option selection (independent of siblings) in multi mode', () => {
+      const { el, fixture, flush } = renderHost(IndicatorHost);
+      fixture.componentInstance.picked.set(['a']);
+      flush();
+
+      const a = el.querySelector<HTMLElement>('[data-ind="a"]')!;
+      const b = el.querySelector<HTMLElement>('[data-ind="b"]')!;
+      expect(a.hasAttribute('hidden')).toBe(false);
+      expect(a.getAttribute('data-state')).toBe('checked');
+      expect(b.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('throws when used outside [forListboxOption]', () => {
+      @Component({
+        imports: [ForListboxOptionIndicator],
+        template: `<span forListboxOptionIndicator></span>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrow(
+        /\[forty-cdk\/listbox\] ForListboxOptionIndicator must be used inside a \[forListboxOption\] element\./,
       );
     });
   });

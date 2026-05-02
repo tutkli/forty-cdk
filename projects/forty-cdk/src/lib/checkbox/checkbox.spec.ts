@@ -3,6 +3,7 @@ import { form, FormField, required } from '@angular/forms/signals';
 
 import { renderHost } from '../../test-utils/render';
 import { ForCheckbox } from './checkbox';
+import { ForCheckboxIndicator } from './checkbox-indicator';
 
 @Component({
   imports: [ForCheckbox],
@@ -164,6 +165,60 @@ describe('ForCheckbox', () => {
       expect(cb.getAttribute('aria-invalid')).toBe('true');
       expect(cb.getAttribute('aria-busy')).toBe('true');
       expect(cb.getAttribute('name')).toBe('terms');
+    });
+  });
+
+  describe('ForCheckboxIndicator', () => {
+    @Component({
+      imports: [ForCheckbox, ForCheckboxIndicator],
+      template: `
+        <button forCheckbox [(checked)]="agreed" [(indeterminate)]="indeterminate">
+          <span forCheckboxIndicator data-test-id="ind">✓</span>
+        </button>
+      `,
+    })
+    class IndicatorHost {
+      readonly agreed = signal(false);
+      readonly indeterminate = signal(false);
+    }
+
+    it('hides the indicator while unchecked', () => {
+      const { el } = renderHost(IndicatorHost);
+      const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
+      expect(ind.hasAttribute('hidden')).toBe(true);
+      expect(ind.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('shows the indicator while checked', () => {
+      const { el, fixture, flush } = renderHost(IndicatorHost);
+      fixture.componentInstance.agreed.set(true);
+      flush();
+
+      const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
+      expect(ind.hasAttribute('hidden')).toBe(false);
+      expect(ind.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('shows the indicator while indeterminate', () => {
+      const { el, fixture, flush } = renderHost(IndicatorHost);
+      fixture.componentInstance.indeterminate.set(true);
+      flush();
+
+      const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
+      expect(ind.hasAttribute('hidden')).toBe(false);
+      expect(ind.getAttribute('data-state')).toBe('indeterminate');
+    });
+
+    it('throws when used outside [forCheckbox]', () => {
+      @Component({
+        imports: [ForCheckboxIndicator],
+        template: `<span forCheckboxIndicator></span>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrow(
+        /\[forty-cdk\/checkbox\] ForCheckboxIndicator must be used inside a \[forCheckbox\] element\./,
+      );
     });
   });
 

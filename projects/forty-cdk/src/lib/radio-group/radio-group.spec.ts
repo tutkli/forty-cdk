@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { renderHost } from '../../test-utils/render';
 import { ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
+import { ForRadioIndicator } from './radio-indicator';
 
 const RADIO_IMPORTS = [ForRadioGroup, ForRadio] as const;
 
@@ -340,6 +341,55 @@ describe('ForRadioGroup', () => {
 
       expect(() => TestBed.createComponent(OrphanRadio)).toThrow(
         /\[forty-cdk\/radio-group\] ForRadio must be used inside a \[forRadioGroup\] element\./,
+      );
+    });
+  });
+
+  describe('ForRadioIndicator', () => {
+    @Component({
+      imports: [...RADIO_IMPORTS, ForRadioIndicator],
+      template: `
+        <div forRadioGroup [(value)]="color">
+          <button type="button" forRadio value="red" data-test-id="red">
+            <span forRadioIndicator data-ind="red"></span>
+          </button>
+          <button type="button" forRadio value="blue" data-test-id="blue">
+            <span forRadioIndicator data-ind="blue"></span>
+          </button>
+        </div>
+      `,
+    })
+    class IndicatorHost {
+      readonly color = signal('');
+    }
+
+    it('hides indicators while no radio is selected', () => {
+      const { el } = renderHost(IndicatorHost);
+      const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
+      expect(Array.from(inds).every((n) => n.hasAttribute('hidden'))).toBe(true);
+    });
+
+    it('shows only the selected radio\'s indicator', () => {
+      const { el, fixture, flush } = renderHost(IndicatorHost);
+      fixture.componentInstance.color.set('blue');
+      flush();
+
+      const red = el.querySelector<HTMLElement>('[data-ind="red"]')!;
+      const blue = el.querySelector<HTMLElement>('[data-ind="blue"]')!;
+      expect(red.hasAttribute('hidden')).toBe(true);
+      expect(blue.hasAttribute('hidden')).toBe(false);
+      expect(blue.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('throws when used outside [forRadio]', () => {
+      @Component({
+        imports: [ForRadioIndicator],
+        template: `<span forRadioIndicator></span>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrow(
+        /\[forty-cdk\/radio-group\] ForRadioIndicator must be used inside a \[forRadio\] element\./,
       );
     });
   });
