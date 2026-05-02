@@ -15,6 +15,7 @@ import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock'
 import { injectDismissableLayer } from '../_internal/dismissable-layer';
 import { injectFocusTrap } from '../_internal/focus-trap';
 import { injectPortal } from '../_internal/portal';
+import { injectPresence } from '../_internal/presence';
 import {
   FOR_DIALOG_CONTEXT,
   ForDialogCloseReason,
@@ -44,7 +45,7 @@ import {
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
-    '[attr.hidden]': 'open() ? null : ""',
+    '[attr.hidden]': 'present() ? null : ""',
     tabindex: '-1',
   },
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
@@ -90,6 +91,15 @@ export class ForDialog implements ForDialogContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
+   * When true, the dialog stays mounted in the DOM regardless of `open`
+   * state — `[hidden]` is never applied. Useful when the consumer drives
+   * mount/unmount externally (e.g. via `@if`) or wants to keep the DOM
+   * stable for animation orchestration. `data-state` still reflects the
+   * logical open/closed state.
+   */
+  readonly forceMount = input(false, { transform: booleanAttribute });
+
+  /**
    * Fires when the user presses Escape while this dialog is the topmost
    * dismissable layer. Call `event.preventDefault()` to keep the dialog
    * open (e.g. to ask for confirmation first). Otherwise the dialog
@@ -131,6 +141,15 @@ export class ForDialog implements ForDialogContext {
 
   readonly #focusTrap = injectFocusTrap();
   readonly #dismissable = injectDismissableLayer();
+  readonly #presence = injectPresence({ open: this.open, forceMount: this.forceMount });
+
+  /**
+   * `true` while the dialog should remain in the DOM. Tracks `open()` plus
+   * any closing animation still playing on the host, plus `forceMount`.
+   * Bound to `[attr.hidden]` so closing animations driven from
+   * `data-state="closed"` complete before unmount.
+   */
+  protected readonly present = this.#presence.present;
 
   constructor() {
     injectPortal();

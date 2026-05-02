@@ -62,6 +62,14 @@ export class ForTooltip implements ForTooltipContext {
   /** When true, all hover / focus interaction is ignored and any open tooltip is forced closed. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * When true, `ForTooltipContent` stays mounted regardless of `open` —
+   * `[hidden]` is never applied. Use when the consumer wants to drive
+   * mount/unmount externally or keep DOM stable across animations.
+   * `data-state` still reflects the logical open/closed state.
+   */
+  readonly forceMount = input(false, { transform: booleanAttribute });
+
   readonly triggerId = signal(this.#idGen.next('for-tooltip-trigger'));
   readonly contentId = signal(this.#idGen.next('for-tooltip-content'));
 

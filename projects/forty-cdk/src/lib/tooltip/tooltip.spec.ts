@@ -459,6 +459,36 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('forceMount', () => {
+    it('keeps the content mounted (no [hidden]) when open=false', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="isOpen" [forceMount]="true">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly isOpen = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flushAsync(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forTooltipContent]')!;
+      expect(content.hasAttribute('hidden')).toBe(false);
+      expect(content.getAttribute('data-state')).toBe('closed');
+
+      r.instance.isOpen.set(true);
+      await flushAsync(r.fixture);
+
+      expect(content.hasAttribute('hidden')).toBe(false);
+      expect(content.getAttribute('data-state')).toBe('open');
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(TooltipHost);

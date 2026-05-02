@@ -750,6 +750,33 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
+  describe('forceMount', () => {
+    it('keeps the dialog mounted (no [hidden]) when open=false', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <div forDialog [(open)]="open" [forceMount]="true" ariaLabel="t"></div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.hasAttribute('hidden')).toBe(false);
+      expect(dialog.getAttribute('data-state')).toBe('closed');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(dialog.hasAttribute('hidden')).toBe(false);
+      expect(dialog.getAttribute('data-state')).toBe('open');
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(DialogHost);

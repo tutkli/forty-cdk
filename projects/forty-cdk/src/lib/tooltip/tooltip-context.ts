@@ -12,6 +12,7 @@ export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
 export interface ForTooltipContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
+  readonly forceMount: Signal<boolean>;
   readonly placement: Signal<Placement>;
   readonly offset: Signal<number>;
   readonly openDelay: Signal<number>;
