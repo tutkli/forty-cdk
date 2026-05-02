@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { FOR_TOOLBAR_CONTEXT } from '../toolbar/toolbar-context';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**
@@ -22,6 +23,12 @@ import { injectToggleGroupContext } from './toggle-group-context';
  * (the first selected, or the first enabled when nothing is pressed).
  * Arrow keys move focus inside the group; the consumer never has to
  * wire keyboard navigation manually.
+ *
+ * **Composition with [forToolbar]:** when the group is nested inside a
+ * `[forToolbar]`, focus management is delegated to the toolbar — the
+ * tabindex policy and arrow-key navigation flow across all toolbar items
+ * (buttons, links, toggle items) instead of staying confined to the
+ * group. Selection still lives on the group; only focus is shared.
  */
 @Directive({
   selector: '[forToggleGroupItem]',
@@ -40,6 +47,7 @@ import { injectToggleGroupContext } from './toggle-group-context';
 })
 export class ForToggleGroupItem {
   readonly #group = injectToggleGroupContext('ForToggleGroupItem');
+  readonly #toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Identifier added to / removed from the group's `value`. Required. */
@@ -51,29 +59,43 @@ export class ForToggleGroupItem {
   readonly pressed = computed(() => this.#group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.#group.disabled(),
+    () => this.disabled() || this.#group.disabled() || (this.#toolbar?.disabled() ?? false),
   );
 
   /**
-   * Tabindex per APG toolbar: 0 if this item is the group's current entry
-   * point (first selected, or first enabled when nothing is selected); -1
+   * Tabindex per APG: 0 if this item is the current entry point (toolbar's
+   * first-focusable when nested in a toolbar, otherwise the group's), -1
    * otherwise. Disabled items are always -1.
    */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    return this.#group.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+    const owner = this.#toolbar ?? this.#group;
+    return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
   constructor() {
-    const handle = {
+    const groupHandle = {
       host: this.#host.nativeElement,
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.#group.registerItem(handle);
-    inject(DestroyRef).onDestroy(() => this.#group.unregisterItem(handle));
+    this.#group.registerItem(groupHandle);
+
+    const toolbarHandle = this.#toolbar
+      ? { host: this.#host.nativeElement, disabled: this.effectiveDisabled }
+      : null;
+    if (this.#toolbar && toolbarHandle) {
+      this.#toolbar.registerItem(toolbarHandle);
+    }
+
+    inject(DestroyRef).onDestroy(() => {
+      this.#group.unregisterItem(groupHandle);
+      if (this.#toolbar && toolbarHandle) {
+        this.#toolbar.unregisterItem(toolbarHandle);
+      }
+    });
   }
 
   protected onClick(): void {
@@ -87,14 +109,15 @@ export class ForToggleGroupItem {
     if (this.effectiveDisabled()) {
       return;
     }
+    const owner = this.#toolbar ?? this.#group;
     const action = resolveListNavigation(event, {
-      orientation: this.#group.orientation(),
-      dir: this.#group.dir(),
+      orientation: owner.orientation(),
+      dir: owner.dir(),
     });
     if (!action) {
       return;
     }
     event.preventDefault();
-    this.#group.navigate(this.#host.nativeElement, action);
+    owner.navigate(this.#host.nativeElement, action);
   }
 }

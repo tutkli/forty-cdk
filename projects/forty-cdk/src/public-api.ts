@@ -30,3 +30,4 @@ export * from './lib/aspect-ratio';
 export * from './lib/progress';
 export * from './lib/meter';
 export * from './lib/avatar';
+export * from './lib/toolbar';
