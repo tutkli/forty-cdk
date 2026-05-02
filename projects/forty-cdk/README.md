@@ -1,64 +1,53 @@
-# FortyCdk
+# forty-cdk
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.0.
+Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.
+Inspired by Radix UI and Base UI but reinterpreted idiomatically for modern Angular.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Installation
 
 ```bash
-ng generate --help
+npm install forty-cdk
 ```
+
+### Peer dependencies
+
+Required:
+
+- `@angular/common` `^21.2.0`
+- `@angular/core` `^21.2.0`
+
+Optional — install only if you use the matching primitives:
+
+| Peer | Needed by |
+| --- | --- |
+| `@angular/forms` `^21.2.0` | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, plus future `Select` / `Slider` / `Combobox`). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. Consumers using only non-form primitives can skip it. |
+| `@floating-ui/dom` `^1.6.0` | Positioned overlays (`Tooltip` today; future `Popover` / `Menu` / `Select`). Consumers using only `Disclosure`, `Accordion`, `Tabs`, `Switch`, `Checkbox`, `RadioGroup`, `Listbox`, or `Dialog` can skip it. |
+
+`@angular/forms/signals` is `@experimental` in Angular 21, so we pin to the matching minor (`^21.2.0`) and revisit on each Angular bump.
+
+## Primitives
+
+Each primitive lives under [`src/lib/<primitive>/`](src/lib) with its own `README.md` and a minimal styleless usage example.
+
+The library ships a single entry point (`forty-cdk`); standalone directives plus `"sideEffects": false` let tree-shakers drop primitives you don't import.
 
 ## Building
-
-To build the library, run:
 
 ```bash
 ng build forty-cdk
 ```
 
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
+Build artifacts land in `dist/forty-cdk` (consumed locally via the `forty-cdk` path alias in the root `tsconfig.json`).
 
-### Publishing the Library
+## Testing
 
-Once the project is built, you can publish your library by following these steps:
-
-1. Navigate to the `dist` directory:
-
-   ```bash
-   cd dist/forty-cdk
-   ```
-
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Tests run on Vitest via the Angular CLI builder `@angular/build:unit-test`:
 
 ```bash
-ng test
+npm test                                       # all specs, single pass
+npx ng test --watch                            # watch mode
+npx ng test -- src/lib/accordion/accordion.spec.ts  # single file
+npx ng test -- -t "opens on Enter"             # single test by name
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Every primitive's test suite includes a case running under `provideZonelessChangeDetection()` to keep reactivity working without Zone.js.
