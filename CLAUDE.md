@@ -116,6 +116,33 @@ These keep the surface predictable across primitives. Apply them everywhere; dev
 
 **Output naming.** `*Change` for value/state transitions emitted by `model()`. Verb outputs (`select`, `escapeKeyDown`, `pointerDownOutside`) for one-shot events — never `onX` (React idiom).
 
+**Mount/unmount and animations.** Primitives **never** apply `[hidden]` to their visible pieces. Presence in the DOM is the consumer's responsibility — they wrap the visible piece with `@if` and use Angular's native `animate.enter` / `animate.leave` for transitions. The directive's job is reactive state + ARIA + behavior; visibility is template control flow. This rule is what unblocks idiomatic Angular animations and forces a clean separation between "is open" (state) and "is mounted" (DOM).
+
+There are two API shapes for primitives that have a visibility/open concept:
+
+- **Floating overlays** (Dialog, future Popover / Menu / Drawer / Toast / HoverCard): the trigger lives outside the surface; the consumer's signal drives `@if` and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, *Outside, close button, programmatic). **No `[(open)]` model.** Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
+
+  ```html
+  @if (open()) {
+    <div forDialog (close)="open.set(false)" animate.leave="fade-out">…</div>
+  }
+  ```
+
+- **Embedded toggle/selection** (Disclosure, Accordion, Tabs, Tooltip, Listbox, future ToggleGroup): the trigger lives inside the wrapper and drives state, so `[(open)]` / `[(value)]` is correct. The visible content piece still drops `[hidden]`; the consumer wraps it with `@if` driven by the same signal (or a template ref to the directive). `data-state` reflects logical open/closed for CSS styling, but is never tied to visibility — that's `@if`'s job.
+
+  ```html
+  <div forDisclosure [(open)]="isOpen">
+    <button forDisclosureTrigger>Toggle</button>
+    @if (isOpen()) {
+      <section forDisclosureContent animate.leave="slide-up">…</section>
+    }
+  </div>
+  ```
+
+The single exception is **Tabs panels**: it's idiomatic to keep all panels mounted to preserve scroll/input state. The consumer can either `@if` per panel or simply leave them mounted and toggle visibility in CSS via `[data-state="active"]`.
+
+Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, `Tabs` selection) keep `[(checked)]` / `[(value)]` — that's form state, not visibility, and the rule above doesn't apply.
+
 ## Workflow for new primitives
 
 When asked to add a primitive, follow this order:
