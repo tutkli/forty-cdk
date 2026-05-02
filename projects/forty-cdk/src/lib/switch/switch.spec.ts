@@ -146,6 +146,46 @@ describe('ForSwitch', () => {
     });
   });
 
+  describe('native form submission', () => {
+    @Component({
+      imports: [ForSwitch],
+      template: `
+        <form>
+          <button forSwitch [(checked)]="enabled" [name]="fieldName()"></button>
+        </form>
+      `,
+    })
+    class FormHost {
+      readonly enabled = signal(false);
+      readonly fieldName = signal<string>('');
+    }
+
+    it('does not submit any value when name is empty', () => {
+      const { el } = renderHost(FormHost);
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+
+    it('submits name=on while checked', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('notify');
+      fixture.componentInstance.enabled.set(true);
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([['notify', 'on']]);
+    });
+
+    it('omits the value when unchecked', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('notify');
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external set without Zone.js', () => {
       const { el, fixture, flush } = renderHost(SwitchHost);

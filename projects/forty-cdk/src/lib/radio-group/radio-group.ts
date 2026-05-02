@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
+import { injectHiddenInput } from '../_internal/hidden-input';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -88,6 +89,17 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
     }
     return null;
   });
+
+  constructor() {
+    injectHiddenInput({
+      name: this.name,
+      values: computed(() => {
+        const v = this.value();
+        return v ? [v] : [];
+      }),
+      disabled: this.disabled,
+    });
+  }
 
   isSelected(v: string): boolean {
     return this.value() === v;

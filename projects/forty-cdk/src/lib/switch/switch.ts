@@ -1,5 +1,7 @@
-import { booleanAttribute, Directive, input, model } from '@angular/core';
+import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
 import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
+
+import { injectHiddenInput } from '../_internal/hidden-input';
 
 /**
  * Headless on/off switch implementing the
@@ -62,6 +64,14 @@ export class ForSwitch implements FormCheckboxControl {
 
   /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
   readonly touched = model<boolean>(false);
+
+  constructor() {
+    injectHiddenInput({
+      name: this.name,
+      values: computed(() => (this.checked() ? ['on'] : [])),
+      disabled: this.disabled,
+    });
+  }
 
   protected onClick(): void {
     if (this.disabled() || this.readonly()) {

@@ -455,6 +455,47 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('native form submission', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <form>
+          <ul forListbox [(value)]="picked" [multiple]="true" [name]="fieldName()">
+            <li><button type="button" forListboxOption value="a">A</button></li>
+            <li><button type="button" forListboxOption value="b">B</button></li>
+            <li><button type="button" forListboxOption value="c">C</button></li>
+          </ul>
+        </form>
+      `,
+    })
+    class FormHost {
+      readonly picked = signal<string[]>([]);
+      readonly fieldName = signal<string>('');
+    }
+
+    it('submits one entry per selected value with the same name (multi mode)', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('tags');
+      fixture.componentInstance.picked.set(['a', 'c']);
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([
+        ['tags', 'a'],
+        ['tags', 'c'],
+      ]);
+    });
+
+    it('omits the value when nothing is selected', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('tags');
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);

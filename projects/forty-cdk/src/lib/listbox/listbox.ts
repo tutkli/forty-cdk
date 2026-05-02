@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
+import { injectHiddenInput } from '../_internal/hidden-input';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -101,6 +102,14 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
     }
     return null;
   });
+
+  constructor() {
+    injectHiddenInput({
+      name: this.name,
+      values: this.value,
+      disabled: this.disabled,
+    });
+  }
 
   isSelected(v: string): boolean {
     return this.value().includes(v);

@@ -167,6 +167,47 @@ describe('ForCheckbox', () => {
     });
   });
 
+  describe('native form submission', () => {
+    @Component({
+      imports: [ForCheckbox],
+      template: `
+        <form>
+          <button
+            forCheckbox
+            [(checked)]="agreed"
+            [(indeterminate)]="indeterminate"
+            [name]="fieldName()"
+          ></button>
+        </form>
+      `,
+    })
+    class FormHost {
+      readonly agreed = signal(false);
+      readonly indeterminate = signal(false);
+      readonly fieldName = signal<string>('');
+    }
+
+    it('submits name=on while checked', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('terms');
+      fixture.componentInstance.agreed.set(true);
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([['terms', 'on']]);
+    });
+
+    it('omits the value while unchecked, including in indeterminate state', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('terms');
+      fixture.componentInstance.indeterminate.set(true);
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external sets without Zone.js', () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);

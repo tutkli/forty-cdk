@@ -344,6 +344,43 @@ describe('ForRadioGroup', () => {
     });
   });
 
+  describe('native form submission', () => {
+    @Component({
+      imports: [...RADIO_IMPORTS],
+      template: `
+        <form>
+          <div forRadioGroup [(value)]="color" [name]="fieldName()">
+            <button type="button" forRadio value="red">Red</button>
+            <button type="button" forRadio value="green">Green</button>
+          </div>
+        </form>
+      `,
+    })
+    class FormHost {
+      readonly color = signal('');
+      readonly fieldName = signal<string>('');
+    }
+
+    it('submits name=value for the selected radio', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('color');
+      fixture.componentInstance.color.set('green');
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([['color', 'green']]);
+    });
+
+    it('omits the value when nothing is selected', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('color');
+      flush();
+
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);

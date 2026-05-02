@@ -7,6 +7,8 @@ import {
 } from '@angular/core';
 import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
 
+import { injectHiddenInput } from '../_internal/hidden-input';
+
 /**
  * Headless checkbox implementing the
  * [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)
@@ -94,6 +96,16 @@ export class ForCheckbox implements FormCheckboxControl {
     if (this.indeterminate()) return 'indeterminate';
     return this.checked() ? 'checked' : 'unchecked';
   });
+
+  constructor() {
+    injectHiddenInput({
+      name: this.name,
+      // Matches native `<input type="checkbox">`: only `checked` contributes
+      // to form submission; `indeterminate` is purely a presentational flag.
+      values: computed(() => (this.checked() ? ['on'] : [])),
+      disabled: this.disabled,
+    });
+  }
 
   protected onClick(): void {
     if (this.disabled() || this.readonly()) {
