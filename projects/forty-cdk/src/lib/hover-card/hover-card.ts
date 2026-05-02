@@ -117,7 +117,7 @@ export class ForHoverCard implements ForHoverCardContext {
       return;
     }
     const local = this.openDelay();
-    const base = this.#coordinator.skipDelay() ? 0 : local ?? this.#coordinator.openDelay;
+    const base = this.#coordinator.skipDelay() ? 0 : (local ?? this.#coordinator.openDelay);
     const delay = Math.max(0, base);
     if (delay === 0) {
       this.open.set(true);

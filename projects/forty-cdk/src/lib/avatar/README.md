@@ -6,20 +6,20 @@ There is no WAI-ARIA pattern for "avatar" — it is a presentational composition
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForAvatar` | `[forAvatar]` | Root. Owns `status`, `shouldShowFallback`, and `fallbackDelayMs`. |
-| `ForAvatarImage` | `img[forAvatarImage]` | Observes the `<img>` and reports `idle \| loading \| loaded \| error`. |
-| `ForAvatarFallback` | `[forAvatarFallback]` | Marker for fallback content. Reflects `data-status`. |
+| Class               | Selector              | Role                                                                   |
+| ------------------- | --------------------- | ---------------------------------------------------------------------- |
+| `ForAvatar`         | `[forAvatar]`         | Root. Owns `status`, `shouldShowFallback`, and `fallbackDelayMs`.      |
+| `ForAvatarImage`    | `img[forAvatarImage]` | Observes the `<img>` and reports `idle \| loading \| loaded \| error`. |
+| `ForAvatarFallback` | `[forAvatarFallback]` | Marker for fallback content. Reflects `data-status`.                   |
 
 ## Inputs / outputs / models
 
-| API | Type | Owner | Description |
-| --- | --- | --- | --- |
-| `fallbackDelayMs` | `input<number>` | `ForAvatar` | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
-| `status` | `Signal<ForAvatarStatus>` | `ForAvatar` | Read-only current status. |
-| `shouldShowFallback` | `Signal<boolean>` | `ForAvatar` | `true` when the consumer should render the fallback. Drives `@if`. |
-| `(onLoadingStatusChange)` | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions. |
+| API                       | Type                      | Owner            | Description                                                                               |
+| ------------------------- | ------------------------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| `fallbackDelayMs`         | `input<number>`           | `ForAvatar`      | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
+| `status`                  | `Signal<ForAvatarStatus>` | `ForAvatar`      | Read-only current status.                                                                 |
+| `shouldShowFallback`      | `Signal<boolean>`         | `ForAvatar`      | `true` when the consumer should render the fallback. Drives `@if`.                        |
+| `(onLoadingStatusChange)` | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
 
 The host element of every piece carries `data-status="idle" \| "loading" \| "loaded" \| "error"`.
 
@@ -43,14 +43,25 @@ import { ForAvatar, ForAvatarImage, ForAvatarFallback } from 'forty-cdk';
   styles: [
     `
       [forAvatar] {
-        display: inline-flex; width: 40px; height: 40px;
-        border-radius: 999px; overflow: hidden;
-        background: #eee; font: 600 14px/40px system-ui;
-        align-items: center; justify-content: center;
+        display: inline-flex;
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #eee;
+        font: 600 14px/40px system-ui;
+        align-items: center;
+        justify-content: center;
       }
-      [forAvatarImage] { width: 100%; height: 100%; object-fit: cover; }
-      [forAvatarImage][data-status="loading"],
-      [forAvatarImage][data-status="error"] { display: none; }
+      [forAvatarImage] {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      [forAvatarImage][data-status='loading'],
+      [forAvatarImage][data-status='error'] {
+        display: none;
+      }
     `,
   ],
 })

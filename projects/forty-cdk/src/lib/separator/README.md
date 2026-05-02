@@ -4,16 +4,16 @@ Headless implementation of the [WAI-ARIA Separator pattern](https://www.w3.org/W
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
+| Class          | Selector         | Role                                                                                 |
+| -------------- | ---------------- | ------------------------------------------------------------------------------------ |
 | `ForSeparator` | `[forSeparator]` | Single attribute directive. Reflects role / `aria-orientation` / `data-orientation`. |
 
 ## Inputs
 
-| API | Type | Description |
-| --- | --- | --- |
+| API           | Type                                | Description                                                   |
+| ------------- | ----------------------------------- | ------------------------------------------------------------- |
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the separator divides along. Defaults to `'horizontal'`. |
-| `decorative` | `input<boolean>` | When true, the separator is purely visual (`role="none"`). |
+| `decorative`  | `input<boolean>`                    | When true, the separator is purely visual (`role="none"`).    |
 
 The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
 

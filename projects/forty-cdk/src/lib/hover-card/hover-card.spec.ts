@@ -188,9 +188,7 @@ describe('ForHoverCard', () => {
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
-      trigger.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      );
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });

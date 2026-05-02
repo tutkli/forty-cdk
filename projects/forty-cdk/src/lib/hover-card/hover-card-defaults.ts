@@ -31,17 +31,14 @@ const DEFAULT_OPEN_DELAY = 700;
 const DEFAULT_CLOSE_DELAY = 300;
 const DEFAULT_SKIP_DELAY_DURATION = 300;
 
-const FOR_HOVER_CARD_DEFAULTS = new InjectionToken<HoverCardDefaults>(
-  'FOR_HOVER_CARD_DEFAULTS',
-  {
-    providedIn: 'root',
-    factory: () => ({
-      openDelay: DEFAULT_OPEN_DELAY,
-      closeDelay: DEFAULT_CLOSE_DELAY,
-      skipDelayDuration: DEFAULT_SKIP_DELAY_DURATION,
-    }),
-  },
-);
+const FOR_HOVER_CARD_DEFAULTS = new InjectionToken<HoverCardDefaults>('FOR_HOVER_CARD_DEFAULTS', {
+  providedIn: 'root',
+  factory: () => ({
+    openDelay: DEFAULT_OPEN_DELAY,
+    closeDelay: DEFAULT_CLOSE_DELAY,
+    skipDelayDuration: DEFAULT_SKIP_DELAY_DURATION,
+  }),
+});
 
 /**
  * Per-injector-scope coordinator: holds the resolved defaults and the
@@ -69,10 +66,13 @@ export class HoverCardCoordinator {
   startSkipDelay(): void {
     this.cancelSkipDelay();
     this.#skipDelay.set(true);
-    this.#timer = setTimeout(() => {
-      this.#skipDelay.set(false);
-      this.#timer = null;
-    }, Math.max(0, this.skipDelayDuration));
+    this.#timer = setTimeout(
+      () => {
+        this.#skipDelay.set(false);
+        this.#timer = null;
+      },
+      Math.max(0, this.skipDelayDuration),
+    );
   }
 
   cancelSkipDelay(): void {

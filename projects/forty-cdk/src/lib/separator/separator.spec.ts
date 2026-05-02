@@ -6,9 +6,7 @@ import { ForSeparator } from './separator';
 
 @Component({
   imports: [ForSeparator],
-  template: `
-    <hr forSeparator [orientation]="orientation()" [decorative]="decorative()" />
-  `,
+  template: ` <hr forSeparator [orientation]="orientation()" [decorative]="decorative()" /> `,
 })
 class SeparatorHost {
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');

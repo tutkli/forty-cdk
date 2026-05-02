@@ -58,6 +58,8 @@ export interface ForNavigationMenuContext {
   contentIdFor(value: string): string | null;
   triggerIdFor(value: string): string | null;
   triggerHostFor(value: string): HTMLElement | null;
+  /** Layout-oriented selector for indicator positioning. */
+  readonly activeTriggerHost: Signal<HTMLElement | null>;
 }
 
 export type NavigationMenuScheduleReason = 'hover' | 'focus' | 'keyboard' | 'click';
@@ -72,8 +74,9 @@ export const FOR_NAVIGATION_MENU_CONTEXT = new InjectionToken<ForNavigationMenuC
   'FOR_NAVIGATION_MENU_CONTEXT',
 );
 
-export const FOR_NAVIGATION_MENU_ITEM_CONTEXT =
-  new InjectionToken<ForNavigationMenuItemContext>('FOR_NAVIGATION_MENU_ITEM_CONTEXT');
+export const FOR_NAVIGATION_MENU_ITEM_CONTEXT = new InjectionToken<ForNavigationMenuItemContext>(
+  'FOR_NAVIGATION_MENU_ITEM_CONTEXT',
+);
 
 export function injectNavigationMenuContext(piece: string): ForNavigationMenuContext {
   const ctx = inject(FOR_NAVIGATION_MENU_CONTEXT, { optional: true });

@@ -6,14 +6,14 @@ No ARIA semantics. Use it to reserve space for media before it loads (preventing
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
+| Class            | Selector           | Role                                                      |
+| ---------------- | ------------------ | --------------------------------------------------------- |
 | `ForAspectRatio` | `[forAspectRatio]` | Single attribute directive. Applies `style.aspect-ratio`. |
 
 ## Inputs
 
-| API | Type | Description |
-| --- | --- | --- |
+| API     | Type            | Description                                                                                                                  |
+| ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `ratio` | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. |
 
 ## Usage
@@ -40,9 +40,17 @@ import { ForAspectRatio } from 'forty-cdk';
   `,
   styles: [
     `
-      .card-cover, .avatar, .hero { width: 100%; }
-      .card-cover img, .avatar img, .hero video {
-        width: 100%; height: 100%; object-fit: cover;
+      .card-cover,
+      .avatar,
+      .hero {
+        width: 100%;
+      }
+      .card-cover img,
+      .avatar img,
+      .hero video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
     `,
   ],

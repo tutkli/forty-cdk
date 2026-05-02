@@ -265,10 +265,13 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   #startSkipDelay(): void {
     this.#cancelSkipDelay();
     this.#skipDelayActive = true;
-    this.#skipDelayTimer = setTimeout(() => {
-      this.#skipDelayTimer = null;
-      this.#skipDelayActive = false;
-    }, Math.max(0, this.skipDelayDuration()));
+    this.#skipDelayTimer = setTimeout(
+      () => {
+        this.#skipDelayTimer = null;
+        this.#skipDelayActive = false;
+      },
+      Math.max(0, this.skipDelayDuration()),
+    );
   }
 
   #cancelSkipDelay(): void {

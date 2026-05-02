@@ -1,11 +1,4 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, signal } from '@angular/core';
 
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 
@@ -80,11 +73,11 @@ export class ForScrollAreaThumb {
     if (this.scrollbar.orientation() === 'horizontal') {
       const max = ctx.scrollWidth() - ctx.clientWidth();
       if (max <= 0) return 0;
-      return ((ctx.scrollLeft() / max) * (tl - tsz)) || 0;
+      return (ctx.scrollLeft() / max) * (tl - tsz) || 0;
     }
     const max = ctx.scrollHeight() - ctx.clientHeight();
     if (max <= 0) return 0;
-    return ((ctx.scrollTop() / max) * (tl - tsz)) || 0;
+    return (ctx.scrollTop() / max) * (tl - tsz) || 0;
   });
 
   protected widthPx(): number | null {

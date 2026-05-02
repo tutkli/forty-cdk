@@ -1,12 +1,4 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  Signal,
-  signal,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, Signal, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
@@ -44,7 +36,11 @@ export class ForNavigationMenuContent {
   protected readonly triggerId = computed(() => this.menu.triggerIdFor(this.value()));
 
   constructor() {
-    const handle = { host: inject<ElementRef<HTMLElement>>(ElementRef).nativeElement, value: this.value, id: this.id };
+    const handle = {
+      host: inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+      value: this.value,
+      id: this.id,
+    };
     this.menu.registerContent(handle);
     inject(DestroyRef).onDestroy(() => this.menu.unregisterContent(handle));
   }

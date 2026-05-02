@@ -1,17 +1,7 @@
-import {
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, signal } from '@angular/core';
 
 import { injectElementSize } from '../_internal/element-size/element-size';
-import {
-  injectScrollAreaContext,
-  type ForScrollbarOrientation,
-} from './scroll-area-context';
+import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-area-context';
 
 /**
  * Synthetic scrollbar track. Reflects `data-orientation`, `data-state`

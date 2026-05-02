@@ -6,21 +6,21 @@ This is the **only** primitive in forty-cdk that ships CSS — a single `<style>
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForScrollArea` | `[forScrollArea]` | Root. Owns `type`, `scrollHideDelay`, hover / scrolling state. |
-| `ForScrollAreaViewport` | `[forScrollAreaViewport]` | The actual scrolling element. |
-| `ForScrollAreaScrollbar` | `[forScrollAreaScrollbar]` | Synthetic track. Required `orientation`. |
-| `ForScrollAreaThumb` | `[forScrollAreaThumb]` | Draggable thumb sized & translated automatically. |
-| `ForScrollAreaCorner` | `[forScrollAreaCorner]` | Only shows when both scrollbars are visible. |
+| Class                    | Selector                   | Role                                                           |
+| ------------------------ | -------------------------- | -------------------------------------------------------------- |
+| `ForScrollArea`          | `[forScrollArea]`          | Root. Owns `type`, `scrollHideDelay`, hover / scrolling state. |
+| `ForScrollAreaViewport`  | `[forScrollAreaViewport]`  | The actual scrolling element.                                  |
+| `ForScrollAreaScrollbar` | `[forScrollAreaScrollbar]` | Synthetic track. Required `orientation`.                       |
+| `ForScrollAreaThumb`     | `[forScrollAreaThumb]`     | Draggable thumb sized & translated automatically.              |
+| `ForScrollAreaCorner`    | `[forScrollAreaCorner]`    | Only shows when both scrollbars are visible.                   |
 
 ## Inputs (root)
 
-| API | Type | Description |
-| --- | --- | --- |
-| `type` | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. Default `'hover'`. |
-| `scrollHideDelay` | `input<number>` | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`). Default `600`. |
-| `dir` | `input<WritingDirection>` | Reflected as `dir`. |
+| API               | Type                                               | Description                                                                                       |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. Default `'hover'`.                                                           |
+| `scrollHideDelay` | `input<number>`                                    | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`). Default `600`. |
+| `dir`             | `input<WritingDirection>`                          | Reflected as `dir`.                                                                               |
 
 The scrollbar reflects `data-orientation`, `data-state` (`'visible'` / `'hidden'`); the thumb reflects `data-orientation` and `data-state`. Position is driven by inline `transform: translate{X,Y}(…)` on the thumb.
 
@@ -29,15 +29,21 @@ The scrollbar reflects `data-orientation`, `data-state` (`'visible'` / `'hidden'
 ```ts
 import { Component } from '@angular/core';
 import {
-  ForScrollArea, ForScrollAreaViewport, ForScrollAreaScrollbar,
-  ForScrollAreaThumb, ForScrollAreaCorner,
+  ForScrollArea,
+  ForScrollAreaViewport,
+  ForScrollAreaScrollbar,
+  ForScrollAreaThumb,
+  ForScrollAreaCorner,
 } from 'forty-cdk';
 
 @Component({
   selector: 'demo-scroll',
   imports: [
-    ForScrollArea, ForScrollAreaViewport, ForScrollAreaScrollbar,
-    ForScrollAreaThumb, ForScrollAreaCorner,
+    ForScrollArea,
+    ForScrollAreaViewport,
+    ForScrollAreaScrollbar,
+    ForScrollAreaThumb,
+    ForScrollAreaCorner,
   ],
   template: `
     <div forScrollArea>
@@ -55,13 +61,49 @@ import {
   `,
   styles: [
     `
-      [forScrollArea]            { position: relative; width: 240px; height: 240px; }
-      [forScrollAreaViewport]    { position: absolute; inset: 0; }
-      [forScrollAreaScrollbar][orientation="vertical"]   { position: absolute; top: 0; right: 0; width: 8px; height: 100%; background: rgba(0,0,0,.04); transition: opacity .2s; }
-      [forScrollAreaScrollbar][orientation="horizontal"] { position: absolute; bottom: 0; left: 0; height: 8px; width: 100%; background: rgba(0,0,0,.04); transition: opacity .2s; }
-      [forScrollAreaScrollbar][data-state="hidden"]      { opacity: 0; pointer-events: none; }
-      [forScrollAreaThumb]                               { background: rgba(0,0,0,.4); border-radius: 4px; }
-      [forScrollAreaCorner]                              { position: absolute; right: 0; bottom: 0; width: 8px; height: 8px; background: rgba(0,0,0,.04); }
+      [forScrollArea] {
+        position: relative;
+        width: 240px;
+        height: 240px;
+      }
+      [forScrollAreaViewport] {
+        position: absolute;
+        inset: 0;
+      }
+      [forScrollAreaScrollbar][orientation='vertical'] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.04);
+        transition: opacity 0.2s;
+      }
+      [forScrollAreaScrollbar][orientation='horizontal'] {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 8px;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.04);
+        transition: opacity 0.2s;
+      }
+      [forScrollAreaScrollbar][data-state='hidden'] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      [forScrollAreaThumb] {
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 4px;
+      }
+      [forScrollAreaCorner] {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 8px;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.04);
+      }
     `,
   ],
 })

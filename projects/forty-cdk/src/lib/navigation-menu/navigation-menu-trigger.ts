@@ -1,12 +1,4 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  Signal,
-  signal,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, Signal, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';

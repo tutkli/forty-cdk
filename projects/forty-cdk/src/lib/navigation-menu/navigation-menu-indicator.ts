@@ -1,11 +1,4 @@
-import {
-  afterEveryRender,
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { afterEveryRender, computed, Directive, ElementRef, inject, signal } from '@angular/core';
 
 import { injectNavigationMenuContext } from './navigation-menu-context';
 
@@ -49,9 +42,7 @@ export class ForNavigationMenuIndicator {
   protected readonly width = this.#w.asReadonly();
   protected readonly height = this.#h.asReadonly();
 
-  protected readonly state = computed(() =>
-    this.menu.activeTriggerHost() ? 'visible' : 'hidden',
-  );
+  protected readonly state = computed(() => (this.menu.activeTriggerHost() ? 'visible' : 'hidden'));
 
   constructor() {
     afterEveryRender(() => {

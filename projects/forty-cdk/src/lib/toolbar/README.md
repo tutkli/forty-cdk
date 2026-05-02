@@ -6,36 +6,44 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForToolbar` | `[forToolbar]` | Root. `role="toolbar"`. Owns roving + nav. |
-| `ForToolbarButton` | `[forToolbarButton]` | Plain push button. Apply on `<button>`. |
-| `ForToolbarLink` | `[forToolbarLink]` | Hyperlink. Apply on `<a>`. |
+| Class                 | Selector                | Role                                                                                               |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `ForToolbar`          | `[forToolbar]`          | Root. `role="toolbar"`. Owns roving + nav.                                                         |
+| `ForToolbarButton`    | `[forToolbarButton]`    | Plain push button. Apply on `<button>`.                                                            |
+| `ForToolbarLink`      | `[forToolbarLink]`      | Hyperlink. Apply on `<a>`.                                                                         |
 | `ForToolbarSeparator` | `[forToolbarSeparator]` | Visual divider. Defaults to the cross-axis. Delegates role / `aria-orientation` to `ForSeparator`. |
 
 ## Inputs (root)
 
-| API | Type | Description |
-| --- | --- | --- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`. |
-| `dir` | `input<WritingDirection>` | Reading direction. RTL swaps ArrowLeft / ArrowRight. |
-| `loop` | `input<boolean>` | Whether arrow nav wraps at the ends. Default `true`. |
-| `disabled` | `input<boolean>` | Disables every item. |
+| API           | Type                                | Description                                          |
+| ------------- | ----------------------------------- | ---------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`.            |
+| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight. |
+| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends. Default `true`. |
+| `disabled`    | `input<boolean>`                    | Disables every item.                                 |
 
 ## Usage
 
 ```ts
 import { Component, signal } from '@angular/core';
 import {
-  ForToolbar, ForToolbarButton, ForToolbarLink, ForToolbarSeparator,
-  ForToggleGroup, ForToggleGroupItem,
+  ForToolbar,
+  ForToolbarButton,
+  ForToolbarLink,
+  ForToolbarSeparator,
+  ForToggleGroup,
+  ForToggleGroupItem,
 } from 'forty-cdk';
 
 @Component({
   selector: 'demo-toolbar',
   imports: [
-    ForToolbar, ForToolbarButton, ForToolbarLink, ForToolbarSeparator,
-    ForToggleGroup, ForToggleGroupItem,
+    ForToolbar,
+    ForToolbarButton,
+    ForToolbarLink,
+    ForToolbarSeparator,
+    ForToggleGroup,
+    ForToggleGroupItem,
   ],
   template: `
     <div forToolbar aria-label="Formatting">

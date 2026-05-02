@@ -1,4 +1,11 @@
-import { Component, ElementRef, inject, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  inject,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { injectElementSize } from './element-size';

@@ -1,10 +1,6 @@
 import { computed, Directive, input, model } from '@angular/core';
 
-import {
-  FOR_METER_CONTEXT,
-  type ForMeterContext,
-  type ForMeterQuality,
-} from './meter-context';
+import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
 
 /**
  * Headless implementation of the

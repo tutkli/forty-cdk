@@ -9,11 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  FOR_AVATAR_CONTEXT,
-  type ForAvatarContext,
-  type ForAvatarStatus,
-} from './avatar-context';
+import { FOR_AVATAR_CONTEXT, type ForAvatarContext, type ForAvatarStatus } from './avatar-context';
 
 /**
  * Headless avatar root. Tracks the load lifecycle of an inner

@@ -15,6 +15,4 @@ export interface ForProgressContext {
   readonly state: Signal<ForProgressState>;
 }
 
-export const FOR_PROGRESS_CONTEXT = new InjectionToken<ForProgressContext>(
-  'FOR_PROGRESS_CONTEXT',
-);
+export const FOR_PROGRESS_CONTEXT = new InjectionToken<ForProgressContext>('FOR_PROGRESS_CONTEXT');

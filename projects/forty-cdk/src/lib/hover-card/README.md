@@ -6,23 +6,23 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForHoverCard` | `[forHoverCard]` | Root. Owns open state and delays. |
-| `ForHoverCardTrigger` | `[forHoverCardTrigger]` | Element that opens the card on hover / focus. |
+| Class                 | Selector                | Role                                                                                                                     |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `ForHoverCard`        | `[forHoverCard]`        | Root. Owns open state and delays.                                                                                        |
+| `ForHoverCardTrigger` | `[forHoverCardTrigger]` | Element that opens the card on hover / focus.                                                                            |
 | `ForHoverCardContent` | `[forHoverCardContent]` | The card surface. Portaled and floating-positioned. Pointer-enter cancels close, so the user can move the cursor inside. |
-| `ForHoverCardArrow` | `[forHoverCardArrow]` | Optional arrow positioned by floating-ui. |
+| `ForHoverCardArrow`   | `[forHoverCardArrow]`   | Optional arrow positioned by floating-ui.                                                                                |
 
 ## Inputs / models
 
-| API | Type | Description |
-| --- | --- | --- |
-| `open` | `model<boolean>` | Two-way bindable. `(openChange)` fires only on internal transitions. |
-| `placement` | `input<Placement>` | Floating-ui placement. Default `'top'`. |
-| `offset` | `input<number>` | Gap (px) between trigger and card. Default `8`. |
-| `openDelay` | `input<number \| undefined>` | Per-card override for open delay. Falls back to `provideHoverCardDefaults` (700ms). |
+| API          | Type                         | Description                                                                          |
+| ------------ | ---------------------------- | ------------------------------------------------------------------------------------ |
+| `open`       | `model<boolean>`             | Two-way bindable. `(openChange)` fires only on internal transitions.                 |
+| `placement`  | `input<Placement>`           | Floating-ui placement. Default `'top'`.                                              |
+| `offset`     | `input<number>`              | Gap (px) between trigger and card. Default `8`.                                      |
+| `openDelay`  | `input<number \| undefined>` | Per-card override for open delay. Falls back to `provideHoverCardDefaults` (700ms).  |
 | `closeDelay` | `input<number \| undefined>` | Per-card override for close delay. Falls back to `provideHoverCardDefaults` (300ms). |
-| `disabled` | `input<boolean>` | When true, hover / focus interaction is ignored. |
+| `disabled`   | `input<boolean>`             | When true, hover / focus interaction is ignored.                                     |
 
 ## Defaults
 
@@ -34,7 +34,12 @@ The HoverCard coordinator is **independent** from `TooltipCoordinator` — the t
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ForHoverCardArrow } from 'forty-cdk';
+import {
+  ForHoverCard,
+  ForHoverCardTrigger,
+  ForHoverCardContent,
+  ForHoverCardArrow,
+} from 'forty-cdk';
 
 @Component({
   selector: 'demo-profile-link',
@@ -43,11 +48,7 @@ import { ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ForHoverCardArr
     <span forHoverCard #card="forHoverCard">
       <a forHoverCardTrigger href="/users/ada">Ada Lovelace</a>
       @if (card.open()) {
-        <div
-          forHoverCardContent
-          animate.enter="card-in"
-          animate.leave="card-out"
-        >
+        <div forHoverCardContent animate.enter="card-in" animate.leave="card-out">
           <img src="/api/avatar/ada" alt="" width="64" height="64" />
           <h3>Ada Lovelace</h3>
           <p>Mathematician — designed the first algorithm.</p>

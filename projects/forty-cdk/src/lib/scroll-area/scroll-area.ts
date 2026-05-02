@@ -1,11 +1,4 @@
-import {
-  DestroyRef,
-  Directive,
-  inject,
-  input,
-  numberAttribute,
-  signal,
-} from '@angular/core';
+import { DestroyRef, Directive, inject, input, numberAttribute, signal } from '@angular/core';
 
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
@@ -107,10 +100,13 @@ export class ForScrollArea implements ForScrollAreaContext {
   noteUserScroll(): void {
     this.#scrolling.set(true);
     if (this.#scrollTimer !== null) clearTimeout(this.#scrollTimer);
-    this.#scrollTimer = setTimeout(() => {
-      this.#scrollTimer = null;
-      this.#scrolling.set(false);
-    }, Math.max(0, this.scrollHideDelay()));
+    this.#scrollTimer = setTimeout(
+      () => {
+        this.#scrollTimer = null;
+        this.#scrolling.set(false);
+      },
+      Math.max(0, this.scrollHideDelay()),
+    );
   }
 
   protected onPointerEnter(): void {

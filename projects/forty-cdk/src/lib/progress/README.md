@@ -6,19 +6,19 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForProgress` | `[forProgress]` | Root. Owns `value` / `max`, reflects `role="progressbar"` and ARIA. |
-| `ForProgressIndicator` | `[forProgressIndicator]` | Visual fill. Reflects `data-state` and `data-percentage`. |
+| Class                  | Selector                 | Role                                                                |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------- |
+| `ForProgress`          | `[forProgress]`          | Root. Owns `value` / `max`, reflects `role="progressbar"` and ARIA. |
+| `ForProgressIndicator` | `[forProgressIndicator]` | Visual fill. Reflects `data-state` and `data-percentage`.           |
 
 ## Inputs / models
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<number \| null>` | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate. |
-| `max` | `input<number>` | Upper bound. Defaults to `100`. |
-| `getValueLabel` | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5"). |
-| `announceCompletion` | `input<boolean>` | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition. |
+| API                  | Type                                      | Description                                                                                 |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.                   |
+| `max`                | `input<number>`                           | Upper bound. Defaults to `100`.                                                             |
+| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                         |
+| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition. |
 
 The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, and `data-max`. The indicator additionally reflects `data-percentage` and the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
 
@@ -39,23 +39,35 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk';
   styles: [
     `
       [forProgress] {
-        position: relative; height: 8px; width: 240px;
-        background: #eee; border-radius: 4px; overflow: hidden;
+        position: relative;
+        height: 8px;
+        width: 240px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
       }
       [forProgressIndicator] {
-        position: absolute; inset: 0;
+        position: absolute;
+        inset: 0;
         background: #4f46e5;
         transform-origin: left center;
         transition: transform 120ms;
       }
-      [forProgressIndicator][data-state="loading"] {
+      [forProgressIndicator][data-state='loading'] {
         transform: scaleX(calc(var(--for-progress-percentage) / 100));
       }
-      [forProgressIndicator][data-state="indeterminate"] {
+      [forProgressIndicator][data-state='indeterminate'] {
         transform: scaleX(0.4);
         animation: slide 1.2s infinite ease-in-out;
       }
-      @keyframes slide { from { transform: translateX(-100%) scaleX(0.4); } to { transform: translateX(250%) scaleX(0.4); } }
+      @keyframes slide {
+        from {
+          transform: translateX(-100%) scaleX(0.4);
+        }
+        to {
+          transform: translateX(250%) scaleX(0.4);
+        }
+      }
     `,
   ],
 })

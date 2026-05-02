@@ -1,10 +1,4 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectScrollAreaContext } from './scroll-area-context';
 

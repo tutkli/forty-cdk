@@ -1,11 +1,4 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  output,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject, output } from '@angular/core';
 
 import { FOR_AVATAR_CONTEXT, type ForAvatarStatus } from './avatar-context';
 

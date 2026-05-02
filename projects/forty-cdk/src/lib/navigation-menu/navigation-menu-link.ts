@@ -23,7 +23,5 @@ export class ForNavigationMenuLink {
    * Value forwarded to `aria-current` when `active` is true. Defaults to
    * `'page'` (the most common case for top-level navigation).
    */
-  readonly ariaCurrent = input<'page' | 'step' | 'location' | 'date' | 'time' | 'true'>(
-    'page',
-  );
+  readonly ariaCurrent = input<'page' | 'step' | 'location' | 'date' | 'time' | 'true'>('page');
 }
