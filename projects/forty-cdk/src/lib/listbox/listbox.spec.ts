@@ -4,9 +4,17 @@ import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
 import { ForListbox } from './listbox';
+import { ForListboxGroup } from './listbox-group';
+import { ForListboxGroupLabel } from './listbox-group-label';
 import { ForListboxOption } from './listbox-option';
 
 const LISTBOX_IMPORTS = [ForListbox, ForListboxOption] as const;
+const GROUP_IMPORTS = [
+  ForListbox,
+  ForListboxOption,
+  ForListboxGroup,
+  ForListboxGroupLabel,
+] as const;
 
 @Component({
   imports: [...LISTBOX_IMPORTS],
@@ -452,6 +460,76 @@ describe('ForListbox', () => {
       flush();
 
       expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+  });
+
+  describe('groups (ForListboxGroup + ForListboxGroupLabel)', () => {
+    @Component({
+      imports: [...GROUP_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked">
+          <li forListboxGroup>
+            <div forListboxGroupLabel>Fruit</div>
+            <button type="button" forListboxOption value="a" data-test-id="a">A</button>
+            <button type="button" forListboxOption value="b" data-test-id="b">B</button>
+          </li>
+          <li forListboxGroup>
+            <div forListboxGroupLabel>Other</div>
+            <button type="button" forListboxOption value="c" data-test-id="c">C</button>
+          </li>
+        </ul>
+      `,
+    })
+    class GroupHost {
+      readonly picked = signal<string[]>([]);
+    }
+
+    it('renders role=group and links aria-labelledby to the label id', () => {
+      const { el } = renderHost(GroupHost);
+      const groups = el.querySelectorAll<HTMLElement>('[forListboxGroup]');
+      expect(groups).toHaveLength(2);
+      for (const group of Array.from(groups)) {
+        expect(group.getAttribute('role')).toBe('group');
+        const labelId = group.getAttribute('aria-labelledby');
+        expect(labelId).toBeTruthy();
+        const label = el.querySelector(`#${labelId}`);
+        expect(label?.matches('[forListboxGroupLabel]')).toBe(true);
+      }
+    });
+
+    it('produces unique label ids across groups', () => {
+      const { el } = renderHost(GroupHost);
+      const ids = Array.from(el.querySelectorAll<HTMLElement>('[forListboxGroupLabel]')).map((n) => n.id);
+      expect(ids[0]).not.toBe(ids[1]);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('keeps options registered with the listbox across groups, in DOM order', () => {
+      const { el, fixture, flush } = renderHost(GroupHost);
+      const a = el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!;
+      const c = el.querySelector<HTMLButtonElement>('[data-test-id="c"]')!;
+
+      a.focus();
+      a.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      flush();
+
+      // End jumps to the last enabled option, even when it lives in another
+      // group — proving the listbox sees options from both groups in DOM order.
+      expect(document.activeElement).toBe(c);
+      void fixture;
+    });
+
+    it('throws when ForListboxGroupLabel is used outside [forListboxGroup]', () => {
+      @Component({
+        imports: [ForListboxGroupLabel],
+        template: `<div forListboxGroupLabel></div>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(Orphan)).toThrow(
+        /\[forty-cdk\/listbox\] ForListboxGroupLabel must be used inside a \[forListboxGroup\] element\./,
+      );
     });
   });
 
