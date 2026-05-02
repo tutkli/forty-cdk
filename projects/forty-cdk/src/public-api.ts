@@ -32,3 +32,4 @@ export * from './lib/meter';
 export * from './lib/avatar';
 export * from './lib/toolbar';
 export * from './lib/hover-card';
+export * from './lib/navigation-menu';
