@@ -6,10 +6,10 @@ import {
   inject,
   input,
   model,
-  signal,
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
+import { Collection } from '../_internal/collection';
 import { injectFormControlReflection } from '../_internal/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input';
 import {
@@ -81,10 +81,10 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
 
   readonly touched = model<boolean>(false);
 
-  readonly #items = signal<readonly ForRadioHandle[]>([]);
+  readonly #items = new Collection<ForRadioHandle>();
 
   readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const item of this.#items()) {
+    for (const item of this.#items.items()) {
       if (!item.disabled()) {
         return item.host;
       }
@@ -124,7 +124,7 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
     if (this.disabled() || this.readonly()) {
       return;
     }
-    const items = this.#items();
+    const items = this.#items.items();
     if (items.length === 0) {
       return;
     }
@@ -149,11 +149,11 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
   }
 
   registerRadio(handle: ForRadioHandle): void {
-    this.#items.update((arr) => [...arr, handle]);
+    this.#items.register(handle);
   }
 
   unregisterRadio(handle: ForRadioHandle): void {
-    this.#items.update((arr) => arr.filter((h) => h !== handle));
+    this.#items.unregister(handle);
   }
 
   protected onFocusOut(event: FocusEvent): void {

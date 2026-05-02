@@ -2,6 +2,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  ElementRef,
   inject,
   input,
   signal,
@@ -40,7 +41,8 @@ export class ForTabsContent {
   protected readonly labelledBy = computed(() => this.#group.triggerIdFor(this.value()));
 
   constructor() {
-    const handle = { id: this.id, value: this.value };
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const handle = { host, id: this.id, value: this.value };
     this.#group.registerContent(handle);
     inject(DestroyRef).onDestroy(() => this.#group.unregisterContent(handle));
   }

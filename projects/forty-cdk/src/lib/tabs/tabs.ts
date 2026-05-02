@@ -5,9 +5,9 @@ import {
   input,
   model,
   Signal,
-  signal,
 } from '@angular/core';
 
+import { Collection } from '../_internal/collection';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -59,11 +59,11 @@ export class ForTabs implements ForTabsContext {
 
   readonly roving = injectRovingTabindex();
 
-  readonly #triggers = signal<readonly ForTabsTriggerHandle[]>([]);
-  readonly #contents = signal<readonly ForTabsContentHandle[]>([]);
+  readonly #triggers = new Collection<ForTabsTriggerHandle>();
+  readonly #contents = new Collection<ForTabsContentHandle>();
 
   readonly #firstEnabledTriggerHost = computed<HTMLElement | null>(() => {
-    for (const t of this.#triggers()) {
+    for (const t of this.#triggers.items()) {
       if (!t.disabled()) {
         return t.host;
       }
@@ -86,7 +86,7 @@ export class ForTabs implements ForTabsContext {
     if (this.disabled()) {
       return;
     }
-    const triggers = this.#triggers();
+    const triggers = this.#triggers.items();
     if (triggers.length === 0) {
       return;
     }
@@ -109,23 +109,23 @@ export class ForTabs implements ForTabsContext {
   }
 
   registerTrigger(handle: ForTabsTriggerHandle): void {
-    this.#triggers.update((arr) => [...arr, handle]);
+    this.#triggers.register(handle);
   }
 
   unregisterTrigger(handle: ForTabsTriggerHandle): void {
-    this.#triggers.update((arr) => arr.filter((h) => h !== handle));
+    this.#triggers.unregister(handle);
   }
 
   registerContent(handle: ForTabsContentHandle): void {
-    this.#contents.update((arr) => [...arr, handle]);
+    this.#contents.register(handle);
   }
 
   unregisterContent(handle: ForTabsContentHandle): void {
-    this.#contents.update((arr) => arr.filter((h) => h !== handle));
+    this.#contents.unregister(handle);
   }
 
   triggerIdFor(value: string): string | null {
-    for (const t of this.#triggers()) {
+    for (const t of this.#triggers.items()) {
       if (readSignalSafe(t.value) === value) {
         return t.id();
       }
@@ -134,7 +134,7 @@ export class ForTabs implements ForTabsContext {
   }
 
   contentIdFor(value: string): string | null {
-    for (const c of this.#contents()) {
+    for (const c of this.#contents.items()) {
       if (readSignalSafe(c.value) === value) {
         return c.id();
       }

@@ -13,6 +13,7 @@ export interface ForTabsTriggerHandle {
 }
 
 export interface ForTabsContentHandle {
+  readonly host: HTMLElement;
   readonly id: Signal<string>;
   readonly value: Signal<string>;
 }

@@ -6,10 +6,10 @@ import {
   inject,
   input,
   model,
-  signal,
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
+import { Collection } from '../_internal/collection';
 import { injectFormControlReflection } from '../_internal/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input';
 import {
@@ -94,10 +94,10 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
   readonly roving = injectRovingTabindex();
   readonly #typeahead = injectTypeahead();
 
-  readonly #options = signal<readonly ForListboxOptionHandle[]>([]);
+  readonly #options = new Collection<ForListboxOptionHandle>();
 
   readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const o of this.#options()) {
+    for (const o of this.#options.items()) {
       if (!o.disabled()) {
         return o.host;
       }
@@ -143,7 +143,7 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
     if (this.disabled()) {
       return;
     }
-    const options = this.#options();
+    const options = this.#options.items();
     if (options.length === 0) {
       return;
     }
@@ -173,7 +173,7 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
     if (!buffer) {
       return true;
     }
-    const options = this.#options();
+    const options = this.#options.items();
     const match = options.find((o) => {
       if (o.disabled()) {
         return false;
@@ -192,11 +192,11 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
   }
 
   registerOption(handle: ForListboxOptionHandle): void {
-    this.#options.update((arr) => [...arr, handle]);
+    this.#options.register(handle);
   }
 
   unregisterOption(handle: ForListboxOptionHandle): void {
-    this.#options.update((arr) => arr.filter((h) => h !== handle));
+    this.#options.unregister(handle);
   }
 
   protected onFocusOut(event: FocusEvent): void {
