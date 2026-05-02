@@ -391,6 +391,109 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
+  describe('mode flags', () => {
+    it('keeps focus on the previously focused element when returnFocus=false', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button #trigger type="button" (click)="open.set(true)">Open</button>
+          <div forDialog [(open)]="open" [returnFocus]="false" ariaLabel="t">
+            <button id="inside" type="button">In</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('inside');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.activeElement).not.toBe(trigger);
+    });
+
+    it('focuses the dialog container itself when initialFocus="container"', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <div forDialog [(open)]="open" initialFocus="container" ariaLabel="t">
+            <button id="inside" type="button">In</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(document.activeElement).toBe(dialog);
+    });
+
+    it('skips aria-modal, focus trap, and body scroll lock when modal=false', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <div forDialog [(open)]="open" [modal]="false" ariaLabel="t">
+            <button id="inside" type="button">In</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      document.body.style.overflow = 'auto';
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog.hasAttribute('aria-modal')).toBe(false);
+      expect(document.body.style.overflow).toBe('auto');
+
+      // Focus is still sent in but Tab is not trapped: dispatching Tab from
+      // outside the dialog should not pull focus back inside.
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    });
+
+    it('traps focus in the topmost dialog of a stack', async () => {
+      const r = renderHost(StackedDialogsHost);
+      r.instance.a.set(true);
+      r.instance.b.set(true);
+      await flush(r.fixture);
+
+      const closes = document.querySelectorAll<HTMLButtonElement>('[forDialogClose]');
+      const closeB = closes[1]!;
+      closeB.focus();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+
+      // The B dialog only has one focusable, so Tab cycles back to the same
+      // button — it must NOT escape into A's tree.
+      expect(document.activeElement).toBe(closeB);
+    });
+  });
+
   describe('(openChange) output', () => {
     it('emits false when Escape closes the dialog', async () => {
       @Component({
