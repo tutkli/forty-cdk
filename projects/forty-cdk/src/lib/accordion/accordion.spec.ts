@@ -76,7 +76,6 @@ describe('ForAccordion', () => {
         const trigger = triggerOf(el, id);
         const content = contentOf(el, id)!;
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
-        expect(content.hasAttribute('hidden')).toBe(true);
         expect(content.getAttribute('data-state')).toBe('closed');
       }
     });
@@ -90,7 +89,7 @@ describe('ForAccordion', () => {
       flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
-      expect(contentOf(el, 'a')!.hasAttribute('hidden')).toBe(false);
+      expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('open');
 
       triggerOf(el, 'b').click();
       flush();
@@ -196,7 +195,7 @@ describe('ForAccordion', () => {
       flush();
 
       expect(triggerOf(el, 'c').getAttribute('aria-expanded')).toBe('true');
-      expect(contentOf(el, 'c')!.hasAttribute('hidden')).toBe(false);
+      expect(contentOf(el, 'c')!.getAttribute('data-state')).toBe('open');
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
     });
   });

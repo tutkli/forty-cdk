@@ -3,8 +3,10 @@ import { Directive } from '@angular/core';
 import { injectAccordionItemContext } from './accordion-context';
 
 /**
- * Panel revealed by a `ForAccordionTrigger`. Hidden via the native `hidden`
- * attribute when closed and labelled by the trigger via `aria-labelledby`.
+ * Panel revealed by a `ForAccordionTrigger`. The directive does not manage
+ * DOM presence — wrap with `@if (item.expanded())` so panels mount and
+ * unmount with the expanded state and `animate.enter` / `animate.leave`
+ * work natively.
  *
  * APG note: `role="region"` adds the panel to the landmark navigation tree.
  * If the accordion has 6+ simultaneously expandable panels, consider not
@@ -19,7 +21,6 @@ import { injectAccordionItemContext } from './accordion-context';
     '[attr.role]': '"region"',
     '[attr.aria-labelledby]': 'item.triggerId()',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
-    '[attr.hidden]': 'item.expanded() ? null : ""',
   },
 })
 export class ForAccordionContent {
