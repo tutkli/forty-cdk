@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { resolveListNavigation } from '../_internal/keyboard-navigation';
+import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**

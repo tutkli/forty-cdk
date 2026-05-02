@@ -9,8 +9,8 @@ import {
   signal,
 } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator';
-import { resolveListNavigation } from '../_internal/keyboard-navigation';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectListboxContext } from './listbox-context';
 
 /**

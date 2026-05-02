@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock';
+import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogs, FOR_DIALOG_DATA, injectDialogData } from './dialogs';
 

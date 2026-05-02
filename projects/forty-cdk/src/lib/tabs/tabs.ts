@@ -7,13 +7,13 @@ import {
   Signal,
 } from '@angular/core';
 
-import { Collection } from '../_internal/collection';
+import { Collection } from '../_internal/collection/collection';
 import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation';
-import { injectRovingTabindex } from '../_internal/roving-tabindex';
+} from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import {
   FOR_TABS_CONTEXT,
   ForTabsContentHandle,

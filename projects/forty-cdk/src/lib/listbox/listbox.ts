@@ -9,16 +9,16 @@ import {
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection';
-import { injectFormControlReflection } from '../_internal/form-control-reflection';
-import { injectHiddenInput } from '../_internal/hidden-input';
+import { Collection } from '../_internal/collection/collection';
+import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation';
-import { injectRovingTabindex } from '../_internal/roving-tabindex';
-import { injectTypeahead } from '../_internal/typeahead';
+} from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   FOR_LISTBOX_CONTEXT,
   ForListboxContext,

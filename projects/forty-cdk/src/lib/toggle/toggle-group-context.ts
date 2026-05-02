@@ -1,10 +1,10 @@
 import { inject, InjectionToken, ModelSignal, Signal } from '@angular/core';
 
-import type { CollectionHandle } from '../_internal/collection';
+import type { CollectionHandle } from '../_internal/collection/collection';
 import type {
   ListNavigationAction,
   WritingDirection,
-} from '../_internal/keyboard-navigation';
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
  * Per-item handle stored in the group's `Collection`. The directive

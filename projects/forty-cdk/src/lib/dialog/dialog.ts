@@ -10,10 +10,10 @@ import {
   signal,
 } from '@angular/core';
 
-import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock';
-import { injectDismissableLayer } from '../_internal/dismissable-layer';
-import { injectFocusTrap } from '../_internal/focus-trap';
-import { injectPortal } from '../_internal/portal';
+import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
+import { injectFocusTrap } from '../_internal/focus-trap/focus-trap';
+import { injectPortal } from '../_internal/portal/portal';
 import {
   FOR_DIALOG_CONTEXT,
   ForDialogCloseReason,

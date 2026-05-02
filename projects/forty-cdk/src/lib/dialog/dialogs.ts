@@ -11,8 +11,8 @@ import {
   Type,
 } from '@angular/core';
 
-import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock';
-import { FocusTrap } from '../_internal/focus-trap';
+import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { FocusTrap } from '../_internal/focus-trap/focus-trap';
 import { ForDialogRef } from './dialog-ref';
 
 const FOCUSABLE_SELECTOR = [

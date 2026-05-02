@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectFloating } from '../_internal/floating';
+import { injectFloating } from '../_internal/floating/floating';
 import { injectTooltipContext } from './tooltip-context';
 
 /**

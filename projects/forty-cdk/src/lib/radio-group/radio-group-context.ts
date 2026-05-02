@@ -1,6 +1,6 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 
-import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation';
+import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
  * Lightweight handle each `ForRadio` registers with the group on init so the

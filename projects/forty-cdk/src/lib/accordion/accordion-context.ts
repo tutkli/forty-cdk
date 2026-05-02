@@ -3,7 +3,7 @@ import { inject, InjectionToken, Signal } from '@angular/core';
 import type {
   ListNavigationAction,
   WritingDirection,
-} from '../_internal/keyboard-navigation';
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
  * Coordination contract owned by the `ForAccordion` root.

@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { resolveListNavigation } from '../_internal/keyboard-navigation';
+import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   injectAccordionContext,
   injectAccordionItemContext,

@@ -1,8 +1,8 @@
 import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
 import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
 
-import { injectFormControlReflection } from '../_internal/form-control-reflection';
-import { injectHiddenInput } from '../_internal/hidden-input';
+import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 
 /**
  * Headless on/off switch implementing the

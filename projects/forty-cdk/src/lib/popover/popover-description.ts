@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, inject, signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectPopoverContext } from './popover-context';
 
 /**

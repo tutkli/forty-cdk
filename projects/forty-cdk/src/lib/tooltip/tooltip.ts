@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
-import { IdGenerator } from '../_internal/id-generator';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_TOOLTIP_CONTEXT,
   ForTooltipContext,

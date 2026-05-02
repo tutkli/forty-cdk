@@ -11,7 +11,7 @@ import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation';
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_ACCORDION_CONTEXT, ForAccordionContext } from './accordion-context';
 
 /**

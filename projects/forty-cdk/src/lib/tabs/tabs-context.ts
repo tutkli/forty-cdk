@@ -1,7 +1,7 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 
-import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex';
+import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 
 export type TabsActivationMode = 'automatic' | 'manual';
 

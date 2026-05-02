@@ -6,8 +6,8 @@ import {
   inject,
 } from '@angular/core';
 
-import { injectDismissableLayer } from '../_internal/dismissable-layer';
-import { injectFloating } from '../_internal/floating';
+import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
+import { injectFloating } from '../_internal/floating/floating';
 import { injectPopoverContext } from './popover-context';
 
 /**

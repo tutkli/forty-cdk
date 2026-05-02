@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock';
+import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { renderHost } from '../../test-utils/render';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';

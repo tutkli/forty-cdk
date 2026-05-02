@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, inject, input, model, signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_DISCLOSURE_CONTEXT, ForDisclosureContext } from './disclosure-context';
 
 /**

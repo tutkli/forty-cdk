@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectPortal } from '../_internal/portal';
+import { injectPortal } from '../_internal/portal/portal';
 import { injectDialogContext } from './dialog-context';
 
 /**

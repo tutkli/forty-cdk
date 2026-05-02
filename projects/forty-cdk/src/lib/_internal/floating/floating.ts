@@ -17,7 +17,7 @@ import {
   shift,
 } from '@floating-ui/dom';
 
-import { injectPortal } from './portal';
+import { injectPortal } from '../portal/portal';
 
 const PLACEMENT_OPPOSITE: Record<'top' | 'right' | 'bottom' | 'left', string> = {
   top: 'bottom',
