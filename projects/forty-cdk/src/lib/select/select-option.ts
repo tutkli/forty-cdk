@@ -1,0 +1,106 @@
+import {
+  booleanAttribute,
+  computed,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+
+import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectSelectContext } from './select-context';
+
+/**
+ * One option inside a `[forSelectContent]`. Apply on a `<button type="button">`
+ * so Space / Enter activation come from native button behavior — printable
+ * keys fall through to the listbox for typeahead matching.
+ *
+ * Click activates: in single mode the value replaces `[(value)]` and the
+ * listbox closes; in multi mode the value toggles in/out and the listbox
+ * stays open.
+ *
+ * Keyboard while focused:
+ * - **Enter / Space** — activate (via native button click).
+ * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
+ * - **Tab** — close the listbox (focus returns to the trigger).
+ * - **Escape** — close the listbox.
+ * - **Typeahead** — printable keys match by text content.
+ */
+@Directive({
+  selector: '[forSelectOption]',
+  exportAs: 'forSelectOption',
+  host: {
+    role: 'option',
+    type: 'button',
+    tabindex: '-1',
+    '[id]': 'id()',
+    '[attr.aria-selected]': 'selected() ? "true" : "false"',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
+    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '(click)': 'onClick()',
+    '(keydown)': 'onKeyDown($event)',
+  },
+})
+export class ForSelectOption {
+  readonly #ctx = injectSelectContext('ForSelectOption');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #idGen = inject(IdGenerator);
+
+  /** Stable string identifier serialized into `[(value)]` and the hidden input. */
+  readonly value = input.required<string>();
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  readonly id = signal(this.#idGen.next('for-select-option'));
+
+  readonly selected = computed(() => this.#ctx.isSelected(this.value()));
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
+
+  constructor() {
+    const handle = {
+      host: this.#host.nativeElement,
+      value: this.value,
+      disabled: this.effectiveDisabled,
+    };
+    this.#ctx.registerOption(handle);
+    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterOption(handle));
+  }
+
+  protected onClick(): void {
+    if (this.effectiveDisabled() || this.#ctx.readonly()) {
+      return;
+    }
+    this.#ctx.activate(this.value());
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      // Close + return focus to trigger (handled by Content's onDestroy).
+      // preventDefault so the in-portal Tab doesn't escape sideways before
+      // the trigger receives focus.
+      event.preventDefault();
+      this.#ctx.closeMenu('tab');
+      return;
+    }
+
+    const action = resolveListNavigation(event, {
+      orientation: this.#ctx.orientation(),
+      dir: this.#ctx.dir(),
+    });
+    if (action) {
+      event.preventDefault();
+      this.#ctx.navigate(this.#host.nativeElement, action);
+      return;
+    }
+
+    this.#ctx.handleTypeahead(event);
+  }
+}
