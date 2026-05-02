@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   Directive,
   inject,
   input,
@@ -7,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement, ReferenceElement, VirtualElement } from '@floating-ui/dom';
+import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../_internal/collection/collection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -21,56 +22,66 @@ import {
   type ForMenuCloseReason,
   type ForMenuContext,
   type ForMenuItemHandle,
-} from '../menu/menu-context';
+} from './menu-context';
 
 /**
- * Headless implementation of a right-click / `Shift+F10` menu (variant of
- * the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)).
- * Apply on a wrapper that contains a `[forContextMenuTrigger]` and an
- * `@if`-mounted `[forMenuContent]`.
+ * Root for a nested submenu inside a parent `[forDropdownMenu]` /
+ * `[forContextMenu]` (or another `[forMenuSub]`). Owns its own open
+ * state, ids, and item collection — items inside the submenu register
+ * here, not in the parent.
  *
- * The menu is positioned at the pointer location at the time of the
- * `contextmenu` event — implemented via floating-ui's virtual element so
- * placement / flip / shift middleware still apply normally. Selecting an
- * item, Escape, or any outside interaction closes.
+ * The parent menu's content is added to this submenu's dismissable
+ * exemptions so a click on a parent menu item doesn't fire the
+ * submenu's outside-handler (the parent item's own click flow closes
+ * everything via propagated `closeMenu`).
+ *
+ * Closing this submenu propagates `closeMenu` upward for every reason
+ * except `'escape'` and `'programmatic'` — Escape inside a submenu
+ * closes only that level, while activating an item or clicking outside
+ * everything tears down the entire chain.
  *
  * ```html
- * <div forContextMenu [(open)]="open">
- *   <div forContextMenuTrigger class="region">Right-click here</div>
+ * <div forDropdownMenu [(open)]="open">
+ *   <button forDropdownMenuTrigger>Options</button>
  *   @if (open()) {
- *     <div forMenuContent (close)="open.set(false)">…</div>
+ *     <div forMenuContent>
+ *       <button forMenuItem>Cut</button>
+ *       <div forMenuSub [(open)]="moreOpen">
+ *         <button forMenuSubTrigger>More</button>
+ *         @if (moreOpen()) {
+ *           <div forMenuSubContent>
+ *             <button forMenuItem>Advanced</button>
+ *           </div>
+ *         }
+ *       </div>
+ *     </div>
  *   }
  * </div>
  * ```
  */
 @Directive({
-  selector: '[forContextMenu]',
-  exportAs: 'forContextMenu',
+  selector: '[forMenuSub]',
+  exportAs: 'forMenuSub',
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
   },
-  providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu }],
+  providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForMenuSub }],
 })
-export class ForContextMenu implements ForMenuContext {
+export class ForMenuSub implements ForMenuContext {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForMenuItemHandle>();
 
+  /** The enclosing menu — required (orphan throws). */
+  readonly parentMenu: ForMenuContext;
+
   readonly open = model<boolean>(false);
 
-  /** Floating-ui placement relative to the pointer. Default `'bottom-start'` (right-of, below). */
-  readonly placement = input<Placement>('bottom-start');
+  readonly placement = input<Placement>('right-start');
   readonly offset = input<number>(0);
   readonly loop = input(true, { transform: booleanAttribute });
-
-  /**
-   * When true, the contextmenu event is allowed to fall through to the
-   * native browser menu. Useful for letting the OS-provided context menu
-   * appear on certain regions while keeping the directive mounted.
-   */
   readonly disabled = input(false, { transform: booleanAttribute });
-
   readonly dismissible = input(true, { transform: booleanAttribute });
   readonly returnFocus = input(true, { transform: booleanAttribute });
   readonly ariaLabel = input<string | null>(null);
@@ -80,52 +91,42 @@ export class ForContextMenu implements ForMenuContext {
   readonly focusOutside = output<FocusEvent>();
   readonly interactOutside = output<PointerEvent | FocusEvent>();
 
-  readonly triggerId = signal(this.#idGen.next('for-context-menu-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-context-menu-content'));
+  readonly triggerId = signal(this.#idGen.next('for-menu-sub-trigger'));
+  readonly contentId = signal(this.#idGen.next('for-menu-sub-content'));
 
   readonly #initialFocus = signal<'first' | 'last'>('first');
   readonly initialFocus = this.#initialFocus.asReadonly();
 
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #anchor = signal<ReferenceElement | null>(null);
-  readonly anchor = this.#anchor.asReadonly();
-
-  /**
-   * ContextMenu exempts nothing — a left-click on the right-click region
-   * while the menu is open should close it like any other outside click.
-   */
-  readonly dismissableExemptions = signal<readonly HTMLElement[]>([]).asReadonly();
+  readonly anchor = computed<ReferenceElement | null>(() => this.#triggerEl());
 
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
 
-  /** Top-level: no parent menu. */
-  readonly parentMenu = null;
+  /**
+   * Submenus exempt the parent menu's content. Clicks on parent menu items
+   * activate via the item's own click handler (which propagates `closeMenu`
+   * upward through the whole chain) instead of firing the submenu's
+   * outside-close.
+   */
+  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() => {
+    const parentContent = this.parentMenu.content();
+    return parentContent ? [parentContent] : [];
+  });
+
+  constructor() {
+    const parent = inject(FOR_MENU_CONTEXT, { skipSelf: true, optional: true });
+    if (!parent) {
+      throw new Error(
+        '[forty-cdk/menu] [forMenuSub] must be inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub] element.',
+      );
+    }
+    this.parentMenu = parent;
+  }
 
   setInitialFocus(target: 'first' | 'last'): void {
     this.#initialFocus.set(target);
-  }
-
-  /** Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates. */
-  setVirtualAnchor(x: number, y: number): void {
-    const virtual: VirtualElement = {
-      getBoundingClientRect: () => ({
-        x,
-        y,
-        width: 0,
-        height: 0,
-        top: y,
-        left: x,
-        right: x,
-        bottom: y,
-        toJSON() {
-          return this;
-        },
-      }),
-    };
-    this.#anchor.set(virtual);
   }
 
   registerTrigger(el: HTMLElement): void {
@@ -228,8 +229,14 @@ export class ForContextMenu implements ForMenuContext {
     this.open.set(true);
   }
 
-  closeMenu(_reason: ForMenuCloseReason): void {
+  closeMenu(reason: ForMenuCloseReason): void {
     this.open.set(false);
+    // Propagate up so item activation, Tab, and outside-pointer collapse
+    // the entire menu chain. `'escape'` collapses only this level (per APG);
+    // `'programmatic'` is the consumer's own write — no propagation either.
+    if (reason !== 'escape' && reason !== 'programmatic') {
+      this.parentMenu.closeMenu(reason);
+    }
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {

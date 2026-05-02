@@ -360,7 +360,7 @@ describe('Menu items / content', () => {
         providers: [provideZonelessChangeDetection()],
       });
       expect(() => TestBed.createComponent(OrphanItem)).toThrow(
-        /must be used inside a \[forDropdownMenu\] or \[forContextMenu\]/,
+        /must be used inside a \[forDropdownMenu\], \[forContextMenu\], or \[forMenuSub\]/,
       );
     });
 

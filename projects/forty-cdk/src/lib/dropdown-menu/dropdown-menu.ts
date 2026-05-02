@@ -108,6 +108,12 @@ export class ForDropdownMenu implements ForMenuContext {
     return t ? [t] : [];
   });
 
+  readonly #contentEl = signal<HTMLElement | null>(null);
+  readonly content = this.#contentEl.asReadonly();
+
+  /** Top-level: no parent menu. */
+  readonly parentMenu = null;
+
   setInitialFocus(target: 'first' | 'last'): void {
     this.#initialFocus.set(target);
   }
@@ -118,6 +124,15 @@ export class ForDropdownMenu implements ForMenuContext {
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
+    }
+  }
+
+  registerContent(el: HTMLElement): void {
+    this.#contentEl.set(el);
+  }
+  unregisterContent(el: HTMLElement): void {
+    if (this.#contentEl() === el) {
+      this.#contentEl.set(null);
     }
   }
 

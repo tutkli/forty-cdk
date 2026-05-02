@@ -6,6 +6,8 @@ export { ForMenuRadioItem } from './menu-radio-item';
 export { ForMenuSeparator } from './menu-separator';
 export { ForMenuGroup } from './menu-group';
 export { ForMenuGroupLabel } from './menu-group-label';
+export { ForMenuSub } from './menu-sub';
+export { ForMenuSubTrigger } from './menu-sub-trigger';
 export {
   FOR_MENU_CONTEXT,
   injectMenuContext,

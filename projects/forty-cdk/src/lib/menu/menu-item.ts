@@ -76,6 +76,13 @@ export class ForMenuItem {
     if (this.effectiveDisabled()) {
       return;
     }
+    // ArrowLeft inside a submenu closes only the submenu (focus returns to
+    // the SubTrigger via the content's DestroyRef hook).
+    if (event.key === 'ArrowLeft' && this.ctx.parentMenu) {
+      event.preventDefault();
+      this.ctx.closeMenu('escape');
+      return;
+    }
     const action = resolveListNavigation(event, { orientation: 'vertical' });
     if (action) {
       event.preventDefault();

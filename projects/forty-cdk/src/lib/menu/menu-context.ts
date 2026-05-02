@@ -56,6 +56,18 @@ export interface ForMenuContext {
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
 
+  /** The mounted `[forMenuContent]` element. Submenus exempt their parent's content. */
+  readonly content: Signal<HTMLElement | null>;
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
+
+  /**
+   * The enclosing menu, when this context is a `[forMenuSub]`. `null` for
+   * top-level roots (`[forDropdownMenu]`, `[forContextMenu]`). Items use it to
+   * route ArrowLeft / item-activation upward.
+   */
+  readonly parentMenu: ForMenuContext | null;
+
   /**
    * Elements treated as "inside" by the dismissable layer. DropdownMenu
    * exempts the trigger button (clicks on it toggle via the trigger
@@ -93,7 +105,7 @@ export function injectMenuContext(piece: string): ForMenuContext {
   const ctx = inject(FOR_MENU_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu] or [forContextMenu] element.`,
+      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu], [forContextMenu], or [forMenuSub] element.`,
     );
   }
   return ctx;

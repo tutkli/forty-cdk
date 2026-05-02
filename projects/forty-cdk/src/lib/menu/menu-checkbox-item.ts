@@ -71,6 +71,11 @@ export class ForMenuCheckboxItem {
     if (this.effectiveDisabled()) {
       return;
     }
+    if (event.key === 'ArrowLeft' && this.ctx.parentMenu) {
+      event.preventDefault();
+      this.ctx.closeMenu('escape');
+      return;
+    }
     const action = resolveListNavigation(event, { orientation: 'vertical' });
     if (action) {
       event.preventDefault();

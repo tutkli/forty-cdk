@@ -74,6 +74,11 @@ export class ForMenuRadioItem {
     if (this.effectiveDisabled()) {
       return;
     }
+    if (event.key === 'ArrowLeft' && this.menu.parentMenu) {
+      event.preventDefault();
+      this.menu.closeMenu('escape');
+      return;
+    }
     const action = resolveListNavigation(event, { orientation: 'vertical' });
     if (action) {
       event.preventDefault();

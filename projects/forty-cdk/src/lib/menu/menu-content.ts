@@ -27,7 +27,10 @@ import { injectMenuContext } from './menu-context';
  * without spuriously closing.
  */
 @Directive({
-  selector: '[forMenuContent]',
+  // The same directive serves submenu content too — the behavior is identical
+  // (the injected ctx is the [forMenuSub] in that case). The extra selector is
+  // an alias for template readability.
+  selector: '[forMenuContent], [forMenuSubContent]',
   exportAs: 'forMenuContent',
   host: {
     role: 'menu',
@@ -44,6 +47,9 @@ export class ForMenuContent {
   readonly #dismissable = injectDismissableLayer();
 
   constructor() {
+    this.ctx.registerContent(this.#host.nativeElement);
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
+
     injectFloating({
       reference: this.ctx.anchor,
       open: this.ctx.open,
