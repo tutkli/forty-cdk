@@ -38,6 +38,32 @@ export interface DismissableLayerActivateOptions {
 }
 
 const layerStack: DismissableLayer[] = [];
+let listenersInstalled = false;
+
+function topmost(): DismissableLayer | undefined {
+  return layerStack[layerStack.length - 1];
+}
+
+function installListenersOnce(): void {
+  if (listenersInstalled) {
+    return;
+  }
+  listenersInstalled = true;
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    topmost()?.['handleEscape'](event);
+  });
+  document.addEventListener(
+    'pointerdown',
+    (event) => topmost()?.['handlePointerDown'](event as PointerEvent),
+    true,
+  );
+  document.addEventListener('focusin', (event) =>
+    topmost()?.['handleFocusIn'](event as FocusEvent),
+  );
+}
 
 /**
  * Coordinates the standard "dismissable surface" interactions used by modal
@@ -46,55 +72,17 @@ const layerStack: DismissableLayer[] = [];
  *
  * Only the topmost active layer responds to events — nested layers (e.g. a
  * popover inside a dialog) shadow their parents until they deactivate.
+ * Dispatch goes through a single shared document listener that always
+ * targets the layer at the top of the stack, so synchronous changes to the
+ * stack from a handler don't leak into sibling listeners.
  *
  * Each event handler can call `preventDefault()` on the native event to
- * cancel the layer's `onDismiss` action. Other handlers (and the global
- * stack) still see the event.
+ * cancel the layer's `onDismiss` action.
  */
 export class DismissableLayer {
   readonly #host: HTMLElement;
   #options: DismissableLayerActivateOptions = {};
   #active = false;
-
-  readonly #onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape' || !this.#isTopmost()) {
-      return;
-    }
-    this.#options.onEscapeKeyDown?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
-  };
-
-  readonly #onPointerDown = (event: PointerEvent): void => {
-    if (!this.#isTopmost()) {
-      return;
-    }
-    const target = event.target as Node | null;
-    if (!target || this.#contains(target)) {
-      return;
-    }
-    this.#options.onPointerDownOutside?.(event);
-    this.#options.onInteractOutside?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
-  };
-
-  readonly #onFocusIn = (event: FocusEvent): void => {
-    if (!this.#isTopmost()) {
-      return;
-    }
-    const target = event.target as Node | null;
-    if (!target || this.#contains(target)) {
-      return;
-    }
-    this.#options.onFocusOutside?.(event);
-    this.#options.onInteractOutside?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
-  };
 
   constructor(host: HTMLElement) {
     this.#host = host;
@@ -109,9 +97,8 @@ export class DismissableLayer {
   }
 
   /**
-   * Pushes this layer onto the global stack and starts listening for the
-   * supported events. Calling `activate` twice without an intervening
-   * `deactivate` is a no-op.
+   * Pushes this layer onto the global stack. Calling `activate` twice
+   * without an intervening `deactivate` is a no-op.
    */
   activate(options: DismissableLayerActivateOptions = {}): void {
     if (this.#active) {
@@ -120,20 +107,15 @@ export class DismissableLayer {
     this.#active = true;
     this.#options = options;
     layerStack.push(this);
-    document.addEventListener('keydown', this.#onKeyDown);
-    document.addEventListener('pointerdown', this.#onPointerDown, true);
-    document.addEventListener('focusin', this.#onFocusIn);
+    installListenersOnce();
   }
 
-  /** Removes this layer from the stack and tears down listeners. */
+  /** Removes this layer from the stack. */
   deactivate(): void {
     if (!this.#active) {
       return;
     }
     this.#active = false;
-    document.removeEventListener('keydown', this.#onKeyDown);
-    document.removeEventListener('pointerdown', this.#onPointerDown, true);
-    document.removeEventListener('focusin', this.#onFocusIn);
     const idx = layerStack.indexOf(this);
     if (idx >= 0) {
       layerStack.splice(idx, 1);
@@ -141,8 +123,35 @@ export class DismissableLayer {
     this.#options = {};
   }
 
-  #isTopmost(): boolean {
-    return layerStack.length > 0 && layerStack[layerStack.length - 1] === this;
+  protected handleEscape(event: KeyboardEvent): void {
+    this.#options.onEscapeKeyDown?.(event);
+    if (!event.defaultPrevented) {
+      this.#options.onDismiss?.();
+    }
+  }
+
+  protected handlePointerDown(event: PointerEvent): void {
+    const target = event.target as Node | null;
+    if (!target || this.#contains(target)) {
+      return;
+    }
+    this.#options.onPointerDownOutside?.(event);
+    this.#options.onInteractOutside?.(event);
+    if (!event.defaultPrevented) {
+      this.#options.onDismiss?.();
+    }
+  }
+
+  protected handleFocusIn(event: FocusEvent): void {
+    const target = event.target as Node | null;
+    if (!target || this.#contains(target)) {
+      return;
+    }
+    this.#options.onFocusOutside?.(event);
+    this.#options.onInteractOutside?.(event);
+    if (!event.defaultPrevented) {
+      this.#options.onDismiss?.();
+    }
   }
 
   #contains(target: Node): boolean {

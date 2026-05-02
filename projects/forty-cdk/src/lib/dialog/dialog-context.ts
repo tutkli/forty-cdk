@@ -1,6 +1,12 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 
-export type ForDialogCloseReason = 'escape' | 'backdrop' | 'closeButton' | 'programmatic';
+export type ForDialogCloseReason =
+  | 'escape'
+  | 'backdrop'
+  | 'pointerDownOutside'
+  | 'focusOutside'
+  | 'closeButton'
+  | 'programmatic';
 
 /**
  * Coordination contract owned by `ForDialog` (declarative) or by the
@@ -25,7 +31,8 @@ export interface ForDialogContext {
 
   /**
    * Request that the dialog close. Reasons:
-   * - `'escape'` / `'backdrop'`: honored only when `dismissible()` is true.
+   * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'`:
+   *   honored only when `dismissible()` is true.
    * - `'closeButton'`: always honored.
    * - `'programmatic'`: always honored, used by `ForDialogs.open()` consumers
    *   that drive close imperatively from a child component.

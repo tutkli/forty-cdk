@@ -7,6 +7,7 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
 } from '@angular/core';
 
@@ -54,8 +55,9 @@ export class ForDialog implements ForDialogContext {
   /**
    * Two-way bindable visibility. The `model()` change emitter (`(openChange)`)
    * fires only on internal transitions (Escape, backdrop click,
-   * `[forDialogClose]` button, programmatic `requestClose`), never on
-   * consumer writes via `[(open)]` — observe state changes without binding back.
+   * pointer-down / focus outside, `[forDialogClose]` button, programmatic
+   * `requestClose`), never on consumer writes via `[(open)]` — observe
+   * state changes without binding back.
    */
   readonly open = model<boolean>(false);
 
@@ -87,6 +89,34 @@ export class ForDialog implements ForDialogContext {
   /** Manual `aria-label`. Use this when no visible title element exists. */
   readonly ariaLabel = input<string | null>(null);
 
+  /**
+   * Fires when the user presses Escape while this dialog is the topmost
+   * dismissable layer. Call `event.preventDefault()` to keep the dialog
+   * open (e.g. to ask for confirmation first). Otherwise the dialog
+   * closes — provided `dismissible` is true.
+   */
+  readonly escapeKeyDown = output<KeyboardEvent>();
+
+  /**
+   * Fires when a pointer goes down outside the dialog. `preventDefault()`
+   * cancels the auto-close. Useful to keep the dialog open when the user
+   * clicks specific decorative regions you'd rather treat as inert.
+   */
+  readonly pointerDownOutside = output<PointerEvent>();
+
+  /**
+   * Fires when focus moves outside the dialog (e.g. user tabs out of a
+   * non-modal dialog). `preventDefault()` cancels the auto-close.
+   */
+  readonly focusOutside = output<FocusEvent>();
+
+  /**
+   * Composite event: fires alongside `pointerDownOutside` and
+   * `focusOutside`. `preventDefault()` cancels the auto-close like the
+   * specific events.
+   */
+  readonly interactOutside = output<PointerEvent | FocusEvent>();
+
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
 
@@ -112,6 +142,33 @@ export class ForDialog implements ForDialogContext {
       }
       const isModal = this.modal();
 
+      // Push the dismissable layer onto the stack *before* moving focus so
+      // that focusin events triggered by our own focus management land on
+      // this layer, not on whatever lower layer was previously topmost.
+      this.#dismissable.activate({
+        onEscapeKeyDown: (event) => {
+          this.escapeKeyDown.emit(event);
+          if (!event.defaultPrevented && this.dismissible()) {
+            event.stopPropagation();
+            this.requestClose('escape');
+          }
+        },
+        onPointerDownOutside: (event) => {
+          this.pointerDownOutside.emit(event);
+        },
+        onFocusOutside: (event) => {
+          this.focusOutside.emit(event);
+        },
+        onInteractOutside: (event) => {
+          this.interactOutside.emit(event);
+          if (!event.defaultPrevented && this.dismissible()) {
+            this.requestClose(
+              event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside',
+            );
+          }
+        },
+      });
+
       if (isModal) {
         this.#focusTrap.activate({ initialFocus: this.initialFocus() });
         lockBodyScroll();
@@ -126,16 +183,6 @@ export class ForDialog implements ForDialogContext {
           (first ?? this.#host.nativeElement).focus();
         }
       }
-
-      this.#dismissable.activate({
-        onEscapeKeyDown: (event) => {
-          if (this.dismissible()) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.requestClose('escape');
-          }
-        },
-      });
 
       onCleanup(() => {
         this.#dismissable.deactivate();
@@ -161,7 +208,7 @@ export class ForDialog implements ForDialogContext {
   }
 
   requestClose(reason: ForDialogCloseReason, _value?: unknown): void {
-    if ((reason === 'escape' || reason === 'backdrop') && !this.dismissible()) {
+    if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
     }
     this.open.set(false);
