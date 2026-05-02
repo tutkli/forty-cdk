@@ -1,0 +1,660 @@
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { renderHost } from '../../test-utils/render';
+import { ForSlider } from './slider';
+import { ForSliderRange } from './slider-range';
+import { ForSliderThumb } from './slider-thumb';
+import { ForSliderTrack } from './slider-track';
+
+const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb] as const;
+
+@Component({
+  imports: [...SLIDER_IMPORTS],
+  template: `
+    <div
+      forSlider
+      [(value)]="picked"
+      [min]="min()"
+      [max]="max()"
+      [step]="step()"
+      [largeStep]="largeStep()"
+      [orientation]="orientation()"
+      [dir]="dir()"
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      [inverted]="inverted()"
+      [minStepsBetweenThumbs]="gap()"
+      [name]="name()"
+      [touched]="touched()"
+      (valueChange)="onValueChange($event)"
+      (touchedChange)="onTouchedChange($event)"
+      data-test-id="root"
+    >
+      <span forSliderTrack data-test-id="track">
+        <span forSliderRange data-test-id="range"></span>
+        @for (v of picked(); let i = $index; track i) {
+          <span
+            forSliderThumb
+            [index]="i"
+            [label]="thumbLabel(i)"
+            [attr.data-test-id]="'thumb-' + i"
+          ></span>
+        }
+      </span>
+    </div>
+  `,
+})
+class SliderHost {
+  readonly picked = signal<readonly number[]>([50]);
+  readonly min = signal(0);
+  readonly max = signal(100);
+  readonly step = signal(1);
+  readonly largeStep = signal(10);
+  readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+  readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly disabled = signal(false);
+  readonly readonly = signal(false);
+  readonly inverted = signal(false);
+  readonly gap = signal(0);
+  readonly name = signal('');
+  readonly touched = signal(false);
+  readonly valueChanges: (readonly number[])[] = [];
+  readonly touchedChanges: boolean[] = [];
+
+  thumbLabel(i: number): string {
+    return this.picked().length > 1 ? (i === 0 ? 'Min' : 'Max') : 'Volume';
+  }
+
+  onValueChange(v: readonly number[]): void {
+    this.valueChanges.push(v);
+  }
+  onTouchedChange(t: boolean): void {
+    this.touchedChanges.push(t);
+  }
+}
+
+const root = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="root"]')!;
+const track = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="track"]')!;
+const range = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="range"]')!;
+const thumb = (host: HTMLElement, i: number) =>
+  host.querySelector<HTMLElement>(`[data-test-id="thumb-${i}"]`)!;
+
+const keyDown = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =>
+  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
+
+const stubTrackRect = (
+  el: HTMLElement,
+  rect: { left?: number; top?: number; width?: number; height?: number } = {},
+) => {
+  const left = rect.left ?? 0;
+  const top = rect.top ?? 0;
+  const width = rect.width ?? 200;
+  const height = rect.height ?? 20;
+  el.getBoundingClientRect = () =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+};
+
+const pointer = (
+  el: HTMLElement,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  init: { clientX?: number; clientY?: number; pointerId?: number; button?: number } = {},
+) => {
+  const ev = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0,
+    pointerId: init.pointerId ?? 1,
+    button: init.button ?? 0,
+  });
+  el.dispatchEvent(ev);
+  return ev;
+};
+
+const pointerOnWindow = (
+  type: 'pointermove' | 'pointerup' | 'pointercancel',
+  init: { clientX?: number; clientY?: number; pointerId?: number } = {},
+) => {
+  window.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: init.clientX ?? 0,
+      clientY: init.clientY ?? 0,
+      pointerId: init.pointerId ?? 1,
+    }),
+  );
+};
+
+describe('ForSlider', () => {
+  describe('static accessibility', () => {
+    it('sets role=group on root and role=slider on each thumb', () => {
+      const { el } = renderHost(SliderHost);
+      expect(root(el).getAttribute('role')).toBe('group');
+      expect(thumb(el, 0).getAttribute('role')).toBe('slider');
+    });
+
+    it('exposes aria-valuemin / aria-valuemax / aria-valuenow / aria-orientation on the thumb', () => {
+      const { el } = renderHost(SliderHost);
+      const t = thumb(el, 0);
+      expect(t.getAttribute('aria-valuemin')).toBe('0');
+      expect(t.getAttribute('aria-valuemax')).toBe('100');
+      expect(t.getAttribute('aria-valuenow')).toBe('50');
+      expect(t.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
+    it('reflects [label] as aria-label', () => {
+      const { el } = renderHost(SliderHost);
+      expect(thumb(el, 0).getAttribute('aria-label')).toBe('Volume');
+    });
+
+    it('mirrors data-orientation on every piece', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      flush();
+      expect(root(el).getAttribute('data-orientation')).toBe('vertical');
+      expect(track(el).getAttribute('data-orientation')).toBe('vertical');
+      expect(range(el).getAttribute('data-orientation')).toBe('vertical');
+      expect(thumb(el, 0).getAttribute('data-orientation')).toBe('vertical');
+    });
+
+    it('reflects data-disabled and dir=rtl on the root', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      expect(root(el).hasAttribute('data-disabled')).toBe(true);
+      expect(root(el).getAttribute('dir')).toBe('rtl');
+    });
+
+    it('disabled thumb has tabindex=-1 and aria-disabled=true', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      flush();
+      expect(thumb(el, 0).getAttribute('tabindex')).toBe('-1');
+      expect(thumb(el, 0).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('enabled thumb has tabindex=0', () => {
+      const { el } = renderHost(SliderHost);
+      expect(thumb(el, 0).getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('keyboard (single thumb, horizontal LTR)', () => {
+    it('ArrowRight increases by step', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+    });
+
+    it('ArrowLeft decreases by step', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
+
+    it('ArrowUp increases, ArrowDown decreases', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      keyDown(thumb(el, 0), 'ArrowUp');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+      keyDown(thumb(el, 0), 'ArrowDown');
+      keyDown(thumb(el, 0), 'ArrowDown');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
+
+    it('PageUp / PageDown use largeStep', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      keyDown(thumb(el, 0), 'PageUp');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+      keyDown(thumb(el, 0), 'PageDown');
+      keyDown(thumb(el, 0), 'PageDown');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([40]);
+    });
+
+    it('Home / End jump to min / max', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      keyDown(thumb(el, 0), 'Home');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([0]);
+      keyDown(thumb(el, 0), 'End');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([100]);
+    });
+
+    it('clamps below min and above max', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([0]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([0]);
+      fixture.componentInstance.picked.set([100]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([100]);
+    });
+
+    it('respects custom step', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(5);
+      fixture.componentInstance.picked.set([20]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([25]);
+    });
+
+    it('snaps off-step values onto the step grid', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(10);
+      fixture.componentInstance.picked.set([23]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      // 23 + 10 = 33 → snap to 30
+      expect(fixture.componentInstance.picked()).toEqual([30]);
+    });
+  });
+
+  describe('keyboard (RTL)', () => {
+    it('ArrowLeft increases and ArrowRight decreases under dir=rtl', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
+  });
+
+  describe('keyboard (inverted)', () => {
+    it('ArrowRight decreases when inverted', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.inverted.set(true);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
+  });
+
+  describe('disabled / readonly', () => {
+    it('disabled blocks keyboard', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([50]);
+    });
+
+    it('readonly blocks keyboard but keeps thumb focusable', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.readonly.set(true);
+      flush();
+      expect(thumb(el, 0).getAttribute('tabindex')).toBe('0');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([50]);
+    });
+  });
+
+  describe('range / multi-thumb', () => {
+    it('renders one thumb per value entry', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      expect(thumb(el, 0)).not.toBeNull();
+      expect(thumb(el, 1)).not.toBeNull();
+    });
+
+    it('thumb aria-valuemin / aria-valuemax constrain to neighbors (non-passing)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      const lo = thumb(el, 0);
+      const hi = thumb(el, 1);
+      expect(lo.getAttribute('aria-valuemin')).toBe('0');
+      expect(lo.getAttribute('aria-valuemax')).toBe('80');
+      expect(hi.getAttribute('aria-valuemin')).toBe('20');
+      expect(hi.getAttribute('aria-valuemax')).toBe('100');
+    });
+
+    it('lower thumb cannot move past upper thumb', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([78, 80]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([79, 80]);
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      // 79 → 80 (clamped to upper neighbor), can't go to 81.
+      expect(fixture.componentInstance.picked()).toEqual([80, 80]);
+    });
+
+    it('minStepsBetweenThumbs forces a gap', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.gap.set(5);
+      fixture.componentInstance.picked.set([78, 90]);
+      flush();
+      keyDown(thumb(el, 0), 'End');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([85, 90]);
+    });
+
+    it('Home / End on a multi-thumb clamps to neighbor, not absolute extreme', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      keyDown(thumb(el, 0), 'End');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([80, 80]);
+      keyDown(thumb(el, 1), 'Home');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([80, 80]);
+    });
+  });
+
+  describe('pointer (drag on thumb)', () => {
+    it('pointerdown on thumb followed by pointermove on window updates the value', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 75 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([75]);
+      pointerOnWindow('pointerup', { clientX: 75 });
+    });
+
+    it('pointermove past track edges clamps to min / max', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: -50 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([0]);
+      pointerOnWindow('pointermove', { clientX: 200 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([100]);
+      pointerOnWindow('pointerup');
+    });
+
+    it('pointerup detaches listeners — further moves do nothing', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 60 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+      pointerOnWindow('pointerup', { clientX: 60 });
+      pointerOnWindow('pointermove', { clientX: 90 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+    });
+
+    it('pointerdown does nothing when disabled', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      flush();
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 75 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([50]);
+    });
+
+    it('pointerdown on a non-primary button is ignored', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50, button: 2 });
+      pointerOnWindow('pointermove', { clientX: 80 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([50]);
+      pointerOnWindow('pointerup');
+    });
+  });
+
+  describe('pointer (track click)', () => {
+    it('moves the nearest thumb to the click position and starts drag', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(track(el), 'pointerdown', { clientX: 30 });
+      flush();
+      // Closer to 20 than 80, lower thumb moves.
+      expect(fixture.componentInstance.picked()).toEqual([30, 80]);
+      pointerOnWindow('pointermove', { clientX: 40 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([40, 80]);
+      pointerOnWindow('pointerup');
+    });
+
+    it('ignores track pointerdown when disabled', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      flush();
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      pointer(track(el), 'pointerdown', { clientX: 30 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([50]);
+    });
+  });
+
+  describe('pointer (RTL)', () => {
+    it('flips horizontal mapping under dir=rtl', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      // Click at the visual right edge → minimum value under RTL.
+      pointer(track(el), 'pointerdown', { clientX: 100 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([0]);
+      pointerOnWindow('pointerup');
+    });
+  });
+
+  describe('pointer (vertical)', () => {
+    it('maps clientY: bottom = min, top = max', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      flush();
+      stubTrackRect(track(el), { top: 0, height: 100 });
+      // clientY = 0 → top = max
+      pointer(track(el), 'pointerdown', { clientY: 0 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([100]);
+      pointerOnWindow('pointerup');
+      // clientY = 100 → bottom = min
+      pointer(track(el), 'pointerdown', { clientY: 100 });
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([0]);
+      pointerOnWindow('pointerup');
+    });
+  });
+
+  describe('CSS variable exposure', () => {
+    it('thumb exposes --for-slider-thumb-position as a fraction', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([25]);
+      flush();
+      const t = thumb(el, 0);
+      expect(t.style.getPropertyValue('--for-slider-thumb-position')).toBe('0.25');
+    });
+
+    it('range exposes start / end / size as fractions', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      const r = range(el);
+      expect(r.style.getPropertyValue('--for-slider-range-start')).toBe('0.2');
+      expect(r.style.getPropertyValue('--for-slider-range-end')).toBe('0.8');
+      expect(parseFloat(r.style.getPropertyValue('--for-slider-range-size'))).toBeCloseTo(
+        0.6,
+        5,
+      );
+    });
+
+    it('inverted flips the thumb position', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([25]);
+      fixture.componentInstance.inverted.set(true);
+      flush();
+      const t = thumb(el, 0);
+      expect(t.style.getPropertyValue('--for-slider-thumb-position')).toBe('0.75');
+    });
+  });
+
+  describe('valueChange contract', () => {
+    it('does not fire on consumer writes via [(value)]', () => {
+      const { fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueChanges.length = 0;
+      fixture.componentInstance.picked.set([42]);
+      flush();
+      expect(fixture.componentInstance.valueChanges.length).toBe(0);
+    });
+
+    it('fires only when the directive itself updates the model', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueChanges.length = 0;
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueChanges).toEqual([[51]]);
+    });
+  });
+
+  describe('touched contract', () => {
+    it('marks touched when focus leaves the slider region', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      const t = thumb(el, 0);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+      flush();
+      expect(fixture.componentInstance.touchedChanges).toContain(true);
+      outside.remove();
+    });
+
+    it('does not mark touched when focus stays inside the slider', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      flush();
+      const a = thumb(el, 0);
+      const b = thumb(el, 1);
+      fixture.componentInstance.touchedChanges.length = 0;
+      a.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: b }));
+      flush();
+      expect(fixture.componentInstance.touchedChanges).toEqual([]);
+    });
+
+    it('drag end marks touched', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      fixture.componentInstance.touchedChanges.length = 0;
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 60 });
+      pointerOnWindow('pointerup', { clientX: 60 });
+      flush();
+      expect(fixture.componentInstance.touchedChanges).toContain(true);
+    });
+  });
+
+  describe('form integration', () => {
+    @Component({
+      imports: [ForSlider, ForSliderTrack, ForSliderThumb],
+      template: `
+        <form>
+          <div forSlider [(value)]="picked" [name]="name()" [disabled]="disabled()">
+            <span forSliderTrack>
+              @for (v of picked(); let i = $index; track i) {
+                <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+              }
+            </span>
+          </div>
+        </form>
+      `,
+    })
+    class FormHost {
+      readonly picked = signal<readonly number[]>([42]);
+      readonly name = signal('');
+      readonly disabled = signal(false);
+    }
+
+    const hidden = (form: HTMLElement) =>
+      Array.from(form.querySelectorAll<HTMLInputElement>('input[type="hidden"]'));
+
+    it('emits no hidden inputs while name is empty', () => {
+      const { el } = renderHost(FormHost);
+      expect(hidden(el).length).toBe(0);
+    });
+
+    it('emits one hidden input per value once name is set', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.name.set('volume');
+      flush();
+      const inputs = hidden(el);
+      expect(inputs.length).toBe(1);
+      expect(inputs[0]!.name).toBe('volume');
+      expect(inputs[0]!.value).toBe('42');
+    });
+
+    it('emits N hidden inputs for multi-value', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.name.set('range');
+      fixture.componentInstance.picked.set([10, 20, 30]);
+      flush();
+      const inputs = hidden(el);
+      expect(inputs.length).toBe(3);
+      expect(inputs.map((i) => i.value)).toEqual(['10', '20', '30']);
+    });
+
+    it('disabled sets the disabled attribute on hidden inputs', () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.name.set('volume');
+      fixture.componentInstance.disabled.set(true);
+      flush();
+      expect(hidden(el)[0]!.hasAttribute('disabled')).toBe(true);
+    });
+  });
+
+  describe('zoneless', () => {
+    it('reactivity works without Zone.js', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(SliderHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      keyDown(thumb(el, 0), 'ArrowRight');
+      fixture.detectChanges();
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('51');
+    });
+  });
+});
