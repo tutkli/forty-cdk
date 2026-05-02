@@ -36,6 +36,7 @@ import { injectComboboxContext } from './combobox-context';
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.inputId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
 })

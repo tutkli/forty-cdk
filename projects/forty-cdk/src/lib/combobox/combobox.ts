@@ -20,6 +20,7 @@ import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation'
 import {
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxAutocomplete,
+  type ForComboboxChipHandle,
   type ForComboboxCloseReason,
   type ForComboboxContext,
   type ForComboboxOptionHandle,
@@ -27,13 +28,20 @@ import {
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
- * Implements `FormValueControl<string | null>` from `@angular/forms/signals`
- * for `[formField]` auto-wiring.
+ * Implements `FormValueControl<readonly string[]>` from
+ * `@angular/forms/signals` for `[formField]` auto-wiring.
  *
- * Single-select. The visible input ("query") and the form value are
- * separate two-way bindable models — the consumer keeps them in sync via
- * filtering / display logic, and the primitive only commits to `value`
- * when an option is explicitly activated.
+ * Selection is always modeled as `readonly string[]`:
+ * - In single mode (`multiple=false`, default), the array has 0 or 1
+ *   element and option activation closes the listbox.
+ * - In multi mode, option activation toggles in/out and the listbox stays
+ *   open. Selected entries are typically rendered as chips inside
+ *   `[forComboboxChips]` next to the input.
+ *
+ * The visible input ("query") and the form value are separate two-way
+ * bindable models — the consumer keeps them in sync via filtering /
+ * display logic, and the primitive only commits to `value` when an option
+ * is explicitly activated.
  *
  * Filtering is **always** the consumer's responsibility — the primitive is
  * headless and doesn't filter the registered options. Render the filtered
@@ -49,33 +57,38 @@ import {
   },
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
 })
-export class ForCombobox implements FormValueControl<string | null>, ForComboboxContext {
+export class ForCombobox
+  implements FormValueControl<readonly string[]>, ForComboboxContext
+{
   readonly #idGen = inject(IdGenerator);
   readonly #items = new Collection<ForComboboxOptionHandle>();
+  readonly #chips = new Collection<ForComboboxChipHandle>();
 
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter
    * (`(queryChange)`) fires only on internal mutations (option activation
-   * commit, `clear()`, inline-autocomplete sync), never on consumer writes
+   * commit, `clear()`, multi-mode select reset), never on consumer writes
    * via `[(query)]`.
    */
   readonly query = model<string>('');
 
   /**
-   * Two-way bindable. Currently selected option's `value`, or `null` when
-   * nothing is selected. The `model()` change emitter (`(valueChange)`)
-   * fires only on internal selection changes, never on consumer writes
-   * via `[(value)]`.
+   * Two-way bindable. Selected option values. Single mode (`multiple=false`)
+   * keeps 0 or 1 element; multi mode keeps any number. The `model()` change
+   * emitter (`(valueChange)`) fires only on internal selection changes,
+   * never on consumer writes via `[(value)]`.
    */
-  readonly value = model<string | null>(null);
+  readonly value = model<readonly string[]>([]);
 
   /**
    * Two-way bindable. Whether the listbox is currently shown. Internal
    * transitions: input typing (when `openOnQuery`), focus (when
    * `openOnFocus`), ArrowDown / ArrowUp, Escape, outside dismissal,
-   * option activation.
+   * single-mode option activation.
    */
   readonly open = model<boolean>(false);
+
+  readonly multiple = input(false, { transform: booleanAttribute });
 
   readonly autocomplete = input<ForComboboxAutocomplete>('list');
 
@@ -85,10 +98,15 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
   /** Open the listbox when the user starts typing. On by default. Only honored when `autocomplete` includes a listbox (`'list'` or `'both'`). */
   readonly openOnQuery = input(true, { transform: booleanAttribute });
 
-  /** When activating an option, copy its label into `query`. On by default. */
+  /**
+   * In single mode, copy the activated option's label into `query`. In
+   * multi mode, instead **clear** the query so the user can search the
+   * next item. On by default in both. Set `false` to leave `query`
+   * untouched on activation in either mode.
+   */
   readonly commitOnSelect = input(true, { transform: booleanAttribute });
 
-  /** When the user edits the query, automatically clear the committed `value`. Off by default — most apps want the value preserved across query edits. */
+  /** When the user edits the query, automatically clear the committed `value`. Off by default — most apps want the value preserved across query edits. Single-mode only. */
   readonly clearOnQueryChange = input(false, { transform: booleanAttribute });
 
   /**
@@ -136,6 +154,7 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
   readonly content = this.#contentEl.asReadonly();
 
   readonly options = this.#items.items;
+  readonly chips = this.#chips.items;
 
   readonly #activeId = signal<string | null>(null);
   readonly activeId = this.#activeId.asReadonly();
@@ -145,22 +164,32 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
 
   /**
    * Snapshot of the option set, used by `[forCombobox]` features that need
-   * to look up labels while `[forComboboxContent]` is unmounted (e.g. the
-   * pending closed-state inline match). Updated by an `afterEveryRender`
-   * hook because reading `textContent` reliably requires a post-render
-   * phase; an effect or linkedSignal would race with text-node commits.
+   * to look up labels while `[forComboboxContent]` is unmounted (chips
+   * outside the listbox area, inline autocomplete after close, etc.).
+   * Updated by an `afterEveryRender` hook because reading `textContent`
+   * reliably requires a post-render phase; an effect or linkedSignal would
+   * race with text-node commits.
    */
   readonly #cachedOptions = signal<readonly { id: string; value: string; label: string }[]>(
     [],
   );
 
+  readonly selected = computed<readonly { value: string; label: string }[]>(() => {
+    const values = this.value();
+    if (values.length === 0) {
+      return [];
+    }
+    const cached = this.#cachedOptions();
+    return values.map((v) => {
+      const opt = cached.find((o) => o.value === v);
+      return { value: v, label: opt ? opt.label : v };
+    });
+  });
+
   constructor() {
     injectHiddenInput({
       name: this.name,
-      values: computed(() => {
-        const v = this.value();
-        return v === null ? [] : [v];
-      }),
+      values: this.value,
       disabled: this.disabled,
     });
     injectFormControlReflection({
@@ -197,8 +226,6 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
       // Auto-highlight the first / last enabled option whenever the listbox
       // is open with no activedescendant (e.g. after the consumer's filter
       // removed the previously-active option, or right after openMenu()).
-      // The first/last bias comes from the trigger's hint — ArrowUp lands
-      // on last, everything else lands on first.
       if (
         this.autoHighlight() &&
         this.open() &&
@@ -244,8 +271,15 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
     }
   }
 
+  registerChip(handle: ForComboboxChipHandle): void {
+    this.#chips.register(handle);
+  }
+  unregisterChip(handle: ForComboboxChipHandle): void {
+    this.#chips.unregister(handle);
+  }
+
   isSelected(v: string): boolean {
-    return this.value() === v;
+    return this.value().includes(v);
   }
 
   isActive(id: string): boolean {
@@ -256,12 +290,54 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
     if (this.disabled() || this.readonly() || handle.disabled()) {
       return;
     }
-    this.value.set(handle.value());
+    const v = handle.value();
+    if (this.multiple()) {
+      // Toggle in/out of the array. Stay open so the user can keep picking.
+      const current = this.value();
+      const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+      this.value.set(next);
+      if (this.commitOnSelect()) {
+        // Reset query so the next typed prefix searches afresh — matches
+        // Base UI / Material Autocomplete multi behavior.
+        this.query.set('');
+        this.#syncInputValue('');
+      }
+      this.#activeId.set(handle.id());
+      return;
+    }
+    // Single mode: replace + close + commit label.
+    this.value.set([v]);
     if (this.commitOnSelect()) {
       this.query.set(handle.label());
+      this.#syncInputValue(handle.label());
     }
     this.#activeId.set(handle.id());
     this.closeMenu('select');
+  }
+
+  /**
+   * Imperatively align the visible `<input>` text with `query()` even
+   * while the input has focus. The directive's reactive sync skips
+   * focused syncs to avoid clobbering inline-autocomplete selection
+   * during typing — but activation / clear writes happen *outside* the
+   * typing flow and should be visible immediately.
+   */
+  #syncInputValue(value: string): void {
+    const el = this.#inputEl();
+    if (el && el.value !== value) {
+      el.value = value;
+    }
+  }
+
+  removeValue(v: string): void {
+    if (this.disabled() || this.readonly()) {
+      return;
+    }
+    const current = this.value();
+    if (!current.includes(v)) {
+      return;
+    }
+    this.value.set(current.filter((x) => x !== v));
   }
 
   activateActive(): boolean {
@@ -319,8 +395,8 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
       return;
     }
     this.query.set(query);
-    if (this.clearOnQueryChange() && this.value() !== null) {
-      this.value.set(null);
+    if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
+      this.value.set([]);
     }
     const mode = this.autocomplete();
     const hasListbox = mode === 'list' || mode === 'both';
@@ -333,12 +409,10 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
     this.#activeId.set(null);
   }
 
-  /** Set the activedescendant directly (used by input directive after query commits to seed first match). */
   setActiveId(id: string | null): void {
     this.#activeId.set(id);
   }
 
-  /** Read-only access to the cached snapshot; consumed by the input directive for inline autocomplete. */
   cachedOptions(): readonly { id: string; value: string; label: string }[] {
     return this.#cachedOptions();
   }
@@ -347,9 +421,10 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
     if (this.disabled() || this.readonly()) {
       return;
     }
-    this.value.set(null);
+    this.value.set([]);
     if (clearQuery) {
       this.query.set('');
+      this.#syncInputValue('');
     }
     this.#activeId.set(null);
   }
@@ -423,6 +498,14 @@ export class ForCombobox implements FormValueControl<string | null>, ForCombobox
       }
       if (content && content.contains(next)) {
         return;
+      }
+      // Focus moving to a chip (multi mode) is "inside" — chips are an
+      // extension of the input area, not an outside boundary.
+      const chips = this.#chips.items();
+      for (const chip of chips) {
+        if (chip.host.contains(next)) {
+          return;
+        }
       }
     }
     this.markTouched();

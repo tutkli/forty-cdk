@@ -139,6 +139,28 @@ export class ForComboboxInput {
     if (this.ctx.disabled()) {
       return;
     }
+
+    // Multi-mode Backspace heuristic: an empty input sends focus to the
+    // last chip so a second Backspace there removes it. Matches Base UI /
+    // Material Autocomplete multi behavior. Skip when there's a non-empty
+    // selection in the input (the user's mid-edit) — Backspace falls
+    // through to the native delete-char handler.
+    if (
+      event.key === 'Backspace' &&
+      this.ctx.multiple() &&
+      this.#host.nativeElement.value === '' &&
+      !this.ctx.readonly() &&
+      !this.ctx.disabled()
+    ) {
+      const chips = this.ctx.chips();
+      const last = chips[chips.length - 1];
+      if (last) {
+        event.preventDefault();
+        last.host.focus();
+        return;
+      }
+    }
+
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();

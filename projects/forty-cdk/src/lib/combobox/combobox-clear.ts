@@ -27,7 +27,7 @@ export class ForComboboxClear {
   protected readonly ctx = injectComboboxContext('ForComboboxClear');
 
   protected readonly hasContent = computed(
-    () => this.ctx.value() !== null || this.ctx.query().length > 0,
+    () => this.ctx.value().length > 0 || this.ctx.query().length > 0,
   );
 
   protected onClick(): void {

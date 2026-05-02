@@ -36,16 +36,27 @@ export interface ForComboboxOptionHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
 }
 
+export interface ForComboboxChipHandle extends CollectionHandle {
+  readonly value: Signal<string>;
+}
+
 /**
  * Coordination contract owned by `[forCombobox]`. Input, content, options,
- * groups, separators, the empty-state directive, and the clear button all
- * inject this token to read state and delegate behavior.
+ * groups, separators, the empty-state directive, the clear button, and the
+ * multi-mode chip pieces all inject this token to read state and delegate
+ * behavior.
+ *
+ * The value model is always an array — single mode (`multiple=false`,
+ * default) keeps 0 or 1 element, multi mode keeps any number. This mirrors
+ * `[forListbox]` / `[forSelect]` so consumers learn one selection contract
+ * across the whole library.
  */
 export interface ForComboboxContext {
   readonly query: ModelSignal<string>;
-  readonly value: ModelSignal<string | null>;
+  readonly value: ModelSignal<readonly string[]>;
   readonly open: ModelSignal<boolean>;
 
+  readonly multiple: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly required: Signal<boolean>;
@@ -80,6 +91,18 @@ export interface ForComboboxContext {
   unregisterOption(handle: ForComboboxOptionHandle): void;
   readonly options: Signal<readonly ForComboboxOptionHandle[]>;
 
+  /** Multi-mode chip collection. Order follows DOM (= `value()` order in practice). */
+  registerChip(handle: ForComboboxChipHandle): void;
+  unregisterChip(handle: ForComboboxChipHandle): void;
+  readonly chips: Signal<readonly ForComboboxChipHandle[]>;
+
+  /**
+   * Selected entries paired with their resolved label (from the option
+   * cache) — convenient for rendering chips with `@for`. Falls back to the
+   * raw value string when no matching option is registered.
+   */
+  readonly selected: Signal<readonly { value: string; label: string }[]>;
+
   /** Id of the currently active option (drives `aria-activedescendant` on the input). */
   readonly activeId: Signal<string | null>;
   /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
@@ -87,13 +110,21 @@ export interface ForComboboxContext {
   /** Read-only access to the cached snapshot consumed by inline-autocomplete in the input directive. */
   cachedOptions(): readonly { id: string; value: string; label: string }[];
 
-  /** True for the option whose `value` is registered and matches `value()`. */
+  /** True when `value` includes `v`. */
   isSelected(value: string): boolean;
-  /** True for the option that's currently the activedescendant. */
+  /** True when `id` is the activedescendant. */
   isActive(id: string): boolean;
 
-  /** Activate by handle: select + commit query + close. No-op on disabled / readonly. */
+  /**
+   * Activate by handle. Single mode replaces + closes + commits label. Multi
+   * mode toggles in/out + stays open + (when `commitOnSelect`) clears the
+   * query so the user can search the next item. No-op on disabled / readonly.
+   */
   activate(handle: ForComboboxOptionHandle): void;
+
+  /** Remove a value from `value()`. Used by chip-remove and Backspace heuristics. */
+  removeValue(value: string): void;
+
   /** Move the activedescendant to the first / last / next / prev enabled option. */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
   /** Activate the option currently marked as activedescendant (Enter from the input). */
@@ -104,8 +135,8 @@ export interface ForComboboxContext {
 
   /**
    * Clear value and (optionally) query. Used by `[forComboboxClear]` and
-   * by Backspace+Delete-on-empty heuristics. The query is reset only when
-   * `clearQuery` is true.
+   * by the Backspace-on-empty-input heuristic. The query is reset only
+   * when `clearQuery` is true.
    */
   clear(clearQuery?: boolean): void;
 

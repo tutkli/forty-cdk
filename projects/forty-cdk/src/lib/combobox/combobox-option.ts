@@ -14,18 +14,24 @@ import { injectComboboxContext } from './combobox-context';
 
 /**
  * One option inside a `[forComboboxContent]`. Apply on whatever element
- * fits the design — typically a `<div>` or `<li>`. Click activates: the
- * option's `value` is committed to `[(value)]`, the listbox closes, and
- * (when `commitOnSelect` is on) the input text becomes the option's label.
+ * fits the design — typically a `<div>` or `<li>`. Click activates:
+ * single mode replaces `[(value)]` and closes the listbox; multi mode
+ * toggles the value in/out and keeps the listbox open.
  *
- * The active state (the option that would be activated by Enter) is
- * exposed via `data-active` and `aria-selected`. `aria-activedescendant`
- * on the input points at this option's `id` while it's the active one —
- * focus never leaves the input.
+ * `aria-selected` reflects different things in single vs. multi:
+ * - **Single mode**: the option that's the current activedescendant
+ *   (Enter would activate it). Matches APG select-only-combobox.
+ * - **Multi mode**: every option currently in `value()` carries
+ *   `aria-selected="true"` (multiple "selected" entries simultaneously).
+ *   Matches APG multi-select combobox.
  *
- * Hovering an option *also* makes it the activedescendant, mirroring
- * native menu / select behavior so mouse and keyboard intent stay
- * synchronized.
+ * `data-state="checked" | "unchecked"` always reflects membership in
+ * `value()` regardless of mode, so consumers can paint a checkmark with
+ * pure CSS in either mode. `data-active` marks the option that is the
+ * activedescendant.
+ *
+ * Hovering an option also makes it the activedescendant, mirroring native
+ * menu / select behavior so mouse and keyboard intent stay synchronized.
  */
 @Directive({
   selector: '[forComboboxOption]',
@@ -33,7 +39,7 @@ import { injectComboboxContext } from './combobox-context';
   host: {
     role: 'option',
     '[id]': 'id()',
-    '[attr.aria-selected]': 'active() ? "true" : "false"',
+    '[attr.aria-selected]': 'ariaSelected()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-active]': 'active() ? "" : null',
@@ -65,6 +71,13 @@ export class ForComboboxOption {
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   readonly active = computed(() => this.#ctx.isActive(this.id()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
+
+  protected readonly ariaSelected = computed(() => {
+    if (this.#ctx.multiple()) {
+      return this.selected() ? 'true' : 'false';
+    }
+    return this.active() ? 'true' : 'false';
+  });
 
   readonly #effectiveLabel = computed(() => {
     const explicit = this.label();

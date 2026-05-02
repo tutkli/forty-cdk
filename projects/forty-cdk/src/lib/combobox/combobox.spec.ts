@@ -3,6 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
 import { ForCombobox } from './combobox';
+import { ForComboboxChip } from './combobox-chip';
+import { ForComboboxChipRemove } from './combobox-chip-remove';
+import { ForComboboxChips } from './combobox-chips';
 import { ForComboboxClear } from './combobox-clear';
 import { ForComboboxContent } from './combobox-content';
 import { ForComboboxEmpty } from './combobox-empty';
@@ -13,6 +16,15 @@ import { ForComboboxOption } from './combobox-option';
 import { ForComboboxSeparator } from './combobox-separator';
 
 const BASE_IMPORTS = [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption];
+const MULTI_IMPORTS = [
+  ForCombobox,
+  ForComboboxInput,
+  ForComboboxContent,
+  ForComboboxOption,
+  ForComboboxChips,
+  ForComboboxChip,
+  ForComboboxChipRemove,
+];
 
 interface FruitItem {
   readonly id: string;
@@ -66,7 +78,7 @@ const FRUITS: readonly FruitItem[] = [
 })
 class ComboboxHost {
   readonly query = signal('');
-  readonly value = signal<string | null>(null);
+  readonly value = signal<readonly string[]>([]);
   readonly open = signal(false);
   readonly autocomplete = signal<'none' | 'list' | 'inline' | 'both'>('list');
   readonly autoHighlight = signal(true);
@@ -135,7 +147,7 @@ describe('ForCombobox', () => {
 
     it('options carry role=option + aria-selected + data-state', async () => {
       const r = renderHost(ComboboxHost);
-      r.instance.value.set('banana');
+      r.instance.value.set(['banana']);
       r.instance.open.set(true);
       await flush(r.fixture);
 
@@ -298,7 +310,7 @@ describe('ForCombobox', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       await flush(r.fixture);
 
-      expect(r.instance.value()).toBe('apricot');
+      expect(r.instance.value()).toEqual(['apricot']);
       expect(r.instance.query()).toBe('Apricot');
       expect(r.instance.open()).toBe(false);
     });
@@ -373,7 +385,7 @@ describe('ForCombobox', () => {
       getOption('banana').click();
       await flush(r.fixture);
 
-      expect(r.instance.value()).toBe('banana');
+      expect(r.instance.value()).toEqual(['banana']);
       expect(r.instance.query()).toBe('Banana');
       expect(r.instance.open()).toBe(false);
     });
@@ -386,7 +398,7 @@ describe('ForCombobox', () => {
       getOption('cherry').click();
       await flush(r.fixture);
 
-      expect(r.instance.value()).toBeNull();
+      expect(r.instance.value()).toEqual([]);
       expect(r.instance.open()).toBe(true);
     });
 
@@ -411,7 +423,7 @@ describe('ForCombobox', () => {
       getOption('banana').click();
       await flush(r.fixture);
 
-      expect(r.instance.value()).toBe('banana');
+      expect(r.instance.value()).toEqual(['banana']);
       // commitOnSelect=false: query is unchanged by activation.
       expect(r.instance.query()).toBe('an');
     });
@@ -448,7 +460,7 @@ describe('ForCombobox', () => {
 
     it('clearOnQueryChange clears value when query changes', async () => {
       const r = renderHost(ComboboxHost);
-      r.instance.value.set('banana');
+      r.instance.value.set(['banana']);
       r.instance.clearOnQueryChange.set(true);
       await flush(r.fixture);
 
@@ -456,19 +468,19 @@ describe('ForCombobox', () => {
       input.focus();
       typeInto(input, 'a');
       await flush(r.fixture);
-      expect(r.instance.value()).toBeNull();
+      expect(r.instance.value()).toEqual([]);
     });
 
     it('value survives query edits when clearOnQueryChange is off (default)', async () => {
       const r = renderHost(ComboboxHost);
-      r.instance.value.set('banana');
+      r.instance.value.set(['banana']);
       await flush(r.fixture);
 
       const input = getInput();
       input.focus();
       typeInto(input, 'a');
       await flush(r.fixture);
-      expect(r.instance.value()).toBe('banana');
+      expect(r.instance.value()).toEqual(['banana']);
     });
   });
 
@@ -529,7 +541,7 @@ describe('ForCombobox', () => {
   });
 
   describe('hidden input (form submit)', () => {
-    it('mirrors value into a single hidden input', async () => {
+    it('mirrors single-mode value into one hidden input', async () => {
       @Component({
         imports: [ForCombobox, ForComboboxInput],
         template: `
@@ -539,7 +551,7 @@ describe('ForCombobox', () => {
         `,
       })
       class Host {
-        readonly value = signal<string | null>('apple');
+        readonly value = signal<readonly string[]>(['apple']);
       }
 
       const r = renderHost(Host);
@@ -551,7 +563,7 @@ describe('ForCombobox', () => {
       expect(inputs[0]!.value).toBe('apple');
     });
 
-    it('produces no hidden input when value is null', async () => {
+    it('produces no hidden input when value is empty', async () => {
       @Component({
         imports: [ForCombobox, ForComboboxInput],
         template: `
@@ -561,13 +573,34 @@ describe('ForCombobox', () => {
         `,
       })
       class Host {
-        readonly value = signal<string | null>(null);
+        readonly value = signal<readonly string[]>([]);
       }
 
       const r = renderHost(Host);
       await flush(r.fixture);
 
       expect(r.el.querySelectorAll('input[type=hidden]')).toHaveLength(0);
+    });
+
+    it('mirrors multi-mode value into N hidden inputs', async () => {
+      @Component({
+        imports: [ForCombobox, ForComboboxInput],
+        template: `
+          <div forCombobox multiple name="tags" [(value)]="value">
+            <input forComboboxInput />
+          </div>
+        `,
+      })
+      class Host {
+        readonly value = signal<readonly string[]>(['a', 'b', 'c']);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
+      expect(inputs.map((i) => i.value)).toEqual(['a', 'b', 'c']);
+      expect(inputs.every((i) => i.name === 'tags')).toBe(true);
     });
   });
 
@@ -623,7 +656,7 @@ describe('ForCombobox', () => {
         `,
       })
       class Host {
-        readonly value = signal<string | null>(null);
+        readonly value = signal<readonly string[]>([]);
         readonly query = signal('');
         readonly open = signal(false);
       }
@@ -634,14 +667,14 @@ describe('ForCombobox', () => {
       const clear = r.query<HTMLButtonElement>('[data-test-id="clear"]')!;
       expect(clear.hasAttribute('hidden')).toBe(true);
 
-      r.instance.value.set('apple');
+      r.instance.value.set(['apple']);
       r.instance.query.set('Apple');
       await flush(r.fixture);
       expect(clear.hasAttribute('hidden')).toBe(false);
 
       clear.click();
       await flush(r.fixture);
-      expect(r.instance.value()).toBeNull();
+      expect(r.instance.value()).toEqual([]);
       expect(r.instance.query()).toBe('');
     });
   });
@@ -741,10 +774,10 @@ describe('ForCombobox', () => {
       })
       class Host {
         readonly query = signal('');
-        readonly value = signal<string | null>(null);
+        readonly value = signal<readonly string[]>([]);
         readonly open = signal(false);
         onQuery(_: string): void { queryEmits++; }
-        onValue(_: string | null): void { valueEmits++; }
+        onValue(_: readonly string[]): void { valueEmits++; }
         onOpen(_: boolean): void { openEmits++; }
       }
 
@@ -769,6 +802,306 @@ describe('ForCombobox', () => {
     });
   });
 
+  describe('multi mode', () => {
+    /** Multi-mode host that renders chips next to the input. */
+    @Component({
+      imports: MULTI_IMPORTS,
+      template: `
+        <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
+          <div forComboboxChips>
+            @for (chip of selectedFromCtx(); track chip.value) {
+              <span
+                forComboboxChip
+                [value]="chip.value"
+                [attr.data-test-chip]="chip.value"
+              >
+                {{ chip.label }}
+                <button forComboboxChipRemove [attr.data-test-remove]="chip.value">×</button>
+              </span>
+            }
+            <input forComboboxInput />
+          </div>
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of FRUITS; track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                  [disabled]="!!it.disabled"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class MultiHost {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(false);
+      readonly FRUITS = FRUITS;
+
+      // Mirrors the root's `selected()` so the template can iterate without
+      // poking into ctx via a directive ref. Re-derives labels from FRUITS
+      // so the chip's resolved label doesn't depend on the option cache
+      // having warmed up — the cache test is covered separately.
+      readonly selectedFromCtx = computed(() =>
+        this.value().map((v) => ({
+          value: v,
+          label: FRUITS.find((it) => it.id === v)?.label ?? v,
+        })),
+      );
+    }
+
+    function getChip(value: string): HTMLElement {
+      return document.querySelector<HTMLElement>(`[data-test-chip="${value}"]`)!;
+    }
+
+    function getRemove(value: string): HTMLButtonElement {
+      return document.querySelector<HTMLButtonElement>(`[data-test-remove="${value}"]`)!;
+    }
+
+    it('click toggles options in/out and the listbox stays open', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('apple').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.open()).toBe(true);
+
+      getOption('banana').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual(['apple', 'banana']);
+      expect(r.instance.open()).toBe(true);
+
+      // Clicking already-selected toggles out.
+      getOption('apple').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual(['banana']);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('commitOnSelect=true clears query on each activation', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      typeInto(input, 'a');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('a');
+
+      getOption('apple').click();
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('');
+      // Input DOM value also follows.
+      expect(input.value).toBe('');
+    });
+
+    it('listbox carries aria-multiselectable=true', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      expect(content.getAttribute('aria-multiselectable')).toBe('true');
+    });
+
+    it('every selected option carries aria-selected=true (vs. activedescendant in single)', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set(['apple', 'banana']);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      // Even though apple is the activedescendant (auto-highlighted first),
+      // banana ALSO has aria-selected=true because it's in value.
+      expect(getOption('apple').getAttribute('aria-selected')).toBe('true');
+      expect(getOption('banana').getAttribute('aria-selected')).toBe('true');
+      expect(getOption('apricot').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('chips render a node per selected value', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set(['apple', 'banana']);
+      await flush(r.fixture);
+
+      expect(getChip('apple')).toBeTruthy();
+      expect(getChip('banana')).toBeTruthy();
+      expect(document.querySelector('[data-test-chip="cherry"]')).toBeNull();
+    });
+
+    it('clicking ChipRemove removes that value and focuses the input', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set(['apple', 'banana']);
+      await flush(r.fixture);
+
+      getRemove('apple').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['banana']);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('ChipRemove generates aria-label="Remove <label>" derived from the option cache', async () => {
+      const r = renderHost(MultiHost);
+      // Pre-warm option cache by opening the listbox once.
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      r.instance.value.set(['apple']);
+      await flush(r.fixture);
+
+      const remove = getRemove('apple');
+      expect(remove.getAttribute('aria-label')).toBe('Remove Apple');
+    });
+
+    describe('Backspace heuristic on empty input', () => {
+      it('Backspace on empty input focuses the last chip', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const input = getInput();
+        input.focus();
+        input.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(getChip('banana'));
+      });
+
+      it('Backspace on the focused chip removes it and falls back to previous chip', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const input = getInput();
+        input.focus();
+        // First Backspace: focus moves to last chip.
+        input.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        const banana = document.activeElement as HTMLElement;
+        expect(banana.getAttribute('data-test-chip')).toBe('banana');
+
+        // Second Backspace on the chip: removes + focuses previous chip (apple).
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['apple']);
+        expect(document.activeElement).toBe(getChip('apple'));
+      });
+
+      it('Backspace falls through to native delete-char while input has text', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple']);
+        await flush(r.fixture);
+
+        const input = getInput();
+        input.focus();
+        // Simulate user typed text in the input.
+        typeInto(input, 'b');
+        await flush(r.fixture);
+
+        // Backspace event with non-empty input doesn't get preventDefault'd,
+        // so the chip doesn't take focus.
+        const event = new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        await flush(r.fixture);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(input);
+      });
+    });
+
+    describe('chip keyboard navigation', () => {
+      it('ArrowLeft / ArrowRight move focus between chips', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana', 'date']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getChip('apple'));
+
+        getChip('apple').dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getChip('banana'));
+      });
+
+      it('ArrowRight on the last chip hops to the input', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getInput());
+      });
+
+      it('Escape on chip returns focus to the input', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple']);
+        await flush(r.fixture);
+
+        const apple = getChip('apple');
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(getInput());
+      });
+
+      it('Delete on chip removes it', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['apple']);
+      });
+    });
+
+    it('chips wrapper carries role=group', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set(['apple']);
+      await flush(r.fixture);
+
+      const chipsEl = r.query<HTMLElement>('[forComboboxChips]')!;
+      expect(chipsEl.getAttribute('role')).toBe('group');
+      expect(chipsEl.getAttribute('aria-label')).toBe('Selected items');
+    });
+  });
+
   describe('zoneless', () => {
     it('open / value / aria stay reactive without zone.js', async () => {
       const r = renderHost(ComboboxHost);
@@ -778,7 +1111,7 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       expect(input.getAttribute('aria-expanded')).toBe('true');
 
-      r.instance.value.set('apple');
+      r.instance.value.set(['apple']);
       await flush(r.fixture);
       const apple = getOption('apple');
       expect(apple.getAttribute('aria-selected')).toBe('true');
