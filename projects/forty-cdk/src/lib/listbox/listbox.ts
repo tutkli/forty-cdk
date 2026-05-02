@@ -58,7 +58,13 @@ import {
 export class ForListbox implements FormValueControl<string[]>, ForListboxContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Two-way bindable. Selected option values. Single-mode keeps 0 or 1 element. */
+  /**
+   * Two-way bindable. Selected option values. Single-mode keeps 0 or 1
+   * element. The `model()` change emitter (`(valueChange)`) fires only on
+   * internal selection changes (option activation or `selectionFollowsFocus`
+   * nav), never on consumer writes via `[(value)]` — observe transitions
+   * without binding back.
+   */
   readonly value = model<string[]>([]);
 
   readonly multiple = input(false, { transform: booleanAttribute });

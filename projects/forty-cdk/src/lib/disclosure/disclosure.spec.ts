@@ -179,6 +179,57 @@ describe('ForDisclosure', () => {
     });
   });
 
+  describe('(openChange) output', () => {
+    it('emits the new state when the trigger toggles open/closed', () => {
+      @Component({
+        imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+        template: `
+          <div forDisclosure (openChange)="emitted.push($event)">
+            <button type="button" forDisclosureTrigger>X</button>
+            <section forDisclosureContent></section>
+          </div>
+        `,
+      })
+      class Host {
+        readonly emitted: boolean[] = [];
+      }
+
+      const { fixture, query, flush } = renderHost(Host);
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      flush();
+      trigger.click();
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([true, false]);
+    });
+
+    it('does not emit when the consumer drives `open` externally via [(open)]', () => {
+      @Component({
+        imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+        template: `
+          <div forDisclosure [(open)]="isOpen" (openChange)="emitted.push($event)">
+            <button type="button" forDisclosureTrigger></button>
+            <section forDisclosureContent></section>
+          </div>
+        `,
+      })
+      class Host {
+        readonly isOpen = signal(false);
+        readonly emitted: boolean[] = [];
+      }
+
+      const { fixture, flush } = renderHost(Host);
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+      fixture.componentInstance.isOpen.set(false);
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects state changes after detectChanges without Zone.js', () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);

@@ -55,7 +55,9 @@ export class ForAccordion implements ForAccordionContext {
 
   /**
    * Two-way bindable. List of currently expanded item values. In single
-   * mode the array has 0 or 1 element.
+   * mode the array has 0 or 1 element. The `model()` change emitter
+   * (`(valueChange)`) fires only on internal toggles, never on consumer
+   * writes via `[(value)]` — observe transitions without binding back.
    */
   readonly value = model<readonly string[]>([]);
 

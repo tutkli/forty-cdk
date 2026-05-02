@@ -44,7 +44,12 @@ import {
   providers: [{ provide: FOR_TABS_CONTEXT, useExisting: ForTabs }],
 })
 export class ForTabs implements ForTabsContext {
-  /** Two-way bindable. The selected tab's value. */
+  /**
+   * Two-way bindable. The selected tab's value. The `model()` change emitter
+   * (`(valueChange)`) fires only on internal selection changes (trigger click
+   * or automatic-mode arrow nav), never on consumer writes via `[(value)]` —
+   * observe transitions without binding back.
+   */
   readonly value = model<string>('');
 
   readonly activationMode = input<TabsActivationMode>('automatic');

@@ -32,7 +32,13 @@ import { FOR_DISCLOSURE_CONTEXT, ForDisclosureContext } from './disclosure-conte
 export class ForDisclosure implements ForDisclosureContext {
   readonly #idGen = inject(IdGenerator);
 
-  /** Two-way bindable open state. */
+  /**
+   * Two-way bindable open state. Use `[(open)]` for both read & write, or
+   * `(openChange)` alone to observe transitions when the directive itself
+   * toggles state (trigger click). The `model()` change emitter does NOT fire
+   * for consumer-driven writes via `[(open)]`, so subscribing to
+   * `(openChange)` is safe and only sees internal transitions.
+   */
   readonly open = model<boolean>(false);
 
   /** When true, click on the trigger is ignored and `data-disabled` is reflected. */
@@ -45,6 +51,6 @@ export class ForDisclosure implements ForDisclosureContext {
     if (this.disabled()) {
       return;
     }
-    this.open.update((value) => !value);
+    this.open.set(!this.open());
   }
 }

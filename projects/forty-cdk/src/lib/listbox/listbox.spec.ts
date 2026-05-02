@@ -335,6 +335,56 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('(valueChange) output', () => {
+    it('emits the new selection when an option is clicked', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox multiple (valueChange)="emitted.push($event)">
+            <li>
+              <button type="button" forListboxOption value="a" data-test-id="a">A</button>
+            </li>
+            <li>
+              <button type="button" forListboxOption value="b" data-test-id="b">B</button>
+            </li>
+          </ul>
+        `,
+      })
+      class Host {
+        readonly emitted: (readonly string[])[] = [];
+      }
+
+      const { fixture, el, flush } = renderHost(Host);
+      optOf(el, 'a').click();
+      flush();
+      optOf(el, 'b').click();
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([['a'], ['a', 'b']]);
+    });
+
+    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked" (valueChange)="emitted.push($event)">
+            <li><button type="button" forListboxOption value="a">A</button></li>
+          </ul>
+        `,
+      })
+      class Host {
+        readonly picked = signal<string[]>([]);
+        readonly emitted: (readonly string[])[] = [];
+      }
+
+      const { fixture, flush } = renderHost(Host);
+      fixture.componentInstance.picked.set(['a']);
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);

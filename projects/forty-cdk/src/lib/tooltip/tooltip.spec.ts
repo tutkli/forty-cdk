@@ -407,6 +407,58 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('(openChange) output', () => {
+    it('emits when hover/focus delays toggle open', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [openDelay]="0" [closeDelay]="0" (openChange)="emitted.push($event)">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flushAsync(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flushAsync(r.fixture);
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      await flushAsync(r.fixture);
+
+      expect(r.instance.emitted).toEqual([true, false]);
+    });
+
+    it('does not emit when the consumer drives `open` externally via [(open)]', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="isOpen" (openChange)="emitted.push($event)">
+            <button type="button" forTooltipTrigger></button>
+            <div forTooltipContent></div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly isOpen = signal(false);
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flushAsync(r.fixture);
+      r.instance.isOpen.set(true);
+      await flushAsync(r.fixture);
+      r.instance.isOpen.set(false);
+      await flushAsync(r.fixture);
+
+      expect(r.instance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(TooltipHost);

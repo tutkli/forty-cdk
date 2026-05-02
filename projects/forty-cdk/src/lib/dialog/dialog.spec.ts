@@ -391,6 +391,72 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
+  describe('(openChange) output', () => {
+    it('emits false when Escape closes the dialog', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t"></div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await flush(r.fixture);
+
+      expect(r.instance.emitted).toEqual([false]);
+    });
+
+    it('emits false when [forDialogClose] is clicked', async () => {
+      @Component({
+        imports: [ForDialog, ForDialogClose],
+        template: `
+          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t">
+            <button id="cancel" forDialogClose>Cancel</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      document.querySelector<HTMLButtonElement>('button#cancel')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.emitted).toEqual([false]);
+    });
+
+    it('does not emit when the consumer drives `open` externally via [(open)]', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t"></div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(DialogHost);

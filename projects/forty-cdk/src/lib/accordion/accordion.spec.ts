@@ -306,6 +306,69 @@ describe('ForAccordion', () => {
     });
   });
 
+  describe('(valueChange) output', () => {
+    it('emits the new value when a trigger toggles via click', () => {
+      @Component({
+        imports: [...ACCORDION_IMPORTS],
+        template: `
+          <div forAccordion multiple (valueChange)="emitted.push($event)">
+            <div forAccordionItem value="a">
+              <h3>
+                <button type="button" forAccordionTrigger data-test-id="a">A</button>
+              </h3>
+              <section forAccordionContent></section>
+            </div>
+            <div forAccordionItem value="b">
+              <h3>
+                <button type="button" forAccordionTrigger data-test-id="b">B</button>
+              </h3>
+              <section forAccordionContent></section>
+            </div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly emitted: (readonly string[])[] = [];
+      }
+
+      const { fixture, el, flush } = renderHost(Host);
+      triggerOf(el, 'a').click();
+      flush();
+      triggerOf(el, 'b').click();
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([['a'], ['a', 'b']]);
+    });
+
+    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+      @Component({
+        imports: [...ACCORDION_IMPORTS],
+        template: `
+          <div forAccordion [(value)]="value" (valueChange)="emitted.push($event)">
+            <div forAccordionItem value="a">
+              <h3>
+                <button type="button" forAccordionTrigger>A</button>
+              </h3>
+              <section forAccordionContent></section>
+            </div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly value = signal<readonly string[]>([]);
+        readonly emitted: (readonly string[])[] = [];
+      }
+
+      const { fixture, flush } = renderHost(Host);
+      fixture.componentInstance.value.set(['a']);
+      flush();
+      fixture.componentInstance.value.set([]);
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects state changes after detectChanges without Zone.js', () => {
       const { el, fixture, flush } = renderHost(AccordionHost);

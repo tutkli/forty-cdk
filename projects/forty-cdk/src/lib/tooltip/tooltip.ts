@@ -39,7 +39,12 @@ import {
 export class ForTooltip implements ForTooltipContext {
   readonly #idGen = inject(IdGenerator);
 
-  /** Two-way bindable. Whether the tooltip is currently shown. */
+  /**
+   * Two-way bindable. Whether the tooltip is currently shown. The `model()`
+   * change emitter (`(openChange)`) fires only on internal transitions
+   * (hover/focus delays, Escape), never on consumer writes via `[(open)]` —
+   * observe state changes without binding back.
+   */
   readonly open = model<boolean>(false);
 
   /** Floating-ui placement (e.g. `'top'`, `'bottom-start'`). Default `'top'`. */

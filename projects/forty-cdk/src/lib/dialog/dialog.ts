@@ -50,7 +50,12 @@ import {
 export class ForDialog implements ForDialogContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Two-way bindable visibility. */
+  /**
+   * Two-way bindable visibility. The `model()` change emitter (`(openChange)`)
+   * fires only on internal transitions (Escape, backdrop click,
+   * `[forDialogClose]` button, programmatic `requestClose`), never on
+   * consumer writes via `[(open)]` — observe state changes without binding back.
+   */
   readonly open = model<boolean>(false);
 
   /**

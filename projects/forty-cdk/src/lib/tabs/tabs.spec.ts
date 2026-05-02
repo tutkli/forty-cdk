@@ -340,6 +340,59 @@ describe('ForTabs', () => {
     });
   });
 
+  describe('(valueChange) output', () => {
+    it('emits the new value when a trigger is clicked', () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs (valueChange)="emitted.push($event)">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+              <button type="button" forTabsTrigger value="b" data-test-id="b">B</button>
+            </div>
+            <section forTabsContent value="a"></section>
+            <section forTabsContent value="b"></section>
+          </div>
+        `,
+      })
+      class Host {
+        readonly emitted: string[] = [];
+      }
+
+      const { fixture, el, flush } = renderHost(Host);
+      triggerOf(el, 'b').click();
+      flush();
+      triggerOf(el, 'a').click();
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual(['b', 'a']);
+    });
+
+    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs [(value)]="active" (valueChange)="emitted.push($event)">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a">A</button>
+            </div>
+            <section forTabsContent value="a"></section>
+          </div>
+        `,
+      })
+      class Host {
+        readonly active = signal('');
+        readonly emitted: string[] = [];
+      }
+
+      const { fixture, flush } = renderHost(Host);
+      fixture.componentInstance.active.set('a');
+      flush();
+
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(TabsHost);
