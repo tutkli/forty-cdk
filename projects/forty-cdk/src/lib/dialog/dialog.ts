@@ -1,21 +1,20 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
-  model,
   output,
   signal,
 } from '@angular/core';
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock';
 import { injectDismissableLayer } from '../_internal/dismissable-layer';
-import { injectFocusTrap } from '../_internal/focus-trap';
+import { FocusTrap } from '../_internal/focus-trap';
 import { injectPortal } from '../_internal/portal';
-import { injectPresence } from '../_internal/presence';
 import {
   FOR_DIALOG_CONTEXT,
   ForDialogCloseReason,
@@ -27,13 +26,26 @@ import {
  *
  * Apply `[forDialog]` on the dialog box itself — not on a wrapper. The
  * directive moves the host to `document.body` (portal), traps focus, locks
- * body scroll, and listens for Escape while open. `aria-labelledby` and
- * `aria-describedby` are wired automatically via `[forDialogTitle]` /
- * `[forDialogDescription]` registration; pass `ariaLabel` instead if you
- * don't render visible title text.
+ * body scroll, and listens for Escape while mounted. `aria-labelledby`
+ * and `aria-describedby` wire automatically via `[forDialogTitle]` /
+ * `[forDialogDescription]`; pass `ariaLabel` instead if you don't render
+ * a visible title.
+ *
+ * Mount/unmount is the consumer's responsibility — the directive does
+ * not manage `[hidden]`. Wrap with `@if (open())` and let
+ * `animate.enter` / `animate.leave` handle transitions:
+ *
+ * ```html
+ * @if (dialogOpen()) {
+ *   <div forDialog (close)="dialogOpen.set(false)" animate.leave="fade-out">
+ *     <h2 forDialogTitle>Confirm</h2>
+ *     <button forDialogClose>Cancel</button>
+ *   </div>
+ * }
+ * ```
  *
  * For programmatic use (open arbitrary components imperatively), see
- * `ForDialogs.open()` — same behaviors under the hood.
+ * `ForDialogs.open()`.
  */
 @Directive({
   selector: '[forDialog]',
@@ -44,8 +56,6 @@ import {
     '[attr.aria-label]': 'ariaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
-    '[attr.data-state]': 'open() ? "open" : "closed"',
-    '[attr.hidden]': 'present() ? null : ""',
     tabindex: '-1',
   },
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
@@ -54,17 +64,9 @@ export class ForDialog implements ForDialogContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
-   * Two-way bindable visibility. The `model()` change emitter (`(openChange)`)
-   * fires only on internal transitions (Escape, backdrop click,
-   * pointer-down / focus outside, `[forDialogClose]` button, programmatic
-   * `requestClose`), never on consumer writes via `[(open)]` — observe
-   * state changes without binding back.
-   */
-  readonly open = model<boolean>(false);
-
-  /**
-   * When true (default), Escape and backdrop click close the dialog.
-   * Disable for critical confirm flows that must be answered explicitly.
+   * When true (default), Escape, backdrop click, pointer-down outside, and
+   * focus outside emit `(close)`. Disable for critical confirm flows that
+   * must be answered explicitly via `[forDialogClose]`.
    */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
@@ -81,7 +83,7 @@ export class ForDialog implements ForDialogContext {
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**
-   * Where to send focus on open. `'first'` (default) finds the first
+   * Where to send focus on mount. `'first'` (default) finds the first
    * focusable descendant; `'container'` focuses the dialog box itself
    * (useful when there's nothing focusable inside).
    */
@@ -91,39 +93,35 @@ export class ForDialog implements ForDialogContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
-   * When true, the dialog stays mounted in the DOM regardless of `open`
-   * state — `[hidden]` is never applied. Useful when the consumer drives
-   * mount/unmount externally (e.g. via `@if`) or wants to keep the DOM
-   * stable for animation orchestration. `data-state` still reflects the
-   * logical open/closed state.
+   * Emitted when the dialog wants to close. Consumers wire this to flip
+   * the signal that gates the surrounding `@if`. Reasons: `'escape'`,
+   * `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`,
+   * `'closeButton'`, `'programmatic'`.
    */
-  readonly forceMount = input(false, { transform: booleanAttribute });
+  readonly close = output<ForDialogCloseReason>();
 
   /**
    * Fires when the user presses Escape while this dialog is the topmost
-   * dismissable layer. Call `event.preventDefault()` to keep the dialog
-   * open (e.g. to ask for confirmation first). Otherwise the dialog
-   * closes — provided `dismissible` is true.
+   * dismissable layer. Call `event.preventDefault()` to suppress the
+   * subsequent `(close)` emission (e.g. to ask for confirmation first).
    */
   readonly escapeKeyDown = output<KeyboardEvent>();
 
   /**
    * Fires when a pointer goes down outside the dialog. `preventDefault()`
-   * cancels the auto-close. Useful to keep the dialog open when the user
-   * clicks specific decorative regions you'd rather treat as inert.
+   * suppresses the auto `(close)`.
    */
   readonly pointerDownOutside = output<PointerEvent>();
 
   /**
    * Fires when focus moves outside the dialog (e.g. user tabs out of a
-   * non-modal dialog). `preventDefault()` cancels the auto-close.
+   * non-modal dialog). `preventDefault()` suppresses the auto `(close)`.
    */
   readonly focusOutside = output<FocusEvent>();
 
   /**
    * Composite event: fires alongside `pointerDownOutside` and
-   * `focusOutside`. `preventDefault()` cancels the auto-close like the
-   * specific events.
+   * `focusOutside`. `preventDefault()` suppresses the auto `(close)`.
    */
   readonly interactOutside = output<PointerEvent | FocusEvent>();
 
@@ -139,31 +137,30 @@ export class ForDialog implements ForDialogContext {
     return ids.length === 0 ? null : ids.join(' ');
   });
 
-  readonly #focusTrap = injectFocusTrap();
+  // Manage the FocusTrap directly (not via injectFocusTrap) so the
+  // directive's own DestroyRef callback owns the deactivate call —
+  // injectFocusTrap's safety-net teardown forces returnFocus:false, which
+  // would race ours and prevent the trigger from getting focus back.
+  readonly #focusTrap = new FocusTrap(this.#host.nativeElement);
   readonly #dismissable = injectDismissableLayer();
-  readonly #presence = injectPresence({ open: this.open, forceMount: this.forceMount });
 
-  /**
-   * `true` while the dialog should remain in the DOM. Tracks `open()` plus
-   * any closing animation still playing on the host, plus `forceMount`.
-   * Bound to `[attr.hidden]` so closing animations driven from
-   * `data-state="closed"` complete before unmount.
-   */
-  protected readonly present = this.#presence.present;
+  // Captured once on mount so cleanup can mirror the same mode regardless
+  // of whether the consumer toggles `modal()` on a doomed instance.
+  #activatedAsModal = false;
 
   constructor() {
     injectPortal();
 
-    effect((onCleanup) => {
-      const isOpen = this.open();
-      if (!isOpen) {
-        return;
-      }
+    // Run setup *after* Angular has applied input bindings (reading
+    // `this.modal()` in the constructor would always see the default).
+    afterNextRender(() => {
       const isModal = this.modal();
+      this.#activatedAsModal = isModal;
 
-      // Push the dismissable layer onto the stack *before* moving focus so
-      // that focusin events triggered by our own focus management land on
-      // this layer, not on whatever lower layer was previously topmost.
+      // Push the dismissable layer onto the stack *before* moving focus
+      // so that focusin events triggered by our own focus management
+      // land on this layer, not on whatever lower layer was previously
+      // topmost.
       this.#dismissable.activate({
         onEscapeKeyDown: (event) => {
           this.escapeKeyDown.emit(event);
@@ -202,14 +199,14 @@ export class ForDialog implements ForDialogContext {
           (first ?? this.#host.nativeElement).focus();
         }
       }
+    });
 
-      onCleanup(() => {
-        this.#dismissable.deactivate();
-        if (isModal) {
-          this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
-          unlockBodyScroll();
-        }
-      });
+    inject(DestroyRef).onDestroy(() => {
+      this.#dismissable.deactivate();
+      if (this.#activatedAsModal) {
+        this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
+        unlockBodyScroll();
+      }
     });
   }
 
@@ -230,6 +227,6 @@ export class ForDialog implements ForDialogContext {
     if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
     }
-    this.open.set(false);
+    this.close.emit(reason);
   }
 }

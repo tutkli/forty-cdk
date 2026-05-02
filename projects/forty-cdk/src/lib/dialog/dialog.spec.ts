@@ -10,6 +10,7 @@ import { renderHost } from '../../test-utils/render';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
+import type { ForDialogCloseReason } from './dialog-context';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogTitle } from './dialog-title';
 
@@ -23,31 +24,36 @@ import { ForDialogTitle } from './dialog-title';
   ],
   template: `
     <button #trigger type="button" (click)="open.set(true)">Open</button>
-    <div
-      forDialog
-      [(open)]="open"
-      [dismissible]="dismissible()"
-      [alert]="alert()"
-    >
-      <div forDialogBackdrop></div>
-      <h2 forDialogTitle>Confirm action</h2>
-      <p forDialogDescription>This cannot be undone.</p>
-      <button id="ok" type="button">OK</button>
-      <button id="cancel" forDialogClose>Cancel</button>
-    </div>
+    @if (open()) {
+      <div
+        forDialog
+        (close)="open.set(false); reasons.push($event)"
+        [dismissible]="dismissible()"
+        [alert]="alert()"
+      >
+        <div forDialogBackdrop></div>
+        <h2 forDialogTitle>Confirm action</h2>
+        <p forDialogDescription>This cannot be undone.</p>
+        <button id="ok" type="button">OK</button>
+        <button id="cancel" forDialogClose>Cancel</button>
+      </div>
+    }
   `,
 })
 class DialogHost {
   readonly open = signal(false);
   readonly dismissible = signal(true);
   readonly alert = signal(false);
+  readonly reasons: ForDialogCloseReason[] = [];
 }
 
 @Component({
   imports: [ForDialog],
   template: `
     <button (click)="open.set(true)">Open</button>
-    <div forDialog [(open)]="open" [ariaLabel]="'Quick prompt'"></div>
+    @if (open()) {
+      <div forDialog (close)="open.set(false)" [ariaLabel]="'Quick prompt'"></div>
+    }
   `,
 })
 class AriaLabelHost {
@@ -57,12 +63,16 @@ class AriaLabelHost {
 @Component({
   imports: [ForDialog, ForDialogClose],
   template: `
-    <div forDialog [(open)]="a">
-      <button forDialogClose>close A</button>
-    </div>
-    <div forDialog [(open)]="b">
-      <button forDialogClose>close B</button>
-    </div>
+    @if (a()) {
+      <div forDialog (close)="a.set(false)">
+        <button forDialogClose>close A</button>
+      </div>
+    }
+    @if (b()) {
+      <div forDialog (close)="b.set(false)">
+        <button forDialogClose>close B</button>
+      </div>
+    }
   `,
 })
 class StackedDialogsHost {
@@ -121,17 +131,16 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('initial state', () => {
-    it('renders hidden when open is false', async () => {
+    it('does not render the dialog while the consumer signal is false', async () => {
       const r = renderHost(DialogHost);
       await flush(r.fixture);
 
-      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
-      expect(dialog.hasAttribute('hidden')).toBe(true);
-      expect(dialog.getAttribute('data-state')).toBe('closed');
+      expect(document.querySelector('[forDialog]')).toBeNull();
     });
 
-    it('portals the dialog to document.body', async () => {
+    it('portals the dialog to document.body once opened', async () => {
       const r = renderHost(DialogHost);
+      r.instance.open.set(true);
       await flush(r.fixture);
 
       const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
@@ -139,18 +148,16 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('open/close via [(open)]', () => {
-    it('removes hidden and sets data-state=open on open', async () => {
+  describe('mount/unmount via @if', () => {
+    it('mounts when the consumer signal flips true', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
-      expect(dialog.hasAttribute('hidden')).toBe(false);
-      expect(dialog.getAttribute('data-state')).toBe('open');
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
     });
 
-    it('moves focus into the dialog on open (first focusable)', async () => {
+    it('moves focus into the dialog on mount (first focusable)', async () => {
       const r = renderHost(DialogHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.focus();
@@ -160,7 +167,7 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement?.id).toBe('ok');
     });
 
-    it('returns focus to the previous element on close', async () => {
+    it('returns focus to the previous element on unmount', async () => {
       const r = renderHost(DialogHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.focus();
@@ -175,7 +182,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('Escape key', () => {
-    it('closes a dismissible dialog', async () => {
+    it('emits (close) with reason "escape" while dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -184,9 +191,10 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
+      expect(r.instance.reasons).toEqual(['escape']);
     });
 
-    it('is ignored when dismissible=false', async () => {
+    it('does not emit (close) when dismissible=false', async () => {
       const r = renderHost(DialogHost);
       r.instance.dismissible.set(false);
       r.instance.open.set(true);
@@ -196,11 +204,12 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
+      expect(r.instance.reasons).toEqual([]);
     });
   });
 
   describe('ForDialogClose', () => {
-    it('closes the dialog when clicked', async () => {
+    it('emits (close) with reason "closeButton" when clicked', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -210,9 +219,10 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
+      expect(r.instance.reasons).toEqual(['closeButton']);
     });
 
-    it('closes regardless of dismissible (close button is always honored)', async () => {
+    it('always emits (close) regardless of dismissible (close button is non-dismiss)', async () => {
       const r = renderHost(DialogHost);
       r.instance.dismissible.set(false);
       r.instance.open.set(true);
@@ -227,22 +237,22 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('ForDialogBackdrop', () => {
-    it('closes the dialog on direct click when dismissible', async () => {
+    it('emits (close) with reason "backdrop" on direct click when dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
-      // Simulate a direct click on the backdrop element.
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
+      expect(r.instance.reasons).toEqual(['backdrop']);
     });
 
-    it('does NOT close on click bubbled from a child element', async () => {
+    it('does NOT emit on click bubbled from a child element', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -259,7 +269,7 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.open()).toBe(true);
     });
 
-    it('is ignored when dismissible=false', async () => {
+    it('does not emit (close) when dismissible=false', async () => {
       const r = renderHost(DialogHost);
       r.instance.dismissible.set(false);
       r.instance.open.set(true);
@@ -276,6 +286,7 @@ describe('ForDialog (declarative)', () => {
 
     it('is portaled to body alongside the dialog', async () => {
       const r = renderHost(DialogHost);
+      r.instance.open.set(true);
       await flush(r.fixture);
 
       const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
@@ -314,7 +325,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('body scroll lock', () => {
-    it('locks body overflow while open and restores on close', async () => {
+    it('locks body overflow while mounted and restores on unmount', async () => {
       document.body.style.overflow = 'auto';
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
@@ -330,7 +341,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('stacked dialogs', () => {
-    it('keeps body locked until the last dialog closes', async () => {
+    it('keeps body locked until the last dialog unmounts', async () => {
       const r = renderHost(StackedDialogsHost);
       r.instance.a.set(true);
       r.instance.b.set(true);
@@ -415,9 +426,11 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           <button #trigger type="button" (click)="open.set(true)">Open</button>
-          <div forDialog [(open)]="open" [returnFocus]="false" ariaLabel="t">
-            <button id="inside" type="button">In</button>
-          </div>
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" [returnFocus]="false" ariaLabel="t">
+              <button id="inside" type="button">In</button>
+            </div>
+          }
         `,
       })
       class Host {
@@ -441,9 +454,11 @@ describe('ForDialog (declarative)', () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div forDialog [(open)]="open" initialFocus="container" ariaLabel="t">
-            <button id="inside" type="button">In</button>
-          </div>
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" initialFocus="container" ariaLabel="t">
+              <button id="inside" type="button">In</button>
+            </div>
+          }
         `,
       })
       class Host {
@@ -463,9 +478,11 @@ describe('ForDialog (declarative)', () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div forDialog [(open)]="open" [modal]="false" ariaLabel="t">
-            <button id="inside" type="button">In</button>
-          </div>
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" [modal]="false" ariaLabel="t">
+              <button id="inside" type="button">In</button>
+            </div>
+          }
         `,
       })
       class Host {
@@ -513,11 +530,13 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('dismiss outputs (escapeKeyDown / pointerDownOutside / focusOutside / interactOutside)', () => {
-    it('emits (escapeKeyDown) with the native event before closing', async () => {
+    it('emits (escapeKeyDown) with the native event before emitting (close)', async () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div forDialog [(open)]="open" (escapeKeyDown)="captured.push($event)" ariaLabel="t"></div>
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" (escapeKeyDown)="captured.push($event)" ariaLabel="t"></div>
+          }
         `,
       })
       class Host {
@@ -539,7 +558,9 @@ describe('ForDialog (declarative)', () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div forDialog [(open)]="open" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t"></div>
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t"></div>
+          }
         `,
       })
       class Host {
@@ -554,17 +575,19 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.open()).toBe(true);
     });
 
-    it('emits (pointerDownOutside) and (interactOutside) and closes when not prevented', async () => {
+    it('emits (pointerDownOutside) and (interactOutside), then (close), when not prevented', async () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div
-            forDialog
-            [(open)]="open"
-            (pointerDownOutside)="pointerCount = pointerCount + 1"
-            (interactOutside)="interactCount = interactCount + 1"
-            ariaLabel="t"
-          ></div>
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (pointerDownOutside)="pointerCount = pointerCount + 1"
+              (interactOutside)="interactCount = interactCount + 1"
+              ariaLabel="t"
+            ></div>
+          }
         `,
       })
       class Host {
@@ -594,12 +617,14 @@ describe('ForDialog (declarative)', () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div
-            forDialog
-            [(open)]="open"
-            (pointerDownOutside)="$event.preventDefault()"
-            ariaLabel="t"
-          ></div>
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (pointerDownOutside)="$event.preventDefault()"
+              ariaLabel="t"
+            ></div>
+          }
         `,
       })
       class Host {
@@ -625,13 +650,15 @@ describe('ForDialog (declarative)', () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div
-            forDialog
-            [(open)]="open"
-            (focusOutside)="focusCount = focusCount + 1"
-            (interactOutside)="interactCount = interactCount + 1"
-            ariaLabel="t"
-          ></div>
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (focusOutside)="focusCount = focusCount + 1"
+              (interactOutside)="interactCount = interactCount + 1"
+              ariaLabel="t"
+            ></div>
+          }
         `,
       })
       class Host {
@@ -656,17 +683,19 @@ describe('ForDialog (declarative)', () => {
       outside.remove();
     });
 
-    it('does not fire dismiss outputs when dismissible=false (events still emit, close blocked)', async () => {
+    it('still emits the event but suppresses (close) when dismissible=false', async () => {
       @Component({
         imports: [ForDialog],
         template: `
-          <div
-            forDialog
-            [(open)]="open"
-            [dismissible]="false"
-            (escapeKeyDown)="escapes = escapes + 1"
-            ariaLabel="t"
-          ></div>
+          @if (open()) {
+            <div
+              forDialog
+              [dismissible]="false"
+              (close)="open.set(false)"
+              (escapeKeyDown)="escapes = escapes + 1"
+              ariaLabel="t"
+            ></div>
+          }
         `,
       })
       class Host {
@@ -684,109 +713,19 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('(openChange) output', () => {
-    it('emits false when Escape closes the dialog', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t"></div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        readonly emitted: boolean[] = [];
-      }
-
-      const r = renderHost(Host);
+  describe('zoneless reactivity', () => {
+    it('mounts and unmounts after detectChanges without Zone.js', async () => {
+      const r = renderHost(DialogHost);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      await flush(r.fixture);
+      expect(document.querySelector('[forDialog]')).toBeNull();
 
-      expect(r.instance.emitted).toEqual([false]);
-    });
-
-    it('emits false when [forDialogClose] is clicked', async () => {
-      @Component({
-        imports: [ForDialog, ForDialogClose],
-        template: `
-          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t">
-            <button id="cancel" forDialogClose>Cancel</button>
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        readonly emitted: boolean[] = [];
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      document.querySelector<HTMLButtonElement>('button#cancel')!.click();
-      await flush(r.fixture);
-
-      expect(r.instance.emitted).toEqual([false]);
-    });
-
-    it('does not emit when the consumer drives `open` externally via [(open)]', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          <div forDialog [(open)]="open" (openChange)="emitted.push($event)" ariaLabel="t"></div>
-        `,
-      })
-      class Host {
-        readonly open = signal(false);
-        readonly emitted: boolean[] = [];
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
       r.instance.open.set(true);
       await flush(r.fixture);
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+
       r.instance.open.set(false);
       await flush(r.fixture);
-
-      expect(r.instance.emitted).toEqual([]);
-    });
-  });
-
-  describe('forceMount', () => {
-    it('keeps the dialog mounted (no [hidden]) when open=false', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          <div forDialog [(open)]="open" [forceMount]="true" ariaLabel="t"></div>
-        `,
-      })
-      class Host {
-        readonly open = signal(false);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
-      expect(dialog.hasAttribute('hidden')).toBe(false);
-      expect(dialog.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(dialog.hasAttribute('hidden')).toBe(false);
-      expect(dialog.getAttribute('data-state')).toBe('open');
-    });
-  });
-
-  describe('zoneless reactivity', () => {
-    it('reflects open writes after detectChanges without Zone.js', async () => {
-      const r = renderHost(DialogHost);
-      const dialog = () => document.querySelector<HTMLElement>('[forDialog]')!;
-      await flush(r.fixture);
-      expect(dialog().hasAttribute('hidden')).toBe(true);
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-      expect(dialog().hasAttribute('hidden')).toBe(false);
+      expect(document.querySelector('[forDialog]')).toBeNull();
     });
   });
 });

@@ -15,9 +15,12 @@ export type ForDialogCloseReason =
  * `aria-describedby` reactively. Close button and backdrop request close
  * via `requestClose` — the implementation decides whether to honor the
  * request based on `dismissible` and on programmatic semantics.
+ *
+ * The dialog's "openness" isn't part of this contract: the directive is
+ * mounted iff the dialog is open, so descendants don't need an open
+ * signal to coordinate.
  */
 export interface ForDialogContext {
-  readonly open: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly modal: Signal<boolean>;
   readonly alert: Signal<boolean>;

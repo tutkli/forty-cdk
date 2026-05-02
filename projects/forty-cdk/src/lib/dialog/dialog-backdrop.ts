@@ -5,8 +5,9 @@ import { injectDialogContext } from './dialog-context';
 
 /**
  * Optional backdrop overlay. Portaled to `document.body` so it sits
- * underneath the dialog regardless of where it's declared. When
- * `dismissible` is on, clicking the backdrop closes the dialog.
+ * underneath the dialog regardless of where it's declared. While mounted
+ * the backdrop is visible; mount/unmount it alongside the dialog with
+ * the same `@if` so `animate.enter` / `animate.leave` works on both.
  *
  * The directive applies no visual styles — set `position: fixed; inset: 0;
  * background: rgba(0,0,0,0.5)` (or whatever) yourself.
@@ -16,8 +17,6 @@ import { injectDialogContext } from './dialog-context';
   exportAs: 'forDialogBackdrop',
   host: {
     'data-for-dialog-backdrop': '',
-    '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.hidden]': 'ctx.open() ? null : ""',
     '(click)': 'onClick($event)',
   },
 })
