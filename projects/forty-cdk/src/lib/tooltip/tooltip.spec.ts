@@ -5,7 +5,7 @@ import { renderHost } from '../../test-utils/render';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
-import { ForTooltipProvider } from './tooltip-provider';
+import { provideTooltipDefaults } from './tooltip-defaults';
 import { ForTooltipTrigger } from './tooltip-trigger';
 
 @Component({
@@ -460,40 +460,37 @@ describe('ForTooltip', () => {
     });
   });
 
-  describe('ForTooltipProvider', () => {
+  describe('provideTooltipDefaults', () => {
     @Component({
-      imports: [ForTooltipProvider, ForTooltip, ForTooltipTrigger, ForTooltipContent],
+      imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+      providers: [provideTooltipDefaults({ skipDelayDuration: 1000 })],
       template: `
-        <div forTooltipProvider [skipDelayDuration]="skip()">
-          <div forTooltip [(open)]="aOpen" [openDelay]="500" [closeDelay]="0">
-            <button type="button" forTooltipTrigger>A</button>
-            <div forTooltipContent>A</div>
-          </div>
-          <div forTooltip [(open)]="bOpen" [openDelay]="500" [closeDelay]="0">
-            <button type="button" forTooltipTrigger>B</button>
-            <div forTooltipContent>B</div>
-          </div>
+        <div forTooltip [(open)]="aOpen" [openDelay]="500" [closeDelay]="0">
+          <button type="button" forTooltipTrigger>A</button>
+          <div forTooltipContent>A</div>
+        </div>
+        <div forTooltip [(open)]="bOpen" [openDelay]="500" [closeDelay]="0">
+          <button type="button" forTooltipTrigger>B</button>
+          <div forTooltipContent>B</div>
         </div>
       `,
     })
-    class ProviderHost {
+    class DefaultsHost {
       readonly aOpen = signal(false);
       readonly bOpen = signal(false);
-      readonly skip = signal(300);
     }
 
     it('opens the second tooltip instantly while a peer just closed (skip-delay window)', async () => {
-      const r = renderHost(ProviderHost);
-      r.instance.skip.set(1000);
+      const r = renderHost(DefaultsHost);
       await flushAsync(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
       const triggerA = triggers[0]!;
       const triggerB = triggers[1]!;
 
-      // Open A via its own logic (with delay 500), then close it via
-      // pointer-leave so the tooltip's internal close path runs and
-      // notifies the provider to start the skip-delay window.
+      // Open A externally, then close it via pointer-leave so the
+      // tooltip's internal close path runs and asks the coordinator to
+      // start the skip-delay window.
       r.instance.aOpen.set(true);
       await flushAsync(r.fixture);
       triggerA.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
@@ -507,7 +504,7 @@ describe('ForTooltip', () => {
     });
 
     it('does not skip the delay when no peer has recently closed', async () => {
-      const r = renderHost(ProviderHost);
+      const r = renderHost(DefaultsHost);
       await flushAsync(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
@@ -515,10 +512,37 @@ describe('ForTooltip', () => {
       triggerA.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       await flushAsync(r.fixture);
 
-      // Without a prior close, the provider's skip flag is false → the
-      // tooltip waits for its full openDelay (500ms) before opening.
+      // Without a prior close, the coordinator's skip flag is false →
+      // the tooltip waits for its full openDelay (500ms) before opening.
       expect(r.instance.aOpen()).toBe(false);
     });
+
+    it('uses delayDuration as the openDelay fallback when the input is unset', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideTooltipDefaults({ delayDuration: 0 })],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class FallbackHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(FallbackHost);
+      await flushAsync(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flushAsync(r.fixture);
+
+      // delayDuration=0 → opens synchronously without any per-tooltip override.
+      expect(r.instance.open()).toBe(true);
+    });
+
   });
 
   describe('forceMount', () => {

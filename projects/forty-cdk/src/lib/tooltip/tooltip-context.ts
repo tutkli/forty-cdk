@@ -15,8 +15,6 @@ export interface ForTooltipContext {
   readonly forceMount: Signal<boolean>;
   readonly placement: Signal<Placement>;
   readonly offset: Signal<number>;
-  readonly openDelay: Signal<number>;
-  readonly closeDelay: Signal<number>;
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly trigger: Signal<HTMLElement | null>;

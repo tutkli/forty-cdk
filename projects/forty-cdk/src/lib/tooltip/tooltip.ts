@@ -15,7 +15,7 @@ import {
   ForTooltipContext,
   TooltipScheduleReason,
 } from './tooltip-context';
-import { ForTooltipProvider } from './tooltip-provider';
+import { TooltipCoordinator } from './tooltip-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).
@@ -54,8 +54,12 @@ export class ForTooltip implements ForTooltipContext {
   /** Gap (px) between trigger and content. Forwarded to floating-ui's `offset` middleware. Default `8`. */
   readonly offset = input<number>(8);
 
-  /** ms before the tooltip opens after hover or focus enters the trigger. Default `700`. */
-  readonly openDelay = input<number>(700);
+  /**
+   * Per-tooltip override for the open delay (ms). When `undefined`
+   * (default), falls back to `TooltipDefaults.delayDuration` from the
+   * surrounding `provideTooltipDefaults` scope (700ms unless configured).
+   */
+  readonly openDelay = input<number | undefined>(undefined);
 
   /** ms before the tooltip closes after hover or focus leaves. `Escape` ignores this. Default `300`. */
   readonly closeDelay = input<number>(300);
@@ -81,7 +85,7 @@ export class ForTooltip implements ForTooltipContext {
   readonly arrow = this.#arrowEl.asReadonly();
 
   #pendingTimer: ReturnType<typeof setTimeout> | null = null;
-  readonly #provider = inject(ForTooltipProvider, { optional: true });
+  readonly #coordinator = inject(TooltipCoordinator);
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancelPending());
@@ -115,11 +119,14 @@ export class ForTooltip implements ForTooltipContext {
     if (this.open()) {
       return;
     }
-    // Skip the open delay if a peer tooltip just closed within the
-    // provider's skipDelayDuration window — keeps toolbar-style tooltips
-    // from feeling sluggish on cursor movement between targets.
-    const baseDelay = this.#provider?.skipDelay() ? 0 : this.openDelay();
-    const delay = Math.max(0, baseDelay);
+    // Skip the open delay if a peer tooltip in the same provideTooltipDefaults
+    // scope just closed within the skipDelayDuration window — keeps
+    // toolbar-style tooltips from feeling sluggish on cursor movement.
+    const local = this.openDelay();
+    const base = this.#coordinator.skipDelay()
+      ? 0
+      : local ?? this.#coordinator.delayDuration;
+    const delay = Math.max(0, base);
     if (delay === 0) {
       this.open.set(true);
       return;
@@ -152,7 +159,7 @@ export class ForTooltip implements ForTooltipContext {
 
   #close(): void {
     this.open.set(false);
-    this.#provider?.startSkipDelay();
+    this.#coordinator.startSkipDelay();
   }
 
   cancelPending(): void {

@@ -2,7 +2,7 @@ export { ForTooltip } from './tooltip';
 export { ForTooltipTrigger } from './tooltip-trigger';
 export { ForTooltipContent } from './tooltip-content';
 export { ForTooltipArrow } from './tooltip-arrow';
-export { ForTooltipProvider } from './tooltip-provider';
+export { provideTooltipDefaults, type TooltipDefaults } from './tooltip-defaults';
 export {
   FOR_TOOLTIP_CONTEXT,
   injectTooltipContext,
