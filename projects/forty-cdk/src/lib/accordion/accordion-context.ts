@@ -1,6 +1,9 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 
-import type { ListNavigationAction } from '../_internal/keyboard-navigation';
+import type {
+  ListNavigationAction,
+  WritingDirection,
+} from '../_internal/keyboard-navigation';
 
 /**
  * Coordination contract owned by the `ForAccordion` root.
@@ -10,6 +13,8 @@ import type { ListNavigationAction } from '../_internal/keyboard-navigation';
 export interface ForAccordionContext {
   readonly multiple: Signal<boolean>;
   readonly collapsible: Signal<boolean>;
+  readonly orientation: Signal<'horizontal' | 'vertical'>;
+  readonly dir: Signal<WritingDirection>;
   isExpanded(itemValue: string): boolean;
   toggle(itemValue: string): void;
   /** Whether the given item is allowed to collapse right now. */

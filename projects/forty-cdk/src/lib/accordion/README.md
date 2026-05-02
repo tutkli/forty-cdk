@@ -21,6 +21,8 @@ A vertical stack of collapsible sections, each with a header button and a panel.
 | `value` | `model<readonly string[]>` | Currently open item values. In single mode the array has 0 or 1 element. |
 | `multiple` | `input<boolean>` | When true, multiple items can be open simultaneously. Defaults to `false`. |
 | `collapsible` | `input<boolean>` | Single mode only: when true, the open item can be collapsed by clicking it. Defaults to `false` — once any item is open, exactly one stays open. |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. Defaults to `'vertical'`; in horizontal mode ArrowLeft/Right replace ArrowUp/Down. |
+| `dir` | `input<'ltr' \| 'rtl'>` | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows. |
 
 ### `ForAccordionItem`
 
@@ -81,5 +83,5 @@ export class DemoFaq {
 
 - **Heading wrapper is your job.** The library does not render a heading around the trigger — wrap it in the heading level appropriate to your document outline. Without it, screen-reader landmark navigation is broken.
 - **`role="region"`** is added to every panel automatically. APG recommends suppressing it on accordions with 6+ panels to avoid landmark proliferation. An opt-out input will be added to `ForAccordionContent` if this surfaces in real usage.
-- **Keyboard**: Enter and Space toggle the focused trigger (native button). ArrowDown / ArrowUp move focus between triggers (wrap-around, skip disabled). Home / End jump to the first/last trigger.
+- **Keyboard**: Enter and Space toggle the focused trigger (native button). ArrowDown / ArrowUp (vertical, default) or ArrowLeft / ArrowRight (horizontal — flipped under `dir='rtl'`) move focus between triggers (wrap-around, skip disabled). Home / End jump to the first/last trigger.
 - **`aria-disabled`** is applied to the open trigger only when single mode is active and `collapsible=false`, indicating the user cannot collapse it from this trigger. A truly disabled item uses the native `disabled` attribute instead.

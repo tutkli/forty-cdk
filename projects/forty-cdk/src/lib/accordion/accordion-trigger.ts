@@ -46,7 +46,10 @@ export class ForAccordionTrigger {
   });
 
   protected onKeyDown(event: KeyboardEvent): void {
-    const action = resolveListNavigation(event, { orientation: 'vertical' });
+    const action = resolveListNavigation(event, {
+      orientation: this.#parent.orientation(),
+      dir: this.#parent.dir(),
+    });
     if (!action) {
       return;
     }

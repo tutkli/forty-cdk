@@ -7,7 +7,11 @@ import {
   model,
 } from '@angular/core';
 
-import { type ListNavigationAction, moveIndex } from '../_internal/keyboard-navigation';
+import {
+  type ListNavigationAction,
+  moveIndex,
+  type WritingDirection,
+} from '../_internal/keyboard-navigation';
 import { FOR_ACCORDION_CONTEXT, ForAccordionContext } from './accordion-context';
 
 /**
@@ -36,7 +40,7 @@ import { FOR_ACCORDION_CONTEXT, ForAccordionContext } from './accordion-context'
   selector: '[forAccordion]',
   exportAs: 'forAccordion',
   host: {
-    '[attr.data-orientation]': '"vertical"',
+    '[attr.data-orientation]': 'orientation()',
   },
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
 })
@@ -52,6 +56,16 @@ export class ForAccordion implements ForAccordionContext {
    * any has been opened.
    */
   readonly collapsible = input(false, { transform: booleanAttribute });
+
+  /**
+   * Layout direction of the trigger list. `'vertical'` (default) maps
+   * ArrowUp/Down to prev/next; `'horizontal'` maps ArrowLeft/Right (with RTL
+   * swap when `dir='rtl'`).
+   */
+  readonly orientation = input<'horizontal' | 'vertical'>('vertical');
+
+  /** Writing direction. Only relevant when `orientation='horizontal'`. */
+  readonly dir = input<WritingDirection>('ltr');
 
   /**
    * Two-way bindable. List of currently expanded item values. In single

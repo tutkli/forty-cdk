@@ -248,6 +248,66 @@ describe('ForAccordion', () => {
     });
   });
 
+  describe('orientation: horizontal', () => {
+    @Component({
+      imports: [...ACCORDION_IMPORTS],
+      template: `
+        <div forAccordion orientation="horizontal" [dir]="dir()">
+          @for (id of ['a', 'b', 'c']; track id) {
+            <div forAccordionItem [value]="id">
+              <h3>
+                <button type="button" forAccordionTrigger [attr.data-test-id]="id">
+                  {{ id }}
+                </button>
+              </h3>
+              <section forAccordionContent></section>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class HorizontalHost {
+      readonly dir = signal<'ltr' | 'rtl'>('ltr');
+    }
+
+    const keyDown = (target: HTMLElement, key: string) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+
+    it('reflects orientation on data-orientation', () => {
+      const { el } = renderHost(HorizontalHost);
+      const root = el.querySelector('[forAccordion]')!;
+      expect(root.getAttribute('data-orientation')).toBe('horizontal');
+    });
+
+    it('uses ArrowRight/ArrowLeft instead of ArrowDown/ArrowUp', () => {
+      const { el } = renderHost(HorizontalHost);
+      triggerOf(el, 'a').focus();
+
+      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      expect(document.activeElement).toBe(triggerOf(el, 'b'));
+
+      keyDown(triggerOf(el, 'b'), 'ArrowLeft');
+      expect(document.activeElement).toBe(triggerOf(el, 'a'));
+
+      // ArrowDown is a no-op horizontally — focus stays put.
+      keyDown(triggerOf(el, 'a'), 'ArrowDown');
+      expect(document.activeElement).toBe(triggerOf(el, 'a'));
+    });
+
+    it('swaps horizontal arrows in RTL', () => {
+      const { el, fixture, flush } = renderHost(HorizontalHost);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      triggerOf(el, 'a').focus();
+
+      keyDown(triggerOf(el, 'a'), 'ArrowLeft');
+      expect(document.activeElement).toBe(triggerOf(el, 'b'));
+
+      keyDown(triggerOf(el, 'b'), 'ArrowRight');
+      expect(document.activeElement).toBe(triggerOf(el, 'a'));
+    });
+  });
+
   describe('used outside [forAccordion]', () => {
     it('throws a prefixed error from ForAccordionItem', () => {
       @Component({
