@@ -26,3 +26,4 @@ export * from './lib/combobox';
 export * from './lib/slider';
 export * from './lib/toast';
 export * from './lib/separator';
+export * from './lib/aspect-ratio';
