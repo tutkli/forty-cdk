@@ -44,7 +44,7 @@ import {
  * ```
  *
  * For programmatic use (open arbitrary components imperatively), see
- * `ForDialogs.open()`.
+ * `ForDialogManager.open()`.
  */
 @Directive({
   selector: '[forDialog]',

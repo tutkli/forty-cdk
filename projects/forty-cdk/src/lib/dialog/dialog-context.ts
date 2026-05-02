@@ -10,7 +10,7 @@ export type ForDialogCloseReason =
 
 /**
  * Coordination contract owned by `ForDialog` (declarative) or by the
- * programmatic `ForDialogs.open()` machinery. Title / Description register
+ * programmatic `ForDialogManager.open()` machinery. Title / Description register
  * their generated ids so the dialog wires `aria-labelledby` /
  * `aria-describedby` reactively. Close button and backdrop request close
  * via `requestClose` — the implementation decides whether to honor the
@@ -37,7 +37,7 @@ export interface ForDialogContext {
    * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'`:
    *   honored only when `dismissible()` is true.
    * - `'closeButton'`: always honored.
-   * - `'programmatic'`: always honored, used by `ForDialogs.open()` consumers
+   * - `'programmatic'`: always honored, used by `ForDialogManager.open()` consumers
    *   that drive close imperatively from a child component.
    *
    * `value` is the close result, propagated to `ForDialogRef.close(value)`

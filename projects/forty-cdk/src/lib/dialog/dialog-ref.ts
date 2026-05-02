@@ -1,12 +1,12 @@
 import { signal } from '@angular/core';
 
 /**
- * Handle returned by `ForDialogs.open()`. Inject inside the opened component
- * to drive close imperatively. Both reactive (`isClosed`, `result`) and
- * awaitable (`closed`) APIs are exposed — pick what fits the call site.
+ * Handle returned by `ForDialogManager.open()`. Inject inside the opened
+ * component to drive close imperatively. Both reactive (`isClosed`, `result`)
+ * and awaitable (`closed`) APIs are exposed — pick what fits the call site.
  *
  * `R` is the close-result type. Default `unknown`; specify it on
- * `dialogs.open<C, R>(...)` to get type safety.
+ * `manager.open<C, R>(...)` to get type safety.
  */
 export class ForDialogRef<R = unknown> {
   readonly #result = signal<R | undefined>(undefined);

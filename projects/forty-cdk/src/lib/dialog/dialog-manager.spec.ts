@@ -7,7 +7,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { ForDialogRef } from './dialog-ref';
-import { ForDialogs, FOR_DIALOG_DATA, injectDialogData } from './dialogs';
+import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
 
 interface ConfirmData {
   message: string;
@@ -44,11 +44,11 @@ class TokenInjectingDialog {
   readonly tokenValue = inject(FOR_DIALOG_DATA, { optional: true }) as string | null;
 }
 
-function setup(): { dialogs: ForDialogs; trigger: HTMLButtonElement } {
+function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
   TestBed.configureTestingModule({
     providers: [provideZonelessChangeDetection()],
   });
-  const dialogs = TestBed.inject(ForDialogs);
+  const dialogs = TestBed.inject(ForDialogManager);
   const trigger = document.createElement('button');
   trigger.id = 'external-trigger';
   trigger.textContent = 'open';
@@ -57,7 +57,7 @@ function setup(): { dialogs: ForDialogs; trigger: HTMLButtonElement } {
   return { dialogs, trigger };
 }
 
-describe('ForDialogs (programmatic)', () => {
+describe('ForDialogManager (programmatic)', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
     document

@@ -11,8 +11,8 @@ export {
 } from './dialog-context';
 export { ForDialogRef } from './dialog-ref';
 export {
-  ForDialogs,
+  ForDialogManager,
   FOR_DIALOG_DATA,
   injectDialogData,
   type ForDialogOpenConfig,
-} from './dialogs';
+} from './dialog-manager';

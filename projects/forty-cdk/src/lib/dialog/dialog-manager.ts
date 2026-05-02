@@ -26,7 +26,7 @@ const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 /**
- * Injection token for the `data` payload passed to `ForDialogs.open(component, { data })`.
+ * Injection token for the `data` payload passed to `ForDialogManager.open(component, { data })`.
  * Inject inside the opened component:
  *
  * ```ts
@@ -83,7 +83,7 @@ export interface ForDialogOpenConfig<D = unknown> {
  * for the payload.
  */
 @Injectable({ providedIn: 'root' })
-export class ForDialogs {
+export class ForDialogManager {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
 

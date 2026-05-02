@@ -1,6 +1,6 @@
 # Dialog
 
-Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) with focus trap, body scroll lock, Escape-to-close, portal rendering, and a programmatic `ForDialogs.open()` API mirroring CDK's `Dialog`.
+Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) with focus trap, body scroll lock, Escape-to-close, portal rendering, and a programmatic `ForDialogManager.open()` API mirroring CDK's `Dialog`.
 
 ## Two flows, one engine
 
@@ -45,11 +45,11 @@ export class DemoConfirm {
 
 Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.leave` work — they fire on real mount / unmount, not on attribute toggling.
 
-### Programmatic — `ForDialogs.open()`
+### Programmatic — `ForDialogManager.open()`
 
 ```ts
 import { Component, inject } from '@angular/core';
-import { ForDialogs, ForDialogRef, injectDialogData } from 'forty-cdk';
+import { ForDialogManager, ForDialogRef, injectDialogData } from 'forty-cdk';
 
 @Component({
   template: `
@@ -68,7 +68,7 @@ class ConfirmDialog {
   template: `<button (click)="askToDelete()">Delete</button>`,
 })
 export class DemoHost {
-  readonly dialogs = inject(ForDialogs);
+  readonly dialogs = inject(ForDialogManager);
 
   async askToDelete() {
     const ref = this.dialogs.open<ConfirmDialog, 'confirm' | 'cancel', { message: string }>(
@@ -118,7 +118,7 @@ export class DemoHost {
 
 | Symbol | Description |
 | --- | --- |
-| `ForDialogs` | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`. |
+| `ForDialogManager` | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`. |
 | `ForDialogRef<R>` | `close(result?)`, `closed: Promise<R \| undefined>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
 | `FOR_DIALOG_DATA` | Token for the `data` payload. Inject in the opened component. |
 | `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. |
@@ -151,7 +151,7 @@ export class DemoHost {
 - **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT mark the rest of the page `inert` — keyboard users are protected, mouse users still see / can hover outside (the backdrop is the consumer's pointer-events solution).
 - **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(close)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
 - **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
-- **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogs.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
+- **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
 
 ## Accessibility notes
 
