@@ -24,3 +24,4 @@ export * from './lib/context-menu';
 export * from './lib/select';
 export * from './lib/combobox';
 export * from './lib/slider';
+export * from './lib/toast';
