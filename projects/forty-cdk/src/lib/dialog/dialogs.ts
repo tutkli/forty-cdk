@@ -160,7 +160,12 @@ export class ForDialogs {
 
     this.#count.update((n) => n + 1);
 
+    let torn = false;
     teardown = (): void => {
+      if (torn) {
+        return;
+      }
+      torn = true;
       document.removeEventListener('keydown', onKeyDown);
       if (focusTrap) {
         focusTrap.deactivate({ returnFocus: shouldReturnFocus });
@@ -173,6 +178,19 @@ export class ForDialogs {
       hostEl.remove();
       this.#count.update((n) => Math.max(0, n - 1));
     };
+
+    // If the host environment destroys the view (TestBed reset, manual
+    // ApplicationRef destruction) without going through ref.close(), still
+    // pull down the listener and reset the focus trap.
+    componentRef.onDestroy(() => {
+      if (!torn) {
+        document.removeEventListener('keydown', onKeyDown);
+        if (focusTrap?.isActive) {
+          focusTrap.deactivate({ returnFocus: false });
+          unlockBodyScroll();
+        }
+      }
+    });
 
     // Edge case: the user's component may have called ref.close() during its
     // own constructor (before we wired up the real teardown). Run it now.
