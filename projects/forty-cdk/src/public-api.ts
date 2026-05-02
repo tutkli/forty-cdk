@@ -16,3 +16,4 @@ export * from './lib/tabs';
 export * from './lib/listbox';
 export * from './lib/tooltip';
 export * from './lib/dialog';
+export * from './lib/popover';
