@@ -289,6 +289,76 @@ describe('ForListbox', () => {
       keyDown(optOf(el, 'apple'), 'ArrowLeft');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
+
+    it('ignores cross-axis arrows in horizontal mode (ArrowDown/ArrowUp no-op)', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.orientation.set('horizontal');
+      flush();
+      optOf(el, 'apple').focus();
+      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+      keyDown(optOf(el, 'apple'), 'ArrowUp');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+  });
+
+  describe('readonly', () => {
+    it('exposes aria-readonly and blocks click selection while keeping options focusable', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked" readonly>
+            <li>
+              <button type="button" forListboxOption value="a" data-test-id="a">A</button>
+            </li>
+            <li>
+              <button type="button" forListboxOption value="b" data-test-id="b">B</button>
+            </li>
+          </ul>
+        `,
+      })
+      class Host {
+        readonly picked = signal<string[]>([]);
+      }
+
+      const { el, fixture, flush } = renderHost(Host);
+      expect(listboxOf(el).getAttribute('aria-readonly')).toBe('true');
+
+      optOf(el, 'a').click();
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([]);
+
+      // Arrow nav still works — readonly only blocks selection, not focus.
+      optOf(el, 'a').focus();
+      keyDown(optOf(el, 'a'), 'ArrowDown');
+      expect(document.activeElement).toBe(optOf(el, 'b'));
+    });
+
+    it('does not auto-select on focus nav when readonly even with selectionFollowsFocus', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked" readonly selectionFollowsFocus>
+            <li>
+              <button type="button" forListboxOption value="a" data-test-id="a">A</button>
+            </li>
+            <li>
+              <button type="button" forListboxOption value="b" data-test-id="b">B</button>
+            </li>
+          </ul>
+        `,
+      })
+      class Host {
+        readonly picked = signal<string[]>([]);
+      }
+
+      const { el, fixture, flush } = renderHost(Host);
+      optOf(el, 'a').focus();
+      keyDown(optOf(el, 'a'), 'ArrowDown');
+      flush();
+
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
   });
 
   describe('disabled', () => {
