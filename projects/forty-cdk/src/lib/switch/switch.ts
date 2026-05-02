@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
 import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
 
+import { injectFormControlReflection } from '../_internal/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input';
 
 /**
@@ -57,6 +58,7 @@ export class ForSwitch implements FormCheckboxControl {
   readonly required = input(false, { transform: booleanAttribute });
   readonly invalid = input(false, { transform: booleanAttribute });
   readonly pending = input(false, { transform: booleanAttribute });
+  readonly dirty = input(false, { transform: booleanAttribute });
 
   readonly name = input<string>('');
 
@@ -70,6 +72,12 @@ export class ForSwitch implements FormCheckboxControl {
       name: this.name,
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.disabled,
+    });
+    injectFormControlReflection({
+      touched: this.touched,
+      dirty: this.dirty,
+      pending: this.pending,
+      invalid: this.invalid,
     });
   }
 

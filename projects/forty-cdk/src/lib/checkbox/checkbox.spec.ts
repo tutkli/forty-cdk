@@ -167,6 +167,49 @@ describe('ForCheckbox', () => {
     });
   });
 
+  describe('form-state data attributes', () => {
+    @Component({
+      imports: [ForCheckbox],
+      template: `
+        <button
+          forCheckbox
+          [(checked)]="agreed"
+          [(touched)]="touched"
+          [dirty]="dirty()"
+          [pending]="pending()"
+          [invalid]="invalid()"
+        ></button>
+      `,
+    })
+    class FlagsHost {
+      readonly agreed = signal(false);
+      readonly touched = signal(false);
+      readonly dirty = signal(false);
+      readonly pending = signal(false);
+      readonly invalid = signal(false);
+    }
+
+    it('reflects each form-state flag as a boolean data-* attribute', () => {
+      const { el, fixture, flush } = renderHost(FlagsHost);
+      const cb = el.querySelector<HTMLButtonElement>('button')!;
+
+      fixture.componentInstance.touched.set(true);
+      fixture.componentInstance.dirty.set(true);
+      fixture.componentInstance.pending.set(true);
+      fixture.componentInstance.invalid.set(true);
+      flush();
+
+      expect(cb.getAttribute('data-touched')).toBe('');
+      expect(cb.getAttribute('data-dirty')).toBe('');
+      expect(cb.getAttribute('data-pending')).toBe('');
+      expect(cb.getAttribute('data-invalid')).toBe('');
+
+      fixture.componentInstance.touched.set(false);
+      flush();
+      expect(cb.hasAttribute('data-touched')).toBe(false);
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [ForCheckbox],

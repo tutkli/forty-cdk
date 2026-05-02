@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
+import { injectFormControlReflection } from '../_internal/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input';
 import {
   type ListNavigationAction,
@@ -85,6 +86,7 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
   readonly required = input(false, { transform: booleanAttribute });
   readonly invalid = input(false, { transform: booleanAttribute });
   readonly pending = input(false, { transform: booleanAttribute });
+  readonly dirty = input(false, { transform: booleanAttribute });
   readonly name = input<string>('');
   readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
   readonly touched = model<boolean>(false);
@@ -108,6 +110,12 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
       name: this.name,
       values: this.value,
       disabled: this.disabled,
+    });
+    injectFormControlReflection({
+      touched: this.touched,
+      dirty: this.dirty,
+      pending: this.pending,
+      invalid: this.invalid,
     });
   }
 

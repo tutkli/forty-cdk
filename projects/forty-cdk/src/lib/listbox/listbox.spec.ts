@@ -455,6 +455,47 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('form-state data attributes', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul
+          forListbox
+          [(value)]="picked"
+          [(touched)]="touched"
+          [dirty]="dirty()"
+          [pending]="pending()"
+          [invalid]="invalid()"
+        >
+          <li><button type="button" forListboxOption value="a">A</button></li>
+        </ul>
+      `,
+    })
+    class FlagsHost {
+      readonly picked = signal<string[]>([]);
+      readonly touched = signal(false);
+      readonly dirty = signal(false);
+      readonly pending = signal(false);
+      readonly invalid = signal(false);
+    }
+
+    it('reflects each form-state flag as a boolean data-* attribute on the listbox', () => {
+      const { el, fixture, flush } = renderHost(FlagsHost);
+      const lb = el.querySelector<HTMLElement>('[forListbox]')!;
+
+      fixture.componentInstance.touched.set(true);
+      fixture.componentInstance.dirty.set(true);
+      fixture.componentInstance.pending.set(true);
+      fixture.componentInstance.invalid.set(true);
+      flush();
+
+      expect(lb.getAttribute('data-touched')).toBe('');
+      expect(lb.getAttribute('data-dirty')).toBe('');
+      expect(lb.getAttribute('data-pending')).toBe('');
+      expect(lb.getAttribute('data-invalid')).toBe('');
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [...LISTBOX_IMPORTS],

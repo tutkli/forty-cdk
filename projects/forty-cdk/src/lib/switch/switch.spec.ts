@@ -146,6 +146,50 @@ describe('ForSwitch', () => {
     });
   });
 
+  describe('form-state data attributes', () => {
+    @Component({
+      imports: [ForSwitch],
+      template: `
+        <button
+          forSwitch
+          [(checked)]="enabled"
+          [(touched)]="touched"
+          [dirty]="dirty()"
+          [pending]="pending()"
+          [invalid]="invalid()"
+        ></button>
+      `,
+    })
+    class FlagsHost {
+      readonly enabled = signal(false);
+      readonly touched = signal(false);
+      readonly dirty = signal(false);
+      readonly pending = signal(false);
+      readonly invalid = signal(false);
+    }
+
+    it('reflects each form-state flag as a boolean data-* attribute', () => {
+      const { el, fixture, flush } = renderHost(FlagsHost);
+      const sw = el.querySelector<HTMLButtonElement>('button')!;
+
+      expect(sw.hasAttribute('data-touched')).toBe(false);
+      expect(sw.hasAttribute('data-dirty')).toBe(false);
+      expect(sw.hasAttribute('data-pending')).toBe(false);
+      expect(sw.hasAttribute('data-invalid')).toBe(false);
+
+      fixture.componentInstance.touched.set(true);
+      fixture.componentInstance.dirty.set(true);
+      fixture.componentInstance.pending.set(true);
+      fixture.componentInstance.invalid.set(true);
+      flush();
+
+      expect(sw.getAttribute('data-touched')).toBe('');
+      expect(sw.getAttribute('data-dirty')).toBe('');
+      expect(sw.getAttribute('data-pending')).toBe('');
+      expect(sw.getAttribute('data-invalid')).toBe('');
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [ForSwitch],

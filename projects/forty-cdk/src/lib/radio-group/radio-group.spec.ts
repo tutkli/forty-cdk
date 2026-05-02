@@ -344,6 +344,47 @@ describe('ForRadioGroup', () => {
     });
   });
 
+  describe('form-state data attributes', () => {
+    @Component({
+      imports: [...RADIO_IMPORTS],
+      template: `
+        <div
+          forRadioGroup
+          [(value)]="color"
+          [(touched)]="touched"
+          [dirty]="dirty()"
+          [pending]="pending()"
+          [invalid]="invalid()"
+        >
+          <button type="button" forRadio value="red">Red</button>
+        </div>
+      `,
+    })
+    class FlagsHost {
+      readonly color = signal('');
+      readonly touched = signal(false);
+      readonly dirty = signal(false);
+      readonly pending = signal(false);
+      readonly invalid = signal(false);
+    }
+
+    it('reflects each form-state flag as a boolean data-* attribute on the group', () => {
+      const { el, fixture, flush } = renderHost(FlagsHost);
+      const group = el.querySelector<HTMLElement>('[forRadioGroup]')!;
+
+      fixture.componentInstance.touched.set(true);
+      fixture.componentInstance.dirty.set(true);
+      fixture.componentInstance.pending.set(true);
+      fixture.componentInstance.invalid.set(true);
+      flush();
+
+      expect(group.getAttribute('data-touched')).toBe('');
+      expect(group.getAttribute('data-dirty')).toBe('');
+      expect(group.getAttribute('data-pending')).toBe('');
+      expect(group.getAttribute('data-invalid')).toBe('');
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [...RADIO_IMPORTS],

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
 
+import { injectFormControlReflection } from '../_internal/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input';
 
 /**
@@ -80,6 +81,7 @@ export class ForCheckbox implements FormCheckboxControl {
   readonly required = input(false, { transform: booleanAttribute });
   readonly invalid = input(false, { transform: booleanAttribute });
   readonly pending = input(false, { transform: booleanAttribute });
+  readonly dirty = input(false, { transform: booleanAttribute });
 
   readonly name = input<string>('');
 
@@ -104,6 +106,12 @@ export class ForCheckbox implements FormCheckboxControl {
       // to form submission; `indeterminate` is purely a presentational flag.
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.disabled,
+    });
+    injectFormControlReflection({
+      touched: this.touched,
+      dirty: this.dirty,
+      pending: this.pending,
+      invalid: this.invalid,
     });
   }
 
