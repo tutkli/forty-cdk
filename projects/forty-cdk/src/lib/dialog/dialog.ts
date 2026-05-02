@@ -4,7 +4,6 @@ import {
   computed,
   DestroyRef,
   Directive,
-  ElementRef,
   inject,
   input,
   output,
@@ -13,7 +12,7 @@ import {
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock';
 import { injectDismissableLayer } from '../_internal/dismissable-layer';
-import { FocusTrap } from '../_internal/focus-trap';
+import { injectFocusTrap } from '../_internal/focus-trap';
 import { injectPortal } from '../_internal/portal';
 import {
   FOR_DIALOG_CONTEXT,
@@ -61,8 +60,6 @@ import {
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
 })
 export class ForDialog implements ForDialogContext {
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-
   /**
    * When true (default), Escape, backdrop click, pointer-down outside, and
    * focus outside emit `(close)`. Disable for critical confirm flows that
@@ -137,11 +134,7 @@ export class ForDialog implements ForDialogContext {
     return ids.length === 0 ? null : ids.join(' ');
   });
 
-  // Manage the FocusTrap directly (not via injectFocusTrap) so the
-  // directive's own DestroyRef callback owns the deactivate call —
-  // injectFocusTrap's safety-net teardown forces returnFocus:false, which
-  // would race ours and prevent the trigger from getting focus back.
-  readonly #focusTrap = new FocusTrap(this.#host.nativeElement);
+  readonly #focusTrap = injectFocusTrap();
   readonly #dismissable = injectDismissableLayer();
 
   // Captured once on mount so cleanup can mirror the same mode regardless
@@ -190,13 +183,14 @@ export class ForDialog implements ForDialogContext {
         lockBodyScroll();
       } else {
         // Non-modal: still send focus, no trap.
+        const host = this.#focusTrap.container;
         if (this.initialFocus() === 'container') {
-          this.#host.nativeElement.focus();
+          host.focus();
         } else {
-          const first = this.#host.nativeElement.querySelector<HTMLElement>(
+          const first = host.querySelector<HTMLElement>(
             'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
           );
-          (first ?? this.#host.nativeElement).focus();
+          (first ?? host).focus();
         }
       }
     });

@@ -1,4 +1,4 @@
-import { DestroyRef, ElementRef, inject } from '@angular/core';
+import { ElementRef, inject } from '@angular/core';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -160,13 +160,18 @@ export class FocusTrap {
 }
 
 /**
- * Creates a `FocusTrap` for the directive's host element and wires deactivate
- * into `DestroyRef`. Activation is left to the consumer — call
- * `trap.activate()` when the surface opens.
+ * Creates a `FocusTrap` for the directive's host element. Activation and
+ * deactivation are the consumer's responsibility — call `trap.activate()`
+ * when the surface opens and `trap.deactivate({ returnFocus })` from a
+ * `DestroyRef.onDestroy` (or equivalent) when it closes.
+ *
+ * The helper deliberately does NOT register a safety-net teardown: forcing
+ * `returnFocus: false` from the helper would race consumer cleanups that
+ * want `returnFocus: true`, and an unconditional `returnFocus: true` could
+ * dump focus on a removed element. The consumer always knows the right
+ * answer; do the deactivate yourself.
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const trap = new FocusTrap(host.nativeElement);
-  inject(DestroyRef).onDestroy(() => trap.deactivate({ returnFocus: false }));
-  return trap;
+  return new FocusTrap(host.nativeElement);
 }
