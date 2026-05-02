@@ -1,0 +1,1 @@
+export { ForSeparator } from './separator';

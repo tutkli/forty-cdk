@@ -25,3 +25,4 @@ export * from './lib/select';
 export * from './lib/combobox';
 export * from './lib/slider';
 export * from './lib/toast';
+export * from './lib/separator';
