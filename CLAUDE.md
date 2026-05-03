@@ -144,6 +144,11 @@ The single exception is **Tabs panels**: it's idiomatic to keep all panels mount
 
 Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, `Tabs` selection) keep `[(checked)]` / `[(value)]` — that's form state, not visibility, and the rule above doesn't apply.
 
+**Intentional exceptions to the headless rules.** A few primitives knowingly break a project-wide rule because the underlying behaviour can't be modelled any other way without making the consumer's life worse. Any new exception MUST be added here with rationale before merge:
+
+- **`ScrollAreaViewport` injects global CSS.** The viewport is the only piece in the library that ships a `<style id="for-scroll-area-hide-native">` tag (appended once on first construction) to hide the native scrollbars on `[forScrollAreaViewport]`. The synthetic scrollbars are the entire point of the primitive, so without this the consumer would always see double bars; pure inline styles can't target the platform-specific pseudo-elements (`::-webkit-scrollbar`, `scrollbar-width`). The injected sheet is keyed by id so multiple bundles can't double-insert it.
+- **`ScrollAreaCorner` applies `[hidden]`.** The corner has no logical presence when fewer than two scrollbars are visible — keeping it mounted-but-empty would still occupy grid space and bleed into the consumer's layout. Because there is no consumer-meaningful "closed" state to wrap with `@if`, the directive applies `[hidden]` itself. This is the only primitive piece in the library that does so; the rule still stands for everything else.
+
 ## Workflow for new primitives
 
 When asked to add a primitive, follow this order:
