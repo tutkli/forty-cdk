@@ -49,10 +49,6 @@ export class ForHoverCardTrigger {
   }
 
   protected onEscape(event: Event): void {
-    if (this.ctx.open()) {
-      event.preventDefault();
-      event.stopPropagation();
-      this.ctx.scheduleClose('escape');
-    }
+    this.ctx.emitEscapeKeyDown(event as KeyboardEvent);
   }
 }

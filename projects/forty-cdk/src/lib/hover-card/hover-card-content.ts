@@ -19,6 +19,7 @@ import { injectHoverCardContext } from './hover-card-context';
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
+    '(keydown.escape)': 'onEscape($event)',
   },
 })
 export class ForHoverCardContent {
@@ -51,5 +52,9 @@ export class ForHoverCardContent {
 
   protected onPointerLeave(): void {
     this.ctx.scheduleClose('hover-content');
+  }
+
+  protected onEscape(event: Event): void {
+    this.ctx.emitEscapeKeyDown(event as KeyboardEvent);
   }
 }

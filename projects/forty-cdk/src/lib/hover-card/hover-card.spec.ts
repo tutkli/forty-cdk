@@ -192,6 +192,74 @@ describe('ForHoverCard', () => {
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
+
+    it('closes when Escape is pressed inside the portaled content', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', () => {
+      const captured: KeyboardEvent[] = [];
+
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        template: `
+          <span
+            forHoverCard
+            #card="forHoverCard"
+            [(open)]="isOpen"
+            [openDelay]="0"
+            [closeDelay]="0"
+            (escapeKeyDown)="onEscape($event)"
+          >
+            <a forHoverCardTrigger href="/x">Trigger</a>
+            @if (card.open()) {
+              <div forHoverCardContent>Content</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly isOpen = signal(false);
+        onEscape(event: KeyboardEvent): void {
+          captured.push(event);
+          event.preventDefault();
+        }
+      }
+
+      const { fixture, query, flush } = renderHost(Host);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(captured.length).toBe(1);
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(captured.length).toBe(2);
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
   });
 
   describe('orphan pieces', () => {
