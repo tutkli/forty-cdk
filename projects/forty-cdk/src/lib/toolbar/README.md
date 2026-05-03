@@ -11,7 +11,7 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 | `ForToolbar`          | `[forToolbar]`          | Root. `role="toolbar"`. Owns roving + nav.                                                         |
 | `ForToolbarButton`    | `[forToolbarButton]`    | Plain push button. Apply on `<button>`.                                                            |
 | `ForToolbarLink`      | `[forToolbarLink]`      | Hyperlink. Apply on `<a>`.                                                                         |
-| `ForToolbarSeparator` | `[forToolbarSeparator]` | Visual divider. Defaults to the cross-axis. Delegates role / `aria-orientation` to `ForSeparator`. |
+| `ForToolbarSeparator` | `[forToolbarSeparator]` | Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `role="separator"` + `aria-orientation` + `data-orientation`. |
 
 ## Inputs (root)
 
