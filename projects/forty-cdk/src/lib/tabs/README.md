@@ -22,6 +22,7 @@ Headless implementation of the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/AR
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`. |
 | `dir` | `input<'ltr' \| 'rtl'>` | Default `'ltr'`. Swaps ArrowLeft / ArrowRight. |
 | `disabled` | `input<boolean>` | When true, blocks all selection and keyboard nav. |
+| `loop` | `input<boolean>` | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist. |
 
 ### `ForTabsTrigger`
 

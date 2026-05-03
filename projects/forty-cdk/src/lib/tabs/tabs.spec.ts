@@ -19,6 +19,7 @@ const TABS_IMPORTS = [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent] as c
       [orientation]="orientation()"
       [dir]="dir()"
       [disabled]="rootDisabled()"
+      [loop]="loop()"
     >
       <div forTabsList>
         @for (t of tabs(); track t.value) {
@@ -47,6 +48,7 @@ class TabsHost {
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly rootDisabled = signal(false);
+  readonly loop = signal(true);
   readonly tabs = signal([
     { value: 'a', label: 'A', disabled: false },
     { value: 'b', label: 'B', disabled: false },
@@ -186,6 +188,22 @@ describe('ForTabs', () => {
       keyDown(triggerOf(el, 'c'), 'Home');
       flush();
       expect(fixture.componentInstance.active()).toBe('a');
+    });
+
+    it('does not wrap past the last enabled trigger when loop=false', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.loop.set(false);
+      flush();
+
+      triggerOf(el, 'c').focus();
+      fixture.componentInstance.active.set('c');
+      flush();
+
+      keyDown(triggerOf(el, 'c'), 'ArrowRight');
+      flush();
+      // Stays on c — no wrap.
+      expect(document.activeElement).toBe(triggerOf(el, 'c'));
+      expect(fixture.componentInstance.active()).toBe('c');
     });
   });
 
