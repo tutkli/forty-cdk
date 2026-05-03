@@ -30,7 +30,9 @@ Use a native `<button type="button">` so Enter / Space activation come for free.
 
 ### `ForDisclosureContent`
 
-Reflects on its host: `id`, `data-state`, `hidden` (set when closed).
+Reflects on its host: `id`, `data-state`, `data-disabled`.
+
+The directive does **not** apply `[hidden]` or otherwise control DOM presence. Mount and unmount the panel yourself with `@if (open())` — that keeps animations idiomatic (`animate.enter` / `animate.leave`) and aligns with the project-wide rule that visibility is template control flow, not a directive concern.
 
 If the panel is a semantic region, add `role="region"` and `aria-labelledby="..."` pointing to the trigger.
 
@@ -52,9 +54,11 @@ import {
       <button type="button" forDisclosureTrigger>
         {{ isOpen() ? 'Hide' : 'Show' }} details
       </button>
-      <div forDisclosureContent>
-        <p>Hidden content goes here.</p>
-      </div>
+      @if (isOpen()) {
+        <div forDisclosureContent>
+          <p>Hidden content goes here.</p>
+        </div>
+      }
     </div>
   `,
 })
@@ -73,5 +77,5 @@ The library ships no styles. Hide animations / transitions can be driven off `da
 ## Accessibility notes
 
 - The library does not auto-add `role="button"` or keyboard handlers when the trigger is not a `<button>`. Always use a real button.
-- When closed, the content has the native `hidden` attribute, so it is removed from the accessibility tree and tab order.
+- The directive does not apply the native `hidden` attribute to the content. Wrap it with `@if (open())` so it unmounts when closed — that removes it from the accessibility tree and tab order, and lets you drive enter/leave transitions.
 - Disabled state sets the native `disabled` attribute on the trigger (effective on `<button>` elements). Click is also ignored at the directive level as a defensive measure.
