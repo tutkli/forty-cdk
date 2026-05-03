@@ -130,6 +130,36 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
+  describe('data-state reflection', () => {
+    it('reflects data-state="open" on host, backdrop, and close while mounted', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      const backdrop = document.querySelector<HTMLElement>('[forDialogBackdrop]')!;
+      const closeBtn = document.querySelector<HTMLElement>('[forDialogClose]')!;
+
+      expect(dialog.getAttribute('data-state')).toBe('open');
+      expect(backdrop.getAttribute('data-state')).toBe('open');
+      expect(closeBtn.getAttribute('data-state')).toBe('open');
+    });
+
+    it('removes the dialog (and its data-state) entirely when consumer signal flips false', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forDialog]')).toBeNull();
+      expect(document.querySelector('[forDialogBackdrop]')).toBeNull();
+      expect(document.querySelector('[forDialogClose]')).toBeNull();
+    });
+  });
+
   describe('initial state', () => {
     it('does not render the dialog while the consumer signal is false', async () => {
       const r = renderHost(DialogHost);

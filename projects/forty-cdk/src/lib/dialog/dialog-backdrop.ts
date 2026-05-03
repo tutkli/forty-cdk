@@ -17,6 +17,7 @@ import { injectDialogContext } from './dialog-context';
   exportAs: 'forDialogBackdrop',
   host: {
     'data-for-dialog-backdrop': '',
+    'data-state': 'open',
     '(click)': 'onClick($event)',
   },
 })
