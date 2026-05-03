@@ -102,12 +102,21 @@ The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `
 
 These keep the surface predictable across primitives. Apply them everywhere; deviate only with a written reason.
 
-**`data-state` vocabulary.** Three families, picked semantically — never invent a fourth:
+**`data-state` vocabulary.** Three canonical families, picked semantically — never invent a fourth without listing it in the *Documented alternative vocabularies* table below:
 - `"open" | "closed"` — for things that expand/collapse (`Disclosure`, `Accordion`, `Tooltip`, `Dialog`, future `Popover`/`Menu`/`Drawer`).
 - `"active" | "inactive"` — for one-of-N selectables embedded in a tablist-like container (`Tabs` trigger and content). Matches Radix.
 - `"checked" | "unchecked" | "indeterminate"` — for form-control state (`Switch`, `Checkbox`, `RadioGroup` items, `Listbox` options, future `Select`/`ToggleGroup`). `"indeterminate"` only on tri-state controls (Checkbox today).
 
 `data-state` is reflected on every piece of the primitive that the consumer might want to style — the root *and* trigger/content/option/etc. — using the same vocabulary across pieces.
+
+**Documented alternative vocabularies.** A handful of primitives intentionally use a different attribute name or value set because the underlying spec / pattern doesn't fit any of the three families above. New primitives must reuse one of the canonical families unless they have an equally strong reason and update this table:
+
+| Attribute | Values | Primitives | Why |
+| --- | --- | --- | --- |
+| `data-state` | `"visible" \| "hidden"` | `ScrollArea` (scrollbar, thumb), `NavigationMenu` (indicator) | These pieces have no logical open/closed *state* — they reflect whether the floating helper is currently rendered/painted, which is a layout outcome, not a toggle. |
+| `data-status` | `"idle" \| "loading" \| "loaded" \| "error"` | `Avatar` (root, image, fallback) | Mirrors the four-step image lifecycle of Radix's Avatar. None of the three families captures a finite-state-machine with an error terminal. |
+| `data-state` | `"indeterminate" \| "loading" \| "complete"` | `Progress` (root, indicator) | Mirrors the HTML5 `<progress>` semantics + an explicit `complete` terminal so styling / `aria-live` can fire on the loading→complete edge. `"loading"` is *not* the same as the form-control `"unchecked"`. |
+| `data-quality` | `"optimum" \| "sub-optimum" \| "even-less-good"` | `Meter` (root, indicator) | Reflects the HTML5 `<meter>` "preferred-value" buckets. This is a styling hook layered *on top of* `aria-valuenow`; it is not a state toggle and the spec mandates the three names. |
 
 **Boolean `data-*` attributes.** Present (with empty string value) when `true`, absent (`null`) when `false`. Never emit `data-disabled="false"`. The Angular host binding `[attr.data-disabled]="disabled() ? '' : null"` is the canonical form. Applies to `data-disabled`, `data-readonly`, and any future boolean reflection (`data-touched`, `data-dirty`, `data-pending`, `data-invalid`).
 
