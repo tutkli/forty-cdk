@@ -21,6 +21,7 @@ const RADIO_IMPORTS = [ForRadioGroup, ForRadio] as const;
       [readonly]="groupReadonly()"
       [required]="groupRequired()"
       [invalid]="groupInvalid()"
+      [loop]="loop()"
     >
       @for (option of options(); track option.value) {
         <button
@@ -44,6 +45,7 @@ class RadioGroupHost {
   readonly groupReadonly = signal(false);
   readonly groupRequired = signal(false);
   readonly groupInvalid = signal(false);
+  readonly loop = signal(true);
   readonly options = signal([
     { value: 'red', label: 'Red', disabled: false },
     { value: 'green', label: 'Green', disabled: false },
@@ -164,6 +166,31 @@ describe('ForRadioGroup', () => {
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
+    });
+
+    it('does not wrap when loop=false', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.loop.set(false);
+      flush();
+
+      radioOf(el, 'blue').focus();
+      fixture.componentInstance.color.set('blue');
+      flush();
+
+      keyDown(radioOf(el, 'blue'), 'ArrowDown');
+      flush();
+      // Stays on blue — no wrap.
+      expect(document.activeElement).toBe(radioOf(el, 'blue'));
+      expect(fixture.componentInstance.color()).toBe('blue');
+
+      // ArrowUp at the start also doesn't wrap.
+      radioOf(el, 'red').focus();
+      fixture.componentInstance.color.set('red');
+      flush();
+      keyDown(radioOf(el, 'red'), 'ArrowUp');
+      flush();
+      expect(document.activeElement).toBe(radioOf(el, 'red'));
+      expect(fixture.componentInstance.color()).toBe('red');
     });
 
     it('ArrowLeft / ArrowRight are ignored in vertical orientation', () => {

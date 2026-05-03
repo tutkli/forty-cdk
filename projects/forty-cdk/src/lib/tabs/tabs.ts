@@ -57,6 +57,13 @@ export class ForTabs implements ForTabsContext {
   readonly dir = input<WritingDirection>('ltr');
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Whether arrow navigation wraps around past the first / last enabled
+   * trigger. Default `true` — matches the WAI-ARIA Tabs APG. Set to `false`
+   * for a non-wrapping tablist.
+   */
+  readonly loop = input(true, { transform: booleanAttribute });
+
   readonly roving = injectRovingTabindex();
 
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
@@ -92,7 +99,7 @@ export class ForTabs implements ForTabsContext {
     }
     const currentIndex = triggers.findIndex((t) => t.host === currentTrigger);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
-      loop: true,
+      loop: this.loop(),
       isDisabled: (i) => triggers[i]!.disabled(),
     });
     if (next === null) {

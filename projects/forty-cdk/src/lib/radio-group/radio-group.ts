@@ -75,6 +75,13 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
   readonly pending = input(false, { transform: booleanAttribute });
   readonly dirty = input(false, { transform: booleanAttribute });
 
+  /**
+   * Whether arrow navigation wraps around past the first / last enabled
+   * radio. Default `true` — matches the WAI-ARIA Radio Group APG. Set to
+   * `false` for a non-wrapping group.
+   */
+  readonly loop = input(true, { transform: booleanAttribute });
+
   readonly name = input<string>('');
 
   readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
@@ -130,7 +137,7 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
     }
     const currentIndex = items.findIndex((item) => item.host === currentRadio);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: true,
+      loop: this.loop(),
       isDisabled: (i) => items[i]!.disabled(),
     });
     if (next === null) {

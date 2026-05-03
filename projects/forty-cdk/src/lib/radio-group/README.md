@@ -19,6 +19,7 @@ Headless implementation of the [WAI-ARIA Radio Group pattern](https://www.w3.org
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Default `'vertical'`. Drives keyboard navigation and `aria-orientation`. |
 | `dir` | `input<'ltr' \| 'rtl'>` | Default `'ltr'`. Swaps ArrowLeft / ArrowRight in horizontal layouts. |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>` | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection. |
+| `loop` | `input<boolean>` | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group. |
 | `name` | `input<string>` | For form association. |
 | `errors` | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`. |
 | `touched` | `model<boolean>` | Set to `true` when focus leaves the group entirely. |
