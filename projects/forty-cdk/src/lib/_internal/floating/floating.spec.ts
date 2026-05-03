@@ -1,7 +1,6 @@
 import {
   Component,
   ElementRef,
-  inject,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -66,6 +65,51 @@ class FloatingBubble {
       portal: this.portal,
     });
   }
+}
+
+// Separate fixture exercising the new `side` + `align` + collision API so
+// the legacy bubble above stays a clean back-compat regression target.
+@Component({
+  selector: 'modern-bubble',
+  template: '<ng-content />',
+})
+class ModernBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly side = signal<'top' | 'right' | 'bottom' | 'left'>('bottom');
+  readonly align = signal<'start' | 'center' | 'end'>('center');
+  readonly sideOffset = signal(8);
+  readonly alignOffset = signal(0);
+  readonly avoidCollisions = signal(true);
+  readonly hideWhenDetached = signal(false);
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      side: this.side,
+      align: this.align,
+      sideOffset: this.sideOffset,
+      alignOffset: this.alignOffset,
+      avoidCollisions: this.avoidCollisions,
+      hideWhenDetached: this.hideWhenDetached,
+      portal: false,
+    });
+  }
+}
+
+@Component({
+  imports: [ModernBubble],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <modern-bubble #bubble>Content</modern-bubble>
+    </div>
+  `,
+})
+class ModernBubbleHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<ModernBubble>('bubble');
 }
 
 @Component({
@@ -155,7 +199,9 @@ describe('injectFloating', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('floating-bubble, inplace-bubble').forEach((n) => n.remove());
+    document
+      .querySelectorAll('floating-bubble, inplace-bubble, modern-bubble')
+      .forEach((n) => n.remove());
   });
 
   describe('portal', () => {
@@ -281,8 +327,161 @@ describe('injectFloating', () => {
 
       expect(arrowEl.style.position).toBe('absolute');
       expect(arrowEl.dataset['placement']).toBeTruthy();
+      expect(arrowEl.dataset['side']).toBeTruthy();
       // top placement → opposite is 'bottom' → bottom: -4px should be set.
       expect(arrowEl.style.bottom).toBe('-4px');
+    });
+  });
+
+  describe('data-side / data-align', () => {
+    it('reflects data-side and data-align on the host (legacy placement input)', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      // placement='top' (no align suffix) → side='top', align='center'.
+      expect(bubbleEl.dataset['side']).toBe('top');
+      expect(bubbleEl.dataset['align']).toBe('center');
+    });
+
+    it('builds placement from side + align when both are provided', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.side.set('right');
+      bubble.align.set('end');
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.dataset['placement']).toBe('right-end');
+      expect(bubbleEl.dataset['side']).toBe('right');
+      expect(bubbleEl.dataset['align']).toBe('end');
+    });
+
+    it('treats align="center" as no suffix in placement', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.side.set('left');
+      bubble.align.set('center');
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.dataset['placement']).toBe('left');
+      expect(bubbleEl.dataset['side']).toBe('left');
+      expect(bubbleEl.dataset['align']).toBe('center');
+    });
+  });
+
+  describe('CSS variables', () => {
+    it('writes --for-anchor-width / --for-anchor-height from the reference rect', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      // jsdom returns 0 from getBoundingClientRect — the var must still be set
+      // with an explicit "Npx" value so consumers can rely on it being present.
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toMatch(/^-?\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toMatch(/^-?\d+px$/);
+    });
+
+    it('writes --for-available-width / --for-available-height from the size middleware', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.style.getPropertyValue('--for-available-width')).toMatch(/^\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-available-height')).toMatch(/^\d+px$/);
+    });
+
+    it('writes --for-content-transform-origin matching the resolved side/align', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.side.set('bottom');
+      bubble.align.set('start');
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      // bottom + align:start → content scales out from the trigger's
+      // bottom-left corner → origin is the floating element's "left top".
+      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('left top');
+
+      bubble.side.set('right');
+      bubble.align.set('end');
+      await flushPositioning(fixture);
+
+      // right + align:end → origin is left bottom of the floating element.
+      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('left bottom');
+    });
+  });
+
+  describe('avoidCollisions', () => {
+    it('still resolves a placement when avoidCollisions is false', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.side.set('top');
+      bubble.align.set('center');
+      bubble.avoidCollisions.set(false);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      // Without flip/shift the requested placement is honoured verbatim.
+      expect(bubbleEl.dataset['side']).toBe('top');
+      expect(bubbleEl.dataset['align']).toBe('center');
+      expect(bubbleEl.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
+    });
+  });
+
+  describe('hideWhenDetached', () => {
+    it('does not set data-detached when the option is off', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.hideWhenDetached.set(false);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.dataset['detached']).toBeUndefined();
     });
   });
 });

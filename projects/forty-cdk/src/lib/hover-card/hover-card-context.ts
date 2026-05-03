@@ -1,6 +1,8 @@
 import { inject, InjectionToken, Signal } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
 
@@ -8,7 +10,16 @@ export interface ForHoverCardContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly placement: Signal<Placement>;
+  readonly side: Signal<FloatingSide | undefined>;
+  readonly align: Signal<FloatingAlign | undefined>;
   readonly offset: Signal<number>;
+  readonly sideOffset: Signal<number | undefined>;
+  readonly alignOffset: Signal<number>;
+  readonly avoidCollisions: Signal<boolean>;
+  readonly collisionPadding: Signal<number>;
+  readonly arrowPadding: Signal<number>;
+  readonly sticky: Signal<'partial' | 'always' | false>;
+  readonly hideWhenDetached: Signal<boolean>;
   readonly trigger: Signal<HTMLElement | null>;
   readonly arrow: Signal<HTMLElement | null>;
 

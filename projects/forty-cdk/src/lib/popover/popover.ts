@@ -5,11 +5,13 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   output,
   signal,
 } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_POPOVER_CONTEXT, ForPopoverContext } from './popover-context';
 
@@ -58,11 +60,74 @@ export class ForPopover implements ForPopoverContext {
    */
   readonly open = model<boolean>(false);
 
-  /** Floating-ui placement (e.g. `'bottom'`, `'bottom-start'`). Default `'bottom'`. */
+  /**
+   * Floating-ui placement (e.g. `'bottom'`, `'bottom-start'`). Default
+   * `'bottom'`. Legacy single-string API — new code should prefer the
+   * `side` + `align` pair, which compose to the same placement.
+   */
   readonly placement = input<Placement>('bottom');
 
-  /** Gap (px) between trigger and content. Forwarded to floating-ui's `offset` middleware. Default `8`. */
+  /**
+   * Side the popover is anchored to. When set, takes precedence over
+   * `placement`. Pair with `align` for the full positioning API
+   * (`side="bottom" align="start"` ≡ `placement="bottom-start"`).
+   */
+  readonly side = input<FloatingSide | undefined>(undefined);
+
+  /** Alignment along the chosen `side`. Defaults to `'center'`. */
+  readonly align = input<FloatingAlign | undefined>(undefined);
+
+  /**
+   * Gap (px) between trigger and content along the *main* axis (perpendicular
+   * to `side`). Default `8`. Forwarded to floating-ui's `offset` middleware.
+   * Legacy alias kept for backward compatibility — new code should use
+   * `sideOffset` instead.
+   */
   readonly offset = input<number>(8);
+
+  /**
+   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
+   * Identical semantics to Radix's `sideOffset`.
+   */
+  readonly sideOffset = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /**
+   * When `true` (default), `flip` and `shift` keep the popover inside the
+   * viewport. Disable for strict positioning where overflow is acceptable.
+   */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares. Default `8`. Mirrors Radix's `collisionPadding`.
+   */
+  readonly collisionPadding = input(8, { transform: numberAttribute });
+
+  /**
+   * Padding (px) for the `arrow` middleware so the arrow stays inside any
+   * rounded corners on the popover content. Default `0`.
+   */
+  readonly arrowPadding = input(0, { transform: numberAttribute });
+
+  /**
+   * Stickiness behaviour for `shift`. `'partial'` (default) lets the
+   * popover shift to stay visible. `'always'` disables `shift` so the
+   * popover keeps its requested placement even off-screen. `false`
+   * is treated as `'partial'`.
+   */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /**
+   * When `true`, sets `data-detached=""` on the content while the trigger
+   * has scrolled off all clipping ancestors. Use to fade out popovers
+   * tied to scrolled-away triggers.
+   */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   /**
    * When true, trigger interaction is ignored and any open popover stays

@@ -2,6 +2,7 @@ import { inject, InjectionToken, ModelSignal, Signal } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import type {
   ListNavigationAction,
   WritingDirection,
@@ -55,7 +56,16 @@ export interface ForSelectContext {
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
   readonly placement: Signal<Placement>;
+  readonly side: Signal<FloatingSide | undefined>;
+  readonly align: Signal<FloatingAlign | undefined>;
   readonly offset: Signal<number>;
+  readonly sideOffset: Signal<number | undefined>;
+  readonly alignOffset: Signal<number>;
+  readonly avoidCollisions: Signal<boolean>;
+  readonly collisionPadding: Signal<number>;
+  readonly arrowPadding: Signal<number>;
+  readonly sticky: Signal<'partial' | 'always' | false>;
+  readonly hideWhenDetached: Signal<boolean>;
   readonly loop: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;

@@ -6,6 +6,7 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   output,
   signal,
 } from '@angular/core';
@@ -13,6 +14,7 @@ import type { Placement, ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -78,8 +80,47 @@ export class ForSelect implements FormValueControl<readonly string[]>, ForSelect
 
   readonly multiple = input(false, { transform: booleanAttribute });
 
+  /**
+   * Floating-ui placement. Default `'bottom-start'`. Legacy single-string
+   * API — new code should prefer the `side` + `align` pair.
+   */
   readonly placement = input<Placement>('bottom-start');
+
+  /**
+   * Side the listbox is anchored to. When set, takes precedence over
+   * `placement`. Pair with `align` for the full positioning API.
+   */
+  readonly side = input<FloatingSide | undefined>(undefined);
+
+  /** Alignment along the chosen `side`. Defaults to `'center'`. */
+  readonly align = input<FloatingAlign | undefined>(undefined);
+
+  /** Gap (px) between trigger and listbox along the main axis. Default `4`. Legacy alias for `sideOffset`. */
   readonly offset = input<number>(4);
+
+  /** Gap (px) along the main axis. When set, overrides the legacy `offset`. */
+  readonly sideOffset = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Gap (px) along the cross axis. Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /** When `true` (default), `flip` and `shift` keep the listbox inside the viewport. */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
+  readonly collisionPadding = input(8, { transform: numberAttribute });
+
+  /** Padding (px) for the `arrow` middleware. Default `0`. */
+  readonly arrowPadding = input(0, { transform: numberAttribute });
+
+  /** Stickiness behaviour for `shift`. Default `'partial'`. */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+
   readonly loop = input(true, { transform: booleanAttribute });
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
   readonly dir = input<WritingDirection>('ltr');

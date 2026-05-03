@@ -5,10 +5,12 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   signal,
 } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -48,11 +50,67 @@ export class ForTooltip implements ForTooltipContext {
    */
   readonly open = model<boolean>(false);
 
-  /** Floating-ui placement (e.g. `'top'`, `'bottom-start'`). Default `'top'`. */
+  /**
+   * Floating-ui placement (e.g. `'top'`, `'bottom-start'`). Default `'top'`.
+   * Legacy single-string API — new code should prefer the `side` + `align`
+   * pair, which compose to the same placement.
+   */
   readonly placement = input<Placement>('top');
 
-  /** Gap (px) between trigger and content. Forwarded to floating-ui's `offset` middleware. Default `8`. */
+  /**
+   * Side the tooltip is anchored to. When set, takes precedence over
+   * `placement`. Pair with `align` for the full positioning API.
+   */
+  readonly side = input<FloatingSide | undefined>(undefined);
+
+  /** Alignment along the chosen `side`. Defaults to `'center'`. */
+  readonly align = input<FloatingAlign | undefined>(undefined);
+
+  /**
+   * Gap (px) between trigger and content along the *main* axis.
+   * Default `8`. Legacy alias kept for backward compatibility — new
+   * code should use `sideOffset` instead.
+   */
   readonly offset = input<number>(8);
+
+  /**
+   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
+   * Identical semantics to Radix's `sideOffset`.
+   */
+  readonly sideOffset = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /**
+   * When `true` (default), `flip` and `shift` keep the tooltip inside the
+   * viewport. Disable for strict positioning where overflow is acceptable.
+   */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares. Default `8`.
+   */
+  readonly collisionPadding = input(8, { transform: numberAttribute });
+
+  /** Padding (px) for the `arrow` middleware. Default `0`. */
+  readonly arrowPadding = input(0, { transform: numberAttribute });
+
+  /**
+   * Stickiness behaviour for `shift`. `'partial'` (default) lets the
+   * tooltip shift to stay visible. `'always'` keeps the requested
+   * placement even off-screen.
+   */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /**
+   * When `true`, sets `data-detached=""` while the trigger has scrolled
+   * off all clipping ancestors.
+   */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`

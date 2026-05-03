@@ -5,10 +5,12 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   signal,
 } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,
@@ -60,11 +62,49 @@ export class ForHoverCard implements ForHoverCardContext {
    */
   readonly open = model<boolean>(false);
 
-  /** Floating-ui placement. Default `'top'`. */
+  /**
+   * Floating-ui placement. Default `'top'`. Legacy single-string API —
+   * new code should prefer the `side` + `align` pair.
+   */
   readonly placement = input<Placement>('top');
 
-  /** Gap (px) between trigger and card. Default `8`. */
+  /**
+   * Side the card is anchored to. When set, takes precedence over
+   * `placement`. Pair with `align` for the full positioning API.
+   */
+  readonly side = input<FloatingSide | undefined>(undefined);
+
+  /** Alignment along the chosen `side`. Defaults to `'center'`. */
+  readonly align = input<FloatingAlign | undefined>(undefined);
+
+  /** Gap (px) between trigger and card along the main axis. Default `8`. Legacy alias for `sideOffset`. */
   readonly offset = input<number>(8);
+
+  /**
+   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
+   * Identical semantics to Radix's `sideOffset`.
+   */
+  readonly sideOffset = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Gap (px) along the cross axis. Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /** When `true` (default), `flip` and `shift` keep the card inside the viewport. */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
+  readonly collisionPadding = input(8, { transform: numberAttribute });
+
+  /** Padding (px) for the `arrow` middleware. Default `0`. */
+  readonly arrowPadding = input(0, { transform: numberAttribute });
+
+  /** Stickiness behaviour for `shift`. Default `'partial'`. */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
   readonly openDelay = input<number | undefined>(undefined);

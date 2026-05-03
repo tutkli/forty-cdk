@@ -5,12 +5,14 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   output,
   signal,
 } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../_internal/collection/collection';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
@@ -78,8 +80,46 @@ export class ForMenuSub implements ForMenuContext {
 
   readonly open = model<boolean>(false);
 
+  /**
+   * Floating-ui placement relative to the parent item. Default
+   * `'right-start'`. Legacy API — new code should prefer `side` + `align`.
+   */
   readonly placement = input<Placement>('right-start');
+
+  /**
+   * Side the submenu opens on. When set, takes precedence over `placement`.
+   */
+  readonly side = input<FloatingSide | undefined>(undefined);
+
+  /** Alignment along the chosen `side`. Defaults to `'center'`. */
+  readonly align = input<FloatingAlign | undefined>(undefined);
+
+  /** Gap (px) along the main axis. Default `0`. Legacy alias for `sideOffset`. */
   readonly offset = input<number>(0);
+
+  /** Gap (px) along the main axis. When set, overrides the legacy `offset`. */
+  readonly sideOffset = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Gap (px) along the cross axis. Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /** When `true` (default), `flip` and `shift` keep the submenu inside the viewport. */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
+  readonly collisionPadding = input(8, { transform: numberAttribute });
+
+  /** Padding (px) for the `arrow` middleware. Default `0`. */
+  readonly arrowPadding = input(0, { transform: numberAttribute });
+
+  /** Stickiness behaviour for `shift`. Default `'partial'`. */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /** When `true`, sets `data-detached=""` while the parent item is scrolled off-screen. */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+
   readonly loop = input(true, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly dismissible = input(true, { transform: booleanAttribute });

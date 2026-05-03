@@ -35,7 +35,16 @@ export class ForTooltipContent {
       reference: this.ctx.trigger,
       open: this.ctx.open,
       placement: this.ctx.placement,
+      side: this.ctx.side,
+      align: this.ctx.align,
       offset: this.ctx.offset,
+      sideOffset: this.ctx.sideOffset,
+      alignOffset: this.ctx.alignOffset,
+      avoidCollisions: this.ctx.avoidCollisions,
+      collisionPadding: this.ctx.collisionPadding,
+      arrowPadding: this.ctx.arrowPadding,
+      sticky: this.ctx.sticky,
+      hideWhenDetached: this.ctx.hideWhenDetached,
       arrow: this.ctx.arrow,
     });
   }

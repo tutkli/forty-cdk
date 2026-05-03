@@ -1,6 +1,8 @@
 import { inject, InjectionToken, ModelSignal, Signal } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+
 /**
  * Coordination contract owned by `ForPopover`. Trigger / Content register
  * their elements (for floating-ui positioning, dismissable-layer exemptions,
@@ -19,7 +21,16 @@ export interface ForPopoverContext {
   readonly initialFocus: Signal<'first' | 'container'>;
 
   readonly placement: Signal<Placement>;
+  readonly side: Signal<FloatingSide | undefined>;
+  readonly align: Signal<FloatingAlign | undefined>;
   readonly offset: Signal<number>;
+  readonly sideOffset: Signal<number | undefined>;
+  readonly alignOffset: Signal<number>;
+  readonly avoidCollisions: Signal<boolean>;
+  readonly collisionPadding: Signal<number>;
+  readonly arrowPadding: Signal<number>;
+  readonly sticky: Signal<'partial' | 'always' | false>;
+  readonly hideWhenDetached: Signal<boolean>;
 
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
