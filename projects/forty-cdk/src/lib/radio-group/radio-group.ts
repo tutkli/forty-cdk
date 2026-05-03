@@ -10,6 +10,7 @@ import {
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
+import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
@@ -90,14 +91,7 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
 
   readonly #items = new Collection<ForRadioHandle>();
 
-  readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const item of this.#items.items()) {
-      if (!item.disabled()) {
-        return item.host;
-      }
-    }
-    return null;
-  });
+  readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
   constructor() {
     injectHiddenInput({
