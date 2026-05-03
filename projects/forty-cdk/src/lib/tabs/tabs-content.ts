@@ -26,24 +26,25 @@ import { injectTabsContext } from './tabs-context';
     '[id]': 'id()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',
+    '[attr.data-orientation]': 'group.orientation()',
     '[attr.hidden]': 'selected() ? null : ""',
   },
 })
 export class ForTabsContent {
-  readonly #group = injectTabsContext('ForTabsContent');
+  protected readonly group = injectTabsContext('ForTabsContent');
   readonly #idGen = inject(IdGenerator);
 
   readonly value = input.required<string>();
 
   readonly id = signal(this.#idGen.next('for-tabs-content'));
 
-  readonly selected = computed(() => this.#group.isSelected(this.value()));
-  protected readonly labelledBy = computed(() => this.#group.triggerIdFor(this.value()));
+  readonly selected = computed(() => this.group.isSelected(this.value()));
+  protected readonly labelledBy = computed(() => this.group.triggerIdFor(this.value()));
 
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     const handle = { host, id: this.id, value: this.value };
-    this.#group.registerContent(handle);
-    inject(DestroyRef).onDestroy(() => this.#group.unregisterContent(handle));
+    this.group.registerContent(handle);
+    inject(DestroyRef).onDestroy(() => this.group.unregisterContent(handle));
   }
 }

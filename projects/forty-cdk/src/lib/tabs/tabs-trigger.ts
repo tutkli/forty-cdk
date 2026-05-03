@@ -35,13 +35,14 @@ import { injectTabsContext } from './tabs-context';
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForTabsTrigger {
-  readonly #group = injectTabsContext('ForTabsTrigger');
+  protected readonly group = injectTabsContext('ForTabsTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
 
@@ -50,12 +51,12 @@ export class ForTabsTrigger {
 
   readonly id = signal(this.#idGen.next('for-tabs-trigger'));
 
-  readonly selected = computed(() => this.#group.isSelected(this.value()));
+  readonly selected = computed(() => this.group.isSelected(this.value()));
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.#group.disabled(),
+    () => this.disabled() || this.group.disabled(),
   );
 
-  protected readonly controlsId = computed(() => this.#group.contentIdFor(this.value()));
+  protected readonly controlsId = computed(() => this.group.contentIdFor(this.value()));
 
   /**
    * APG tabindex: user-driven roving owns it once any trigger has been
@@ -65,16 +66,16 @@ export class ForTabsTrigger {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    if (this.#group.roving.active() !== null) {
-      return this.#group.roving.tabindexFor(this.#host.nativeElement);
+    if (this.group.roving.active() !== null) {
+      return this.group.roving.tabindexFor(this.#host.nativeElement);
     }
     if (this.selected()) {
       return 0;
     }
-    if (this.#group.value() !== '') {
+    if (this.group.value() !== '') {
       return -1;
     }
-    return this.#group.isFirstEnabledTrigger(this.#host.nativeElement) ? 0 : -1;
+    return this.group.isFirstEnabledTrigger(this.#host.nativeElement) ? 0 : -1;
   });
 
   constructor() {
@@ -84,22 +85,22 @@ export class ForTabsTrigger {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.#group.registerTrigger(handle);
-    inject(DestroyRef).onDestroy(() => this.#group.unregisterTrigger(handle));
+    this.group.registerTrigger(handle);
+    inject(DestroyRef).onDestroy(() => this.group.unregisterTrigger(handle));
   }
 
   protected onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#group.select(this.value());
+    this.group.select(this.value());
   }
 
   protected onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#group.roving.setActive(this.#host.nativeElement);
+    this.group.roving.setActive(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -107,13 +108,13 @@ export class ForTabsTrigger {
       return;
     }
     const action = resolveListNavigation(event, {
-      orientation: this.#group.orientation(),
-      dir: this.#group.dir(),
+      orientation: this.group.orientation(),
+      dir: this.group.dir(),
     });
     if (!action) {
       return;
     }
     event.preventDefault();
-    this.#group.navigate(this.#host.nativeElement, action);
+    this.group.navigate(this.#host.nativeElement, action);
   }
 }

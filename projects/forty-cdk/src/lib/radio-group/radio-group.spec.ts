@@ -86,6 +86,29 @@ describe('ForRadioGroup', () => {
       expect(new Set(ids).size).toBe(3);
       ids.forEach((id) => expect(id).toBeTruthy());
     });
+
+    it('propagates data-orientation to each radio (and to the indicator when present)', () => {
+      @Component({
+        imports: [ForRadioGroup, ForRadio, ForRadioIndicator],
+        template: `
+          <div forRadioGroup [(value)]="color" orientation="horizontal">
+            <button type="button" forRadio value="red" data-test-id="red">
+              <span forRadioIndicator data-test-id="red-indicator"></span>
+            </button>
+            <button type="button" forRadio value="green" data-test-id="green"></button>
+          </div>
+        `,
+      })
+      class IndicatorHost {
+        readonly color = signal('red');
+      }
+
+      const { el } = renderHost(IndicatorHost);
+      expect(radioOf(el, 'red').getAttribute('data-orientation')).toBe('horizontal');
+      expect(radioOf(el, 'green').getAttribute('data-orientation')).toBe('horizontal');
+      const indicator = el.querySelector<HTMLElement>('[data-test-id="red-indicator"]')!;
+      expect(indicator.getAttribute('data-orientation')).toBe('horizontal');
+    });
   });
 
   describe('initial tabindex', () => {

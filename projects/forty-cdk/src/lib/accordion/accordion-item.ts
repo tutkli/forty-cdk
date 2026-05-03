@@ -25,13 +25,14 @@ import {
   host: {
     '[attr.data-state]': 'expanded() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-orientation]': 'parent.orientation()',
   },
   providers: [
     { provide: FOR_ACCORDION_ITEM_CONTEXT, useExisting: ForAccordionItem },
   ],
 })
 export class ForAccordionItem implements ForAccordionItemContext {
-  readonly #parent = injectAccordionContext('ForAccordionItem');
+  protected readonly parent = injectAccordionContext('ForAccordionItem');
   readonly #idGen = inject(IdGenerator);
 
   /** Unique identifier of this item within the accordion. Required. */
@@ -43,12 +44,12 @@ export class ForAccordionItem implements ForAccordionItemContext {
   readonly triggerId = signal(this.#idGen.next('for-accordion-trigger'));
   readonly contentId = signal(this.#idGen.next('for-accordion-content'));
 
-  readonly expanded = computed(() => this.#parent.isExpanded(this.value()));
+  readonly expanded = computed(() => this.parent.isExpanded(this.value()));
 
   toggle(): void {
     if (this.disabled()) {
       return;
     }
-    this.#parent.toggle(this.value());
+    this.parent.toggle(this.value());
   }
 }

@@ -1,6 +1,9 @@
 import { Directive } from '@angular/core';
 
-import { injectAccordionItemContext } from './accordion-context';
+import {
+  injectAccordionContext,
+  injectAccordionItemContext,
+} from './accordion-context';
 
 /**
  * Panel revealed by a `ForAccordionTrigger`. The directive does not manage
@@ -21,8 +24,10 @@ import { injectAccordionItemContext } from './accordion-context';
     '[attr.role]': '"region"',
     '[attr.aria-labelledby]': 'item.triggerId()',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
+    '[attr.data-orientation]': 'parent.orientation()',
   },
 })
 export class ForAccordionContent {
+  protected readonly parent = injectAccordionContext('ForAccordionContent');
   protected readonly item = injectAccordionItemContext('ForAccordionContent');
 }

@@ -81,6 +81,16 @@ describe('ForToggleGroup', () => {
       expect(group.getAttribute('data-orientation')).toBe('vertical');
     });
 
+    it('propagates data-orientation to each item', () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.orientation.set('vertical');
+      r.flush();
+
+      for (const v of ['left', 'center', 'right']) {
+        expect(itemOf(r.el, v).getAttribute('data-orientation')).toBe('vertical');
+      }
+    });
+
     it('reflects group-level disabled', () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.groupDisabled.set(true);

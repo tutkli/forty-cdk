@@ -66,6 +66,17 @@ describe('ForToolbar', () => {
       flush();
       expect(query<HTMLElement>('[forToolbar]')!.getAttribute('dir')).toBe('rtl');
     });
+
+    it('propagates data-orientation to button and link', () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.orientation.set('vertical');
+      flush();
+
+      const button = query<HTMLButtonElement>('[forToolbarButton]')!;
+      const link = query<HTMLAnchorElement>('[forToolbarLink]')!;
+      expect(button.getAttribute('data-orientation')).toBe('vertical');
+      expect(link.getAttribute('data-orientation')).toBe('vertical');
+    });
   });
 
   describe('roving tabindex', () => {

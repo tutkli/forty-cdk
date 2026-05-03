@@ -15,6 +15,7 @@ import { ForRadio } from './radio';
   exportAs: 'forRadioIndicator',
   host: {
     '[attr.data-state]': 'parent.checked() ? "checked" : "unchecked"',
+    '[attr.data-orientation]': 'parent.group.orientation()',
     '[attr.hidden]': 'parent.checked() ? null : ""',
   },
 })

@@ -24,13 +24,14 @@ import {
     '[attr.aria-disabled]': 'ariaDisabled() ? "true" : null',
     '[attr.disabled]': 'item.disabled() ? "" : null',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
+    '[attr.data-orientation]': 'parent.orientation()',
     '(click)': 'item.toggle()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForAccordionTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #parent = injectAccordionContext('ForAccordionTrigger');
+  protected readonly parent = injectAccordionContext('ForAccordionTrigger');
   protected readonly item = injectAccordionItemContext('ForAccordionTrigger');
 
   /**
@@ -42,18 +43,18 @@ export class ForAccordionTrigger {
     if (this.item.disabled()) {
       return false;
     }
-    return this.item.expanded() && !this.#parent.canCollapse(this.item.value());
+    return this.item.expanded() && !this.parent.canCollapse(this.item.value());
   });
 
   protected onKeyDown(event: KeyboardEvent): void {
     const action = resolveListNavigation(event, {
-      orientation: this.#parent.orientation(),
-      dir: this.#parent.dir(),
+      orientation: this.parent.orientation(),
+      dir: this.parent.dir(),
     });
     if (!action) {
       return;
     }
     event.preventDefault();
-    this.#parent.focusByOffset(this.#host.nativeElement, action);
+    this.parent.focusByOffset(this.#host.nativeElement, action);
   }
 }

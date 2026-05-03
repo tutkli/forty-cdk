@@ -25,29 +25,30 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-orientation]': 'toolbar?.orientation()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForToolbarButton {
-  readonly #toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
+  protected readonly toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Per-item disabled (in addition to the toolbar's `disabled`). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || (this.#toolbar?.disabled() ?? false),
+    () => this.disabled() || (this.toolbar?.disabled() ?? false),
   );
 
   readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled() || !this.#toolbar) {
+    if (this.effectiveDisabled() || !this.toolbar) {
       return this.effectiveDisabled() ? -1 : 0;
     }
-    return this.#toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+    return this.toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
   constructor() {
-    if (!this.#toolbar) {
+    if (!this.toolbar) {
       throw new Error(
         '[forty-cdk/toolbar] ForToolbarButton must be used inside a [forToolbar] element.',
       );
@@ -56,22 +57,22 @@ export class ForToolbarButton {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
     };
-    this.#toolbar.registerItem(handle);
-    inject(DestroyRef).onDestroy(() => this.#toolbar!.unregisterItem(handle));
+    this.toolbar.registerItem(handle);
+    inject(DestroyRef).onDestroy(() => this.toolbar!.unregisterItem(handle));
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled() || !this.#toolbar) {
+    if (this.effectiveDisabled() || !this.toolbar) {
       return;
     }
     const action = resolveListNavigation(event, {
-      orientation: this.#toolbar.orientation(),
-      dir: this.#toolbar.dir(),
+      orientation: this.toolbar.orientation(),
+      dir: this.toolbar.dir(),
     });
     if (!action) {
       return;
     }
     event.preventDefault();
-    this.#toolbar.navigate(this.#host.nativeElement, action);
+    this.toolbar.navigate(this.#host.nativeElement, action);
   }
 }

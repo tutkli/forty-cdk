@@ -41,12 +41,13 @@ import { injectToggleGroupContext } from './toggle-group-context';
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'pressed() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForToggleGroupItem {
-  readonly #group = injectToggleGroupContext('ForToggleGroupItem');
+  protected readonly group = injectToggleGroupContext('ForToggleGroupItem');
   readonly #toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -56,10 +57,10 @@ export class ForToggleGroupItem {
   /** Per-item disabled (in addition to the group's `disabled`). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly pressed = computed(() => this.#group.isSelected(this.value()));
+  readonly pressed = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.#group.disabled() || (this.#toolbar?.disabled() ?? false),
+    () => this.disabled() || this.group.disabled() || (this.#toolbar?.disabled() ?? false),
   );
 
   /**
@@ -71,7 +72,7 @@ export class ForToggleGroupItem {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    const owner = this.#toolbar ?? this.#group;
+    const owner = this.#toolbar ?? this.group;
     return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
@@ -81,7 +82,7 @@ export class ForToggleGroupItem {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.#group.registerItem(groupHandle);
+    this.group.registerItem(groupHandle);
 
     const toolbarHandle = this.#toolbar
       ? { host: this.#host.nativeElement, disabled: this.effectiveDisabled }
@@ -91,7 +92,7 @@ export class ForToggleGroupItem {
     }
 
     inject(DestroyRef).onDestroy(() => {
-      this.#group.unregisterItem(groupHandle);
+      this.group.unregisterItem(groupHandle);
       if (this.#toolbar && toolbarHandle) {
         this.#toolbar.unregisterItem(toolbarHandle);
       }
@@ -102,14 +103,14 @@ export class ForToggleGroupItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#group.toggle(this.value());
+    this.group.toggle(this.value());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    const owner = this.#toolbar ?? this.#group;
+    const owner = this.#toolbar ?? this.group;
     const action = resolveListNavigation(event, {
       orientation: owner.orientation(),
       dir: owner.dir(),
