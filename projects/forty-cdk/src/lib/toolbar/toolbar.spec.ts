@@ -217,13 +217,17 @@ describe('ForToolbar', () => {
 
       const sep = query<HTMLElement>('[forToolbarSeparator]')!;
       // Horizontal toolbar → vertical separator (cross-axis).
-      // Default orientation on ForSeparator is 'horizontal' if no input is bound;
-      // we explicitly set the override below in another test pattern.
       expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('data-orientation')).toBe('vertical');
+      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
 
+      // Vertical toolbar → horizontal separator (cross-axis). aria-orientation
+      // is only emitted for 'vertical' (horizontal is the ARIA default).
       fixture.componentInstance.orientation.set('vertical');
       flush();
       expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
+      expect(sep.getAttribute('aria-orientation')).toBeNull();
     });
   });
 
