@@ -34,6 +34,12 @@ export interface ForHoverCardContext {
   scheduleClose(reason: HoverCardScheduleReason): void;
   /** Cancel any pending open / close timer without changing state. */
   cancelPending(): void;
+  /**
+   * Emit the public `(escapeKeyDown)` output and, unless prevented, close.
+   * The trigger AND the portaled content both delegate Escape handling here
+   * so the card responds regardless of where focus lives.
+   */
+  emitEscapeKeyDown(event: KeyboardEvent): void;
 }
 
 export const FOR_HOVER_CARD_CONTEXT = new InjectionToken<ForHoverCardContext>(

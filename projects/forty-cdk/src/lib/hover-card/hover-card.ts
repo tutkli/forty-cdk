@@ -140,6 +140,13 @@ export class ForHoverCard implements ForHoverCardContext {
   /** When true, all hover / focus interaction is ignored and any open card is forced closed. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Fires when the user presses Escape while the card is open, regardless of
+   * whether focus is on the trigger or inside the portaled content. Call
+   * `event.preventDefault()` to suppress the automatic close.
+   */
+  readonly escapeKeyDown = output<KeyboardEvent>();
+
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
 
@@ -254,6 +261,23 @@ export class ForHoverCard implements ForHoverCardContext {
     if (this.#pendingTimer !== null) {
       clearTimeout(this.#pendingTimer);
       this.#pendingTimer = null;
+    }
+  }
+
+  /**
+   * Emit `(escapeKeyDown)` and, unless the consumer calls `preventDefault()`
+   * on the event, close immediately. Called by the trigger and the portaled
+   * content so Escape works no matter where focus currently lives.
+   */
+  emitEscapeKeyDown(event: KeyboardEvent): void {
+    if (!this.open()) {
+      return;
+    }
+    this.escapeKeyDown.emit(event);
+    if (!event.defaultPrevented) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.scheduleClose('escape');
     }
   }
 }
