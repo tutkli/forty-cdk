@@ -73,7 +73,7 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('is forced closed when disabled', () => {
+    it('is forced closed when disabled flips to true', () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       flush();
       const trigger = query<HTMLAnchorElement>('a')!;
@@ -82,17 +82,35 @@ describe('ForHoverCard', () => {
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
+      // Flipping disabled true must force-close the card AND propagate
+      // through (openChange) so consumer's [(open)] binding stays in sync.
       fixture.componentInstance.isDisabled.set(true);
       flush();
-      // disabled does not auto-close — but a subsequent enter is ignored.
-      trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
-      vi.advanceTimersByTime(0);
-      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
 
-      // Reopen attempt while disabled is no-op.
+    it('ignores reopen attempts while disabled', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isDisabled.set(true);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
       trigger.dispatchEvent(pointerEvent('pointerenter'));
       flush();
+      vi.advanceTimersByTime(1000);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('rejects consumer writes to [(open)] while disabled', () => {
+      const { fixture, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isDisabled.set(true);
+      flush();
+
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+      // The directive must override the attempt: open stays false and the
+      // consumer's signal is reset.
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
