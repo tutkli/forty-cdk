@@ -278,6 +278,17 @@ describe('ForAccordion', () => {
       expect(root.getAttribute('data-orientation')).toBe('horizontal');
     });
 
+    it('propagates data-orientation to item, trigger, and content', () => {
+      const { el } = renderHost(HorizontalHost);
+      const item = el.querySelector('[forAccordionItem]')!;
+      const trigger = el.querySelector('[forAccordionTrigger]')!;
+      const content = el.querySelector('[forAccordionContent]')!;
+
+      expect(item.getAttribute('data-orientation')).toBe('horizontal');
+      expect(trigger.getAttribute('data-orientation')).toBe('horizontal');
+      expect(content.getAttribute('data-orientation')).toBe('horizontal');
+    });
+
     it('uses ArrowRight/ArrowLeft instead of ArrowDown/ArrowUp', () => {
       const { el } = renderHost(HorizontalHost);
       triggerOf(el, 'a').focus();

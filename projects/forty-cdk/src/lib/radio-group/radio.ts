@@ -33,12 +33,14 @@ import { injectRadioGroupContext } from './radio-group-context';
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForRadio {
-  readonly #group = injectRadioGroupContext('ForRadio');
+  /** Parent group's context — public so siblings like `ForRadioIndicator` can read it. */
+  readonly group = injectRadioGroupContext('ForRadio');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
 
@@ -50,10 +52,10 @@ export class ForRadio {
 
   readonly id = signal(this.#idGen.next('for-radio'));
 
-  readonly checked = computed(() => this.#group.isSelected(this.value()));
+  readonly checked = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.#group.disabled(),
+    () => this.disabled() || this.group.disabled(),
   );
 
   constructor() {
@@ -62,8 +64,8 @@ export class ForRadio {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.#group.registerRadio(handle);
-    inject(DestroyRef).onDestroy(() => this.#group.unregisterRadio(handle));
+    this.group.registerRadio(handle);
+    inject(DestroyRef).onDestroy(() => this.group.unregisterRadio(handle));
   }
 
   /**
@@ -79,17 +81,17 @@ export class ForRadio {
     if (this.checked()) {
       return 0;
     }
-    if (this.#group.value() !== '') {
+    if (this.group.value() !== '') {
       return -1;
     }
-    return this.#group.isFirstEnabledRadio(this.#host.nativeElement) ? 0 : -1;
+    return this.group.isFirstEnabledRadio(this.#host.nativeElement) ? 0 : -1;
   });
 
   protected onClick(): void {
-    if (this.effectiveDisabled() || this.#group.readonly()) {
+    if (this.effectiveDisabled() || this.group.readonly()) {
       return;
     }
-    this.#group.select(this.value());
+    this.group.select(this.value());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -97,13 +99,13 @@ export class ForRadio {
       return;
     }
     const action = resolveListNavigation(event, {
-      orientation: this.#group.orientation(),
-      dir: this.#group.dir(),
+      orientation: this.group.orientation(),
+      dir: this.group.dir(),
     });
     if (!action) {
       return;
     }
     event.preventDefault();
-    this.#group.navigate(this.#host.nativeElement, action);
+    this.group.navigate(this.#host.nativeElement, action);
   }
 }

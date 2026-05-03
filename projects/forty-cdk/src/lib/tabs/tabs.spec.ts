@@ -252,6 +252,15 @@ describe('ForTabs', () => {
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
     });
+
+    it('propagates data-orientation to trigger and content', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.orientation.set('vertical');
+      flush();
+
+      expect(triggerOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
+      expect(contentOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
+    });
   });
 
   describe('horizontal RTL', () => {
