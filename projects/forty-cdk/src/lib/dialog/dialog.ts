@@ -55,6 +55,7 @@ import {
     '[attr.aria-label]': 'ariaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
+    'data-state': 'open',
     tabindex: '-1',
   },
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],

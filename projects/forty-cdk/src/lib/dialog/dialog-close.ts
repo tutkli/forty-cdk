@@ -13,6 +13,7 @@ import { injectDialogContext } from './dialog-context';
   exportAs: 'forDialogClose',
   host: {
     type: 'button',
+    'data-state': 'open',
     '(click)': 'onClick()',
   },
 })
