@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
+import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -62,14 +63,7 @@ export class ForToolbar implements ForToolbarContext {
 
   readonly #items = new Collection<ForToolbarItemHandle>();
 
-  readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const item of this.#items.items()) {
-      if (!item.disabled()) {
-        return item.host;
-      }
-    }
-    return null;
-  });
+  readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {

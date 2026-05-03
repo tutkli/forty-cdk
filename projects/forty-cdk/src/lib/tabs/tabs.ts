@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
+import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -69,14 +70,9 @@ export class ForTabs implements ForTabsContext {
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
   readonly #contents = new Collection<ForTabsContentHandle>();
 
-  readonly #firstEnabledTriggerHost = computed<HTMLElement | null>(() => {
-    for (const t of this.#triggers.items()) {
-      if (!t.disabled()) {
-        return t.host;
-      }
-    }
-    return null;
-  });
+  readonly #firstEnabledTriggerHost = computed(() =>
+    firstEnabledHost(this.#triggers.items()),
+  );
 
   isSelected(v: string): boolean {
     return this.value() === v;

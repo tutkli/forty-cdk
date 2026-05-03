@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
+import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -95,14 +96,7 @@ export class ForToggleGroup implements ForToggleGroupContext {
     return null;
   });
 
-  readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const item of this.#items.items()) {
-      if (!item.disabled()) {
-        return item.host;
-      }
-    }
-    return null;
-  });
+  readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
   isSelected(v: string): boolean {
     return this.value().includes(v);
