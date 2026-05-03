@@ -8,6 +8,7 @@ import {
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
+import { injectPortal } from '../_internal/portal/portal';
 import { injectSelectContext } from './select-context';
 
 /**
@@ -48,6 +49,8 @@ export class ForSelectContent {
   readonly #dismissable = injectDismissableLayer();
 
   constructor() {
+    injectPortal();
+
     this.ctx.registerContent(this.#host.nativeElement);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
 

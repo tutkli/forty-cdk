@@ -170,6 +170,15 @@ describe('ForCombobox', () => {
       expect(root.getAttribute('data-state')).toBe('open');
       expect(input.getAttribute('data-state')).toBe('open');
     });
+
+    it('portals the listbox content directly under document.body', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      expect(content.parentElement).toBe(document.body);
+    });
   });
 
   describe('open behavior', () => {
