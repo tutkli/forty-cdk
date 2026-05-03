@@ -155,6 +155,15 @@ describe('ForSelect', () => {
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.getAttribute('data-state')).toBe('open');
     });
+
+    it('portals the listbox content directly under document.body', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.parentElement).toBe(document.body);
+    });
   });
 
   describe('trigger interaction (closed)', () => {
