@@ -10,6 +10,7 @@ import {
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
+import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
@@ -96,14 +97,7 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
 
   readonly #options = new Collection<ForListboxOptionHandle>();
 
-  readonly #firstEnabledHost = computed<HTMLElement | null>(() => {
-    for (const o of this.#options.items()) {
-      if (!o.disabled()) {
-        return o.host;
-      }
-    }
-    return null;
-  });
+  readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
   constructor() {
     injectHiddenInput({
