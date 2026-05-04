@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../test-utils/render';
 import { ForMenuContent } from '../menu/menu-content';
@@ -13,7 +14,10 @@ const IMPORTS = [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuI
   imports: IMPORTS,
   template: `
     <div forContextMenu [(open)]="open" [disabled]="disabled()">
-      <div id="region" forContextMenuTrigger tabindex="-1">Right-click here</div>
+      <div id="region" forContextMenuTrigger tabindex="-1">
+        Right-click here
+        <button id="inner-btn" type="button">Inner</button>
+      </div>
       @if (open()) {
         <div forMenuContent>
           <button id="cut" forMenuItem (select)="lastSelected.set('cut')">Cut</button>
@@ -27,6 +31,35 @@ class ContextMenuHost {
   readonly open = signal(false);
   readonly disabled = signal(false);
   readonly lastSelected = signal<string | null>(null);
+}
+
+function getMenuDirective<T>(fixture: ComponentFixture<T>): ForContextMenu {
+  return fixture.debugElement.query(By.directive(ForContextMenu)).injector.get(ForContextMenu);
+}
+
+function stubRect(
+  el: HTMLElement,
+  rect: { left?: number; top?: number; width?: number; height?: number } = {},
+): DOMRect {
+  const left = rect.left ?? 0;
+  const top = rect.top ?? 0;
+  const width = rect.width ?? 100;
+  const height = rect.height ?? 24;
+  const stubbed = {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    x: left,
+    y: top,
+    toJSON() {
+      return this;
+    },
+  } as DOMRect;
+  el.getBoundingClientRect = () => stubbed;
+  return stubbed;
 }
 
 async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
@@ -96,6 +129,163 @@ describe('ForContextMenu', () => {
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       expect(content.getAttribute('role')).toBe('menu');
+    });
+  });
+
+  describe('keyboard activator', () => {
+    const keyDown = (
+      target: HTMLElement,
+      key: string,
+      init: KeyboardEventInit = {},
+    ): KeyboardEvent => {
+      const ev = new KeyboardEvent('keydown', {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      target.dispatchEvent(ev);
+      return ev;
+    };
+
+    it('Shift+F10 on the focused trigger opens the menu and prevents the native menu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
+      region.focus();
+
+      const ev = keyDown(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(ev.defaultPrevented).toBe(true);
+    });
+
+    it('Shift+F10 anchors the menu at the focused element rect, not at (0,0)', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
+      region.focus();
+
+      keyDown(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      const anchor = getMenuDirective(r.fixture).anchor();
+      expect(anchor).not.toBeNull();
+      const rect = anchor!.getBoundingClientRect();
+      expect(rect.left).toBe(30);
+      expect(rect.top).toBe(50);
+      expect(rect.width).toBe(200);
+      expect(rect.height).toBe(80);
+    });
+
+    it('ContextMenu key opens the menu and prevents the native menu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
+      region.focus();
+
+      const ev = keyDown(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(ev.defaultPrevented).toBe(true);
+    });
+
+    it('ContextMenu key anchors at the focused element rect', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
+      region.focus();
+
+      keyDown(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      const rect = getMenuDirective(r.fixture).anchor()!.getBoundingClientRect();
+      expect(rect.left).toBe(10);
+      expect(rect.top).toBe(10);
+      expect(rect.width).toBe(50);
+      expect(rect.height).toBe(50);
+    });
+
+    it('anchors at a focused descendant rather than the trigger when focus is inside', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      stubRect(region, { left: 0, top: 0, width: 300, height: 200 });
+      stubRect(inner, { left: 110, top: 90, width: 60, height: 24 });
+      inner.focus();
+
+      keyDown(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      const rect = getMenuDirective(r.fixture).anchor()!.getBoundingClientRect();
+      expect(rect.left).toBe(110);
+      expect(rect.top).toBe(90);
+      expect(rect.width).toBe(60);
+      expect(rect.height).toBe(24);
+    });
+
+    it('falls back to the trigger rect when document.activeElement is outside the trigger', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      stubRect(region, { left: 5, top: 7, width: 11, height: 13 });
+
+      // Focus an element outside the trigger, then dispatch the key on the trigger
+      // (simulating a programmatic dispatch where activeElement isn't the source).
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+
+      keyDown(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      const rect = getMenuDirective(r.fixture).anchor()!.getBoundingClientRect();
+      expect(rect.left).toBe(5);
+      expect(rect.top).toBe(7);
+      expect(rect.width).toBe(11);
+      expect(rect.height).toBe(13);
+      outside.remove();
+    });
+
+    it('does not open or preventDefault when disabled', async () => {
+      const r = renderHost(ContextMenuHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      const evF10 = keyDown(region, 'F10', { shiftKey: true });
+      const evCtxKey = keyDown(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(evF10.defaultPrevented).toBe(false);
+      expect(evCtxKey.defaultPrevented).toBe(false);
+    });
+
+    it('plain F10 (no Shift) does not open the menu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      const ev = keyDown(region, 'F10');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('focuses the first menu item once mounted via keyboard', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      keyDown(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('cut');
     });
   });
 
