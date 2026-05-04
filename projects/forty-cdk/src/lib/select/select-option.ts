@@ -25,7 +25,9 @@ import { injectSelectContext } from './select-context';
  * Keyboard while focused:
  * - **Enter / Space** — activate (via native button click).
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
- * - **Tab** — close the listbox (focus returns to the trigger).
+ * - **Tab / Shift+Tab** — commit the focused option (single mode) and let
+ *   the browser advance focus to the next / previous focusable, mirroring
+ *   the WAI-ARIA select-only combobox pattern and native `<select>`.
  * - **Escape** — close the listbox.
  * - **Typeahead** — printable keys match by text content.
  */
@@ -83,11 +85,11 @@ export class ForSelectOption {
     }
 
     if (event.key === 'Tab') {
-      // Close + return focus to trigger (handled by Content's onDestroy).
-      // preventDefault so the in-portal Tab doesn't escape sideways before
-      // the trigger receives focus.
-      event.preventDefault();
-      this.#ctx.closeMenu('tab');
+      // APG (combobox-select-only): Tab commits the focused option and lets
+      // the browser advance focus to the next / previous focusable. Do NOT
+      // preventDefault — the browser's Tab default uses the focus we just
+      // moved to the trigger as the starting point.
+      this.#ctx.commitOnTab(this.value());
       return;
     }
 

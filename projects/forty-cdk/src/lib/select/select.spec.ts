@@ -11,12 +11,7 @@ import { ForSelectSeparator } from './select-separator';
 import { ForSelectTrigger } from './select-trigger';
 import { ForSelectValue } from './select-value';
 
-const BASE_IMPORTS = [
-  ForSelect,
-  ForSelectTrigger,
-  ForSelectContent,
-  ForSelectOption,
-];
+const BASE_IMPORTS = [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption];
 
 const HOST_IMPORTS = [...BASE_IMPORTS, ForSelectValue];
 
@@ -415,10 +410,80 @@ describe('ForSelect', () => {
       expect(activeTestId()).toBe('date');
     });
 
-    it('Tab closes and returns focus to the trigger', async () => {
+    it('Tab commits the focused option, closes, and parks focus on the trigger', async () => {
       const r = renderHost(SelectHost);
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
       r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const banana = getOption('banana');
+      banana.focus();
+      const event = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        cancelable: true,
+      });
+      banana.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.value()).toEqual(['banana']);
+      // Focus is parked on the trigger so the browser's Tab default action
+      // can advance from a stable element to the next focusable.
+      expect(document.activeElement).toBe(trigger);
+      // CRITICAL: Tab must NOT preventDefault, otherwise the browser would
+      // not advance focus past the trigger.
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('Shift+Tab commits the focused option (same handling as Tab)', async () => {
+      const r = renderHost(SelectHost);
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const date = getOption('date');
+      date.focus();
+      const event = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      date.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.value()).toEqual(['date']);
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('Tab in multi-mode closes without overwriting selection', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(['apple', 'banana']);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const date = getOption('date');
+      date.focus();
+      date.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      // Multi-mode: nothing committed by Tab — selection stays as-is.
+      expect(r.instance.value()).toEqual(['apple', 'banana']);
+    });
+
+    it('Tab on a disabled select is a no-op', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      // Flip disabled after the listbox is mounted so options exist.
+      r.instance.disabled.set(true);
       await flush(r.fixture);
 
       const apple = getOption('apple');
@@ -428,8 +493,27 @@ describe('ForSelect', () => {
       );
       await flush(r.fixture);
 
+      // Disabled short-circuits commitOnTab — no value change, listbox stays open.
+      expect(r.instance.value()).toEqual([]);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('Tab on a readonly select moves focus / closes but does not commit', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.readonly.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const banana = getOption('banana');
+      banana.focus();
+      banana.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
       expect(r.instance.open()).toBe(false);
-      expect(document.activeElement).toBe(trigger);
+      // Readonly: close fine, but no value mutation.
+      expect(r.instance.value()).toEqual([]);
     });
   });
 
@@ -637,9 +721,7 @@ describe('ForSelect', () => {
       const r = renderHost(Host);
       await flush(r.fixture);
 
-      const inputs = Array.from(
-        r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'),
-      );
+      const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
       expect(inputs).toHaveLength(1);
       expect(inputs[0]!.name).toBe('fruit');
       expect(inputs[0]!.value).toBe('apple');
@@ -667,9 +749,7 @@ describe('ForSelect', () => {
       const r = renderHost(Host);
       await flush(r.fixture);
 
-      const inputs = Array.from(
-        r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'),
-      );
+      const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
       expect(inputs.map((i) => i.value)).toEqual(['a', 'b', 'c']);
       expect(inputs.every((i) => i.name === 'tags')).toBe(true);
     });

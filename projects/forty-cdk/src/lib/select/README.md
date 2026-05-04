@@ -4,16 +4,16 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForSelect` | `[forSelect]` | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface. |
-| `ForSelectTrigger` | `[forSelectTrigger]` | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`. |
-| `ForSelectValue` | `[forSelectValue]` | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional. |
-| `ForSelectContent` | `[forSelectContent]` | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached. |
-| `ForSelectOption` | `[forSelectOption]` | One option. `value: required<string>`. |
-| `ForSelectGroup` | `[forSelectGroup]` | Logical grouping, `role="group"` with `aria-labelledby`. |
-| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group. |
-| `ForSelectSeparator` | `[forSelectSeparator]` | Decorative separator, `role="separator"`. Skipped by navigation. |
+| Class                 | Selector                | Role                                                                                                            |
+| --------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                  |
+| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`. |
+| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.            |
+| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                           |
+| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<string>`.                                                                          |
+| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                        |
+| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                         |
+| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                |
 
 ## Single mode (default)
 
@@ -25,11 +25,11 @@ Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 ele
     <span forSelectValue></span>
   </button>
   @if (favoriteOpen()) {
-    <div forSelectContent>
-      <button forSelectOption value="apple">Apple</button>
-      <button forSelectOption value="banana">Banana</button>
-      <button forSelectOption value="cherry">Cherry</button>
-    </div>
+  <div forSelectContent>
+    <button forSelectOption value="apple">Apple</button>
+    <button forSelectOption value="banana">Banana</button>
+    <button forSelectOption value="cherry">Cherry</button>
+  </div>
   }
 </div>
 ```
@@ -44,11 +44,11 @@ Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle i
     <span forSelectValue placeholder="Pick tags…"></span>
   </button>
   @if (tagsOpen()) {
-    <div forSelectContent>
-      <button forSelectOption value="ng">Angular</button>
-      <button forSelectOption value="ts">TypeScript</button>
-      <button forSelectOption value="rx">RxJS</button>
-    </div>
+  <div forSelectContent>
+    <button forSelectOption value="ng">Angular</button>
+    <button forSelectOption value="ts">TypeScript</button>
+    <button forSelectOption value="rx">RxJS</button>
+  </div>
   }
 </div>
 ```
@@ -73,7 +73,7 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 - **Click / Enter / Space** — open (focus selected, else first).
 - **ArrowDown** — open (focus selected, else first).
 - **ArrowUp** — open (focus selected, else last).
-- **Typeahead** *(single mode only)* — printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
+- **Typeahead** _(single mode only)_ — printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)
 
@@ -81,7 +81,7 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 - **Home / End** — jump to first / last enabled option.
 - **Enter / Space** — activate the focused option (native `<button>` semantics): select + close in single mode, toggle (stay open) in multi mode.
 - **Escape** — close without changing selection. Returns focus to the trigger.
-- **Tab** — close. Returns focus to the trigger.
+- **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
 - **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
 
 ## Selection follows focus
@@ -96,12 +96,12 @@ Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arro
 
 Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventDefault()` on the event to keep the listbox open.
 
-| Output | When |
-| --- | --- |
-| `(escapeKeyDown)` | Escape pressed while listbox is open. |
-| `(pointerDownOutside)` | Pointer-down outside both trigger and content. |
-| `(focusOutside)` | Focus moves outside both trigger and content. |
-| `(interactOutside)` | Either of the two above (single output for consumers that don't care which). |
+| Output                 | When                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `(escapeKeyDown)`      | Escape pressed while listbox is open.                                        |
+| `(pointerDownOutside)` | Pointer-down outside both trigger and content.                               |
+| `(focusOutside)`       | Focus moves outside both trigger and content.                                |
+| `(interactOutside)`    | Either of the two above (single output for consumers that don't care which). |
 
 ## Form integration
 
