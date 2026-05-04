@@ -104,6 +104,8 @@ export class DemoNav {
 - **Trigger labels are mandatory.** Each `[forNavigationMenuTrigger]` needs visible text or an `aria-label`. The directive does not invent one.
 - **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
 - **Indicator follows the active trigger.** Subscribed to `afterEveryRender`, so it tracks layout changes without polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
+- **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
+- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissable layer; this covers the keyboard-Tab case it can't see.
 
 ## Limitations (v1)
 
