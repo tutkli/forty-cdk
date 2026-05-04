@@ -44,6 +44,13 @@ export class ForMenuRadioItem {
   readonly value = input.required<string>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Override the string used for typeahead matching. Defaults to `''`,
+   * which falls back to the item's `textContent`. See `[forMenuItem]`
+   * for the rationale.
+   */
+  readonly textValue = input<string>('');
+
   readonly checked = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menu.disabled());
@@ -54,6 +61,7 @@ export class ForMenuRadioItem {
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
+      textValue: this.textValue,
     };
     this.menu.registerItem(handle);
     inject(DestroyRef).onDestroy(() => this.menu.unregisterItem(handle));

@@ -43,6 +43,13 @@ export class ForMenuCheckboxItem {
   readonly checked = model<boolean>(false);
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Override the string used for typeahead matching. Defaults to `''`,
+   * which falls back to the item's `textContent`. See `[forMenuItem]`
+   * for the rationale.
+   */
+  readonly textValue = input<string>('');
+
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   readonly select = output<Event>();
@@ -51,6 +58,7 @@ export class ForMenuCheckboxItem {
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
+      textValue: this.textValue,
     };
     this.ctx.registerItem(handle);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterItem(handle));

@@ -47,7 +47,15 @@ Every item type emits a vetoable `(select)` event — a `CustomEvent` with `canc
 - **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
 - **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
-- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped.
+- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's `textContent`; pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when the DOM contains icons, kbd hints, or badges that would otherwise bleed into it.
+
+  ```html
+  <!-- Without textValue, prefix-match would compare against "3 Archive" -->
+  <button forMenuItem textValue="Archive">
+    <span class="badge">3</span>
+    Archive
+  </button>
+  ```
 
 ## Submenu
 

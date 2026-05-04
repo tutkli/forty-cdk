@@ -93,6 +93,47 @@ class GroupedMenuHost {
   readonly open = signal(true);
 }
 
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>File</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button id="archive" forMenuItem textValue="Archive">
+            <span class="badge">3</span>
+            Archive
+          </button>
+          <button id="copy" forMenuItem>Copy</button>
+          <button id="bold" forMenuCheckboxItem textValue="Bold" [(checked)]="bold">
+            <span class="badge">!</span>
+            Bold
+          </button>
+          <div forMenuRadioGroup [(value)]="alignment">
+            <button id="left" forMenuRadioItem value="left" textValue="Left">
+              <span class="badge">!</span>
+              Left
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class TypeaheadOverrideHost {
+  readonly open = signal(true);
+  readonly bold = signal(false);
+  readonly alignment = signal('left');
+}
+
 async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
   fixture.detectChanges();
   await fixture.whenStable();
@@ -516,6 +557,59 @@ describe('Menu items / content', () => {
 
       // 'paste' is disabled — typeahead should not focus it.
       expect(document.activeElement?.id).not.toBe('paste');
+    });
+
+    describe('textValue override', () => {
+      it('matches via textValue when item content has noise before the label', async () => {
+        const r = renderHost(TypeaheadOverrideHost);
+        await flush(r.fixture);
+
+        const archive = document.querySelector<HTMLElement>('#archive')!;
+        // The item's textContent starts with '3' (a badge), so the legacy
+        // textContent-based prefix match would not catch 'a'. Override fixes it.
+        archive.focus();
+        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        await flush(r.fixture);
+
+        expect(document.activeElement?.id).toBe('archive');
+      });
+
+      it('falls back to textContent when textValue is empty', async () => {
+        const r = renderHost(TypeaheadOverrideHost);
+        await flush(r.fixture);
+
+        const archive = document.querySelector<HTMLElement>('#archive')!;
+        archive.focus();
+        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }));
+        await flush(r.fixture);
+
+        // 'copy' has no textValue and a clean textContent — fallback path.
+        expect(document.activeElement?.id).toBe('copy');
+      });
+
+      it('applies the textValue override to ForMenuCheckboxItem', async () => {
+        const r = renderHost(TypeaheadOverrideHost);
+        await flush(r.fixture);
+
+        const archive = document.querySelector<HTMLElement>('#archive')!;
+        archive.focus();
+        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+        await flush(r.fixture);
+
+        expect(document.activeElement?.id).toBe('bold');
+      });
+
+      it('applies the textValue override to ForMenuRadioItem', async () => {
+        const r = renderHost(TypeaheadOverrideHost);
+        await flush(r.fixture);
+
+        const archive = document.querySelector<HTMLElement>('#archive')!;
+        archive.focus();
+        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'l', bubbles: true }));
+        await flush(r.fixture);
+
+        expect(document.activeElement?.id).toBe('left');
+      });
     });
   });
 

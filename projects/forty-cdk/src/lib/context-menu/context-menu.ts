@@ -248,8 +248,9 @@ export class ForContextMenu implements ForMenuContext {
       if (i.disabled()) {
         return false;
       }
-      const text = (i.host.textContent ?? '').trim().toLowerCase();
-      return text.startsWith(buffer);
+      const override = i.textValue?.() ?? '';
+      const source = override !== '' ? override : (i.host.textContent ?? '');
+      return source.trim().toLowerCase().startsWith(buffer);
     });
     match?.host.focus();
   }

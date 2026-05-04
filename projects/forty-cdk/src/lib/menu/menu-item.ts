@@ -44,6 +44,15 @@ export class ForMenuItem {
   /** Per-item disabled, in addition to the menu's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Override the string used for typeahead matching. Defaults to `''`,
+   * which falls back to the item's `textContent`. Set this when the item
+   * DOM contains icons, kbd hints, or other text that shouldn't bleed
+   * into the match — e.g. `<button forMenuItem textValue="New file">…</button>`
+   * for an item rendered as `New file ⌘N`.
+   */
+  readonly textValue = input<string>('');
+
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   /**
@@ -56,6 +65,7 @@ export class ForMenuItem {
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
+      textValue: this.textValue,
     };
     this.ctx.registerItem(handle);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterItem(handle));
