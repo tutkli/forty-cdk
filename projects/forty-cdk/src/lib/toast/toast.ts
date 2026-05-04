@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -13,8 +14,10 @@ import {
   untracked,
 } from '@angular/core';
 
+import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import {
   FOR_TOAST_CONTEXT,
+  type ForToastActionHandle,
   type ForToastCloseReason,
   type ForToastContext,
   type ForToastVariant,
@@ -64,6 +67,7 @@ import {
 export class ForToast implements ForToastContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #destroyRef = inject(DestroyRef);
+  readonly #announcer = inject(LiveAnnouncer);
 
   readonly variant = input<ForToastVariant>('info');
 
@@ -87,15 +91,28 @@ export class ForToast implements ForToastContext {
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #descIds = signal<readonly string[]>([]);
+  readonly #actions = signal<readonly ForToastActionHandle[]>([]);
   readonly labelledBy = computed(() => this.#labelIds().join(' ') || null);
   readonly describedBy = computed(() => this.#descIds().join(' ') || null);
+
+  /**
+   * `true` when at least one registered `[forToastAction]` carries a
+   * non-empty `altText`. In that mode the host's `aria-live` is silenced
+   * and the announcement is composed and routed through `LiveAnnouncer`.
+   */
+  readonly #hasActionAltText = computed(() =>
+    this.#actions().some((a) => a.altText().trim() !== ''),
+  );
 
   protected readonly computedRole = computed(() =>
     this.variant() === 'error' ? 'alert' : 'status',
   );
-  protected readonly ariaLive = computed(() =>
-    this.variant() === 'error' ? 'assertive' : 'polite',
-  );
+  protected readonly ariaLive = computed(() => {
+    if (this.#hasActionAltText()) {
+      return 'off';
+    }
+    return this.variant() === 'error' ? 'assertive' : 'polite';
+  });
 
   // Timer state — kept off the reactive graph because pause/resume are
   // imperative and we don't want to trip change detection on every tick.
@@ -117,6 +134,21 @@ export class ForToast implements ForToastContext {
       }
     });
     this.#destroyRef.onDestroy(() => this.#cancelTimer());
+
+    // After the first render every child directive (title / description /
+    // action) has registered, so we can compose the synthesized announcement
+    // and push it through LiveAnnouncer. Only fires when at least one action
+    // carries `altText` — otherwise the host's `aria-live` already does the
+    // job and we'd cause a duplicate readout.
+    afterNextRender(() => {
+      if (!this.#hasActionAltText()) {
+        return;
+      }
+      const message = this.#composeAnnouncement();
+      if (message) {
+        this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
+      }
+    });
   }
 
   registerLabel(id: string): void {
@@ -133,6 +165,14 @@ export class ForToast implements ForToastContext {
 
   unregisterDescription(id: string): void {
     this.#descIds.update((arr) => arr.filter((x) => x !== id));
+  }
+
+  registerAction(handle: ForToastActionHandle): void {
+    this.#actions.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
+  }
+
+  unregisterAction(handle: ForToastActionHandle): void {
+    this.#actions.update((arr) => arr.filter((h) => h !== handle));
   }
 
   requestClose(reason: ForToastCloseReason): void {
@@ -201,5 +241,16 @@ export class ForToast implements ForToastContext {
       clearTimeout(this.#timerHandle);
       this.#timerHandle = null;
     }
+  }
+
+  #composeAnnouncement(): string {
+    const root = this.#host.nativeElement.ownerDocument;
+    const lookup = (id: string): string => (root.getElementById(id)?.textContent ?? '').trim();
+    const titles = this.#labelIds().map(lookup).filter(Boolean);
+    const descriptions = this.#descIds().map(lookup).filter(Boolean);
+    const altTexts = this.#actions()
+      .map((a) => a.altText().trim())
+      .filter(Boolean);
+    return [...titles, ...descriptions, ...altTexts].join('. ');
   }
 }

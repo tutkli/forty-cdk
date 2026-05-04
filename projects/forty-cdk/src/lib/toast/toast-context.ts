@@ -2,12 +2,7 @@ import { inject, InjectionToken, type Signal, type TemplateRef } from '@angular/
 
 export type ForToastVariant = 'info' | 'success' | 'warning' | 'error';
 
-export type ForToastCloseReason =
-  | 'auto'
-  | 'manual'
-  | 'action'
-  | 'escape'
-  | 'programmatic';
+export type ForToastCloseReason = 'auto' | 'manual' | 'action' | 'escape' | 'programmatic';
 
 /**
  * Configuration for a programmatic toast. Pass to `ForToastManager.show()`.
@@ -61,6 +56,20 @@ export interface ForToastInstance<D = unknown> {
 }
 
 /**
+ * Handle a `[forToastAction]` registers with its parent `[forToast]` so the
+ * toast can compose a screen-reader announcement that includes the action's
+ * `altText` (per WCAG 2.2.1, when the toast is time-limited the announcement
+ * must tell the user how to recover the action even after it disappears).
+ *
+ * `altText` is a signal that returns `''` when the consumer hasn't set
+ * `[altText]` on the action — in which case the action is treated as
+ * voice-less for announcement purposes.
+ */
+export interface ForToastActionHandle {
+  readonly altText: Signal<string>;
+}
+
+/**
  * Coordination contract owned by `ForToast`. Title / description register
  * generated ids so the toast can wire `aria-labelledby` / `aria-describedby`
  * reactively. Action and close buttons request close via `requestClose`.
@@ -76,6 +85,14 @@ export interface ForToastContext {
   unregisterLabel(id: string): void;
   registerDescription(id: string): void;
   unregisterDescription(id: string): void;
+
+  /**
+   * Register an action so the toast can include its `altText` in the
+   * synthesized announcement. Actions without `altText` are still allowed
+   * to register — they're skipped during composition.
+   */
+  registerAction(handle: ForToastActionHandle): void;
+  unregisterAction(handle: ForToastActionHandle): void;
 
   /** Request close. Always honored — the directive emits `(close)` and the consumer unmounts. */
   requestClose(reason: ForToastCloseReason): void;

@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { DestroyRef, Directive, inject, input } from '@angular/core';
 
 import { injectToastContext } from './toast-context';
 
@@ -9,6 +9,14 @@ import { injectToastContext } from './toast-context';
  * Clicking emits `(close)` from the parent `[forToast]` with reason
  * `'action'`. Wire your action handler with `(click)` on this element
  * itself — the close fires after your handler runs (via event order).
+ *
+ * Set `[altText]` for WCAG 2.2.1 compliance: the visible label (e.g.
+ * "Undo") rarely carries enough context to recover the action once the
+ * toast disappears. The alt text replaces the toast's automatic live
+ * announcement with a self-contained string, e.g. `altText="Undo (Cmd+Z)"`.
+ * When at least one action carries an alt text, the parent toast routes
+ * its announcement through `LiveAnnouncer` and silences the host
+ * `aria-live` to avoid a duplicate readout.
  */
 @Directive({
   selector: '[forToastAction]',
@@ -20,6 +28,19 @@ import { injectToastContext } from './toast-context';
 })
 export class ForToastAction {
   protected readonly ctx = injectToastContext('ForToastAction');
+
+  /**
+   * Self-contained text read aloud in place of the visible label so the
+   * user knows how to recover the action after the toast is gone. Required
+   * for time-limited toasts per WCAG 2.2.1; defaults to `''` (no alt text).
+   */
+  readonly altText = input<string>('');
+
+  constructor() {
+    const handle = { altText: this.altText };
+    this.ctx.registerAction(handle);
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterAction(handle));
+  }
 
   protected onClick(): void {
     this.ctx.requestClose('action');
