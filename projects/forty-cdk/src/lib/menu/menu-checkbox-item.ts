@@ -8,6 +8,7 @@ import {
   input,
   model,
   output,
+  signal,
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -31,8 +32,11 @@ import { injectMenuContext } from './menu-context';
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForMenuCheckboxItem {
@@ -51,6 +55,10 @@ export class ForMenuCheckboxItem {
   readonly textValue = input<string>('');
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
+
+  readonly #highlighted = signal(false);
+  /** True while this item has DOM focus. Reflected as `data-highlighted`. */
+  readonly highlighted = this.#highlighted.asReadonly();
 
   readonly select = output<Event>();
 
@@ -74,6 +82,14 @@ export class ForMenuCheckboxItem {
     if (!event.defaultPrevented) {
       this.ctx.closeMenu('select');
     }
+  }
+
+  protected onFocus(): void {
+    this.#highlighted.set(true);
+  }
+
+  protected onBlur(): void {
+    this.#highlighted.set(false);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

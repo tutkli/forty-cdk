@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -31,8 +32,11 @@ import { injectMenuRadioGroupContext } from './menu-radio-group-context';
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForMenuRadioItem {
@@ -54,6 +58,10 @@ export class ForMenuRadioItem {
   readonly checked = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menu.disabled());
+
+  readonly #highlighted = signal(false);
+  /** True while this item has DOM focus. Reflected as `data-highlighted`. */
+  readonly highlighted = this.#highlighted.asReadonly();
 
   readonly select = output<Event>();
 
@@ -77,6 +85,14 @@ export class ForMenuRadioItem {
     if (!event.defaultPrevented) {
       this.menu.closeMenu('select');
     }
+  }
+
+  protected onFocus(): void {
+    this.#highlighted.set(true);
+  }
+
+  protected onBlur(): void {
+    this.#highlighted.set(false);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
