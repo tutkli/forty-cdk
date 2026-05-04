@@ -74,6 +74,13 @@ export interface ForSliderContext {
 
   // form
   markTouched(): void;
+  /**
+   * Trailing-edge hook for value-changing interactions. Emits `(valueCommit)`
+   * with the final value array if the running interaction has mutated the
+   * value, then resets the internal flag. No-op otherwise. Pointer drags
+   * call this on pointerup; thumbs call it on keyup of a navigation key.
+   */
+  commitInteraction(): void;
 
   // registry
   registerThumb(handle: ForSliderThumbHandle): void;

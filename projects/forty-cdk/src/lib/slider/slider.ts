@@ -7,6 +7,7 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
 } from '@angular/core';
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
@@ -40,6 +41,10 @@ import {
  * The `model()` change emitter (`(valueChange)`) fires only on internal
  * updates (drag, keyboard, track click), never on consumer writes via
  * `[(value)]` — observe transitions without binding back.
+ *
+ * For trailing-edge work (network calls, undo entries) bind `(valueCommit)`
+ * instead — it fires once at the end of an interaction with the final value
+ * array, never per drag step.
  */
 @Directive({
   selector: '[forSlider]',
@@ -117,10 +122,22 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
   readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
   readonly touched = model<boolean>(false);
 
+  /**
+   * Emitted at the end of a value-changing interaction — pointerup /
+   * pointercancel after a drag, or keyup after one or more keyboard
+   * adjustments — with the final value array. Mirrors Radix / Base UI
+   * `onValueCommit`. Use it to defer expensive work (network calls,
+   * history entries) to the trailing edge of the interaction instead of
+   * running it per step. Stays silent when nothing changed (e.g. press +
+   * release without movement, or a non-navigation key on a focused thumb).
+   */
+  readonly valueCommit = output<readonly number[]>();
+
   readonly #thumbs = new Collection<ForSliderThumbHandle>();
   readonly #trackEl = signal<HTMLElement | null>(null);
   readonly #destroyRef = inject(DestroyRef);
   readonly #activeDragCleanups = new Set<() => void>();
+  #interactionMutated = false;
 
   readonly fractions = computed(() => {
     const min = this.minValue();
@@ -201,6 +218,7 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
     const updated = current.slice();
     updated[index] = next;
     this.value.set(updated);
+    this.#interactionMutated = true;
   }
 
   bumpAt(index: number, key: SliderArrowKey, large: boolean): void {
@@ -302,6 +320,7 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
       }
       cleanup();
       this.markTouched();
+      this.commitInteraction();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', stop);
@@ -321,6 +340,19 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
     if (!this.touched()) {
       this.touched.set(true);
     }
+  }
+
+  /**
+   * Emit `valueCommit` if the running interaction mutated the value at least
+   * once, and clear the flag. Pointer drags call this on pointerup; thumbs
+   * call it on keyup of a navigation key.
+   */
+  commitInteraction(): void {
+    if (!this.#interactionMutated) {
+      return;
+    }
+    this.#interactionMutated = false;
+    this.valueCommit.emit(this.value());
   }
 
   registerThumb(handle: ForSliderThumbHandle): void {

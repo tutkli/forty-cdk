@@ -51,6 +51,7 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
     '[attr.data-index]': 'index()',
     '[style.--for-slider-thumb-position]': 'fraction()',
     '(keydown)': 'onKeyDown($event)',
+    '(keyup)': 'onKeyUp($event)',
     '(pointerdown)': 'onPointerDown($event)',
   },
 })
@@ -159,6 +160,23 @@ export class ForSliderThumb {
     }
   }
 
+  protected onKeyUp(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'PageUp':
+      case 'PageDown':
+      case 'Home':
+      case 'End':
+        this.ctx.commitInteraction();
+        return;
+      default:
+        return;
+    }
+  }
+
   protected onPointerDown(event: PointerEvent): void {
     if (this.ctx.disabled() || this.ctx.readonly()) {
       return;
@@ -173,5 +191,4 @@ export class ForSliderThumb {
     this.#host.nativeElement.focus();
     this.ctx.beginDrag(this.index(), event);
   }
-
 }
