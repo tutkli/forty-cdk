@@ -65,10 +65,12 @@ These rules govern every change. They override habits from older Angular code or
 **Banned dependencies / APIs.** No `@angular/material`, `@angular/cdk`, `@angular/aria`. No `NgModule`. No Zone.js — the library must work under `provideZonelessChangeDetection()`; never use `NgZone` or `zone.js/testing`. No third-party runtime deps unless explicitly justified (e.g. `@floating-ui/dom` for positioning, only if agreed).
 
 **Modern Angular style guide (Angular 20+).** No type suffixes anywhere:
+
 - Files: `accordion.ts`, `focus-trap.ts` — never `accordion.component.ts`, `focus-trap.service.ts`.
 - Classes: `ForAccordion`, `FocusTrap` — never `ForAccordionComponent`, `FocusTrapService`. The `Service` suffix is explicitly banned; name services for what they represent.
 
 **Naming.**
+
 - Public classes use the `For` prefix: `ForAccordion`, `ForAccordionTrigger`.
 - Selectors use the `for-` prefix and default to **attribute** selectors so consumers keep their own HTML semantics: `<button forAccordionTrigger>`. Use element selectors only when the primitive must inject its own structure with content projection.
 - `InjectionToken`s: `FOR_<PRIMITIVE>_CONTEXT` (e.g. `FOR_ACCORDION_CONTEXT`).
@@ -79,6 +81,7 @@ These rules govern every change. They override habits from older Angular code or
 **Required Angular patterns.** Standalone only. `ChangeDetectionStrategy.OnPush` on every component. State with `signal` / `computed` / `linkedSignal` (no `BehaviorSubject` for component state without strong reason). Inputs/outputs as functions: `input()`, `input.required()`, `output()`, `model()` — NEVER `@Input()` / `@Output()` decorators. `inject()` for DI, never constructor injection. Host bindings via the decorator's `host: { ... }` block, never `@HostBinding` / `@HostListener`. Control flow via `@if` / `@for` / `@switch` / `@let`, never `*ngIf` / `*ngFor` / `*ngSwitch`. Prefer `afterNextRender`, `afterEveryRender`, `effect()`, and `DestroyRef` + `takeUntilDestroyed()` over classic lifecycle hooks. `@ContentChild` / `@ViewChild` are only for genuine consumer queries, never for coordinating state between pieces of the same primitive.
 
 **Never propagate state inside `effect()`.** Writing to a signal from inside an `effect` to derive another piece of state is an anti-pattern in modern Angular: it creates implicit cycles, double change-detection passes, and ordering bugs that are hard to debug. `effect()` is for **side effects** that escape the reactive graph (DOM imperative calls, subscriptions to non-signal sources, logging, focus moves that can't be expressed as host bindings). Reach for the right primitive instead:
+
 - **`computed()`** — pure derivation from other signals.
 - **`linkedSignal()`** — writable state derived from a source, with a reset rule when the source changes (the canonical replacement for `effect(() => mySignal.set(...))`).
 - **`resource()` / `httpResource()`** — async state driven by a signal source (loading, error, value already modeled).
@@ -87,12 +90,13 @@ These rules govern every change. They override habits from older Angular code or
 If you genuinely need to write a signal from an `effect` (rare — usually integrating an external imperative API), document why in a comment and isolate it.
 
 **Form primitives use Signal Forms, never `ControlValueAccessor`.** Any primitive that represents a form value (Switch, Checkbox, RadioGroup, Slider, Combobox, DatePicker, etc.) must implement the appropriate `@angular/forms/signals` interface so it auto-wires with the `[formField]` directive (selector `[formField]`, alias `formField`) — Angular detects the interface and binds everything, no provider/token registration:
+
 - **`FormValueControl<T>`** for value-based controls. Required: `value: ModelSignal<T>`.
 - **`FormCheckboxControl`** for binary on/off. Required: `checked: ModelSignal<boolean>`.
 
 Both extend **`FormUiControl`** — expose its relevant optional members (`disabled`, `readonly`, `required`, `invalid`, `errors`, `touched`, `name`, `pending`, `min`/`max`/`pattern` where meaningful) as the prescribed `input` / `model` signals so field state flows in and out without consumer glue. Skip the members that don't apply to the control's shape (e.g. `min`/`max`/`pattern` on a Switch).
 
-The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an *optional* peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
+The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an _optional_ peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
 
 `@angular/forms/signals` is `@experimental` in Angular 21. Pin to the matching minor (`^21.x`) and revisit on each Angular bump.
 
@@ -102,25 +106,28 @@ The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `
 
 These keep the surface predictable across primitives. Apply them everywhere; deviate only with a written reason.
 
-**`data-state` vocabulary.** Three canonical families, picked semantically — never invent a fourth without listing it in the *Documented alternative vocabularies* table below:
+**`data-state` vocabulary.** Three canonical families, picked semantically — never invent a fourth without listing it in the _Documented alternative vocabularies_ table below:
+
 - `"open" | "closed"` — for things that expand/collapse (`Disclosure`, `Accordion`, `Tooltip`, `Dialog`, future `Popover`/`Menu`/`Drawer`).
 - `"active" | "inactive"` — for one-of-N selectables embedded in a tablist-like container (`Tabs` trigger and content). Matches Radix.
 - `"checked" | "unchecked" | "indeterminate"` — for form-control state (`Switch`, `Checkbox`, `RadioGroup` items, `Listbox` options, future `Select`/`ToggleGroup`). `"indeterminate"` only on tri-state controls (Checkbox today).
 
-`data-state` is reflected on every piece of the primitive that the consumer might want to style — the root *and* trigger/content/option/etc. — using the same vocabulary across pieces.
+`data-state` is reflected on every piece of the primitive that the consumer might want to style — the root _and_ trigger/content/option/etc. — using the same vocabulary across pieces.
 
 **Documented alternative vocabularies.** A handful of primitives intentionally use a different attribute name or value set because the underlying spec / pattern doesn't fit any of the three families above. New primitives must reuse one of the canonical families unless they have an equally strong reason and update this table:
 
-| Attribute | Values | Primitives | Why |
-| --- | --- | --- | --- |
-| `data-state` | `"visible" \| "hidden"` | `ScrollArea` (scrollbar, thumb), `NavigationMenu` (indicator) | These pieces have no logical open/closed *state* — they reflect whether the floating helper is currently rendered/painted, which is a layout outcome, not a toggle. |
-| `data-status` | `"idle" \| "loading" \| "loaded" \| "error"` | `Avatar` (root, image, fallback) | Mirrors the four-step image lifecycle of Radix's Avatar. None of the three families captures a finite-state-machine with an error terminal. |
-| `data-state` | `"indeterminate" \| "loading" \| "complete"` | `Progress` (root, indicator) | Mirrors the HTML5 `<progress>` semantics + an explicit `complete` terminal so styling / `aria-live` can fire on the loading→complete edge. `"loading"` is *not* the same as the form-control `"unchecked"`. |
-| `data-quality` | `"optimum" \| "sub-optimum" \| "even-less-good"` | `Meter` (root, indicator) | Reflects the HTML5 `<meter>` "preferred-value" buckets. This is a styling hook layered *on top of* `aria-valuenow`; it is not a state toggle and the spec mandates the three names. |
+| Attribute      | Values                                           | Primitives                                                    | Why                                                                                                                                                                                                         |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-state`   | `"visible" \| "hidden"`                          | `ScrollArea` (scrollbar, thumb), `NavigationMenu` (indicator) | These pieces have no logical open/closed _state_ — they reflect whether the floating helper is currently rendered/painted, which is a layout outcome, not a toggle.                                         |
+| `data-status`  | `"idle" \| "loading" \| "loaded" \| "error"`     | `Avatar` (root, image, fallback)                              | Mirrors the four-step image lifecycle of Radix's Avatar. None of the three families captures a finite-state-machine with an error terminal.                                                                 |
+| `data-state`   | `"indeterminate" \| "loading" \| "complete"`     | `Progress` (root, indicator)                                  | Mirrors the HTML5 `<progress>` semantics + an explicit `complete` terminal so styling / `aria-live` can fire on the loading→complete edge. `"loading"` is _not_ the same as the form-control `"unchecked"`. |
+| `data-quality` | `"optimum" \| "sub-optimum" \| "even-less-good"` | `Meter` (root, indicator)                                     | Reflects the HTML5 `<meter>` "preferred-value" buckets. This is a styling hook layered _on top of_ `aria-valuenow`; it is not a state toggle and the spec mandates the three names.                         |
 
-**Boolean `data-*` attributes.** Present (with empty string value) when `true`, absent (`null`) when `false`. Never emit `data-disabled="false"`. The Angular host binding `[attr.data-disabled]="disabled() ? '' : null"` is the canonical form. Applies to `data-disabled`, `data-readonly`, and any future boolean reflection (`data-touched`, `data-dirty`, `data-pending`, `data-invalid`).
+**Boolean `data-*` attributes.** Present (with empty string value) when `true`, absent (`null`) when `false`. Never emit `data-disabled="false"`. The Angular host binding `[attr.data-disabled]="disabled() ? '' : null"` is the canonical form. Applies to `data-disabled`, `data-readonly`, `data-highlighted`, and any future boolean reflection (`data-touched`, `data-dirty`, `data-pending`, `data-invalid`).
 
-**`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires *only* when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
+**`data-highlighted` (sibling vocabulary to `data-state`).** Items that participate in roving-tabindex or `aria-activedescendant` navigation expose a boolean `data-highlighted` when they are the current keyboard-focused candidate. This is distinct from `data-state` (which reflects logical state — `checked`, `open`, etc.) and is the _only_ CSS hook combobox consumers have, since `aria-activedescendant` keeps focus on the input rather than on the option (no `:focus`). Roving-tabindex primitives expose it for parity with the activedescendant flow and for hover-uncoupled-from-focus styling (Radix-aligned). Items reflecting `data-highlighted` today: `Listbox` option, `Menu` item / checkbox-item / radio-item, `Select` option, `Combobox` option.
+
+**`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires _only_ when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
 
 **Orientation + writing direction.** Primitives whose keyboard navigation has an axis expose `orientation: 'horizontal' | 'vertical'` and `dir: 'ltr' | 'rtl'` inputs and pass them to the shared `_internal/keyboard-navigation` helpers. Default to the orientation that matches the primitive's most common layout (`vertical` for `Accordion`/`RadioGroup`/`Listbox`, `horizontal` for `Tabs`). Reflect `data-orientation` on the root container so the consumer can flip CSS.
 
@@ -130,11 +137,11 @@ These keep the surface predictable across primitives. Apply them everywhere; dev
 
 There are two API shapes for primitives that have a visibility/open concept:
 
-- **Floating overlays** (Dialog, future Popover / Menu / Drawer / Toast / HoverCard): the trigger lives outside the surface; the consumer's signal drives `@if` and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, *Outside, close button, programmatic). **No `[(open)]` model.** Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
+- **Floating overlays** (Dialog, future Popover / Menu / Drawer / Toast / HoverCard): the trigger lives outside the surface; the consumer's signal drives `@if` and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). **No `[(open)]` model.** Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
 
   ```html
   @if (open()) {
-    <div forDialog (close)="open.set(false)" animate.leave="fade-out">…</div>
+  <div forDialog (close)="open.set(false)" animate.leave="fade-out">…</div>
   }
   ```
 
@@ -144,7 +151,7 @@ There are two API shapes for primitives that have a visibility/open concept:
   <div forDisclosure [(open)]="isOpen">
     <button forDisclosureTrigger>Toggle</button>
     @if (isOpen()) {
-      <section forDisclosureContent animate.leave="slide-up">…</section>
+    <section forDisclosureContent animate.leave="slide-up">…</section>
     }
   </div>
   ```

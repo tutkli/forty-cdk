@@ -27,8 +27,9 @@ import { injectComboboxContext } from './combobox-context';
  *
  * `data-state="checked" | "unchecked"` always reflects membership in
  * `value()` regardless of mode, so consumers can paint a checkmark with
- * pure CSS in either mode. `data-active` marks the option that is the
- * activedescendant.
+ * pure CSS in either mode. `data-highlighted` marks the option that is
+ * the current activedescendant — Radix-aligned and shared across the
+ * library's roving / activedescendant primitives.
  *
  * Hovering an option also makes it the activedescendant, mirroring native
  * menu / select behavior so mouse and keyboard intent stay synchronized.
@@ -42,7 +43,7 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-selected]': 'ariaSelected()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
-    '[attr.data-active]': 'active() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
     '(pointermove)': 'onPointerMove()',
@@ -69,14 +70,15 @@ export class ForComboboxOption {
   readonly id = signal(this.#idGen.next('for-combobox-option'));
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
-  readonly active = computed(() => this.#ctx.isActive(this.id()));
+  /** True when this option is the current activedescendant. Reflected as `data-highlighted`. */
+  readonly highlighted = computed(() => this.#ctx.isActive(this.id()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
 
   protected readonly ariaSelected = computed(() => {
     if (this.#ctx.multiple()) {
       return this.selected() ? 'true' : 'false';
     }
-    return this.active() ? 'true' : 'false';
+    return this.highlighted() ? 'true' : 'false';
   });
 
   readonly #effectiveLabel = computed(() => {

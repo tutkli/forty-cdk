@@ -44,8 +44,11 @@ import { injectSelectContext } from './select-context';
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForSelectOption {
@@ -62,6 +65,10 @@ export class ForSelectOption {
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
 
+  readonly #highlighted = signal(false);
+  /** True while this option has DOM focus. Reflected as `data-highlighted`. */
+  readonly highlighted = this.#highlighted.asReadonly();
+
   constructor() {
     const handle = {
       host: this.#host.nativeElement,
@@ -77,6 +84,14 @@ export class ForSelectOption {
       return;
     }
     this.#ctx.activate(this.value());
+  }
+
+  protected onFocus(): void {
+    this.#highlighted.set(true);
+  }
+
+  protected onBlur(): void {
+    this.#highlighted.set(false);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

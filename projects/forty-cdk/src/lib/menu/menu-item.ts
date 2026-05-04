@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -33,8 +34,11 @@ import { injectMenuContext } from './menu-context';
     tabindex: '-1',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForMenuItem {
@@ -54,6 +58,10 @@ export class ForMenuItem {
   readonly textValue = input<string>('');
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
+
+  readonly #highlighted = signal(false);
+  /** True while this item has DOM focus. Reflected as `data-highlighted`. */
+  readonly highlighted = this.#highlighted.asReadonly();
 
   /**
    * Fires on click / Enter / Space activation. The event is a `CustomEvent`;
@@ -80,6 +88,14 @@ export class ForMenuItem {
     if (!event.defaultPrevented) {
       this.ctx.closeMenu('select');
     }
+  }
+
+  protected onFocus(): void {
+    this.#highlighted.set(true);
+  }
+
+  protected onBlur(): void {
+    this.#highlighted.set(false);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

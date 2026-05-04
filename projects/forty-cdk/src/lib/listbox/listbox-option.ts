@@ -30,6 +30,7 @@ import { injectListboxContext } from './listbox-context';
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
     '(focus)': 'onFocus()',
@@ -48,9 +49,14 @@ export class ForListboxOption {
 
   readonly selected = computed(() => this.#group.isSelected(this.value()));
 
-  readonly effectiveDisabled = computed(
-    () => this.disabled() || this.#group.disabled(),
-  );
+  /**
+   * True when this option is the keyboard-focused candidate (the
+   * roving-tabindex active item). Reflected as `data-highlighted` so
+   * consumers can style it uniformly with the other primitives.
+   */
+  readonly highlighted = computed(() => this.#group.roving.active() === this.#host.nativeElement);
+
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#group.disabled());
 
   protected readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {

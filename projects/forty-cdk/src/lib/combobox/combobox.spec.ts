@@ -290,6 +290,27 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
     });
 
+    it('reflects data-highlighted on the option that is the activedescendant', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+
+      const apple = getOption('apple');
+      const apricot = getOption('apricot');
+
+      // auto-highlight defaults to first enabled (apple)
+      expect(apple.getAttribute('data-highlighted')).toBe('');
+      expect(apricot.hasAttribute('data-highlighted')).toBe(false);
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(apricot.getAttribute('data-highlighted')).toBe('');
+      expect(apple.hasAttribute('data-highlighted')).toBe(false);
+    });
+
     it('Home / End jump to first / last enabled', async () => {
       const r = renderHost(ComboboxHost);
       r.instance.open.set(true);
@@ -345,7 +366,9 @@ describe('ForCombobox', () => {
 
       const input = getInput();
       input.focus();
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -619,7 +642,7 @@ describe('ForCombobox', () => {
         imports: [...BASE_IMPORTS, ForComboboxEmpty],
         template: `
           @let q = query().toLowerCase();
-          @let filtered = items.filter(it => it.toLowerCase().includes(q));
+          @let filtered = items.filter((it) => it.toLowerCase().includes(q));
 
           <div forCombobox [(query)]="query" [(open)]="open">
             <input forComboboxInput />
@@ -785,9 +808,15 @@ describe('ForCombobox', () => {
         readonly query = signal('');
         readonly value = signal<readonly string[]>([]);
         readonly open = signal(false);
-        onQuery(_: string): void { queryEmits++; }
-        onValue(_: readonly string[]): void { valueEmits++; }
-        onOpen(_: boolean): void { openEmits++; }
+        onQuery(_: string): void {
+          queryEmits++;
+        }
+        onValue(_: readonly string[]): void {
+          valueEmits++;
+        }
+        onOpen(_: boolean): void {
+          openEmits++;
+        }
       }
 
       const r = renderHost(Host);
@@ -819,11 +848,7 @@ describe('ForCombobox', () => {
         <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
           <div forComboboxChips>
             @for (chip of selectedFromCtx(); track chip.value) {
-              <span
-                forComboboxChip
-                [value]="chip.value"
-                [attr.data-test-chip]="chip.value"
-              >
+              <span forComboboxChip [value]="chip.value" [attr.data-test-chip]="chip.value">
                 {{ chip.label }}
                 <button forComboboxChipRemove [attr.data-test-remove]="chip.value">×</button>
               </span>
@@ -1024,7 +1049,11 @@ describe('ForCombobox', () => {
 
         // Backspace event with non-empty input doesn't get preventDefault'd,
         // so the chip doesn't take focus.
-        const event = new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true });
+        const event = new KeyboardEvent('keydown', {
+          key: 'Backspace',
+          bubbles: true,
+          cancelable: true,
+        });
         input.dispatchEvent(event);
         await flush(r.fixture);
 

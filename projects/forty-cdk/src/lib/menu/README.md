@@ -94,3 +94,4 @@ The submenu's dismissable layer exempts the **parent menu's content** — clicki
 - `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
 - `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
 - Submenus use `placement="right-start"` by default (open to the right of the parent item). Override with `[placement]` on `[forMenuSub]` if your layout flips RTL or needs another direction.
+- **`data-highlighted=""`** is reflected on the focused `[forMenuItem]` / `[forMenuCheckboxItem]` / `[forMenuRadioItem]` so consumers can paint a uniform focus ring shared with the listbox / select / combobox primitives.

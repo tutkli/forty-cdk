@@ -529,6 +529,27 @@ describe('Menu items / content', () => {
 
       expect(document.activeElement?.id).toBe('right');
     });
+
+    it('reflects data-highlighted on the focused item, moving with arrow nav', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      cut.focus();
+      await flush(r.fixture);
+
+      expect(cut.getAttribute('data-highlighted')).toBe('');
+      expect(copy.hasAttribute('data-highlighted')).toBe(false);
+
+      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('copy');
+      expect(copy.getAttribute('data-highlighted')).toBe('');
+      expect(cut.hasAttribute('data-highlighted')).toBe(false);
+    });
   });
 
   describe('typeahead', () => {
