@@ -16,10 +16,7 @@ import { ForToastClose } from './toast-close';
 import { ForToastDescription } from './toast-description';
 import { ForToastTitle } from './toast-title';
 import { ForToastViewport } from './toast-viewport';
-import {
-  ForToastManager,
-  provideForToastDefaults,
-} from './toast-manager';
+import { ForToastManager, provideForToastDefaults } from './toast-manager';
 
 @Component({
   imports: [ForToastViewport],
@@ -57,9 +54,7 @@ class ProgrammaticHost {
           <div forToastDescription>{{ description() }}</div>
         }
         @if (showAction()) {
-          <button forToastAction (click)="onAction()" data-test-id="action">
-            Action
-          </button>
+          <button forToastAction (click)="onAction()" data-test-id="action">Action</button>
         }
         @if (closable()) {
           <button forToastClose data-test-id="close">×</button>
@@ -89,8 +84,45 @@ class DeclarativeHost {
   }
 }
 
+@Component({
+  imports: [ForToast, ForToastTitle, ForToastDescription, ForToastAction],
+  template: `
+    <div forToast [variant]="variant()" [duration]="duration()" data-test-id="alt-toast">
+      <div forToastTitle>{{ title() }}</div>
+      @if (description()) {
+        <div forToastDescription>{{ description() }}</div>
+      }
+      <button forToastAction [altText]="altText()" data-test-id="alt-action">Undo</button>
+    </div>
+  `,
+})
+class AltTextHost {
+  readonly variant = signal<'info' | 'success' | 'warning' | 'error'>('info');
+  readonly duration = signal(5000);
+  readonly title = signal('Saved');
+  readonly description = signal('Your changes are live.');
+  readonly altText = signal('');
+}
+
 const $ = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-id="${id}"]`);
+
+function flushMicrotasks(): Promise<void> {
+  return Promise.resolve();
+}
+
+function getLiveAnnouncerRegion(politeness: 'polite' | 'assertive'): HTMLElement | null {
+  // The toast directive itself binds aria-live to its host. LiveAnnouncer
+  // inserts its own region directly under document.body — distinguish by
+  // matching the body-level element specifically.
+  const matches = document.querySelectorAll<HTMLElement>(`[aria-live="${politeness}"]`);
+  for (const el of matches) {
+    if (el.parentElement === document.body) {
+      return el;
+    }
+  }
+  return null;
+}
 
 describe('ForToast (declarative)', () => {
   describe('static accessibility', () => {
@@ -218,9 +250,7 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual([]);
       const outside = document.createElement('button');
       document.body.appendChild(outside);
-      action.dispatchEvent(
-        new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
-      );
+      action.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
       r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
       outside.remove();
@@ -235,9 +265,7 @@ describe('ForToast (declarative)', () => {
       const action = $(r.el, 'action')!;
       const close = $(r.el, 'close')!;
       action.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      action.dispatchEvent(
-        new FocusEvent('focusout', { bubbles: true, relatedTarget: close }),
-      );
+      action.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: close }));
       close.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
       r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
@@ -294,6 +322,71 @@ describe('ForToast (declarative)', () => {
       $(r.el, 'action')!.click();
       r.flush();
       expect(r.instance.closes).toEqual(['action']);
+    });
+  });
+
+  describe('action altText (WCAG 2.2.1 announcement)', () => {
+    afterEach(() => {
+      // LiveAnnouncer keeps two off-screen regions in document.body across
+      // tests; clear them so assertions about announcement text are scoped to
+      // the current toast's emission.
+      document.querySelectorAll('[aria-live]').forEach((n) => {
+        n.textContent = '';
+      });
+    });
+
+    it('keeps the host aria-live polite when no action carries altText', () => {
+      const r = renderHost(AltTextHost);
+      // altText defaults to '' — host announcement remains the active path.
+      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('polite');
+    });
+
+    it('does not announce via LiveAnnouncer when altText is the empty string', async () => {
+      const r = renderHost(AltTextHost);
+      await flushMicrotasks();
+
+      expect(getLiveAnnouncerRegion('polite')).toBeNull();
+      expect(getLiveAnnouncerRegion('assertive')).toBeNull();
+      // The toast itself still carries the visible content, of course.
+      expect($(r.el, 'alt-toast')!.textContent).toContain('Saved');
+    });
+
+    it('silences the host aria-live and announces composed message via LiveAnnouncer', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AltTextHost);
+      // Set altText BEFORE first change detection so the action mounts with
+      // the value already in place — `afterNextRender` then sees a non-empty
+      // alt text on its first (and only) firing.
+      fixture.componentInstance.altText.set('Undo (Cmd+Z)');
+      fixture.detectChanges();
+      await flushMicrotasks();
+
+      const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
+      expect(t.getAttribute('aria-live')).toBe('off');
+
+      const region = getLiveAnnouncerRegion('polite');
+      expect(region).not.toBeNull();
+      expect(region!.textContent).toBe('Saved. Your changes are live.. Undo (Cmd+Z)');
+    });
+
+    it('routes error variant announcements through the assertive region', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AltTextHost);
+      fixture.componentInstance.variant.set('error');
+      fixture.componentInstance.title.set('Save failed');
+      fixture.componentInstance.description.set('Network unreachable.');
+      fixture.componentInstance.altText.set('Retry (Cmd+R)');
+      fixture.detectChanges();
+      await flushMicrotasks();
+
+      const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
+      expect(t.getAttribute('aria-live')).toBe('off');
+
+      const region = getLiveAnnouncerRegion('assertive');
+      expect(region).not.toBeNull();
+      expect(region!.textContent).toBe('Save failed. Network unreachable.. Retry (Cmd+R)');
     });
   });
 });
@@ -470,9 +563,9 @@ describe('ForToastViewport', () => {
     r.instance.toasts.show({ title: 'B' });
     r.instance.toasts.show({ title: 'C' });
     r.flush();
-    const titles = Array.from(
-      r.el.querySelectorAll<HTMLElement>('[forToastTitle]'),
-    ).map((e) => e.textContent?.trim());
+    const titles = Array.from(r.el.querySelectorAll<HTMLElement>('[forToastTitle]')).map((e) =>
+      e.textContent?.trim(),
+    );
     expect(titles).toEqual(['B', 'C']);
     expect(r.instance.toasts.count()).toBe(3);
   });
@@ -522,10 +615,7 @@ describe('global defaults via provideForToastDefaults', () => {
     vi.useFakeTimers();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [
-        provideZonelessChangeDetection(),
-        provideForToastDefaults({ duration: 1_000 }),
-      ],
+      providers: [provideZonelessChangeDetection(), provideForToastDefaults({ duration: 1_000 })],
     });
     const fixture = TestBed.createComponent(ProgrammaticHost);
     fixture.detectChanges();
@@ -543,10 +633,7 @@ describe('global defaults via provideForToastDefaults', () => {
   it('default hotkey applies when viewport leaves [hotkey] empty', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [
-        provideZonelessChangeDetection(),
-        provideForToastDefaults({ hotkey: 'F2' }),
-      ],
+      providers: [provideZonelessChangeDetection(), provideForToastDefaults({ hotkey: 'F2' })],
     });
     const fixture = TestBed.createComponent(ProgrammaticHost);
     fixture.detectChanges();

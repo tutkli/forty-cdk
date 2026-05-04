@@ -3,21 +3,22 @@
 Headless toast notifications. The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warning'`) or `role="alert"` (`'error'`) plus `aria-live` so screen readers announce updates without forcing focus, following the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alert/).
 
 Two ways to use the same primitive:
+
 - **Programmatic** (the common path): inject `ForToastManager` and call `show({ title, … })` from anywhere.
 - **Declarative**: drop `<div forToast>` directly in any template, controlling mount/unmount with `@if`.
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForToastManager` | injectable | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`. |
-| `ForToastViewport` | `[forToastViewport]` / `<for-toast-viewport>` | Mount once near the app root. `role="region"`, hosts the F6 hotkey, renders programmatic toasts. |
-| `ForToast` | `[forToast]` | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close. |
-| `ForToastTitle` | `[forToastTitle]` | Wires `aria-labelledby`. |
-| `ForToastDescription` | `[forToastDescription]` | Wires `aria-describedby`. |
-| `ForToastAction` | `[forToastAction]` | Action button — emits `(close)` with reason `'action'` after invoking your `(click)` handler. |
-| `ForToastClose` | `[forToastClose]` | Close button — emits `(close)` with reason `'manual'`. Carries `aria-label="Close"`. |
-| `ForToastRef<R>` | handle | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state. |
+| Class                 | Selector                                      | Role                                                                                                                                            |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForToastManager`     | injectable                                    | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`.                                                   |
+| `ForToastViewport`    | `[forToastViewport]` / `<for-toast-viewport>` | Mount once near the app root. `role="region"`, hosts the F6 hotkey, renders programmatic toasts.                                                |
+| `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                             |
+| `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                        |
+| `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                       |
+| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(close)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements. |
+| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(close)` with reason `'manual'`. Carries `aria-label="Close"`.                                                            |
+| `ForToastRef<R>`      | handle                                        | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state.                                                      |
 
 ## Mount the viewport once
 
@@ -38,7 +39,9 @@ Position it from CSS — the directive doesn't impose layout:
   gap: 0.5rem;
   pointer-events: none;
 }
-[forToast] { pointer-events: auto; }
+[forToast] {
+  pointer-events: auto;
+}
 ```
 
 ## Programmatic API
@@ -69,6 +72,7 @@ class SomeComponent {
 ```
 
 `show()` returns a `ForToastRef`:
+
 - `ref.dismiss(reason?, result?)` — close imperatively.
 - `ref.update(patch)` — mutate config in place (text, duration, variant).
 - `ref.closed` — `Promise<{ reason, result }>` resolved on first dismiss.
@@ -100,16 +104,16 @@ For a toast driven by component state (e.g. an offline banner):
 
 ```html
 @if (offline()) {
-  <div
-    forToast
-    variant="warning"
-    [duration]="0"
-    (close)="offline.set(false)"
-    animate.leave="fade-out"
-  >
-    <div forToastTitle>Network unavailable</div>
-    <div forToastDescription>Reconnecting…</div>
-  </div>
+<div
+  forToast
+  variant="warning"
+  [duration]="0"
+  (close)="offline.set(false)"
+  animate.leave="fade-out"
+>
+  <div forToastTitle>Network unavailable</div>
+  <div forToastDescription>Reconnecting…</div>
+</div>
 }
 ```
 
@@ -129,12 +133,12 @@ The directive doesn't manage its own visibility — `@if` does. The directive em
 
 ## Variants
 
-| Variant | Role | aria-live | Use for |
-| --- | --- | --- | --- |
-| `info` *(default)* | `status` | `polite` | Neutral notifications. |
-| `success` | `status` | `polite` | Confirmations of completed actions. |
-| `warning` | `status` | `polite` | Non-blocking warnings. |
-| `error` | `alert` | `assertive` | Failures that interrupt the user's task. |
+| Variant            | Role     | aria-live   | Use for                                  |
+| ------------------ | -------- | ----------- | ---------------------------------------- |
+| `info` _(default)_ | `status` | `polite`    | Neutral notifications.                   |
+| `success`          | `status` | `polite`    | Confirmations of completed actions.      |
+| `warning`          | `status` | `polite`    | Non-blocking warnings.                   |
+| `error`            | `alert`  | `assertive` | Failures that interrupt the user's task. |
 
 `data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
 
@@ -144,9 +148,7 @@ The directive doesn't manage its own visibility — `@if` does. The directive em
 import { provideForToastDefaults } from 'forty-cdk';
 
 bootstrapApplication(App, {
-  providers: [
-    provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 }),
-  ],
+  providers: [provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 })],
 });
 ```
 
@@ -159,3 +161,8 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
 - The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut and matches Radix.
 - Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
+- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. When at least one `[forToastAction]` carries a non-empty `altText`, the toast silences its host `aria-live` and routes a synthesized announcement (`title. description. altText`) through the shared `LiveAnnouncer` — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions.
+
+  ```html
+  <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>
+  ```
