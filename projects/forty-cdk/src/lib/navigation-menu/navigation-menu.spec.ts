@@ -272,6 +272,111 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('root data-state', () => {
+    it('reflects "closed" initially and flips to "open" when an item opens', () => {
+      const { fixture, query, flush } = renderHost(NavMenuHost);
+      flush();
+
+      const root = query<HTMLElement>('[forNavigationMenu]')!;
+      expect(root.getAttribute('data-state')).toBe('closed');
+
+      fixture.componentInstance.open.set('products');
+      flush();
+      expect(root.getAttribute('data-state')).toBe('open');
+
+      fixture.componentInstance.open.set('');
+      flush();
+      expect(root.getAttribute('data-state')).toBe('closed');
+    });
+  });
+
+  describe('focusout (Tab out closes per APG)', () => {
+    it('closes when focus moves to an element outside the nav', () => {
+      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
+      flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const root = query<HTMLElement>('[forNavigationMenu]')!;
+        // focusout bubbles, so dispatching on a descendant link or trigger
+        // works. We use a link inside the open content as the source.
+        const link = root.querySelector<HTMLElement>('a[forNavigationMenuLink]')!;
+        link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        flush();
+        expect(fixture.componentInstance.open()).toBe('');
+        expect(root.getAttribute('data-state')).toBe('closed');
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('does not close when focus stays inside the nav (e.g. trigger → link)', () => {
+      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
+      flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      flush();
+
+      const link = query<HTMLAnchorElement>('a[forNavigationMenuLink]')!;
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link }));
+      flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('does not close when focus moves between two triggers in the nav', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+      triggers[0]!.click();
+      flush();
+
+      triggers[0]!.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: triggers[1]! }),
+      );
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('treats null relatedTarget (focus leaving the document) as outside and closes', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      flush();
+
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
+
+    it('is a no-op when nothing is open (avoids extra work for every Tab)', () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      const root = query<HTMLElement>('[forNavigationMenu]')!;
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        trigger.dispatchEvent(
+          new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+        );
+        flush();
+        // Open stays at '' (nothing was open) and data-state stays "closed".
+        expect(fixture.componentInstance.open()).toBe('');
+        expect(root.getAttribute('data-state')).toBe('closed');
+      } finally {
+        outside.remove();
+      }
+    });
+  });
+
   describe('link reflects active state', () => {
     it('sets aria-current="page" and data-active on active links', () => {
       const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);

@@ -3,6 +3,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  ElementRef,
   inject,
   input,
   model,
@@ -58,13 +59,16 @@ import {
   exportAs: 'forNavigationMenu',
   host: {
     '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.data-state]': 'value() === "" ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: ForNavigationMenu }],
 })
 export class ForNavigationMenu implements ForNavigationMenuContext {
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   /**
    * Two-way bindable. The id of the open item, or `''` for none. The
    * `model()` change emitter (`(valueChange)`) fires only on internal
@@ -186,6 +190,26 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   cancelPending(): void {
     this.#cancelPending();
+  }
+
+  /**
+   * APG: moving focus out of the navigation closes any open dropdown. Fires
+   * when Tab/Shift+Tab walks past the last/first focusable inside the nav,
+   * or when something else steals focus. The dismissable layer already
+   * handles Escape and outside pointerdown; this covers the keyboard-tab
+   * case the layer can't see.
+   */
+  protected onFocusOut(event: FocusEvent): void {
+    if (this.value() === '') {
+      return;
+    }
+    const next = event.relatedTarget as HTMLElement | null;
+    // `null` means focus is leaving the document (e.g. browser chrome) or
+    // moving to a non-focusable area — both qualify as "outside the nav".
+    if (next && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    this.close();
   }
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void {
