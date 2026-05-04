@@ -33,12 +33,18 @@ import { ForMenuSeparator } from './menu-separator';
           <button id="copy" forMenuItem (select)="lastSelected.set('copy')">Copy</button>
           <button id="paste" forMenuItem disabled>Paste</button>
           <hr forMenuSeparator />
-          <button id="bold" forMenuCheckboxItem [(checked)]="bold">Bold</button>
+          <button id="bold" forMenuCheckboxItem [(checked)]="bold" (select)="recordSelect('bold')">
+            Bold
+          </button>
           <button id="italic" forMenuCheckboxItem [(checked)]="italic">Italic</button>
           <hr forMenuSeparator />
           <div forMenuRadioGroup [(value)]="alignment">
-            <button id="left" forMenuRadioItem value="left">Left</button>
-            <button id="center" forMenuRadioItem value="center">Center</button>
+            <button id="left" forMenuRadioItem value="left" (select)="recordSelect('left')">
+              Left
+            </button>
+            <button id="center" forMenuRadioItem value="center" (select)="recordSelect('center')">
+              Center
+            </button>
             <button id="right" forMenuRadioItem value="right">Right</button>
           </div>
         </div>
@@ -52,6 +58,11 @@ class MenuHost {
   readonly italic = signal(false);
   readonly alignment = signal('left');
   readonly lastSelected = signal<string | null>(null);
+  readonly selects: string[] = [];
+
+  recordSelect(id: string): void {
+    this.selects.push(id);
+  }
 }
 
 @Component({
@@ -236,6 +247,194 @@ describe('Menu items / content', () => {
     });
   });
 
+  describe('keyboard activation (APG: Space vs Enter)', () => {
+    const spaceDown = (el: HTMLElement) => {
+      const ev = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      el.dispatchEvent(ev);
+      return ev;
+    };
+
+    it('Space on a checkbox item toggles checked, emits (select), and keeps the menu open', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLButtonElement>('#bold')!;
+      bold.focus();
+      const ev = spaceDown(bold);
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.bold()).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.selects).toEqual(['bold']);
+    });
+
+    it('Space toggles back on each press without ever closing the menu', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLButtonElement>('#bold')!;
+      bold.focus();
+      spaceDown(bold);
+      await flush(r.fixture);
+      expect(r.instance.bold()).toBe(true);
+      expect(r.instance.open()).toBe(true);
+
+      spaceDown(bold);
+      await flush(r.fixture);
+      expect(r.instance.bold()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.selects).toEqual(['bold', 'bold']);
+    });
+
+    it('Enter on a checkbox item is not intercepted — keydown does not toggle on its own', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLButtonElement>('#bold')!;
+      bold.focus();
+      const ev = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      });
+      bold.dispatchEvent(ev);
+      await flush(r.fixture);
+
+      // We let the browser's native button-Enter activation flow through; we
+      // do not preventDefault and do not toggle on keydown.
+      expect(ev.defaultPrevented).toBe(false);
+      expect(r.instance.bold()).toBe(false);
+      expect(r.instance.selects).toEqual([]);
+    });
+
+    it('click on a checkbox item toggles, emits (select), and closes (Enter follows the same path via native button activation)', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLButtonElement>('#bold')!;
+      bold.click();
+      await flush(r.fixture);
+
+      expect(r.instance.bold()).toBe(true);
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.selects).toEqual(['bold']);
+    });
+
+    it('Space on a radio item sets the group value, emits (select), and keeps the menu open', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const center = document.querySelector<HTMLButtonElement>('#center')!;
+      center.focus();
+      const ev = spaceDown(center);
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.alignment()).toBe('center');
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.selects).toEqual(['center']);
+    });
+
+    it('Space on a radio item already selected re-emits (select) without closing', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const left = document.querySelector<HTMLButtonElement>('#left')!;
+      left.focus();
+      // 'left' is the initial value; pressing Space should still emit select
+      // and stay open even though the value didn't change.
+      spaceDown(left);
+      await flush(r.fixture);
+
+      expect(r.instance.alignment()).toBe('left');
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.selects).toEqual(['left']);
+    });
+
+    it('Enter on a radio item is not intercepted — keydown does not change the group value', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const center = document.querySelector<HTMLButtonElement>('#center')!;
+      center.focus();
+      const ev = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      });
+      center.dispatchEvent(ev);
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(false);
+      expect(r.instance.alignment()).toBe('left');
+      expect(r.instance.selects).toEqual([]);
+    });
+
+    it('click on a radio item sets the value, emits (select), and closes', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const center = document.querySelector<HTMLButtonElement>('#center')!;
+      center.click();
+      await flush(r.fixture);
+
+      expect(r.instance.alignment()).toBe('center');
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.selects).toEqual(['center']);
+    });
+
+    it('Space on a disabled item is a no-op (no toggle, no select)', async () => {
+      @Component({
+        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuCheckboxItem],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <button
+                  id="locked"
+                  forMenuCheckboxItem
+                  [(checked)]="checked"
+                  disabled
+                  (select)="selects.update((c) => c + 1)"
+                >
+                  Locked
+                </button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly checked = signal(false);
+        readonly selects = signal(0);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const locked = document.querySelector<HTMLButtonElement>('#locked')!;
+      locked.focus();
+      const ev = spaceDown(locked);
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(false);
+      expect(r.instance.checked()).toBe(false);
+      expect(r.instance.selects()).toBe(0);
+      expect(r.instance.open()).toBe(true);
+    });
+  });
+
   describe('navigation', () => {
     it('ArrowDown moves focus to the next enabled item, skipping disabled', async () => {
       const r = renderHost(MenuHost);
@@ -366,12 +565,7 @@ describe('Menu items / content', () => {
 
     it('throws when [forMenuRadioItem] is used outside [forMenuRadioGroup]', () => {
       @Component({
-        imports: [
-          ForDropdownMenu,
-          ForDropdownMenuTrigger,
-          ForMenuContent,
-          ForMenuRadioItem,
-        ],
+        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuRadioItem],
         template: `
           <div forDropdownMenu [(open)]="open">
             <button forDropdownMenuTrigger>x</button>
