@@ -23,6 +23,8 @@ import {
     '[id]': 'id()',
     '[attr.aria-labelledby]': 'triggerId()',
     '[attr.data-state]': 'menu.isOpen(value()) ? "open" : "closed"',
+    '(pointerenter)': 'menu.cancelPending()',
+    '(pointerleave)': 'menu.scheduleClose("hover")',
     '(keydown.escape)': 'onEscape($any($event))',
   },
 })

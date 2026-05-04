@@ -160,6 +160,36 @@ describe('ForNavigationMenu', () => {
       flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
+
+    it('keeps the menu open when the pointer moves from trigger into content', () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.click();
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      trigger.dispatchEvent(pointer('pointerleave'));
+      flush();
+
+      const content = query<HTMLElement>('[forNavigationMenuContent]')!;
+      content.dispatchEvent(pointer('pointerenter'));
+      flush();
+
+      vi.advanceTimersByTime(500);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      content.dispatchEvent(pointer('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(149);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
   });
 
   describe('keyboard', () => {
