@@ -168,6 +168,32 @@ export class ForContextMenu implements ForMenuContext {
     this.#anchor.set(virtual);
   }
 
+  /**
+   * Updates the virtual anchor to a snapshot of `rect`. Used by the keyboard
+   * activators (`Shift+F10`, `ContextMenu` key) so the menu floats off the
+   * focused element instead of the pointer position. The rect is captured
+   * by value, so subsequent layout changes don't shift the anchor.
+   */
+  setVirtualAnchorFromRect(rect: DOMRect): void {
+    const { x, y, width, height, top, left, right, bottom } = rect;
+    const virtual: VirtualElement = {
+      getBoundingClientRect: () => ({
+        x,
+        y,
+        width,
+        height,
+        top,
+        left,
+        right,
+        bottom,
+        toJSON() {
+          return this;
+        },
+      }),
+    };
+    this.#anchor.set(virtual);
+  }
+
   registerTrigger(el: HTMLElement): void {
     this.#triggerEl.set(el);
   }
