@@ -14,10 +14,11 @@ import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard
 import { injectMenuContext } from './menu-context';
 
 /**
- * Tri-state-free checkbox item. Activation toggles `checked`, then emits
- * `(select)` and closes the menu — `event.preventDefault()` on the emitted
- * event keeps the menu open (useful for "select multiple options before
- * dismissing" flows).
+ * Tri-state-free checkbox item. Click and Enter toggle `checked`, emit
+ * `(select)`, and close the menu — `event.preventDefault()` on the emitted
+ * event keeps the menu open. Per APG, **Space** toggles `checked` and
+ * emits `(select)` without closing the menu, so users can flip several
+ * options in one open without consumer glue.
  */
 @Directive({
   selector: '[forMenuCheckboxItem]',
@@ -74,6 +75,15 @@ export class ForMenuCheckboxItem {
     if (event.key === 'ArrowLeft' && this.ctx.parentMenu) {
       event.preventDefault();
       this.ctx.closeMenu('escape');
+      return;
+    }
+    // APG menubar guidance: Space toggles checked without closing the menu
+    // (Enter and click still close via native button activation). preventDefault
+    // here suppresses the browser-synthesized click so the menu stays open.
+    if (event.key === ' ') {
+      event.preventDefault();
+      this.checked.update((v) => !v);
+      this.select.emit(new CustomEvent('forMenuItemSelect', { cancelable: true }));
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });

@@ -6,18 +6,18 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForMenuContent` | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
-| `ForMenuItem` | `[forMenuItem]` | One action item. Activation closes the menu. |
-| `ForMenuCheckboxItem` | `[forMenuCheckboxItem]` | `model<boolean> checked`. Activation toggles + closes. |
-| `ForMenuRadioGroup` | `[forMenuRadioGroup]` | `model<string> value` shared by its radio items. |
-| `ForMenuRadioItem` | `[forMenuRadioItem]` | One radio option. `value: required<string>`. |
-| `ForMenuSeparator` | `[forMenuSeparator]` | Decorative separator, `role="separator"`. |
-| `ForMenuGroup` | `[forMenuGroup]` | Logical grouping, `role="group"` with `aria-labelledby`. |
-| `ForMenuGroupLabel` | `[forMenuGroupLabel]` | Label registered with the parent group. |
-| `ForMenuSub` | `[forMenuSub]` | Root for a nested submenu — owns its own `open`, ids, and item collection. |
-| `ForMenuSubTrigger` | `[forMenuSubTrigger]` | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`. |
+| Class                 | Selector                                   | Role                                                                                                                                                                   |
+| --------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForMenuContent`      | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
+| `ForMenuItem`         | `[forMenuItem]`                            | One action item. Activation closes the menu.                                                                                                                           |
+| `ForMenuCheckboxItem` | `[forMenuCheckboxItem]`                    | `model<boolean> checked`. Activation toggles + closes.                                                                                                                 |
+| `ForMenuRadioGroup`   | `[forMenuRadioGroup]`                      | `model<string> value` shared by its radio items.                                                                                                                       |
+| `ForMenuRadioItem`    | `[forMenuRadioItem]`                       | One radio option. `value: required<string>`.                                                                                                                           |
+| `ForMenuSeparator`    | `[forMenuSeparator]`                       | Decorative separator, `role="separator"`.                                                                                                                              |
+| `ForMenuGroup`        | `[forMenuGroup]`                           | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                               |
+| `ForMenuGroupLabel`   | `[forMenuGroupLabel]`                      | Label registered with the parent group.                                                                                                                                |
+| `ForMenuSub`          | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
+| `ForMenuSubTrigger`   | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
 
 ## Mount/visibility convention
 
@@ -32,16 +32,17 @@ Every item type emits a vetoable `(select)` event — a `CustomEvent` with `canc
 <button forMenuItem (select)="save()">Save</button>
 
 <!-- Stays open -->
-<button forMenuCheckboxItem [(checked)]="bold" (select)="$event.preventDefault()">
-  Bold
-</button>
+<button forMenuCheckboxItem [(checked)]="bold" (select)="$event.preventDefault()">Bold</button>
 ```
 
 ## Keyboard
 
 - **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
 - **Home / End** — jump to first / last enabled item.
-- **Enter / Space** — activate the focused item (native `<button>` semantics).
+- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(select)`.
+- **Space** — activates the focused item:
+  - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
+  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(select)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(select)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
 - **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
 - **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
@@ -56,18 +57,18 @@ A nested menu is opened by a `[forMenuSubTrigger]` — itself a `menuitem` in th
 <div forDropdownMenu [(open)]="open">
   <button forDropdownMenuTrigger>File</button>
   @if (open()) {
-    <div forMenuContent>
-      <button forMenuItem (select)="open()">Open</button>
-      <div forMenuSub [(open)]="recent">
-        <button forMenuSubTrigger>Open recent</button>
-        @if (recent()) {
-          <div forMenuSubContent>
-            <button forMenuItem (select)="open('a.txt')">a.txt</button>
-            <button forMenuItem (select)="open('b.txt')">b.txt</button>
-          </div>
-        }
+  <div forMenuContent>
+    <button forMenuItem (select)="open()">Open</button>
+    <div forMenuSub [(open)]="recent">
+      <button forMenuSubTrigger>Open recent</button>
+      @if (recent()) {
+      <div forMenuSubContent>
+        <button forMenuItem (select)="open('a.txt')">a.txt</button>
+        <button forMenuItem (select)="open('b.txt')">b.txt</button>
       </div>
+      }
     </div>
+  </div>
   }
 </div>
 ```

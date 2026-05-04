@@ -14,10 +14,11 @@ import { injectMenuContext } from './menu-context';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 
 /**
- * One radio option inside `[forMenuRadioGroup]`. Activation sets the
- * group's `value` to this item's `value`, emits `(select)`, and closes
- * the menu (call `event.preventDefault()` on the emitted event to keep
- * the menu open).
+ * One radio option inside `[forMenuRadioGroup]`. Click and Enter set the
+ * group's `value` to this item's `value`, emit `(select)`, and close the
+ * menu — call `event.preventDefault()` on the emitted event to keep the
+ * menu open. Per APG, **Space** sets the value and emits `(select)`
+ * without closing the menu.
  */
 @Directive({
   selector: '[forMenuRadioItem]',
@@ -77,6 +78,15 @@ export class ForMenuRadioItem {
     if (event.key === 'ArrowLeft' && this.menu.parentMenu) {
       event.preventDefault();
       this.menu.closeMenu('escape');
+      return;
+    }
+    // APG menubar guidance: Space sets the group value without closing the
+    // menu (Enter and click still close via native button activation).
+    // preventDefault here suppresses the browser-synthesized click.
+    if (event.key === ' ') {
+      event.preventDefault();
+      this.group.select(this.value());
+      this.select.emit(new CustomEvent('forMenuItemSelect', { cancelable: true }));
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });
