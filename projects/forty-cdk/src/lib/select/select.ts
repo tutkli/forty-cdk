@@ -165,6 +165,9 @@ export class ForSelect implements FormValueControl<readonly string[]>, ForSelect
   readonly #initialFocus = signal<ForSelectInitialFocus>('selected');
   readonly initialFocus = this.#initialFocus.asReadonly();
 
+  readonly #lastCloseReason = signal<ForSelectCloseReason | null>(null);
+  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
   readonly anchor = computed<ReferenceElement | null>(() => this.#triggerEl());
@@ -410,11 +413,29 @@ export class ForSelect implements FormValueControl<readonly string[]>, ForSelect
       return;
     }
     this.#initialFocus.set(initialFocus);
+    this.#lastCloseReason.set(null);
     this.open.set(true);
   }
 
-  closeMenu(_reason: ForSelectCloseReason): void {
+  closeMenu(reason: ForSelectCloseReason): void {
+    this.#lastCloseReason.set(reason);
     this.open.set(false);
+  }
+
+  commitOnTab(value: string): void {
+    if (this.disabled()) {
+      return;
+    }
+    if (!this.multiple() && !this.readonly()) {
+      this.value.set([value]);
+    }
+    // Move focus to the trigger BEFORE the unmount + close so the browser's
+    // Tab default action has a stable active element to advance from. The
+    // content's `DestroyRef` reads `lastCloseReason() === 'tab'` and skips
+    // its own re-focus — otherwise it would steal focus back from wherever
+    // the browser advanced it.
+    this.#triggerEl()?.focus();
+    this.closeMenu('tab');
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {

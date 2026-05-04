@@ -122,6 +122,23 @@ export interface ForSelectContext {
   openMenu(initialFocus?: ForSelectInitialFocus): void;
   closeMenu(reason: ForSelectCloseReason): void;
 
+  /**
+   * Reason of the most recent close, or `null` while the listbox is open
+   * (or before any close). Read by `[forSelectContent]` so `'tab'` closes
+   * skip the return-focus step — Tab needs the browser to advance focus
+   * from the trigger, and a re-focus would steal it back.
+   */
+  readonly lastCloseReason: Signal<ForSelectCloseReason | null>;
+
+  /**
+   * Commit the focused option's value (single mode) and close the listbox
+   * with reason `'tab'`. Moves focus to the trigger synchronously so the
+   * browser's Tab default action advances focus from there to the next
+   * (or previous) focusable in tab order. Multi-mode skips the value-set
+   * — selection toggles already happened via Space / Enter / click.
+   */
+  commitOnTab(value: string): void;
+
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(event: PointerEvent): void;
   emitFocusOutside(event: FocusEvent): void;
@@ -136,9 +153,7 @@ export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELE
 export function injectSelectContext(piece: string): ForSelectContext {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/select] ${piece} must be used inside a [forSelect] element.`,
-    );
+    throw new Error(`[forty-cdk/select] ${piece} must be used inside a [forSelect] element.`);
   }
   return ctx;
 }

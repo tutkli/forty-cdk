@@ -1,10 +1,4 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
@@ -101,8 +95,10 @@ export class ForSelectContent {
     inject(DestroyRef).onDestroy(() => {
       this.#dismissable.deactivate();
       // Return focus *before* the portal helper removes the DOM node so the
-      // trigger receives the focus event in a stable layout.
-      if (this.ctx.returnFocus()) {
+      // trigger receives the focus event in a stable layout. Skip on `'tab'`
+      // closes — Tab already moved focus to the trigger and let the browser
+      // advance from there; re-focusing would steal it back.
+      if (this.ctx.returnFocus() && this.ctx.lastCloseReason() !== 'tab') {
         this.ctx.trigger()?.focus();
       }
     });
