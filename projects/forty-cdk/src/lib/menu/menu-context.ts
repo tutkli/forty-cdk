@@ -21,9 +21,15 @@ export type ForMenuCloseReason =
  * Handle every item type (`menuitem`, `menuitemcheckbox`, `menuitemradio`)
  * registers with the parent menu. The collection orders them by DOM
  * position so groups, separators, and `@for` loops don't affect navigation.
+ *
+ * `textValue`, when present and non-empty, overrides `host.textContent` for
+ * typeahead matching — useful when the item's DOM contains icons, kbd
+ * shortcuts, badges, or SVG titles that would otherwise bleed into the
+ * match string. Empty / unset means "fall back to the host's text content".
  */
 export interface ForMenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
+  readonly textValue?: Signal<string>;
 }
 
 /**
