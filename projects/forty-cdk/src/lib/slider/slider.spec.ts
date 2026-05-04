@@ -28,6 +28,7 @@ const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThum
       [name]="name()"
       [touched]="touched()"
       (valueChange)="onValueChange($event)"
+      (valueCommit)="onValueCommit($event)"
       (touchedChange)="onTouchedChange($event)"
       data-test-id="root"
     >
@@ -60,6 +61,7 @@ class SliderHost {
   readonly name = signal('');
   readonly touched = signal(false);
   readonly valueChanges: (readonly number[])[] = [];
+  readonly valueCommits: (readonly number[])[] = [];
   readonly touchedChanges: boolean[] = [];
 
   thumbLabel(i: number): string {
@@ -68,6 +70,9 @@ class SliderHost {
 
   onValueChange(v: readonly number[]): void {
     this.valueChanges.push(v);
+  }
+  onValueCommit(v: readonly number[]): void {
+    this.valueCommits.push(v);
   }
   onTouchedChange(t: boolean): void {
     this.touchedChanges.push(t);
@@ -81,7 +86,14 @@ const thumb = (host: HTMLElement, i: number) =>
   host.querySelector<HTMLElement>(`[data-test-id="thumb-${i}"]`)!;
 
 const keyDown = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }),
+  );
+
+const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =>
+  target.dispatchEvent(
+    new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true, ...init }),
+  );
 
 const stubTrackRect = (
   el: HTMLElement,
@@ -515,10 +527,7 @@ describe('ForSlider', () => {
       const r = range(el);
       expect(r.style.getPropertyValue('--for-slider-range-start')).toBe('0.2');
       expect(r.style.getPropertyValue('--for-slider-range-end')).toBe('0.8');
-      expect(parseFloat(r.style.getPropertyValue('--for-slider-range-size'))).toBeCloseTo(
-        0.6,
-        5,
-      );
+      expect(parseFloat(r.style.getPropertyValue('--for-slider-range-size'))).toBeCloseTo(0.6, 5);
     });
 
     it('inverted flips the thumb position', () => {
@@ -546,6 +555,107 @@ describe('ForSlider', () => {
       keyDown(thumb(el, 0), 'ArrowRight');
       flush();
       expect(fixture.componentInstance.valueChanges).toEqual([[51]]);
+    });
+  });
+
+  describe('valueCommit contract', () => {
+    it('fires once per drag with the final value, not per pointermove step', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      fixture.componentInstance.valueCommits.length = 0;
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 60 });
+      pointerOnWindow('pointermove', { clientX: 70 });
+      pointerOnWindow('pointermove', { clientX: 75 });
+      flush();
+      // Many valueChange ticks, but no commit yet — drag is still active.
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+      pointerOnWindow('pointerup', { clientX: 75 });
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[75]]);
+    });
+
+    it('fires on pointercancel as well', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      fixture.componentInstance.valueCommits.length = 0;
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointermove', { clientX: 80 });
+      pointerOnWindow('pointercancel', { clientX: 80 });
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[80]]);
+    });
+
+    it('does not fire when pointerdown / pointerup occur without movement', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      fixture.componentInstance.valueCommits.length = 0;
+      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
+      pointerOnWindow('pointerup', { clientX: 50 });
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+    });
+
+    it('fires on track click + release because the value mutates on pointerdown', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      stubTrackRect(track(el), { left: 0, width: 100 });
+      fixture.componentInstance.valueCommits.length = 0;
+      pointer(track(el), 'pointerdown', { clientX: 30 });
+      pointerOnWindow('pointerup', { clientX: 30 });
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[30]]);
+    });
+
+    it('fires once on keyup after a navigation key', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueCommits.length = 0;
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+      keyUp(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[51]]);
+    });
+
+    it('fires once with the final value after a held arrow key (multiple keydowns, one keyup)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueCommits.length = 0;
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+      keyUp(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[53]]);
+    });
+
+    it('does not fire on keyup of a non-navigation key', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueCommits.length = 0;
+      keyUp(thumb(el, 0), 'Tab');
+      keyUp(thumb(el, 0), 'a');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+    });
+
+    it('does not fire when keyboard interaction yields no change (clamped at extreme)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([100]);
+      flush();
+      fixture.componentInstance.valueCommits.length = 0;
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyUp(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+    });
+
+    it('does not fire on consumer writes via [(value)]', () => {
+      const { fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueCommits.length = 0;
+      fixture.componentInstance.picked.set([42]);
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
     });
   });
 
