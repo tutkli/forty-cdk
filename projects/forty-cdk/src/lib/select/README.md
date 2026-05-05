@@ -11,6 +11,7 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 | `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.            |
 | `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                           |
 | `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<string>`.                                                                          |
+| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
 | `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                        |
 | `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                         |
 | `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                |

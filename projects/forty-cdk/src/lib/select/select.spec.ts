@@ -6,6 +6,7 @@ import { ForSelect } from './select';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
 import { ForSelectGroupLabel } from './select-group-label';
+import { ForSelectIndicator } from './select-indicator';
 import { ForSelectOption } from './select-option';
 import { ForSelectSeparator } from './select-separator';
 import { ForSelectTrigger } from './select-trigger';
@@ -921,6 +922,100 @@ describe('ForSelect', () => {
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/select\] ForSelectGroupLabel must be used inside a \[forSelectGroup\] element\./,
       );
+    });
+  });
+});
+
+describe('ForSelectIndicator', () => {
+  afterEach(() => {
+    document.querySelectorAll('[forSelectContent]').forEach((n) => n.remove());
+  });
+
+  @Component({
+    imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectIndicator],
+    template: `
+      <div forSelect [(open)]="open" [(value)]="value">
+        <button forSelectTrigger>Open</button>
+        @if (open()) {
+          <div forSelectContent>
+            <button data-test-id="apple" forSelectOption value="apple">
+              <span data-test-id="apple-ind" forSelectIndicator>✓</span>
+              Apple
+            </button>
+            <button data-test-id="banana" forSelectOption value="banana">
+              <span data-test-id="banana-ind" forSelectIndicator [forceMount]="forceMount()">✓</span>
+              Banana
+            </button>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class IndicatorHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>([]);
+    readonly forceMount = signal(false);
+  }
+
+  function indicator(testId: string): HTMLElement {
+    const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
+    if (!el) {
+      throw new Error(`Indicator [data-test-id="${testId}"] not found.`);
+    }
+    return el;
+  }
+
+  it('hides the indicator when the option is unselected and shows it when selected', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('unchecked');
+
+    r.instance.value.set(['apple']);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
+  });
+
+  it('keeps the indicator mounted when forceMount=true', async () => {
+    const r = renderHost(IndicatorHost);
+    r.instance.forceMount.set(true);
+    await flush(r.fixture);
+
+    expect(indicator('banana-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('banana-ind').getAttribute('data-state')).toBe('unchecked');
+  });
+
+  it('marks the indicator aria-hidden so screen readers ignore the decoration', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('throws when used outside [forSelectOption]', () => {
+    @Component({
+      imports: [ForSelectIndicator],
+      template: `<span forSelectIndicator></span>`,
+    })
+    class Orphan {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(Orphan)).toThrow(
+      /\[forty-cdk\/select\] ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
+    );
+  });
+
+  describe('zoneless reactivity', () => {
+    it('flips visibility when the parent selection changes without Zone.js', async () => {
+      const r = renderHost(IndicatorHost);
+      await flush(r.fixture);
+
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+      r.instance.value.set(['apple']);
+      await flush(r.fixture);
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
     });
   });
 });

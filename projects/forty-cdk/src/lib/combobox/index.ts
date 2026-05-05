@@ -2,6 +2,7 @@ export { ForCombobox } from './combobox';
 export { ForComboboxInput } from './combobox-input';
 export { ForComboboxContent } from './combobox-content';
 export { ForComboboxOption } from './combobox-option';
+export { ForComboboxIndicator } from './combobox-indicator';
 export { ForComboboxEmpty } from './combobox-empty';
 export { ForComboboxClear } from './combobox-clear';
 export { ForComboboxChips } from './combobox-chips';

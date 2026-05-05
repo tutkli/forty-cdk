@@ -3,6 +3,7 @@ export { ForMenuItem } from './menu-item';
 export { ForMenuCheckboxItem } from './menu-checkbox-item';
 export { ForMenuRadioGroup } from './menu-radio-group';
 export { ForMenuRadioItem } from './menu-radio-item';
+export { ForMenuItemIndicator } from './menu-item-indicator';
 export { ForMenuSeparator } from './menu-separator';
 export { ForMenuGroup } from './menu-group';
 export { ForMenuGroupLabel } from './menu-group-label';

@@ -1,0 +1,64 @@
+import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
+
+import { ForMenuCheckboxItem } from './menu-checkbox-item';
+import { ForMenuRadioItem } from './menu-radio-item';
+
+/**
+ * Visibility helper inside `[forMenuCheckboxItem]` or `[forMenuRadioItem]`.
+ * The directive flips a `[hidden]` host binding so the consumer can keep
+ * the checkmark / dot inline without extra `@if` glue:
+ *
+ * ```html
+ * <button forMenuCheckboxItem [(checked)]="bold">
+ *   <span forMenuItemIndicator>✓</span>
+ *   Bold
+ * </button>
+ *
+ * <div forMenuRadioGroup [(value)]="alignment">
+ *   <button forMenuRadioItem value="left">
+ *     <span forMenuItemIndicator>•</span>
+ *     Left
+ *   </button>
+ * </div>
+ * ```
+ *
+ * Reflects the parent item's `data-state` (`"checked" | "unchecked"`) so
+ * the consumer can also style it from CSS. Set `[forceMount]` to keep the
+ * indicator in the DOM regardless of state — useful when wrapping
+ * `animate.leave` for an exit animation, or when the consumer styles the
+ * indicator via `data-state` instead of presence.
+ */
+@Directive({
+  selector: '[forMenuItemIndicator]',
+  exportAs: 'forMenuItemIndicator',
+  host: {
+    'aria-hidden': 'true',
+    '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
+    '[hidden]': '!checked() && !forceMount()',
+  },
+})
+export class ForMenuItemIndicator {
+  readonly #checkbox = inject(ForMenuCheckboxItem, { optional: true });
+  readonly #radio = inject(ForMenuRadioItem, { optional: true });
+
+  protected readonly checked = computed(() => {
+    if (this.#checkbox) {
+      return this.#checkbox.checked();
+    }
+    if (this.#radio) {
+      return this.#radio.checked();
+    }
+    return false;
+  });
+
+  /** Keep the indicator mounted even when the parent item is unchecked. */
+  readonly forceMount = input(false, { transform: booleanAttribute });
+
+  constructor() {
+    if (!this.#checkbox && !this.#radio) {
+      throw new Error(
+        '[forty-cdk/menu] ForMenuItemIndicator must be used inside a [forMenuCheckboxItem] or [forMenuRadioItem] element.',
+      );
+    }
+  }
+}
