@@ -13,6 +13,7 @@ import { ForDialogClose } from './dialog-close';
 import type { ForDialogCloseReason } from './dialog-context';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogTitle } from './dialog-title';
+import { ForDialogTrigger } from './dialog-trigger';
 
 @Component({
   imports: [
@@ -756,6 +757,117 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(document.querySelector('[forDialog]')).toBeNull();
+    });
+  });
+});
+
+describe('ForDialogTrigger', () => {
+  afterEach(() => {
+    _resetBodyScrollLockForTesting();
+    document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
+  });
+
+  @Component({
+    imports: [ForDialog, ForDialogTrigger],
+    template: `
+      <button forDialogTrigger [(open)]="open" [controls]="dialogId" [disabled]="disabled()">
+        Open
+      </button>
+      @if (open()) {
+        <div forDialog [id]="dialogId" (close)="open.set(false)" ariaLabel="t"></div>
+      }
+    `,
+  })
+  class TriggerHost {
+    readonly open = signal(false);
+    readonly disabled = signal(false);
+    readonly dialogId = 'my-dialog';
+  }
+
+  it('reflects type=button, aria-haspopup, and aria-expanded=false when closed', async () => {
+    const r = renderHost(TriggerHost);
+    await flush(r.fixture);
+    const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+    expect(trigger.getAttribute('type')).toBe('button');
+    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(trigger.hasAttribute('aria-controls')).toBe(false);
+    expect(trigger.getAttribute('data-state')).toBe('closed');
+  });
+
+  it('flips aria-expanded, aria-controls, and data-state when the dialog opens', async () => {
+    const r = renderHost(TriggerHost);
+    await flush(r.fixture);
+    const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+    trigger.click();
+    await flush(r.fixture);
+
+    expect(r.instance.open()).toBe(true);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(trigger.getAttribute('aria-controls')).toBe('my-dialog');
+    expect(trigger.getAttribute('data-state')).toBe('open');
+  });
+
+  it('toggles open on each click', async () => {
+    const r = renderHost(TriggerHost);
+    await flush(r.fixture);
+    const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+    trigger.click();
+    await flush(r.fixture);
+    expect(r.instance.open()).toBe(true);
+
+    trigger.click();
+    await flush(r.fixture);
+    expect(r.instance.open()).toBe(false);
+  });
+
+  it('ignores clicks and reflects data-disabled when disabled=true', async () => {
+    const r = renderHost(TriggerHost);
+    r.instance.disabled.set(true);
+    await flush(r.fixture);
+    const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+    expect(trigger.getAttribute('data-disabled')).toBe('');
+    trigger.click();
+    await flush(r.fixture);
+
+    expect(r.instance.open()).toBe(false);
+  });
+
+  it('returns focus to the trigger after the dialog closes', async () => {
+    const r = renderHost(TriggerHost);
+    await flush(r.fixture);
+    const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+    trigger.focus();
+    trigger.click();
+    await flush(r.fixture);
+    expect(r.instance.open()).toBe(true);
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  describe('zoneless reactivity', () => {
+    it('reacts to open changes after detectChanges without Zone.js', async () => {
+      const r = renderHost(TriggerHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
   });
 });

@@ -8,7 +8,9 @@ The same focus trap, scroll lock, portal, and dismissable-layer behaviors run un
 
 ### Declarative — `[forDialog]`
 
-The dialog is an overlay: **mount equals open**. The consumer's signal drives `@if`, and the directive emits `(close)` when it wants to be unmounted (Escape, backdrop, outside-pointer, outside-focus, close button). There is no `[(open)]` two-way binding — the directive never opens itself, only requests close.
+The dialog is an overlay: **mount equals open**. The consumer's signal drives `@if`, and the directive emits `(close)` when it wants to be unmounted (Escape, backdrop, outside-pointer, outside-focus, close button). There is no `[(open)]` two-way binding on `[forDialog]` — the directive never opens itself, only requests close.
+
+For the open side, drop `[forDialogTrigger]` on a `<button>`. It two-way binds `[(open)]` to the same signal that gates the surrounding `@if`, and wires `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, and `data-state` automatically.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -18,16 +20,24 @@ import {
   ForDialogClose,
   ForDialogDescription,
   ForDialogTitle,
+  ForDialogTrigger,
 } from 'forty-cdk';
 
 @Component({
   selector: 'demo-confirm',
-  imports: [ForDialog, ForDialogTitle, ForDialogDescription, ForDialogClose, ForDialogBackdrop],
+  imports: [
+    ForDialog,
+    ForDialogTrigger,
+    ForDialogTitle,
+    ForDialogDescription,
+    ForDialogClose,
+    ForDialogBackdrop,
+  ],
   template: `
-    <button type="button" (click)="open.set(true)">Delete account</button>
+    <button forDialogTrigger [(open)]="open" controls="confirm-delete">Delete account</button>
 
     @if (open()) {
-      <div forDialog (close)="open.set(false)" animate.leave="fade-out">
+      <div forDialog id="confirm-delete" (close)="open.set(false)" animate.leave="fade-out">
         <div forDialogBackdrop class="my-backdrop" animate.leave="fade-out"></div>
         <h2 forDialogTitle>Delete account?</h2>
         <p forDialogDescription>This permanently removes your data.</p>
@@ -86,6 +96,7 @@ export class DemoHost {
 | Class | Selector | Role |
 | --- | --- | --- |
 | `ForDialog` | `[forDialog]` | The dialog box. Owns `dismissible`, `modal`, `alert`, focus, scroll lock. |
+| `ForDialogTrigger` | `[forDialogTrigger]` | Optional. Button that toggles `[(open)]` and reflects `aria-haspopup`/`aria-expanded`/`aria-controls`/`data-state`. |
 | `ForDialogTitle` | `[forDialogTitle]` | Generates an id and registers it as `aria-labelledby`. |
 | `ForDialogDescription` | `[forDialogDescription]` | Same, for `aria-describedby`. |
 | `ForDialogClose` | `[forDialogClose]` | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode. |
