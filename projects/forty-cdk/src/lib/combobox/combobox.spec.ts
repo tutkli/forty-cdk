@@ -15,6 +15,7 @@ import { ForComboboxIndicator } from './combobox-indicator';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxOption } from './combobox-option';
 import { ForComboboxSeparator } from './combobox-separator';
+import { ForComboboxStatus } from './combobox-status';
 
 const BASE_IMPORTS = [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption];
 const MULTI_IMPORTS = [
@@ -1186,6 +1187,118 @@ describe('ForCombobox', () => {
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/combobox\] ForComboboxGroupLabel must be used inside a \[forComboboxGroup\] element\./,
       );
+    });
+  });
+});
+
+describe('ForComboboxStatus', () => {
+  afterEach(() => {
+    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
+  });
+
+  @Component({
+    imports: [
+      ForCombobox,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxOption,
+      ForComboboxStatus,
+    ],
+    template: `
+      <div forCombobox [(open)]="open" [(query)]="query">
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div data-test-id="status" forComboboxStatus #status="forComboboxStatus">
+              @if (loading()) {
+                Searching…
+              } @else if (status.count() === 0) {
+                No matches.
+              } @else {
+                {{ status.count() }} results.
+              }
+            </div>
+            @for (it of filtered(); track it) {
+              <div [attr.data-test-id]="it" forComboboxOption [value]="it" [label]="it">
+                {{ it }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    `,
+  })
+  class StatusHost {
+    readonly open = signal(true);
+    readonly query = signal('');
+    readonly loading = signal(false);
+    readonly items = signal<readonly string[]>(['apple', 'apricot', 'banana']);
+    readonly filtered = computed(() => {
+      const q = this.query().toLowerCase();
+      return this.items().filter((it) => it.includes(q));
+    });
+  }
+
+  function statusEl(): HTMLElement {
+    const el = document.querySelector<HTMLElement>('[data-test-id="status"]');
+    if (!el) throw new Error('Status element not found.');
+    return el;
+  }
+
+  it('sets role=status, aria-live=polite, and aria-atomic=true', async () => {
+    const r = renderHost(StatusHost);
+    await flush(r.fixture);
+    const el = statusEl();
+
+    expect(el.getAttribute('role')).toBe('status');
+    expect(el.getAttribute('aria-live')).toBe('polite');
+    expect(el.getAttribute('aria-atomic')).toBe('true');
+  });
+
+  it('exposes a live count signal that reflects ctx.options().length', async () => {
+    const r = renderHost(StatusHost);
+    await flush(r.fixture);
+
+    expect(statusEl().textContent?.trim()).toMatch(/^3 results\.$/);
+
+    r.instance.query.set('ap');
+    await flush(r.fixture);
+    expect(statusEl().textContent?.trim()).toMatch(/^2 results\.$/);
+
+    r.instance.query.set('zzz');
+    await flush(r.fixture);
+    expect(statusEl().textContent?.trim()).toMatch(/^No matches\.$/);
+  });
+
+  it('hosts the projected loading message when the consumer sets a loading flag', async () => {
+    const r = renderHost(StatusHost);
+    r.instance.loading.set(true);
+    await flush(r.fixture);
+    expect(statusEl().textContent?.trim()).toMatch(/^Searching…$/);
+  });
+
+  it('throws when used outside [forCombobox]', () => {
+    @Component({
+      imports: [ForComboboxStatus],
+      template: `<div forComboboxStatus></div>`,
+    })
+    class Orphan {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(Orphan)).toThrow(
+      /\[forty-cdk\/combobox\] ForComboboxStatus must be used inside a \[forCombobox\] element\./,
+    );
+  });
+
+  describe('zoneless reactivity', () => {
+    it('count tracks options without Zone.js', async () => {
+      const r = renderHost(StatusHost);
+      await flush(r.fixture);
+
+      expect(statusEl().textContent?.trim()).toMatch(/^3 results\.$/);
+      r.instance.items.set(['apple']);
+      await flush(r.fixture);
+      expect(statusEl().textContent?.trim()).toMatch(/^1 results\.$/);
     });
   });
 });
