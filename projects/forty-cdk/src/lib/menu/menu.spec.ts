@@ -9,6 +9,7 @@ import { ForMenuContent } from './menu-content';
 import { ForMenuGroup } from './menu-group';
 import { ForMenuGroupLabel } from './menu-group-label';
 import { ForMenuItem } from './menu-item';
+import { ForMenuItemIndicator } from './menu-item-indicator';
 import { ForMenuRadioGroup } from './menu-radio-group';
 import { ForMenuRadioItem } from './menu-radio-item';
 import { ForMenuSeparator } from './menu-separator';
@@ -734,6 +735,130 @@ describe('Menu items / content', () => {
       await flush(r.fixture);
       const center = document.querySelector<HTMLElement>('#center')!;
       expect(center.getAttribute('aria-checked')).toBe('true');
+    });
+  });
+});
+
+describe('ForMenuItemIndicator', () => {
+  afterEach(() => {
+    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
+  });
+
+  @Component({
+    imports: [
+      ForDropdownMenu,
+      ForDropdownMenuTrigger,
+      ForMenuContent,
+      ForMenuCheckboxItem,
+      ForMenuRadioGroup,
+      ForMenuRadioItem,
+      ForMenuItemIndicator,
+    ],
+    template: `
+      <div forDropdownMenu [(open)]="open">
+        <button forDropdownMenuTrigger>Format</button>
+        @if (open()) {
+          <div forMenuContent>
+            <button id="bold" forMenuCheckboxItem [(checked)]="bold">
+              <span data-test-id="bold-ind" forMenuItemIndicator>✓</span>
+              Bold
+            </button>
+            <button id="italic" forMenuCheckboxItem [(checked)]="italic">
+              <span data-test-id="italic-ind" forMenuItemIndicator [forceMount]="forceMount()">✓</span>
+              Italic
+            </button>
+            <div forMenuRadioGroup [(value)]="alignment">
+              <button id="left" forMenuRadioItem value="left">
+                <span data-test-id="left-ind" forMenuItemIndicator>•</span>
+                Left
+              </button>
+              <button id="right" forMenuRadioItem value="right">
+                <span data-test-id="right-ind" forMenuItemIndicator>•</span>
+                Right
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class IndicatorHost {
+    readonly open = signal(true);
+    readonly bold = signal(false);
+    readonly italic = signal(false);
+    readonly alignment = signal('left');
+    readonly forceMount = signal(false);
+  }
+
+  function indicator(testId: string): HTMLElement {
+    const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
+    if (!el) {
+      throw new Error(`Indicator [data-test-id="${testId}"] not found.`);
+    }
+    return el;
+  }
+
+  it('hides while the checkbox item is unchecked and shows when checked', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('bold-ind').hasAttribute('hidden')).toBe(true);
+    expect(indicator('bold-ind').getAttribute('data-state')).toBe('unchecked');
+
+    r.instance.bold.set(true);
+    await flush(r.fixture);
+
+    expect(indicator('bold-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('bold-ind').getAttribute('data-state')).toBe('checked');
+  });
+
+  it('reflects the radio group value across siblings', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('left-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('left-ind').getAttribute('data-state')).toBe('checked');
+    expect(indicator('right-ind').hasAttribute('hidden')).toBe(true);
+    expect(indicator('right-ind').getAttribute('data-state')).toBe('unchecked');
+
+    r.instance.alignment.set('right');
+    await flush(r.fixture);
+
+    expect(indicator('left-ind').hasAttribute('hidden')).toBe(true);
+    expect(indicator('right-ind').hasAttribute('hidden')).toBe(false);
+  });
+
+  it('keeps the indicator mounted when forceMount=true', async () => {
+    const r = renderHost(IndicatorHost);
+    r.instance.forceMount.set(true);
+    await flush(r.fixture);
+
+    expect(indicator('italic-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('italic-ind').getAttribute('data-state')).toBe('unchecked');
+  });
+
+  it('throws when used outside a checkable menu item', () => {
+    @Component({
+      imports: [ForMenuItemIndicator],
+      template: `<span forMenuItemIndicator></span>`,
+    })
+    class Orphan {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(Orphan)).toThrow(
+      /\[forty-cdk\/menu\] ForMenuItemIndicator must be used inside a \[forMenuCheckboxItem\] or \[forMenuRadioItem\] element\./,
+    );
+  });
+
+  describe('zoneless reactivity', () => {
+    it('flips visibility on parent state change without Zone.js', async () => {
+      const r = renderHost(IndicatorHost);
+      await flush(r.fixture);
+
+      expect(indicator('bold-ind').hasAttribute('hidden')).toBe(true);
+      r.instance.bold.set(true);
+      await flush(r.fixture);
+      expect(indicator('bold-ind').hasAttribute('hidden')).toBe(false);
     });
   });
 });

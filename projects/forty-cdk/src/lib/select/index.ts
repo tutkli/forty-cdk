@@ -3,6 +3,7 @@ export { ForSelectTrigger } from './select-trigger';
 export { ForSelectValue } from './select-value';
 export { ForSelectContent } from './select-content';
 export { ForSelectOption } from './select-option';
+export { ForSelectIndicator } from './select-indicator';
 export { ForSelectGroup } from './select-group';
 export { ForSelectGroupLabel } from './select-group-label';
 export { ForSelectSeparator } from './select-separator';

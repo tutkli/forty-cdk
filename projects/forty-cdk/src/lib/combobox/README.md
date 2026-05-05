@@ -12,6 +12,7 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic. |
 | `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                          |
 | `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                     |
+| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
 | `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options.                                                       |
 | `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear.                                                           |
 | `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                           |

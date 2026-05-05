@@ -11,6 +11,7 @@ import { ForComboboxContent } from './combobox-content';
 import { ForComboboxEmpty } from './combobox-empty';
 import { ForComboboxGroup } from './combobox-group';
 import { ForComboboxGroupLabel } from './combobox-group-label';
+import { ForComboboxIndicator } from './combobox-indicator';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxOption } from './combobox-option';
 import { ForComboboxSeparator } from './combobox-separator';
@@ -1185,6 +1186,110 @@ describe('ForCombobox', () => {
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/combobox\] ForComboboxGroupLabel must be used inside a \[forComboboxGroup\] element\./,
       );
+    });
+  });
+});
+
+describe('ForComboboxIndicator', () => {
+  afterEach(() => {
+    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
+  });
+
+  @Component({
+    imports: [
+      ForCombobox,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxOption,
+      ForComboboxIndicator,
+    ],
+    template: `
+      <div forCombobox [(open)]="open" [(value)]="value">
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div data-test-id="apple" forComboboxOption value="apple" label="Apple">
+              <span data-test-id="apple-ind" forComboboxIndicator>✓</span>
+              Apple
+            </div>
+            <div data-test-id="banana" forComboboxOption value="banana" label="Banana">
+              <span
+                data-test-id="banana-ind"
+                forComboboxIndicator
+                [forceMount]="forceMount()"
+              >✓</span>
+              Banana
+            </div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class IndicatorHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>([]);
+    readonly forceMount = signal(false);
+  }
+
+  function indicator(testId: string): HTMLElement {
+    const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
+    if (!el) {
+      throw new Error(`Indicator [data-test-id="${testId}"] not found.`);
+    }
+    return el;
+  }
+
+  it('hides while unselected and shows when the option enters value()', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('unchecked');
+
+    r.instance.value.set(['apple']);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
+  });
+
+  it('keeps the indicator mounted when forceMount=true', async () => {
+    const r = renderHost(IndicatorHost);
+    r.instance.forceMount.set(true);
+    await flush(r.fixture);
+
+    expect(indicator('banana-ind').hasAttribute('hidden')).toBe(false);
+    expect(indicator('banana-ind').getAttribute('data-state')).toBe('unchecked');
+  });
+
+  it('marks the indicator aria-hidden so screen readers ignore the decoration', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('throws when used outside [forComboboxOption]', () => {
+    @Component({
+      imports: [ForComboboxIndicator],
+      template: `<span forComboboxIndicator></span>`,
+    })
+    class Orphan {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(Orphan)).toThrow(
+      /\[forty-cdk\/combobox\] ForComboboxIndicator must be used inside a \[forComboboxOption\] element\./,
+    );
+  });
+
+  describe('zoneless reactivity', () => {
+    it('flips visibility on value change without Zone.js', async () => {
+      const r = renderHost(IndicatorHost);
+      await flush(r.fixture);
+
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+      r.instance.value.set(['apple']);
+      await flush(r.fixture);
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
     });
   });
 });
