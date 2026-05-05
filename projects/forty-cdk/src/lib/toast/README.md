@@ -123,6 +123,7 @@ The directive doesn't manage its own visibility — `@if` does. The directive em
 
 - Timer starts on mount and fires `(close)` with reason `'auto'` after `duration` ms.
 - Hovering or focusing inside the toast pauses the timer; leaving / blurring resumes with the remaining time.
+- The timer also pauses while `document.visibilityState !== 'visible'` (tab backgrounded, window hidden) and resumes when the page becomes visible again, so toasts don't silently expire while the user is not looking. The `visibilitychange` listener is shared across all live toasts (refcounted) — one document-level handler regardless of stack depth.
 - `duration: 0` keeps the toast sticky — only manual / action / programmatic close ends it.
 
 ## Keyboard

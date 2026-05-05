@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
+import { subscribeVisibilityPause } from '../_internal/visibility-pause/visibility-pause';
 import {
   FOR_TOAST_CONTEXT,
   type ForToastActionHandle,
@@ -149,6 +150,20 @@ export class ForToast implements ForToastContext {
         this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
       }
     });
+
+    // Pause the auto-dismiss timer while the page is backgrounded so the
+    // toast does not silently expire while the user is not looking. The
+    // global listener is refcounted across all live toast instances, so the
+    // document only carries a single `visibilitychange` handler regardless
+    // of stack depth.
+    const unsubscribe = subscribeVisibilityPause((hidden) => {
+      if (hidden) {
+        this.#applyPause('visibility');
+      } else {
+        this.#releasePause('visibility');
+      }
+    });
+    this.#destroyRef.onDestroy(unsubscribe);
   }
 
   registerLabel(id: string): void {
@@ -184,11 +199,19 @@ export class ForToast implements ForToastContext {
   }
 
   protected onPause(reason: 'hover' | 'focus'): void {
+    this.#applyPause(reason);
+  }
+
+  protected onResume(reason: 'hover' | 'focus'): void {
+    this.#releasePause(reason);
+  }
+
+  #applyPause(reason: 'hover' | 'focus' | 'visibility'): void {
     this.#pauseReasons.add(reason);
     this.#updatePaused();
   }
 
-  protected onResume(reason: 'hover' | 'focus'): void {
+  #releasePause(reason: 'hover' | 'focus' | 'visibility'): void {
     this.#pauseReasons.delete(reason);
     this.#updatePaused();
   }

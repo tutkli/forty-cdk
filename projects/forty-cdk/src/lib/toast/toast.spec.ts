@@ -272,6 +272,100 @@ describe('ForToast (declarative)', () => {
     });
   });
 
+  describe('document visibility pause', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
+
+    function setVisibility(state: 'visible' | 'hidden'): void {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => state,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
+
+    it('pauses the auto-dismiss timer when the page becomes hidden', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+
+      vi.advanceTimersByTime(2_000);
+      r.flush();
+
+      setVisibility('hidden');
+      r.flush();
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      vi.advanceTimersByTime(60_000);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+    });
+
+    it('resumes with the remaining time when the page becomes visible again', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+
+      vi.advanceTimersByTime(2_000);
+      r.flush();
+
+      setVisibility('hidden');
+      r.flush();
+      vi.advanceTimersByTime(60_000);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+
+      setVisibility('visible');
+      r.flush();
+      expect(t.hasAttribute('data-paused')).toBe(false);
+
+      vi.advanceTimersByTime(2_999);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
+    });
+
+    it('keeps paused while hover is also active and only resumes once both clear', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+
+      t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      setVisibility('hidden');
+      r.flush();
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      // Visibility returns first; hover pause keeps the timer down.
+      setVisibility('visible');
+      r.flush();
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      // Releasing hover too clears the pause.
+      t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      r.flush();
+      expect(t.hasAttribute('data-paused')).toBe(false);
+    });
+
+    it('removes its document listener when the toast unmounts', () => {
+      const r = renderHost(DeclarativeHost);
+      r.flush();
+      r.instance.open.set(false);
+      r.flush();
+
+      // Smoke-check: dispatching a visibilitychange after destroy must not throw
+      // and the toast (now unmounted) must not be in the DOM.
+      expect(() => setVisibility('hidden')).not.toThrow();
+      expect($(r.el, 'declarative')).toBeNull();
+    });
+  });
+
   describe('manual close paths', () => {
     it('Escape closes when closable', () => {
       const r = renderHost(DeclarativeHost);
