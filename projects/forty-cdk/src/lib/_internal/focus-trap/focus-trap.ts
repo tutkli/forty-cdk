@@ -1,6 +1,13 @@
 import { ElementRef, inject } from '@angular/core';
 
-const FOCUSABLE_SELECTOR = [
+/**
+ * Shared CSS selector for tabbable elements. Single source of truth for the
+ * library — primitives that need their own focus-finding logic (e.g. the
+ * dialog directive's non-modal initial focus, the programmatic dialog
+ * manager's bootstrap, future menu / popover initial-focus paths) import
+ * this rather than maintaining a private copy that drifts.
+ */
+export const FOCUSABLE_SELECTOR = [
   'a[href]',
   'area[href]',
   'button:not([disabled])',
@@ -12,6 +19,38 @@ const FOCUSABLE_SELECTOR = [
   'audio[controls]',
   'video[controls]',
 ].join(',');
+
+/**
+ * Returns the first tabbable descendant of `container`, or `null` if none
+ * exists. Mirrors the filter used by `FocusTrap` (excludes `[hidden]` and
+ * descendants of `[inert]` ancestors below the container).
+ */
+export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
+  const candidates = Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  );
+  for (const el of candidates) {
+    if (el.hasAttribute('hidden')) {
+      continue;
+    }
+    if (hasInertAncestor(el, container)) {
+      continue;
+    }
+    return el;
+  }
+  return null;
+}
+
+function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
+  let cur: HTMLElement | null = el.parentElement;
+  while (cur && cur !== root) {
+    if (cur.hasAttribute('inert')) {
+      return true;
+    }
+    cur = cur.parentElement;
+  }
+  return false;
+}
 
 export interface FocusTrapActivateOptions {
   /**

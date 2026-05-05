@@ -39,6 +39,7 @@ export interface DismissableLayerActivateOptions {
 
 const layerStack: DismissableLayer[] = [];
 let listenersInstalled = false;
+let suppressDepth = 0;
 
 function topmost(): DismissableLayer | undefined {
   return layerStack[layerStack.length - 1];
@@ -53,16 +54,47 @@ function installListenersOnce(): void {
     if (event.key !== 'Escape') {
       return;
     }
+    if (suppressDepth > 0) {
+      return;
+    }
     topmost()?.['handleEscape'](event);
   });
   document.addEventListener(
     'pointerdown',
-    (event) => topmost()?.['handlePointerDown'](event as PointerEvent),
+    (event) => {
+      if (suppressDepth > 0) {
+        return;
+      }
+      topmost()?.['handlePointerDown'](event as PointerEvent);
+    },
     true,
   );
-  document.addEventListener('focusin', (event) =>
-    topmost()?.['handleFocusIn'](event as FocusEvent),
-  );
+  document.addEventListener('focusin', (event) => {
+    if (suppressDepth > 0) {
+      return;
+    }
+    topmost()?.['handleFocusIn'](event as FocusEvent);
+  });
+}
+
+/**
+ * Runs `fn` with the global dismissable-layer dispatcher suppressed. While
+ * suppressed, neither Escape, pointer-down outside, nor focus-outside events
+ * are forwarded to the topmost layer.
+ *
+ * Used by primitives during teardown: returning focus from a closing surface
+ * fires `focusin` on the focus-return target, which is "outside" the next
+ * topmost layer. Without suppression that would cascade-dismiss the layer
+ * underneath the one the consumer actually meant to close. Suppression is
+ * refcounted, so nested teardowns nest correctly.
+ */
+export function suppressDismissableLayerDispatch<T>(fn: () => T): T {
+  suppressDepth++;
+  try {
+    return fn();
+  } finally {
+    suppressDepth--;
+  }
 }
 
 /**
@@ -181,4 +213,10 @@ export function injectDismissableLayer(): DismissableLayer {
   const layer = new DismissableLayer(host.nativeElement);
   inject(DestroyRef).onDestroy(() => layer.deactivate());
   return layer;
+}
+
+/** @internal — for tests only. Resets the global stack and suppress depth. */
+export function _resetDismissableLayerForTesting(): void {
+  layerStack.length = 0;
+  suppressDepth = 0;
 }

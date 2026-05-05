@@ -11,8 +11,11 @@ import {
 } from '@angular/core';
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { injectFocusTrap } from '../_internal/focus-trap/focus-trap';
+import {
+  injectDismissableLayer,
+  suppressDismissableLayerDispatch,
+} from '../_internal/dismissable-layer/dismissable-layer';
+import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
 import { injectPortal } from '../_internal/portal/portal';
 import {
   FOR_DIALOG_CONTEXT,
@@ -188,10 +191,7 @@ export class ForDialog implements ForDialogContext {
         if (this.initialFocus() === 'container') {
           host.focus();
         } else {
-          const first = host.querySelector<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          );
-          (first ?? host).focus();
+          (findFirstFocusable(host) ?? host).focus();
         }
       }
     });
@@ -199,7 +199,13 @@ export class ForDialog implements ForDialogContext {
     inject(DestroyRef).onDestroy(() => {
       this.#dismissable.deactivate();
       if (this.#activatedAsModal) {
-        this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
+        // Suppress the dismissable-layer dispatcher across focus-return so
+        // the synthetic `focusin` triggered by `.focus()`-ing the previous
+        // element does not cascade-dismiss whatever dialog is now topmost
+        // (a stacked dialog opened above this one).
+        suppressDismissableLayerDispatch(() => {
+          this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
+        });
         unlockBodyScroll();
       }
     });

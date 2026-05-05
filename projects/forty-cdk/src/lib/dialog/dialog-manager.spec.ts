@@ -6,6 +6,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { _resetDismissableLayerForTesting } from '../_internal/dismissable-layer/dismissable-layer';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
 
@@ -60,6 +61,7 @@ function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
 describe('ForDialogManager (programmatic)', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
+    _resetDismissableLayerForTesting();
     document
       .querySelectorAll('[role="dialog"], [role="alertdialog"], #external-trigger')
       .forEach((n) => n.remove());
@@ -298,6 +300,113 @@ describe('ForDialogManager (programmatic)', () => {
       b.close();
       await b.closed;
       expect(document.body.style.overflow).toBe('auto');
+    });
+
+    it('Escape only closes the topmost stacked dialog', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open<ConfirmDialog, string | undefined>(
+        ConfirmDialog,
+        { data: { message: 'a' } },
+      );
+      const b = dialogs.open<ConfirmDialog, string | undefined>(
+        ConfirmDialog,
+        { data: { message: 'b' } },
+      );
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await b.closed;
+
+      expect(b.isClosed()).toBe(true);
+      expect(a.isClosed()).toBe(false);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await a.closed;
+
+      expect(a.isClosed()).toBe(true);
+    });
+
+    it('closing an underlying dialog does NOT cascade-close the dialog above', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+
+      a.close();
+      await a.closed;
+
+      expect(a.isClosed()).toBe(true);
+      expect(b.isClosed()).toBe(false);
+
+      b.close();
+    });
+  });
+
+  describe('dismissable-layer parity with [forDialog]', () => {
+    it('dismisses on outside pointer-down when dismissible (default)', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+
+      outside.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
+      );
+      await ref.closed;
+
+      expect(ref.isClosed()).toBe(true);
+      outside.remove();
+    });
+
+    it('does NOT dismiss on outside pointer-down when dismissible: false', () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        dismissible: false,
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+
+      outside.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
+      );
+
+      expect(ref.isClosed()).toBe(false);
+      outside.remove();
+      ref.close();
+    });
+
+    it('does NOT dismiss on pointer-down INSIDE the dialog', () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      const okButton = document.querySelector<HTMLButtonElement>('#ok')!;
+      okButton.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
+      );
+
+      expect(ref.isClosed()).toBe(false);
+      ref.close();
+    });
+
+    it('uses the shared focusable selector — focuses an <a href> link first', () => {
+      @Component({
+        template: `
+          <a id="link" href="#nope">link</a>
+          <button id="btn">btn</button>
+        `,
+      })
+      class LinkFirstDialog {}
+
+      const { dialogs } = setup();
+      dialogs.open(LinkFirstDialog);
+
+      // The shared FOCUSABLE_SELECTOR (now used by both the manager and
+      // the directive) lists `a[href]` — any pre-existing manager-only
+      // selector is gone, so a leading link should be picked up first.
+      expect(document.activeElement?.id).toBe('link');
     });
   });
 });
