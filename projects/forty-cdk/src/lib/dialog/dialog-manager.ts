@@ -12,18 +12,12 @@ import {
 } from '@angular/core';
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { FocusTrap } from '../_internal/focus-trap/focus-trap';
+import {
+  DismissableLayer,
+  suppressDismissableLayerDispatch,
+} from '../_internal/dismissable-layer/dismissable-layer';
+import { findFirstFocusable, FocusTrap } from '../_internal/focus-trap/focus-trap';
 import { ForDialogRef } from './dialog-ref';
-
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-  '[contenteditable="true"]',
-].join(',');
 
 /**
  * Injection token for the `data` payload passed to `ForDialogManager.open(component, { data })`.
@@ -139,24 +133,44 @@ export class ForDialogManager {
     this.#appRef.attachView(componentRef.hostView);
     componentRef.changeDetectorRef.detectChanges();
 
+    // Push the dismissable layer onto the stack BEFORE moving focus so that
+    // focusin events triggered by our own focus management land on this
+    // layer, not on whatever lower layer was previously topmost. Same
+    // ordering invariant as the declarative `[forDialog]` directive.
+    //
+    // Dismissal is gated on `isDismissible` directly (not through the
+    // layer's `event.preventDefault()` veto path) because synthetic
+    // `KeyboardEvent`s constructed via `new KeyboardEvent(...)` default to
+    // `cancelable: false`, which would silently drop the veto and let
+    // sticky dialogs close on Escape.
+    const dismissable = new DismissableLayer(hostEl);
+    const dismissFromLayer = (): void => {
+      if (!isDismissible || ref.isClosed()) {
+        return;
+      }
+      ref.close();
+    };
+    dismissable.activate({
+      onEscapeKeyDown: (event) => {
+        if (isDismissible) {
+          event.stopPropagation();
+          dismissFromLayer();
+        }
+      },
+      onInteractOutside: () => dismissFromLayer(),
+    });
+
     const focusTrap = isModal ? new FocusTrap(hostEl) : null;
     if (focusTrap) {
       lockBodyScroll();
       focusTrap.activate({ initialFocus: config.initialFocus ?? 'first' });
     } else {
       const target =
-        hostEl.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? hostEl;
+        config.initialFocus === 'container'
+          ? hostEl
+          : findFirstFocusable(hostEl) ?? hostEl;
       target.focus();
     }
-
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape' && isDismissible && !ref.isClosed()) {
-        event.preventDefault();
-        event.stopPropagation();
-        ref.close();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
 
     this.#count.update((n) => n + 1);
 
@@ -166,13 +180,19 @@ export class ForDialogManager {
         return;
       }
       torn = true;
-      document.removeEventListener('keydown', onKeyDown);
-      if (focusTrap) {
-        focusTrap.deactivate({ returnFocus: shouldReturnFocus });
-        unlockBodyScroll();
-      } else if (shouldReturnFocus && returnTo) {
-        returnTo.focus();
-      }
+      // Suppress the dismissable-layer dispatcher across the focus-return
+      // step so that the synthetic `focusin` event we generate by moving
+      // focus back to the trigger does not cascade-dismiss whatever
+      // dialog is now topmost (a stacked dialog opened above this one).
+      suppressDismissableLayerDispatch(() => {
+        if (focusTrap) {
+          focusTrap.deactivate({ returnFocus: shouldReturnFocus });
+          unlockBodyScroll();
+        } else if (shouldReturnFocus && returnTo) {
+          returnTo.focus();
+        }
+      });
+      dismissable.deactivate();
       this.#appRef.detachView(componentRef.hostView);
       componentRef.destroy();
       hostEl.remove();
@@ -181,14 +201,16 @@ export class ForDialogManager {
 
     // If the host environment destroys the view (TestBed reset, manual
     // ApplicationRef destruction) without going through ref.close(), still
-    // pull down the listener and reset the focus trap.
+    // pull down the layer and reset the focus trap.
     componentRef.onDestroy(() => {
       if (!torn) {
-        document.removeEventListener('keydown', onKeyDown);
-        if (focusTrap?.isActive) {
-          focusTrap.deactivate({ returnFocus: false });
-          unlockBodyScroll();
-        }
+        suppressDismissableLayerDispatch(() => {
+          if (focusTrap?.isActive) {
+            focusTrap.deactivate({ returnFocus: false });
+            unlockBodyScroll();
+          }
+        });
+        dismissable.deactivate();
       }
     });
 
