@@ -1,4 +1,5 @@
 export { ForDialog } from './dialog';
+export { ForDialogTrigger } from './dialog-trigger';
 export { ForDialogTitle } from './dialog-title';
 export { ForDialogDescription } from './dialog-description';
 export { ForDialogClose } from './dialog-close';
