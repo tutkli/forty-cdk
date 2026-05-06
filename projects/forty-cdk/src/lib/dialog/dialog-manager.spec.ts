@@ -1,12 +1,9 @@
-import {
-  Component,
-  inject,
-  provideZonelessChangeDetection,
-} from '@angular/core';
+import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { _resetDismissableLayerForTesting } from '../_internal/dismissable-layer/dismissable-layer';
+import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
 
@@ -62,6 +59,7 @@ describe('ForDialogManager (programmatic)', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
     _resetDismissableLayerForTesting();
+    _resetInertSiblingsForTesting();
     document
       .querySelectorAll('[role="dialog"], [role="alertdialog"], #external-trigger')
       .forEach((n) => n.remove());
@@ -142,10 +140,9 @@ describe('ForDialogManager (programmatic)', () => {
   describe('ForDialogRef.close', () => {
     it('resolves the closed promise with the result', async () => {
       const { dialogs } = setup();
-      const ref = dialogs.open<ConfirmDialog, 'confirm' | 'cancel', ConfirmData>(
-        ConfirmDialog,
-        { data: { message: 'x' } },
-      );
+      const ref = dialogs.open<ConfirmDialog, 'confirm' | 'cancel', ConfirmData>(ConfirmDialog, {
+        data: { message: 'x' },
+      });
 
       document.querySelector<HTMLButtonElement>('#ok')!.click();
 
@@ -155,10 +152,9 @@ describe('ForDialogManager (programmatic)', () => {
 
     it('reflects result and isClosed reactively', async () => {
       const { dialogs } = setup();
-      const ref = dialogs.open<ConfirmDialog, 'confirm' | 'cancel', ConfirmData>(
-        ConfirmDialog,
-        { data: { message: 'x' } },
-      );
+      const ref = dialogs.open<ConfirmDialog, 'confirm' | 'cancel', ConfirmData>(ConfirmDialog, {
+        data: { message: 'x' },
+      });
 
       expect(ref.isClosed()).toBe(false);
       expect(ref.result()).toBeUndefined();
@@ -235,10 +231,9 @@ describe('ForDialogManager (programmatic)', () => {
   describe('Escape key', () => {
     it('closes a dismissible dialog and resolves with undefined', async () => {
       const { dialogs } = setup();
-      const ref = dialogs.open<ConfirmDialog, string | undefined>(
-        ConfirmDialog,
-        { data: { message: 'x' } },
-      );
+      const ref = dialogs.open<ConfirmDialog, string | undefined>(ConfirmDialog, {
+        data: { message: 'x' },
+      });
 
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       const result = await ref.closed;
@@ -304,14 +299,12 @@ describe('ForDialogManager (programmatic)', () => {
 
     it('Escape only closes the topmost stacked dialog', async () => {
       const { dialogs } = setup();
-      const a = dialogs.open<ConfirmDialog, string | undefined>(
-        ConfirmDialog,
-        { data: { message: 'a' } },
-      );
-      const b = dialogs.open<ConfirmDialog, string | undefined>(
-        ConfirmDialog,
-        { data: { message: 'b' } },
-      );
+      const a = dialogs.open<ConfirmDialog, string | undefined>(ConfirmDialog, {
+        data: { message: 'a' },
+      });
+      const b = dialogs.open<ConfirmDialog, string | undefined>(ConfirmDialog, {
+        data: { message: 'b' },
+      });
 
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       await b.closed;
@@ -349,9 +342,7 @@ describe('ForDialogManager (programmatic)', () => {
       outside.id = 'outside';
       document.body.appendChild(outside);
 
-      outside.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
-      );
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
       await ref.closed;
 
       expect(ref.isClosed()).toBe(true);
@@ -369,9 +360,7 @@ describe('ForDialogManager (programmatic)', () => {
       outside.id = 'outside';
       document.body.appendChild(outside);
 
-      outside.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
-      );
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
       expect(ref.isClosed()).toBe(false);
       outside.remove();
@@ -383,9 +372,7 @@ describe('ForDialogManager (programmatic)', () => {
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 
       const okButton = document.querySelector<HTMLButtonElement>('#ok')!;
-      okButton.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
-      );
+      okButton.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
       expect(ref.isClosed()).toBe(false);
       ref.close();

@@ -1,11 +1,8 @@
-import {
-  Component,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
 import { renderHost } from '../../test-utils/render';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
@@ -16,13 +13,7 @@ import { ForDialogTitle } from './dialog-title';
 import { ForDialogTrigger } from './dialog-trigger';
 
 @Component({
-  imports: [
-    ForDialog,
-    ForDialogTitle,
-    ForDialogDescription,
-    ForDialogClose,
-    ForDialogBackdrop,
-  ],
+  imports: [ForDialog, ForDialogTitle, ForDialogDescription, ForDialogClose, ForDialogBackdrop],
   template: `
     <button #trigger type="button" (click)="open.set(true)">Open</button>
     @if (open()) {
@@ -91,6 +82,7 @@ async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
 describe('ForDialog (declarative)', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
+    _resetInertSiblingsForTesting();
     document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
   });
 
@@ -348,7 +340,12 @@ describe('ForDialog (declarative)', () => {
       const ok = document.querySelector<HTMLButtonElement>('#ok')!;
       ok.focus();
       document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }),
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
       );
 
       expect(document.activeElement?.id).toBe('cancel');
@@ -566,7 +563,12 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           @if (open()) {
-            <div forDialog (close)="open.set(false)" (escapeKeyDown)="captured.push($event)" ariaLabel="t"></div>
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (escapeKeyDown)="captured.push($event)"
+              ariaLabel="t"
+            ></div>
           }
         `,
       })
@@ -590,7 +592,12 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           @if (open()) {
-            <div forDialog (close)="open.set(false)" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t"></div>
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (escapeKeyDown)="$event.preventDefault()"
+              ariaLabel="t"
+            ></div>
           }
         `,
       })
@@ -744,6 +751,117 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
+  describe('inert siblings', () => {
+    it('inerts and aria-hides body siblings while the dialog is open', async () => {
+      const sibling = document.createElement('section');
+      sibling.id = 'app-shell';
+      document.body.appendChild(sibling);
+
+      try {
+        const r = renderHost(DialogHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        expect(sibling.hasAttribute('inert')).toBe(true);
+        expect(sibling.getAttribute('aria-hidden')).toBe('true');
+
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        expect(sibling.hasAttribute('inert')).toBe(false);
+        expect(sibling.hasAttribute('aria-hidden')).toBe(false);
+      } finally {
+        sibling.remove();
+      }
+    });
+
+    it('does not inert the dialog itself or its backdrop', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+
+      expect(dialog.hasAttribute('inert')).toBe(false);
+      expect(dialog.hasAttribute('aria-hidden')).toBe(false);
+      expect(backdrop.hasAttribute('inert')).toBe(false);
+      expect(backdrop.hasAttribute('aria-hidden')).toBe(false);
+    });
+
+    it('does not inert siblings when modal=false (non-modal dialog)', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          @if (open()) {
+            <div forDialog (close)="open.set(false)" [modal]="false" ariaLabel="t"></div>
+          }
+        `,
+      })
+      class NonModalHost {
+        readonly open = signal(false);
+      }
+
+      const sibling = document.createElement('section');
+      document.body.appendChild(sibling);
+
+      try {
+        const r = renderHost(NonModalHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        expect(sibling.hasAttribute('inert')).toBe(false);
+        expect(sibling.hasAttribute('aria-hidden')).toBe(false);
+      } finally {
+        sibling.remove();
+      }
+    });
+
+    it('stacking: a second open dialog inerts the first; closing it unhides the first', async () => {
+      const sibling = document.createElement('section');
+      document.body.appendChild(sibling);
+
+      try {
+        const r = renderHost(StackedDialogsHost);
+        r.instance.a.set(true);
+        await flush(r.fixture);
+
+        const dialogs = () => Array.from(document.querySelectorAll<HTMLElement>('[forDialog]'));
+
+        let [dialogA] = dialogs();
+        expect(dialogA!.hasAttribute('inert')).toBe(false);
+        expect(sibling.hasAttribute('inert')).toBe(true);
+
+        r.instance.b.set(true);
+        await flush(r.fixture);
+
+        const all = dialogs();
+        const dialogB = all[1]!;
+        dialogA = all[0]!;
+
+        expect(dialogB.hasAttribute('inert')).toBe(false);
+        expect(dialogA.hasAttribute('inert')).toBe(true);
+        expect(dialogA.getAttribute('aria-hidden')).toBe('true');
+        expect(sibling.hasAttribute('inert')).toBe(true);
+
+        r.instance.b.set(false);
+        await flush(r.fixture);
+
+        expect(dialogA.hasAttribute('inert')).toBe(false);
+        expect(dialogA.hasAttribute('aria-hidden')).toBe(false);
+        expect(sibling.hasAttribute('inert')).toBe(true);
+
+        r.instance.a.set(false);
+        await flush(r.fixture);
+
+        expect(sibling.hasAttribute('inert')).toBe(false);
+        expect(sibling.hasAttribute('aria-hidden')).toBe(false);
+      } finally {
+        sibling.remove();
+      }
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('mounts and unmounts after detectChanges without Zone.js', async () => {
       const r = renderHost(DialogHost);
@@ -764,6 +882,7 @@ describe('ForDialog (declarative)', () => {
 describe('ForDialogTrigger', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
+    _resetInertSiblingsForTesting();
     document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
   });
 

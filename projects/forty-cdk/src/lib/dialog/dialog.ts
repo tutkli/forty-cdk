@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  ElementRef,
   inject,
   input,
   output,
@@ -16,12 +17,12 @@ import {
   suppressDismissableLayerDispatch,
 } from '../_internal/dismissable-layer/dismissable-layer';
 import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
-import { injectPortal } from '../_internal/portal/portal';
 import {
-  FOR_DIALOG_CONTEXT,
-  ForDialogCloseReason,
-  ForDialogContext,
-} from './dialog-context';
+  activateInertSiblings,
+  type InertSiblingsHandle,
+} from '../_internal/inert-siblings/inert-siblings';
+import { injectPortal } from '../_internal/portal/portal';
+import { FOR_DIALOG_CONTEXT, ForDialogCloseReason, ForDialogContext } from './dialog-context';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
@@ -140,10 +141,12 @@ export class ForDialog implements ForDialogContext {
 
   readonly #focusTrap = injectFocusTrap();
   readonly #dismissable = injectDismissableLayer();
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   // Captured once on mount so cleanup can mirror the same mode regardless
   // of whether the consumer toggles `modal()` on a doomed instance.
   #activatedAsModal = false;
+  #inertHandle: InertSiblingsHandle | null = null;
 
   constructor() {
     injectPortal();
@@ -175,14 +178,16 @@ export class ForDialog implements ForDialogContext {
         onInteractOutside: (event) => {
           this.interactOutside.emit(event);
           if (!event.defaultPrevented && this.dismissible()) {
-            this.requestClose(
-              event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside',
-            );
+            this.requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
           }
         },
       });
 
       if (isModal) {
+        // Inert + aria-hidden the rest of the document. Pushed BEFORE the
+        // focus trap activates so that the trap's `focus()` call lands on
+        // an element whose siblings are already isolated from AT.
+        this.#inertHandle = activateInertSiblings(this.#host.nativeElement);
         this.#focusTrap.activate({ initialFocus: this.initialFocus() });
         lockBodyScroll();
       } else {
@@ -199,6 +204,11 @@ export class ForDialog implements ForDialogContext {
     inject(DestroyRef).onDestroy(() => {
       this.#dismissable.deactivate();
       if (this.#activatedAsModal) {
+        // Lift inert + aria-hidden BEFORE moving focus back: an `inert`
+        // ancestor blocks `.focus()` on its descendants, so the
+        // return-focus target needs to be live again first.
+        this.#inertHandle?.deactivate();
+        this.#inertHandle = null;
         // Suppress the dismissable-layer dispatcher across focus-return so
         // the synthetic `focusin` triggered by `.focus()`-ing the previous
         // element does not cascade-dismiss whatever dialog is now topmost

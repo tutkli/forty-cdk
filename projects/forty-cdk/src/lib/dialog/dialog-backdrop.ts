@@ -17,6 +17,10 @@ import { injectDialogContext } from './dialog-context';
   exportAs: 'forDialogBackdrop',
   host: {
     'data-for-dialog-backdrop': '',
+    // Marker the inert-siblings utility looks for so the backdrop, which is
+    // portaled to body alongside the dialog, is not inerted alongside the
+    // rest of the document.
+    'data-for-modal-peer': '',
     'data-state': 'open',
     '(click)': 'onClick($event)',
   },
