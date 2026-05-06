@@ -54,40 +54,41 @@ export class DemoPopover {
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForPopover` | `[forPopover]` | Root. Owns `open`, placement, dismissible, returnFocus, initialFocus. |
-| `ForPopoverTrigger` | `[forPopoverTrigger]` | Toggles `open` on click. Wires `aria-haspopup` / `aria-expanded` / `aria-controls`. Acts as the floating-ui anchor. |
-| `ForPopoverContent` | `[forPopoverContent]` | The popover surface. `role="dialog"`, portaled to body, positioned, dismissable. |
-| `ForPopoverTitle` | `[forPopoverTitle]` | Generates an id and registers it as `aria-labelledby`. |
-| `ForPopoverDescription` | `[forPopoverDescription]` | Same, for `aria-describedby`. |
-| `ForPopoverClose` | `[forPopoverClose]` | Button that sets `open` to `false`. Bypasses `dismissible`. |
-| `ForPopoverArrow` | `[forPopoverArrow]` | Optional decorative arrow positioned by floating-ui. |
+| Class                   | Selector                  | Role                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForPopover`            | `[forPopover]`            | Root. Owns `open`, placement, dismissible, returnFocus, initialFocus.                                                                                                                                                                                       |
+| `ForPopoverTrigger`     | `[forPopoverTrigger]`     | Toggles `open` on click. Wires `aria-haspopup` / `aria-expanded` / `aria-controls`. Used as the floating-ui anchor unless a `[forPopoverAnchor]` is registered.                                                                                             |
+| `ForPopoverAnchor`      | `[forPopoverAnchor]`      | Optional. When present, the popover is positioned against this element instead of the trigger — useful when "what opens it" and "where it appears" differ (cursor follower, contextual help anchored to a row, popover anchored to a text-selection range). |
+| `ForPopoverContent`     | `[forPopoverContent]`     | The popover surface. `role="dialog"`, portaled to body, positioned, dismissable.                                                                                                                                                                            |
+| `ForPopoverTitle`       | `[forPopoverTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                                                                                                                                                                      |
+| `ForPopoverDescription` | `[forPopoverDescription]` | Same, for `aria-describedby`.                                                                                                                                                                                                                               |
+| `ForPopoverClose`       | `[forPopoverClose]`       | Button that sets `open` to `false`. Bypasses `dismissible`.                                                                                                                                                                                                 |
+| `ForPopoverArrow`       | `[forPopoverArrow]`       | Optional decorative arrow positioned by floating-ui.                                                                                                                                                                                                        |
 
 ## Inputs (`ForPopover`)
 
-| API | Default | Description |
-| --- | --- | --- |
-| `open` | `false` | Two-way bindable visibility. |
-| `placement` | `'bottom'` | floating-ui placement (`'top'`, `'bottom-start'`, ...). |
-| `offset` | `8` | Gap (px) between trigger and content. |
-| `disabled` | `false` | When `true`, trigger does not toggle. |
-| `dismissible` | `true` | When `false`, Escape / outside-pointer / outside-focus do not close. |
-| `returnFocus` | `true` | Focus returns to the trigger on close. |
-| `initialFocus` | `'first'` | `'first'` (first focusable inside content) or `'container'` (the content host). |
-| `ariaLabel` | `null` | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered. |
+| API            | Default    | Description                                                                     |
+| -------------- | ---------- | ------------------------------------------------------------------------------- |
+| `open`         | `false`    | Two-way bindable visibility.                                                    |
+| `placement`    | `'bottom'` | floating-ui placement (`'top'`, `'bottom-start'`, ...).                         |
+| `offset`       | `8`        | Gap (px) between trigger and content.                                           |
+| `disabled`     | `false`    | When `true`, trigger does not toggle.                                           |
+| `dismissible`  | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.            |
+| `returnFocus`  | `true`     | Focus returns to the trigger on close.                                          |
+| `initialFocus` | `'first'`  | `'first'` (first focusable inside content) or `'container'` (the content host). |
+| `ariaLabel`    | `null`     | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.     |
 
 ## Outputs (`ForPopover`)
 
 All four outputs receive the native event and are vetoable: call `preventDefault()` to suppress the automatic close.
 
-| Output | Payload | Fires on |
-| --- | --- | --- |
-| `escapeKeyDown` | `KeyboardEvent` | Escape while this popover is the topmost dismissable layer. |
-| `pointerDownOutside` | `PointerEvent` | Pointer-down outside the content (and outside the trigger). |
-| `focusOutside` | `FocusEvent` | Focus moves outside the content (and outside the trigger). |
-| `interactOutside` | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above. |
-| `openChange` | `boolean` | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
+| Output               | Payload                      | Fires on                                                                                            |
+| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `escapeKeyDown`      | `KeyboardEvent`              | Escape while this popover is the topmost dismissable layer.                                         |
+| `pointerDownOutside` | `PointerEvent`               | Pointer-down outside the content (and outside the trigger).                                         |
+| `focusOutside`       | `FocusEvent`                 | Focus moves outside the content (and outside the trigger).                                          |
+| `interactOutside`    | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above.                                                       |
+| `openChange`         | `boolean`                    | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
 
 ## Keyboard
 
@@ -99,6 +100,7 @@ All four outputs receive the native event and are vetoable: call `preventDefault
 
 - **Portal**: the content is moved to `document.body` on first render. CSS scoped to ancestors won't reach it — use global styles or classes.
 - **Trigger exemption**: clicks on the trigger never fire `pointerDownOutside` or `interactOutside`. Their only effect is the trigger's own toggle.
+- **Anchor vs. trigger**: `[forPopoverAnchor]` only changes the floating-ui reference. The trigger keeps `aria-controls` / `aria-expanded`, the click toggle, and focus return on close. The anchor is _not_ exempt from outside dismissal — clicking it is treated as outside.
 - **Non-modal**: no focus trap, no body scroll lock, no `aria-modal`. If you need modal semantics, use `[forDialog]` instead.
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
