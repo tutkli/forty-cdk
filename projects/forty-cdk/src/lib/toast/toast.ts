@@ -15,14 +15,22 @@ import {
 } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
+import {
+  attachSwipeDismiss,
+  type SwipeDirection,
+  type SwipeEventDetail,
+} from '../_internal/swipe-dismiss/swipe-dismiss';
 import { subscribeVisibilityPause } from '../_internal/visibility-pause/visibility-pause';
 import {
   FOR_TOAST_CONTEXT,
   type ForToastActionHandle,
   type ForToastCloseReason,
   type ForToastContext,
+  type ForToastSwipeDirection,
   type ForToastVariant,
 } from './toast-context';
+
+type SwipeState = 'start' | 'move' | 'cancel' | 'end';
 
 /**
  * One toast notification. Apply on a `<div>` (or `<output>`, `<section>`)
@@ -41,6 +49,11 @@ import {
  * - Hovering or focusing the toast pauses the timer; leaving / blurring
  *   resumes with the remaining time.
  * - Escape (while focus is inside) closes the toast.
+ * - When `[swipeDirection]` is set, the user can drag past
+ *   `[swipeThreshold]` (default 50 px) to dismiss. While the gesture is
+ *   live the host reflects `data-swipe="start" | "move" | "cancel" | "end"`,
+ *   `data-swipe-direction`, and the CSS variables
+ *   `--toast-swipe-movement-x` / `--toast-swipe-movement-y`.
  * - The host carries `data-state="open"` while alive (no `closed` state —
  *   the consumer unmounts on close).
  */
@@ -57,6 +70,10 @@ import {
     '[attr.data-state]': '"open"',
     '[attr.data-variant]': 'variant()',
     '[attr.data-paused]': 'paused() ? "" : null',
+    '[attr.data-swipe]': 'swipeState()',
+    '[attr.data-swipe-direction]': 'swipeActiveDirection()',
+    '[style.--toast-swipe-movement-x.px]': 'swipeMovementX()',
+    '[style.--toast-swipe-movement-y.px]': 'swipeMovementY()',
     '(pointerenter)': 'onPause("hover")',
     '(pointerleave)': 'onResume("hover")',
     '(focusin)': 'onPause("focus")',
@@ -83,12 +100,67 @@ export class ForToast implements ForToastContext {
    */
   readonly closable = input(true, { transform: booleanAttribute });
 
+  /**
+   * Direction(s) the user can swipe to dismiss the toast. Pass a
+   * single direction (`'right'`) or an array of directions
+   * (`['right', 'down']`). `null` (default) disables swipe.
+   *
+   * The swipe gesture uses pointer events, so it works for both touch
+   * and mouse drags. While the user is swiping, the host reflects
+   * `data-swipe="start" | "move" | "cancel" | "end"` and
+   * `data-swipe-direction` plus the CSS custom properties
+   * `--toast-swipe-movement-x` / `--toast-swipe-movement-y` so the
+   * consumer can drive a transform-based animation entirely from CSS.
+   */
+  readonly swipeDirection = input<ForToastSwipeDirection>(null);
+
+  /**
+   * Pixels of pointer travel along the active swipe direction needed
+   * to commit a dismissal. Defaults to `50` — matches Radix.
+   */
+  readonly swipeThreshold = input(50, { transform: numberAttribute });
+
   /** Emitted when the toast wants to be unmounted. The consumer reacts by removing it from the rendered list. */
   readonly close = output<ForToastCloseReason>();
+
+  /** Fired once on the move that arms the swipe. */
+  readonly swipeStart = output<SwipeEventDetail>();
+  /** Fired on every pointer move while the swipe is active. */
+  readonly swipeMove = output<SwipeEventDetail>();
+  /** Fired on pointer-up after the threshold is crossed (immediately followed by `(close)`). */
+  readonly swipeEnd = output<SwipeEventDetail>();
+  /** Fired on pointer-up before the threshold, or on `pointercancel`. */
+  readonly swipeCancel = output<SwipeEventDetail>();
 
   readonly #paused = signal(false);
   readonly paused = this.#paused.asReadonly();
   readonly #pauseReasons = new Set<'hover' | 'focus' | 'visibility'>();
+
+  readonly #swipeState = signal<SwipeState | null>(null);
+  readonly #swipeActiveDirection = signal<SwipeDirection | null>(null);
+  readonly #swipeMovementX = signal(0);
+  readonly #swipeMovementY = signal(0);
+
+  protected readonly swipeState = this.#swipeState.asReadonly();
+  protected readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
+  protected readonly swipeMovementX = this.#swipeMovementX.asReadonly();
+  protected readonly swipeMovementY = this.#swipeMovementY.asReadonly();
+
+  readonly #normalizedSwipeDirections = computed<readonly SwipeDirection[]>(() => {
+    // A non-closable toast forbids user-initiated dismissal of any kind —
+    // swipe is exactly that, so disable it regardless of the input.
+    if (!this.closable()) {
+      return [];
+    }
+    const raw = this.swipeDirection();
+    if (raw === null || raw === undefined) {
+      return [];
+    }
+    if (typeof raw === 'string') {
+      return [raw];
+    }
+    return raw;
+  });
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #descIds = signal<readonly string[]>([]);
@@ -164,6 +236,39 @@ export class ForToast implements ForToastContext {
       }
     });
     this.#destroyRef.onDestroy(unsubscribe);
+
+    const detachSwipe = attachSwipeDismiss({
+      element: this.#host.nativeElement,
+      getDirections: () => this.#normalizedSwipeDirections(),
+      getThreshold: () => this.swipeThreshold(),
+      onSwipeStart: (detail) => {
+        this.#swipeActiveDirection.set(detail.direction);
+        this.#swipeState.set('start');
+        this.#swipeMovementX.set(detail.delta.x);
+        this.#swipeMovementY.set(detail.delta.y);
+        this.swipeStart.emit(detail);
+      },
+      onSwipeMove: (detail) => {
+        this.#swipeState.set('move');
+        this.#swipeMovementX.set(detail.delta.x);
+        this.#swipeMovementY.set(detail.delta.y);
+        this.swipeMove.emit(detail);
+      },
+      onSwipeCancel: (detail) => {
+        this.#swipeState.set('cancel');
+        // Movement vars stay at the released delta so the consumer's CSS
+        // transition can spring them back to zero on its own timeline.
+        this.swipeCancel.emit(detail);
+      },
+      onSwipeEnd: (detail) => {
+        this.#swipeState.set('end');
+        this.#swipeMovementX.set(detail.delta.x);
+        this.#swipeMovementY.set(detail.delta.y);
+        this.swipeEnd.emit(detail);
+        this.requestClose('swipe');
+      },
+    });
+    this.#destroyRef.onDestroy(detachSwipe);
   }
 
   registerLabel(id: string): void {

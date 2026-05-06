@@ -6,7 +6,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import type { ForToastTemplateContext } from './toast-context';
+import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-context';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
@@ -17,6 +17,25 @@ import { ForToastDescription } from './toast-description';
 import { ForToastTitle } from './toast-title';
 import { ForToastViewport } from './toast-viewport';
 import { ForToastManager, provideForToastDefaults } from './toast-manager';
+import type { SwipeEventDetail } from '../_internal/swipe-dismiss/swipe-dismiss';
+
+function pointer(
+  el: HTMLElement,
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+  init: { clientX?: number; clientY?: number; pointerId?: number; button?: number } = {},
+): PointerEvent {
+  const ev = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0,
+    pointerId: init.pointerId ?? 1,
+    button: init.button ?? 0,
+    pointerType: 'touch',
+  });
+  el.dispatchEvent(ev);
+  return ev;
+}
 
 @Component({
   imports: [ForToastViewport],
@@ -46,7 +65,13 @@ class ProgrammaticHost {
         [variant]="variant()"
         [duration]="duration()"
         [closable]="closable()"
+        [swipeDirection]="swipeDirection()"
+        [swipeThreshold]="swipeThreshold()"
         (close)="onClose($event)"
+        (swipeStart)="onSwipeStart($event)"
+        (swipeMove)="onSwipeMove($event)"
+        (swipeEnd)="onSwipeEnd($event)"
+        (swipeCancel)="onSwipeCancel($event)"
         data-test-id="declarative"
       >
         <div forToastTitle>{{ title() }}</div>
@@ -71,8 +96,14 @@ class DeclarativeHost {
   readonly title = signal('Saved');
   readonly description = signal('Your changes are live.');
   readonly showAction = signal(false);
+  readonly swipeDirection = signal<ForToastSwipeDirection>(null);
+  readonly swipeThreshold = signal(50);
   readonly closes: string[] = [];
   readonly actionsClicked = signal(0);
+  readonly swipeStarts: SwipeEventDetail[] = [];
+  readonly swipeMoves: SwipeEventDetail[] = [];
+  readonly swipeEnds: SwipeEventDetail[] = [];
+  readonly swipeCancels: SwipeEventDetail[] = [];
 
   onClose(reason: string): void {
     this.closes.push(reason);
@@ -81,6 +112,19 @@ class DeclarativeHost {
 
   onAction(): void {
     this.actionsClicked.update((n) => n + 1);
+  }
+
+  onSwipeStart(detail: SwipeEventDetail): void {
+    this.swipeStarts.push(detail);
+  }
+  onSwipeMove(detail: SwipeEventDetail): void {
+    this.swipeMoves.push(detail);
+  }
+  onSwipeEnd(detail: SwipeEventDetail): void {
+    this.swipeEnds.push(detail);
+  }
+  onSwipeCancel(detail: SwipeEventDetail): void {
+    this.swipeCancels.push(detail);
   }
 }
 
@@ -416,6 +460,123 @@ describe('ForToast (declarative)', () => {
       $(r.el, 'action')!.click();
       r.flush();
       expect(r.instance.closes).toEqual(['action']);
+    });
+  });
+
+  describe('swipe-to-dismiss', () => {
+    it('does not arm a swipe when [swipeDirection] is null (default)', () => {
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 80, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 80, clientY: 0 });
+      r.flush();
+      expect(t.hasAttribute('data-swipe')).toBe(false);
+      expect(r.instance.swipeStarts).toEqual([]);
+      expect(r.instance.closes).toEqual([]);
+    });
+
+    it('reflects data-swipe="start"|"move" and CSS movement vars during a swipe', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 20, clientY: 0 });
+      r.flush();
+      expect(t.getAttribute('data-swipe')).toBe('move');
+      expect(t.getAttribute('data-swipe-direction')).toBe('right');
+      expect(t.style.getPropertyValue('--toast-swipe-movement-x')).toBe('20px');
+      expect(t.style.getPropertyValue('--toast-swipe-movement-y')).toBe('0px');
+      expect(r.instance.swipeStarts).toHaveLength(1);
+      expect(r.instance.swipeMoves.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('crosses the threshold → swipeEnd, data-swipe="end", and (close) with reason "swipe"', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.instance.swipeThreshold.set(50);
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 60, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 60, clientY: 0 });
+      r.flush();
+      expect(r.instance.swipeEnds).toHaveLength(1);
+      expect(r.instance.swipeCancels).toEqual([]);
+      expect(r.instance.closes).toEqual(['swipe']);
+    });
+
+    it('releases under threshold → swipeCancel, data-swipe="cancel", no (close)', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.instance.swipeThreshold.set(80);
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 30, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 30, clientY: 0 });
+      r.flush();
+      expect(r.instance.swipeCancels).toHaveLength(1);
+      expect(r.instance.swipeEnds).toEqual([]);
+      expect(t.getAttribute('data-swipe')).toBe('cancel');
+      expect(r.instance.closes).toEqual([]);
+    });
+
+    it('accepts an array of allowed directions', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set(['right', 'down']);
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 0, clientY: 60 });
+      pointer(t, 'pointerup', { clientX: 0, clientY: 60 });
+      r.flush();
+      expect(r.instance.swipeEnds).toHaveLength(1);
+      expect(r.instance.swipeEnds[0]!.direction).toBe('down');
+      expect(r.instance.closes).toEqual(['swipe']);
+    });
+
+    it('disallowed dominant direction is dropped silently', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 5, clientY: 80 });
+      pointer(t, 'pointerup', { clientX: 5, clientY: 80 });
+      r.flush();
+      expect(r.instance.swipeStarts).toEqual([]);
+      expect(r.instance.swipeEnds).toEqual([]);
+      expect(r.instance.closes).toEqual([]);
+    });
+
+    it('closable=false disables swipe entirely (no events, no close)', () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.instance.closable.set(false);
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 200, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 200, clientY: 0 });
+      r.flush();
+      expect(r.instance.swipeStarts).toEqual([]);
+      expect(r.instance.closes).toEqual([]);
+    });
+
+    it('zoneless: a swipe past threshold dismisses without Zone.js', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DeclarativeHost);
+      fixture.componentInstance.swipeDirection.set('right');
+      fixture.detectChanges();
+      const t = fixture.nativeElement.querySelector('[data-test-id="declarative"]') as HTMLElement;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 80, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 80, clientY: 0 });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.closes).toEqual(['swipe']);
     });
   });
 
