@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
-import type { ForToastInstance } from './toast-context';
+import type { ForToastInstance, ForToastSwipeDirection } from './toast-context';
 import { ForToastManager } from './toast-manager';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
@@ -63,6 +63,8 @@ import { ForToastTitle } from './toast-title';
         [variant]="toast.config.variant ?? 'info'"
         [duration]="toast.config.duration ?? defaultDuration()"
         [closable]="toast.config.closable !== false"
+        [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
+        [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
         [attr.data-front-stack-index]="i"
         (close)="onClose(toast, $event)"
       >
@@ -109,6 +111,19 @@ export class ForToastViewport {
    * `Infinity` (default) renders all live toasts.
    */
   readonly maxVisible = input(Infinity, { transform: numberAttribute });
+
+  /**
+   * Default swipe direction(s) applied to every programmatic toast that
+   * doesn't override `swipeDirection` in its own config. `null` (default)
+   * keeps swipe disabled unless explicitly opted into per-toast.
+   */
+  readonly swipeDirection = input<ForToastSwipeDirection>(null);
+
+  /**
+   * Default dismiss-distance in pixels applied to every programmatic toast
+   * that doesn't override `swipeThreshold` in its own config.
+   */
+  readonly swipeThreshold = input(50, { transform: numberAttribute });
 
   protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
 

@@ -1,8 +1,23 @@
 import { inject, InjectionToken, type Signal, type TemplateRef } from '@angular/core';
 
+import type { SwipeDirection } from '../_internal/swipe-dismiss/swipe-dismiss';
+
 export type ForToastVariant = 'info' | 'success' | 'warning' | 'error';
 
-export type ForToastCloseReason = 'auto' | 'manual' | 'action' | 'escape' | 'programmatic';
+/**
+ * Allowed swipe directions on a toast — accepts a single direction or
+ * an array of directions (multi-axis dismissal). `null` / empty array
+ * disables swipe.
+ */
+export type ForToastSwipeDirection = SwipeDirection | readonly SwipeDirection[] | null;
+
+export type ForToastCloseReason =
+  | 'auto'
+  | 'manual'
+  | 'action'
+  | 'escape'
+  | 'programmatic'
+  | 'swipe';
 
 /**
  * Configuration for a programmatic toast. Pass to `ForToastManager.show()`.
@@ -32,6 +47,19 @@ export interface ForToastConfig<D = unknown> {
   action?: { label: string; onClick: () => void };
   /** Render an explicit close button. Default `true`. */
   closable?: boolean;
+  /**
+   * Direction(s) the user can swipe to dismiss the toast. Pass a single
+   * direction (`'right'`) or an array (`['right', 'down']`). When unset,
+   * the value falls through to the viewport-level `[swipeDirection]`
+   * (or stays disabled if that is also unset).
+   */
+  swipeDirection?: ForToastSwipeDirection;
+  /**
+   * Pixels of pointer travel along the active swipe direction needed to
+   * trigger a dismissal. Falls back to the viewport-level
+   * `[swipeThreshold]` (or `50` if neither is set).
+   */
+  swipeThreshold?: number;
   /** Arbitrary payload passed to `template` context as `data`. */
   data?: D;
   /** Override the default rendering with a `TemplateRef`. */

@@ -18,6 +18,8 @@ export {
   type ForToastConfig,
   type ForToastContext,
   type ForToastInstance,
+  type ForToastSwipeDirection,
   type ForToastTemplateContext,
   type ForToastVariant,
 } from './toast-context';
+export type { SwipeDirection, SwipeEventDetail } from '../_internal/swipe-dismiss/swipe-dismiss';

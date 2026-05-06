@@ -119,6 +119,48 @@ For a toast driven by component state (e.g. an offline banner):
 
 The directive doesn't manage its own visibility — `@if` does. The directive emits `(close)` when the timer / Escape / action / close button want it gone; the consumer reacts by flipping the gate.
 
+## Swipe-to-dismiss
+
+Optional, opt-in. Set `[swipeDirection]` on a declarative toast (or via `swipeDirection` in the programmatic config / on the viewport) to let the user drag the toast off-screen with a touch or mouse pointer. The gesture uses pointer events, so it works on every input device.
+
+```html
+<div forToast swipeDirection="right" [swipeThreshold]="60" (close)="dismiss()">…</div>
+```
+
+`swipeDirection` accepts a single direction (`'left' | 'right' | 'up' | 'down'`) or an array of directions. The dominant axis of the user's drag picks which one wins; gestures perpendicular to every allowed direction are dropped. The dismiss commits when pointer-up happens past `swipeThreshold` pixels of pointer travel along the active direction (default `50`).
+
+While the gesture is live the host carries:
+
+| Attribute / variable            | Values                                   | Purpose                                                                         |
+| ------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `data-swipe`                    | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". |
+| `data-swipe-direction`          | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
+| `--toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
+| `--toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
+
+The directive does NOT animate anything — the consumer's CSS transitions / `animate.leave` drive the visual feedback:
+
+```css
+[forToast] {
+  transition: transform 200ms ease-out;
+  transform: translate3d(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px), 0);
+}
+[forToast][data-swipe='cancel'] {
+  /* spring back */
+  --toast-swipe-movement-x: 0px;
+  --toast-swipe-movement-y: 0px;
+}
+```
+
+Outputs:
+
+- `(swipeStart)` — armed; emitted once with `{ direction, delta, originalEvent }`.
+- `(swipeMove)` — every pointer move while active.
+- `(swipeEnd)` — released past threshold (immediately followed by `(close)` with reason `'swipe'`).
+- `(swipeCancel)` — released before threshold, or `pointercancel`.
+
+`closable=false` disables swipe entirely — a sticky / forced-action toast cannot be user-dismissed.
+
 ## Auto-dismiss + pause-on-hover
 
 - Timer starts on mount and fires `(close)` with reason `'auto'` after `duration` ms.
