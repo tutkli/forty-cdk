@@ -55,6 +55,15 @@ export interface ForSelectContext {
 
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
+  /**
+   * Positioning algorithm. `'popper'` (default) is standard floating-ui
+   * anchored placement; `'item-aligned'` overlays the listbox so the
+   * selected option's center aligns with the trigger's center (macOS-style
+   * native `<select>`). All `side`/`align`/`*Offset`/`placement`/`sticky`/
+   * `hideWhenDetached`/`avoidCollisions` inputs are no-ops in
+   * `'item-aligned'` mode (only `collisionPadding` is honored).
+   */
+  readonly position: Signal<'popper' | 'item-aligned'>;
   readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
@@ -98,6 +107,13 @@ export interface ForSelectContext {
   readonly options: Signal<readonly ForSelectOptionHandle[]>;
   /** Trimmed `textContent` of the options whose value is in `value()`, in selection order. */
   readonly selectedLabels: Signal<readonly string[]>;
+  /**
+   * Host element of the first enabled, currently-selected option, or `null`
+   * when no selection exists. Used by `position="item-aligned"` to anchor
+   * the listbox over the trigger; falls back to the first enabled option
+   * inside the listbox when this is `null`.
+   */
+  readonly selectedOptionEl: Signal<HTMLElement | null>;
 
   isSelected(value: string): boolean;
   /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */

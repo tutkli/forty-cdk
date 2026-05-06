@@ -2,6 +2,7 @@ import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@ang
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
+import { injectItemAlignedPositioner } from '../_internal/floating/item-aligned';
 import { injectPortal } from '../_internal/portal/portal';
 import { injectSelectContext } from './select-context';
 
@@ -21,6 +22,14 @@ import { injectSelectContext } from './select-context';
  * enabled option (`'first'`), or the last enabled option (`'last'`)
  * according to the trigger's hint. On destroy, focus returns to the
  * trigger when `returnFocus` is true.
+ *
+ * Positioning branches on `[forSelect].position`:
+ * - `'popper'` (default) — standard `injectFloating` path with full Radix-style
+ *   anchored placement (`side`, `align`, `sideOffset`, `alignOffset`, `flip`,
+ *   `shift`, `arrow`, `hideWhenDetached`).
+ * - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
+ *   the selected option's center aligns with the trigger's center. The
+ *   anchored-placement inputs are documented as no-ops in this mode.
  */
 @Directive({
   selector: '[forSelectContent]',
@@ -48,21 +57,35 @@ export class ForSelectContent {
     this.ctx.registerContent(this.#host.nativeElement);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
 
-    injectFloating({
-      reference: this.ctx.anchor,
-      open: this.ctx.open,
-      placement: this.ctx.placement,
-      side: this.ctx.side,
-      align: this.ctx.align,
-      offset: this.ctx.offset,
-      sideOffset: this.ctx.sideOffset,
-      alignOffset: this.ctx.alignOffset,
-      avoidCollisions: this.ctx.avoidCollisions,
-      collisionPadding: this.ctx.collisionPadding,
-      arrowPadding: this.ctx.arrowPadding,
-      sticky: this.ctx.sticky,
-      hideWhenDetached: this.ctx.hideWhenDetached,
-    });
+    // Static branch — `position` is read once on construction. Switching
+    // modes at runtime would require re-creating the directive (mount /
+    // unmount cycle), which is the expected pattern for primitives whose
+    // positioning algorithm is structurally different.
+    if (this.ctx.position() === 'item-aligned') {
+      injectItemAlignedPositioner({
+        reference: this.ctx.anchor,
+        open: this.ctx.open,
+        selectedOption: this.ctx.selectedOptionEl,
+        collisionPadding: this.ctx.collisionPadding,
+        portal: false,
+      });
+    } else {
+      injectFloating({
+        reference: this.ctx.anchor,
+        open: this.ctx.open,
+        placement: this.ctx.placement,
+        side: this.ctx.side,
+        align: this.ctx.align,
+        offset: this.ctx.offset,
+        sideOffset: this.ctx.sideOffset,
+        alignOffset: this.ctx.alignOffset,
+        avoidCollisions: this.ctx.avoidCollisions,
+        collisionPadding: this.ctx.collisionPadding,
+        arrowPadding: this.ctx.arrowPadding,
+        sticky: this.ctx.sticky,
+        hideWhenDetached: this.ctx.hideWhenDetached,
+      });
+    }
 
     afterNextRender(() => {
       this.#dismissable.activate({

@@ -85,8 +85,25 @@ export class ForSelect
   readonly multiple = input(false, { transform: booleanAttribute });
 
   /**
+   * Positioning algorithm.
+   *
+   * - `'popper'` (default): standard floating-ui anchored placement using
+   *   `side` / `align` / `sideOffset` / `alignOffset`, with `flip` + `shift`
+   *   collision handling. Same path as Popover / DropdownMenu.
+   * - `'item-aligned'`: the listbox overlays the trigger so the selected
+   *   option's vertical center aligns with the trigger's vertical center
+   *   — visually the menu "snaps over" the trigger when opened, mirroring
+   *   macOS native `<select>`. Falls back to the first enabled option when
+   *   nothing is selected. `side`, `align`, `sideOffset`, `alignOffset`,
+   *   `placement`, `sticky`, `hideWhenDetached`, and `avoidCollisions` are
+   *   ignored in this mode; only `collisionPadding` is honored.
+   */
+  readonly position = input<'popper' | 'item-aligned'>('popper');
+
+  /**
    * Floating-ui placement. Default `'bottom-start'`. Legacy single-string
-   * API — new code should prefer the `side` + `align` pair.
+   * API — new code should prefer the `side` + `align` pair. Ignored when
+   * `position="item-aligned"`.
    */
   readonly placement = input<Placement>('bottom-start');
 
@@ -193,6 +210,21 @@ export class ForSelect
       labels.push(opt ? opt.label : v);
     }
     return labels;
+  });
+
+  readonly selectedOptionEl = computed<HTMLElement | null>(() => {
+    const values = this.value();
+    if (values.length === 0) {
+      return null;
+    }
+    const items = this.#items.items();
+    for (const v of values) {
+      const opt = items.find((o) => o.value() === v && !o.disabled());
+      if (opt) {
+        return opt.host;
+      }
+    }
+    return null;
   });
 
   constructor() {

@@ -897,6 +897,69 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('position input', () => {
+    @Component({
+      imports: HOST_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value" [position]="position()">
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+              <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class PositionHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly position = signal<'popper' | 'item-aligned'>('popper');
+    }
+
+    async function settleFloating<T>(fixture: ComponentFixture<T>): Promise<void> {
+      // `autoUpdate` schedules its first computePosition asynchronously —
+      // pump the event loop a few times so the resolved transform / dataset
+      // mutations have flushed before assertions run.
+      for (let i = 0; i < 4; i++) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        fixture.detectChanges();
+        await fixture.whenStable();
+      }
+    }
+
+    it('defaults to popper mode and does not set data-position on the content', async () => {
+      const r = renderHost(PositionHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      await settleFloating(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.dataset['position']).toBeUndefined();
+    });
+
+    it('reflects data-position="item-aligned" on the content when opted in', async () => {
+      const r = renderHost(PositionHost);
+      r.instance.position.set('item-aligned');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      await settleFloating(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.dataset['position']).toBe('item-aligned');
+      // Item-aligned exposes `--for-select-content-available-height` for the
+      // consumer's `max-height: var(...)` recipe.
+      expect(content.style.getPropertyValue('--for-select-content-available-height')).not.toBe('');
+      // Item-aligned does NOT emit popper's data-side / data-align — those
+      // are only produced by `injectFloating`.
+      expect(content.dataset['side']).toBeUndefined();
+      expect(content.dataset['align']).toBeUndefined();
+    });
+  });
+
   describe('orphan errors', () => {
     it('throws when [forSelectTrigger] is used outside [forSelect]', () => {
       @Component({
@@ -943,7 +1006,9 @@ describe('ForSelectIndicator', () => {
               Apple
             </button>
             <button data-test-id="banana" forSelectOption value="banana">
-              <span data-test-id="banana-ind" forSelectIndicator [forceMount]="forceMount()">✓</span>
+              <span data-test-id="banana-ind" forSelectIndicator [forceMount]="forceMount()"
+                >✓</span
+              >
               Banana
             </button>
           </div>
