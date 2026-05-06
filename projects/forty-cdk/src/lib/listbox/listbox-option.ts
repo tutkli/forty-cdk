@@ -102,6 +102,55 @@ export class ForListboxOption {
     if (this.effectiveDisabled()) {
       return;
     }
+
+    // APG-recommended multi-select range modifiers. Single-mode falls through
+    // to plain navigation so Shift+Arrow / Ctrl+A behave like their unmodified
+    // counterparts (or no-op).
+    if (this.#group.multiple()) {
+      // Ctrl/Cmd+A — select all enabled (toggle if all already selected).
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+        if (event.key === 'a' || event.key === 'A') {
+          event.preventDefault();
+          this.#group.selectAll();
+          return;
+        }
+      }
+
+      // Ctrl+Shift+Home / Ctrl+Shift+End — extend selection to first/last.
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
+        if (event.key === 'Home') {
+          event.preventDefault();
+          this.#group.selectFromCurrentToEdge(this.#host.nativeElement, 'first');
+          return;
+        }
+        if (event.key === 'End') {
+          event.preventDefault();
+          this.#group.selectFromCurrentToEdge(this.#host.nativeElement, 'last');
+          return;
+        }
+      }
+
+      // Shift+Space — contiguous range from anchor to current.
+      if (event.shiftKey && event.key === ' ') {
+        event.preventDefault();
+        this.#group.selectRangeToFocused(this.#host.nativeElement);
+        return;
+      }
+
+      // Shift+Arrow — move focus AND toggle the destination option.
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const action = resolveListNavigation(event, {
+          orientation: this.#group.orientation(),
+          dir: this.#group.dir(),
+        });
+        if (action === 'next' || action === 'prev') {
+          event.preventDefault();
+          this.#group.extendByArrow(this.#host.nativeElement, action);
+          return;
+        }
+      }
+    }
+
     const action = resolveListNavigation(event, {
       orientation: this.#group.orientation(),
       dir: this.#group.dir(),

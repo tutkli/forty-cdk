@@ -6,6 +6,7 @@ import {
   inject,
   input,
   model,
+  signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -36,10 +37,10 @@ import {
  * - In single mode (`multiple=false`, default), the array has 0 or 1 element.
  * - In multi mode, any number of items can be selected.
  *
- * v1 keyboard supports the recommended APG model: arrows + Home/End for
+ * Keyboard supports the full APG-recommended model: arrows + Home/End for
  * focus movement, Space/Enter (via native `<button>` activation) to select
- * or toggle, plus typeahead. Range-selection modifiers (Shift+Arrow, Ctrl+A,
- * Ctrl+Shift+Home/End) are deferred to a follow-up.
+ * or toggle, typeahead, plus multi-select range modifiers (Shift+Arrow,
+ * Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End).
  */
 @Directive({
   selector: '[forListbox]',
@@ -93,6 +94,13 @@ export class ForListbox
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
+  /**
+   * Anchor index for APG range-selection actions (Shift+Space). Set on every
+   * unmodified activation (click / Space / Enter); not affected by Shift+Arrow,
+   * which APG defines as per-option toggle. Cleared when no option matches.
+   */
+  readonly #anchorIndex = signal<number | null>(null);
+
   constructor() {
     super();
     injectHiddenInput({
@@ -126,6 +134,130 @@ export class ForListbox
       // Single-mode: idempotent select (no deselect on click of selected).
       this.value.set([v]);
     }
+    this.#setAnchorByValue(v);
+  }
+
+  extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
+    if (this.disabled() || !this.multiple()) {
+      return;
+    }
+    const options = this.#options.items();
+    if (options.length === 0) {
+      return;
+    }
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
+      loop: true,
+      isDisabled: (i) => options[i]!.disabled(),
+    });
+    if (next === null) {
+      return;
+    }
+    const target = options[next];
+    if (!target) {
+      return;
+    }
+    // Focus moves regardless of readonly — same contract as `navigate()`. Readonly
+    // only blocks the selection mutation.
+    target.host.focus();
+    if (this.readonly()) {
+      return;
+    }
+    const v = readSignalSafe(target.value);
+    if (v === null) {
+      return;
+    }
+    const current = this.value();
+    this.value.set(current.includes(v) ? current.filter((x) => x !== v) : [...current, v]);
+  }
+
+  selectRangeToFocused(currentOption: HTMLElement): void {
+    if (this.disabled() || this.readonly() || !this.multiple()) {
+      return;
+    }
+    const options = this.#options.items();
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    if (currentIndex < 0) {
+      return;
+    }
+    const anchor = this.#anchorIndex();
+    const start = anchor === null || anchor >= options.length ? currentIndex : anchor;
+    const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
+
+    const next = new Set(this.value());
+    for (let i = lo; i <= hi; i++) {
+      const opt = options[i];
+      if (!opt || opt.disabled()) {
+        continue;
+      }
+      const v = readSignalSafe(opt.value);
+      if (v !== null) {
+        next.add(v);
+      }
+    }
+    this.value.set([...next]);
+  }
+
+  selectAll(): void {
+    if (this.disabled() || this.readonly() || !this.multiple()) {
+      return;
+    }
+    const enabled: string[] = [];
+    for (const opt of this.#options.items()) {
+      if (opt.disabled()) {
+        continue;
+      }
+      const v = readSignalSafe(opt.value);
+      if (v !== null) {
+        enabled.push(v);
+      }
+    }
+    if (enabled.length === 0) {
+      return;
+    }
+    const current = new Set(this.value());
+    const allSelected = enabled.every((v) => current.has(v));
+    this.value.set(allSelected ? [] : enabled);
+  }
+
+  selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
+    if (this.disabled() || !this.multiple()) {
+      return;
+    }
+    const options = this.#options.items();
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    if (currentIndex < 0) {
+      return;
+    }
+    const [lo, hi] =
+      edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
+
+    const next = new Set(this.value());
+    let firstEnabled: HTMLElement | null = null;
+    let lastEnabled: HTMLElement | null = null;
+    // Walk forward so the resulting Set preserves DOM order (insertion order).
+    for (let i = lo; i <= hi; i++) {
+      const opt = options[i];
+      if (!opt || opt.disabled()) {
+        continue;
+      }
+      const v = readSignalSafe(opt.value);
+      if (v !== null) {
+        next.add(v);
+      }
+      if (firstEnabled === null) {
+        firstEnabled = opt.host;
+      }
+      lastEnabled = opt.host;
+    }
+    const edgeFocusTarget = edge === 'first' ? firstEnabled : lastEnabled;
+    // Focus moves regardless of readonly — same contract as `navigate()`. Readonly
+    // only blocks the selection mutation.
+    edgeFocusTarget?.focus();
+    if (this.readonly()) {
+      return;
+    }
+    this.value.set([...next]);
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
@@ -194,6 +326,11 @@ export class ForListbox
       return;
     }
     this.touched.set(true);
+  }
+
+  #setAnchorByValue(v: string): void {
+    const idx = this.#options.items().findIndex((o) => readSignalSafe(o.value) === v);
+    this.#anchorIndex.set(idx >= 0 ? idx : null);
   }
 }
 

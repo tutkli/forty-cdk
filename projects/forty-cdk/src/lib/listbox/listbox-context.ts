@@ -30,6 +30,31 @@ export interface ForListboxContext {
   /** Move focus from `currentOption` according to `action`. May also select if `selectionFollowsFocus` is on. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
   /**
+   * Multi-mode only. Move focus to the next/prev enabled option AND toggle its
+   * selected state — APG "Shift+ArrowDown / Shift+ArrowUp toggles selection
+   * while moving focus". No-op in single mode, on disabled / readonly, or when
+   * no enabled neighbor exists.
+   */
+  extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void;
+  /**
+   * Multi-mode only. APG "Shift+Space": select every enabled option from the
+   * anchor (set on the most recent unmodified activation) up to and including
+   * `currentOption`. Existing selection outside the range is preserved. No-op
+   * in single mode or when the listbox is disabled / readonly.
+   */
+  selectRangeToFocused(currentOption: HTMLElement): void;
+  /**
+   * Multi-mode only. APG "Ctrl/Cmd+A": select every enabled option. If every
+   * enabled option is already selected, clears the selection (toggle).
+   */
+  selectAll(): void;
+  /**
+   * Multi-mode only. APG "Ctrl+Shift+Home / Ctrl+Shift+End": select every
+   * enabled option from `currentOption` (inclusive) to the first / last
+   * enabled option, and move focus to that edge.
+   */
+  selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void;
+  /**
    * Forward a keydown to the typeahead helper. If the key is a printable
    * character, finds the first matching option and focuses it; returns true
    * to indicate the event was consumed.

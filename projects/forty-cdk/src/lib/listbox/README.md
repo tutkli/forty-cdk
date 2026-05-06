@@ -92,6 +92,8 @@ export class DemoPriorities {
 
 ## Keyboard
 
+### Single mode (and the basics for both)
+
 - **Tab** moves focus into / out of the listbox; lands on the selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction).
 - **ArrowDown / ArrowUp** in vertical, **ArrowRight / ArrowLeft** in horizontal: move focus, wrap-around, skip disabled.
 - **Home / End** jump to first / last enabled option.
@@ -99,11 +101,26 @@ export class DemoPriorities {
 - **Typeahead**: typing characters focuses the first option whose visible text starts with the typed prefix (case-insensitive, debounced).
 - Disabled options are skipped on arrow nav.
 
+### Multi mode (APG-recommended range selection)
+
+The full WAI-ARIA APG "Recommended Selection" model is implemented and active automatically when `multiple` is set. All shortcuts skip disabled options.
+
+| Shortcut                         | Behavior                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Shift+ArrowDown / ArrowUp**    | Move focus to the next / previous enabled option AND toggle its selected state.                         |
+| **Shift+Space**                  | Select every enabled option between the anchor (most recent unmodified click / Space) and the focused option, inclusive. Existing selection outside the range is preserved. |
+| **Ctrl+A** (or **Cmd+A** on mac) | Select every enabled option. If every enabled option is already selected, clears the selection.         |
+| **Ctrl+Shift+Home**              | Select from the focused option to the first enabled option, and move focus there.                       |
+| **Ctrl+Shift+End**               | Select from the focused option to the last enabled option, and move focus there.                        |
+
+The **anchor** for `Shift+Space` is set on every unmodified activation (click, plain Space, plain Enter) and is unaffected by `Shift+ArrowDown`/`ArrowUp` — that lets users click an option, navigate away with Shift+Arrow, and then Shift+Space to select the contiguous block back to where they started.
+
+When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection — same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
+
 ## Accessibility notes
 
 - **Label the listbox** via `aria-label` or `aria-labelledby`.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
-- **`selectionFollowsFocus`** is a v1 opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
-- **Multi-select v1 limitations**: range selection (Shift+Arrow), `Ctrl+A`, and `Ctrl+Shift+Home/End` are not yet implemented. They will land when there's a real consumer.
+- **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
 - **`data-highlighted=""`** is reflected on the option that is the current roving-tabindex active item — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`.

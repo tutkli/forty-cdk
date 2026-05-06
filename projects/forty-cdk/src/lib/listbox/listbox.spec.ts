@@ -279,6 +279,349 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('multi-select APG keyboard model', () => {
+    const setupMulti = (initial: string[] = []) => {
+      const result = renderHost(ListboxHost);
+      result.fixture.componentInstance.isMulti.set(true);
+      result.fixture.componentInstance.picked.set(initial);
+      result.flush();
+      return result;
+    };
+
+    describe('Shift+ArrowDown / Shift+ArrowUp', () => {
+      it('moves focus to the next option AND toggles it on', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apricot'));
+        expect(fixture.componentInstance.picked()).toEqual(['apricot']);
+      });
+
+      it('toggles already-selected options off on Shift+Arrow', () => {
+        const { el, fixture, flush } = setupMulti(['apricot']);
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apricot'));
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('Shift+ArrowUp toggles the previous option', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), 'ArrowUp', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apple'));
+        expect(fixture.componentInstance.picked()).toEqual(['apple']);
+      });
+
+      it('skips disabled options', () => {
+        const { el, fixture, flush } = setupMulti();
+        fixture.componentInstance.options.set([
+          { value: 'apple', label: 'Apple', disabled: false },
+          { value: 'apricot', label: 'Apricot', disabled: true },
+          { value: 'banana', label: 'Banana', disabled: false },
+        ]);
+        flush();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'banana'));
+        expect(fixture.componentInstance.picked()).toEqual(['banana']);
+      });
+
+      it('does NOT toggle in single mode (just moves focus)', () => {
+        const { el, fixture, flush } = renderHost(ListboxHost);
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apricot'));
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('does not change the anchor (so a later Shift+Space spans from the click)', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').click();
+        flush();
+        // Shift+Arrow should NOT move the anchor.
+        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        keyDown(optOf(el, 'apricot'), 'ArrowDown', { shiftKey: true });
+        flush();
+        // Now focus is on banana. Shift+Space should select [apple..banana].
+        keyDown(optOf(el, 'banana'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
+      });
+
+      it('respects readonly (no toggle, focus still moves)', () => {
+        @Component({
+          imports: [...LISTBOX_IMPORTS],
+          template: `
+            <ul forListbox multiple readonly [(value)]="picked">
+              <li><button type="button" forListboxOption value="a" data-test-id="a">A</button></li>
+              <li><button type="button" forListboxOption value="b" data-test-id="b">B</button></li>
+            </ul>
+          `,
+        })
+        class Host {
+          readonly picked = signal<string[]>([]);
+        }
+
+        const r = renderHost(Host);
+        optOf(r.el, 'a').focus();
+        keyDown(optOf(r.el, 'a'), 'ArrowDown', { shiftKey: true });
+        r.flush();
+        expect(document.activeElement).toBe(optOf(r.el, 'b'));
+        expect(r.fixture.componentInstance.picked()).toEqual([]);
+      });
+    });
+
+    describe('Shift+Space (range from anchor)', () => {
+      it('selects contiguous from anchor to focused option (forward)', () => {
+        const { el, fixture, flush } = setupMulti();
+        // Click sets the anchor.
+        optOf(el, 'apple').click();
+        flush();
+        // Move focus a few steps without modifying anchor.
+        optOf(el, 'cherry').focus();
+        keyDown(optOf(el, 'cherry'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'apple',
+          'apricot',
+          'banana',
+          'blueberry',
+          'cherry',
+        ]);
+      });
+
+      it('selects contiguous from anchor to focused option (backward)', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'cherry').click();
+        flush();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'cherry',
+          'apple',
+          'apricot',
+          'banana',
+          'blueberry',
+        ]);
+      });
+
+      it('preserves selection outside the range', () => {
+        const { el, fixture, flush } = setupMulti(['cherry']);
+        optOf(el, 'apple').click(); // Anchor = apple, picks now = [cherry, apple].
+        flush();
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'cherry',
+          'apple',
+          'apricot',
+        ]);
+      });
+
+      it('skips disabled options in the range', () => {
+        const { el, fixture, flush } = setupMulti();
+        fixture.componentInstance.options.set([
+          { value: 'a', label: 'A', disabled: false },
+          { value: 'b', label: 'B', disabled: true },
+          { value: 'c', label: 'C', disabled: false },
+        ]);
+        flush();
+        optOf(el, 'a').click();
+        flush();
+        optOf(el, 'c').focus();
+        keyDown(optOf(el, 'c'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
+      });
+
+      it('falls back to selecting the focused option when no anchor exists', () => {
+        const { el, fixture, flush } = setupMulti();
+        // No prior click → anchor is null. Shift+Space at apricot picks just apricot.
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual(['apricot']);
+      });
+
+      it('no-op in single mode (Space falls through to native click)', () => {
+        const { el, fixture, flush } = renderHost(ListboxHost);
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), ' ', { shiftKey: true });
+        flush();
+        // Space was preventDefaulted-by-nobody; native click on a button doesn't fire
+        // from a synthetic `keydown` event in jsdom. Single-mode picks stays empty.
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+    });
+
+    describe('Ctrl/Cmd+A', () => {
+      it('selects every enabled option', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'apple',
+          'apricot',
+          'banana',
+          'blueberry',
+          'cherry',
+        ]);
+      });
+
+      it('also accepts uppercase A', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'A', { ctrlKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toHaveLength(5);
+      });
+
+      it('also accepts metaKey (mac Cmd+A)', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'a', { metaKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toHaveLength(5);
+      });
+
+      it('clears the selection when every enabled option is already selected (toggle)', () => {
+        const { el, fixture, flush } = setupMulti(['apple', 'apricot', 'banana', 'blueberry', 'cherry']);
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('skips disabled options', () => {
+        const { el, fixture, flush } = setupMulti();
+        fixture.componentInstance.options.set([
+          { value: 'a', label: 'A', disabled: false },
+          { value: 'b', label: 'B', disabled: true },
+          { value: 'c', label: 'C', disabled: false },
+        ]);
+        flush();
+        optOf(el, 'a').focus();
+        keyDown(optOf(el, 'a'), 'a', { ctrlKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
+      });
+
+      it('no-op in single mode', () => {
+        const { el, fixture, flush } = renderHost(ListboxHost);
+        optOf(el, 'apple').focus();
+        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+    });
+
+    describe('Ctrl+Shift+Home / Ctrl+Shift+End', () => {
+      it('Ctrl+Shift+End selects from current to the last enabled option and focuses it', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'banana').focus();
+        keyDown(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'cherry'));
+        expect(fixture.componentInstance.picked()).toEqual([
+          'banana',
+          'blueberry',
+          'cherry',
+        ]);
+      });
+
+      it('Ctrl+Shift+Home selects from current to the first enabled option and focuses it', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'banana').focus();
+        keyDown(optOf(el, 'banana'), 'Home', { ctrlKey: true, shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apple'));
+        expect(fixture.componentInstance.picked()).toEqual([
+          'apple',
+          'apricot',
+          'banana',
+        ]);
+      });
+
+      it('preserves selection outside the range', () => {
+        const { el, fixture, flush } = setupMulti(['cherry']);
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), 'Home', { ctrlKey: true, shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'cherry',
+          'apple',
+          'apricot',
+        ]);
+      });
+
+      it('skips disabled options when picking the focus edge', () => {
+        const { el, fixture, flush } = setupMulti();
+        fixture.componentInstance.options.set([
+          { value: 'a', label: 'A', disabled: true },
+          { value: 'b', label: 'B', disabled: false },
+          { value: 'c', label: 'C', disabled: false },
+        ]);
+        flush();
+        optOf(el, 'c').focus();
+        keyDown(optOf(el, 'c'), 'Home', { ctrlKey: true, shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'b'));
+        expect(fixture.componentInstance.picked()).toEqual(['b', 'c']);
+      });
+
+      it('no-op in single mode', () => {
+        const { el, fixture, flush } = renderHost(ListboxHost);
+        optOf(el, 'banana').focus();
+        keyDown(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+    });
+
+    describe('anchor lifecycle', () => {
+      it('is set on click activation', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'banana').click();
+        flush();
+        // Now Shift+Space at apricot should span apricot..banana.
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'banana',
+          'apricot',
+        ]);
+      });
+
+      it('moves to the most recent click', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').click(); // anchor = apple
+        optOf(el, 'cherry').click(); // anchor moves to cherry
+        flush();
+        // Shift+Space at apricot should span apricot..cherry.
+        optOf(el, 'apricot').focus();
+        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual([
+          'apple',
+          'cherry',
+          'apricot',
+          'banana',
+          'blueberry',
+        ]);
+      });
+    });
+  });
+
   describe('horizontal & RTL', () => {
     it('uses ArrowLeft / ArrowRight in horizontal', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
