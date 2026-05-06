@@ -1,7 +1,8 @@
-import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
-import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
+import { computed, Directive, model } from '@angular/core';
+import type { FormCheckboxControl } from '@angular/forms/signals';
 
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 
 /**
@@ -45,29 +46,12 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     '(blur)': 'touched.set(true)',
   },
 })
-export class ForSwitch implements FormCheckboxControl {
+export class ForSwitch extends FormUiControlBase implements FormCheckboxControl {
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
 
-  /** When true, click is ignored and `disabled` / `aria-disabled` are reflected. */
-  readonly disabled = input(false, { transform: booleanAttribute });
-
-  /** When true, click is ignored but the control remains focusable; `aria-readonly="true"`. */
-  readonly readonly = input(false, { transform: booleanAttribute });
-
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-
-  readonly name = input<string>('');
-
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-
-  /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
-  readonly touched = model<boolean>(false);
-
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       values: computed(() => (this.checked() ? ['on'] : [])),

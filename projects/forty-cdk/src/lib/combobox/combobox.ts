@@ -11,11 +11,12 @@ import {
   signal,
 } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -60,6 +61,7 @@ import {
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
 })
 export class ForCombobox
+  extends FormUiControlBase
   implements FormValueControl<readonly string[]>, ForComboboxContext
 {
   readonly #idGen = inject(IdGenerator);
@@ -162,16 +164,6 @@ export class ForCombobox
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
   readonly loop = input(true, { transform: booleanAttribute });
 
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-  readonly name = input<string>('');
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-  readonly touched = model<boolean>(false);
-
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
@@ -227,6 +219,7 @@ export class ForCombobox
   });
 
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       values: this.value,

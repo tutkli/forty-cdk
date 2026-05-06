@@ -10,10 +10,11 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
@@ -64,7 +65,10 @@ import {
   },
   providers: [{ provide: FOR_SLIDER_CONTEXT, useExisting: ForSlider }],
 })
-export class ForSlider implements FormValueControl<readonly number[]>, ForSliderContext {
+export class ForSlider
+  extends FormUiControlBase
+  implements FormValueControl<readonly number[]>, ForSliderContext
+{
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -111,16 +115,6 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
    * Default `0` (touch but never cross — non-passing per APG).
    */
   readonly minStepsBetweenThumbs = input<number>(0);
-
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-  readonly name = input<string>('');
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-  readonly touched = model<boolean>(false);
 
   /**
    * Emitted at the end of a value-changing interaction — pointerup /
@@ -183,6 +177,7 @@ export class ForSlider implements FormValueControl<readonly number[]>, ForSlider
   });
 
   constructor() {
+    super();
     const stringValues = computed(() => this.value().map((v) => String(v)));
     injectHiddenInput({
       name: this.name,

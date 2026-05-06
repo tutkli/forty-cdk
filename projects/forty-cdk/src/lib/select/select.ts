@@ -11,11 +11,12 @@ import {
   signal,
 } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
@@ -57,7 +58,10 @@ import {
   },
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
-export class ForSelect implements FormValueControl<readonly string[]>, ForSelectContext {
+export class ForSelect
+  extends FormUiControlBase
+  implements FormValueControl<readonly string[]>, ForSelectContext
+{
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
@@ -135,16 +139,6 @@ export class ForSelect implements FormValueControl<readonly string[]>, ForSelect
   /** Placeholder shown by `[forSelectValue]` when no option is selected. */
   readonly placeholder = input<string>('');
 
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-  readonly name = input<string>('');
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-  readonly touched = model<boolean>(false);
-
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
@@ -202,6 +196,7 @@ export class ForSelect implements FormValueControl<readonly string[]>, ForSelect
   });
 
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       values: this.value,
