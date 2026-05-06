@@ -17,6 +17,10 @@ import {
   suppressDismissableLayerDispatch,
 } from '../_internal/dismissable-layer/dismissable-layer';
 import { findFirstFocusable, FocusTrap } from '../_internal/focus-trap/focus-trap';
+import {
+  activateInertSiblings,
+  type InertSiblingsHandle,
+} from '../_internal/inert-siblings/inert-siblings';
 import { ForDialogRef } from './dialog-ref';
 
 /**
@@ -161,14 +165,16 @@ export class ForDialogManager {
     });
 
     const focusTrap = isModal ? new FocusTrap(hostEl) : null;
+    let inertHandle: InertSiblingsHandle | null = null;
     if (focusTrap) {
+      // Inert + aria-hidden body siblings BEFORE the focus trap fires so
+      // the synthesized focusin lands on an already-isolated tree.
+      inertHandle = activateInertSiblings(hostEl);
       lockBodyScroll();
       focusTrap.activate({ initialFocus: config.initialFocus ?? 'first' });
     } else {
       const target =
-        config.initialFocus === 'container'
-          ? hostEl
-          : findFirstFocusable(hostEl) ?? hostEl;
+        config.initialFocus === 'container' ? hostEl : (findFirstFocusable(hostEl) ?? hostEl);
       target.focus();
     }
 
@@ -180,6 +186,10 @@ export class ForDialogManager {
         return;
       }
       torn = true;
+      // Lift inert + aria-hidden BEFORE focus return — `inert` ancestors
+      // block `.focus()` on the return target.
+      inertHandle?.deactivate();
+      inertHandle = null;
       // Suppress the dismissable-layer dispatcher across the focus-return
       // step so that the synthetic `focusin` event we generate by moving
       // focus back to the trigger does not cascade-dismiss whatever
@@ -210,6 +220,8 @@ export class ForDialogManager {
             unlockBodyScroll();
           }
         });
+        inertHandle?.deactivate();
+        inertHandle = null;
         dismissable.deactivate();
       }
     });
