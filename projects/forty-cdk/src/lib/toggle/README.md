@@ -16,9 +16,7 @@ import { ForToggle } from 'forty-cdk';
 @Component({
   selector: 'demo-toggle',
   imports: [ForToggle],
-  template: `
-    <button forToggle [(pressed)]="bold">B</button>
-  `,
+  template: ` <button forToggle [(pressed)]="bold">B</button> `,
 })
 export class DemoToggle {
   readonly bold = signal(false);
@@ -27,9 +25,9 @@ export class DemoToggle {
 
 ### Inputs
 
-| API | Default | Description |
-| --- | --- | --- |
-| `pressed` | `false` | Two-way bindable pressed state. |
+| API        | Default | Description                                            |
+| ---------- | ------- | ------------------------------------------------------ |
+| `pressed`  | `false` | Two-way bindable pressed state.                        |
 | `disabled` | `false` | When `true`, click is ignored and `[disabled]` is set. |
 
 ## ToggleGroup
@@ -67,28 +65,36 @@ export class DemoAlignment {
 
 ### Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForToggleGroup` | `[forToggleGroup]` | Root. Owns `value`, `multiple`, `disabled`, `orientation`, `dir`, `loop`. |
-| `ForToggleGroupItem` | `[forToggleGroupItem]` | One toggle button. Pressed state derives from the group's `value`. |
+| Class                | Selector               | Role                                                                      |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------- |
+| `ForToggleGroup`     | `[forToggleGroup]`     | Root. Owns `value`, `multiple`, `disabled`, `orientation`, `dir`, `loop`. |
+| `ForToggleGroupItem` | `[forToggleGroupItem]` | One toggle button. Pressed state derives from the group's `value`.        |
 
 ### Inputs (`ForToggleGroup`)
 
-| API | Default | Description |
-| --- | --- | --- |
-| `value` | `[]` | Two-way bindable. Selected values, in arbitrary order. |
-| `multiple` | `false` | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears). |
-| `disabled` | `false` | Disables every item regardless of per-item state. |
-| `orientation` | `'horizontal'` | Layout direction for keyboard navigation. |
-| `dir` | `'ltr'` | Reading direction. RTL swaps ArrowLeft / ArrowRight. |
-| `loop` | `true` | When `true`, arrow nav wraps at the ends. |
+| API           | Default        | Description                                                                                               |
+| ------------- | -------------- | --------------------------------------------------------------------------------------------------------- |
+| `value`       | `[]`           | Two-way bindable. Selected values, in arbitrary order. Required by `FormValueControl<readonly string[]>`. |
+| `multiple`    | `false`        | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears).    |
+| `disabled`    | `false`        | Disables every item regardless of per-item state.                                                         |
+| `readonly`    | `false`        | Click is ignored, items remain focusable. Reflected as `aria-readonly`.                                   |
+| `required`    | `false`        | Reflected as `aria-required`.                                                                             |
+| `invalid`     | `false`        | Reflected as `aria-invalid` and `data-invalid`.                                                           |
+| `pending`     | `false`        | Reflected as `aria-busy` and `data-pending`.                                                              |
+| `dirty`       | `false`        | Reflected as `data-dirty`.                                                                                |
+| `name`        | `''`           | When non-empty, hidden inputs are mounted for native form submission (one per selected value).            |
+| `errors`      | `[]`           | Validation errors surfaced by Signal Forms.                                                               |
+| `touched`     | `false`        | Two-way bindable. Set on focusout outside the group.                                                      |
+| `orientation` | `'horizontal'` | Layout direction for keyboard navigation.                                                                 |
+| `dir`         | `'ltr'`        | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                      |
+| `loop`        | `true`         | When `true`, arrow nav wraps at the ends.                                                                 |
 
 ### Inputs (`ForToggleGroupItem`)
 
-| API | Default | Description |
-| --- | --- | --- |
-| `value` | required | Identifier added to / removed from the group's `value`. |
-| `disabled` | `false` | Per-item disabled, in addition to the group's `disabled`. |
+| API        | Default  | Description                                               |
+| ---------- | -------- | --------------------------------------------------------- |
+| `value`    | required | Identifier added to / removed from the group's `value`.   |
+| `disabled` | `false`  | Per-item disabled, in addition to the group's `disabled`. |
 
 ## Keyboard
 
@@ -105,4 +111,33 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 - **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed` — the data attribute mirrors the logical "is this option active" state, not the ARIA term.
 - **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Use `[forRadioGroup]` if you need to enforce one-of-N.
 - **Roving tabindex** is computed from the group's value: with at least one selection the first selected item is the entry point; otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
-- **No form integration yet.** ToggleGroup does not implement `FormValueControl<string[]>` — a `[formField]` adapter can be added in a follow-up if there is real demand.
+
+## Signal Forms usage
+
+`ForToggleGroup` implements `FormValueControl<readonly string[]>`, so it auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, `touched`, and `name` flow into the matching inputs without consumer glue.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, required } from '@angular/forms/signals';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+
+@Component({
+  selector: 'demo-formats',
+  imports: [ForToggleGroup, ForToggleGroupItem /* , FormField from @angular/forms */],
+  template: `
+    <div forToggleGroup multiple [formField]="prefs.formats" aria-label="Formats">
+      <button forToggleGroupItem value="bold">B</button>
+      <button forToggleGroupItem value="italic">I</button>
+      <button forToggleGroupItem value="underline">U</button>
+    </div>
+  `,
+})
+export class DemoFormats {
+  readonly model = signal({ formats: [] as string[] });
+  readonly prefs = form(this.model, (s) => required(s.formats));
+}
+```
+
+When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission.
+
+`ForToggle` (the standalone single-button toggle) is intentionally **not** a form-control: it is the APG button pattern, not a form value. Use `ForToggleGroup` (in single or multiple mode) when you need form integration — its `value` is `readonly string[]` and a single-mode group simply carries `[]` or `[selected]`.
