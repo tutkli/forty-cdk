@@ -102,9 +102,11 @@ export class ForMenuItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    // ArrowLeft inside a submenu closes only the submenu (focus returns to
-    // the SubTrigger via the content's DestroyRef hook).
-    if (event.key === 'ArrowLeft' && this.ctx.parentMenu) {
+    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes only the
+    // submenu (focus returns to the SubTrigger via the content's DestroyRef
+    // hook). Plain top-level menus ignore both keys here.
+    const closeSubmenuKey = this.ctx.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
+    if (event.key === closeSubmenuKey && this.ctx.parentMenu) {
       event.preventDefault();
       this.ctx.closeMenu('escape');
       return;

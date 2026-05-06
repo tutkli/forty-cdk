@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import { ForContextMenu } from '../context-menu/context-menu';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
 import { ForMenuContent } from './menu-content';
@@ -345,6 +346,254 @@ describe('ForMenuSub', () => {
       expect(() => fixture.detectChanges()).toThrow(
         /\[forMenuSubTrigger\] must be inside a \[forMenuSub\]/,
       );
+    });
+  });
+
+  describe('RTL', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open" [dir]="dir()">
+          <button forDropdownMenuTrigger>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+              <div forMenuSub [(open)]="subOpen">
+                <button id="more" forMenuSubTrigger>More</button>
+                @if (subOpen()) {
+                  <div forMenuSubContent>
+                    <button id="advanced" forMenuItem>Advanced</button>
+                    <button id="reset" forMenuItem>Reset</button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class RtlSubMenuHost {
+      readonly open = signal(false);
+      readonly subOpen = signal(false);
+      readonly dir = signal<'ltr' | 'rtl'>('rtl');
+    }
+
+    it('ArrowLeft on the SubTrigger opens the submenu (RTL swap)', async () => {
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).toBe('advanced');
+    });
+
+    it('ArrowRight on the SubTrigger does NOT open the submenu in RTL', async () => {
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(false);
+    });
+
+    it('ArrowRight inside a submenu item closes the submenu (RTL swap)', async () => {
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const advanced = document.querySelector<HTMLElement>('#advanced')!;
+      advanced.focus();
+      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('ArrowLeft inside a submenu item is a no-op in RTL (does not close the submenu)', async () => {
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const advanced = document.querySelector<HTMLElement>('#advanced')!;
+      advanced.focus();
+      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('switching dir at runtime swaps the keyboard semantics live', async () => {
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.dir.set('ltr');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+
+      // LTR: ArrowRight opens.
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+
+      // Close, flip to RTL, retry — ArrowRight should now NOT open.
+      r.instance.subOpen.set(false);
+      r.instance.dir.set('rtl');
+      await flush(r.fixture);
+      more.focus();
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(false);
+
+      // ArrowLeft should now open.
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('a submenu can override dir per instance', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forDropdownMenu [(open)]="open" dir="ltr">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen" dir="rtl">
+                  <button id="more" forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <button id="advanced" forMenuItem>Advanced</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly subOpen = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      // Sub overrides to rtl; ArrowLeft opens.
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('ForContextMenu also exposes a dir input that propagates to its submenus', async () => {
+      @Component({
+        imports: [
+          ForContextMenu,
+          ForMenuContent,
+          ForMenuItem,
+          ForMenuSub,
+          ForMenuSubTrigger,
+        ],
+        template: `
+          <div forContextMenu [(open)]="open" dir="rtl">
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button id="more" forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <button id="leaf" forMenuItem>Leaf</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly subOpen = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('default submenu placement flips to "left-start" in RTL', () => {
+      // Inspect the directive's `placement` computed directly — independent of
+      // floating-ui's async positioning, which is unreliable in jsdom.
+      const r = renderHost(RtlSubMenuHost);
+      r.instance.open.set(true);
+      r.flush();
+
+      const subDir = TestBed.inject(ForMenuSub, undefined, { optional: true });
+      // Locate the submenu instance by querying through Angular's debug API.
+      // The subOpen flag must be false here so the submenu is mounted but
+      // before `injectFloating` has resolved — placement should be authored
+      // from `dir` regardless.
+      const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
+      // Walk to the element's directive instance via Angular debug.
+      const subDebug = r.fixture.debugElement.queryAll(
+        (node) => node.nativeElement === subEl,
+      )[0]!;
+      const sub = subDebug.injector.get(ForMenuSub);
+      expect(sub.placement()).toBe('left-start');
+      void subDir;
+    });
+
+    it('a consumer-provided placement overrides the RTL default (no auto-flip)', () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forDropdownMenu [(open)]="open" dir="rtl">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub placement="top-end">
+                  <button forMenuSubTrigger>More</button>
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(Host);
+      const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
+      const subDebug = r.fixture.debugElement.queryAll(
+        (node) => node.nativeElement === subEl,
+      )[0]!;
+      const sub = subDebug.injector.get(ForMenuSub);
+      expect(sub.placement()).toBe('top-end');
     });
   });
 

@@ -16,6 +16,7 @@ import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
   moveIndex,
+  type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
@@ -103,6 +104,13 @@ export class ForContextMenu implements ForMenuContext {
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
+   * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu
+   * triggers and items underneath this menu (in RTL, ArrowLeft opens a submenu
+   * and ArrowRight closes it back). Default `'ltr'`.
+   */
+  readonly dir = input<WritingDirection>('ltr');
 
   /**
    * When true, the contextmenu event is allowed to fall through to the

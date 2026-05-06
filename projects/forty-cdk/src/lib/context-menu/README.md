@@ -59,6 +59,7 @@ The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 | `placement`   | `'bottom-start'` | Floating-ui placement relative to the pointer.                               |
 | `offset`      | `0`              | Gap (px) between the pointer and the menu.                                   |
 | `loop`        | `true`           | Whether arrow navigation wraps.                                              |
+| `dir`         | `'ltr'`          | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
 | `disabled`    | `false`          | When `true`, the contextmenu event falls through to the native browser menu. |
 | `dismissible` | `true`           | When `false`, Escape and outside interactions don't close.                   |
 | `returnFocus` | `true`           | When `true`, focus returns to the trigger element on close.                  |

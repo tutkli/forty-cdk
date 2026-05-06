@@ -3,7 +3,10 @@ import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type { ListNavigationAction } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type {
+  ListNavigationAction,
+  WritingDirection,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
  * Why a menu requested close. Mirrors Radix's `onCloseAutoFocus` reasons
@@ -43,6 +46,13 @@ export interface ForMenuContext {
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
+  /**
+   * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu
+   * triggers and items, and the default placement of submenus (`'right-start'`
+   * in LTR, `'left-start'` in RTL). On `[forMenuSub]` defaults to the parent
+   * menu's `dir` and can be overridden per-submenu.
+   */
+  readonly dir: Signal<WritingDirection>;
   readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
