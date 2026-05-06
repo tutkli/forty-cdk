@@ -4,17 +4,17 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 
 ## Pieces
 
-| Class                 | Selector                | Role                                                                                                            |
-| --------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                  |
-| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`. |
-| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.            |
-| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                           |
-| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<string>`.                                                                          |
+| Class                 | Selector                | Role                                                                                                                             |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                                   |
+| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`.                  |
+| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                             |
+| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
+| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<string>`.                                                                                           |
 | `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
-| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                        |
-| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                         |
-| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                |
+| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
+| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                          |
+| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                 |
 
 ## Single mode (default)
 
@@ -84,6 +84,40 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 - **Escape** — close without changing selection. Returns focus to the trigger.
 - **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
 - **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
+
+## macOS-style alignment (`position="item-aligned"`)
+
+`[forSelect]` defaults to `position="popper"` — standard floating-ui anchored placement (`side` / `align` / `sideOffset` / `alignOffset` with `flip` + `shift` collision handling). Set `position="item-aligned"` to switch to the macOS-native algorithm: the listbox overlays the trigger so the **selected option's vertical center** lines up with the **trigger's vertical center**. The visual effect is that opening the menu doesn't shift the eye — the selected value stays in place; the rest of the options expand around it. Better UX for short lists with a known selected value (country / language / role pickers).
+
+When nothing is selected, the algorithm falls back to the first enabled option. The listbox is clamped inside the viewport with `collisionPadding`; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
+
+```html
+<div forSelect [(value)]="country" position="item-aligned" [collisionPadding]="10">
+  <button forSelectTrigger>
+    <span forSelectValue placeholder="Country"></span>
+  </button>
+  @if (countryOpen()) {
+  <div forSelectContent class="select-content">
+    <button forSelectOption value="es">Spain</button>
+    <button forSelectOption value="fr">France</button>
+    <button forSelectOption value="de">Germany</button>
+  </div>
+  }
+</div>
+```
+
+The directive sets `--for-select-content-available-height` on the content host so consumers can clamp the visible height in CSS:
+
+```css
+.select-content {
+  max-height: var(--for-select-content-available-height);
+  overflow-y: auto;
+}
+```
+
+When `position="item-aligned"`, the following inputs are **no-ops**: `placement`, `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `arrowPadding`. Only `collisionPadding` (default `8`) is honored — it drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the legacy `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
+
+The default stays `popper` (rather than mirroring Radix's `item-aligned` default) so existing consumers' visuals don't shift on upgrade — opt in per primitive when the macOS feel is what you want.
 
 ## Selection follows focus
 
