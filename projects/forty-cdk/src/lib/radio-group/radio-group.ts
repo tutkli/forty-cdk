@@ -7,11 +7,12 @@ import {
   input,
   model,
 } from '@angular/core';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
@@ -57,7 +58,10 @@ import {
   },
   providers: [{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: ForRadioGroup }],
 })
-export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupContext {
+export class ForRadioGroup
+  extends FormUiControlBase
+  implements FormValueControl<string>, ForRadioGroupContext
+{
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Two-way bindable. Selected radio's value. Empty string = none selected. */
@@ -69,13 +73,6 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
   /** Reading direction for horizontal orientation. */
   readonly dir = input<WritingDirection>('ltr');
 
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-
   /**
    * Whether arrow navigation wraps around past the first / last enabled
    * radio. Default `true` — matches the WAI-ARIA Radio Group APG. Set to
@@ -83,17 +80,12 @@ export class ForRadioGroup implements FormValueControl<string>, ForRadioGroupCon
    */
   readonly loop = input(true, { transform: booleanAttribute });
 
-  readonly name = input<string>('');
-
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-
-  readonly touched = model<boolean>(false);
-
   readonly #items = new Collection<ForRadioHandle>();
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       values: computed(() => {

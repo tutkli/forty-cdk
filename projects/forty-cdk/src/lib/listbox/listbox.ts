@@ -7,11 +7,12 @@ import {
   input,
   model,
 } from '@angular/core';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
@@ -58,7 +59,10 @@ import {
   },
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],
 })
-export class ForListbox implements FormValueControl<string[]>, ForListboxContext {
+export class ForListbox
+  extends FormUiControlBase
+  implements FormValueControl<string[]>, ForListboxContext
+{
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -82,16 +86,6 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
    */
   readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
 
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-  readonly name = input<string>('');
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-  readonly touched = model<boolean>(false);
-
   readonly roving = injectRovingTabindex();
   readonly #typeahead = injectTypeahead();
 
@@ -100,6 +94,7 @@ export class ForListbox implements FormValueControl<string[]>, ForListboxContext
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       values: this.value,

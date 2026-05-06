@@ -1,13 +1,8 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  input,
-  model,
-} from '@angular/core';
-import type { FormCheckboxControl, ValidationError } from '@angular/forms/signals';
+import { computed, Directive, model } from '@angular/core';
+import type { FormCheckboxControl } from '@angular/forms/signals';
 
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 
 /**
@@ -62,7 +57,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     '(blur)': 'touched.set(true)',
   },
 })
-export class ForCheckbox implements FormCheckboxControl {
+export class ForCheckbox extends FormUiControlBase implements FormCheckboxControl {
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
 
@@ -76,19 +71,6 @@ export class ForCheckbox implements FormCheckboxControl {
    */
   readonly indeterminate = model<boolean>(false);
 
-  readonly disabled = input(false, { transform: booleanAttribute });
-  readonly readonly = input(false, { transform: booleanAttribute });
-  readonly required = input(false, { transform: booleanAttribute });
-  readonly invalid = input(false, { transform: booleanAttribute });
-  readonly pending = input(false, { transform: booleanAttribute });
-  readonly dirty = input(false, { transform: booleanAttribute });
-
-  readonly name = input<string>('');
-
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-
-  readonly touched = model<boolean>(false);
-
   protected readonly ariaChecked = computed<'true' | 'false' | 'mixed'>(() => {
     if (this.indeterminate()) return 'mixed';
     return this.checked() ? 'true' : 'false';
@@ -100,6 +82,7 @@ export class ForCheckbox implements FormCheckboxControl {
   });
 
   constructor() {
+    super();
     injectHiddenInput({
       name: this.name,
       // Matches native `<input type="checkbox">`: only `checked` contributes
