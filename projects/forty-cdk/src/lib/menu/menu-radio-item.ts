@@ -99,7 +99,9 @@ export class ForMenuRadioItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (event.key === 'ArrowLeft' && this.menu.parentMenu) {
+    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes the submenu.
+    const closeSubmenuKey = this.menu.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
+    if (event.key === closeSubmenuKey && this.menu.parentMenu) {
       event.preventDefault();
       this.menu.closeMenu('escape');
       return;

@@ -17,6 +17,7 @@ import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
   moveIndex,
+  type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
@@ -81,10 +82,33 @@ export class ForMenuSub implements ForMenuContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Floating-ui placement relative to the parent item. Default
-   * `'right-start'`. Legacy API — new code should prefer `side` + `align`.
+   * Writing direction. When unset, inherits from the enclosing menu — set
+   * `[dir]` once on the top-level `[forDropdownMenu]` / `[forContextMenu]`
+   * and every nested submenu picks it up. Override per-submenu only when
+   * a specific submenu needs to render against the opposite direction.
+   *
+   * The input is aliased to `dir`; consumers bind `[dir]="..."` and read
+   * the effective value via the public `dir` computed below.
    */
-  readonly placement = input<Placement>('right-start');
+  readonly _dirInput = input<WritingDirection | undefined>(undefined, { alias: 'dir' });
+  readonly dir = computed<WritingDirection>(
+    () => this._dirInput() ?? this.parentMenu.dir(),
+  );
+
+  /**
+   * Floating-ui placement relative to the parent item. When omitted, defaults
+   * to `'right-start'` in LTR and `'left-start'` in RTL (per `dir`). When set
+   * explicitly, the consumer's value is used as-is — no automatic flip — so
+   * advanced layouts can pin a side regardless of writing direction. Legacy
+   * API; new code should prefer `side` + `align`.
+   *
+   * The input is aliased to `placement`; consumers bind `[placement]="..."`
+   * and read the effective value via the public `placement` computed below.
+   */
+  readonly _placementInput = input<Placement | undefined>(undefined, { alias: 'placement' });
+  readonly placement = computed<Placement>(
+    () => this._placementInput() ?? (this.dir() === 'rtl' ? 'left-start' : 'right-start'),
+  );
 
   /**
    * Side the submenu opens on. When set, takes precedence over `placement`.

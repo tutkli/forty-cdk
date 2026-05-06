@@ -96,7 +96,9 @@ export class ForMenuCheckboxItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (event.key === 'ArrowLeft' && this.ctx.parentMenu) {
+    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes the submenu.
+    const closeSubmenuKey = this.ctx.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
+    if (event.key === closeSubmenuKey && this.ctx.parentMenu) {
       event.preventDefault();
       this.ctx.closeMenu('escape');
       return;

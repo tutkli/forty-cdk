@@ -73,6 +73,7 @@ The actual menu items, content surface, radio groups, separators, and groups com
 | `placement` | `'bottom-start'` | Floating-ui placement of `[forMenuContent]` against the trigger. |
 | `offset` | `4` | Gap (px) between the trigger and the content. |
 | `loop` | `true` | Whether arrow navigation wraps at the ends. |
+| `dir` | `'ltr'` | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
 | `disabled` | `false` | When `true`, trigger interactions are ignored. |
 | `dismissible` | `true` | When `false`, Escape and outside interactions don't close. |
 | `returnFocus` | `true` | When `true`, focus returns to the trigger on close. |

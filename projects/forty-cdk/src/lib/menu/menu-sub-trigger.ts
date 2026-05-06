@@ -23,10 +23,11 @@ import { injectMenuContext } from './menu-context';
  *
  * Keyboard:
  * - **Click / Enter / Space** — toggle the submenu (focus first item on open).
- * - **ArrowRight** — open the submenu and focus its first item (LTR).
+ * - **ArrowRight (LTR) / ArrowLeft (RTL)** — open the submenu and focus its first item.
  * - **ArrowDown / ArrowUp / Home / End** — navigate parent's items.
- * - **ArrowLeft** — when the parent menu is itself a submenu, close the
- *   parent (return to grandparent's trigger). No-op at the top level.
+ * - **ArrowLeft (LTR) / ArrowRight (RTL)** — when the parent menu is itself
+ *   a submenu, close the parent (return to grandparent's trigger). No-op at
+ *   the top level.
  * - **Tab** — close the entire menu chain.
  * - **Typeahead** — printable keys delegate to parent's typeahead.
  */
@@ -86,15 +87,18 @@ export class ForMenuSubTrigger {
       return;
     }
     const parent = this.submenu.parentMenu!;
+    const isRtl = this.submenu.dir() === 'rtl';
+    const openKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+    const closeParentKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
 
-    if (event.key === 'ArrowRight') {
+    if (event.key === openKey) {
       event.preventDefault();
       this.submenu.openMenu('first');
       return;
     }
 
-    // ArrowLeft when the *parent* is itself a submenu: collapse the parent.
-    if (event.key === 'ArrowLeft' && parent.parentMenu) {
+    // Close-parent key when the *parent* is itself a submenu: collapse the parent.
+    if (event.key === closeParentKey && parent.parentMenu) {
       event.preventDefault();
       parent.closeMenu('escape');
       return;
