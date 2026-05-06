@@ -4,53 +4,53 @@ Headless implementation of the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/AR
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForTabs` | `[forTabs]` | Root. Owns `value` (selected tab), activation mode, orientation. Provides the shared context. |
-| `ForTabsList` | `[forTabsList]` | `role="tablist"` container that wraps the tab buttons. |
-| `ForTabsTrigger` | `[forTabsTrigger]` | One tab button. Apply on a `<button type="button">`. |
-| `ForTabsContent` | `[forTabsContent]` | Panel revealed by the tab with the matching `value`. |
+| Class            | Selector           | Role                                                                                          |
+| ---------------- | ------------------ | --------------------------------------------------------------------------------------------- |
+| `ForTabs`        | `[forTabs]`        | Root. Owns `value` (selected tab), activation mode, orientation. Provides the shared context. |
+| `ForTabsList`    | `[forTabsList]`    | `role="tablist"` container that wraps the tab buttons.                                        |
+| `ForTabsTrigger` | `[forTabsTrigger]` | One tab button. Apply on a `<button type="button">`.                                          |
+| `ForTabsContent` | `[forTabsContent]` | Panel revealed by the tab with the matching `value`.                                          |
 
 ## Inputs / models
 
 ### `ForTabs`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<string>` | Two-way bindable. The selected tab's value. |
-| `activationMode` | `input<'automatic' \| 'manual'>` | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`. |
-| `dir` | `input<'ltr' \| 'rtl'>` | Default `'ltr'`. Swaps ArrowLeft / ArrowRight. |
-| `disabled` | `input<boolean>` | When true, blocks all selection and keyboard nav. |
-| `loop` | `input<boolean>` | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist. |
+| API              | Type                                | Description                                                                                                                            |
+| ---------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `model<string>`                     | Two-way bindable. The selected tab's value.                                                                                            |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter. |
+| `orientation`    | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`.                                                             |
+| `dir`            | `input<'ltr' \| 'rtl'>`             | Default `'ltr'`. Swaps ArrowLeft / ArrowRight.                                                                                         |
+| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.                                                                                      |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.          |
 
 ### `ForTabsTrigger`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`. |
-| `disabled` | `input<boolean>` | Disables this trigger; arrow nav skips it. |
+| API        | Type                     | Description                                                           |
+| ---------- | ------------------------ | --------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`. |
+| `disabled` | `input<boolean>`         | Disables this trigger; arrow nav skips it.                            |
 
 Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `disabled`, `tabindex`, `data-state="active" \| "inactive"`.
 
 ### `ForTabsContent`
 
-| API | Type | Description |
-| --- | --- | --- |
+| API     | Type                     | Description                                         |
+| ------- | ------------------------ | --------------------------------------------------- |
 | `value` | `input.required<string>` | Pairs the panel with the trigger of the same value. |
 
-Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"`, `hidden` (when not selected), `data-state`.
+Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"`, `aria-hidden` (when inactive), `inert` (when inactive), `data-state="active" \| "inactive"`.
+
+The directive does **not** apply `[hidden]`. Two patterns work:
+
+- **Leave all panels mounted** (idiomatic) — preserves scroll/input state across activations. While inactive, the directive sets `aria-hidden="true"` and `inert` so each non-selected panel is out of the accessibility tree and focus order. Hide the inactive ones visually with CSS keyed on `[data-state="inactive"]` (e.g. `display: none`).
+- **Mount/unmount with `@if (active() === 'tab')`** — the panel is absent while inactive; useful for heavy panels or when you want `animate.enter` / `animate.leave`.
 
 ## Example
 
 ```ts
 import { Component, signal } from '@angular/core';
-import {
-  ForTabs,
-  ForTabsList,
-  ForTabsTrigger,
-  ForTabsContent,
-} from 'forty-cdk';
+import { ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent } from 'forty-cdk';
 
 @Component({
   selector: 'demo-settings',

@@ -17,12 +17,7 @@ const ACCORDION_IMPORTS = [
 @Component({
   imports: [...ACCORDION_IMPORTS],
   template: `
-    <div
-      forAccordion
-      [(value)]="value"
-      [multiple]="multiple()"
-      [collapsible]="collapsible()"
-    >
+    <div forAccordion [(value)]="value" [multiple]="multiple()" [collapsible]="collapsible()">
       @for (id of items(); track id) {
         <div forAccordionItem [value]="id" [disabled]="disabledItem() === id">
           <h3>
@@ -450,6 +445,73 @@ describe('ForAccordion', () => {
       fixture.componentInstance.value.set([]);
       flush();
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  describe('mounted-but-closed a11y', () => {
+    it('marks closed panels aria-hidden + inert and clears both when opened', () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+
+      const panelA = contentOf(el, 'a')!;
+      expect(panelA.getAttribute('aria-hidden')).toBe('true');
+      expect(panelA.hasAttribute('inert')).toBe(true);
+
+      fixture.componentInstance.value.set(['a']);
+      flush();
+
+      expect(panelA.hasAttribute('aria-hidden')).toBe(false);
+      expect(panelA.hasAttribute('inert')).toBe(false);
+
+      fixture.componentInstance.value.set([]);
+      flush();
+
+      expect(panelA.getAttribute('aria-hidden')).toBe('true');
+      expect(panelA.hasAttribute('inert')).toBe(true);
+    });
+
+    it('does not apply the native [hidden] attribute', () => {
+      const { el } = renderHost(AccordionHost);
+      for (const id of ['a', 'b', 'c']) {
+        expect(contentOf(el, id)!.hasAttribute('hidden')).toBe(false);
+      }
+    });
+
+    it('with @if-driven mounting, panels unmount on close (no host attrs to assert)', () => {
+      @Component({
+        imports: [...ACCORDION_IMPORTS],
+        template: `
+          <div forAccordion [(value)]="value" multiple>
+            <div forAccordionItem value="a">
+              <h3>
+                <button type="button" forAccordionTrigger data-test-id="a">A</button>
+              </h3>
+              @if (value().includes('a')) {
+                <section forAccordionContent data-test-content="a"></section>
+              }
+            </div>
+          </div>
+        `,
+      })
+      class IfHost {
+        readonly value = signal<readonly string[]>([]);
+      }
+
+      const { el, fixture, flush } = renderHost(IfHost);
+
+      expect(el.querySelector('[data-test-content="a"]')).toBeNull();
+
+      fixture.componentInstance.value.set(['a']);
+      flush();
+
+      const mounted = el.querySelector<HTMLElement>('[data-test-content="a"]')!;
+      expect(mounted).not.toBeNull();
+      expect(mounted.hasAttribute('aria-hidden')).toBe(false);
+      expect(mounted.hasAttribute('inert')).toBe(false);
+
+      fixture.componentInstance.value.set([]);
+      flush();
+
+      expect(el.querySelector('[data-test-content="a"]')).toBeNull();
     });
   });
 });

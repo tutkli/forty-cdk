@@ -95,11 +95,13 @@ describe('ForTabs', () => {
       }
     });
 
-    it('starts with all panels hidden when no value is set', () => {
+    it('starts with all panels marked aria-hidden and inert when no value is set', () => {
       const { el } = renderHost(TabsHost);
       for (const v of ['a', 'b', 'c']) {
         expect(triggerOf(el, v).getAttribute('aria-selected')).toBe('false');
-        expect(contentOf(el, v).hasAttribute('hidden')).toBe(true);
+        expect(contentOf(el, v).getAttribute('aria-hidden')).toBe('true');
+        expect(contentOf(el, v).hasAttribute('inert')).toBe(true);
+        expect(contentOf(el, v).getAttribute('data-state')).toBe('inactive');
       }
     });
   });
@@ -118,7 +120,8 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('-1');
       expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('0');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
-      expect(contentOf(el, 'b').hasAttribute('hidden')).toBe(false);
+      expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
+      expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
     });
 
     it('skips disabled when picking the first-enabled tab entry', () => {
@@ -143,8 +146,10 @@ describe('ForTabs', () => {
       expect(fixture.componentInstance.active()).toBe('b');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
       expect(triggerOf(el, 'b').getAttribute('data-state')).toBe('active');
-      expect(contentOf(el, 'b').hasAttribute('hidden')).toBe(false);
-      expect(contentOf(el, 'a').hasAttribute('hidden')).toBe(true);
+      expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
+      expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
+      expect(contentOf(el, 'a').getAttribute('aria-hidden')).toBe('true');
+      expect(contentOf(el, 'a').hasAttribute('inert')).toBe(true);
     });
 
     it('two-way [(value)] reflects external writes', () => {
@@ -152,7 +157,8 @@ describe('ForTabs', () => {
       fixture.componentInstance.active.set('c');
       flush();
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
-      expect(contentOf(el, 'c').hasAttribute('hidden')).toBe(false);
+      expect(contentOf(el, 'c').hasAttribute('aria-hidden')).toBe(false);
+      expect(contentOf(el, 'c').hasAttribute('inert')).toBe(false);
     });
   });
 
@@ -431,6 +437,72 @@ describe('ForTabs', () => {
       flush();
       expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('true');
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('false');
+    });
+  });
+
+  describe('mounted-but-inactive a11y', () => {
+    it('marks inactive panels aria-hidden + inert and clears both when activated', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+
+      fixture.componentInstance.active.set('b');
+      flush();
+
+      expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
+      expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
+      expect(contentOf(el, 'a').getAttribute('aria-hidden')).toBe('true');
+      expect(contentOf(el, 'a').hasAttribute('inert')).toBe(true);
+      expect(contentOf(el, 'c').getAttribute('aria-hidden')).toBe('true');
+      expect(contentOf(el, 'c').hasAttribute('inert')).toBe(true);
+    });
+
+    it('does not apply the native [hidden] attribute', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.active.set('a');
+      flush();
+
+      for (const v of ['a', 'b', 'c']) {
+        expect(contentOf(el, v).hasAttribute('hidden')).toBe(false);
+      }
+    });
+
+    it('with @if-driven mounting, panels unmount on inactive (no host attrs to assert)', () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs [(value)]="active">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+              <button type="button" forTabsTrigger value="b" data-test-id="b">B</button>
+            </div>
+            @if (active() === 'a') {
+              <section forTabsContent value="a" data-test-content="a"></section>
+            }
+            @if (active() === 'b') {
+              <section forTabsContent value="b" data-test-content="b"></section>
+            }
+          </div>
+        `,
+      })
+      class IfHost {
+        readonly active = signal('a');
+      }
+
+      const { el, fixture, flush } = renderHost(IfHost);
+
+      const aPanel = el.querySelector<HTMLElement>('[data-test-content="a"]')!;
+      expect(aPanel).not.toBeNull();
+      expect(aPanel.hasAttribute('aria-hidden')).toBe(false);
+      expect(aPanel.hasAttribute('inert')).toBe(false);
+      expect(el.querySelector('[data-test-content="b"]')).toBeNull();
+
+      fixture.componentInstance.active.set('b');
+      flush();
+
+      expect(el.querySelector('[data-test-content="a"]')).toBeNull();
+      const bPanel = el.querySelector<HTMLElement>('[data-test-content="b"]')!;
+      expect(bPanel).not.toBeNull();
+      expect(bPanel.hasAttribute('aria-hidden')).toBe(false);
+      expect(bPanel.hasAttribute('inert')).toBe(false);
     });
   });
 });
