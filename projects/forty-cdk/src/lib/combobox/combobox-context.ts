@@ -3,6 +3,7 @@ import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
  * Why the combobox closed. Mirrors the menu / select vocabulary so consumers
@@ -63,6 +64,7 @@ export interface ForComboboxContext {
   readonly required: Signal<boolean>;
   readonly invalid: Signal<boolean>;
   readonly pending: Signal<boolean>;
+  readonly dir: Signal<WritingDirection>;
 
   readonly autocomplete: Signal<ForComboboxAutocomplete>;
   readonly openOnFocus: Signal<boolean>;
@@ -167,16 +169,12 @@ export interface ForComboboxContext {
   markTouched(): void;
 }
 
-export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>(
-  'FOR_COMBOBOX_CONTEXT',
-);
+export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
 export function injectComboboxContext(piece: string): ForComboboxContext {
   const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element.`,
-    );
+    throw new Error(`[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element.`);
   }
   return ctx;
 }

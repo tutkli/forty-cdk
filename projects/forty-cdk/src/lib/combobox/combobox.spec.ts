@@ -1140,6 +1140,163 @@ describe('ForCombobox', () => {
       expect(chipsEl.getAttribute('role')).toBe('group');
       expect(chipsEl.getAttribute('aria-label')).toBe('Selected items');
     });
+
+    describe('RTL', () => {
+      @Component({
+        imports: MULTI_IMPORTS,
+        template: `
+          <div forCombobox multiple dir="rtl" [(query)]="query" [(value)]="value" [(open)]="open">
+            <div forComboboxChips>
+              @for (chip of selectedFromCtx(); track chip.value) {
+                <span forComboboxChip [value]="chip.value" [attr.data-test-chip]="chip.value">
+                  {{ chip.label }}
+                  <button forComboboxChipRemove [attr.data-test-remove]="chip.value">×</button>
+                </span>
+              }
+              <input forComboboxInput />
+            </div>
+            @if (open()) {
+              <div forComboboxContent>
+                @for (it of FRUITS; track it.id) {
+                  <div
+                    [attr.data-test-id]="it.id"
+                    forComboboxOption
+                    [value]="it.id"
+                    [label]="it.label"
+                    [disabled]="!!it.disabled"
+                  >
+                    {{ it.label }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class RtlMultiHost {
+        readonly query = signal('');
+        readonly value = signal<readonly string[]>([]);
+        readonly open = signal(false);
+        readonly FRUITS = FRUITS;
+        readonly selectedFromCtx = computed(() =>
+          this.value().map((v) => ({
+            value: v,
+            label: FRUITS.find((it) => it.id === v)?.label ?? v,
+          })),
+        );
+      }
+
+      it('ArrowRight on a chip moves focus DOM-backward (visually next) in RTL', async () => {
+        const r = renderHost(RtlMultiHost);
+        r.instance.value.set(['apple', 'banana', 'date']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getChip('apple'));
+      });
+
+      it('ArrowLeft on a chip moves focus DOM-forward (visually next) in RTL', async () => {
+        const r = renderHost(RtlMultiHost);
+        r.instance.value.set(['apple', 'banana', 'date']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getChip('date'));
+      });
+
+      it('ArrowLeft on the last chip hops to the input in RTL (input sits at the visual leftmost edge)', async () => {
+        const r = renderHost(RtlMultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const banana = getChip('banana');
+        banana.focus();
+        banana.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(getInput());
+      });
+
+      it('ArrowRight on the first chip in RTL bounces (no focus move)', async () => {
+        const r = renderHost(RtlMultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        await flush(r.fixture);
+
+        const apple = getChip('apple');
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(apple);
+      });
+    });
+  });
+
+  describe('placement default flip under RTL', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox dir="rtl">
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class RtlHost {}
+
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox dir="rtl" placement="top-end">
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class RtlHostWithPlacement {}
+
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox>
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class LtrHost {}
+
+    function getCombobox<T>(r: ReturnType<typeof renderHost<T>>): ForCombobox {
+      const el = r.query<HTMLElement>('[forCombobox]')!;
+      const debug = r.fixture.debugElement.queryAll((node) => node.nativeElement === el)[0]!;
+      return debug.injector.get(ForCombobox);
+    }
+
+    it('defaults placement to bottom-start in LTR', () => {
+      const r = renderHost(LtrHost);
+      expect(getCombobox(r).placement()).toBe('bottom-start');
+    });
+
+    it('defaults placement to bottom-end when dir="rtl" and consumer omits [placement]', () => {
+      const r = renderHost(RtlHost);
+      expect(getCombobox(r).placement()).toBe('bottom-end');
+    });
+
+    it('honors a consumer-provided [placement] in RTL (no auto-flip)', () => {
+      const r = renderHost(RtlHostWithPlacement);
+      expect(getCombobox(r).placement()).toBe('top-end');
+    });
   });
 
   describe('zoneless', () => {
@@ -1326,11 +1483,9 @@ describe('ForComboboxIndicator', () => {
               Apple
             </div>
             <div data-test-id="banana" forComboboxOption value="banana" label="Banana">
-              <span
-                data-test-id="banana-ind"
-                forComboboxIndicator
-                [forceMount]="forceMount()"
-              >✓</span>
+              <span data-test-id="banana-ind" forComboboxIndicator [forceMount]="forceMount()"
+                >✓</span
+              >
               Banana
             </div>
           </div>
