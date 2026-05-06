@@ -6,22 +6,22 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 
 ## Pieces
 
-| Class                   | Selector                  | Role                                                                                                                           |
-| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.            |
-| `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic. |
-| `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                          |
-| `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                     |
+| Class                   | Selector                  | Role                                                                                                                             |
+| ----------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.              |
+| `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.   |
+| `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
+| `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                       |
 | `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
-| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options.                                                       |
-| `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.     |
-| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear.                                                           |
-| `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                           |
-| `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                     |
-| `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                               |
-| `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                       |
-| `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                        |
-| `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                      |
+| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options.                                                         |
+| `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.       |
+| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear.                                                             |
+| `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                             |
+| `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                       |
+| `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                                 |
+| `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
+| `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                          |
+| `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                        |
 
 ## Filtering is the consumer's job
 
@@ -93,14 +93,16 @@ In multi mode, options with `aria-selected="true"` keep appearing in the listbox
 
 ### Chip keyboard
 
-Chips are intentionally **out of the Tab cycle** — Tab from outside lands on the input, not on a chip. The user reaches chips via the input's Backspace heuristic; once focused, ArrowLeft/Right + Backspace/Delete drive everything:
+Chips are intentionally **out of the Tab cycle** — Tab from outside lands on the input, not on a chip. The user reaches chips via the input's Backspace heuristic; once focused, ArrowLeft/Right + Backspace/Delete drive everything (the ArrowLeft / ArrowRight roles swap under `dir="rtl"` so they always follow the visual order):
 
-| Key on chip            | Action                                                                                    |
+| Key on chip            | Action (LTR)                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
 | **ArrowLeft**          | Focus previous chip; bounces if first.                                                    |
 | **ArrowRight**         | Focus next chip; if last, hop to the input.                                               |
 | **Backspace / Delete** | Remove this chip + focus the previous chip (or the input if it was the only / last chip). |
 | **Escape**             | Return focus to the input.                                                                |
+
+In RTL the chip cluster lays out right-to-left, so **ArrowRight** moves to the visually-next chip (DOM-previous) and **ArrowLeft** moves to the visually-previous one (DOM-next, hopping to the input at the leftmost visual edge).
 
 `[forComboboxChipRemove]` is a click-only target (also out of Tab cycle) with auto-generated `aria-label="Remove <chip label>"`.
 
@@ -170,6 +172,15 @@ Each dismiss reason emits a vetoable event from `[forCombobox]` — call `preven
 ```
 
 For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty).
+
+## Writing direction
+
+`[forCombobox]` exposes a `dir: 'ltr' | 'rtl'` input (default `'ltr'`). It drives:
+
+- **Chip keyboard navigation** — ArrowLeft / ArrowRight roles swap so they follow the visual order of the chip cluster, not the DOM order. See _Chip keyboard_ above.
+- **Default popover placement** — `placement` defaults to `'bottom-start'` in LTR and `'bottom-end'` in RTL so the listbox anchors to the visually-leading edge of the input. A consumer-provided `[placement]` (or `[side]` + `[align]`) is honoured as-is — no automatic flip — so advanced layouts can pin a side regardless of writing direction.
+
+The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
 
 ## Accessibility notes
 

@@ -19,7 +19,10 @@ import { injectFormControlReflection } from '../_internal/form-control-reflectio
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  moveIndex,
+  type WritingDirection,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxAutocomplete,
@@ -123,10 +126,27 @@ export class ForCombobox
   readonly autoHighlight = input(true, { transform: booleanAttribute });
 
   /**
-   * Floating-ui placement. Default `'bottom-start'`. Legacy single-string
-   * API — new code should prefer the `side` + `align` pair.
+   * Writing direction. Default `'ltr'`. Drives chip-cluster keyboard
+   * navigation (ArrowLeft / ArrowRight semantics swap in RTL so they
+   * follow the visual order, not DOM order) and the default `placement`
+   * of the listbox (anchors to the right edge of the input in RTL).
    */
-  readonly placement = input<Placement>('bottom-start');
+  readonly dir = input<WritingDirection>('ltr');
+
+  /**
+   * Floating-ui placement. When omitted, defaults to `'bottom-start'` in
+   * LTR and `'bottom-end'` in RTL (per `dir`). When set explicitly, the
+   * consumer's value is used as-is — no automatic flip — so advanced
+   * layouts can pin a side regardless of writing direction. Legacy
+   * single-string API; new code should prefer the `side` + `align` pair.
+   *
+   * The input is aliased to `placement`; consumers bind `[placement]="..."`
+   * and read the effective value via the public `placement` computed below.
+   */
+  readonly _placementInput = input<Placement | undefined>(undefined, { alias: 'placement' });
+  readonly placement = computed<Placement>(
+    () => this._placementInput() ?? (this.dir() === 'rtl' ? 'bottom-end' : 'bottom-start'),
+  );
 
   /**
    * Side the listbox is anchored to. When set, takes precedence over
@@ -202,9 +222,7 @@ export class ForCombobox
    * reliably requires a post-render phase; an effect or linkedSignal would
    * race with text-node commits.
    */
-  readonly #cachedOptions = signal<readonly { id: string; value: string; label: string }[]>(
-    [],
-  );
+  readonly #cachedOptions = signal<readonly { id: string; value: string; label: string }[]>([]);
 
   readonly selected = computed<readonly { value: string; label: string }[]>(() => {
     const values = this.value();
@@ -259,16 +277,9 @@ export class ForCombobox
       // Auto-highlight the first / last enabled option whenever the listbox
       // is open with no activedescendant (e.g. after the consumer's filter
       // removed the previously-active option, or right after openMenu()).
-      if (
-        this.autoHighlight() &&
-        this.open() &&
-        this.#activeId() === null &&
-        items.length > 0
-      ) {
+      if (this.autoHighlight() && this.open() && this.#activeId() === null && items.length > 0) {
         const target =
-          this.#initialFocus() === 'last'
-            ? findLastEnabled(items)
-            : findFirstEnabled(items);
+          this.#initialFocus() === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
         if (target) {
           this.#activeId.set(target.id());
         }
@@ -545,7 +556,9 @@ export class ForCombobox
   }
 }
 
-function findFirstEnabled(items: readonly ForComboboxOptionHandle[]): ForComboboxOptionHandle | null {
+function findFirstEnabled(
+  items: readonly ForComboboxOptionHandle[],
+): ForComboboxOptionHandle | null {
   for (const item of items) {
     if (!item.disabled()) {
       return item;
@@ -554,7 +567,9 @@ function findFirstEnabled(items: readonly ForComboboxOptionHandle[]): ForCombobo
   return null;
 }
 
-function findLastEnabled(items: readonly ForComboboxOptionHandle[]): ForComboboxOptionHandle | null {
+function findLastEnabled(
+  items: readonly ForComboboxOptionHandle[],
+): ForComboboxOptionHandle | null {
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (item && !item.disabled()) {

@@ -1,11 +1,4 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { injectComboboxContext } from './combobox-context';
 
@@ -17,7 +10,8 @@ import { injectComboboxContext } from './combobox-context';
  * an empty input focuses the last chip), then navigates between chips
  * with ArrowLeft / ArrowRight or removes them with Backspace / Delete.
  *
- * Keyboard while the chip has focus:
+ * Keyboard while the chip has focus (LTR; the ArrowLeft/Right roles swap
+ * in RTL so they always follow visual order):
  * - **ArrowLeft** — focus the previous chip; bounces if first.
  * - **ArrowRight** — focus the next chip; if at the last, focus the input.
  * - **Backspace / Delete** — remove this chip + focus the previous chip
@@ -70,8 +64,16 @@ export class ForComboboxChip {
       return;
     }
 
+    // In RTL the chip cluster lays out right-to-left, so ArrowRight must
+    // move to the visually-next chip (= DOM-previous) and ArrowLeft to the
+    // visually-previous one (= DOM-next), with the input sitting at the
+    // visual leftmost edge.
+    const rtl = this.ctx.dir() === 'rtl';
+    const prevKey = rtl ? 'ArrowRight' : 'ArrowLeft';
+    const nextKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+
     switch (event.key) {
-      case 'ArrowLeft': {
+      case prevKey: {
         event.preventDefault();
         const prev = chips[index - 1];
         if (prev) {
@@ -79,13 +81,13 @@ export class ForComboboxChip {
         }
         break;
       }
-      case 'ArrowRight': {
+      case nextKey: {
         event.preventDefault();
         const next = chips[index + 1];
         if (next) {
           next.host.focus();
         } else {
-          // At the last chip — hop to the input.
+          // At the last chip (visual edge in either direction) — hop to the input.
           this.ctx.input()?.focus();
         }
         break;
