@@ -1,4 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
@@ -47,8 +48,7 @@ class ToggleGroupHost {
 const itemOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
-const groupOf = (host: HTMLElement) =>
-  host.querySelector<HTMLElement>('[forToggleGroup]')!;
+const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forToggleGroup]')!;
 
 const keyDown = (target: HTMLElement, key: string) =>
   target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
@@ -385,6 +385,104 @@ describe('ForToggleGroup', () => {
       itemOf(r.el, 'b').click();
       r.flush();
       expect(internalEmits).toBe(1);
+    });
+  });
+
+  describe('Signal Forms integration via [formField]', () => {
+    @Component({
+      imports: [ForToggleGroup, ForToggleGroupItem, FormField],
+      template: `
+        <div forToggleGroup multiple [formField]="prefs.tags">
+          <button forToggleGroupItem value="bold" data-test-id="bold">B</button>
+          <button forToggleGroupItem value="italic" data-test-id="italic">I</button>
+          <button forToggleGroupItem value="underline" data-test-id="underline">U</button>
+        </div>
+      `,
+    })
+    class SignalFormsHost {
+      readonly model = signal({ tags: [] as string[] });
+      readonly prefs = form(this.model, (s) => required(s.tags));
+    }
+
+    it('two-way binds the array with the field value', () => {
+      const { el, fixture, flush } = renderHost(SignalFormsHost);
+      const bold = itemOf(el, 'bold');
+      const italic = itemOf(el, 'italic');
+
+      bold.click();
+      italic.click();
+      flush();
+      expect(fixture.componentInstance.model().tags).toEqual(['bold', 'italic']);
+
+      fixture.componentInstance.model.set({ tags: ['underline'] });
+      flush();
+      expect(itemOf(el, 'underline').getAttribute('aria-pressed')).toBe('true');
+      expect(bold.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('flows schema `required` into aria-required on the group', () => {
+      const { el, flush } = renderHost(SignalFormsHost);
+      flush();
+      expect(groupOf(el).getAttribute('aria-required')).toBe('true');
+    });
+
+    it('mirrors values into hidden inputs when [name] is set', () => {
+      @Component({
+        imports: [ForToggleGroup, ForToggleGroupItem],
+        template: `
+          <form>
+            <div forToggleGroup multiple name="formats" [(value)]="value">
+              <button forToggleGroupItem value="bold" data-test-id="bold">B</button>
+              <button forToggleGroupItem value="italic" data-test-id="italic">I</button>
+            </div>
+          </form>
+        `,
+      })
+      class FormHost {
+        readonly value = signal<readonly string[]>([]);
+      }
+
+      const r = renderHost(FormHost);
+      r.instance.value.set(['bold', 'italic']);
+      r.flush();
+
+      const hiddens = r.el.querySelectorAll<HTMLInputElement>(
+        'input[type="hidden"][name="formats"]',
+      );
+      expect(hiddens.length).toBe(2);
+      expect(Array.from(hiddens, (h) => h.value)).toEqual(['bold', 'italic']);
+    });
+
+    it('reflects touched as data-touched on focusout outside the group', () => {
+      const r = renderHost(ToggleGroupHost);
+      const left = itemOf(r.el, 'left');
+      left.focus();
+      // Move focus elsewhere — relatedTarget is outside the group.
+      left.dispatchEvent(
+        new FocusEvent('focusout', { relatedTarget: document.body, bubbles: true }),
+      );
+      r.flush();
+      expect(groupOf(r.el).hasAttribute('data-touched')).toBe(true);
+    });
+
+    it('blocks click when readonly is set', () => {
+      @Component({
+        imports: [ForToggleGroup, ForToggleGroupItem],
+        template: `
+          <div forToggleGroup readonly [(value)]="value">
+            <button forToggleGroupItem value="a" data-test-id="a">A</button>
+          </div>
+        `,
+      })
+      class ReadonlyHost {
+        readonly value = signal<readonly string[]>([]);
+      }
+
+      const r = renderHost(ReadonlyHost);
+      r.el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!.click();
+      r.flush();
+      expect(r.instance.value()).toEqual([]);
+      expect(r.el.querySelector('[forToggleGroup]')!.getAttribute('aria-readonly')).toBe('true');
     });
   });
 

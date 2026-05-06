@@ -2,12 +2,18 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  ElementRef,
+  inject,
   input,
   model,
 } from '@angular/core';
+import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
+import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
+import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -22,7 +28,9 @@ import {
 /**
  * Headless implementation of a [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/)
  * of toggle buttons. Owns the selected-values set, navigation policy, and
- * the registry of `[forToggleGroupItem]` children.
+ * the registry of `[forToggleGroupItem]` children. Implements
+ * `FormValueControl<readonly string[]>` from `@angular/forms/signals` for
+ * `[formField]` auto-wiring.
  *
  * Two selection modes:
  * - `multiple` (default `false`): clicking an item flips its presence in
@@ -40,6 +48,11 @@ import {
  * a non-empty selection, the first selected item; otherwise the first
  * enabled item in DOM order. Arrow keys move focus (no
  * selection-on-focus — toggles always require an explicit click).
+ *
+ * `ForToggle` (the standalone single-button toggle) is intentionally NOT
+ * a form-control: it is the APG button pattern, not a form value. Use
+ * `ForToggleGroup` (in single or multiple mode) when you need form
+ * integration.
  */
 @Directive({
   selector: '[forToggleGroup]',
@@ -48,17 +61,28 @@ import {
     role: 'group',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-readonly]': 'readonly() ? "true" : null',
+    '[attr.aria-required]': 'required() ? "true" : null',
+    '[attr.aria-invalid]': 'invalid() ? "true" : null',
+    '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_TOGGLE_GROUP_CONTEXT, useExisting: ForToggleGroup }],
 })
-export class ForToggleGroup implements ForToggleGroupContext {
+export class ForToggleGroup
+  extends FormUiControlBase
+  implements FormValueControl<readonly string[]>, ForToggleGroupContext
+{
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   /**
    * Two-way bindable. The currently pressed values, in arbitrary order.
    * In single mode the array holds 0 or 1 entries. The `model()` change
    * emitter (`(valueChange)`) fires only on internal transitions (item
-   * click), never on consumer writes via `[(value)]`.
+   * click), never on consumer writes via `[(value)]`. Required by
+   * `FormValueControl<readonly string[]>`.
    */
   readonly value = model<readonly string[]>([]);
 
@@ -68,9 +92,6 @@ export class ForToggleGroup implements ForToggleGroupContext {
    * each item independently.
    */
   readonly multiple = input(false, { transform: booleanAttribute });
-
-  /** Disables every item regardless of per-item `disabled`. */
-  readonly disabled = input(false, { transform: booleanAttribute });
 
   /** Layout direction for keyboard navigation. */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
@@ -98,12 +119,27 @@ export class ForToggleGroup implements ForToggleGroupContext {
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
+  constructor() {
+    super();
+    injectHiddenInput({
+      name: this.name,
+      values: this.value,
+      disabled: this.disabled,
+    });
+    injectFormControlReflection({
+      touched: this.touched,
+      dirty: this.dirty,
+      pending: this.pending,
+      invalid: this.invalid,
+    });
+  }
+
   isSelected(v: string): boolean {
     return this.value().includes(v);
   }
 
   toggle(v: string): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -153,5 +189,13 @@ export class ForToggleGroup implements ForToggleGroupContext {
 
   unregisterItem(handle: ForToggleGroupItemHandle): void {
     this.#items.unregister(handle);
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget as HTMLElement | null;
+    if (next && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    this.touched.set(true);
   }
 }
