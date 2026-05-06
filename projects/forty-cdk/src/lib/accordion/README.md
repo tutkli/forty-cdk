@@ -5,31 +5,31 @@ A vertical stack of collapsible sections, each with a header button and a panel.
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForAccordion` | `[forAccordion]` | Root. Owns the open `value`, the single/multiple mode, and the keyboard navigation between triggers. |
-| `ForAccordionItem` | `[forAccordionItem]` | One section. Requires a unique `value` string. |
-| `ForAccordionTrigger` | `[forAccordionTrigger]` | Header button. Wires ARIA + click + keyboard. |
-| `ForAccordionContent` | `[forAccordionContent]` | Panel. Adds `role="region"` + `aria-labelledby` automatically. |
+| Class                 | Selector                | Role                                                                                                 |
+| --------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ForAccordion`        | `[forAccordion]`        | Root. Owns the open `value`, the single/multiple mode, and the keyboard navigation between triggers. |
+| `ForAccordionItem`    | `[forAccordionItem]`    | One section. Requires a unique `value` string.                                                       |
+| `ForAccordionTrigger` | `[forAccordionTrigger]` | Header button. Wires ARIA + click + keyboard.                                                        |
+| `ForAccordionContent` | `[forAccordionContent]` | Panel. Adds `role="region"` + `aria-labelledby` automatically.                                       |
 
 ## Inputs / outputs
 
 ### `ForAccordion`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<readonly string[]>` | Currently open item values. In single mode the array has 0 or 1 element. |
-| `multiple` | `input<boolean>` | When true, multiple items can be open simultaneously. Defaults to `false`. |
-| `collapsible` | `input<boolean>` | Single mode only: when true, the open item can be collapsed by clicking it. Defaults to `false` — once any item is open, exactly one stays open. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. Defaults to `'vertical'`; in horizontal mode ArrowLeft/Right replace ArrowUp/Down. |
-| `dir` | `input<'ltr' \| 'rtl'>` | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows. |
+| API           | Type                                | Description                                                                                                                                      |
+| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.                                                                         |
+| `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously. Defaults to `false`.                                                                       |
+| `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Defaults to `false` — once any item is open, exactly one stays open. |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. Defaults to `'vertical'`; in horizontal mode ArrowLeft/Right replace ArrowUp/Down.                         |
+| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.                                                    |
 
 ### `ForAccordionItem`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `input.required<string>` | Unique identifier within the accordion. Required. |
-| `disabled` | `input<boolean>` | When true, the trigger ignores clicks and exposes the native `disabled` attribute. |
+| API        | Type                     | Description                                                                        |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | Unique identifier within the accordion. Required.                                  |
+| `disabled` | `input<boolean>`         | When true, the trigger ignores clicks and exposes the native `disabled` attribute. |
 
 The host gets `data-state="open" \| "closed"` and `data-disabled` for CSS hooks.
 
@@ -41,7 +41,12 @@ Wrap it in a heading element (`<h2>`–`<h6>`) — APG requires that for landmar
 
 ### `ForAccordionContent`
 
-Reflects on its host: `id`, `role="region"`, `aria-labelledby` (the trigger's id), `data-state`, `hidden` (when closed).
+Reflects on its host: `id`, `role="region"`, `aria-labelledby` (the trigger's id), `data-state`, `aria-hidden` (when closed), `inert` (when closed).
+
+The directive does **not** apply `[hidden]`. Two patterns work:
+
+- **Mount/unmount with `@if (item.expanded())`** — the panel is absent from the DOM while closed, which is the cleanest path for `animate.enter` / `animate.leave`.
+- **Leave it mounted** — preserve internal state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
 
 ## Example
 

@@ -261,4 +261,65 @@ describe('ForDisclosure', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
     });
   });
+
+  describe('mounted-but-closed a11y', () => {
+    it('marks the closed panel aria-hidden + inert and clears both when opened', () => {
+      const { fixture, query, flush } = renderHost(DisclosureHost);
+      const content = query<HTMLElement>('section')!;
+
+      expect(content.getAttribute('aria-hidden')).toBe('true');
+      expect(content.hasAttribute('inert')).toBe(true);
+
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+
+      expect(content.hasAttribute('aria-hidden')).toBe(false);
+      expect(content.hasAttribute('inert')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(false);
+      flush();
+
+      expect(content.getAttribute('aria-hidden')).toBe('true');
+      expect(content.hasAttribute('inert')).toBe(true);
+    });
+
+    it('does not apply the native [hidden] attribute', () => {
+      const { query } = renderHost(DisclosureHost);
+      const content = query<HTMLElement>('section')!;
+      expect(content.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('with @if-driven mounting, the panel unmounts on close (no host attrs to assert)', () => {
+      @Component({
+        imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+        template: `
+          <div forDisclosure [(open)]="isOpen">
+            <button type="button" forDisclosureTrigger>Toggle</button>
+            @if (isOpen()) {
+              <section forDisclosureContent>Panel</section>
+            }
+          </div>
+        `,
+      })
+      class IfHost {
+        readonly isOpen = signal(false);
+      }
+
+      const { fixture, query, flush } = renderHost(IfHost);
+      expect(query<HTMLElement>('section')).toBeNull();
+
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+
+      const content = query<HTMLElement>('section')!;
+      expect(content).not.toBeNull();
+      expect(content.hasAttribute('aria-hidden')).toBe(false);
+      expect(content.hasAttribute('inert')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(false);
+      flush();
+
+      expect(query<HTMLElement>('section')).toBeNull();
+    });
+  });
 });
