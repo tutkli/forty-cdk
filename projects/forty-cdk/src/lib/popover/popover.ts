@@ -187,6 +187,16 @@ export class ForPopover implements ForPopoverContext {
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
 
+  readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly anchor = this.#anchorEl.asReadonly();
+
+  /**
+   * The element floating-ui anchors against. Prefers `[forPopoverAnchor]`
+   * when registered, otherwise falls back to the trigger so existing
+   * popovers without an anchor keep their behavior.
+   */
+  readonly reference = computed<HTMLElement | null>(() => this.#anchorEl() ?? this.#triggerEl());
+
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
@@ -208,6 +218,15 @@ export class ForPopover implements ForPopoverContext {
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
+    }
+  }
+
+  registerAnchor(el: HTMLElement): void {
+    this.#anchorEl.set(el);
+  }
+  unregisterAnchor(el: HTMLElement): void {
+    if (this.#anchorEl() === el) {
+      this.#anchorEl.set(null);
     }
   }
 

@@ -39,10 +39,21 @@ export interface ForPopoverContext {
   readonly describedBy: Signal<string | null>;
 
   readonly trigger: Signal<HTMLElement | null>;
+  readonly anchor: Signal<HTMLElement | null>;
+  /**
+   * Element used as the floating-ui reference. When `[forPopoverAnchor]`
+   * is registered, this is the anchor; otherwise it falls back to the
+   * trigger. Decoupled from `trigger` so the trigger can keep driving
+   * `aria-controls`, click toggle, and focus return regardless of where
+   * the popover paints.
+   */
+  readonly reference: Signal<HTMLElement | null>;
   readonly arrow: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
   unregisterArrow(el: HTMLElement): void;
   registerLabel(id: string): void;
@@ -60,16 +71,12 @@ export interface ForPopoverContext {
   emitInteractOutside(event: PointerEvent | FocusEvent): void;
 }
 
-export const FOR_POPOVER_CONTEXT = new InjectionToken<ForPopoverContext>(
-  'FOR_POPOVER_CONTEXT',
-);
+export const FOR_POPOVER_CONTEXT = new InjectionToken<ForPopoverContext>('FOR_POPOVER_CONTEXT');
 
 export function injectPopoverContext(piece: string): ForPopoverContext {
   const ctx = inject(FOR_POPOVER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/popover] ${piece} must be used inside a [forPopover] element.`,
-    );
+    throw new Error(`[forty-cdk/popover] ${piece} must be used inside a [forPopover] element.`);
   }
   return ctx;
 }

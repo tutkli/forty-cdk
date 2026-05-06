@@ -1,5 +1,6 @@
 export { ForPopover } from './popover';
 export { ForPopoverTrigger } from './popover-trigger';
+export { ForPopoverAnchor } from './popover-anchor';
 export { ForPopoverContent } from './popover-content';
 export { ForPopoverTitle } from './popover-title';
 export { ForPopoverDescription } from './popover-description';

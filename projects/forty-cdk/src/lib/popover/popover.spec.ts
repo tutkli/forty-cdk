@@ -1,8 +1,10 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../test-utils/render';
 import { ForPopover } from './popover';
+import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
 import { ForPopoverClose } from './popover-close';
 import { ForPopoverContent } from './popover-content';
@@ -459,12 +461,7 @@ describe('ForPopover', () => {
       @Component({
         imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
         template: `
-          <div
-            forPopover
-            [(open)]="open"
-            (escapeKeyDown)="$event.preventDefault()"
-            ariaLabel="t"
-          >
+          <div forPopover [(open)]="open" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t">
             <button forPopoverTrigger>Open</button>
             @if (open()) {
               <div forPopoverContent></div>
@@ -657,6 +654,154 @@ describe('ForPopover', () => {
       })
       class Orphan {}
       expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverArrow/);
+    });
+
+    it('throws from ForPopoverAnchor', () => {
+      @Component({
+        imports: [ForPopoverAnchor],
+        template: `<span forPopoverAnchor></span>`,
+      })
+      class Orphan {}
+      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverAnchor/);
+    });
+  });
+
+  describe('anchor (separate positioning element)', () => {
+    @Component({
+      imports: [ForPopover, ForPopoverTrigger, ForPopoverAnchor, ForPopoverContent],
+      template: `
+        <div forPopover [(open)]="open" ariaLabel="t">
+          <button forPopoverTrigger>Open</button>
+          <span id="anchor" forPopoverAnchor>Anchored phrase</span>
+          @if (open()) {
+            <div forPopoverContent></div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly open = signal(false);
+    }
+
+    it('uses [forPopoverAnchor] as the positioning reference when registered', async () => {
+      const r = renderHost(AnchorHost);
+      const directive = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+
+      const anchor = r.query<HTMLElement>('#anchor')!;
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+
+      expect(directive.anchor()).toBe(anchor);
+      expect(directive.trigger()).toBe(trigger);
+      expect(directive.reference()).toBe(anchor);
+    });
+
+    it('falls back to the trigger when no anchor is registered', () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <div forPopover [(open)]="open" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class NoAnchorHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(NoAnchorHost);
+      const directive = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      expect(directive.anchor()).toBeNull();
+      expect(directive.reference()).toBe(trigger);
+    });
+
+    it('lets the trigger keep driving aria-controls and the toggle', async () => {
+      const r = renderHost(AnchorHost);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+
+      // aria-controls / aria-expanded still come from the trigger, not the anchor.
+      expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('keeps the trigger exempt from outside dismissal even when an anchor exists', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('treats the anchor as outside for dismissal (only the trigger is exempt)', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const anchor = r.query<HTMLElement>('#anchor')!;
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: anchor, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('switches reference back to the trigger after the anchor is unregistered', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverAnchor, ForPopoverContent],
+        template: `
+          <div forPopover [(open)]="open" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (showAnchor()) {
+              <span id="anchor" forPopoverAnchor>X</span>
+            }
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class ToggleAnchorHost {
+        readonly open = signal(false);
+        readonly showAnchor = signal(true);
+      }
+
+      const r = renderHost(ToggleAnchorHost);
+      const directive = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+
+      expect(directive.anchor()).not.toBeNull();
+      expect(directive.reference()).not.toBe(trigger);
+
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+
+      expect(directive.anchor()).toBeNull();
+      expect(directive.reference()).toBe(trigger);
     });
   });
 });

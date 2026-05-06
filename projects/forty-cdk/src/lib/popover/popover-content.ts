@@ -1,10 +1,4 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
@@ -47,7 +41,7 @@ export class ForPopoverContent {
 
   constructor() {
     injectFloating({
-      reference: this.ctx.trigger,
+      reference: this.ctx.reference,
       open: this.ctx.open,
       placement: this.ctx.placement,
       side: this.ctx.side,
