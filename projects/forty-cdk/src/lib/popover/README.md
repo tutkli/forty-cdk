@@ -88,7 +88,30 @@ All four outputs receive the native event and are vetoable: call `preventDefault
 | `pointerDownOutside` | `PointerEvent`               | Pointer-down outside the content (and outside the trigger).                                         |
 | `focusOutside`       | `FocusEvent`                 | Focus moves outside the content (and outside the trigger).                                          |
 | `interactOutside`    | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above.                                                       |
+| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves into the popover on mount. `preventDefault()` skips the move.               |
+| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.     |
 | `openChange`         | `boolean`                    | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
+
+### Open without stealing focus
+
+```html
+<div forPopover [(open)]="open">
+  <input forPopoverAnchor #q type="search" (input)="open.set(true)" placeholder="Search…" />
+  <button forPopoverTrigger hidden></button>
+
+  @if (open()) {
+  <div
+    forPopoverContent
+    (autoFocusOnOpen)="$event.preventDefault()"
+    (autoFocusOnClose)="$event.preventDefault()"
+  >
+    …
+  </div>
+  }
+</div>
+```
+
+The popover opens / closes alongside the input but never steals focus from it — handy for live-search panels where every keystroke matters.
 
 ## Keyboard
 

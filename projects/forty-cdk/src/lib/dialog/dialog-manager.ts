@@ -67,6 +67,21 @@ export interface ForDialogOpenConfig<D = unknown> {
 
   /** Extra providers for the opened component's injector (alongside `FOR_DIALOG_DATA` + `ForDialogRef`). */
   providers?: Provider[];
+
+  /**
+   * Fires just before the dialog moves focus into itself on mount.
+   * Call `event.preventDefault()` to skip the imperative focus move
+   * — useful when opening a dialog from an input you want to keep
+   * focused. The focus trap (modal mode) still cycles Tab once focus
+   * enters the dialog.
+   */
+  autoFocusOnOpen?: (event: CustomEvent) => void;
+
+  /**
+   * Fires just before focus returns to the previously focused element
+   * on unmount. Call `event.preventDefault()` to skip the return-focus.
+   */
+  autoFocusOnClose?: (event: CustomEvent) => void;
 }
 
 /**
@@ -164,6 +179,17 @@ export class ForDialogManager {
       onInteractOutside: () => dismissFromLayer(),
     });
 
+    // Let the consumer veto the imperative focus move via the
+    // `autoFocusOnOpen` config callback. The trap is still set up
+    // (Tab cycling, return-focus capture) — only the initial `.focus()`
+    // call is skipped.
+    const autoFocusOpenEvent = new CustomEvent('autoFocusOnOpen', {
+      cancelable: true,
+      bubbles: false,
+    });
+    config.autoFocusOnOpen?.(autoFocusOpenEvent);
+    const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
+
     const focusTrap = isModal ? new FocusTrap(hostEl) : null;
     let inertHandle: InertSiblingsHandle | null = null;
     if (focusTrap) {
@@ -171,8 +197,11 @@ export class ForDialogManager {
       // the synthesized focusin lands on an already-isolated tree.
       inertHandle = activateInertSiblings(hostEl);
       lockBodyScroll();
-      focusTrap.activate({ initialFocus: config.initialFocus ?? 'first' });
-    } else {
+      focusTrap.activate({
+        initialFocus: config.initialFocus ?? 'first',
+        preventInitialFocus: skipInitialFocus,
+      });
+    } else if (!skipInitialFocus) {
       const target =
         config.initialFocus === 'container' ? hostEl : (findFirstFocusable(hostEl) ?? hostEl);
       target.focus();
@@ -190,15 +219,23 @@ export class ForDialogManager {
       // block `.focus()` on the return target.
       inertHandle?.deactivate();
       inertHandle = null;
+      // Let the consumer veto the return-focus move (e.g. to send focus
+      // to a confirmation toast instead of the trigger).
+      const autoFocusCloseEvent = new CustomEvent('autoFocusOnClose', {
+        cancelable: true,
+        bubbles: false,
+      });
+      config.autoFocusOnClose?.(autoFocusCloseEvent);
+      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
       // Suppress the dismissable-layer dispatcher across the focus-return
       // step so that the synthetic `focusin` event we generate by moving
       // focus back to the trigger does not cascade-dismiss whatever
       // dialog is now topmost (a stacked dialog opened above this one).
       suppressDismissableLayerDispatch(() => {
         if (focusTrap) {
-          focusTrap.deactivate({ returnFocus: shouldReturnFocus });
+          focusTrap.deactivate({ returnFocus: shouldReturnFocus && !skipReturnFocus });
           unlockBodyScroll();
-        } else if (shouldReturnFocus && returnTo) {
+        } else if (shouldReturnFocus && !skipReturnFocus && returnTo) {
           returnTo.focus();
         }
       });

@@ -19,9 +19,7 @@ export const FOR_MENU_RADIO_GROUP_CONTEXT = new InjectionToken<ForMenuRadioGroup
 export function injectMenuRadioGroupContext(piece: string): ForMenuRadioGroupContext {
   const ctx = inject(FOR_MENU_RADIO_GROUP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forMenuRadioGroup] element.`,
-    );
+    throw new Error(`[forty-cdk/menu] ${piece} must be used inside a [forMenuRadioGroup] element.`);
   }
   return ctx;
 }

@@ -13,6 +13,10 @@ import {
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import {
+  emitAutoFocusOnClose,
+  emitAutoFocusOnOpen,
+} from '../_internal/auto-focus-event/auto-focus-event';
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
@@ -169,6 +173,19 @@ export class ForSelect
   readonly pointerDownOutside = output<PointerEvent>();
   readonly focusOutside = output<FocusEvent>();
   readonly interactOutside = output<PointerEvent | FocusEvent>();
+
+  /**
+   * Fires just before the listbox sends focus to the selected option
+   * (or first / last enabled) on mount. Call `event.preventDefault()`
+   * to skip the imperative focus move.
+   */
+  readonly autoFocusOnOpen = output<CustomEvent>();
+
+  /**
+   * Fires just before focus returns to the trigger on unmount.
+   * `preventDefault()` suppresses the return-focus.
+   */
+  readonly autoFocusOnClose = output<CustomEvent>();
 
   readonly triggerId = signal(this.#idGen.next('for-select-trigger'));
   readonly contentId = signal(this.#idGen.next('for-select-content'));
@@ -488,6 +505,14 @@ export class ForSelect
       this.touched.set(true);
       this.closeMenu('pointerDownOutside');
     }
+  }
+
+  emitAutoFocusOnOpen(): boolean {
+    return emitAutoFocusOnOpen(this.autoFocusOnOpen);
+  }
+
+  emitAutoFocusOnClose(): boolean {
+    return emitAutoFocusOnClose(this.autoFocusOnClose);
   }
 
   markTouched(): void {

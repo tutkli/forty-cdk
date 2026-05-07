@@ -49,8 +49,12 @@ import {
 export class DemoOptions {
   readonly open = signal(false);
   readonly alignment = signal<string>('left');
-  cut() { /* ... */ }
-  copy() { /* ... */ }
+  cut() {
+    /* ... */
+  }
+  copy() {
+    /* ... */
+  }
 }
 ```
 
@@ -58,45 +62,47 @@ export class DemoOptions {
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
-| `ForDropdownMenu` | `[forDropdownMenu]` | Root. Owns open state, ids, item collection, navigate / typeahead / open semantics. |
-| `ForDropdownMenuTrigger` | `[forDropdownMenuTrigger]` | The button. Wires `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`. |
+| Class                    | Selector                   | Role                                                                                |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------- |
+| `ForDropdownMenu`        | `[forDropdownMenu]`        | Root. Owns open state, ids, item collection, navigate / typeahead / open semantics. |
+| `ForDropdownMenuTrigger` | `[forDropdownMenuTrigger]` | The button. Wires `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`.         |
 
 The actual menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — same primitives are used by `[forContextMenu]`.
 
 ## Inputs (`ForDropdownMenu`)
 
-| API | Default | Description |
-| --- | --- | --- |
-| `open` | `false` | Two-way bindable. Whether the menu is shown. |
-| `placement` | `'bottom-start'` | Floating-ui placement of `[forMenuContent]` against the trigger. |
-| `offset` | `4` | Gap (px) between the trigger and the content. |
-| `loop` | `true` | Whether arrow navigation wraps at the ends. |
-| `dir` | `'ltr'` | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled` | `false` | When `true`, trigger interactions are ignored. |
-| `dismissible` | `true` | When `false`, Escape and outside interactions don't close. |
-| `returnFocus` | `true` | When `true`, focus returns to the trigger on close. |
-| `ariaLabel` | `null` | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name. |
+| API           | Default          | Description                                                                                                                                                                    |
+| ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`        | `false`          | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
+| `placement`   | `'bottom-start'` | Floating-ui placement of `[forMenuContent]` against the trigger.                                                                                                               |
+| `offset`      | `4`              | Gap (px) between the trigger and the content.                                                                                                                                  |
+| `loop`        | `true`           | Whether arrow navigation wraps at the ends.                                                                                                                                    |
+| `dir`         | `'ltr'`          | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
+| `disabled`    | `false`          | When `true`, trigger interactions are ignored.                                                                                                                                 |
+| `dismissible` | `true`           | When `false`, Escape and outside interactions don't close.                                                                                                                     |
+| `returnFocus` | `true`           | When `true`, focus returns to the trigger on close.                                                                                                                            |
+| `ariaLabel`   | `null`           | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
 
 ## Outputs (`ForDropdownMenu`)
 
-All four are vetoable: call `preventDefault()` on the event to suppress the automatic close.
+The four dismiss outputs are vetoable — call `preventDefault()` to suppress the automatic close. The two auto-focus outputs are also vetoable — call `preventDefault()` to skip the imperative focus move.
 
-| Output | Payload | Fires on |
-| --- | --- | --- |
-| `escapeKeyDown` | `KeyboardEvent` | Escape pressed while the menu is the topmost dismissable layer. |
-| `pointerDownOutside` | `PointerEvent` | Pointer-down on a target outside content + trigger. |
-| `focusOutside` | `FocusEvent` | Focus moves outside content + trigger. |
-| `interactOutside` | `PointerEvent \| FocusEvent` | Composite — fires alongside the two above. |
+| Output               | Payload                      | Fires on                                                           |
+| -------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| `escapeKeyDown`      | `KeyboardEvent`              | Escape pressed while the menu is the topmost dismissable layer.    |
+| `pointerDownOutside` | `PointerEvent`               | Pointer-down on a target outside content + trigger.                |
+| `focusOutside`       | `FocusEvent`                 | Focus moves outside content + trigger.                             |
+| `interactOutside`    | `PointerEvent \| FocusEvent` | Composite — fires alongside the two above.                         |
+| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves to the first / last enabled item on mount. |
+| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount.               |
 
 ## Trigger keyboard
 
-| Key | Behavior |
-| --- | --- |
+| Key                         | Behavior                                                          |
+| --------------------------- | ----------------------------------------------------------------- |
 | `Click` / `Enter` / `Space` | Toggles the menu. On open, focus moves to the first enabled item. |
-| `ArrowDown` | Opens the menu and focuses the first enabled item. |
-| `ArrowUp` | Opens the menu and focuses the last enabled item. |
+| `ArrowDown`                 | Opens the menu and focuses the first enabled item.                |
+| `ArrowUp`                   | Opens the menu and focuses the last enabled item.                 |
 
 Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-menu keyboard.
 

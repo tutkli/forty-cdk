@@ -160,6 +160,15 @@ export interface ForSelectContext {
   emitFocusOutside(event: FocusEvent): void;
   emitInteractOutside(event: PointerEvent | FocusEvent): void;
 
+  /**
+   * Hooks into the auto-focus pipeline. Content fires these just before
+   * its imperative `.focus()` (open) or the trigger return-focus (close);
+   * `event.preventDefault()` skips the move. Returns `true` when the
+   * consumer vetoed.
+   */
+  emitAutoFocusOnOpen(): boolean;
+  emitAutoFocusOnClose(): boolean;
+
   /** Flip the `touched` model. Called by trigger on blur-to-outside and on dismiss events. */
   markTouched(): void;
 }

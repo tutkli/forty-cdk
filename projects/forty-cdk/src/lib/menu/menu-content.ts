@@ -1,10 +1,4 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
@@ -79,12 +73,16 @@ export class ForMenuContent {
         exemptElements: () => this.ctx.dismissableExemptions(),
       });
 
-      const focused =
-        this.ctx.initialFocus() === 'last'
-          ? this.ctx.focusLastEnabledItem()
-          : this.ctx.focusFirstEnabledItem();
-      if (!focused) {
-        this.#host.nativeElement.focus();
+      // Consumers can veto the imperative focus move via
+      // `(autoFocusOnOpen)` on the menu root.
+      if (!this.ctx.emitAutoFocusOnOpen()) {
+        const focused =
+          this.ctx.initialFocus() === 'last'
+            ? this.ctx.focusLastEnabledItem()
+            : this.ctx.focusFirstEnabledItem();
+        if (!focused) {
+          this.#host.nativeElement.focus();
+        }
       }
     });
 
@@ -92,7 +90,9 @@ export class ForMenuContent {
       this.#dismissable.deactivate();
       // Return focus *before* the portal helper removes the DOM node so
       // the trigger receives the focus event in a stable layout.
-      if (this.ctx.returnFocus()) {
+      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
+      if (this.ctx.returnFocus() && !skipReturnFocus) {
         this.ctx.trigger()?.focus();
       }
     });

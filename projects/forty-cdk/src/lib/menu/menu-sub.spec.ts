@@ -34,9 +34,7 @@ const IMPORTS = [
                 <button id="advanced" forMenuItem (select)="lastSelected.set('advanced')">
                   Advanced
                 </button>
-                <button id="reset" forMenuItem (select)="lastSelected.set('reset')">
-                  Reset
-                </button>
+                <button id="reset" forMenuItem (select)="lastSelected.set('reset')">Reset</button>
               </div>
             }
           </div>
@@ -316,9 +314,7 @@ describe('ForMenuSub', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });
-      expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forMenuSub\] must be inside/,
-      );
+      expect(() => TestBed.createComponent(Orphan)).toThrow(/\[forMenuSub\] must be inside/);
     });
 
     it('throws when [forMenuSubTrigger] is used outside [forMenuSub]', () => {
@@ -505,13 +501,7 @@ describe('ForMenuSub', () => {
 
     it('ForContextMenu also exposes a dir input that propagates to its submenus', async () => {
       @Component({
-        imports: [
-          ForContextMenu,
-          ForMenuContent,
-          ForMenuItem,
-          ForMenuSub,
-          ForMenuSubTrigger,
-        ],
+        imports: [ForContextMenu, ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger],
         template: `
           <div forContextMenu [(open)]="open" dir="rtl">
             @if (open()) {
@@ -559,9 +549,7 @@ describe('ForMenuSub', () => {
       // from `dir` regardless.
       const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
       // Walk to the element's directive instance via Angular debug.
-      const subDebug = r.fixture.debugElement.queryAll(
-        (node) => node.nativeElement === subEl,
-      )[0]!;
+      const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
       const sub = subDebug.injector.get(ForMenuSub);
       expect(sub.placement()).toBe('left-start');
       void subDir;
@@ -589,9 +577,7 @@ describe('ForMenuSub', () => {
 
       const r = renderHost(Host);
       const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
-      const subDebug = r.fixture.debugElement.queryAll(
-        (node) => node.nativeElement === subEl,
-      )[0]!;
+      const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
       const sub = subDebug.injector.get(ForMenuSub);
       expect(sub.placement()).toBe('top-end');
     });

@@ -101,17 +101,20 @@ export class ForSelectContent {
         },
       });
 
-      const target = this.ctx.initialFocus();
-      let focused = false;
-      if (target === 'selected') {
-        focused = this.ctx.focusSelectedOption() || this.ctx.focusFirstEnabledOption();
-      } else if (target === 'last') {
-        focused = this.ctx.focusLastEnabledOption();
-      } else {
-        focused = this.ctx.focusFirstEnabledOption();
-      }
-      if (!focused) {
-        this.#host.nativeElement.focus();
+      // Consumers can veto the imperative focus move via `(autoFocusOnOpen)`.
+      if (!this.ctx.emitAutoFocusOnOpen()) {
+        const target = this.ctx.initialFocus();
+        let focused = false;
+        if (target === 'selected') {
+          focused = this.ctx.focusSelectedOption() || this.ctx.focusFirstEnabledOption();
+        } else if (target === 'last') {
+          focused = this.ctx.focusLastEnabledOption();
+        } else {
+          focused = this.ctx.focusFirstEnabledOption();
+        }
+        if (!focused) {
+          this.#host.nativeElement.focus();
+        }
       }
     });
 
@@ -121,7 +124,9 @@ export class ForSelectContent {
       // trigger receives the focus event in a stable layout. Skip on `'tab'`
       // closes — Tab already moved focus to the trigger and let the browser
       // advance from there; re-focusing would steal it back.
-      if (this.ctx.returnFocus() && this.ctx.lastCloseReason() !== 'tab') {
+      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
+      if (this.ctx.returnFocus() && !skipReturnFocus && this.ctx.lastCloseReason() !== 'tab') {
         this.ctx.trigger()?.focus();
       }
     });

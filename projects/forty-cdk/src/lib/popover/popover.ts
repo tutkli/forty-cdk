@@ -11,6 +11,10 @@ import {
 } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
+import {
+  emitAutoFocusOnClose,
+  emitAutoFocusOnOpen,
+} from '../_internal/auto-focus-event/auto-focus-event';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_POPOVER_CONTEXT, ForPopoverContext } from './popover-context';
@@ -181,6 +185,20 @@ export class ForPopover implements ForPopoverContext {
    */
   readonly interactOutside = output<PointerEvent | FocusEvent>();
 
+  /**
+   * Fires just before the popover sends focus into itself on mount.
+   * Call `event.preventDefault()` to skip the imperative focus move
+   * — useful when opening a popover from an input you want to keep
+   * focused.
+   */
+  readonly autoFocusOnOpen = output<CustomEvent>();
+
+  /**
+   * Fires just before focus returns to the trigger on unmount.
+   * `preventDefault()` suppresses the return-focus.
+   */
+  readonly autoFocusOnClose = output<CustomEvent>();
+
   readonly triggerId = signal(this.#idGen.next('for-popover-trigger'));
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
 
@@ -280,5 +298,13 @@ export class ForPopover implements ForPopoverContext {
     if (!event.defaultPrevented && this.dismissible()) {
       this.open.set(false);
     }
+  }
+
+  emitAutoFocusOnOpen(): boolean {
+    return emitAutoFocusOnOpen(this.autoFocusOnOpen);
+  }
+
+  emitAutoFocusOnClose(): boolean {
+    return emitAutoFocusOnClose(this.autoFocusOnClose);
   }
 }

@@ -128,6 +128,23 @@ export class DemoHost {
 | `pointerDownOutside` | `PointerEvent`               | Pointer-down outside the dialog.                                                                                                              |
 | `focusOutside`       | `FocusEvent`                 | Focus moves outside the dialog.                                                                                                               |
 | `interactOutside`    | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above.                                                                                                 |
+| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves into the dialog on mount. `preventDefault()` skips the move.                                                          |
+| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount (modal mode). `preventDefault()` skips the return-focus.                                  |
+
+### Open without stealing focus
+
+```html
+<input #q type="search" placeholder="Search…" />
+
+@if (open()) {
+<div forDialog (close)="open.set(false)" (autoFocusOnOpen)="$event.preventDefault(); q.focus()">
+  <h2 forDialogTitle>Results</h2>
+  …
+</div>
+}
+```
+
+The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
 
 ## Programmatic API
 
@@ -140,17 +157,19 @@ export class DemoHost {
 
 ### `ForDialogOpenConfig`
 
-| Field          | Default   | Description                                                      |
-| -------------- | --------- | ---------------------------------------------------------------- |
-| `data`         | —         | Payload available as `injectDialogData<T>()`.                    |
-| `dismissible`  | `true`    | Escape closes when `true`.                                       |
-| `modal`        | `true`    | Sets `aria-modal`, locks body scroll, traps focus.               |
-| `alert`        | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                  |
-| `returnFocus`  | `true`    | Focus returns to the previously focused element on close.        |
-| `initialFocus` | `'first'` | `'first'` finds first focusable; `'container'` focuses the host. |
-| `ariaLabel`    | —         | Manual accessible name when no title element is rendered.        |
-| `hostTag`      | `'div'`   | Tag name for the host element (e.g. `'section'`).                |
-| `providers`    | `[]`      | Extra providers for the opened component's injector.             |
+| Field              | Default   | Description                                                                                                      |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `data`             | —         | Payload available as `injectDialogData<T>()`.                                                                    |
+| `dismissible`      | `true`    | Escape closes when `true`.                                                                                       |
+| `modal`            | `true`    | Sets `aria-modal`, locks body scroll, traps focus.                                                               |
+| `alert`            | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                                                                  |
+| `returnFocus`      | `true`    | Focus returns to the previously focused element on close.                                                        |
+| `initialFocus`     | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                                 |
+| `ariaLabel`        | —         | Manual accessible name when no title element is rendered.                                                        |
+| `hostTag`          | `'div'`   | Tag name for the host element (e.g. `'section'`).                                                                |
+| `providers`        | `[]`      | Extra providers for the opened component's injector.                                                             |
+| `autoFocusOnOpen`  | —         | Callback. Receives a cancelable `CustomEvent`; `event.preventDefault()` skips the imperative initial focus move. |
+| `autoFocusOnClose` | —         | Callback. Receives a cancelable `CustomEvent`; `event.preventDefault()` skips the return-focus on close.         |
 
 ## Keyboard
 

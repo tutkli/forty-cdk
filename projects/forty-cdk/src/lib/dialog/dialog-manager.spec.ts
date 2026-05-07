@@ -226,6 +226,39 @@ describe('ForDialogManager (programmatic)', () => {
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(document.activeElement).toBe(host);
     });
+
+    it('skips initial focus when autoFocusOnOpen calls preventDefault', () => {
+      const { dialogs, trigger } = setup();
+      trigger.focus();
+      dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        autoFocusOnOpen: (event) => event.preventDefault(),
+      });
+
+      // Trap was set up but the imperative `.focus()` was skipped.
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('skips return-focus when autoFocusOnClose calls preventDefault', async () => {
+      const { dialogs, trigger } = setup();
+      trigger.focus();
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        autoFocusOnClose: (event) => event.preventDefault(),
+      });
+
+      // Park focus elsewhere so we can detect whether the trap restored it.
+      const sentinel = document.createElement('button');
+      sentinel.id = 'sentinel';
+      document.body.appendChild(sentinel);
+      sentinel.focus();
+
+      ref.close();
+      await ref.closed;
+
+      expect(document.activeElement?.id).toBe('sentinel');
+      sentinel.remove();
+    });
   });
 
   describe('Escape key', () => {

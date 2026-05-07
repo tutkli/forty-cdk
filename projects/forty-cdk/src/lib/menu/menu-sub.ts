@@ -11,6 +11,10 @@ import {
 } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
+import {
+  emitAutoFocusOnClose,
+  emitAutoFocusOnOpen,
+} from '../_internal/auto-focus-event/auto-focus-event';
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -91,9 +95,7 @@ export class ForMenuSub implements ForMenuContext {
    * the effective value via the public `dir` computed below.
    */
   readonly _dirInput = input<WritingDirection | undefined>(undefined, { alias: 'dir' });
-  readonly dir = computed<WritingDirection>(
-    () => this._dirInput() ?? this.parentMenu.dir(),
-  );
+  readonly dir = computed<WritingDirection>(() => this._dirInput() ?? this.parentMenu.dir());
 
   /**
    * Floating-ui placement relative to the parent item. When omitted, defaults
@@ -154,6 +156,19 @@ export class ForMenuSub implements ForMenuContext {
   readonly pointerDownOutside = output<PointerEvent>();
   readonly focusOutside = output<FocusEvent>();
   readonly interactOutside = output<PointerEvent | FocusEvent>();
+
+  /**
+   * Fires just before the submenu sends focus to its first / last
+   * enabled item on mount. Call `event.preventDefault()` to skip the
+   * imperative focus move.
+   */
+  readonly autoFocusOnOpen = output<CustomEvent>();
+
+  /**
+   * Fires just before focus returns to the parent item on unmount.
+   * `preventDefault()` suppresses the return-focus.
+   */
+  readonly autoFocusOnClose = output<CustomEvent>();
 
   readonly triggerId = signal(this.#idGen.next('for-menu-sub-trigger'));
   readonly contentId = signal(this.#idGen.next('for-menu-sub-content'));
@@ -325,5 +340,13 @@ export class ForMenuSub implements ForMenuContext {
     if (!event.defaultPrevented && this.dismissible()) {
       this.closeMenu('pointerDownOutside');
     }
+  }
+
+  emitAutoFocusOnOpen(): boolean {
+    return emitAutoFocusOnOpen(this.autoFocusOnOpen);
+  }
+
+  emitAutoFocusOnClose(): boolean {
+    return emitAutoFocusOnClose(this.autoFocusOnClose);
   }
 }
