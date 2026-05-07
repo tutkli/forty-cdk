@@ -6,7 +6,9 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   model,
+  signal,
   Signal,
 } from '@angular/core';
 
@@ -21,7 +23,9 @@ import {
   FOR_NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,
   type ForNavigationMenuContext,
+  type ForNavigationMenuMotion,
   type ForNavigationMenuTriggerHandle,
+  type ForNavigationMenuViewportHandle,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
 
@@ -99,6 +103,22 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   readonly #triggers = new Collection<ForNavigationMenuTriggerHandle>();
   readonly #contents = new Collection<ForNavigationMenuContentHandle>();
+  readonly #viewport = signal<ForNavigationMenuViewportHandle | null>(null);
+
+  /**
+   * Previously open `value`, tracked so [forNavigationMenuContent] can
+   * reflect `data-motion` while the leaving panel is still mounted (its
+   * `animate.leave` keeps the DOM around past the value transition).
+   *
+   * `linkedSignal` is the canonical replacement for `effect()` writing to a
+   * signal: each time `value()` changes, computation runs with the new
+   * source plus the prior `{ source, value }` and returns the *previous*
+   * source as the new value.
+   */
+  readonly previousValue = linkedSignal<string, string>({
+    source: () => this.value(),
+    computation: (_current, prev) => prev?.source ?? '',
+  });
 
   #pendingTimer: ReturnType<typeof setTimeout> | null = null;
   #skipDelayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -241,6 +261,15 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   unregisterContent(handle: ForNavigationMenuContentHandle): void {
     this.#contents.unregister(handle);
   }
+  registerViewport(handle: ForNavigationMenuViewportHandle): void {
+    this.#viewport.set(handle);
+  }
+  unregisterViewport(handle: ForNavigationMenuViewportHandle): void {
+    if (this.#viewport() === handle) {
+      this.#viewport.set(null);
+    }
+  }
+  readonly viewport: Signal<ForNavigationMenuViewportHandle | null> = this.#viewport.asReadonly();
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
@@ -278,6 +307,73 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     }
     return null;
   });
+
+  /** Currently-active content's host element, if mounted. */
+  readonly activeContentHost = computed<HTMLElement | null>(() => {
+    const v = this.value();
+    if (v === '') return null;
+    for (const c of this.#contents.items()) {
+      if (readSignalSafe(c.value) === v) return c.host;
+    }
+    return null;
+  });
+
+  /**
+   * `data-motion` direction for the content with the given `value`.
+   *
+   * Mirrors Radix's `NavigationMenu.Content` convention: when the user
+   * moves rightward from A (index 0) to B (index 2), the entering panel
+   * slides in from the end side (`from-end`) and the leaving panel slides
+   * out to the start side (`to-start`) — both shift in the same logical
+   * direction, like a horizontal carousel advancing.
+   *
+   * - The currently-entering content (`value === this.value()`) reflects
+   *   `from-start` / `from-end` based on which side the previous trigger
+   *   sat on relative to it.
+   * - The currently-leaving content (`value === this.previousValue()`)
+   *   reflects `to-start` / `to-end` based on which side the new trigger
+   *   sits on relative to it.
+   * - Anything else (and first open / last close, where there is no peer
+   *   to compare against) returns `null` so the host binding emits no
+   *   attribute.
+   *
+   * "Start" and "end" are logical: index 0 in DOM order is "start", which
+   * maps to the visual right in `dir="rtl"`. Consumers can author the
+   * keyframes once with logical CSS (e.g. `inset-inline-start`) and it
+   * flips automatically.
+   */
+  motionFor(value: string): ForNavigationMenuMotion | null {
+    if (value === '') return null;
+    const current = this.value();
+    const prev = this.previousValue();
+    if (value === current) {
+      if (prev === '' || prev === current) return null;
+      const prevIndex = this.#triggerIndexFor(prev);
+      const currentIndex = this.#triggerIndexFor(current);
+      if (prevIndex < 0 || currentIndex < 0) return null;
+      if (prevIndex < currentIndex) return 'from-end';
+      if (prevIndex > currentIndex) return 'from-start';
+      return null;
+    }
+    if (value === prev) {
+      if (current === '' || current === prev) return null;
+      const prevIndex = this.#triggerIndexFor(prev);
+      const currentIndex = this.#triggerIndexFor(current);
+      if (prevIndex < 0 || currentIndex < 0) return null;
+      if (currentIndex > prevIndex) return 'to-start';
+      if (currentIndex < prevIndex) return 'to-end';
+      return null;
+    }
+    return null;
+  }
+
+  #triggerIndexFor(value: string): number {
+    const triggers = this.#triggers.items();
+    for (let i = 0; i < triggers.length; i++) {
+      if (readSignalSafe(triggers[i]!.value) === value) return i;
+    }
+    return -1;
+  }
 
   #cancelPending(): void {
     if (this.#pendingTimer !== null) {

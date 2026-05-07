@@ -15,6 +15,7 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 | `ForNavigationMenuContent`   | `[forNavigationMenuContent]`   | Panel mounted via `@if`. Carries `aria-labelledby`.                   |
 | `ForNavigationMenuLink`      | `[forNavigationMenuLink]`      | Decorative wrapper that reflects `aria-current` on active links.      |
 | `ForNavigationMenuIndicator` | `[forNavigationMenuIndicator]` | Optional follower (underline / pill) positioned via CSS custom props. |
+| `ForNavigationMenuViewport`  | `[forNavigationMenuViewport]`  | Optional shared surface for mega-menu animations (Radix Viewport).    |
 
 ## Inputs (root)
 
@@ -107,9 +108,75 @@ export class DemoNav {
 - **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
 - **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissable layer; this covers the keyboard-Tab case it can't see.
 
+## Mega-menu (shared `Viewport`)
+
+For Stripe / Vercel / Linear-style mega menus that share a single panel between trigger groups, drop a `[forNavigationMenuViewport]` inside the menu and let it host the active content. The Viewport is fully opt-in: with no Viewport in the markup the menu behaves exactly as the disclosure recipe above.
+
+When present, each `[forNavigationMenuContent]` re-parents its host into the Viewport on mount. The Viewport exposes the active panel's natural size as CSS custom properties so consumers can transition `width` / `height` between groups, and each Content reflects `data-motion` so consumers can author directional slide / fade animations:
+
+| Attribute / variable                     | Where            | Meaning                                                   |
+| ---------------------------------------- | ---------------- | --------------------------------------------------------- |
+| `data-state="visible" \| "hidden"`       | Viewport host    | Whether any content is currently mounted in the Viewport. |
+| `--for-navigation-menu-viewport-width`   | Viewport host    | Active content's natural width (px).                      |
+| `--for-navigation-menu-viewport-height`  | Viewport host    | Active content's natural height (px).                     |
+| `data-motion="from-start" \| "from-end"` | Entering Content | Side the previous trigger sat on, relative to this one.   |
+| `data-motion="to-start" \| "to-end"`     | Leaving Content  | Side the new trigger sits on, relative to this one.       |
+
+`from-start` / `to-start` map to the logical inline-start (left in LTR, right in RTL); writing the keyframes with logical CSS properties (e.g. `inset-inline-start`) makes the animation work in both directions automatically. `data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
+
+```html
+<nav forNavigationMenu [(value)]="open" aria-label="Main">
+  <ul forNavigationMenuList>
+    <li forNavigationMenuItem value="products">
+      <button forNavigationMenuTrigger>Products</button>
+      @if (open() === 'products') {
+      <div forNavigationMenuContent>…</div>
+      }
+    </li>
+    <li forNavigationMenuItem value="solutions">
+      <button forNavigationMenuTrigger>Solutions</button>
+      @if (open() === 'solutions') {
+      <div forNavigationMenuContent>…</div>
+      }
+    </li>
+  </ul>
+
+  <!-- Single shared surface. Content panels re-parent into here on open. -->
+  <div forNavigationMenuViewport></div>
+</nav>
+```
+
+```css
+[forNavigationMenuViewport] {
+  position: relative;
+  width: var(--for-navigation-menu-viewport-width);
+  height: var(--for-navigation-menu-viewport-height);
+  transition:
+    width 200ms,
+    height 200ms;
+}
+
+[forNavigationMenuContent] {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+}
+[forNavigationMenuContent][data-motion='from-start'] {
+  animation: slide-in-from-start 200ms;
+}
+[forNavigationMenuContent][data-motion='from-end'] {
+  animation: slide-in-from-end 200ms;
+}
+[forNavigationMenuContent][data-motion='to-start'] {
+  animation: slide-out-to-start 200ms;
+}
+[forNavigationMenuContent][data-motion='to-end'] {
+  animation: slide-out-to-end 200ms;
+}
+```
+
+The leaving content stays mounted as long as the consumer's `@if` keeps it (typically via `animate.leave`), so two panels can briefly overlap inside the Viewport and cross-fade or slide past each other.
+
 ## Limitations (v1)
 
-- Submenús anidados (Radix `Sub`) — not implemented.
-- Shared `Viewport` (mega-menu shared content area) — not implemented; each item's content lives under its own trigger.
-
-Both are tracked for a future iteration.
+- Submenús anidados (Radix `Sub`) — not implemented; tracked separately.

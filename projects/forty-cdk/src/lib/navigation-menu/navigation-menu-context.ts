@@ -23,6 +23,23 @@ export interface ForNavigationMenuContentHandle extends CollectionHandle {
   readonly id: Signal<string>;
 }
 
+/**
+ * Per-viewport handle. Only one viewport is expected per menu (Radix
+ * mirror). The host element is the destination for re-parented active
+ * content panels.
+ */
+export interface ForNavigationMenuViewportHandle {
+  readonly host: HTMLElement;
+}
+
+/**
+ * Logical motion direction for `[forNavigationMenuContent]`'s
+ * `data-motion` hook, computed from the relative DOM position of the
+ * previously- and currently-active triggers. `null` (attribute absent)
+ * when no comparison applies — first open, last close, or unknown values.
+ */
+export type ForNavigationMenuMotion = 'from-start' | 'from-end' | 'to-start' | 'to-end';
+
 export interface ForNavigationMenuContext {
   readonly value: ModelSignal<string>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
@@ -54,12 +71,26 @@ export interface ForNavigationMenuContext {
   unregisterTrigger(handle: ForNavigationMenuTriggerHandle): void;
   registerContent(handle: ForNavigationMenuContentHandle): void;
   unregisterContent(handle: ForNavigationMenuContentHandle): void;
+  registerViewport(handle: ForNavigationMenuViewportHandle): void;
+  unregisterViewport(handle: ForNavigationMenuViewportHandle): void;
 
   contentIdFor(value: string): string | null;
   triggerIdFor(value: string): string | null;
   triggerHostFor(value: string): HTMLElement | null;
   /** Layout-oriented selector for indicator positioning. */
   readonly activeTriggerHost: Signal<HTMLElement | null>;
+  /** Host element of the currently-active content, if any. */
+  readonly activeContentHost: Signal<HTMLElement | null>;
+  /** Currently-registered viewport (at most one), or `null`. */
+  readonly viewport: Signal<ForNavigationMenuViewportHandle | null>;
+  /** Most recent open value before the current one. `''` if none. */
+  readonly previousValue: Signal<string>;
+  /**
+   * Motion direction for `[forNavigationMenuContent]` whose item carries
+   * `value`. Returns `null` when no transition applies (first open, value
+   * not currently entering or leaving, indices unknown).
+   */
+  motionFor(value: string): ForNavigationMenuMotion | null;
 }
 
 export type NavigationMenuScheduleReason = 'hover' | 'focus' | 'keyboard' | 'click';
