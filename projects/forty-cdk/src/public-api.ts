@@ -21,6 +21,7 @@ export * from './lib/toggle';
 export * from './lib/menu';
 export * from './lib/dropdown-menu';
 export * from './lib/context-menu';
+export * from './lib/menubar';
 export * from './lib/select';
 export * from './lib/combobox';
 export * from './lib/slider';

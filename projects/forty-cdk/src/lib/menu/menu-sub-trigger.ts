@@ -103,6 +103,16 @@ export class ForMenuSubTrigger {
       parent.closeMenu('escape');
       return;
     }
+    // Close-parent key when the *parent* is the top menu of a menubar:
+    // switch to the previous / next sibling menu (LTR-ArrowLeft → prev,
+    // RTL-ArrowRight → prev). Open-key on the sub-trigger keeps its own
+    // meaning (open this submenu) — only the close-direction propagates
+    // up to the menubar.
+    if (event.key === closeParentKey && parent.menubar) {
+      event.preventDefault();
+      parent.menubar.switchToSibling('prev');
+      return;
+    }
 
     const action = resolveListNavigation(event, { orientation: 'vertical' });
     if (action) {

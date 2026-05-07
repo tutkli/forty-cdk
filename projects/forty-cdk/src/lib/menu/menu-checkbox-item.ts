@@ -13,6 +13,7 @@ import {
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectMenuContext } from './menu-context';
+import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 
 /**
  * Tri-state-free checkbox item. Click and Enter toggle `checked`, emit
@@ -96,11 +97,7 @@ export class ForMenuCheckboxItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes the submenu.
-    const closeSubmenuKey = this.ctx.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
-    if (event.key === closeSubmenuKey && this.ctx.parentMenu) {
-      event.preventDefault();
-      this.ctx.closeMenu('escape');
+    if (handleMenuHorizontalArrow(event, this.ctx)) {
       return;
     }
     // APG menubar guidance: Space toggles checked without closing the menu
