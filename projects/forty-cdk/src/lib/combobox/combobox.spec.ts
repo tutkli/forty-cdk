@@ -1348,6 +1348,249 @@ describe('ForCombobox', () => {
   });
 });
 
+describe('ForCombobox object values', () => {
+  interface City {
+    readonly id: string;
+    readonly name: string;
+  }
+
+  const CITIES: readonly City[] = [
+    { id: 'paris', name: 'Paris' },
+    { id: 'berlin', name: 'Berlin' },
+    { id: 'rome', name: 'Rome' },
+  ];
+
+  afterEach(() => {
+    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
+  });
+
+  // Single-mode object host. Notice the directive class is not annotated
+  // with an explicit `<City>` — the template-binding inference is enough
+  // to specialize the model and the option `value` input to `City`.
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        [isItemEqualToValue]="equals"
+        [itemToStringLabel]="toLabel"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            @for (it of CITIES; track it.id) {
+              <div [attr.data-test-id]="it.id" forComboboxOption [value]="it">
+                {{ it.name }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    `,
+  })
+  class ObjectHost {
+    readonly query = signal('');
+    readonly value = signal<readonly City[]>([]);
+    readonly open = signal(false);
+    readonly CITIES = CITIES;
+    readonly equals = (a: City, b: City) => a.id === b.id;
+    readonly toLabel = (it: City) => it.name;
+  }
+
+  it('activation commits the full object into [(value)]', async () => {
+    const r = renderHost(ObjectHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    document.querySelector<HTMLElement>('[data-test-id="berlin"]')!.click();
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual([{ id: 'berlin', name: 'Berlin' }]);
+    // commitOnSelect wrote the resolved label into query (option label
+    // falls back through itemToStringLabel because [label] is omitted).
+    expect(r.instance.query()).toBe('Berlin');
+    expect(r.instance.open()).toBe(false);
+  });
+
+  it('isItemEqualToValue drives selection lookup (different reference, same id)', async () => {
+    const r = renderHost(ObjectHost);
+    // Pre-seed value with a NEW reference that has the same id as one of
+    // the registered options. Without isItemEqualToValue the option would
+    // not be recognised as selected (=== fails on distinct refs).
+    r.instance.value.set([{ id: 'paris', name: 'Paris' }]);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const paris = document.querySelector<HTMLElement>('[data-test-id="paris"]')!;
+    expect(paris.getAttribute('data-state')).toBe('checked');
+
+    const berlin = document.querySelector<HTMLElement>('[data-test-id="berlin"]')!;
+    expect(berlin.getAttribute('data-state')).toBe('unchecked');
+  });
+
+  it('mirrors the object value into the hidden input via JSON.stringify by default', async () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput],
+      template: `
+        <div forCombobox name="city" [(value)]="value" [isItemEqualToValue]="equals">
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class Host {
+      readonly value = signal<readonly City[]>([{ id: 'paris', name: 'Paris' }]);
+      readonly equals = (a: City, b: City) => a.id === b.id;
+    }
+
+    const r = renderHost(Host);
+    await flush(r.fixture);
+
+    const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]!.name).toBe('city');
+    expect(inputs[0]!.value).toBe(JSON.stringify({ id: 'paris', name: 'Paris' }));
+  });
+
+  it('honours a custom itemToFormValue (per-item id)', async () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput],
+      template: `
+        <div
+          forCombobox
+          multiple
+          name="cities"
+          [(value)]="value"
+          [isItemEqualToValue]="equals"
+          [itemToFormValue]="toForm"
+        >
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class Host {
+      readonly value = signal<readonly City[]>([CITIES[0]!, CITIES[1]!]);
+      readonly equals = (a: City, b: City) => a.id === b.id;
+      readonly toForm = (it: City) => it.id;
+    }
+
+    const r = renderHost(Host);
+    await flush(r.fixture);
+
+    const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
+    expect(inputs.map((i) => i.value)).toEqual(['paris', 'berlin']);
+    expect(inputs.every((i) => i.name === 'cities')).toBe(true);
+  });
+
+  describe('multi mode', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxOption,
+        ForComboboxChips,
+        ForComboboxChip,
+        ForComboboxChipRemove,
+      ],
+      template: `
+        <div
+          forCombobox
+          multiple
+          [(query)]="query"
+          [(value)]="value"
+          [(open)]="open"
+          [isItemEqualToValue]="equals"
+          [itemToStringLabel]="toLabel"
+        >
+          <div forComboboxChips>
+            @for (chip of selectedFromCtx(); track chip.value.id) {
+              <span forComboboxChip [value]="chip.value" [attr.data-test-chip]="chip.value.id">
+                {{ chip.label }}
+                <button forComboboxChipRemove [attr.data-test-remove]="chip.value.id">×</button>
+              </span>
+            }
+            <input forComboboxInput />
+          </div>
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of CITIES; track it.id) {
+                <div [attr.data-test-id]="it.id" forComboboxOption [value]="it">
+                  {{ it.name }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class MultiObjectHost {
+      readonly query = signal('');
+      readonly value = signal<readonly City[]>([]);
+      readonly open = signal(false);
+      readonly CITIES = CITIES;
+      readonly equals = (a: City, b: City) => a.id === b.id;
+      readonly toLabel = (it: City) => it.name;
+      readonly selectedFromCtx = computed(() =>
+        this.value().map((v) => ({ value: v, label: v.name })),
+      );
+    }
+
+    it('toggles object values in/out of [(value)] using isItemEqualToValue', async () => {
+      const r = renderHost(MultiObjectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      document.querySelector<HTMLElement>('[data-test-id="paris"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value().map((c) => c.id)).toEqual(['paris']);
+
+      document.querySelector<HTMLElement>('[data-test-id="berlin"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value().map((c) => c.id)).toEqual(['paris', 'berlin']);
+
+      // Toggling Paris off must locate it via id (the click hands a fresh
+      // option-handle reference, so === would not find it).
+      document.querySelector<HTMLElement>('[data-test-id="paris"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value().map((c) => c.id)).toEqual(['berlin']);
+    });
+
+    it('renders one chip per selected object and removes via chip-remove', async () => {
+      const r = renderHost(MultiObjectHost);
+      r.instance.value.set([CITIES[0]!, CITIES[2]!]);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[data-test-chip="paris"]')).not.toBeNull();
+      expect(document.querySelector('[data-test-chip="rome"]')).not.toBeNull();
+      expect(document.querySelector('[data-test-chip="berlin"]')).toBeNull();
+
+      document.querySelector<HTMLButtonElement>('[data-test-remove="rome"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value().map((c) => c.id)).toEqual(['paris']);
+    });
+  });
+
+  describe('zoneless', () => {
+    it('object selection stays reactive without zone.js', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.value.set([{ id: 'rome', name: 'Rome' }]);
+      await flush(r.fixture);
+
+      // data-state reflects membership in value() regardless of mode —
+      // that's the canonical CSS hook. aria-selected follows the
+      // activedescendant in single mode, so we stay off it here.
+      const rome = document.querySelector<HTMLElement>('[data-test-id="rome"]')!;
+      expect(rome.getAttribute('data-state')).toBe('checked');
+    });
+  });
+});
+
 describe('ForComboboxStatus', () => {
   afterEach(() => {
     document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());

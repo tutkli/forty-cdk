@@ -26,23 +26,43 @@ import { injectComboboxContext } from './combobox-context';
   exportAs: 'forComboboxChip',
   host: {
     tabindex: '-1',
-    '[attr.data-value]': 'value()',
+    '[attr.data-value]': 'dataValue()',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
   },
 })
-export class ForComboboxChip {
-  protected readonly ctx = injectComboboxContext('ForComboboxChip');
+export class ForComboboxChip<T = string> {
+  protected readonly ctx = injectComboboxContext<T>('ForComboboxChip');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The value this chip represents — must match an entry in `[forCombobox][(value)]`. */
-  readonly value = input.required<string>();
+  /**
+   * The value this chip represents — must match an entry in
+   * `[forCombobox][(value)]` per the parent's `[isItemEqualToValue]`.
+   * Generic over `T` (default `string`); inferred from the binding
+   * (`[value]="someObject"` specializes `T`).
+   */
+  readonly value = input.required<T>();
+
+  /**
+   * `data-value` reflection — for string `T` this is the value verbatim
+   * (unchanged from the pre-generic behaviour); for object `T` it uses
+   * the parent's `itemToFormValue` so the attribute carries the same
+   * wire format as the hidden inputs (typically JSON or a per-item id).
+   */
+  protected readonly dataValue = computed(() => {
+    const v = this.value();
+    return typeof v === 'string' ? (v as string) : this.ctx.itemToFormValue()(v);
+  });
 
   /** Resolved label of the underlying option, used by `[forComboboxChipRemove]` for its `aria-label`. */
   readonly label = computed(() => {
     const v = this.value();
-    const cached = this.ctx.cachedOptions().find((o) => o.value === v);
-    return cached ? cached.label : v;
+    const equals = this.ctx.isItemEqualToValue();
+    const cached = this.ctx.cachedOptions().find((o) => equals(o.value, v));
+    if (cached) {
+      return cached.label;
+    }
+    return typeof v === 'string' ? (v as string) : this.ctx.itemToStringLabel()(v);
   });
 
   constructor() {

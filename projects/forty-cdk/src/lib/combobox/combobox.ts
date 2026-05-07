@@ -34,10 +34,18 @@ import {
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
- * Implements `FormValueControl<readonly string[]>` from
- * `@angular/forms/signals` for `[formField]` auto-wiring.
+ * Implements `FormValueControl<readonly T[]>` from `@angular/forms/signals`
+ * for `[formField]` auto-wiring.
  *
- * Selection is always modeled as `readonly string[]`:
+ * Generic over the option value type `T` (default `string`). When the
+ * consumer binds object items the directive infers `T` from `[(value)]`
+ * and per-piece signatures (`[forComboboxOption][value]`,
+ * `[forComboboxChip][value]`) specialize accordingly. Object identity is
+ * resolved by the consumer-supplied `[isItemEqualToValue]` and labels by
+ * `[itemToStringLabel]`; the hidden inputs serialize via
+ * `[itemToFormValue]` (defaults to `JSON.stringify` for non-strings).
+ *
+ * Selection is always modeled as `readonly T[]`:
  * - In single mode (`multiple=false`, default), the array has 0 or 1
  *   element and option activation closes the listbox.
  * - In multi mode, option activation toggles in/out and the listbox stays
@@ -63,13 +71,13 @@ import {
   },
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
 })
-export class ForCombobox
+export class ForCombobox<T = string>
   extends FormUiControlBase
-  implements FormValueControl<readonly string[]>, ForComboboxContext
+  implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
   readonly #idGen = inject(IdGenerator);
-  readonly #items = new Collection<ForComboboxOptionHandle>();
-  readonly #chips = new Collection<ForComboboxChipHandle>();
+  readonly #items = new Collection<ForComboboxOptionHandle<T>>();
+  readonly #chips = new Collection<ForComboboxChipHandle<T>>();
 
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter
@@ -85,7 +93,38 @@ export class ForCombobox
    * emitter (`(valueChange)`) fires only on internal selection changes,
    * never on consumer writes via `[(value)]`.
    */
-  readonly value = model<readonly string[]>([]);
+  readonly value = model<readonly T[]>([]);
+
+  /**
+   * Compare two items for equality. Defaults to `===`, which is the
+   * correct identity for primitive `T` (e.g. strings, numbers). Override
+   * when binding object items so the directive can locate selected /
+   * removed entries by id (or any other stable key) instead of by
+   * reference: `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   */
+  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+
+  /**
+   * Render an item as a string label. Defaults to `String(item)`, which is
+   * identity for strings. Drives the visible input text after activation
+   * (when `commitOnSelect`) and the chip label fallback in multi mode.
+   * Override when binding object items so the directive can fall back to
+   * a meaningful label without relying on the option cache being warm:
+   * `[itemToStringLabel]="(it) => it.name"`.
+   */
+  readonly itemToStringLabel = input<(item: T) => string>((item) => String(item));
+
+  /**
+   * Serialize an item for the hidden input that participates in native
+   * form submission. Defaults to identity for strings and to
+   * `JSON.stringify` for non-string items so the primitive works out of
+   * the box round-tripping objects. Override to emit a specific wire
+   * format — typically a per-item id — when the backend expects that:
+   * `[itemToFormValue]="(it) => it.id"`.
+   */
+  readonly itemToFormValue = input<(item: T) => string>((item) =>
+    typeof item === 'string' ? item : JSON.stringify(item),
+  );
 
   /**
    * Two-way bindable. Whether the listbox is currently shown. Internal
@@ -222,25 +261,33 @@ export class ForCombobox
    * reliably requires a post-render phase; an effect or linkedSignal would
    * race with text-node commits.
    */
-  readonly #cachedOptions = signal<readonly { id: string; value: string; label: string }[]>([]);
+  readonly #cachedOptions = signal<readonly { id: string; value: T; label: string }[]>([]);
 
-  readonly selected = computed<readonly { value: string; label: string }[]>(() => {
+  readonly selected = computed<readonly { value: T; label: string }[]>(() => {
     const values = this.value();
     if (values.length === 0) {
       return [];
     }
     const cached = this.#cachedOptions();
+    const equals = this.isItemEqualToValue();
+    const toLabel = this.itemToStringLabel();
     return values.map((v) => {
-      const opt = cached.find((o) => o.value === v);
-      return { value: v, label: opt ? opt.label : v };
+      const opt = cached.find((o) => equals(o.value, v));
+      if (opt) {
+        return { value: v, label: opt.label };
+      }
+      // Fall back to the consumer-provided label fn so non-string items
+      // still render a meaningful string before the option cache warms up.
+      return { value: v, label: typeof v === 'string' ? (v as string) : toLabel(v) };
     });
   });
 
   constructor() {
     super();
-    injectHiddenInput({
+    injectHiddenInput<T>({
       name: this.name,
       values: this.value,
+      serialize: (item) => this.itemToFormValue()(item),
       disabled: this.disabled,
     });
     injectFormControlReflection({
@@ -253,8 +300,9 @@ export class ForCombobox
     afterEveryRender(() => {
       const items = this.#items.items();
       if (items.length > 0) {
-        const next: { id: string; value: string; label: string }[] = new Array(items.length);
+        const next: { id: string; value: T; label: string }[] = new Array(items.length);
         const cached = this.#cachedOptions();
+        const equals = this.isItemEqualToValue();
         let changed = cached.length !== items.length;
         for (let i = 0; i < items.length; i++) {
           const item = items[i]!;
@@ -264,7 +312,7 @@ export class ForCombobox
           next[i] = { id, value, label };
           if (!changed) {
             const prev = cached[i]!;
-            if (prev.id !== id || prev.value !== value || prev.label !== label) {
+            if (prev.id !== id || !equals(prev.value, value) || prev.label !== label) {
               changed = true;
             }
           }
@@ -305,40 +353,44 @@ export class ForCombobox
     }
   }
 
-  registerOption(handle: ForComboboxOptionHandle): void {
+  registerOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.register(handle);
   }
-  unregisterOption(handle: ForComboboxOptionHandle): void {
+  unregisterOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.unregister(handle);
     if (this.#activeId() === handle.id()) {
       this.#activeId.set(null);
     }
   }
 
-  registerChip(handle: ForComboboxChipHandle): void {
+  registerChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.register(handle);
   }
-  unregisterChip(handle: ForComboboxChipHandle): void {
+  unregisterChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.unregister(handle);
   }
 
-  isSelected(v: string): boolean {
-    return this.value().includes(v);
+  isSelected(v: T): boolean {
+    const equals = this.isItemEqualToValue();
+    return this.value().some((x) => equals(x, v));
   }
 
   isActive(id: string): boolean {
     return this.#activeId() === id;
   }
 
-  activate(handle: ForComboboxOptionHandle): void {
+  activate(handle: ForComboboxOptionHandle<T>): void {
     if (this.disabled() || this.readonly() || handle.disabled()) {
       return;
     }
     const v = handle.value();
+    const equals = this.isItemEqualToValue();
     if (this.multiple()) {
       // Toggle in/out of the array. Stay open so the user can keep picking.
       const current = this.value();
-      const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+      const next = current.some((x) => equals(x, v))
+        ? current.filter((x) => !equals(x, v))
+        : [...current, v];
       this.value.set(next);
       if (this.commitOnSelect()) {
         // Reset query so the next typed prefix searches afresh — matches
@@ -373,15 +425,16 @@ export class ForCombobox
     }
   }
 
-  removeValue(v: string): void {
+  removeValue(v: T): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
+    const equals = this.isItemEqualToValue();
     const current = this.value();
-    if (!current.includes(v)) {
+    if (!current.some((x) => equals(x, v))) {
       return;
     }
-    this.value.set(current.filter((x) => x !== v));
+    this.value.set(current.filter((x) => !equals(x, v)));
   }
 
   activateActive(): boolean {
@@ -457,7 +510,7 @@ export class ForCombobox
     this.#activeId.set(id);
   }
 
-  cachedOptions(): readonly { id: string; value: string; label: string }[] {
+  cachedOptions(): readonly { id: string; value: T; label: string }[] {
     return this.#cachedOptions();
   }
 
@@ -556,9 +609,9 @@ export class ForCombobox
   }
 }
 
-function findFirstEnabled(
-  items: readonly ForComboboxOptionHandle[],
-): ForComboboxOptionHandle | null {
+function findFirstEnabled<T>(
+  items: readonly ForComboboxOptionHandle<T>[],
+): ForComboboxOptionHandle<T> | null {
   for (const item of items) {
     if (!item.disabled()) {
       return item;
@@ -567,9 +620,9 @@ function findFirstEnabled(
   return null;
 }
 
-function findLastEnabled(
-  items: readonly ForComboboxOptionHandle[],
-): ForComboboxOptionHandle | null {
+function findLastEnabled<T>(
+  items: readonly ForComboboxOptionHandle<T>[],
+): ForComboboxOptionHandle<T> | null {
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (item && !item.disabled()) {

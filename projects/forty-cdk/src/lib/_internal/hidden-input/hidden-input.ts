@@ -1,12 +1,6 @@
-import {
-  DestroyRef,
-  effect,
-  ElementRef,
-  inject,
-  type Signal,
-} from '@angular/core';
+import { DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
 
-export interface HiddenInputConfig {
+export interface HiddenInputConfig<T = string> {
   /**
    * Form name. While empty, no hidden inputs are mounted — set a non-empty
    * `name` (typically via `[name]` on the host primitive) to opt in.
@@ -20,7 +14,16 @@ export interface HiddenInputConfig {
    * - `[value]` (selected) / `[]` (none) for single-value controls.
    * - the array as-is for multi-value controls.
    */
-  values: Signal<readonly string[]>;
+  values: Signal<readonly T[]>;
+
+  /**
+   * How to serialize each entry to a string for the hidden input's `value`
+   * attribute. Defaults to `String(item)`, which is identity for strings.
+   * Object-valued primitives (e.g. generic `[forCombobox]`) pass a custom
+   * function — typically a consumer-provided `itemToFormValue` — so the
+   * wire format is explicit (per-item id, per-item JSON, …).
+   */
+  serialize?: (item: T) => string;
 
   /**
    * Optional disabled mirror. Disabled hidden inputs are skipped by native
@@ -39,14 +42,15 @@ export interface HiddenInputConfig {
  * live inside whatever `<form>` the host lives in. Lifecycle is wired to
  * `DestroyRef`: the inputs are removed when the directive is destroyed.
  */
-export function injectHiddenInput(config: HiddenInputConfig): void {
+export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const inputs: HTMLInputElement[] = [];
 
   effect(() => {
     const name = config.name();
-    const values = name ? config.values() : [];
+    const values = name ? config.values() : ([] as readonly T[]);
     const disabled = config.disabled?.() ?? false;
+    const serialize = config.serialize;
 
     while (inputs.length > values.length) {
       inputs.pop()?.remove();
@@ -64,7 +68,15 @@ export function injectHiddenInput(config: HiddenInputConfig): void {
       if (input.name !== name) {
         input.name = name;
       }
-      const next = values[i] ?? '';
+      const item = values[i] as T;
+      let next: string;
+      if (serialize) {
+        next = serialize(item);
+      } else if (item == null) {
+        next = '';
+      } else {
+        next = String(item);
+      }
       if (input.value !== next) {
         input.value = next;
       }

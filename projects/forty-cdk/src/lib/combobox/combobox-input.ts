@@ -1,11 +1,4 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, effect, ElementRef, inject } from '@angular/core';
 
 import { injectComboboxContext } from './combobox-context';
 
@@ -60,7 +53,9 @@ import { injectComboboxContext } from './combobox-context';
   },
 })
 export class ForComboboxInput {
-  protected readonly ctx = injectComboboxContext('ForComboboxInput');
+  // The input doesn't introspect the value type — it reads/writes the
+  // query string and reads cached labels for inline autocomplete.
+  protected readonly ctx = injectComboboxContext<unknown>('ForComboboxInput');
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
   protected readonly ariaAutocomplete = computed(() => this.ctx.autocomplete());

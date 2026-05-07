@@ -26,8 +26,12 @@ import { ForComboboxChip } from './combobox-chip';
   },
 })
 export class ForComboboxChipRemove {
-  protected readonly ctx = injectComboboxContext('ForComboboxChipRemove');
-  readonly #chip = inject(ForComboboxChip, { optional: true });
+  // The value type is opaque to chip-remove: it just forwards whatever the
+  // parent chip exposes back into `removeValue`. At runtime the chip and
+  // the parent `[forCombobox]` share the same `T` because the consumer
+  // binds them with the same value source.
+  protected readonly ctx = injectComboboxContext<unknown>('ForComboboxChipRemove');
+  readonly #chip = inject<ForComboboxChip<unknown>>(ForComboboxChip, { optional: true });
 
   constructor() {
     if (!this.#chip) {
