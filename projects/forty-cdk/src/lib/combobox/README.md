@@ -239,6 +239,68 @@ readonly toId = (c: City) => c.id;
 
 The same three inputs cover multi mode + chips: bind `<span forComboboxChip [value]="chip.value">` to the object and the chip's resolved `label()` falls back through `itemToStringLabel` when the option cache is cold (e.g. chips rendered before the listbox has opened).
 
+## Virtualization
+
+For very large option sets (1k+) the consumer can render only the visible window and let the directive coordinate navigation across the full source. Three additive inputs / one output cover the wiring; non-virtualized usage is unchanged.
+
+| Input / Output                              | Purpose                                                                                                                                                                    |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[totalCount]: number \| undefined`         | Length of the **filtered** source array. Drives `aria-setsize` and lets navigation walk past the rendered window. Leave `undefined` (default) for non-virtualized lists.   |
+| `[visibleRange]: [start, end) \| undefined` | Inclusive-exclusive index range currently rendered in the DOM. Pulled from your virtualizer's `getVirtualItems()`.                                                         |
+| `[forComboboxOption][posInSet]`             | Absolute index of this option in the source array. Required when virtualizing; the directive folds option data into a snapshot keyed by this index so it survives unmount. |
+| `(scrollToIndex)`                           | Emitted when arrow keys (or Home / End) need to land on an option whose absolute index falls outside `visibleRange()`. Wire to the virtualizer's `scrollToIndex(idx)`.     |
+
+How navigation flows when virtualizing:
+
+1. The user presses **End** while the visible window is `[0, 20)` and the source has 1000 items.
+2. The directive computes the next index (999) against `totalCount`. It's outside `visibleRange`, so the directive emits `(scrollToIndex)=999` and remembers 999 as the pending pos.
+3. Your virtualizer scrolls; the directive's `@for` mounts the option for index 999.
+4. As soon as that option registers (at the matching `posInSet`), the directive seeds `aria-activedescendant` to its id.
+
+Typeahead, inline autocomplete, and `selected().label` all read from a merged snapshot that retains entries for options scrolled out of view, so completion against off-screen labels still works.
+
+```html
+@let virtualItems = virtualizer.virtualItems(); @let total = virtualizer.totalCount();
+
+<div
+  forCombobox
+  [(query)]="query"
+  [(value)]="value"
+  [(open)]="open"
+  [totalCount]="total"
+  [visibleRange]="virtualizer.range()"
+  (scrollToIndex)="virtualizer.scrollToIndex($event)"
+>
+  <input forComboboxInput placeholder="Search 100k items…" />
+  @if (open()) {
+  <div forComboboxContent #scroll>
+    <div [style.height.px]="virtualizer.totalSize()" style="position: relative">
+      @for (vi of virtualItems; track vi.key) {
+      <div
+        forComboboxOption
+        [value]="filtered()[vi.index]!.id"
+        [label]="filtered()[vi.index]!.label"
+        [posInSet]="vi.index"
+        [style.transform]="'translateY(' + vi.start + 'px)'"
+        style="position: absolute; left: 0; right: 0;"
+      >
+        {{ filtered()[vi.index]!.label }}
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+```
+
+The above sketches a `@tanstack/virtual` integration: `virtualizer.virtualItems()` is the windowed slice, `virtualizer.totalSize()` is the spacer height, and `virtualizer.scrollToIndex(idx)` brings an absolute index into view. The directive does not own the scroll container — the consumer's virtualizer does.
+
+When `[totalCount]` is omitted, the directive falls back to `options().length` and behaves exactly as before — `aria-setsize` is left to the platform default and navigation never emits `(scrollToIndex)`.
+
+> **Disabled options off-screen.** The directive learns an option's `disabled` only when it's been rendered at least once. While the consumer can pre-mark disabled rows with their own filter (most apps do), arrow nav cannot skip an off-screen disabled option it has never seen — it will land on it, the option will mount, and the next arrow press skips. Mark disabled rows in the source array if this matters.
+
+> **Listbox virtualization** is intentionally not part of this release: `[forListbox]` uses roving tabindex (DOM focus on the actual option element), which can't be virtualized without flipping its keyboard model to `aria-activedescendant`. That's a separate opt-in (`selection="activedescendant"`) tracked elsewhere.
+
 ## Writing direction
 
 `[forCombobox]` exposes a `dir: 'ltr' | 'rtl'` input (default `'ltr'`). It drives:

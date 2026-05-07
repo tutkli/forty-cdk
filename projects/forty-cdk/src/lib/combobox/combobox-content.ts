@@ -1,5 +1,6 @@
 import {
   afterNextRender,
+  computed,
   DestroyRef,
   Directive,
   ElementRef,
@@ -38,6 +39,7 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.inputId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
+    '[attr.aria-setsize]': 'ariaSetSize()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
 })
@@ -45,6 +47,16 @@ export class ForComboboxContent {
   protected readonly ctx = injectComboboxContext('ForComboboxContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #dismissable = injectDismissableLayer();
+
+  /**
+   * Reflects `aria-setsize` when the consumer wires up `[totalCount]` for
+   * virtualization. Falls back to `null` (omitted) otherwise — leaving the
+   * default option-count semantics screen readers already infer.
+   */
+  protected readonly ariaSetSize = computed<string | null>(() => {
+    const total = this.ctx.totalCount();
+    return total === undefined ? null : String(total);
+  });
 
   constructor() {
     injectPortal();

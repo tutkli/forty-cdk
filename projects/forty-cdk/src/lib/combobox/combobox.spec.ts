@@ -1804,3 +1804,239 @@ describe('ForComboboxIndicator', () => {
     });
   });
 });
+
+describe('ForCombobox virtualization', () => {
+  // Synthetic 100-item source. Cherry at index 3 is disabled across all
+  // tests so virtualized navigation has a stable disabled boundary.
+  interface VItem {
+    readonly id: string;
+    readonly label: string;
+    readonly disabled?: boolean;
+  }
+  const TOTAL = 100;
+  const ITEMS: readonly VItem[] = Array.from({ length: TOTAL }, (_, i) => ({
+    id: `item-${i}`,
+    label: `Item ${i}`,
+    disabled: i === 3,
+  }));
+
+  /**
+   * Synthetic virtualizer host: renders only `[start, end)` of the source
+   * array but exposes the full `totalCount` to the directive. Tracks
+   * `(scrollToIndex)` emissions and lets tests advance the visible range.
+   */
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        [totalCount]="ITEMS.length"
+        [visibleRange]="range()"
+        (scrollToIndex)="onScrollToIndex($event)"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            @for (it of windowed(); track it.id) {
+              <div
+                [attr.data-test-id]="it.id"
+                forComboboxOption
+                [value]="it.id"
+                [label]="it.label"
+                [posInSet]="it.posInSet"
+                [disabled]="!!it.disabled"
+              >
+                {{ it.label }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    `,
+  })
+  class VirtHost {
+    readonly query = signal('');
+    readonly value = signal<readonly string[]>([]);
+    readonly open = signal(false);
+    readonly ITEMS = ITEMS;
+    readonly range = signal<readonly [number, number]>([0, 10]);
+    readonly scrollToIndexCalls: number[] = [];
+
+    readonly windowed = computed<readonly (VItem & { posInSet: number })[]>(() => {
+      const [start, end] = this.range();
+      return ITEMS.slice(start, end).map((it, i) => ({ ...it, posInSet: start + i }));
+    });
+
+    onScrollToIndex(idx: number): void {
+      this.scrollToIndexCalls.push(idx);
+      // Mimic a virtualizer: scroll the requested index into a 10-row
+      // window centered around it.
+      const start = Math.max(0, Math.min(ITEMS.length - 10, idx - 5));
+      this.range.set([start, start + 10]);
+    }
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
+  });
+
+  it('reflects aria-setsize on the listbox and aria-posinset on each option', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+    expect(content.getAttribute('aria-setsize')).toBe('100');
+
+    const item0 = document.querySelector<HTMLElement>('[data-test-id="item-0"]')!;
+    expect(item0.getAttribute('aria-posinset')).toBe('1');
+    expect(item0.getAttribute('aria-setsize')).toBe('100');
+
+    const item5 = document.querySelector<HTMLElement>('[data-test-id="item-5"]')!;
+    expect(item5.getAttribute('aria-posinset')).toBe('6');
+  });
+
+  it('navigation past the rendered window emits (scrollToIndex)', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    // Auto-highlight has activeId on item-0. Visible window is [0, 10).
+    const input = getInput();
+    input.focus();
+
+    // Press End → last enabled (index 99). Out of window → emits scrollToIndex.
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await flush(r.fixture);
+    expect(r.instance.scrollToIndexCalls).toContain(99);
+
+    // The host advances the window to [89, 99]. Once item-99 mounts, the
+    // pending pos resolves to its id.
+    const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
+    expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
+  });
+
+  it('in-window navigation skips disabled options and stays inside the visible range', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    const input = getInput();
+    input.focus();
+
+    // Auto-highlight is item-0. ArrowDown three times: 0 → 1 → 2 → 4 (3 disabled).
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await flush(r.fixture);
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      document.querySelector<HTMLElement>('[data-test-id="item-1"]')!.id,
+    );
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await flush(r.fixture);
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      document.querySelector<HTMLElement>('[data-test-id="item-2"]')!.id,
+    );
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await flush(r.fixture);
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      document.querySelector<HTMLElement>('[data-test-id="item-4"]')!.id,
+    );
+    expect(r.instance.scrollToIndexCalls).toEqual([]);
+  });
+
+  it('typeahead / inline autocomplete sees off-window labels through the snapshot', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    // Walk the consumer-visible window [0, 10) → [50, 60) so the snapshot
+    // captures both ranges. (Selection follows but isn't asserted here.)
+    r.instance.range.set([50, 60]);
+    await flush(r.fixture);
+    r.instance.range.set([0, 10]);
+    await flush(r.fixture);
+
+    // Look up the directive instance to inspect its merged cache.
+    const root = r.query<HTMLElement>('[forCombobox]')!;
+    const debug = r.fixture.debugElement.queryAll((n) => n.nativeElement === root)[0]!;
+    const cb = debug.injector.get(ForCombobox);
+    const cached = cb.cachedOptions();
+    const cachedIds = cached.map((o) => o.id);
+    // Should include both windows' option ids — the off-window snapshot
+    // is folded in even though only [0,10) is currently in the DOM.
+    expect(cached.some((o) => o.label === 'Item 55')).toBe(true);
+    expect(cachedIds.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it('totalCount change resets the indexed snapshot', async () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      template: `
+        <div forCombobox [(open)]="open" [totalCount]="total()">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of windowed(); track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                  [posInSet]="it.posInSet"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class ResetHost {
+      readonly open = signal(true);
+      readonly total = signal(100);
+      readonly range = signal<readonly [number, number]>([50, 55]);
+      readonly windowed = computed(() => {
+        const [start, end] = this.range();
+        return Array.from({ length: end - start }, (_, i) => ({
+          id: `r-${start + i}`,
+          label: `Row ${start + i}`,
+          posInSet: start + i,
+        }));
+      });
+    }
+
+    const r = renderHost(ResetHost);
+    await flush(r.fixture);
+
+    const root = r.query<HTMLElement>('[forCombobox]')!;
+    const debug = r.fixture.debugElement.queryAll((n) => n.nativeElement === root)[0]!;
+    const cb = debug.injector.get(ForCombobox);
+    expect(cb.cachedOptions().some((o) => o.label === 'Row 52')).toBe(true);
+
+    // Flip totalCount → snapshot resets. Move to a fresh window so the new
+    // cache is built from scratch.
+    r.instance.total.set(20);
+    r.instance.range.set([0, 5]);
+    await flush(r.fixture);
+
+    // Old entries from the previous totalCount are gone; only [0,5) appear.
+    const labels = cb.cachedOptions().map((o) => o.label);
+    expect(labels.some((l) => l === 'Row 52')).toBe(false);
+    expect(labels.some((l) => l === 'Row 0')).toBe(true);
+  });
+
+  it('zoneless: virtualized navigation works without Zone.js', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const input = getInput();
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await flush(r.fixture);
+
+    expect(r.instance.scrollToIndexCalls.at(-1)).toBe(99);
+    const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
+    expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
+  });
+});
