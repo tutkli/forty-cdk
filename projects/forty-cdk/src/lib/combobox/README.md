@@ -1,8 +1,10 @@
 # Combobox
 
-Headless combobox with editable input + portaled listbox popup. Implements the [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) (`role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input) and the `FormValueControl<readonly string[]>` interface from `@angular/forms/signals`.
+Headless combobox with editable input + portaled listbox popup. Implements the [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) (`role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
 Supports both single (default) and multi-select. Multi mode renders the selected values as chips next to the input (Base UI / Material Autocomplete style).
+
+`[forCombobox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forComboboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## Pieces
 
@@ -162,7 +164,7 @@ Each dismiss reason emits a vetoable event from `[forCombobox]` — call `preven
 
 ## Form integration
 
-`[forCombobox]` implements `FormValueControl<readonly string[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
+`[forCombobox]` implements `FormValueControl<readonly T[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
 
 ```html
 <div forCombobox [formField]="form.country">
@@ -171,7 +173,65 @@ Each dismiss reason emits a vetoable event from `[forCombobox]` — call `preven
 </div>
 ```
 
-For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty).
+For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
+
+## Object values
+
+Real apps usually have richer option models — `{ id, label, ... }` — where the user-facing label and the comparison key differ, plus extra fields the consumer wants on selection. `[forCombobox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
+
+Three inputs configure the object behaviour. Defaults make string mode work unchanged:
+
+| Input                  | Default                                                            | Purpose                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / removal locate by id (or any stable key).      |
+| `[itemToStringLabel]`  | `(item) => String(item)`                                           | Render an item as a string. Drives `commitOnSelect` writes into the input and the chip-label fallback.          |
+| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
+
+```html
+@let q = query().toLowerCase(); @let filtered = cities().filter((c) =>
+c.name.toLowerCase().includes(q));
+
+<div
+  forCombobox
+  [(query)]="query"
+  [(value)]="value"
+  [(open)]="open"
+  [isItemEqualToValue]="byId"
+  [itemToStringLabel]="toName"
+  name="city"
+  [itemToFormValue]="toId"
+>
+  <input forComboboxInput placeholder="Search a city…" />
+  @if (open()) {
+  <div forComboboxContent>
+    @for (c of filtered; track c.id) {
+    <div forComboboxOption [value]="c">{{ c.name }}</div>
+    }
+  </div>
+  }
+</div>
+```
+
+```ts
+interface City {
+  id: string;
+  name: string;
+}
+
+readonly query = signal('');
+readonly value = signal<readonly City[]>([]);
+readonly open = signal(false);
+readonly cities = signal<readonly City[]>([
+  { id: 'paris', name: 'Paris' },
+  { id: 'berlin', name: 'Berlin' },
+]);
+
+readonly byId = (a: City, b: City) => a.id === b.id;
+readonly toName = (c: City) => c.name;
+readonly toId = (c: City) => c.id;
+```
+
+The same three inputs cover multi mode + chips: bind `<span forComboboxChip [value]="chip.value">` to the object and the chip's resolved `label()` falls back through `itemToStringLabel` when the option cache is cold (e.g. chips rendered before the listbox has opened).
 
 ## Writing direction
 

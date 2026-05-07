@@ -31,15 +31,15 @@ export type ForComboboxCloseReason =
  */
 export type ForComboboxAutocomplete = 'none' | 'list' | 'inline' | 'both';
 
-export interface ForComboboxOptionHandle extends CollectionHandle {
+export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
   readonly id: Signal<string>;
-  readonly value: Signal<string>;
+  readonly value: Signal<T>;
   readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
 }
 
-export interface ForComboboxChipHandle extends CollectionHandle {
-  readonly value: Signal<string>;
+export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
+  readonly value: Signal<T>;
 }
 
 /**
@@ -52,10 +52,17 @@ export interface ForComboboxChipHandle extends CollectionHandle {
  * default) keeps 0 or 1 element, multi mode keeps any number. This mirrors
  * `[forListbox]` / `[forSelect]` so consumers learn one selection contract
  * across the whole library.
+ *
+ * Generic over the option value type `T` (default `string`). When a
+ * consumer binds object items the directive infers `T` from `[(value)]` and
+ * the per-piece signatures specialize accordingly. Items are compared via
+ * the consumer-provided `isItemEqualToValue` and rendered as labels via
+ * `itemToStringLabel`; the form's hidden inputs serialize via
+ * `itemToFormValue`.
  */
-export interface ForComboboxContext {
+export interface ForComboboxContext<T = unknown> {
   readonly query: ModelSignal<string>;
-  readonly value: ModelSignal<readonly string[]>;
+  readonly value: ModelSignal<readonly T[]>;
   readonly open: ModelSignal<boolean>;
 
   readonly multiple: Signal<boolean>;
@@ -99,31 +106,39 @@ export interface ForComboboxContext {
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
 
-  registerOption(handle: ForComboboxOptionHandle): void;
-  unregisterOption(handle: ForComboboxOptionHandle): void;
-  readonly options: Signal<readonly ForComboboxOptionHandle[]>;
+  registerOption(handle: ForComboboxOptionHandle<T>): void;
+  unregisterOption(handle: ForComboboxOptionHandle<T>): void;
+  readonly options: Signal<readonly ForComboboxOptionHandle<T>[]>;
 
   /** Multi-mode chip collection. Order follows DOM (= `value()` order in practice). */
-  registerChip(handle: ForComboboxChipHandle): void;
-  unregisterChip(handle: ForComboboxChipHandle): void;
-  readonly chips: Signal<readonly ForComboboxChipHandle[]>;
+  registerChip(handle: ForComboboxChipHandle<T>): void;
+  unregisterChip(handle: ForComboboxChipHandle<T>): void;
+  readonly chips: Signal<readonly ForComboboxChipHandle<T>[]>;
 
   /**
    * Selected entries paired with their resolved label (from the option
-   * cache) — convenient for rendering chips with `@for`. Falls back to the
-   * raw value string when no matching option is registered.
+   * cache) — convenient for rendering chips with `@for`. Falls back to
+   * `itemToStringLabel(value)` when no matching option is registered (and
+   * to the raw string when `T` is `string`).
    */
-  readonly selected: Signal<readonly { value: string; label: string }[]>;
+  readonly selected: Signal<readonly { value: T; label: string }[]>;
+
+  /** Compare two items for equality. Defaults to `===`; overridden for object values. */
+  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  /** Render an item as a string label. Drives chip labels and `commitOnSelect` writes into the input. */
+  readonly itemToStringLabel: Signal<(item: T) => string>;
+  /** Serialize an item for the hidden input's `value` attribute. */
+  readonly itemToFormValue: Signal<(item: T) => string>;
 
   /** Id of the currently active option (drives `aria-activedescendant` on the input). */
   readonly activeId: Signal<string | null>;
   /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
   setActiveId(id: string | null): void;
   /** Read-only access to the cached snapshot consumed by inline-autocomplete in the input directive. */
-  cachedOptions(): readonly { id: string; value: string; label: string }[];
+  cachedOptions(): readonly { id: string; value: T; label: string }[];
 
-  /** True when `value` includes `v`. */
-  isSelected(value: string): boolean;
+  /** True when `value` includes `v` per the active equality function. */
+  isSelected(value: T): boolean;
   /** True when `id` is the activedescendant. */
   isActive(id: string): boolean;
 
@@ -132,10 +147,10 @@ export interface ForComboboxContext {
    * mode toggles in/out + stays open + (when `commitOnSelect`) clears the
    * query so the user can search the next item. No-op on disabled / readonly.
    */
-  activate(handle: ForComboboxOptionHandle): void;
+  activate(handle: ForComboboxOptionHandle<T>): void;
 
   /** Remove a value from `value()`. Used by chip-remove and Backspace heuristics. */
-  removeValue(value: string): void;
+  removeValue(value: T): void;
 
   /** Move the activedescendant to the first / last / next / prev enabled option. */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
@@ -171,10 +186,10 @@ export interface ForComboboxContext {
 
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
-export function injectComboboxContext(piece: string): ForComboboxContext {
+export function injectComboboxContext<T = unknown>(piece: string): ForComboboxContext<T> {
   const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element.`);
   }
-  return ctx;
+  return ctx as unknown as ForComboboxContext<T>;
 }

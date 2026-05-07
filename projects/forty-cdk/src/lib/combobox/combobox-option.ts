@@ -18,6 +18,11 @@ import { injectComboboxContext } from './combobox-context';
  * single mode replaces `[(value)]` and closes the listbox; multi mode
  * toggles the value in/out and keeps the listbox open.
  *
+ * Generic over the option value type `T` (default `string`). Inferred from
+ * the `[value]` binding so consumers can pass either primitive ids or
+ * full objects (`[value]="city"` infers `T = City`); the parent
+ * `[forCombobox]` must be parameterized over the same `T`.
+ *
  * `aria-selected` reflects different things in single vs. multi:
  * - **Single mode**: the option that's the current activedescendant
  *   (Enter would activate it). Matches APG select-only-combobox.
@@ -49,19 +54,26 @@ import { injectComboboxContext } from './combobox-context';
     '(pointermove)': 'onPointerMove()',
   },
 })
-export class ForComboboxOption {
-  readonly #ctx = injectComboboxContext('ForComboboxOption');
+export class ForComboboxOption<T = string> {
+  readonly #ctx = injectComboboxContext<T>('ForComboboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
 
-  /** Stable string identifier serialized into `[(value)]` and the hidden input. */
-  readonly value = input.required<string>();
+  /**
+   * Stable identifier serialized into `[(value)]` and the hidden input.
+   * Defaults to `string` for back-compat; bind an object to specialize
+   * the parent `[forCombobox]` over a richer `T`. The parent's
+   * `[isItemEqualToValue]` decides how options are matched against the
+   * committed selection.
+   */
+  readonly value = input.required<T>();
 
   /**
    * Visible label used by `[forComboboxInput]` for inline autocomplete
    * matching, by `commitOnSelect` to populate the input on selection,
-   * and by typeahead / display utilities. Defaults to the trimmed
-   * `textContent` of the host element when omitted.
+   * and by typeahead / display utilities. When omitted: for string
+   * `value` falls back to the trimmed `textContent` of the host element;
+   * for object `value` falls back to the parent's `itemToStringLabel(value)`.
    */
   readonly label = input<string | null>(null);
 
@@ -86,7 +98,16 @@ export class ForComboboxOption {
     if (explicit !== null) {
       return explicit;
     }
-    return (this.#host.nativeElement.textContent ?? '').trim();
+    const v = this.value();
+    if (typeof v === 'string') {
+      // String mode: the trimmed `textContent` is the canonical fallback,
+      // identical to the pre-generic behaviour. Lets consumers omit
+      // `[label]` and have it just work for projected text.
+      return (this.#host.nativeElement.textContent ?? '').trim();
+    }
+    // Object mode: lean on the parent's `itemToStringLabel` so the
+    // resolved label is consistent with chip rendering and `commitOnSelect`.
+    return this.#ctx.itemToStringLabel()(v);
   });
 
   constructor() {
