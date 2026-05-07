@@ -36,6 +36,13 @@ export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
   readonly value: Signal<T>;
   readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
+  /**
+   * Index in the consumer's source array. Required when virtualizing so the
+   * directive can fold off-screen options into the snapshot keyed by
+   * absolute position. Optional otherwise — when absent the snapshot falls
+   * back to DOM order.
+   */
+  readonly posInSet?: Signal<number | null>;
 }
 
 export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
@@ -136,6 +143,15 @@ export interface ForComboboxContext<T = unknown> {
   setActiveId(id: string | null): void;
   /** Read-only access to the cached snapshot consumed by inline-autocomplete in the input directive. */
   cachedOptions(): readonly { id: string; value: T; label: string }[];
+
+  /**
+   * Total number of options in the consumer's source array. Used for
+   * `aria-setsize` and for navigation past the visible window when
+   * virtualizing. Falls back to `options().length` when undefined.
+   */
+  readonly totalCount: Signal<number | undefined>;
+  /** Inclusive-exclusive [start, end) range of options currently rendered when virtualizing. */
+  readonly visibleRange: Signal<readonly [number, number] | undefined>;
 
   /** True when `value` includes `v` per the active equality function. */
   isSelected(value: T): boolean;

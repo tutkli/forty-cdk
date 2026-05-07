@@ -47,6 +47,8 @@ import { injectComboboxContext } from './combobox-context';
     '[id]': 'id()',
     '[attr.aria-selected]': 'ariaSelected()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
+    '[attr.aria-posinset]': 'ariaPosInSet()',
+    '[attr.aria-setsize]': 'ariaSetSize()',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -79,6 +81,15 @@ export class ForComboboxOption<T = string> {
 
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Absolute index of this option in the consumer's source array. Required
+   * when wiring up a virtualized listbox so navigation past the rendered
+   * window can resolve indices to options (and emit `(scrollToIndex)` when
+   * needed). Leave `null` for non-virtualized lists — the directive then
+   * falls back to DOM order.
+   */
+  readonly posInSet = input<number | null>(null);
+
   readonly id = signal(this.#idGen.next('for-combobox-option'));
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
@@ -91,6 +102,26 @@ export class ForComboboxOption<T = string> {
       return this.selected() ? 'true' : 'false';
     }
     return this.highlighted() ? 'true' : 'false';
+  });
+
+  /** Reflects `aria-posinset` (1-based) when virtualizing. Falls back to DOM order otherwise. */
+  protected readonly ariaPosInSet = computed<string | null>(() => {
+    const explicit = this.posInSet();
+    if (explicit !== null) {
+      return String(explicit + 1);
+    }
+    if (this.#ctx.totalCount() === undefined) {
+      return null;
+    }
+    const items = this.#ctx.options();
+    const idx = items.findIndex((it) => it.id() === this.id());
+    return idx < 0 ? null : String(idx + 1);
+  });
+
+  /** Reflects `aria-setsize` when the consumer wires up `[totalCount]`. */
+  protected readonly ariaSetSize = computed<string | null>(() => {
+    const total = this.#ctx.totalCount();
+    return total === undefined ? null : String(total);
   });
 
   readonly #effectiveLabel = computed(() => {
@@ -110,30 +141,25 @@ export class ForComboboxOption<T = string> {
     return this.#ctx.itemToStringLabel()(v);
   });
 
+  readonly #handle = {
+    host: this.#host.nativeElement,
+    id: this.id,
+    value: this.value,
+    label: this.#effectiveLabel,
+    disabled: this.effectiveDisabled,
+    posInSet: this.posInSet,
+  };
+
   constructor() {
-    const handle = {
-      host: this.#host.nativeElement,
-      id: this.id,
-      value: this.value,
-      label: this.#effectiveLabel,
-      disabled: this.effectiveDisabled,
-    };
-    this.#ctx.registerOption(handle);
-    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterOption(handle));
+    this.#ctx.registerOption(this.#handle);
+    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterOption(this.#handle));
   }
 
   protected onClick(): void {
     if (this.effectiveDisabled() || this.#ctx.readonly()) {
       return;
     }
-    const handle = {
-      host: this.#host.nativeElement,
-      id: this.id,
-      value: this.value,
-      label: this.#effectiveLabel,
-      disabled: this.effectiveDisabled,
-    };
-    this.#ctx.activate(handle);
+    this.#ctx.activate(this.#handle);
   }
 
   protected onPointerMove(): void {
