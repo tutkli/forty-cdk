@@ -31,9 +31,7 @@ export class ForDropdownMenuTrigger {
 
   constructor() {
     this.ctx.registerTrigger(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() =>
-      this.ctx.unregisterTrigger(this.#host.nativeElement),
-    );
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterTrigger(this.#host.nativeElement));
   }
 
   protected onClick(): void {

@@ -53,21 +53,23 @@ The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 
 ## Inputs (`ForContextMenu`)
 
-| API           | Default          | Description                                                                  |
-| ------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `open`        | `false`          | Two-way bindable. Whether the menu is shown.                                 |
-| `placement`   | `'bottom-start'` | Floating-ui placement relative to the pointer.                               |
-| `offset`      | `0`              | Gap (px) between the pointer and the menu.                                   |
-| `loop`        | `true`           | Whether arrow navigation wraps.                                              |
+| API           | Default          | Description                                                                                                                                                                    |
+| ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`        | `false`          | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
+| `placement`   | `'bottom-start'` | Floating-ui placement relative to the pointer.                                                                                                                                 |
+| `offset`      | `0`              | Gap (px) between the pointer and the menu.                                                                                                                                     |
+| `loop`        | `true`           | Whether arrow navigation wraps.                                                                                                                                                |
 | `dir`         | `'ltr'`          | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled`    | `false`          | When `true`, the contextmenu event falls through to the native browser menu. |
-| `dismissible` | `true`           | When `false`, Escape and outside interactions don't close.                   |
-| `returnFocus` | `true`           | When `true`, focus returns to the trigger element on close.                  |
-| `ariaLabel`   | `null`           | Manual `aria-label` on `[forMenuContent]`.                                   |
+| `disabled`    | `false`          | When `true`, the contextmenu event falls through to the native browser menu.                                                                                                   |
+| `dismissible` | `true`           | When `false`, Escape and outside interactions don't close.                                                                                                                     |
+| `returnFocus` | `true`           | When `true`, focus returns to the trigger element on close.                                                                                                                    |
+| `ariaLabel`   | `null`           | Manual `aria-label` on `[forMenuContent]`.                                                                                                                                     |
 
 ## Outputs (`ForContextMenu`)
 
 Same vetoable dismiss API as DropdownMenu — `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`. Call `preventDefault()` to keep the menu open.
+
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the imperative focus move on mount / unmount. Call `preventDefault()` on the `CustomEvent` to skip the move while keeping the menu mounted.
 
 ## Behavior notes
 

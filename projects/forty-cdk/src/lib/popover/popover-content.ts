@@ -75,16 +75,20 @@ export class ForPopoverContent {
 
       // Send focus into the popover. Non-modal: no trap, so Tab is free
       // to move out (and `onFocusOutside` will fire and close unless
-      // dismissible is off).
-      const initial = this.ctx.initialFocus();
-      const host = this.#host.nativeElement;
-      if (initial === 'container') {
-        host.focus();
-      } else {
-        const first = host.querySelector<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-        (first ?? host).focus();
+      // dismissible is off). Consumers can veto the imperative focus move
+      // via `(autoFocusOnOpen)` (e.g. to keep focus on the input that
+      // opened the popover).
+      if (!this.ctx.emitAutoFocusOnOpen()) {
+        const initial = this.ctx.initialFocus();
+        const host = this.#host.nativeElement;
+        if (initial === 'container') {
+          host.focus();
+        } else {
+          const first = host.querySelector<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          );
+          (first ?? host).focus();
+        }
       }
     });
 
@@ -92,7 +96,9 @@ export class ForPopoverContent {
       this.#dismissable.deactivate();
       // Return focus *before* the portal helper removes the DOM node so
       // the trigger receives the focus event in a stable layout.
-      if (this.ctx.returnFocus()) {
+      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
+      if (this.ctx.returnFocus() && !skipReturnFocus) {
         this.ctx.trigger()?.focus();
       }
     });

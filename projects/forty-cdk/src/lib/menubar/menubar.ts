@@ -219,6 +219,13 @@ export class ForMenubar implements ForMenubarContext {
         this.closeOpen();
       }
     },
+    // Menubar doesn't expose `(autoFocusOnOpen)` / `(autoFocusOnClose)` as
+    // public outputs — bar-level menus default to APG-prescribed focus
+    // movement and the multiplexed context has no per-trigger output to
+    // route through. No-op stubs so [forMenuContent] can call them
+    // unconditionally regardless of which root provided the context.
+    emitAutoFocusOnOpen: () => false,
+    emitAutoFocusOnClose: () => false,
   };
 
   // -- ForMenubarContext ----------------------------------------------------

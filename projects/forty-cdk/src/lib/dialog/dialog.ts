@@ -11,6 +11,10 @@ import {
   signal,
 } from '@angular/core';
 
+import {
+  emitAutoFocusOnClose,
+  emitAutoFocusOnOpen,
+} from '../_internal/auto-focus-event/auto-focus-event';
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
 import {
   injectDismissableLayer,
@@ -127,6 +131,23 @@ export class ForDialog implements ForDialogContext {
    */
   readonly interactOutside = output<PointerEvent | FocusEvent>();
 
+  /**
+   * Fires just before the dialog moves focus into itself on mount.
+   * Call `event.preventDefault()` to skip the imperative focus move
+   * — useful when opening a dialog from an input you want to keep
+   * focused. The focus trap (modal mode) still cycles Tab inside the
+   * dialog once focus enters it.
+   */
+  readonly autoFocusOnOpen = output<CustomEvent>();
+
+  /**
+   * Fires just before focus returns to the previously focused element
+   * on unmount. Call `event.preventDefault()` to skip the return-focus
+   * — useful when the consumer wants to send focus elsewhere
+   * imperatively (e.g. a confirmation toast).
+   */
+  readonly autoFocusOnClose = output<CustomEvent>();
+
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
 
@@ -147,6 +168,14 @@ export class ForDialog implements ForDialogContext {
   // of whether the consumer toggles `modal()` on a doomed instance.
   #activatedAsModal = false;
   #inertHandle: InertSiblingsHandle | null = null;
+  // Stashes the consumer's `(autoFocusOnClose)` veto from requestClose.
+  // We have to capture it *before* destroy — Angular tears down `output()`
+  // OutputEmitterRefs at the start of view destroy, which lands them in
+  // an "already destroyed" state by the time our DestroyRef hook runs.
+  // Direct-signal-flip closes (consumer setting `open=false` without
+  // going through requestClose) don't trip this and fall back to the
+  // default return-focus behavior.
+  #closeAutoFocusVetoed = false;
 
   constructor() {
     injectPortal();
@@ -183,14 +212,22 @@ export class ForDialog implements ForDialogContext {
         },
       });
 
+      // Let the consumer veto the imperative focus move. The trap is
+      // still set up (Tab cycling, return-focus capture) — only the
+      // initial `.focus()` call is skipped.
+      const skipInitialFocus = emitAutoFocusOnOpen(this.autoFocusOnOpen);
+
       if (isModal) {
         // Inert + aria-hidden the rest of the document. Pushed BEFORE the
         // focus trap activates so that the trap's `focus()` call lands on
         // an element whose siblings are already isolated from AT.
         this.#inertHandle = activateInertSiblings(this.#host.nativeElement);
-        this.#focusTrap.activate({ initialFocus: this.initialFocus() });
+        this.#focusTrap.activate({
+          initialFocus: this.initialFocus(),
+          preventInitialFocus: skipInitialFocus,
+        });
         lockBodyScroll();
-      } else {
+      } else if (!skipInitialFocus) {
         // Non-modal: still send focus, no trap.
         const host = this.#focusTrap.container;
         if (this.initialFocus() === 'container') {
@@ -209,15 +246,23 @@ export class ForDialog implements ForDialogContext {
         // return-focus target needs to be live again first.
         this.#inertHandle?.deactivate();
         this.#inertHandle = null;
+        // The consumer's `(autoFocusOnClose)` veto was captured in
+        // `requestClose` before `output()` torn down — read the stash.
+        const skipReturnFocus = this.#closeAutoFocusVetoed;
         // Suppress the dismissable-layer dispatcher across focus-return so
         // the synthetic `focusin` triggered by `.focus()`-ing the previous
         // element does not cascade-dismiss whatever dialog is now topmost
         // (a stacked dialog opened above this one).
         suppressDismissableLayerDispatch(() => {
-          this.#focusTrap.deactivate({ returnFocus: this.returnFocus() });
+          this.#focusTrap.deactivate({
+            returnFocus: this.returnFocus() && !skipReturnFocus,
+          });
         });
         unlockBodyScroll();
       }
+      // Non-modal mode never activated the trap and never moves focus on
+      // close, so there's nothing to veto — `(autoFocusOnClose)` only
+      // fires from the modal path.
     });
   }
 
@@ -237,6 +282,14 @@ export class ForDialog implements ForDialogContext {
   requestClose(reason: ForDialogCloseReason, _value?: unknown): void {
     if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
+    }
+    // Emit `(autoFocusOnClose)` *here*, while `output()` is still alive,
+    // and stash the consumer's `preventDefault()` decision for the
+    // DestroyRef hook to honour. Firing from inside DestroyRef would land
+    // after Angular has already torn down the OutputEmitterRef, with the
+    // listener never reached.
+    if (this.#activatedAsModal) {
+      this.#closeAutoFocusVetoed = emitAutoFocusOnClose(this.autoFocusOnClose);
     }
     this.close.emit(reason);
   }

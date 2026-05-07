@@ -162,6 +162,12 @@ Each dismiss reason emits a vetoable event from `[forCombobox]` — call `preven
 | `(focusOutside)`       | Focus moves outside both input and content.                       |
 | `(interactOutside)`    | Either of the two above.                                          |
 
+## No `(autoFocusOnOpen)` / `(autoFocusOnClose)`
+
+Unlike `[forDialog]`, `[forPopover]`, `[forDropdownMenu]`, `[forContextMenu]`, and `[forSelect]`, the combobox does **not** expose these events. By design, the input retains focus the entire time the listbox is open and on close — the active option is tracked via `aria-activedescendant`, never via `.focus()`. There's no automatic focus move to veto.
+
+If you need to programmatically move focus elsewhere (e.g. into the listbox), do it from your own keydown handler — the combobox won't fight you.
+
 ## Form integration
 
 `[forCombobox]` implements `FormValueControl<readonly T[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:

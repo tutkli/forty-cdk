@@ -46,16 +46,12 @@ export interface ForDialogContext {
   requestClose(reason: ForDialogCloseReason, value?: unknown): void;
 }
 
-export const FOR_DIALOG_CONTEXT = new InjectionToken<ForDialogContext>(
-  'FOR_DIALOG_CONTEXT',
-);
+export const FOR_DIALOG_CONTEXT = new InjectionToken<ForDialogContext>('FOR_DIALOG_CONTEXT');
 
 export function injectDialogContext(piece: string): ForDialogContext {
   const ctx = inject(FOR_DIALOG_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/dialog] ${piece} must be used inside a [forDialog] element.`,
-    );
+    throw new Error(`[forty-cdk/dialog] ${piece} must be used inside a [forDialog] element.`);
   }
   return ctx;
 }

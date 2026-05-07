@@ -596,6 +596,111 @@ describe('ForPopover', () => {
     });
   });
 
+  describe('autoFocusOnOpen / autoFocusOnClose', () => {
+    it('emits (autoFocusOnOpen) before moving focus into content', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <div forPopover [(open)]="open" (autoFocusOnOpen)="captured.push($event)" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent>
+                <button id="inside">in</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly captured: CustomEvent[] = [];
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.type).toBe('autoFocusOnOpen');
+      expect(document.activeElement?.id).toBe('inside');
+    });
+
+    it('skips the imperative focus move when (autoFocusOnOpen) calls preventDefault', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <input id="anchor" type="search" />
+          <div forPopover [(open)]="open" (autoFocusOnOpen)="$event.preventDefault()" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent>
+                <button id="inside">in</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      const anchor = (r.fixture.nativeElement as HTMLElement).querySelector(
+        '#anchor',
+      ) as HTMLInputElement;
+      anchor.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('anchor');
+    });
+
+    it('skips the trigger return-focus when (autoFocusOnClose) calls preventDefault', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <div
+            forPopover
+            [(open)]="open"
+            (autoFocusOnClose)="captured.push($event); $event.preventDefault()"
+            ariaLabel="t"
+          >
+            <button forPopoverTrigger id="trigger">Open</button>
+            @if (open()) {
+              <div forPopoverContent>
+                <button id="inside">in</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly captured: CustomEvent[] = [];
+      }
+
+      const r = renderHost(Host);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const sentinel = document.createElement('button');
+      sentinel.id = 'sentinel';
+      document.body.appendChild(sentinel);
+      sentinel.focus();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.type).toBe('autoFocusOnClose');
+      // Return-focus vetoed — focus did not move back to the trigger.
+      expect(document.activeElement?.id).toBe('sentinel');
+      sentinel.remove();
+    });
+  });
+
   describe('used outside [forPopover]', () => {
     function expectThrows(host: new (...args: unknown[]) => unknown, regex: RegExp): void {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });

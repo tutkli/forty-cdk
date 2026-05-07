@@ -23,8 +23,6 @@ export class ForPopoverArrow {
 
   constructor() {
     this.#ctx.registerArrow(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() =>
-      this.#ctx.unregisterArrow(this.#host.nativeElement),
-    );
+    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterArrow(this.#host.nativeElement));
   }
 }

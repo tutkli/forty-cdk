@@ -69,6 +69,15 @@ export interface ForPopoverContext {
   emitPointerDownOutside(event: PointerEvent): void;
   emitFocusOutside(event: FocusEvent): void;
   emitInteractOutside(event: PointerEvent | FocusEvent): void;
+
+  /**
+   * Hooks into the auto-focus pipeline. Content fires these just before
+   * its imperative `.focus()` (open) or the trigger return-focus (close);
+   * `event.preventDefault()` skips the move. Returns `true` when the
+   * consumer vetoed.
+   */
+  emitAutoFocusOnOpen(): boolean;
+  emitAutoFocusOnClose(): boolean;
 }
 
 export const FOR_POPOVER_CONTEXT = new InjectionToken<ForPopoverContext>('FOR_POPOVER_CONTEXT');

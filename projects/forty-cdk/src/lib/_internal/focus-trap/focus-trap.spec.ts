@@ -175,4 +175,38 @@ describe('FocusTrap', () => {
     trap = new FocusTrap(container);
     expect(trap.container).toBe(container);
   });
+
+  describe('preventInitialFocus', () => {
+    it('does not move focus on activate when set', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container);
+      trap.activate({ preventInitialFocus: true });
+
+      expect(document.activeElement).toBe(outsideBefore);
+      expect(trap.isActive).toBe(true);
+    });
+
+    it('still cycles Tab from the last focusable to the first once focus enters', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container);
+      trap.activate({ preventInitialFocus: true });
+
+      const last = container.querySelector<HTMLElement>('#b3')!;
+      last.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('still returns focus to the previously focused element on deactivate', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container);
+      trap.activate({ preventInitialFocus: true });
+      // Move focus inside afterwards.
+      const middle = container.querySelector<HTMLElement>('#b2')!;
+      middle.focus();
+      trap.deactivate();
+
+      expect(document.activeElement).toBe(outsideBefore);
+    });
+  });
 });

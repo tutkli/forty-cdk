@@ -26,9 +26,7 @@ export const FOCUSABLE_SELECTOR = [
  * descendants of `[inert]` ancestors below the container).
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
-  const candidates = Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  );
+  const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
   for (const el of candidates) {
     if (el.hasAttribute('hidden')) {
       continue;
@@ -60,6 +58,14 @@ export interface FocusTrapActivateOptions {
    * - explicit element: focuses that element directly.
    */
   initialFocus?: 'first' | 'container' | HTMLElement;
+  /**
+   * When `true`, sets up Tab cycling and captures the previously-focused
+   * element for return on deactivate, but skips the imperative `.focus()`
+   * call. Lets the consumer keep focus elsewhere on open while still
+   * benefitting from the trap's keyboard cycling once focus enters the
+   * surface. Default `false`.
+   */
+  preventInitialFocus?: boolean;
 }
 
 export interface FocusTrapDeactivateOptions {
@@ -103,6 +109,13 @@ export class FocusTrap {
     this.#active = true;
     this.#returnTo = (document.activeElement as HTMLElement | null) ?? null;
     document.addEventListener('keydown', this.#onKeyDown, true);
+
+    if (options.preventInitialFocus) {
+      // Tab cycling and return-focus are still set up; the imperative
+      // focus move is the only thing skipped. Focus stays wherever the
+      // consumer wants until they choose to enter the trap.
+      return;
+    }
 
     const initial = options.initialFocus ?? 'first';
     if (initial === 'first') {
@@ -180,9 +193,7 @@ export class FocusTrap {
   }
 
   #focusables(): HTMLElement[] {
-    const all = Array.from(
-      this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    );
+    const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
     return all.filter((el) => !el.hasAttribute('hidden') && !this.#hasInertAncestor(el));
   }
 

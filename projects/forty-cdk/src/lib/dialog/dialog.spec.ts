@@ -877,6 +877,125 @@ describe('ForDialog (declarative)', () => {
       expect(document.querySelector('[forDialog]')).toBeNull();
     });
   });
+
+  describe('autoFocusOnOpen / autoFocusOnClose', () => {
+    it('emits (autoFocusOnOpen) before moving focus into the dialog', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (autoFocusOnOpen)="captured.push($event)"
+              ariaLabel="t"
+            >
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly captured: CustomEvent[] = [];
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.type).toBe('autoFocusOnOpen');
+      expect(document.activeElement?.id).toBe('inside');
+    });
+
+    it('keeps focus outside the dialog when (autoFocusOnOpen) calls preventDefault', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <input #q id="search" type="search" />
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (autoFocusOnOpen)="$event.preventDefault()"
+              ariaLabel="t"
+            >
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      const search = (r.fixture.nativeElement as HTMLElement).querySelector(
+        '#search',
+      ) as HTMLInputElement;
+      search.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      // Initial focus move skipped — focus stayed on the search input.
+      expect(document.activeElement?.id).toBe('search');
+      // Trap is still active: Tab cycles inside the dialog once focus enters it.
+      const inside = document.querySelector<HTMLElement>('#inside')!;
+      inside.focus();
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+      expect(document.activeElement?.id).toBe('inside');
+    });
+
+    it('skips return-focus when (autoFocusOnClose) calls preventDefault', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button id="trigger" (click)="open.set(true)">open</button>
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              (autoFocusOnClose)="$event.preventDefault()"
+              ariaLabel="t"
+            >
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      const trigger = (r.fixture.nativeElement as HTMLElement).querySelector(
+        '#trigger',
+      ) as HTMLButtonElement;
+      trigger.focus();
+      expect(document.activeElement?.id).toBe('trigger');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('inside');
+
+      // Park focus somewhere else so we can detect whether the trap restored it.
+      const sentinel = document.createElement('button');
+      sentinel.id = 'sentinel';
+      document.body.appendChild(sentinel);
+      sentinel.focus();
+      expect(document.activeElement?.id).toBe('sentinel');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      // returnFocus was vetoed — focus stays on the sentinel, not back on the trigger.
+      expect(document.activeElement?.id).toBe('sentinel');
+      sentinel.remove();
+    });
+  });
 });
 
 describe('ForDialogTrigger', () => {
