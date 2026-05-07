@@ -675,7 +675,7 @@ describe('Menu items / content', () => {
         providers: [provideZonelessChangeDetection()],
       });
       expect(() => TestBed.createComponent(OrphanItem)).toThrow(
-        /must be used inside a \[forDropdownMenu\], \[forContextMenu\], or \[forMenuSub\]/,
+        /must be used inside a \[forDropdownMenu\], \[forContextMenu\], \[forMenubar\], or \[forMenuSub\]/,
       );
     });
 
@@ -764,7 +764,9 @@ describe('ForMenuItemIndicator', () => {
               Bold
             </button>
             <button id="italic" forMenuCheckboxItem [(checked)]="italic">
-              <span data-test-id="italic-ind" forMenuItemIndicator [forceMount]="forceMount()">✓</span>
+              <span data-test-id="italic-ind" forMenuItemIndicator [forceMount]="forceMount()"
+                >✓</span
+              >
               Italic
             </button>
             <div forMenuRadioGroup [(value)]="alignment">

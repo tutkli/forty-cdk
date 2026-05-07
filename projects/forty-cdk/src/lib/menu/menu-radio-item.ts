@@ -12,6 +12,7 @@ import {
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectMenuContext } from './menu-context';
+import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 
 /**
@@ -99,11 +100,7 @@ export class ForMenuRadioItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes the submenu.
-    const closeSubmenuKey = this.menu.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
-    if (event.key === closeSubmenuKey && this.menu.parentMenu) {
-      event.preventDefault();
-      this.menu.closeMenu('escape');
+    if (handleMenuHorizontalArrow(event, this.menu)) {
       return;
     }
     // APG menubar guidance: Space sets the group value without closing the

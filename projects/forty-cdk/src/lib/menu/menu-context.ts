@@ -1,4 +1,4 @@
-import { inject, InjectionToken, ModelSignal, Signal } from '@angular/core';
+import { inject, InjectionToken, Signal } from '@angular/core';
 import type { Placement, ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
@@ -7,6 +7,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { ForMenubarContext } from '../menubar/menubar-context';
 
 /**
  * Why a menu requested close. Mirrors Radix's `onCloseAutoFocus` reasons
@@ -42,7 +43,14 @@ export interface ForMenuItemHandle extends CollectionHandle {
  * this contract so they don't depend on a specific root flavor.
  */
 export interface ForMenuContext {
-  readonly open: ModelSignal<boolean>;
+  /**
+   * Whether the menu is currently shown. Read-only at the contract level —
+   * concrete roots (`[forDropdownMenu]`, `[forContextMenu]`, `[forMenuSub]`)
+   * back this with their own `model<boolean>` and write through their own
+   * `openMenu` / `closeMenu` plumbing. Pieces consuming this contract
+   * (`[forMenuContent]`, the trigger directives) only ever read.
+   */
+  readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
@@ -89,10 +97,19 @@ export interface ForMenuContext {
 
   /**
    * The enclosing menu, when this context is a `[forMenuSub]`. `null` for
-   * top-level roots (`[forDropdownMenu]`, `[forContextMenu]`). Items use it to
-   * route ArrowLeft / item-activation upward.
+   * top-level roots (`[forDropdownMenu]`, `[forContextMenu]`, and the
+   * `[forMenubar]`-flavored ctx). Items use it to route ArrowLeft /
+   * item-activation upward.
    */
   readonly parentMenu: ForMenuContext | null;
+
+  /**
+   * The enclosing menubar, when this context is the top-level menu of a
+   * `[forMenubar]`. `null` otherwise. `[forMenuItem]` and `[forMenuContent]`
+   * route ArrowLeft / ArrowRight up to it for cross-menu navigation when
+   * there's no parent submenu.
+   */
+  readonly menubar?: ForMenubarContext | null;
 
   /**
    * Elements treated as "inside" by the dismissable layer. DropdownMenu
@@ -131,7 +148,7 @@ export function injectMenuContext(piece: string): ForMenuContext {
   const ctx = inject(FOR_MENU_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu], [forContextMenu], or [forMenuSub] element.`,
+      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu], [forContextMenu], [forMenubar], or [forMenuSub] element.`,
     );
   }
   return ctx;

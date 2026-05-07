@@ -12,6 +12,7 @@ import {
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectMenuContext } from './menu-context';
+import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 
 /**
  * A single action inside `[forMenuContent]`. Apply on a `<button>` so
@@ -102,13 +103,10 @@ export class ForMenuItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    // ArrowLeft (LTR) / ArrowRight (RTL) inside a submenu closes only the
-    // submenu (focus returns to the SubTrigger via the content's DestroyRef
-    // hook). Plain top-level menus ignore both keys here.
-    const closeSubmenuKey = this.ctx.dir() === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
-    if (event.key === closeSubmenuKey && this.ctx.parentMenu) {
-      event.preventDefault();
-      this.ctx.closeMenu('escape');
+    // ArrowLeft / ArrowRight: inside a submenu, close-submenu key collapses
+    // one level; in the top menu of a menubar, both arrows switch to the
+    // previous / next sibling menu.
+    if (handleMenuHorizontalArrow(event, this.ctx)) {
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });
