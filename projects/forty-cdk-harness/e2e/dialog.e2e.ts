@@ -28,16 +28,7 @@ test.describe('Dialog', () => {
     await expect(page.locator('#close-btn')).toBeFocused();
   });
 
-  test('Escape closes and returns focus to the trigger', async ({ page, browserName }, testInfo) => {
-    // Cross-browser bug exposed by this suite (the whole point of #90):
-    // ForDialog applies `inert` to siblings BEFORE the focus trap captures
-    // `returnTo`. On WebKit the inert side-effect blurs the previously-focused
-    // trigger before capture, so deactivate's `returnTo.focus()` ends up on
-    // `body` and is a no-op. Chromium does not auto-blur on inert and so the
-    // existing capture order happens to work. Tracked as a follow-up — this
-    // test will fail on WebKit until the dialog activation order is fixed.
-    testInfo.fixme(browserName === 'webkit', 'WebKit return-focus race vs inert (follow-up)');
-
+  test('Escape closes and returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'dialog');
     await page.locator('#trigger').focus();
     await page.locator('#trigger').click();
@@ -49,9 +40,7 @@ test.describe('Dialog', () => {
     await expect(page.locator('#trigger')).toBeFocused();
   });
 
-  test('close button closes with reason "closeButton"', async ({ page, browserName }, testInfo) => {
-    testInfo.fixme(browserName === 'webkit', 'WebKit return-focus race vs inert (follow-up)');
-
+  test('close button closes with reason "closeButton"', async ({ page }) => {
     await gotoFixture(page, 'dialog');
     await page.locator('#trigger').focus();
     await page.locator('#trigger').click();

@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -187,13 +188,26 @@ export class ForDialog implements ForDialogContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #inertStack = inject(InertSiblingsStack);
   readonly #scrollLock = inject(BodyScrollLock);
+  readonly #document = inject(DOCUMENT);
 
   // Captured once on mount so cleanup can mirror the same mode regardless
   // of whether the consumer toggles `modal()` on a doomed instance.
   #activatedAsModal = false;
   #inertHandle: InertSiblingsHandle | null = null;
+  // Captured synchronously in the constructor (before `afterNextRender`).
+  // Required for WebKit return-focus correctness (#136): WebKit blurs the
+  // previously-focused element when an ancestor receives `inert`, so by the
+  // time `afterNextRender` fires (where inert is activated) reading
+  // `document.activeElement` from the focus trap would yield `<body>`. The
+  // constructor reads it before that side-effect, locking in the trigger
+  // as the return target. Combined with `ForDialogTrigger` re-focusing
+  // itself in `onClick` to defeat WebKit's separate mousedown-blurs-button
+  // quirk, this gives a stable target across both browsers.
+  readonly #returnFocusTarget: HTMLElement | null;
 
   constructor() {
+    this.#returnFocusTarget =
+      this.#document.activeElement instanceof HTMLElement ? this.#document.activeElement : null;
     injectPortal();
 
     // Run setup *after* Angular has applied input bindings (reading
@@ -250,11 +264,16 @@ export class ForDialog implements ForDialogContext {
       if (isModal) {
         // Inert + aria-hidden the rest of the document. Pushed BEFORE the
         // focus trap activates so that the trap's `focus()` call lands on
-        // an element whose siblings are already isolated from AT.
+        // an element whose siblings are already isolated from AT. The
+        // return-focus target was captured synchronously in the constructor
+        // (see `#returnFocusTarget`) — WebKit blurs the previously-focused
+        // element by the time `afterNextRender` fires, so we cannot read
+        // `document.activeElement` here.
         this.#inertHandle = this.#inertStack.activate(this.#host.nativeElement);
         this.#focusTrap.activate({
           initialFocus: this.initialFocus(),
           preventInitialFocus: skipInitialFocus,
+          returnFocus: this.#returnFocusTarget,
         });
         this.#scrollLock.lock();
       } else if (!skipInitialFocus) {

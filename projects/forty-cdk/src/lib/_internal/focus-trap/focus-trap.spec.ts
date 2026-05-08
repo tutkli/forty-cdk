@@ -176,6 +176,45 @@ describe('FocusTrap', () => {
     expect(trap.container).toBe(container);
   });
 
+  describe('returnFocus override', () => {
+    it('restores focus to the explicit target on deactivate, ignoring document.activeElement at activation', () => {
+      // Simulates the ForDialog scenario: WebKit blurs the trigger before
+      // the trap captures activeElement, so the consumer captures it
+      // earlier and forwards it via the override.
+      const explicitTarget = outsideBefore;
+      // Pretend the inert side-effect blurred the trigger between capture
+      // and activate — activeElement is now body.
+      (document.body as HTMLElement).focus();
+      expect(document.activeElement).toBe(document.body);
+
+      trap = new FocusTrap(container);
+      trap.activate({ returnFocus: explicitTarget });
+      trap.deactivate();
+
+      expect(document.activeElement).toBe(explicitTarget);
+    });
+
+    it('treats null override as "no return target" (no focus restore on deactivate)', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container);
+      trap.activate({ returnFocus: null });
+      trap.deactivate();
+
+      // Trap focused #b1 on activate; deactivate with no returnTo leaves
+      // focus where it is.
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('falls back to document.activeElement when returnFocus is omitted', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container);
+      trap.activate();
+      trap.deactivate();
+
+      expect(document.activeElement).toBe(outsideBefore);
+    });
+  });
+
   describe('preventInitialFocus', () => {
     it('does not move focus on activate when set', () => {
       outsideBefore.focus();
