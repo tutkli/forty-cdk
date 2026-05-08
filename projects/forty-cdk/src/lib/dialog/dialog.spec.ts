@@ -893,7 +893,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('autoFocusOnOpen / autoFocusOnClose', () => {
-    it('emits (autoFocusOnOpen) before moving focus into the dialog', async () => {
+    it('invokes [autoFocusOnOpen] before moving focus into the dialog', async () => {
       @Component({
         imports: [ForDialog],
         template: `
@@ -901,7 +901,7 @@ describe('ForDialog (declarative)', () => {
             <div
               forDialog
               (close)="open.set(false)"
-              (autoFocusOnOpen)="captured.push($event)"
+              [autoFocusOnOpen]="onAutoFocusOpen"
               ariaLabel="t"
             >
               <button id="inside">inside</button>
@@ -912,6 +912,9 @@ describe('ForDialog (declarative)', () => {
       class Host {
         readonly open = signal(false);
         readonly captured: VetoableEvent[] = [];
+        readonly onAutoFocusOpen = (event: VetoableEvent): void => {
+          this.captured.push(event);
+        };
       }
 
       const r = renderHost(Host);
@@ -924,7 +927,7 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement?.id).toBe('inside');
     });
 
-    it('keeps focus outside the dialog when (autoFocusOnOpen) calls preventDefault', async () => {
+    it('keeps focus outside the dialog when [autoFocusOnOpen] calls preventDefault', async () => {
       @Component({
         imports: [ForDialog],
         template: `
@@ -933,7 +936,7 @@ describe('ForDialog (declarative)', () => {
             <div
               forDialog
               (close)="open.set(false)"
-              (autoFocusOnOpen)="$event.preventDefault()"
+              [autoFocusOnOpen]="vetoOpen"
               ariaLabel="t"
             >
               <button id="inside">inside</button>
@@ -943,6 +946,9 @@ describe('ForDialog (declarative)', () => {
       })
       class Host {
         readonly open = signal(false);
+        readonly vetoOpen = (event: VetoableEvent): void => {
+          event.preventDefault();
+        };
       }
 
       const r = renderHost(Host);
@@ -964,25 +970,35 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement?.id).toBe('inside');
     });
 
-    it('skips return-focus when (autoFocusOnClose) calls preventDefault', async () => {
+    it('fires [autoFocusOnClose] once when closing via the (close) output', async () => {
+      // Issue #104 path-1: close via close button → `requestClose` →
+      // `(close)` output → consumer flips the `@if`-gating signal.
+      // Callback must fire exactly once, in the destroy hook.
       @Component({
-        imports: [ForDialog],
+        imports: [ForDialog, ForDialogClose],
         template: `
           <button id="trigger" (click)="open.set(true)">open</button>
           @if (open()) {
             <div
               forDialog
-              (close)="open.set(false)"
-              (autoFocusOnClose)="$event.preventDefault()"
+              (close)="open.set(false); closeCount = closeCount + 1"
+              [autoFocusOnClose]="vetoClose"
               ariaLabel="t"
             >
               <button id="inside">inside</button>
+              <button id="cancel" forDialogClose>Cancel</button>
             </div>
           }
         `,
       })
       class Host {
         readonly open = signal(false);
+        callCount = 0;
+        closeCount = 0;
+        readonly vetoClose = (event: VetoableEvent): void => {
+          this.callCount += 1;
+          event.preventDefault();
+        };
       }
 
       const r = renderHost(Host);
@@ -996,19 +1012,146 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
       expect(document.activeElement?.id).toBe('inside');
 
-      // Park focus somewhere else so we can detect whether the trap restored it.
+      // Close via the close button — goes through `(close)` output →
+      // consumer flips signal → `@if` unmounts → destroy hook fires the
+      // callback. Cancel is INSIDE the dialog, so focusing it does not
+      // trip the dismissable layer's outside-focus path.
+      const cancel = document.querySelector<HTMLButtonElement>('#cancel')!;
+      cancel.click();
+      await flush(r.fixture);
+
+      // Issue #104 acceptance: callback fires once (not twice) on the (close) path.
+      expect(r.instance.callCount).toBe(1);
+      expect(r.instance.closeCount).toBe(1);
+      // returnFocus was vetoed — focus did NOT return to the trigger.
+      expect(document.activeElement).not.toBe(trigger);
+    });
+
+    it('skips return-focus when [autoFocusOnClose] calls preventDefault (close via direct signal flip)', async () => {
+      // Issue #104 path-2 reproduction: consumer flips `open.set(false)`
+      // directly without going through `(close)` (no listener bound).
+      // Before the refactor, `requestClose` was never invoked, so the
+      // veto event was never emitted — the dialog silently fell back to
+      // the default return-focus behaviour. After the refactor, the
+      // callback fires from the destroy hook regardless of close path.
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button id="trigger" (click)="open.set(true)">open</button>
+          @if (open()) {
+            <div forDialog [autoFocusOnClose]="vetoClose" ariaLabel="t">
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        callCount = 0;
+        readonly vetoClose = (event: VetoableEvent): void => {
+          this.callCount += 1;
+          event.preventDefault();
+        };
+      }
+
+      const r = renderHost(Host);
+      const trigger = (r.fixture.nativeElement as HTMLElement).querySelector(
+        '#trigger',
+      ) as HTMLButtonElement;
+      trigger.focus();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('inside');
+
       const sentinel = document.createElement('button');
       sentinel.id = 'sentinel';
       document.body.appendChild(sentinel);
       sentinel.focus();
       expect(document.activeElement?.id).toBe('sentinel');
 
+      // Direct signal flip — bypasses `(close)` entirely.
       r.instance.open.set(false);
       await flush(r.fixture);
 
-      // returnFocus was vetoed — focus stays on the sentinel, not back on the trigger.
+      expect(r.instance.callCount).toBe(1);
       expect(document.activeElement?.id).toBe('sentinel');
       sentinel.remove();
+    });
+
+    it('runs return-focus by default when [autoFocusOnClose] does NOT preventDefault', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button id="trigger" (click)="open.set(true)">open</button>
+          @if (open()) {
+            <div
+              forDialog
+              (close)="open.set(false)"
+              [autoFocusOnClose]="onClose"
+              ariaLabel="t"
+            >
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        callCount = 0;
+        readonly onClose = (_event: VetoableEvent): void => {
+          this.callCount += 1;
+          // No preventDefault — return-focus must still happen.
+        };
+      }
+
+      const r = renderHost(Host);
+      const trigger = (r.fixture.nativeElement as HTMLElement).querySelector(
+        '#trigger',
+      ) as HTMLButtonElement;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.callCount).toBe(1);
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    describe('zoneless reactivity', () => {
+      it('fires [autoFocusOnClose] under provideZonelessChangeDetection on direct signal-flip close', async () => {
+        @Component({
+          imports: [ForDialog],
+          template: `
+            <button id="trigger" (click)="open.set(true)">open</button>
+            @if (open()) {
+              <div forDialog [autoFocusOnClose]="onClose" ariaLabel="t">
+                <button id="inside">inside</button>
+              </div>
+            }
+          `,
+        })
+        class ZonelessHost {
+          readonly open = signal(false);
+          callCount = 0;
+          readonly onClose = (_event: VetoableEvent): void => {
+            this.callCount += 1;
+          };
+        }
+
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const r = renderHost(ZonelessHost);
+        await flush(r.fixture);
+
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        expect(r.instance.callCount).toBe(1);
+      });
     });
   });
 });

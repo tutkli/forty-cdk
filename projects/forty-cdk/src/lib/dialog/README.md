@@ -119,7 +119,7 @@ export class DemoHost {
 
 ## Outputs (`ForDialog`)
 
-`(close)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
+`(close)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs are vetoable: each receives a `VetoableNativeEvent<E>` carrying the underlying DOM event. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event is on `.event`.
 
 | Output               | Payload                                           | Fires on                                                                                                                                      |
 | -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -128,8 +128,15 @@ export class DemoHost {
 | `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | Pointer-down outside the dialog.                                                                                                              |
 | `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside the dialog.                                                                                                               |
 | `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite: fires alongside both of the above (and shares their veto state).                                                                   |
-| `autoFocusOnOpen`    | `VetoableEvent`                                   | Just before focus moves into the dialog on mount. `preventDefault()` skips the move.                                                          |
-| `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount (modal mode). `preventDefault()` skips the return-focus.                                  |
+
+### Inputs — focus callbacks
+
+The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action. This shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(close)` output.
+
+| Input              | Payload                          | Fires on                                                                                                                  |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.     |
+| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount (modal mode). Call `event.preventDefault()` to skip the return-focus. |
 
 ### Open without stealing focus
 
@@ -137,11 +144,18 @@ export class DemoHost {
 <input #q type="search" placeholder="Search…" />
 
 @if (open()) {
-<div forDialog (close)="open.set(false)" (autoFocusOnOpen)="$event.preventDefault(); q.focus()">
+<div forDialog (close)="open.set(false)" [autoFocusOnOpen]="keepSearchFocused">
   <h2 forDialogTitle>Results</h2>
   …
 </div>
 }
+```
+
+```ts
+readonly keepSearchFocused = (event: VetoableEvent): void => {
+  event.preventDefault();
+  this.q().nativeElement.focus();
+};
 ```
 
 The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
