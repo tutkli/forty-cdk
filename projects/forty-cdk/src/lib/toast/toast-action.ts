@@ -1,4 +1,4 @@
-import { Directive, inject, input } from '@angular/core';
+import { Directive, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { injectToastContext } from './toast-context';

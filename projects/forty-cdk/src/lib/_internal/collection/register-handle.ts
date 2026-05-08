@@ -1,7 +1,7 @@
 import { afterNextRender, DestroyRef, inject, signal, type Signal } from '@angular/core';
 
 import { IdGenerator } from '../id-generator/id-generator';
-import { Collection } from './collection';
+import type { Collection } from './collection';
 
 /**
  * Scheduling for the `register` call.
