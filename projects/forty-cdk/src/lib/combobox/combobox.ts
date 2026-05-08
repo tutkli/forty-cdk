@@ -1,8 +1,8 @@
 import {
-  afterEveryRender,
   booleanAttribute,
   computed,
   Directive,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -280,41 +280,92 @@ export class ForCombobox<T = string>
   readonly initialFocus = this.#initialFocus.asReadonly();
 
   /**
-   * Snapshot of the option set, used by `[forCombobox]` features that need
-   * to look up labels while `[forComboboxContent]` is unmounted (chips
-   * outside the listbox area, inline autocomplete after close, etc.) and
-   * by `navigate()` when virtualizing — entries persist across unmount so
-   * arrow keys can walk past the rendered window.
+   * Snapshot of the registered options as plain `{ id, value, label }`
+   * tuples. Drives inline-autocomplete matching in the input directive and
+   * the label-resolution fallback in `selected`.
    *
-   * Updated by an `afterEveryRender` hook because reading `textContent`
-   * reliably requires a post-render phase; an effect or linkedSignal would
-   * race with text-node commits.
+   * Persists across listbox close/open cycles: when the consumer's `@if`
+   * unmounts the content (`items().length === 0`) the prior cache is
+   * carried over so chips outside the listbox area and inline completion
+   * after close keep resolving labels. Resets only when the consumer's
+   * `totalCount` transitions — a query / source rebuild signal in the
+   * virtualized case.
    *
-   * Position semantics:
-   * - When the option declares `[posInSet]`, that's its key and the entry
-   *   is retained when the option unmounts (virtualization).
-   * - When `[posInSet]` is absent, the snapshot is rebuilt from DOM order
-   *   on every render — same behaviour as before this change.
+   * The option's `label` is itself a `Signal<string>` so we never need to
+   * peek at `textContent`; this used to be an `afterEveryRender`-driven
+   * cache for exactly that reason but the post-render phase is unnecessary.
    */
-  readonly #cachedOptions = signal<readonly { id: string; value: T; label: string }[]>([]);
+  readonly #cachedOptions = linkedSignal<
+    { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
+    readonly { id: string; value: T; label: string }[]
+  >({
+    source: () => ({ total: this.totalCount(), items: this.#items.items() }),
+    computation: ({ total, items }, prev) => {
+      // On a `totalCount` transition the `items()` array may still hold the
+      // previous window — signal commits run serially, so the @for re-render
+      // hasn't unregistered the old options yet. Skip folding on this
+      // transition compute and start fresh; the next run (fired when items
+      // catches up) folds the new window into a clean carry-over map.
+      if (prev && prev.source.total !== total) {
+        return [];
+      }
+      if (items.length === 0) {
+        return prev?.value ?? [];
+      }
+      const merged = new Map<string, { id: string; value: T; label: string }>();
+      for (const entry of prev?.value ?? []) {
+        merged.set(entry.id, entry);
+      }
+      for (const item of items) {
+        const id = item.id();
+        merged.set(id, { id, value: item.value(), label: item.label() });
+      }
+      return [...merged.values()];
+    },
+  });
 
-  /** Snapshot keyed by absolute index (`posInSet`), persisted across unmount. */
+  /**
+   * Snapshot keyed by absolute index (`posInSet`), persisted across unmount
+   * so navigation can walk past the rendered window when virtualizing.
+   *
+   * Reset whenever the consumer's `totalCount` transitions — a query change
+   * typically rebuilds the source array, so previously-folded entries no
+   * longer point at the same items. On any other reactive trigger (option
+   * mount / unmount) the prior map is carried over and the currently-
+   * rendered options are overlaid in place.
+   */
   readonly #snapshotByPos = linkedSignal<
-    number | undefined,
+    { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
     Map<number, { id: string; value: T; label: string; disabled: boolean }>
   >({
-    // Reset whenever the consumer's totalCount transitions — a query change
-    // typically rebuilds the source array, so the previously-folded posInSet
-    // entries no longer point at the same items.
-    source: () => this.totalCount(),
-    computation: () => new Map(),
+    source: () => ({ total: this.totalCount(), items: this.#items.items() }),
+    computation: ({ total, items }, prev) => {
+      // Same `items()`-still-stale handling as `#cachedOptions` above.
+      if (prev && prev.source.total !== total) {
+        return new Map();
+      }
+      const next = new Map<number, { id: string; value: T; label: string; disabled: boolean }>(
+        prev?.value ?? [],
+      );
+      for (const item of items) {
+        const pos = item.posInSet?.() ?? null;
+        if (pos === null) continue;
+        next.set(pos, {
+          id: item.id(),
+          value: item.value(),
+          label: item.label(),
+          disabled: item.disabled(),
+        });
+      }
+      return next;
+    },
   });
 
   /**
    * When navigation lands on a posInSet outside the visible window, the
    * directive emits `(scrollToIndex)` and remembers the target here. The
-   * `afterEveryRender` pass below seeds `aria-activedescendant` once the
-   * option for that posInSet mounts.
+   * bridge effect below seeds `aria-activedescendant` once the option for
+   * that posInSet mounts.
    */
   readonly #pendingActivePos = signal<number | null>(null);
 
@@ -361,59 +412,22 @@ export class ForCombobox<T = string>
       invalid: this.invalid,
     });
 
-    afterEveryRender(() => {
+    // Bridge: keep `aria-activedescendant` (`#activeId`) in sync with the
+    // registered option set. This effect ONLY moves the activedescendant
+    // pointer (and scrolls the matching option into view) — it does not
+    // derive data into another signal. Per CLAUDE.md that's the canonical
+    // bridge use of `effect()` and is exempt from the "no signal-derivation
+    // in effect" rule.
+    //
+    // Eagerly pulls the option caches so their `linkedSignal` `prev` slot
+    // gets seeded while the listbox is open. Without this, the lazy caches
+    // never run during the open cycle (no other consumer pulls them in
+    // non-virtualized usage), and persistence across close→re-open would
+    // start from an empty `prev`.
+    effect(() => {
+      this.#cachedOptions();
+      this.#snapshotByPos();
       const items = this.#items.items();
-      if (items.length > 0) {
-        const next: { id: string; value: T; label: string }[] = new Array(items.length);
-        const cached = this.#cachedOptions();
-        const equals = this.isItemEqualToValue();
-        let changed = cached.length !== items.length;
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i]!;
-          const id = item.id();
-          const value = item.value();
-          const label = item.label();
-          next[i] = { id, value, label };
-          if (!changed) {
-            const prev = cached[i]!;
-            if (prev.id !== id || !equals(prev.value, value) || prev.label !== label) {
-              changed = true;
-            }
-          }
-        }
-        if (changed) {
-          this.#cachedOptions.set(next);
-        }
-      }
-
-      // Fold currently-rendered options into the indexed snapshot at their
-      // declared `posInSet`. Entries persist across unmount so navigation
-      // can walk past the rendered window when virtualizing.
-      const indexed = this.#snapshotByPos();
-      let indexedChanged = false;
-      for (const item of items) {
-        const pos = item.posInSet?.() ?? null;
-        if (pos === null) continue;
-        const existing = indexed.get(pos);
-        const id = item.id();
-        const value = item.value();
-        const label = item.label();
-        const disabled = item.disabled();
-        if (
-          !existing ||
-          existing.id !== id ||
-          existing.label !== label ||
-          existing.disabled !== disabled ||
-          !this.isItemEqualToValue()(existing.value, value)
-        ) {
-          indexed.set(pos, { id, value, label, disabled });
-          indexedChanged = true;
-        }
-      }
-      if (indexedChanged) {
-        // Re-seat the Map so consumers of `#snapshotByPos` re-read it.
-        this.#snapshotByPos.set(new Map(indexed));
-      }
 
       // Resolve a pending virtualized navigation: once the option for the
       // requested posInSet mounts, seed activedescendant to its id.
@@ -424,6 +438,7 @@ export class ForCombobox<T = string>
           this.#activeId.set(match.id());
           this.#pendingActivePos.set(null);
           match.host.scrollIntoView?.({ block: 'nearest' });
+          return;
         }
       }
 
@@ -435,8 +450,7 @@ export class ForCombobox<T = string>
       if (this.autoHighlight() && this.open() && this.#activeId() === null && items.length > 0) {
         const total = this.totalCount();
         if (total !== undefined) {
-          const direction = this.#initialFocus() === 'last' ? 'last' : 'first';
-          this.#seedFromIndexedSnapshot(direction);
+          this.#seedFromIndexedSnapshot(this.#initialFocus() === 'last' ? 'last' : 'first');
         } else {
           const target =
             this.#initialFocus() === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
