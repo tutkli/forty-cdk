@@ -5,7 +5,7 @@ import {
   Directive,
   ElementRef,
   inject,
-  Signal,
+  type Signal,
   signal,
 } from '@angular/core';
 

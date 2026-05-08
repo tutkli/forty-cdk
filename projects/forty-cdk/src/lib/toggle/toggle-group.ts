@@ -21,8 +21,8 @@ import {
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,
-  ForToggleGroupContext,
-  ForToggleGroupItemHandle,
+  type ForToggleGroupContext,
+  type ForToggleGroupItemHandle,
 } from './toggle-group-context';
 
 /**

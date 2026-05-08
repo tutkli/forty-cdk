@@ -1,4 +1,4 @@
-import { InjectionToken, Signal } from '@angular/core';
+import { InjectionToken, type Signal } from '@angular/core';
 
 /** State of a progress bar reflected on `data-state`. */
 export type ForProgressState = 'indeterminate' | 'loading' | 'complete';

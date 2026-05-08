@@ -21,8 +21,8 @@ import {
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   FOR_RADIO_GROUP_CONTEXT,
-  ForRadioGroupContext,
-  ForRadioHandle,
+  type ForRadioGroupContext,
+  type ForRadioHandle,
 } from './radio-group-context';
 
 /**

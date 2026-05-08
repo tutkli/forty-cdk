@@ -42,6 +42,10 @@ __screenshots__/
 # Claude Code
 .claude/settings.local.json
 
+# Audit working files (issue body drafts kept locally, not part of source)
+/.audit-issues/
+/.tmp-issue-*.md
+
 # System files
 .DS_Store
 Thumbs.db

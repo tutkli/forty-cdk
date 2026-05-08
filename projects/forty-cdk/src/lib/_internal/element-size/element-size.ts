@@ -1,4 +1,4 @@
-import { afterNextRender, DestroyRef, effect, inject, Signal, signal } from '@angular/core';
+import { afterNextRender, DestroyRef, effect, inject, type Signal, signal } from '@angular/core';
 
 export interface ElementBox {
   /** Border-box width in CSS pixels. */

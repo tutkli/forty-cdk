@@ -1,6 +1,6 @@
 import {
   Component,
-  ElementRef,
+  type ElementRef,
   inject,
   provideZonelessChangeDetection,
   signal,
@@ -52,13 +52,13 @@ describe('injectElementSize', () => {
 
   beforeEach(() => {
     originalRO = globalThis.ResizeObserver;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (globalThis as any).ResizeObserver = FakeResizeObserver as any;
     FakeResizeObserver.instances = [];
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });
   afterEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (globalThis as any).ResizeObserver = originalRO;
   });
 

@@ -10,7 +10,7 @@ import {
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_ACCORDION_ITEM_CONTEXT,
-  ForAccordionItemContext,
+  type ForAccordionItemContext,
   injectAccordionContext,
 } from './accordion-context';
 

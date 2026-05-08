@@ -1,11 +1,11 @@
 import {
   Component,
-  ElementRef,
+  type ElementRef,
   provideZonelessChangeDetection,
   signal,
   viewChild,
 } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { injectItemAlignedPositioner } from './item-aligned';
 

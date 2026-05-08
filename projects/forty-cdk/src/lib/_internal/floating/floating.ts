@@ -1,4 +1,4 @@
-import { afterNextRender, effect, ElementRef, inject, Signal } from '@angular/core';
+import { afterNextRender, effect, ElementRef, inject, type Signal } from '@angular/core';
 import {
   arrow,
   autoUpdate,

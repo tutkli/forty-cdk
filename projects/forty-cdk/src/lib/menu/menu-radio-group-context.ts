@@ -1,4 +1,4 @@
-import { inject, InjectionToken, ModelSignal } from '@angular/core';
+import { inject, InjectionToken, type ModelSignal } from '@angular/core';
 
 /**
  * Coordination contract owned by `[forMenuRadioGroup]`. Radio items inject

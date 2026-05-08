@@ -29,7 +29,7 @@ export class ForAvatarImage {
    * if the consumer wants to log analytics, swap to a different src on
    * error, etc.
    */
-  readonly onLoadingStatusChange = output<ForAvatarStatus>();
+  readonly loadingStatusChange = output<ForAvatarStatus>();
 
   constructor() {
     if (!this.#parent) {
@@ -58,7 +58,7 @@ export class ForAvatarImage {
       if (last === status) return;
       last = status;
       parent.reportStatus(status);
-      this.onLoadingStatusChange.emit(status);
+      this.loadingStatusChange.emit(status);
     };
     this.#emit = emit;
   }
