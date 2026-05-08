@@ -3,7 +3,6 @@ import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@ang
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
 import { injectItemAlignedPositioner } from '../_internal/floating/item-aligned';
-import { injectPortal } from '../_internal/portal/portal';
 import { injectSelectContext } from './select-context';
 
 /**
@@ -52,8 +51,6 @@ export class ForSelectContent {
   readonly #dismissable = injectDismissableLayer();
 
   constructor() {
-    injectPortal();
-
     this.ctx.registerContent(this.#host.nativeElement);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
 
@@ -61,13 +58,15 @@ export class ForSelectContent {
     // modes at runtime would require re-creating the directive (mount /
     // unmount cycle), which is the expected pattern for primitives whose
     // positioning algorithm is structurally different.
+    //
+    // Both positioner helpers portal by default; no separate
+    // `injectPortal()` is needed at the top of this directive.
     if (this.ctx.position() === 'item-aligned') {
       injectItemAlignedPositioner({
         reference: this.ctx.anchor,
         open: this.ctx.open,
         selectedOption: this.ctx.selectedOptionEl,
         collisionPadding: this.ctx.collisionPadding,
-        portal: false,
       });
     } else {
       injectFloating({

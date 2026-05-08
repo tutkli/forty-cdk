@@ -119,8 +119,22 @@ function typeInto(input: HTMLInputElement, text: string): void {
 }
 
 describe('ForCombobox', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
+  describe('portal cleanup', () => {
+    it('removes the portaled content from document.body on close', async () => {
+      // Issue #89 reproduction. Combobox previously called `injectPortal()`
+      // explicitly *and* let `injectFloating` portal again, doubling the
+      // destroy hook. The fix removes the explicit call; this test guards
+      // against regressions on either side.
+      const r = renderHost(ComboboxHost);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forComboboxContent]')).toHaveLength(1);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forComboboxContent]')).toHaveLength(0);
+    });
   });
 
   describe('a11y baseline', () => {
@@ -1354,10 +1368,6 @@ describe('ForCombobox object values', () => {
     { id: 'rome', name: 'Rome' },
   ];
 
-  afterEach(() => {
-    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
-  });
-
   // Single-mode object host. Notice the directive class is not annotated
   // with an explicit `<City>` — the template-binding inference is enough
   // to specialize the model and the option `value` input to `City`.
@@ -1586,10 +1596,6 @@ describe('ForCombobox object values', () => {
 });
 
 describe('ForComboboxStatus', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
-  });
-
   @Component({
     imports: [
       ForCombobox,
@@ -1698,10 +1704,6 @@ describe('ForComboboxStatus', () => {
 });
 
 describe('ForComboboxIndicator', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
-  });
-
   @Component({
     imports: [
       ForCombobox,
@@ -1872,10 +1874,6 @@ describe('ForCombobox virtualization', () => {
       this.range.set([start, start + 10]);
     }
   }
-
-  afterEach(() => {
-    document.querySelectorAll('[forComboboxContent]').forEach((n) => n.remove());
-  });
 
   it('reflects aria-setsize on the listbox and aria-posinset on each option', async () => {
     const r = renderHost(VirtHost);

@@ -22,6 +22,24 @@ export interface PortalConfig {
  * Note: any styles scoped to the original parent (CSS modules, encapsulated
  * `:host` rules, descendant selectors) won't reach the portaled element.
  * Style it via global CSS or with classes on the host directive itself.
+ *
+ * Implementation note — destroy ordering. The deferred `appendChild` is
+ * registered as `afterNextRender`; the destroy hook runs `el.remove()`. If
+ * the directive is torn down between construction and the next render
+ * (rare, but happens in synchronous open/close test paths or fast SPA
+ * navigations), the destroy hook sees a not-yet-portaled element and
+ * `el.remove()` is effectively a no-op against the original parent. Without
+ * defending against it, the queued `afterNextRender` would still fire after
+ * destroy and re-attach the element to `target` with no remaining destroy
+ * hook to clean it up — a leak. We mitigate by:
+ *
+ *   1. Capturing the `AfterRenderRef` returned by `afterNextRender` and
+ *      calling `.destroy()` from the destroy hook so the queued callback is
+ *      cancelled if it hasn't fired yet.
+ *   2. Setting a `destroyed` flag the queued callback re-checks before
+ *      touching the DOM, in case it interleaves before `.destroy()` takes
+ *      effect (belt-and-suspenders for harnesses that flush render queues
+ *      synchronously inside teardown).
  */
 export function injectPortal(config: PortalConfig = {}): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -29,11 +47,23 @@ export function injectPortal(config: PortalConfig = {}): void {
   const el = host.nativeElement;
   const target = config.target ?? document.body;
 
-  afterNextRender(() => {
+  let destroyed = false;
+
+  const ref = afterNextRender(() => {
+    if (destroyed) return;
     if (el.parentNode !== target) {
       target.appendChild(el);
     }
   });
 
-  destroyRef.onDestroy(() => el.remove());
+  destroyRef.onDestroy(() => {
+    destroyed = true;
+    // Cancel the queued render callback first — otherwise an interleaved
+    // render flush could re-attach the element after we've removed it.
+    ref.destroy();
+    // `Element.remove()` is a no-op when the node has no parent, so this is
+    // safe whether the portal moved the element to `target`, the element is
+    // still in its original parent, or it's been detached already.
+    el.remove();
+  });
 }

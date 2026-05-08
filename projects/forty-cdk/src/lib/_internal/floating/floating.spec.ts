@@ -189,12 +189,6 @@ describe('injectFloating', () => {
     }
   });
 
-  afterEach(() => {
-    document
-      .querySelectorAll('floating-bubble, inplace-bubble, modern-bubble')
-      .forEach((n) => n.remove());
-  });
-
   describe('portal', () => {
     it('moves the floating element to document.body once mounted', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });

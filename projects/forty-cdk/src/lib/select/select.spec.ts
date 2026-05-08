@@ -82,10 +82,6 @@ function activeTestId(): string | null {
 }
 
 describe('ForSelect', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forSelectContent]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('wires combobox role + aria-haspopup + aria-expanded + aria-controls', async () => {
       const r = renderHost(SelectHost);
@@ -971,10 +967,6 @@ describe('ForSelect', () => {
 });
 
 describe('ForSelectIndicator', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forSelectContent]').forEach((n) => n.remove());
-  });
-
   @Component({
     imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectIndicator],
     template: `

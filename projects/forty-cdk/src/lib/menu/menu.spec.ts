@@ -137,10 +137,6 @@ class TypeaheadOverrideHost {
 
 
 describe('Menu items / content', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('sets role=menu on content and aria-labelledby to the trigger', async () => {
       const r = renderHost(MenuHost);
@@ -734,10 +730,6 @@ describe('Menu items / content', () => {
 });
 
 describe('ForMenuItemIndicator', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
-  });
-
   @Component({
     imports: [
       ForDropdownMenu,
