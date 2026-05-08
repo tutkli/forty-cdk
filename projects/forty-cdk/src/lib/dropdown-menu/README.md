@@ -98,6 +98,8 @@ Every output below is vetoable — each handler receives a `VetoableEvent` (or `
 | `autoFocusOnOpen`    | `VetoableEvent`                                   | Just before focus moves to the first / last enabled item on mount.       |
 | `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount.                     |
 
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because DropdownMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+
 ## Trigger keyboard
 
 | Key                         | Behavior                                                          |

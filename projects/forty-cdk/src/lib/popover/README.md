@@ -94,6 +94,8 @@ The dismiss outputs and the auto-focus pair are vetoable: each receives a `Vetoa
 | `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.     |
 | `openChange`         | `boolean`                                         | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
 
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+
 ### Open without stealing focus
 
 ```html
