@@ -11,5 +11,5 @@ export {
   FOR_HOVER_CARD_DEFAULTS,
   HoverCardCoordinator,
   provideForHoverCardDefaults,
-  type HoverCardDefaults,
+  type ForHoverCardDefaults,
 } from './hover-card-defaults';

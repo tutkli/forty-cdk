@@ -8,7 +8,7 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * or in any component's `providers` array; partial overrides merge with
  * the parent scope.
  */
-export interface TooltipDefaults {
+export interface ForTooltipDefaults {
   /** Open delay (ms) for tooltips that don't override `openDelay` locally. */
   delayDuration: number;
   /**
@@ -19,12 +19,12 @@ export interface TooltipDefaults {
   skipDelayDuration: number;
 }
 
-const FALLBACK: TooltipDefaults = {
+const FALLBACK: ForTooltipDefaults = {
   delayDuration: 700,
   skipDelayDuration: 300,
 };
 
-const { token, provideDefaults } = createDefaults<TooltipDefaults>(
+const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(
   'FOR_TOOLTIP_DEFAULTS',
   FALLBACK,
 );
@@ -34,7 +34,7 @@ export const FOR_TOOLTIP_DEFAULTS = token;
 
 /**
  * Per-injector-scope state owned by forty-cdk tooltip. Holds the
- * skip-delay flag and the resolved `TooltipDefaults`. Each call to
+ * skip-delay flag and the resolved `ForTooltipDefaults`. Each call to
  * `provideForTooltipDefaults` re-provides this class so the corresponding
  * subtree gets its own coordinator (and therefore its own skip-delay
  * window). Tooltips inject it on construction.
@@ -103,6 +103,6 @@ export class TooltipCoordinator {
  * class Toolbar {}
  * ```
  */
-export function provideForTooltipDefaults(defaults: Partial<TooltipDefaults>): Provider[] {
+export function provideForTooltipDefaults(defaults: Partial<ForTooltipDefaults>): Provider[] {
   return [...provideDefaults(defaults), TooltipCoordinator];
 }

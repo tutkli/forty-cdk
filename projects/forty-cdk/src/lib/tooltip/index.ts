@@ -5,7 +5,7 @@ export { ForTooltipArrow } from './tooltip-arrow';
 export {
   FOR_TOOLTIP_DEFAULTS,
   provideForTooltipDefaults,
-  type TooltipDefaults,
+  type ForTooltipDefaults,
 } from './tooltip-defaults';
 export {
   FOR_TOOLTIP_CONTEXT,
