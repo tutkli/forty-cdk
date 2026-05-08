@@ -2,7 +2,7 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { FOR_TOOLBAR_CONTEXT } from '../toolbar/toolbar-context';
+import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**
@@ -41,7 +41,7 @@ import { injectToggleGroupContext } from './toggle-group-context';
 })
 export class ForToggleGroupItem {
   protected readonly group = injectToggleGroupContext('ForToggleGroupItem');
-  readonly #toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true, skipSelf: true });
+  readonly #rovingHost = inject(FOR_HOST_ROVING_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Identifier added to / removed from the group's `value`. Required. */
@@ -53,19 +53,19 @@ export class ForToggleGroupItem {
   readonly pressed = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.group.disabled() || (this.#toolbar?.disabled() ?? false),
+    () => this.disabled() || this.group.disabled() || (this.#rovingHost?.disabled() ?? false),
   );
 
   /**
-   * Tabindex per APG: 0 if this item is the current entry point (toolbar's
-   * first-focusable when nested in a toolbar, otherwise the group's), -1
-   * otherwise. Disabled items are always -1.
+   * Tabindex per APG: 0 if this item is the current entry point (the
+   * roving host's first-focusable when nested inside one, otherwise the
+   * group's), -1 otherwise. Disabled items are always -1.
    */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    const owner = this.#toolbar ?? this.group;
+    const owner = this.#rovingHost ?? this.group;
     return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
@@ -81,16 +81,16 @@ export class ForToggleGroupItem {
       (h) => this.group.unregisterItem(h),
     );
 
-    const toolbar = this.#toolbar;
-    if (toolbar) {
-      const toolbarHandle = {
+    const rovingHost = this.#rovingHost;
+    if (rovingHost) {
+      const rovingHandle = {
         host: this.#host.nativeElement,
         disabled: this.effectiveDisabled,
       };
       registerHandle(
-        toolbarHandle,
-        (h) => toolbar.registerItem(h),
-        (h) => toolbar.unregisterItem(h),
+        rovingHandle,
+        (h) => rovingHost.registerItem(h),
+        (h) => rovingHost.unregisterItem(h),
       );
     }
   }
@@ -106,7 +106,7 @@ export class ForToggleGroupItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    const owner = this.#toolbar ?? this.group;
+    const owner = this.#rovingHost ?? this.group;
     const action = resolveListNavigation(event, {
       orientation: owner.orientation(),
       dir: owner.dir(),
