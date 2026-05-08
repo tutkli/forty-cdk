@@ -1,5 +1,5 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -59,16 +59,14 @@ export interface ForSelectContext {
    * Positioning algorithm. `'popper'` (default) is standard floating-ui
    * anchored placement; `'item-aligned'` overlays the listbox so the
    * selected option's center aligns with the trigger's center (macOS-style
-   * native `<select>`). All `side`/`align`/`*Offset`/`placement`/`sticky`/
+   * native `<select>`). All `side`/`align`/`*Offset`/`sticky`/
    * `hideWhenDetached`/`avoidCollisions` inputs are no-ops in
    * `'item-aligned'` mode (only `collisionPadding` is honored).
    */
   readonly position: Signal<'popper' | 'item-aligned'>;
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;

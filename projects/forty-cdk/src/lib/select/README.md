@@ -115,7 +115,7 @@ The directive sets `--for-select-content-available-height` on the content host s
 }
 ```
 
-When `position="item-aligned"`, the following inputs are **no-ops**: `placement`, `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `arrowPadding`. Only `collisionPadding` (default `8`) is honored — it drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the legacy `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
+When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `arrowPadding`. Only `collisionPadding` (default `8`) is honored — it drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
 
 The default stays `popper` (rather than mirroring Radix's `item-aligned` default) so existing consumers' visuals don't shift on upgrade — opt in per primitive when the macOS feel is what you want.
 

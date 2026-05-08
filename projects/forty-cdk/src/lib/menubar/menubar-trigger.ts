@@ -9,7 +9,6 @@ import {
   numberAttribute,
   signal,
 } from '@angular/core';
-import type { Placement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -24,9 +23,10 @@ import { injectMenubarContext } from './menubar-context';
  * `aria-controls`. Participates in the menubar's roving tabindex (only the
  * active trigger is tabbable; the rest are `tabindex="-1"`).
  *
- * Each trigger registers its per-menu floating-ui inputs (placement, side,
- * offset, …) with the menubar so the multiplexed `[forMenuContent]` reads
- * the right values when this trigger's menu is the one currently open.
+ * Each trigger registers its per-menu floating-ui inputs (side, align,
+ * sideOffset, …) with the menubar so the multiplexed `[forMenuContent]`
+ * reads the right values when this trigger's menu is the one currently
+ * open.
  *
  * Keyboard:
  * - **Click / Enter / Space** — toggle this trigger's menu (focus first item on open).
@@ -76,14 +76,13 @@ export class ForMenubarTrigger {
 
   // -- Floating-ui inputs (forwarded to the multiplexed [forMenuContent]) --
 
-  /** Floating-ui placement. Default `'bottom-start'`. */
-  readonly placement = input<Placement>('bottom-start');
-  readonly side = input<FloatingSide | undefined>(undefined);
-  readonly align = input<FloatingAlign | undefined>(undefined);
-  readonly offset = input<number>(4);
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  /** Anchor side. Default `'bottom'`. */
+  readonly side = input<FloatingSide | undefined>('bottom');
+  /** Alignment along `side`. Default `'start'`. */
+  readonly align = input<FloatingAlign | undefined>('start');
+  /** Gap (px) along the main axis. Default `4`. */
+  readonly sideOffset = input(4, { transform: numberAttribute });
+  /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
   readonly collisionPadding = input(8, { transform: numberAttribute });
@@ -115,10 +114,8 @@ export class ForMenubarTrigger {
       disabled: this.effectiveDisabled,
       triggerId: this.triggerId,
       contentId: this.contentId,
-      placement: this.placement,
       side: this.side,
       align: this.align,
-      offset: this.offset,
       sideOffset: this.sideOffset,
       alignOffset: this.alignOffset,
       avoidCollisions: this.avoidCollisions,

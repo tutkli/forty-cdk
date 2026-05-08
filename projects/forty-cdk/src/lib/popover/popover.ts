@@ -9,7 +9,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement } from '@floating-ui/dom';
 
 import {
   emitAutoFocusOnClose,
@@ -65,16 +64,8 @@ export class ForPopover implements ForPopoverContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Floating-ui placement (e.g. `'bottom'`, `'bottom-start'`). Default
-   * `'bottom'`. Legacy single-string API — new code should prefer the
-   * `side` + `align` pair, which compose to the same placement.
-   */
-  readonly placement = input<Placement>('bottom');
-
-  /**
-   * Side the popover is anchored to. When set, takes precedence over
-   * `placement`. Pair with `align` for the full positioning API
-   * (`side="bottom" align="start"` ≡ `placement="bottom-start"`).
+   * Side the popover is anchored to. Defaults to `'bottom'`. Pair with
+   * `align` for the full positioning API (`side="bottom" align="start"`).
    */
   readonly side = input<FloatingSide | undefined>(undefined);
 
@@ -82,20 +73,11 @@ export class ForPopover implements ForPopoverContext {
   readonly align = input<FloatingAlign | undefined>(undefined);
 
   /**
-   * Gap (px) between trigger and content along the *main* axis (perpendicular
-   * to `side`). Default `8`. Forwarded to floating-ui's `offset` middleware.
-   * Legacy alias kept for backward compatibility — new code should use
-   * `sideOffset` instead.
+   * Gap (px) between trigger and content along the *main* axis
+   * (perpendicular to `side`). Default `8`. Forwarded to floating-ui's
+   * `offset` middleware. Mirrors Radix's `sideOffset`.
    */
-  readonly offset = input<number>(8);
-
-  /**
-   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
-   * Identical semantics to Radix's `sideOffset`.
-   */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  readonly sideOffset = input(8, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

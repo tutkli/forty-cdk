@@ -1,5 +1,4 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
-import type { Placement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 
@@ -14,11 +13,9 @@ export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
 export interface ForTooltipContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;

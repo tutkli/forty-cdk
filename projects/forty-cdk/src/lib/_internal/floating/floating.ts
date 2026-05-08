@@ -47,9 +47,9 @@ export interface FloatingConfig {
 
   /**
    * Side the floating element is anchored to (`'top'`/`'right'`/`'bottom'`/
-   * `'left'`). When omitted (or the signal returns `undefined`), falls
-   * back to the side parsed from `placement`. Pair with `align` for the
-   * full Radix-style positioning API.
+   * `'left'`). When omitted (or the signal returns `undefined`), defaults
+   * to `'bottom'`. Pair with `align` for the full Radix-style positioning
+   * API.
    */
   readonly side?: Signal<FloatingSide | undefined>;
 
@@ -63,7 +63,7 @@ export interface FloatingConfig {
   /**
    * Distance (px) between reference and floating along the *main* axis
    * (perpendicular to `side`). Forwarded to floating-ui's `offset`
-   * middleware. Falls back to `offset` for backward compatibility.
+   * middleware. Defaults to `0`.
    */
   readonly sideOffset?: Signal<number | undefined>;
 
@@ -72,19 +72,6 @@ export interface FloatingConfig {
    * shifting an `align: 'start'` popover slightly past the trigger edge.
    */
   readonly alignOffset?: Signal<number | undefined>;
-
-  /**
-   * Legacy floating-ui placement string (e.g. `'top'`, `'bottom-start'`).
-   * Used when `side` is not provided. New code should prefer the
-   * `side` + `align` pair.
-   */
-  readonly placement?: Signal<Placement>;
-
-  /**
-   * Legacy alias for `sideOffset`. Kept for backward compatibility with
-   * primitives that still expose a single `offset` input.
-   */
-  readonly offset?: Signal<number>;
 
   /**
    * Optional arrow element. When non-null, the `arrow` middleware is
@@ -224,15 +211,12 @@ export function injectFloating(config: FloatingConfig): void {
     const reference = config.reference();
     const arrowEl = config.arrow?.() ?? null;
 
-    // Resolve placement — `side` + `align` win over the legacy `placement`.
-    const sideInput = config.side?.();
-    const alignInput = config.align?.();
-    const legacyPlacement = config.placement?.() ?? 'bottom';
-    const requestedPlacement: Placement = sideInput
-      ? joinPlacement(sideInput, alignInput ?? 'center')
-      : legacyPlacement;
+    // Resolve placement from `side` + `align` with sensible defaults.
+    const sideInput = config.side?.() ?? 'bottom';
+    const alignInput = config.align?.() ?? 'center';
+    const requestedPlacement: Placement = joinPlacement(sideInput, alignInput);
 
-    const sideOffsetVal = config.sideOffset?.() ?? config.offset?.() ?? 0;
+    const sideOffsetVal = config.sideOffset?.() ?? 0;
     const alignOffsetVal = config.alignOffset?.() ?? 0;
     const avoidCollisions = config.avoidCollisions?.() ?? true;
     // `collisionPadding`, when set, applies uniformly to flip + shift +

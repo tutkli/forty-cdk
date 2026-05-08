@@ -18,8 +18,10 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 | API          | Type                         | Description                                                                          |
 | ------------ | ---------------------------- | ------------------------------------------------------------------------------------ |
 | `open`       | `WritableSignal<boolean>` (two-way bindable as `[(open)]`) | `(openChange)` fires only on internal transitions (delay timers, escape, blur, and the force-close that runs when `disabled` flips to true). |
-| `placement`  | `input<Placement>`           | Floating-ui placement. Default `'top'`.                                              |
-| `offset`     | `input<number>`              | Gap (px) between trigger and card. Default `8`.                                      |
+| `side`       | `input<FloatingSide>`        | Anchor side. Default `'top'`.                                                        |
+| `align`      | `input<FloatingAlign>`       | Alignment along `side`. Default `'center'`.                                          |
+| `sideOffset` | `input<number>`              | Gap (px) between trigger and card along the main axis. Default `8`.                  |
+| `alignOffset`| `input<number>`              | Gap (px) along the cross axis. Default `0`.                                          |
 | `openDelay`  | `input<number \| undefined>` | Per-card override for open delay. Falls back to `provideHoverCardDefaults` (700ms).  |
 | `closeDelay` | `input<number \| undefined>` | Per-card override for close delay. Falls back to `provideHoverCardDefaults` (300ms). |
 | `disabled`   | `input<boolean>`             | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync). |

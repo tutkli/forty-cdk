@@ -71,17 +71,19 @@ The actual menu items, content surface, radio groups, separators, and groups com
 
 ## Inputs (`ForDropdownMenu`)
 
-| API           | Default          | Description                                                                                                                                                                    |
-| ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `open`        | `false`          | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
-| `placement`   | `'bottom-start'` | Floating-ui placement of `[forMenuContent]` against the trigger.                                                                                                               |
-| `offset`      | `4`              | Gap (px) between the trigger and the content.                                                                                                                                  |
-| `loop`        | `true`           | Whether arrow navigation wraps at the ends.                                                                                                                                    |
-| `dir`         | `'ltr'`          | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled`    | `false`          | When `true`, trigger interactions are ignored.                                                                                                                                 |
-| `dismissible` | `true`           | When `false`, Escape and outside interactions don't close.                                                                                                                     |
-| `returnFocus` | `true`           | When `true`, focus returns to the trigger on close.                                                                                                                            |
-| `ariaLabel`   | `null`           | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
+| API           | Default     | Description                                                                                                                                                                    |
+| ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`        | `false`     | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
+| `side`        | `'bottom'`  | Anchor side of `[forMenuContent]` against the trigger.                                                                                                                         |
+| `align`       | `'start'`   | Alignment along `side` (`'start'` / `'center'` / `'end'`).                                                                                                                     |
+| `sideOffset`  | `4`         | Gap (px) between the trigger and the content along the main axis.                                                                                                              |
+| `alignOffset` | `0`         | Gap (px) along the cross axis (parallel to `side`).                                                                                                                            |
+| `loop`        | `true`      | Whether arrow navigation wraps at the ends.                                                                                                                                    |
+| `dir`         | `'ltr'`     | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
+| `disabled`    | `false`     | When `true`, trigger interactions are ignored.                                                                                                                                 |
+| `dismissible` | `true`      | When `false`, Escape and outside interactions don't close.                                                                                                                     |
+| `returnFocus` | `true`      | When `true`, focus returns to the trigger on close.                                                                                                                            |
+| `ariaLabel`   | `null`      | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
 
 ## Outputs (`ForDropdownMenu`)
 

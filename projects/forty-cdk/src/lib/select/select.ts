@@ -10,7 +10,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -99,34 +99,26 @@ export class ForSelect
    *   — visually the menu "snaps over" the trigger when opened, mirroring
    *   macOS native `<select>`. Falls back to the first enabled option when
    *   nothing is selected. `side`, `align`, `sideOffset`, `alignOffset`,
-   *   `placement`, `sticky`, `hideWhenDetached`, and `avoidCollisions` are
-   *   ignored in this mode; only `collisionPadding` is honored.
+   *   `sticky`, `hideWhenDetached`, and `avoidCollisions` are ignored in
+   *   this mode; only `collisionPadding` is honored.
    */
   readonly position = input<'popper' | 'item-aligned'>('popper');
 
   /**
-   * Floating-ui placement. Default `'bottom-start'`. Legacy single-string
-   * API — new code should prefer the `side` + `align` pair. Ignored when
+   * Side the listbox is anchored to. Defaults to `'bottom'`. Pair with
+   * `align` for the full positioning API. Ignored when
    * `position="item-aligned"`.
    */
-  readonly placement = input<Placement>('bottom-start');
+  readonly side = input<FloatingSide | undefined>('bottom');
+
+  /** Alignment along the chosen `side`. Defaults to `'start'`. */
+  readonly align = input<FloatingAlign | undefined>('start');
 
   /**
-   * Side the listbox is anchored to. When set, takes precedence over
-   * `placement`. Pair with `align` for the full positioning API.
+   * Gap (px) between trigger and listbox along the main axis. Default `4`.
+   * Mirrors Radix's `sideOffset`.
    */
-  readonly side = input<FloatingSide | undefined>(undefined);
-
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
-
-  /** Gap (px) between trigger and listbox along the main axis. Default `4`. Legacy alias for `sideOffset`. */
-  readonly offset = input<number>(4);
-
-  /** Gap (px) along the main axis. When set, overrides the legacy `offset`. */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  readonly sideOffset = input(4, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

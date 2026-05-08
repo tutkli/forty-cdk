@@ -72,10 +72,8 @@ export class ForSelectContent {
       injectFloating({
         reference: this.ctx.anchor,
         open: this.ctx.open,
-        placement: this.ctx.placement,
         side: this.ctx.side,
         align: this.ctx.align,
-        offset: this.ctx.offset,
         sideOffset: this.ctx.sideOffset,
         alignOffset: this.ctx.alignOffset,
         avoidCollisions: this.ctx.avoidCollisions,

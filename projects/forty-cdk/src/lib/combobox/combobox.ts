@@ -11,7 +11,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
@@ -168,42 +168,32 @@ export class ForCombobox<T = string>
   /**
    * Writing direction. Default `'ltr'`. Drives chip-cluster keyboard
    * navigation (ArrowLeft / ArrowRight semantics swap in RTL so they
-   * follow the visual order, not DOM order) and the default `placement`
-   * of the listbox (anchors to the right edge of the input in RTL).
+   * follow the visual order, not DOM order) and the default `align` of
+   * the listbox (anchors to the right edge of the input in RTL).
    */
   readonly dir = input<WritingDirection>('ltr');
 
   /**
-   * Floating-ui placement. When omitted, defaults to `'bottom-start'` in
-   * LTR and `'bottom-end'` in RTL (per `dir`). When set explicitly, the
-   * consumer's value is used as-is — no automatic flip — so advanced
-   * layouts can pin a side regardless of writing direction. Legacy
-   * single-string API; new code should prefer the `side` + `align` pair.
-   *
-   * The input is aliased to `placement`; consumers bind `[placement]="..."`
-   * and read the effective value via the public `placement` computed below.
+   * Side the listbox is anchored to. Defaults to `'bottom'`. Pair with
+   * `align` for the full positioning API.
    */
-  readonly _placementInput = input<Placement | undefined>(undefined, { alias: 'placement' });
-  readonly placement = computed<Placement>(
-    () => this._placementInput() ?? (this.dir() === 'rtl' ? 'bottom-end' : 'bottom-start'),
-  );
+  readonly side = input<FloatingSide | undefined>('bottom');
 
   /**
-   * Side the listbox is anchored to. When set, takes precedence over
-   * `placement`. Pair with `align` for the full positioning API.
+   * Alignment along the chosen `side`. When unset, defaults to `'start'`
+   * in LTR and `'end'` in RTL (per `dir`). Set explicitly to pin an
+   * alignment regardless of writing direction.
+   *
+   * The input is aliased to `align`; consumers bind `[align]="..."` and
+   * read the effective value via the public `align` computed below.
    */
-  readonly side = input<FloatingSide | undefined>(undefined);
+  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
+  readonly align = computed<FloatingAlign>(
+    () => this._alignInput() ?? (this.dir() === 'rtl' ? 'end' : 'start'),
+  );
 
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
-
-  /** Gap (px) between input and listbox along the main axis. Default `4`. Legacy alias for `sideOffset`. */
-  readonly offset = input<number>(4);
-
-  /** Gap (px) along the main axis. When set, overrides the legacy `offset`. */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  /** Gap (px) between input and listbox along the main axis. Default `4`. */
+  readonly sideOffset = input(4, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

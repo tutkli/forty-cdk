@@ -1,5 +1,4 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
-import type { Placement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -12,19 +11,17 @@ import type {
  * Per-trigger configuration that the menubar root reads when its menu is the
  * one currently open. Each `[forMenubarTrigger]` registers one of these so
  * the menubar's multiplexed `ForMenuContext` (which `[forMenuContent]`
- * injects) can pull placement, ids, anchor, and per-menu inputs from the
- * matching trigger.
+ * injects) can pull side / align, ids, anchor, and per-menu inputs from
+ * the matching trigger.
  */
 export interface ForMenubarTriggerHandle extends CollectionHandle {
   readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;
