@@ -728,6 +728,36 @@ describe('ForToastManager (programmatic)', () => {
     expect(r.el.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
   });
 
+  it('two synchronous show({id}) calls before any flush yield exactly one entry and one ref', () => {
+    const r = renderHost(ProgrammaticHost);
+    // Back-to-back inside the same synchronous tick — no `flush` between
+    // calls. The id-keyed lookup must catch the duplicate before the second
+    // call pushes a parallel entry.
+    const a = r.instance.toasts.show({ id: 'save', title: 'Saving…' });
+    const b = r.instance.toasts.show({ id: 'save', title: 'Saving…' });
+    r.flush();
+    expect(a).toBe(b);
+    expect(r.instance.toasts.count()).toBe(1);
+    // Single dismiss by that id must remove the entry entirely (regression
+    // guard against the map drifting out of sync with the entries array).
+    r.instance.toasts.dismiss('save');
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('auto-generated ids stay unique across rapid show() calls', () => {
+    const r = renderHost(ProgrammaticHost);
+    const refs = [
+      r.instance.toasts.show({ title: 'A' }),
+      r.instance.toasts.show({ title: 'B' }),
+      r.instance.toasts.show({ title: 'C' }),
+    ];
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(3);
+    // Each ref is distinct — no aliasing through the id-keyed lookup.
+    expect(new Set(refs).size).toBe(3);
+  });
+
   it('dismissAll() closes every live toast', () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'A' });
