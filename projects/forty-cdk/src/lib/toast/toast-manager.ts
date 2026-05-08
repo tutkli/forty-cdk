@@ -64,6 +64,10 @@ export class ForToastManager {
   readonly #defaults = inject(FOR_TOAST_DEFAULTS);
 
   readonly #entries = signal<readonly ToastEntry[]>([]);
+  // O(1) id → entry index kept in sync with `#entries`. Prevents same-tick
+  // id-collision races where two `show({ id: 'X' })` calls would both miss
+  // an array `find` and end up pushing duplicate entries.
+  readonly #byId = new Map<string, ToastEntry>();
 
   /** Reactive view of all live toasts, in insertion order. */
   readonly toasts = computed<readonly ForToastInstance[]>(() =>
@@ -83,21 +87,22 @@ export class ForToastManager {
   show<R = unknown, D = unknown>(config: ForToastConfig<D> = {}): ForToastRef<R, D> {
     const id = config.id ?? this.#idGen.next('for-toast');
 
-    const existing = this.#entries().find((e) => e.id === id);
+    const existing = this.#byId.get(id);
     if (existing) {
       (existing.ref as ForToastRef<R, D>).update(config);
       return existing.ref as ForToastRef<R, D>;
     }
 
     const ref = new ForToastRef<R, D>({ ...config, id }, (reason) => this.#removeById(id, reason));
-    this.#entries.update((arr) => [...arr, { id, ref: ref as ForToastRef }]);
+    const entry: ToastEntry = { id, ref: ref as ForToastRef };
+    this.#byId.set(id, entry);
+    this.#entries.update((arr) => [...arr, entry]);
     return ref;
   }
 
   /** Dismiss a toast by id. No-op when unknown. */
   dismiss(id: string, reason: ForToastCloseReason = 'programmatic'): void {
-    const entry = this.#entries().find((e) => e.id === id);
-    entry?.ref.dismiss(reason);
+    this.#byId.get(id)?.ref.dismiss(reason);
   }
 
   /** Dismiss every live toast. */
@@ -123,6 +128,7 @@ export class ForToastManager {
   }
 
   #removeById(id: string, _reason: ForToastCloseReason): void {
+    this.#byId.delete(id);
     this.#entries.update((arr) => arr.filter((e) => e.id !== id));
   }
 
