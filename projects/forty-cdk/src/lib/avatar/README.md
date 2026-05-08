@@ -19,7 +19,7 @@ There is no WAI-ARIA pattern for "avatar" — it is a presentational composition
 | `fallbackDelayMs`         | `input<number>`           | `ForAvatar`      | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
 | `status`                  | `Signal<ForAvatarStatus>` | `ForAvatar`      | Read-only current status.                                                                 |
 | `shouldShowFallback`      | `Signal<boolean>`         | `ForAvatar`      | `true` when the consumer should render the fallback. Drives `@if`.                        |
-| `(loadingStatusChange)`   | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
+| `(loadStatusChanged)`     | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
 
 The host element of every piece carries `data-status="idle" \| "loading" \| "loaded" \| "error"`.
 
