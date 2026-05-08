@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForToggleGroup } from '../toggle/toggle-group';
 import { ForToggleGroupItem } from '../toggle/toggle-group-item';
 import { ForToolbar } from './toolbar';
@@ -40,10 +40,6 @@ class ToolbarHost {
   `,
 })
 class ToolbarWithGroupHost {}
-
-function key(name: string): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
-}
 
 describe('ForToolbar', () => {
   describe('roles + reflection', () => {
@@ -120,11 +116,11 @@ describe('ForToolbar', () => {
       const link = document.querySelector<HTMLAnchorElement>('a')!;
 
       buttons[0]!.focus();
-      buttons[0]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[0]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(buttons[1]);
 
-      buttons[1]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[1]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(link);
     });
@@ -137,7 +133,7 @@ describe('ForToolbar', () => {
       const link = document.querySelector<HTMLAnchorElement>('a')!;
 
       buttons[0]!.focus();
-      buttons[0]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[0]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(link);
     });
@@ -149,7 +145,7 @@ describe('ForToolbar', () => {
       const buttons = queryAll<HTMLButtonElement>('button');
 
       buttons[0]!.focus();
-      buttons[0]!.dispatchEvent(key('ArrowLeft'));
+      pressKey(buttons[0]!, 'ArrowLeft');
       flush();
       expect(document.activeElement).toBe(buttons[1]);
     });
@@ -161,11 +157,11 @@ describe('ForToolbar', () => {
       const link = document.querySelector<HTMLAnchorElement>('a')!;
 
       buttons[0]!.focus();
-      buttons[0]!.dispatchEvent(key('End'));
+      pressKey(buttons[0]!, 'End');
       flush();
       expect(document.activeElement).toBe(link);
 
-      link.dispatchEvent(key('Home'));
+      pressKey(link, 'Home');
       flush();
       expect(document.activeElement).toBe(buttons[0]);
     });
@@ -183,13 +179,13 @@ describe('ForToolbar', () => {
       expect(buttons[3]!.getAttribute('tabindex')).toBe('-1');
 
       buttons[0]!.focus();
-      buttons[0]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[0]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(buttons[1]);
-      buttons[1]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[1]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(buttons[2]);
-      buttons[2]!.dispatchEvent(key('ArrowRight'));
+      pressKey(buttons[2]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(buttons[3]);
     });

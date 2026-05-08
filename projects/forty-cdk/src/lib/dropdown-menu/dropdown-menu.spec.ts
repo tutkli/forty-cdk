@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForDropdownMenu } from './dropdown-menu';
@@ -30,12 +30,6 @@ class DropdownHost {
   readonly dismissible = signal(true);
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 describe('ForDropdownMenu', () => {
   afterEach(() => {
@@ -102,7 +96,7 @@ describe('ForDropdownMenu', () => {
     it('opens on ArrowDown and focuses the first item', async () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(trigger, 'ArrowDown');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -112,7 +106,7 @@ describe('ForDropdownMenu', () => {
     it('opens on ArrowUp and focuses the last item', async () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(trigger, 'ArrowUp');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -129,7 +123,7 @@ describe('ForDropdownMenu', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
 
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(trigger, 'ArrowDown');
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
 
@@ -145,7 +139,7 @@ describe('ForDropdownMenu', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -158,7 +152,7 @@ describe('ForDropdownMenu', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -184,7 +178,7 @@ describe('ForDropdownMenu', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -313,7 +307,7 @@ describe('ForDropdownMenu', () => {
       expect(internalEmits).toBe(0);
 
       // Internal transition (Escape) — should fire once.
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(internalEmits).toBe(1);
     });

@@ -58,10 +58,6 @@ function setup(): { fixture: ComponentFixture<Host>; host: Host; button: HTMLBut
   };
 }
 
-function flush(fixture: ComponentFixture<Host>): void {
-  fixture.detectChanges();
-}
-
 describe('injectFormControlReflection', () => {
   it('omits all four data attributes by default', () => {
     const { button } = setup();
@@ -77,7 +73,7 @@ describe('injectFormControlReflection', () => {
     host.dirty.set(true);
     host.pending.set(true);
     host.invalid.set(true);
-    flush(fixture);
+    fixture.detectChanges();
 
     expect(button.getAttribute('data-touched')).toBe('');
     expect(button.getAttribute('data-dirty')).toBe('');
@@ -88,11 +84,11 @@ describe('injectFormControlReflection', () => {
   it('removes the attribute when the flag flips back to false', () => {
     const { fixture, host, button } = setup();
     host.invalid.set(true);
-    flush(fixture);
+    fixture.detectChanges();
     expect(button.hasAttribute('data-invalid')).toBe(true);
 
     host.invalid.set(false);
-    flush(fixture);
+    fixture.detectChanges();
     expect(button.hasAttribute('data-invalid')).toBe(false);
   });
 });

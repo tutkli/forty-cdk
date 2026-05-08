@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
@@ -206,7 +206,7 @@ describe('ForHoverCard', () => {
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(trigger, 'Escape');
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
@@ -221,7 +221,7 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
-      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(content, 'Escape');
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });

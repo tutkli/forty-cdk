@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';
 import { ForAccordionItem } from './accordion-item';
@@ -196,26 +196,23 @@ describe('ForAccordion', () => {
   });
 
   describe('keyboard navigation', () => {
-    const keyDown = (target: HTMLElement, key: string) =>
-      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-
     it('moves focus to the next trigger on ArrowDown and wraps around', () => {
       const { el } = renderHost(AccordionHost);
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowDown');
+      pressKey(triggerOf(el, 'a'), 'ArrowDown');
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
-      keyDown(triggerOf(el, 'b'), 'ArrowDown');
+      pressKey(triggerOf(el, 'b'), 'ArrowDown');
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
 
-      keyDown(triggerOf(el, 'c'), 'ArrowDown');
+      pressKey(triggerOf(el, 'c'), 'ArrowDown');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
 
     it('moves focus to the previous trigger on ArrowUp and wraps around', () => {
       const { el } = renderHost(AccordionHost);
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowUp');
+      pressKey(triggerOf(el, 'a'), 'ArrowUp');
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
     });
 
@@ -223,10 +220,10 @@ describe('ForAccordion', () => {
       const { el } = renderHost(AccordionHost);
       triggerOf(el, 'b').focus();
 
-      keyDown(triggerOf(el, 'b'), 'End');
+      pressKey(triggerOf(el, 'b'), 'End');
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
 
-      keyDown(triggerOf(el, 'c'), 'Home');
+      pressKey(triggerOf(el, 'c'), 'Home');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
 
@@ -236,7 +233,7 @@ describe('ForAccordion', () => {
       flush();
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowDown');
+      pressKey(triggerOf(el, 'a'), 'ArrowDown');
 
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
     });
@@ -264,9 +261,6 @@ describe('ForAccordion', () => {
       readonly dir = signal<'ltr' | 'rtl'>('ltr');
     }
 
-    const keyDown = (target: HTMLElement, key: string) =>
-      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-
     it('reflects orientation on data-orientation', () => {
       const { el } = renderHost(HorizontalHost);
       const root = el.querySelector('[forAccordion]')!;
@@ -288,14 +282,14 @@ describe('ForAccordion', () => {
       const { el } = renderHost(HorizontalHost);
       triggerOf(el, 'a').focus();
 
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
-      keyDown(triggerOf(el, 'b'), 'ArrowLeft');
+      pressKey(triggerOf(el, 'b'), 'ArrowLeft');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
 
       // ArrowDown is a no-op horizontally — focus stays put.
-      keyDown(triggerOf(el, 'a'), 'ArrowDown');
+      pressKey(triggerOf(el, 'a'), 'ArrowDown');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
 
@@ -305,10 +299,10 @@ describe('ForAccordion', () => {
       flush();
       triggerOf(el, 'a').focus();
 
-      keyDown(triggerOf(el, 'a'), 'ArrowLeft');
+      pressKey(triggerOf(el, 'a'), 'ArrowLeft');
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
-      keyDown(triggerOf(el, 'b'), 'ArrowRight');
+      pressKey(triggerOf(el, 'b'), 'ArrowRight');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
   });

@@ -1,9 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
@@ -70,13 +70,6 @@ class AriaLabelHost {
 class StackedDialogsHost {
   readonly a = signal(false);
   readonly b = signal(false);
-}
-
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
 }
 
 describe('ForDialog (declarative)', () => {
@@ -210,7 +203,7 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -223,7 +216,7 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -392,13 +385,13 @@ describe('ForDialog (declarative)', () => {
       r.instance.b.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.a()).toBe(true);
       expect(r.instance.b()).toBe(false);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.a()).toBe(false);
@@ -579,7 +572,7 @@ describe('ForDialog (declarative)', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
@@ -607,7 +600,7 @@ describe('ForDialog (declarative)', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -743,7 +736,7 @@ describe('ForDialog (declarative)', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.escapes).toBe(1);

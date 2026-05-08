@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForToggleGroup } from './toggle-group';
 import { ForToggleGroupItem } from './toggle-group-item';
 
@@ -49,9 +49,6 @@ const itemOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
 const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forToggleGroup]')!;
-
-const keyDown = (target: HTMLElement, key: string) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 
 describe('ForToggleGroup', () => {
   describe('a11y baseline', () => {
@@ -230,7 +227,7 @@ describe('ForToggleGroup', () => {
       const { el } = renderHost(ToggleGroupHost);
       const left = itemOf(el, 'left');
       left.focus();
-      keyDown(left, 'ArrowRight');
+      pressKey(left, 'ArrowRight');
 
       expect(document.activeElement).toBe(itemOf(el, 'center'));
     });
@@ -239,7 +236,7 @@ describe('ForToggleGroup', () => {
       const { el } = renderHost(ToggleGroupHost);
       const right = itemOf(el, 'right');
       right.focus();
-      keyDown(right, 'ArrowLeft');
+      pressKey(right, 'ArrowLeft');
 
       expect(document.activeElement).toBe(itemOf(el, 'center'));
     });
@@ -249,10 +246,10 @@ describe('ForToggleGroup', () => {
       const center = itemOf(el, 'center');
       center.focus();
 
-      keyDown(center, 'Home');
+      pressKey(center, 'Home');
       expect(document.activeElement).toBe(itemOf(el, 'left'));
 
-      keyDown(itemOf(el, 'left'), 'End');
+      pressKey(itemOf(el, 'left'), 'End');
       expect(document.activeElement).toBe(itemOf(el, 'right'));
     });
 
@@ -267,7 +264,7 @@ describe('ForToggleGroup', () => {
 
       const left = itemOf(r.el, 'left');
       left.focus();
-      keyDown(left, 'ArrowRight');
+      pressKey(left, 'ArrowRight');
 
       expect(document.activeElement).toBe(itemOf(r.el, 'right'));
     });
@@ -276,7 +273,7 @@ describe('ForToggleGroup', () => {
       const { el } = renderHost(ToggleGroupHost);
       const right = itemOf(el, 'right');
       right.focus();
-      keyDown(right, 'ArrowRight');
+      pressKey(right, 'ArrowRight');
 
       expect(document.activeElement).toBe(itemOf(el, 'left'));
     });
@@ -288,7 +285,7 @@ describe('ForToggleGroup', () => {
 
       const right = itemOf(r.el, 'right');
       right.focus();
-      keyDown(right, 'ArrowRight');
+      pressKey(right, 'ArrowRight');
 
       expect(document.activeElement).toBe(right);
     });
@@ -297,7 +294,7 @@ describe('ForToggleGroup', () => {
       const { el } = renderHost(ToggleGroupHost);
       const left = itemOf(el, 'left');
       left.focus();
-      keyDown(left, 'ArrowDown');
+      pressKey(left, 'ArrowDown');
 
       expect(document.activeElement).toBe(left);
     });
@@ -306,7 +303,7 @@ describe('ForToggleGroup', () => {
       const r = renderHost(ToggleGroupHost);
       const left = itemOf(r.el, 'left');
       left.focus();
-      keyDown(left, 'ArrowRight');
+      pressKey(left, 'ArrowRight');
       r.flush();
 
       expect(r.instance.value()).toEqual([]);
@@ -322,10 +319,10 @@ describe('ForToggleGroup', () => {
 
       const left = itemOf(r.el, 'left');
       left.focus();
-      keyDown(left, 'ArrowDown');
+      pressKey(left, 'ArrowDown');
       expect(document.activeElement).toBe(itemOf(r.el, 'center'));
 
-      keyDown(itemOf(r.el, 'center'), 'ArrowUp');
+      pressKey(itemOf(r.el, 'center'), 'ArrowUp');
       expect(document.activeElement).toBe(left);
     });
 
@@ -336,7 +333,7 @@ describe('ForToggleGroup', () => {
 
       const left = itemOf(r.el, 'left');
       left.focus();
-      keyDown(left, 'ArrowRight');
+      pressKey(left, 'ArrowRight');
       expect(document.activeElement).toBe(left);
     });
   });
@@ -349,7 +346,7 @@ describe('ForToggleGroup', () => {
 
       const left = itemOf(r.el, 'left');
       left.focus();
-      keyDown(left, 'ArrowLeft'); // RTL: visually means "next"
+      pressKey(left, 'ArrowLeft'); // RTL: visually means "next"
       expect(document.activeElement).toBe(itemOf(r.el, 'center'));
     });
   });

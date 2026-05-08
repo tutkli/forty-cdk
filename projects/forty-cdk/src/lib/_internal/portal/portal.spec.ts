@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
+import { flush } from '../../../test-utils';
 import { injectPortal } from './portal';
 
 @Component({
@@ -43,13 +44,6 @@ class TargetedBubble {
 })
 class CustomTargetHost {}
 
-async function flushRender<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
-
 describe('injectPortal', () => {
   afterEach(() => {
     document
@@ -60,7 +54,7 @@ describe('injectPortal', () => {
   it('moves the host element to document.body after first render', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(PortalHost);
-    await flushRender(fixture);
+    await flush(fixture);
 
     const parent = fixture.nativeElement.querySelector('#parent');
     const portaled = document.querySelector('portaled-bubble')!;
@@ -72,7 +66,7 @@ describe('injectPortal', () => {
   it('removes the portaled element on destroy', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(PortalHost);
-    await flushRender(fixture);
+    await flush(fixture);
 
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
     fixture.destroy();
@@ -86,7 +80,7 @@ describe('injectPortal', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(CustomTargetHost);
-    await flushRender(fixture);
+    await flush(fixture);
 
     const portaled = document.querySelector('targeted-bubble')!;
     expect(portaled.parentElement).toBe(target);
@@ -95,8 +89,8 @@ describe('injectPortal', () => {
   it('is idempotent: re-rendering does not move the element again', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(PortalHost);
-    await flushRender(fixture);
-    await flushRender(fixture);
+    await flush(fixture);
+    await flush(fixture);
 
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
   });

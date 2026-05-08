@@ -1,6 +1,7 @@
 import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { pressKey } from '../../test-utils';
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { _resetDismissableLayerForTesting } from '../_internal/dismissable-layer/dismissable-layer';
 import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
@@ -268,7 +269,7 @@ describe('ForDialogManager (programmatic)', () => {
         data: { message: 'x' },
       });
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      pressKey(document, 'Escape');
       const result = await ref.closed;
 
       expect(result).toBeUndefined();
@@ -282,7 +283,7 @@ describe('ForDialogManager (programmatic)', () => {
         dismissible: false,
       });
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      pressKey(document, 'Escape');
       expect(ref.isClosed()).toBe(false);
 
       ref.close();
@@ -339,13 +340,13 @@ describe('ForDialogManager (programmatic)', () => {
         data: { message: 'b' },
       });
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      pressKey(document, 'Escape');
       await b.closed;
 
       expect(b.isClosed()).toBe(true);
       expect(a.isClosed()).toBe(false);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      pressKey(document, 'Escape');
       await a.closed;
 
       expect(a.isClosed()).toBe(true);

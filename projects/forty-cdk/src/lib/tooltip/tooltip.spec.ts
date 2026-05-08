@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
@@ -66,24 +66,6 @@ async function nextTick(): Promise<void> {
   await Promise.resolve();
 }
 
-async function flushAsync<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  fixture.detectChanges();
-}
-
-async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
-  // Drain: signal write → effect → autoUpdate → computePosition.then.
-  // computePosition's promise resolves across several microtask hops; mix in
-  // macrotask waits so anything queued via setTimeout/Promise.then settles.
-  await flushAsync(fixture);
-  for (let i = 0; i < 3; i++) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    fixture.detectChanges();
-    await fixture.whenStable();
-  }
-}
-
 describe('ForTooltip', () => {
   beforeAll(() => {
     // floating-ui's autoUpdate uses these — jsdom 28 still doesn't ship them.
@@ -118,7 +100,7 @@ describe('ForTooltip', () => {
   describe('a11y baseline', () => {
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('button')!;
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
@@ -131,19 +113,19 @@ describe('ForTooltip', () => {
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
 
       r.instance.isOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
 
       r.instance.isOpen.set(false);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
     });
 
     it('produces unique ids across instances', async () => {
       const r = renderHost(TwoTooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
       const contents = Array.from(
@@ -160,7 +142,7 @@ describe('ForTooltip', () => {
   describe('portal', () => {
     it('moves content out of its declared parent into document.body', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const wrapper = r.query<HTMLElement>('[forTooltip]')!;
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
@@ -171,7 +153,7 @@ describe('ForTooltip', () => {
 
     it('removes the portaled content on destroy', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(document.querySelectorAll('[role="tooltip"]')).toHaveLength(1);
 
@@ -187,7 +169,7 @@ describe('ForTooltip', () => {
 
     it('opens after openDelay on pointerenter', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -205,7 +187,7 @@ describe('ForTooltip', () => {
     it('closes after closeDelay on pointerleave', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -222,7 +204,7 @@ describe('ForTooltip', () => {
 
     it('cancels a pending open if pointerleave fires within the delay', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -244,7 +226,7 @@ describe('ForTooltip', () => {
 
     it('opens on focus respecting openDelay', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -262,7 +244,7 @@ describe('ForTooltip', () => {
     it('schedules close on blur', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -278,10 +260,10 @@ describe('ForTooltip', () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
       r.instance.closeDelay.set(5_000);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(trigger, 'Escape');
       r.fixture.detectChanges();
 
       expect(r.instance.isOpen()).toBe(false);
@@ -289,10 +271,10 @@ describe('ForTooltip', () => {
 
     it('is a no-op when already closed', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      pressKey(trigger, 'Escape');
       r.fixture.detectChanges();
 
       expect(r.instance.isOpen()).toBe(false);
@@ -307,7 +289,7 @@ describe('ForTooltip', () => {
     it('ignores hover and focus while disabled', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isDisabled.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
@@ -325,7 +307,7 @@ describe('ForTooltip', () => {
     it('reflects disabled on the wrapper as data-disabled', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isDisabled.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const wrapper = r.query<HTMLElement>('[forTooltip]')!;
       expect(wrapper.getAttribute('data-disabled')).toBe('');
@@ -424,12 +406,12 @@ describe('ForTooltip', () => {
       }
 
       const r = renderHost(Host);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.dispatchEvent(new PointerEvent('pointerenter'));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       trigger.dispatchEvent(new PointerEvent('pointerleave'));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(r.instance.emitted).toEqual([true, false]);
     });
@@ -450,11 +432,11 @@ describe('ForTooltip', () => {
       }
 
       const r = renderHost(Host);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       r.instance.isOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       r.instance.isOpen.set(false);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(r.instance.emitted).toEqual([]);
     });
@@ -482,7 +464,7 @@ describe('ForTooltip', () => {
 
     it('opens the second tooltip instantly while a peer just closed (skip-delay window)', async () => {
       const r = renderHost(DefaultsHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
       const triggerA = triggers[0]!;
@@ -492,25 +474,25 @@ describe('ForTooltip', () => {
       // tooltip's internal close path runs and asks the coordinator to
       // start the skip-delay window.
       r.instance.aOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       triggerA.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       expect(r.instance.aOpen()).toBe(false);
 
       triggerB.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       expect(r.instance.bOpen()).toBe(true);
     });
 
     it('does not skip the delay when no peer has recently closed', async () => {
       const r = renderHost(DefaultsHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
       const triggerA = triggers[0]!;
       triggerA.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       // Without a prior close, the coordinator's skip flag is false →
       // the tooltip waits for its full openDelay (500ms) before opening.
@@ -533,11 +515,11 @@ describe('ForTooltip', () => {
       }
 
       const r = renderHost(FallbackHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
 
       // delayDuration=0 → opens synchronously without any per-tooltip override.
       expect(r.instance.open()).toBe(true);
@@ -548,16 +530,16 @@ describe('ForTooltip', () => {
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(TooltipHost);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
 
       r.instance.isOpen.set(true);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       expect(trigger.hasAttribute('aria-describedby')).toBe(true);
 
       r.instance.isOpen.set(false);
-      await flushAsync(r.fixture);
+      await flush(r.fixture);
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
     });
   });
