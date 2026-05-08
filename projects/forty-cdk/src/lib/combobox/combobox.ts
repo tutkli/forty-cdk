@@ -5,7 +5,6 @@ import {
   effect,
   inject,
   input,
-  linkedSignal,
   model,
   numberAttribute,
   output,
@@ -36,6 +35,7 @@ import {
   type ForComboboxContext,
   type ForComboboxOptionHandle,
 } from './combobox-context';
+import { ComboboxSnapshot } from './combobox-snapshot';
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -287,102 +287,28 @@ export class ForCombobox<T = string>
   readonly initialFocus = this.#initialFocus.asReadonly();
 
   /**
-   * Snapshot of the registered options as plain `{ id, value, label }`
-   * tuples. Drives inline-autocomplete matching in the input directive and
-   * the label-resolution fallback in `selected`.
-   *
-   * Persists across listbox close/open cycles: when the consumer's `@if`
-   * unmounts the content (`items().length === 0`) the prior cache is
-   * carried over so chips outside the listbox area and inline completion
-   * after close keep resolving labels. Resets only when the consumer's
-   * `totalCount` transitions — a query / source rebuild signal in the
-   * virtualized case.
-   *
-   * The option's `label` is itself a `Signal<string>` so we never need to
-   * peek at `textContent`; this used to be an `afterEveryRender`-driven
-   * cache for exactly that reason but the post-render phase is unnecessary.
+   * Virtualization snapshot — keeps option metadata across close/open and
+   * scroll-out-of-view, drives inline autocomplete matching, and powers
+   * keyboard navigation past the rendered window. See `combobox-snapshot.ts`
+   * for the full contract.
    */
-  readonly #cachedOptions = linkedSignal<
-    { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
-    readonly { id: string; value: T; label: string }[]
-  >({
-    source: () => ({ total: this.totalCount(), items: this.#items.items() }),
-    computation: ({ total, items }, prev) => {
-      // On a `totalCount` transition the `items()` array may still hold the
-      // previous window — signal commits run serially, so the @for re-render
-      // hasn't unregistered the old options yet. Skip folding on this
-      // transition compute and start fresh; the next run (fired when items
-      // catches up) folds the new window into a clean carry-over map.
-      if (prev && prev.source.total !== total) {
-        return [];
-      }
-      if (items.length === 0) {
-        return prev?.value ?? [];
-      }
-      const merged = new Map<string, { id: string; value: T; label: string }>();
-      for (const entry of prev?.value ?? []) {
-        merged.set(entry.id, entry);
-      }
-      for (const item of items) {
-        const id = item.id();
-        merged.set(id, { id, value: item.value(), label: item.label() });
-      }
-      return [...merged.values()];
-    },
+  readonly #snapshot = new ComboboxSnapshot<T>({
+    items: this.#items.items,
+    totalCount: this.totalCount,
+    visibleRange: this.visibleRange,
+    loop: this.loop,
+    getActiveId: () => this.#activeId(),
+    setActiveId: (id) => this.#activeId.set(id),
+    emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
   });
-
-  /**
-   * Snapshot keyed by absolute index (`posInSet`), persisted across unmount
-   * so navigation can walk past the rendered window when virtualizing.
-   *
-   * Reset whenever the consumer's `totalCount` transitions — a query change
-   * typically rebuilds the source array, so previously-folded entries no
-   * longer point at the same items. On any other reactive trigger (option
-   * mount / unmount) the prior map is carried over and the currently-
-   * rendered options are overlaid in place.
-   */
-  readonly #snapshotByPos = linkedSignal<
-    { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
-    Map<number, { id: string; value: T; label: string; disabled: boolean }>
-  >({
-    source: () => ({ total: this.totalCount(), items: this.#items.items() }),
-    computation: ({ total, items }, prev) => {
-      // Same `items()`-still-stale handling as `#cachedOptions` above.
-      if (prev && prev.source.total !== total) {
-        return new Map();
-      }
-      const next = new Map<number, { id: string; value: T; label: string; disabled: boolean }>(
-        prev?.value ?? [],
-      );
-      for (const item of items) {
-        const pos = item.posInSet?.() ?? null;
-        if (pos === null) continue;
-        next.set(pos, {
-          id: item.id(),
-          value: item.value(),
-          label: item.label(),
-          disabled: item.disabled(),
-        });
-      }
-      return next;
-    },
-  });
-
-  /**
-   * When navigation lands on a posInSet outside the visible window, the
-   * directive emits `(scrollToIndex)` and remembers the target here. The
-   * bridge effect below seeds `aria-activedescendant` once the option for
-   * that posInSet mounts.
-   */
-  readonly #pendingActivePos = signal<number | null>(null);
 
   readonly selected = computed<readonly { value: T; label: string }[]>(() => {
     const values = this.value();
     if (values.length === 0) {
       return [];
     }
-    const cached = this.#cachedOptions();
-    const indexed = this.#snapshotByPos();
+    const cached = this.#snapshot.cachedOptions();
+    const indexed = this.#snapshot.snapshotByPos();
     const equals = this.isItemEqualToValue();
     const toLabel = this.itemToStringLabel();
     return values.map((v) => {
@@ -420,27 +346,19 @@ export class ForCombobox<T = string>
     // bridge use of `effect()` and is exempt from the "no signal-derivation
     // in effect" rule.
     //
-    // Eagerly pulls the option caches so their `linkedSignal` `prev` slot
-    // gets seeded while the listbox is open. Without this, the lazy caches
-    // never run during the open cycle (no other consumer pulls them in
-    // non-virtualized usage), and persistence across close→re-open would
-    // start from an empty `prev`.
+    // `#snapshot.prime()` eagerly pulls the snapshot caches so their
+    // `linkedSignal` `prev` slot gets seeded while the listbox is open.
+    // Without this, the lazy caches never run during the open cycle (no
+    // other consumer pulls them in non-virtualized usage), and persistence
+    // across close→re-open would start from an empty `prev`.
     effect(() => {
-      this.#cachedOptions();
-      this.#snapshotByPos();
+      this.#snapshot.prime();
       const items = this.#items.items();
 
       // Resolve a pending virtualized navigation: once the option for the
       // requested posInSet mounts, seed activedescendant to its id.
-      const pendingPos = this.#pendingActivePos();
-      if (pendingPos !== null) {
-        const match = items.find((it) => it.posInSet?.() === pendingPos);
-        if (match) {
-          this.#activeId.set(match.id());
-          this.#pendingActivePos.set(null);
-          match.host.scrollIntoView?.({ block: 'nearest' });
-          return;
-        }
+      if (this.#snapshot.tryResolvePending()) {
+        return;
       }
 
       // Auto-highlight the first / last enabled option whenever the listbox
@@ -451,7 +369,9 @@ export class ForCombobox<T = string>
       if (this.autoHighlight() && this.open() && this.#activeId() === null && items.length > 0) {
         const total = this.totalCount();
         if (total !== undefined) {
-          this.#seedFromIndexedSnapshot(this.#initialFocus() === 'last' ? 'last' : 'first');
+          this.#snapshot.seedFromIndexedSnapshot(
+            this.#initialFocus() === 'last' ? 'last' : 'first',
+          );
         } else {
           const target =
             this.#initialFocus() === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
@@ -582,7 +502,7 @@ export class ForCombobox<T = string>
       return;
     }
     if (this.totalCount() !== undefined) {
-      this.#navigateVirtualized(direction);
+      this.#snapshot.navigateVirtualized(direction);
       return;
     }
     const items = this.#items.items();
@@ -618,99 +538,6 @@ export class ForCombobox<T = string>
     target.host.scrollIntoView?.({ block: 'nearest' });
   }
 
-  #navigateVirtualized(direction: 'next' | 'prev' | 'first' | 'last'): void {
-    const total = this.totalCount();
-    if (total === undefined || total <= 0) {
-      return;
-    }
-    const indexed = this.#snapshotByPos();
-    const items = this.#items.items();
-
-    // Locate current absolute position from the activedescendant.
-    const currentId = this.#activeId();
-    let currentPos = -1;
-    if (currentId !== null) {
-      const live = items.find((o) => o.id() === currentId);
-      const livePos = live?.posInSet?.() ?? null;
-      if (livePos !== null) {
-        currentPos = livePos;
-      } else {
-        for (const [pos, entry] of indexed) {
-          if (entry.id === currentId) {
-            currentPos = pos;
-            break;
-          }
-        }
-      }
-    }
-
-    let action = direction;
-    if (currentPos < 0 && direction === 'next') {
-      action = 'first';
-    } else if (currentPos < 0 && direction === 'prev') {
-      action = 'last';
-    }
-
-    // Disabled lookup against the indexed snapshot — entries we've never
-    // seen are assumed enabled (the consumer filtered them in).
-    const isDisabled = (i: number) => indexed.get(i)?.disabled === true;
-
-    const next = moveIndex(currentPos, total, action, {
-      loop: this.loop(),
-      isDisabled,
-    });
-    if (next === null) {
-      return;
-    }
-
-    const range = this.visibleRange();
-    const inRange = !range || (next >= range[0] && next < range[1]);
-    if (inRange) {
-      const live = items.find((it) => it.posInSet?.() === next);
-      if (live) {
-        this.#pendingActivePos.set(null);
-        this.#activeId.set(live.id());
-        live.host.scrollIntoView?.({ block: 'nearest' });
-        return;
-      }
-      // Range claims it's in-window but the option hasn't mounted yet —
-      // fall through to the pending path so the next render seeds it.
-    }
-    this.#pendingActivePos.set(next);
-    this.scrollToIndex.emit(next);
-  }
-
-  #seedFromIndexedSnapshot(direction: 'first' | 'last'): void {
-    const total = this.totalCount();
-    if (total === undefined || total <= 0) {
-      return;
-    }
-    const indexed = this.#snapshotByPos();
-    const items = this.#items.items();
-
-    const start = direction === 'last' ? total - 1 : 0;
-    const step = direction === 'last' ? -1 : 1;
-    for (let i = start; i >= 0 && i < total; i += step) {
-      const entry = indexed.get(i);
-      if (entry && entry.disabled) continue;
-      // Prefer a live option for in-window seeds; fall back to pending +
-      // scrollToIndex when we know about an off-screen entry.
-      const live = items.find((it) => it.posInSet?.() === i);
-      if (live) {
-        if (live.disabled()) continue;
-        this.#activeId.set(live.id());
-        return;
-      }
-      if (entry) {
-        this.#pendingActivePos.set(i);
-        this.scrollToIndex.emit(i);
-        return;
-      }
-      // No info on this index — let the consumer's render seed us next pass.
-      return;
-    }
-  }
-
   setQueryFromInput(query: string): void {
     if (this.disabled() || this.readonly()) {
       return;
@@ -735,26 +562,7 @@ export class ForCombobox<T = string>
   }
 
   cachedOptions(): readonly { id: string; value: T; label: string }[] {
-    const live = this.#cachedOptions();
-    if (this.totalCount() === undefined) {
-      return live;
-    }
-    // Virtualized: merge in entries that previously rendered so typeahead
-    // and inline autocomplete can match against options scrolled out of
-    // view. The live entries take precedence (freshest data).
-    const indexed = this.#snapshotByPos();
-    if (indexed.size === 0) {
-      return live;
-    }
-    const seen = new Set(live.map((o) => o.id));
-    const merged: { id: string; value: T; label: string }[] = [...live];
-    const positions = [...indexed.keys()].sort((a, b) => a - b);
-    for (const pos of positions) {
-      const entry = indexed.get(pos)!;
-      if (seen.has(entry.id)) continue;
-      merged.push({ id: entry.id, value: entry.value, label: entry.label });
-    }
-    return merged;
+    return this.#snapshot.cachedOptions();
   }
 
   clear(clearQuery: boolean = true): void {
@@ -798,7 +606,7 @@ export class ForCombobox<T = string>
     }
     this.open.set(false);
     this.#activeId.set(null);
-    this.#pendingActivePos.set(null);
+    this.#snapshot.resetPending();
   }
 
   // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
