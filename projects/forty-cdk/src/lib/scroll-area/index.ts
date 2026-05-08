@@ -10,3 +10,8 @@ export {
   type ForScrollAreaType,
   type ForScrollbarOrientation,
 } from './scroll-area-context';
+export {
+  FOR_SCROLL_AREA_DEFAULTS,
+  provideForScrollAreaDefaults,
+  type ForScrollAreaDefaults,
+} from './scroll-area-defaults';

@@ -23,6 +23,7 @@ import {
   type ForRadioGroupContext,
   type ForRadioHandle,
 } from './radio-group-context';
+import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
 
 /**
  * Root of the Radio Group primitive. Owns the selected value, orientation,
@@ -62,6 +63,7 @@ export class ForRadioGroup
   implements FormValueControl<string>, ForRadioGroupContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_RADIO_GROUP_DEFAULTS);
 
   /** Two-way bindable. Selected radio's value. Empty string = none selected. */
   readonly value = model<string>('');
@@ -75,9 +77,10 @@ export class ForRadioGroup
   /**
    * Whether arrow navigation wraps around past the first / last enabled
    * radio. Default `true` — matches the WAI-ARIA Radio Group APG. Set to
-   * `false` for a non-wrapping group.
+   * `false` for a non-wrapping group. The default is read from
+   * `provideForRadioGroupDefaults` for the surrounding scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   readonly #items = new Collection<ForRadioHandle>();
 

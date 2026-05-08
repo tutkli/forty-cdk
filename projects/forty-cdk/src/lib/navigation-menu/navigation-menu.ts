@@ -28,6 +28,7 @@ import {
   type ForNavigationMenuViewportHandle,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
+import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
 
 /**
  * Headless implementation of the
@@ -73,6 +74,7 @@ import {
 })
 export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_NAVIGATION_MENU_DEFAULTS);
   /**
    * Two-way bindable. The id of the open item, or `''` for none. The
    * `model()` change emitter (`(valueChange)`) fires only on internal
@@ -89,17 +91,26 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   /** Optional accessible name for the surrounding `<nav>`. */
   readonly ariaLabel = input<string>('');
 
-  /** ms before a hover/focus opens an item. Default `200`. */
-  readonly delayDuration = input<number>(200);
+  /**
+   * ms before a hover/focus opens an item. Default `200`. The default is
+   * read from `provideForNavigationMenuDefaults` for the surrounding scope.
+   */
+  readonly delayDuration = input<number>(this.#defaults.delayDuration);
 
-  /** ms before an item closes after hover leaves. Default `300`. */
-  readonly closeDelay = input<number>(150);
+  /**
+   * ms before an item closes after hover leaves. Default `150`. The default
+   * is read from `provideForNavigationMenuDefaults` for the surrounding
+   * scope.
+   */
+  readonly closeDelay = input<number>(this.#defaults.closeDelay);
 
   /**
    * ms after a peer item closed during which the next open is instant.
    * Keeps fluid hover-across-triggers feeling responsive. Default `300`.
+   * The default is read from `provideForNavigationMenuDefaults` for the
+   * surrounding scope.
    */
-  readonly skipDelayDuration = input<number>(300);
+  readonly skipDelayDuration = input<number>(this.#defaults.skipDelayDuration);
 
   readonly #triggers = new Collection<ForNavigationMenuTriggerHandle>();
   readonly #contents = new Collection<ForNavigationMenuContentHandle>();

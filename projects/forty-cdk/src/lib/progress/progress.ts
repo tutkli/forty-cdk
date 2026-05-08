@@ -6,6 +6,7 @@ import {
   type ForProgressContext,
   type ForProgressState,
 } from './progress-context';
+import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
 
 /**
  * Headless progress bar. Implements the
@@ -47,6 +48,8 @@ import {
   providers: [{ provide: FOR_PROGRESS_CONTEXT, useExisting: ForProgress }],
 })
 export class ForProgress implements ForProgressContext {
+  readonly #defaults = inject(FOR_PROGRESS_DEFAULTS);
+
   /**
    * Two-way bindable. Current progress in `[0, max]`, or `null` for the
    * indeterminate state. Values outside the range are clamped for ARIA but
@@ -68,8 +71,12 @@ export class ForProgress implements ForProgressContext {
    * When true, transitions to `value === max` are announced once via the
    * live announcer using the current `aria-valuetext` (or `"Complete"` if
    * none). Repeated transitions to the same complete state do not re-fire.
+   * The default is read from `provideForProgressDefaults` for the
+   * surrounding scope.
    */
-  readonly announceCompletion = input(false, { transform: booleanAttribute });
+  readonly announceCompletion = input(this.#defaults.announceCompletion, {
+    transform: booleanAttribute,
+  });
 
   readonly clampedValue = computed<number | null>(() => {
     const v = this.value();

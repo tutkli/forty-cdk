@@ -1,4 +1,4 @@
-import { booleanAttribute, computed, Directive, input } from '@angular/core';
+import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -12,6 +12,7 @@ import {
   type ForToolbarContext,
   type ForToolbarItemHandle,
 } from './toolbar-context';
+import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
 
 /**
  * Headless implementation of the
@@ -56,9 +57,16 @@ import {
   providers: [{ provide: FOR_TOOLBAR_CONTEXT, useExisting: ForToolbar }],
 })
 export class ForToolbar implements ForToolbarContext {
+  readonly #defaults = inject(FOR_TOOLBAR_DEFAULTS);
+
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
   readonly dir = input<WritingDirection>('ltr');
-  readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * Whether arrow navigation wraps around past the first / last enabled
+   * item. Default `true`. The default is read from `provideForToolbarDefaults`
+   * for the surrounding scope.
+   */
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly #items = new Collection<ForToolbarItemHandle>();

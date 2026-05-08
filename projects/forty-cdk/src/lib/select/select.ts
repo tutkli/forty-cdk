@@ -38,6 +38,7 @@ import {
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
 } from './select-context';
+import { FOR_SELECT_DEFAULTS } from './select-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -72,6 +73,7 @@ export class ForSelect
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
   readonly #items = new Collection<ForSelectOptionHandle>();
+  readonly #defaults = inject(FOR_SELECT_DEFAULTS);
 
   /**
    * Two-way bindable. Selected option values. Single-mode keeps 0 or 1
@@ -118,9 +120,10 @@ export class ForSelect
 
   /**
    * Gap (px) between trigger and listbox along the main axis. Default `4`.
-   * Mirrors Radix's `sideOffset`.
+   * Mirrors Radix's `sideOffset`. The default is read from
+   * `provideForSelectDefaults` for the surrounding scope.
    */
-  readonly sideOffset = input(4, { transform: numberAttribute });
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -128,8 +131,14 @@ export class ForSelect
   /** When `true` (default), `flip` and `shift` keep the listbox inside the viewport. */
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  /**
+   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
+   * The default is read from `provideForSelectDefaults` for the surrounding
+   * scope.
+   */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });

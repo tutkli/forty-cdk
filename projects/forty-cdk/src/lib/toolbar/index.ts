@@ -7,3 +7,8 @@ export {
   type ForToolbarContext,
   type ForToolbarItemHandle,
 } from './toolbar-context';
+export {
+  FOR_TOOLBAR_DEFAULTS,
+  provideForToolbarDefaults,
+  type ForToolbarDefaults,
+} from './toolbar-defaults';

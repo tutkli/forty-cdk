@@ -1,4 +1,4 @@
-import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
+import { booleanAttribute, computed, Directive, inject, input, model } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -15,6 +15,7 @@ import {
   type ForTabsTriggerHandle,
   type TabsActivationMode,
 } from './tabs-context';
+import { FOR_TABS_DEFAULTS } from './tabs-defaults';
 
 /**
  * Root of the Tabs primitive. Owns the selected value, activation mode,
@@ -38,6 +39,8 @@ import {
   providers: [{ provide: FOR_TABS_CONTEXT, useExisting: ForTabs }],
 })
 export class ForTabs implements ForTabsContext {
+  readonly #defaults = inject(FOR_TABS_DEFAULTS);
+
   /**
    * Two-way bindable. The selected tab's value. The `model()` change emitter
    * (`(valueChange)`) fires only on internal selection changes (trigger click
@@ -46,7 +49,7 @@ export class ForTabs implements ForTabsContext {
    */
   readonly value = model<string>('');
 
-  readonly activationMode = input<TabsActivationMode>('automatic');
+  readonly activationMode = input<TabsActivationMode>(this.#defaults.activationMode);
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
   readonly dir = input<WritingDirection>('ltr');
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -54,9 +57,10 @@ export class ForTabs implements ForTabsContext {
   /**
    * Whether arrow navigation wraps around past the first / last enabled
    * trigger. Default `true` — matches the WAI-ARIA Tabs APG. Set to `false`
-   * for a non-wrapping tablist.
+   * for a non-wrapping tablist. The default is read from
+   * `provideForTabsDefaults` for the surrounding scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   readonly roving = new RovingTabindex();
 

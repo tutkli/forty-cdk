@@ -33,6 +33,7 @@ import {
   type ForMenuContext,
   type ForMenuItemHandle,
 } from '../menu/menu-context';
+import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/).
@@ -70,6 +71,7 @@ export class ForDropdownMenu implements ForMenuContext {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForMenuItemHandle>();
+  readonly #defaults = inject(FOR_DROPDOWN_MENU_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the menu is currently shown. The `model()`
@@ -90,9 +92,10 @@ export class ForDropdownMenu implements ForMenuContext {
 
   /**
    * Gap (px) between trigger and menu along the main axis. Default `4`.
-   * Mirrors Radix's `sideOffset`.
+   * Mirrors Radix's `sideOffset`. The default is read from
+   * `provideForDropdownMenuDefaults` for the surrounding scope.
    */
-  readonly sideOffset = input(4, { transform: numberAttribute });
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -100,8 +103,14 @@ export class ForDropdownMenu implements ForMenuContext {
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  /**
+   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
+   * The default is read from `provideForDropdownMenuDefaults` for the
+   * surrounding scope.
+   */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });
