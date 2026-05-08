@@ -240,6 +240,44 @@ module.exports = tseslint.config(
     },
   },
 
+  // ---------- E2E harness app (projects/forty-cdk-harness) ----------
+  // The harness is a tiny Angular application that mounts each primitive on
+  // its own route so Playwright can drive real-browser focus/keyboard tests.
+  // It is dev/CI-only; nothing in it ships to consumers, so the public-API
+  // conventions don't apply.
+  {
+    files: ['projects/forty-cdk-harness/**/*.ts'],
+    rules: {
+      // The harness uses the default `app-` prefix Angular CLI generated.
+      '@angular-eslint/component-selector': 'off',
+      '@angular-eslint/directive-selector': 'off',
+      // Harness fixtures often render bare buttons whose "content" is the
+      // directive being exercised, not user-visible copy.
+      '@angular-eslint/template/elements-content': 'off',
+    },
+  },
+
+  // ---------- Playwright E2E specs + root config ----------
+  // These run inside @playwright/test (Node + browser), not Angular. They
+  // freely poke at `document`/`window` via page.evaluate, and there is no
+  // SSR concern. They also live outside any Angular tsconfig project, so
+  // disable typed linting to avoid adding them to a project just for ESLint.
+  {
+    files: ['projects/forty-cdk-harness/e2e/**/*.ts', 'playwright.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: null,
+      },
+    },
+    rules: {
+      'no-restricted-globals': 'off',
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
+      'forty-cdk/no-suffixed-filenames': 'off',
+    },
+  },
+
   // ---------- HTML templates ----------
   {
     files: ['**/*.html'],

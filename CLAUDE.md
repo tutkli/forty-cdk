@@ -10,14 +10,17 @@ Currently, the only code is a placeholder (`projects/forty-cdk/src/lib/forty-cdk
 
 ## Commands
 
-All commands run from repo root unless noted. The Angular workspace defines a single library project (`forty-cdk`).
+All commands run from repo root unless noted. The Angular workspace contains the library project (`forty-cdk`) and a small dev-only application (`forty-cdk-harness`) used by the Playwright E2E suite — `npm run build` and `npm test` are pinned to the library project so the harness never ships.
 
 ```bash
-npm run build              # ng build (production, ng-packagr → dist/forty-cdk)
-npm run watch              # ng build --watch --configuration development
-npm test                   # ng test → @angular/build:unit-test (Vitest + jsdom)
-npx ng test --watch        # watch mode for tests
+npm run build              # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
+npm run watch              # ng build forty-cdk --watch --configuration development
+npm test                   # ng test forty-cdk → @angular/build:unit-test (Vitest + jsdom)
+npx ng test forty-cdk --watch  # watch mode for tests
 npm run lint               # eslint . (flat config, codifies CLAUDE.md non-negotiables)
+npm run test:e2e           # playwright test (Chromium + WebKit; spins ng serve forty-cdk-harness)
+npm run test:e2e:ui        # playwright test --ui
+npm run test:e2e:install   # playwright install --with-deps chromium webkit
 ```
 
 Single-file / single-test runs go through Vitest's CLI filtering (the `@angular/build:unit-test` builder forwards args):
@@ -215,6 +218,18 @@ When asked to add a primitive, follow this order:
 Vitest runs through the Angular CLI builder `@angular/build:unit-test` (configured in `angular.json`). The spec tsconfig (`projects/forty-cdk/tsconfig.spec.json`) sets `types: ["vitest/globals"]`, so `describe` / `it` / `expect` are global — no imports needed. `jsdom` is the DOM environment. Tests use modern standalone `TestBed` setup; a single placeholder spec exists at `projects/forty-cdk/src/lib/forty-cdk.spec.ts` as reference.
 
 Every primitive's test suite must include a case running under `provideZonelessChangeDetection()` to guarantee reactivity works without Zone.js.
+
+### E2E (Playwright)
+
+The Vitest + jsdom suite is the contract layer for ARIA, signals, and the data-state vocabulary, but jsdom mis-models `document.activeElement`, `inert`, and the focus-event order. Real focus management — focus trap, return focus, vetoable `autoFocusOnOpen` / `autoFocusOnClose`, layered Escape, click-outside, disabled-skip in keyboard navigation — runs against real browsers via Playwright.
+
+- `playwright.config.ts` (root) targets Chromium + WebKit, parallel, with `webServer: 'ng serve forty-cdk-harness --port 4400'`.
+- The harness app under `projects/forty-cdk-harness/` is dev/CI-only. It reads the library by sources via a `paths` override in its `tsconfig.app.json` (`forty-cdk` → `../forty-cdk/src/public-api.ts`), so changes to library code show up without rebuild.
+- Per-primitive fixtures live in `projects/forty-cdk-harness/src/app/fixtures/<primitive>.fixture.ts`, mounted on routes `/<primitive>`. Each one exercises focus / keyboard / dismissable behavior for its overlay primitive (Dialog, Popover, DropdownMenu, ContextMenu, Combobox, Tooltip, HoverCard, Select, Listbox) and the `/nested` fixture covers the popover-inside-dialog Escape-stack contract.
+- E2E specs live in `projects/forty-cdk-harness/e2e/<primitive>.e2e.ts`. They use `data-testid="…"` rather than `id="…"` for any element bound to a directive — several directives (`forPopoverTrigger`, `forSelectOption`, `forComboboxInput`, etc.) host-bind `[id]` for `aria-controls` wiring and would override a static `id` attribute.
+- WebKit-specific `test.fixme()` is reserved for cross-browser bugs the library still owes a fix for (e.g. modal Dialog return-focus race vs `inert`). Don't add a fixme without a clear comment naming the underlying library issue — the suite's value is exposing those, not papering over them.
+
+Adding a primitive's E2E coverage is part of the workflow: open a route, build a small fixture, and write the focus / keyboard / dismissable specs alongside the existing Vitest contract suite.
 
 ## TypeScript expectations
 
