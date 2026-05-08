@@ -1,8 +1,8 @@
 import {
   booleanAttribute,
-  computed,
   DestroyRef,
   Directive,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -11,8 +11,6 @@ import {
   signal,
   type WritableSignal,
 } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged } from 'rxjs';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
@@ -164,21 +162,20 @@ export class ForHoverCard implements ForHoverCardContext {
     // blur) AND the linkedSignal-driven force-close when `disabled` flips
     // (or when the consumer tries to open while disabled). Consumer-driven
     // `[(open)]` writes propagate through the linkedSignal so `open === input`
-    // again, and stay silent — preserving the documented `model()`-style
-    // contract. This is not a state-deriving effect — it only invokes the
-    // imperative output emitter — so it is consistent with CLAUDE.md's
-    // "no propagate state in effect" rule (replaced here by `linkedSignal`).
-    const divergence = computed(() => ({ open: this.open(), input: this._openInput() }));
-    toObservable(divergence)
-      .pipe(
-        distinctUntilChanged((a, b) => a.open === b.open && a.input === b.input),
-        takeUntilDestroyed(),
-      )
-      .subscribe(({ open, input }) => {
-        if (open !== input) {
-          this.openChange.emit(open);
-        }
-      });
+    // again on the next effect run, and stay silent — preserving the
+    // documented `model()`-style contract.
+    //
+    // This effect emits an output (an imperative escape from the reactive
+    // graph), it never writes a signal, so it does not violate CLAUDE.md's
+    // "no propagate state in effect" rule. The "force-close on disabled"
+    // state derivation lives in the `linkedSignal` above.
+    effect(() => {
+      const open = this.open();
+      const input = this._openInput();
+      if (open !== input) {
+        this.openChange.emit(open);
+      }
+    });
 
     inject(DestroyRef).onDestroy(() => this.cancelPending());
   }
