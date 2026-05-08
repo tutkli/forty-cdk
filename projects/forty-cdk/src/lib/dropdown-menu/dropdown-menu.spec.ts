@@ -32,10 +32,6 @@ class DropdownHost {
 
 
 describe('ForDropdownMenu', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('wires aria-haspopup, aria-expanded, aria-controls on the trigger', async () => {
       const r = renderHost(DropdownHost);

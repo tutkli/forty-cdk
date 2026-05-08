@@ -59,8 +59,19 @@ class AriaLabelHost {
 }
 
 describe('ForPopover', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forPopoverContent]').forEach((n) => n.remove());
+  describe('portal cleanup', () => {
+    it('removes the portaled content from document.body on close', async () => {
+      // Issue #89 reproduction.
+      const r = renderHost(PopoverHost);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forPopoverContent]')).toHaveLength(1);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forPopoverContent]')).toHaveLength(0);
+    });
   });
 
   describe('a11y baseline', () => {

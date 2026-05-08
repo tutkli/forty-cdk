@@ -52,10 +52,6 @@ class SubMenuHost {
 
 
 describe('ForMenuSub', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent], [forMenuSubContent]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('wires aria-haspopup, aria-expanded, aria-controls on the SubTrigger', async () => {
       const r = renderHost(SubMenuHost);

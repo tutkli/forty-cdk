@@ -76,7 +76,26 @@ describe('ForDialog (declarative)', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
     _resetInertSiblingsForTesting();
-    document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
+  });
+
+  describe('portal cleanup', () => {
+    it('removes the portaled dialog and backdrop from document.body on close', async () => {
+      // Issue #89 reproduction. Without the destroy fix in `injectPortal`, an
+      // open + close cycle would leave `[forDialog]` and
+      // `[data-for-dialog-backdrop]` attached to `document.body`, motivating a
+      // manual `afterEach(remove)` band-aid in every overlay spec.
+      const r = renderHost(DialogHost);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forDialog]')).toHaveLength(1);
+      expect(document.querySelectorAll('[data-for-dialog-backdrop]')).toHaveLength(1);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.querySelectorAll('[forDialog]')).toHaveLength(0);
+      expect(document.querySelectorAll('[data-for-dialog-backdrop]')).toHaveLength(0);
+    });
   });
 
   describe('a11y baseline', () => {
@@ -995,7 +1014,6 @@ describe('ForDialogTrigger', () => {
   afterEach(() => {
     _resetBodyScrollLockForTesting();
     _resetInertSiblingsForTesting();
-    document.querySelectorAll('[forDialog], [data-for-dialog-backdrop]').forEach((n) => n.remove());
   });
 
   @Component({

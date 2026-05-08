@@ -76,10 +76,6 @@ function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
 }
 
 describe('ForContextMenu', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
-  });
-
   describe('right-click trigger', () => {
     it('opens the menu on contextmenu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);

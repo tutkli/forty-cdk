@@ -92,11 +92,6 @@ describe('ForTooltip', () => {
     }
   });
 
-  afterEach(() => {
-    // Clean up any portaled tooltip content left in document.body.
-    document.querySelectorAll('[role="tooltip"]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
       const r = renderHost(TooltipHost);

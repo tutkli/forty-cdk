@@ -91,7 +91,6 @@ describe('injectItemAlignedPositioner', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('item-aligned-listbox').forEach((n) => n.remove());
     Object.defineProperty(window, 'innerHeight', {
       configurable: true,
       value: ORIGINAL_INNER_HEIGHT,

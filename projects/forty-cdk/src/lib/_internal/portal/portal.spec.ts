@@ -46,9 +46,11 @@ class CustomTargetHost {}
 
 describe('injectPortal', () => {
   afterEach(() => {
-    document
-      .querySelectorAll('portaled-bubble, targeted-bubble, #custom-target')
-      .forEach((n) => n.remove());
+    // Stray `#custom-target` is a manually-appended container — not portaled,
+    // not covered by Angular destroy hooks. Bubbles themselves should clean
+    // themselves up via the directive's destroy hook; if any survive, that's
+    // a leak and the assertions below should be the ones that fail.
+    document.querySelectorAll('#custom-target').forEach((n) => n.remove());
   });
 
   it('moves the host element to document.body after first render', async () => {
@@ -93,5 +95,28 @@ describe('injectPortal', () => {
     await flush(fixture);
 
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
+  });
+
+  it('does not leak when the host is destroyed before the queued render fires', async () => {
+    // Reproduces the failure mode that motivated the spec-side
+    // `afterEach(() => document.querySelectorAll(...).forEach(remove))`
+    // pattern: if the directive is torn down between construction and the
+    // first `afterNextRender` callback, the queued `appendChild` must NOT
+    // re-attach the element to `target` after the destroy hook ran.
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PortalHost);
+    fixture.detectChanges();
+
+    // Destroy synchronously — before the macrotask hop that lets
+    // `afterNextRender` callbacks run. This is the path SPA navigations and
+    // synchronous test teardowns hit.
+    fixture.destroy();
+
+    // Drain any queued render/macrotask work that might have escaped the
+    // destroy. Without the cancellation in `injectPortal`, `appendChild`
+    // would fire here and leak the element into `document.body`.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
   });
 });

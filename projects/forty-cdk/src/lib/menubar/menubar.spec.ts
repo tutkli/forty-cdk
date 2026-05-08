@@ -104,11 +104,6 @@ class MenubarWithSubmenuHost {
 
 
 describe('ForMenubar', () => {
-  afterEach(() => {
-    document.querySelectorAll('[forMenuContent]').forEach((n) => n.remove());
-    document.querySelectorAll('[forMenuSubContent]').forEach((n) => n.remove());
-  });
-
   describe('a11y baseline', () => {
     it('reflects role="menubar", aria-orientation, data-state, dir', async () => {
       const r = renderHost(MenubarHost);
