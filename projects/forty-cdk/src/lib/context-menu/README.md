@@ -71,7 +71,7 @@ The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 
 Same vetoable dismiss API as DropdownMenu — `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`. Each handler receives a `VetoableNativeEvent<E>` (the original DOM event lives on `.event`); call `preventDefault()` on the veto to keep the menu open.
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the imperative focus move on mount / unmount. Each receives a `VetoableEvent`; call `preventDefault()` on the veto to skip the move while keeping the menu mounted.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the imperative focus move on mount / unmount. Each receives a `VetoableEvent`; call `preventDefault()` on the veto to skip the move while keeping the menu mounted. These are output-shape because ContextMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
 
 ## Behavior notes
 

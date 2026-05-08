@@ -162,7 +162,7 @@ Consumers styling falsy state must select on **the absence** of the attribute (`
 
 There are two API shapes for primitives that have a visibility/open concept:
 
-- **Floating overlays** (Dialog, future Popover / Menu / Drawer / Toast / HoverCard): the trigger lives outside the surface; the consumer's signal drives `@if` and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). **No `[(open)]` model.** Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
+- **Free-floating overlays** (Dialog, Toast): the instance lifecycle is decoupled from the trigger and the directive owns no `[(open)]` model. The consumer's external signal drives `@if`, and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
 
   ```html
   @if (open()) {
@@ -170,7 +170,18 @@ There are two API shapes for primitives that have a visibility/open concept:
   }
   ```
 
-- **Embedded toggle/selection** (Disclosure, Accordion, Tabs, Tooltip, Listbox, future ToggleGroup): the trigger lives inside the wrapper and drives state, so `[(open)]` / `[(value)]` is correct. The visible content piece still drops `[hidden]`; the consumer wraps it with `@if` driven by the same signal (or a template ref to the directive). `data-state` reflects logical open/closed for CSS styling, but is never tied to visibility — that's `@if`'s job.
+- **Trigger-anchored overlays** (Popover, DropdownMenu, ContextMenu, HoverCard, NavigationMenu, Tooltip, Combobox content, Select content): the trigger lives inside the wrapper directive and drives state, so the wrapper exposes `[(open)]` (or `[(value)]` for selection-driven content like Combobox / Select) via a `model<bool>()` / `model<T>()`. The consumer wraps the visible content piece with `@if` driven by the same signal. `data-state` reflects logical open/closed for CSS styling, but is never tied to visibility — that's `@if`'s job.
+
+  ```html
+  <div forPopover [(open)]="isOpen">
+    <button forPopoverTrigger>Toggle</button>
+    @if (isOpen()) {
+    <div forPopoverContent animate.leave="fade-out">…</div>
+    }
+  </div>
+  ```
+
+- **Embedded toggle/selection** (Disclosure, Accordion, Tabs, Listbox, future ToggleGroup): same `[(open)]` / `[(value)]` shape as trigger-anchored overlays, but the content piece is part of the document flow rather than a floating layer. The visible content piece still drops `[hidden]`; the consumer wraps it with `@if` driven by the same signal.
 
   ```html
   <div forDisclosure [(open)]="isOpen">
@@ -184,6 +195,18 @@ There are two API shapes for primitives that have a visibility/open concept:
 The single exception is **Tabs panels**: it's idiomatic to keep all panels mounted to preserve scroll/input state. The consumer can either `@if` per panel or simply leave them mounted and toggle visibility in CSS via `[data-state="active"]`.
 
 Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, `Tabs` selection) keep `[(checked)]` / `[(value)]` — that's form state, not visibility, and the rule above doesn't apply.
+
+**Auto-focus hook shape.** Overlay primitives expose two vetoable hooks for the imperative focus moves they perform on mount and unmount: `autoFocusOnOpen` (just before focus enters the surface) and `autoFocusOnClose` (just before focus returns to the trigger). Both deliver a `VetoableEvent`; calling `event.preventDefault()` skips the directive's focus move while leaving the rest of the lifecycle alone. The library deliberately uses two binding shapes for this single contract:
+
+- **Free-floating overlays use `input<((event: VetoableEvent) => void) | undefined>`** — bound as a function reference: `[autoFocusOnOpen]="onOpen"`. Today: **Dialog** (and `ForDialogManager`'s `config.autoFocusOn*`, which is the same callback). The reason is reliability on the close path: a Dialog can be closed via a direct `open.set(false)` from the consumer, which bypasses the `(close)` output entirely. The directive must still fire `autoFocusOnClose` deterministically on every close path — including the destroy hook — so it stores a function reference rather than relying on Angular's `OutputEmitterRef` lifecycle (which doesn't guarantee subscriber delivery during teardown).
+- **Trigger-anchored overlays use `output<VetoableEvent>()`** — bound as an event listener: `(autoFocusOnOpen)="…"`. Today: **Popover, DropdownMenu, ContextMenu, Menu sub, Select**, plus any future trigger-anchored overlay. These primitives always route close transitions through their own `model<bool>() open` (and therefore through the implicit `openChange` emitter), so there is no escape hatch that bypasses the output. The output shape stays idiomatic Angular and matches the surrounding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, etc.).
+
+| Primitive(s)                                         | Shape                            | Binding                       |
+| ---------------------------------------------------- | -------------------------------- | ----------------------------- |
+| Dialog                                               | `input<(e: VetoableEvent) => void>` | `[autoFocusOnOpen]="onOpen"`  |
+| Popover, DropdownMenu, ContextMenu, Menu sub, Select | `output<VetoableEvent>()`        | `(autoFocusOnOpen)="…"`       |
+
+Combobox is the documented exception that exposes neither hook: `aria-activedescendant` keeps focus on the input the entire time, so there is no imperative focus move to veto. Document any new overlay against this section.
 
 **No `forceMount` / `keepMounted` equivalent for overlays.** The library deliberately does **not** ship a Radix-style `forceMount` or Base-UI-style `keepMounted` opt-in on overlay content directives (`[forDialog]`, popover / tooltip / hover-card / dropdown-menu / context-menu content). Mount == open is structural for these primitives — focus trap, scroll lock, body inert, dismissable layer push, and ARIA modality all hang off the directive's lifetime via `afterNextRender` + `DestroyRef`. Splitting "alive" from "open" would require re-gating every side effect on a separate `open()` signal and inherits a long tail of bugs documented upstream. The single bona-fide use case (handing exit animation control to JS animation libraries) is already covered by `animate.leave` + `@if`, so the consumer never needs the directive to outlive the open state. Revisit only if a real consumer brings a use case `animate.leave` cannot cover; design constraints if accepted are recorded in [#72](https://github.com/tutkli/forty-cdk/issues/72).
 
