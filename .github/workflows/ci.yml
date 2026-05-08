@@ -11,6 +11,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  defaults-guard:
+    name: Defaults stub guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Enforces CLAUDE.md § "Defaults providers": every primitive folder
+      # under projects/forty-cdk/src/lib/<name>/ that ships a <name>.ts must
+      # also ship a sibling <name>-defaults.ts (empty stub or populated).
+      # Skips _internal and test-utils.
+      - name: Check primitive defaults stubs
+        run: |
+          fail=0
+          for dir in projects/forty-cdk/src/lib/*/; do
+            name=$(basename "$dir")
+            [[ "$name" == "_internal" ]] && continue
+            [[ "$name" == "test-utils" ]] && continue
+            if [[ -f "$dir$name.ts" && ! -f "$dir$name-defaults.ts" ]]; then
+              echo "::error file=$dir$name.ts::MISSING defaults stub: $dir$name-defaults.ts"
+              fail=1
+            fi
+          done
+          exit $fail
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
