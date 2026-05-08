@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
 import { ForMenuCheckboxItem } from './menu-checkbox-item';
@@ -135,12 +135,6 @@ class TypeaheadOverrideHost {
   readonly alignment = signal('left');
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 describe('Menu items / content', () => {
   afterEach(() => {
@@ -485,7 +479,7 @@ describe('Menu items / content', () => {
 
       const copy = document.querySelector<HTMLElement>('#copy')!;
       copy.focus();
-      copy.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(copy, 'ArrowDown');
       await flush(r.fixture);
 
       // Skips disabled #paste, lands on #bold
@@ -499,7 +493,7 @@ describe('Menu items / content', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(cut, 'ArrowUp');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('right');
@@ -512,7 +506,7 @@ describe('Menu items / content', () => {
 
       const right = document.querySelector<HTMLElement>('#right')!;
       right.focus();
-      right.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      pressKey(right, 'Home');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('cut');
@@ -525,7 +519,7 @@ describe('Menu items / content', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      pressKey(cut, 'End');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('right');
@@ -544,7 +538,7 @@ describe('Menu items / content', () => {
       expect(cut.getAttribute('data-highlighted')).toBe('');
       expect(copy.hasAttribute('data-highlighted')).toBe(false);
 
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(cut, 'ArrowDown');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('copy');
@@ -561,7 +555,7 @@ describe('Menu items / content', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', bubbles: true }));
+      pressKey(cut, 'i');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('italic');
@@ -574,7 +568,7 @@ describe('Menu items / content', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+      pressKey(cut, 'p');
       await flush(r.fixture);
 
       // 'paste' is disabled — typeahead should not focus it.
@@ -590,7 +584,7 @@ describe('Menu items / content', () => {
         // The item's textContent starts with '3' (a badge), so the legacy
         // textContent-based prefix match would not catch 'a'. Override fixes it.
         archive.focus();
-        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        pressKey(archive, 'a');
         await flush(r.fixture);
 
         expect(document.activeElement?.id).toBe('archive');
@@ -602,7 +596,7 @@ describe('Menu items / content', () => {
 
         const archive = document.querySelector<HTMLElement>('#archive')!;
         archive.focus();
-        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }));
+        pressKey(archive, 'c');
         await flush(r.fixture);
 
         // 'copy' has no textValue and a clean textContent — fallback path.
@@ -615,7 +609,7 @@ describe('Menu items / content', () => {
 
         const archive = document.querySelector<HTMLElement>('#archive')!;
         archive.focus();
-        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+        pressKey(archive, 'b');
         await flush(r.fixture);
 
         expect(document.activeElement?.id).toBe('bold');
@@ -627,7 +621,7 @@ describe('Menu items / content', () => {
 
         const archive = document.querySelector<HTMLElement>('#archive')!;
         archive.focus();
-        archive.dispatchEvent(new KeyboardEvent('keydown', { key: 'l', bubbles: true }));
+        pressKey(archive, 'l');
         await flush(r.fixture);
 
         expect(document.activeElement?.id).toBe('left');
@@ -643,7 +637,7 @@ describe('Menu items / content', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      pressKey(cut, 'Tab');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);

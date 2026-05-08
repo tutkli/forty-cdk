@@ -5,8 +5,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
+import { flushPositioning } from '../../../test-utils';
 import { injectItemAlignedPositioner } from './item-aligned';
 
 interface MockRect {
@@ -74,16 +75,6 @@ class ItemAlignedListbox {
 class Host {
   readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
   readonly lb = viewChild.required<ItemAlignedListbox>('lb');
-}
-
-async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  for (let i = 0; i < 4; i++) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    fixture.detectChanges();
-    await fixture.whenStable();
-  }
 }
 
 const ORIGINAL_INNER_HEIGHT = window.innerHeight;

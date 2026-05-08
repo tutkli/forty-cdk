@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForContextMenu } from './context-menu';
@@ -62,12 +62,6 @@ function stubRect(
   return stubbed;
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
   const event = new MouseEvent('contextmenu', {
@@ -133,28 +127,13 @@ describe('ForContextMenu', () => {
   });
 
   describe('keyboard activator', () => {
-    const keyDown = (
-      target: HTMLElement,
-      key: string,
-      init: KeyboardEventInit = {},
-    ): KeyboardEvent => {
-      const ev = new KeyboardEvent('keydown', {
-        key,
-        bubbles: true,
-        cancelable: true,
-        ...init,
-      });
-      target.dispatchEvent(ev);
-      return ev;
-    };
-
     it('Shift+F10 on the focused trigger opens the menu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
       stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
       region.focus();
 
-      const ev = keyDown(region, 'F10', { shiftKey: true });
+      const ev = pressKey(region, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -167,7 +146,7 @@ describe('ForContextMenu', () => {
       stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
       region.focus();
 
-      keyDown(region, 'F10', { shiftKey: true });
+      pressKey(region, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
       const anchor = getMenuDirective(r.fixture).anchor();
@@ -185,7 +164,7 @@ describe('ForContextMenu', () => {
       stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
       region.focus();
 
-      const ev = keyDown(region, 'ContextMenu');
+      const ev = pressKey(region, 'ContextMenu');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -198,7 +177,7 @@ describe('ForContextMenu', () => {
       stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
       region.focus();
 
-      keyDown(region, 'ContextMenu');
+      pressKey(region, 'ContextMenu');
       await flush(r.fixture);
 
       const rect = getMenuDirective(r.fixture).anchor()!.getBoundingClientRect();
@@ -216,7 +195,7 @@ describe('ForContextMenu', () => {
       stubRect(inner, { left: 110, top: 90, width: 60, height: 24 });
       inner.focus();
 
-      keyDown(inner, 'F10', { shiftKey: true });
+      pressKey(inner, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -238,7 +217,7 @@ describe('ForContextMenu', () => {
       document.body.appendChild(outside);
       outside.focus();
 
-      keyDown(region, 'F10', { shiftKey: true });
+      pressKey(region, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
       const rect = getMenuDirective(r.fixture).anchor()!.getBoundingClientRect();
@@ -257,8 +236,8 @@ describe('ForContextMenu', () => {
       const region = r.query<HTMLElement>('#region')!;
       region.focus();
 
-      const evF10 = keyDown(region, 'F10', { shiftKey: true });
-      const evCtxKey = keyDown(region, 'ContextMenu');
+      const evF10 = pressKey(region, 'F10', { shiftKey: true });
+      const evCtxKey = pressKey(region, 'ContextMenu');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -271,7 +250,7 @@ describe('ForContextMenu', () => {
       const region = r.query<HTMLElement>('#region')!;
       region.focus();
 
-      const ev = keyDown(region, 'F10');
+      const ev = pressKey(region, 'F10');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -282,7 +261,7 @@ describe('ForContextMenu', () => {
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
       region.focus();
-      keyDown(region, 'F10', { shiftKey: true });
+      pressKey(region, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('cut');
@@ -342,7 +321,7 @@ describe('ForContextMenu', () => {
       rightClick(r.query<HTMLElement>('#region')!, 0, 0);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);

@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
 import { ForTabsList } from './tabs-list';
@@ -63,9 +63,6 @@ const contentOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-content="${id}"]`)!;
 
 const tablistOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forTabsList]')!;
-
-const keyDown = (target: HTMLElement, key: string) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
 
 describe('ForTabs', () => {
   describe('static accessibility & wiring', () => {
@@ -168,17 +165,17 @@ describe('ForTabs', () => {
       triggerOf(el, 'a').focus();
       flush();
 
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
       expect(fixture.componentInstance.active()).toBe('b');
 
-      keyDown(triggerOf(el, 'b'), 'ArrowRight');
+      pressKey(triggerOf(el, 'b'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
       expect(fixture.componentInstance.active()).toBe('c');
 
-      keyDown(triggerOf(el, 'c'), 'ArrowRight');
+      pressKey(triggerOf(el, 'c'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
       expect(fixture.componentInstance.active()).toBe('a');
@@ -187,11 +184,11 @@ describe('ForTabs', () => {
     it('Home / End jump and select', () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       triggerOf(el, 'b').focus();
-      keyDown(triggerOf(el, 'b'), 'End');
+      pressKey(triggerOf(el, 'b'), 'End');
       flush();
       expect(fixture.componentInstance.active()).toBe('c');
 
-      keyDown(triggerOf(el, 'c'), 'Home');
+      pressKey(triggerOf(el, 'c'), 'Home');
       flush();
       expect(fixture.componentInstance.active()).toBe('a');
     });
@@ -205,7 +202,7 @@ describe('ForTabs', () => {
       fixture.componentInstance.active.set('c');
       flush();
 
-      keyDown(triggerOf(el, 'c'), 'ArrowRight');
+      pressKey(triggerOf(el, 'c'), 'ArrowRight');
       flush();
       // Stays on c — no wrap.
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
@@ -221,7 +218,7 @@ describe('ForTabs', () => {
       flush();
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
       expect(fixture.componentInstance.active()).toBe('a');
@@ -236,7 +233,7 @@ describe('ForTabs', () => {
       flush();
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       flush();
       // Now focus is on b, value still a.
       triggerOf(el, 'b').click();
@@ -251,7 +248,7 @@ describe('ForTabs', () => {
       flush();
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       flush();
       expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('0');
       expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('-1');
@@ -268,11 +265,11 @@ describe('ForTabs', () => {
       expect(list.getAttribute('aria-orientation')).toBe('vertical');
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowDown');
+      pressKey(triggerOf(el, 'a'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
-      keyDown(triggerOf(el, 'b'), 'ArrowRight');
+      pressKey(triggerOf(el, 'b'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
     });
@@ -294,7 +291,7 @@ describe('ForTabs', () => {
       flush();
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowLeft');
+      pressKey(triggerOf(el, 'a'), 'ArrowLeft');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
     });
@@ -318,7 +315,7 @@ describe('ForTabs', () => {
       expect(fixture.componentInstance.active()).toBe('');
 
       triggerOf(el, 'a').focus();
-      keyDown(triggerOf(el, 'a'), 'ArrowRight');
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
     });

@@ -5,8 +5,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
+import { flushPositioning } from '../../../test-utils';
 import { injectFloating } from './floating';
 
 @Component({
@@ -161,16 +162,6 @@ class InPlaceBubble {
 })
 class InPlaceHost {
   readonly bubble = viewChild.required<InPlaceBubble>('b');
-}
-
-async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  for (let i = 0; i < 3; i++) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    fixture.detectChanges();
-    await fixture.whenStable();
-  }
 }
 
 describe('injectFloating', () => {

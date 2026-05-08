@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
@@ -65,9 +65,6 @@ const optOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
 const listboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forListbox]')!;
-
-const keyDown = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }));
 
 describe('ForListbox', () => {
   describe('static accessibility', () => {
@@ -165,7 +162,7 @@ describe('ForListbox', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
 
-      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
       expect(fixture.componentInstance.picked()).toEqual([]);
@@ -174,16 +171,16 @@ describe('ForListbox', () => {
     it('wraps at the ends', () => {
       const { el } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowUp');
+      pressKey(optOf(el, 'apple'), 'ArrowUp');
       expect(document.activeElement).toBe(optOf(el, 'cherry'));
     });
 
     it('Home / End jump', () => {
       const { el } = renderHost(ListboxHost);
       optOf(el, 'banana').focus();
-      keyDown(optOf(el, 'banana'), 'End');
+      pressKey(optOf(el, 'banana'), 'End');
       expect(document.activeElement).toBe(optOf(el, 'cherry'));
-      keyDown(optOf(el, 'cherry'), 'Home');
+      pressKey(optOf(el, 'cherry'), 'Home');
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
@@ -196,7 +193,7 @@ describe('ForListbox', () => {
       ]);
       flush();
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'banana'));
     });
   });
@@ -208,7 +205,7 @@ describe('ForListbox', () => {
       flush();
 
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
       flush();
       expect(fixture.componentInstance.picked()).toEqual(['apricot']);
     });
@@ -220,7 +217,7 @@ describe('ForListbox', () => {
       flush();
 
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
       flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
@@ -230,7 +227,7 @@ describe('ForListbox', () => {
     it('focuses the first option matching the typed prefix', () => {
       const { el, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'b');
+      pressKey(optOf(el, 'apple'), 'b');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'banana'));
     });
@@ -238,10 +235,10 @@ describe('ForListbox', () => {
     it('extends the prefix on consecutive keystrokes', () => {
       const { el, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'b');
+      pressKey(optOf(el, 'apple'), 'b');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'banana'));
-      keyDown(optOf(el, 'banana'), 'l');
+      pressKey(optOf(el, 'banana'), 'l');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'blueberry'));
     });
@@ -256,14 +253,14 @@ describe('ForListbox', () => {
       flush();
 
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'a');
+      pressKey(optOf(el, 'apple'), 'a');
       flush();
       // 'apple' matches first but the focus is already there — typeahead's
       // prefix match returns first enabled match in list order, which is apple.
       expect(document.activeElement).toBe(optOf(el, 'apple'));
 
       // Type 'av' to skip apricot (disabled).
-      keyDown(optOf(el, 'apple'), 'v');
+      pressKey(optOf(el, 'apple'), 'v');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
     });
@@ -271,7 +268,7 @@ describe('ForListbox', () => {
     it('ignores Space (reserved for activation)', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), ' ');
+      pressKey(optOf(el, 'apple'), ' ');
       flush();
       // Space is not a typeahead character; focus stays on apple.
       expect(document.activeElement).toBe(optOf(el, 'apple'));
@@ -292,7 +289,7 @@ describe('ForListbox', () => {
       it('moves focus to the next option AND toggles it on', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
@@ -301,7 +298,7 @@ describe('ForListbox', () => {
       it('toggles already-selected options off on Shift+Arrow', () => {
         const { el, fixture, flush } = setupMulti(['apricot']);
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual([]);
@@ -310,7 +307,7 @@ describe('ForListbox', () => {
       it('Shift+ArrowUp toggles the previous option', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), 'ArrowUp', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), 'ArrowUp', { shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
         expect(fixture.componentInstance.picked()).toEqual(['apple']);
@@ -325,7 +322,7 @@ describe('ForListbox', () => {
         ]);
         flush();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'banana'));
         expect(fixture.componentInstance.picked()).toEqual(['banana']);
@@ -334,7 +331,7 @@ describe('ForListbox', () => {
       it('does NOT toggle in single mode (just moves focus)', () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual([]);
@@ -345,11 +342,11 @@ describe('ForListbox', () => {
         optOf(el, 'apple').click();
         flush();
         // Shift+Arrow should NOT move the anchor.
-        keyDown(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
-        keyDown(optOf(el, 'apricot'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), 'ArrowDown', { shiftKey: true });
         flush();
         // Now focus is on banana. Shift+Space should select [apple..banana].
-        keyDown(optOf(el, 'banana'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'banana'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
       });
@@ -370,7 +367,7 @@ describe('ForListbox', () => {
 
         const r = renderHost(Host);
         optOf(r.el, 'a').focus();
-        keyDown(optOf(r.el, 'a'), 'ArrowDown', { shiftKey: true });
+        pressKey(optOf(r.el, 'a'), 'ArrowDown', { shiftKey: true });
         r.flush();
         expect(document.activeElement).toBe(optOf(r.el, 'b'));
         expect(r.fixture.componentInstance.picked()).toEqual([]);
@@ -385,7 +382,7 @@ describe('ForListbox', () => {
         flush();
         // Move focus a few steps without modifying anchor.
         optOf(el, 'cherry').focus();
-        keyDown(optOf(el, 'cherry'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'cherry'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
@@ -401,7 +398,7 @@ describe('ForListbox', () => {
         optOf(el, 'cherry').click();
         flush();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'cherry',
@@ -417,7 +414,7 @@ describe('ForListbox', () => {
         optOf(el, 'apple').click(); // Anchor = apple, picks now = [cherry, apple].
         flush();
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'cherry',
@@ -437,7 +434,7 @@ describe('ForListbox', () => {
         optOf(el, 'a').click();
         flush();
         optOf(el, 'c').focus();
-        keyDown(optOf(el, 'c'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'c'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
       });
@@ -446,7 +443,7 @@ describe('ForListbox', () => {
         const { el, fixture, flush } = setupMulti();
         // No prior click → anchor is null. Shift+Space at apricot picks just apricot.
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
       });
@@ -454,7 +451,7 @@ describe('ForListbox', () => {
       it('no-op in single mode (Space falls through to native click)', () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apple'), ' ', { shiftKey: true });
         flush();
         // Space was preventDefaulted-by-nobody; native click on a button doesn't fire
         // from a synthetic `keydown` event in jsdom. Single-mode picks stays empty.
@@ -466,7 +463,7 @@ describe('ForListbox', () => {
       it('selects every enabled option', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
@@ -480,7 +477,7 @@ describe('ForListbox', () => {
       it('also accepts uppercase A', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'A', { ctrlKey: true });
+        pressKey(optOf(el, 'apple'), 'A', { ctrlKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toHaveLength(5);
       });
@@ -488,7 +485,7 @@ describe('ForListbox', () => {
       it('also accepts metaKey (mac Cmd+A)', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'a', { metaKey: true });
+        pressKey(optOf(el, 'apple'), 'a', { metaKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toHaveLength(5);
       });
@@ -496,7 +493,7 @@ describe('ForListbox', () => {
       it('clears the selection when every enabled option is already selected (toggle)', () => {
         const { el, fixture, flush } = setupMulti(['apple', 'apricot', 'banana', 'blueberry', 'cherry']);
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
@@ -510,7 +507,7 @@ describe('ForListbox', () => {
         ]);
         flush();
         optOf(el, 'a').focus();
-        keyDown(optOf(el, 'a'), 'a', { ctrlKey: true });
+        pressKey(optOf(el, 'a'), 'a', { ctrlKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
       });
@@ -518,7 +515,7 @@ describe('ForListbox', () => {
       it('no-op in single mode', () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'apple').focus();
-        keyDown(optOf(el, 'apple'), 'a', { ctrlKey: true });
+        pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
@@ -528,7 +525,7 @@ describe('ForListbox', () => {
       it('Ctrl+Shift+End selects from current to the last enabled option and focuses it', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'banana').focus();
-        keyDown(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
+        pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'cherry'));
         expect(fixture.componentInstance.picked()).toEqual([
@@ -541,7 +538,7 @@ describe('ForListbox', () => {
       it('Ctrl+Shift+Home selects from current to the first enabled option and focuses it', () => {
         const { el, fixture, flush } = setupMulti();
         optOf(el, 'banana').focus();
-        keyDown(optOf(el, 'banana'), 'Home', { ctrlKey: true, shiftKey: true });
+        pressKey(optOf(el, 'banana'), 'Home', { ctrlKey: true, shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
         expect(fixture.componentInstance.picked()).toEqual([
@@ -554,7 +551,7 @@ describe('ForListbox', () => {
       it('preserves selection outside the range', () => {
         const { el, fixture, flush } = setupMulti(['cherry']);
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), 'Home', { ctrlKey: true, shiftKey: true });
+        pressKey(optOf(el, 'apricot'), 'Home', { ctrlKey: true, shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'cherry',
@@ -572,7 +569,7 @@ describe('ForListbox', () => {
         ]);
         flush();
         optOf(el, 'c').focus();
-        keyDown(optOf(el, 'c'), 'Home', { ctrlKey: true, shiftKey: true });
+        pressKey(optOf(el, 'c'), 'Home', { ctrlKey: true, shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'b'));
         expect(fixture.componentInstance.picked()).toEqual(['b', 'c']);
@@ -581,7 +578,7 @@ describe('ForListbox', () => {
       it('no-op in single mode', () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'banana').focus();
-        keyDown(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
+        pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
@@ -594,7 +591,7 @@ describe('ForListbox', () => {
         flush();
         // Now Shift+Space at apricot should span apricot..banana.
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'banana',
@@ -609,7 +606,7 @@ describe('ForListbox', () => {
         flush();
         // Shift+Space at apricot should span apricot..cherry.
         optOf(el, 'apricot').focus();
-        keyDown(optOf(el, 'apricot'), ' ', { shiftKey: true });
+        pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
@@ -628,7 +625,7 @@ describe('ForListbox', () => {
       fixture.componentInstance.orientation.set('horizontal');
       flush();
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowRight');
+      pressKey(optOf(el, 'apple'), 'ArrowRight');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
@@ -638,7 +635,7 @@ describe('ForListbox', () => {
       fixture.componentInstance.dir.set('rtl');
       flush();
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowLeft');
+      pressKey(optOf(el, 'apple'), 'ArrowLeft');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
@@ -647,9 +644,9 @@ describe('ForListbox', () => {
       fixture.componentInstance.orientation.set('horizontal');
       flush();
       optOf(el, 'apple').focus();
-      keyDown(optOf(el, 'apple'), 'ArrowDown');
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'apple'));
-      keyDown(optOf(el, 'apple'), 'ArrowUp');
+      pressKey(optOf(el, 'apple'), 'ArrowUp');
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
   });
@@ -682,7 +679,7 @@ describe('ForListbox', () => {
 
       // Arrow nav still works — readonly only blocks selection, not focus.
       optOf(el, 'a').focus();
-      keyDown(optOf(el, 'a'), 'ArrowDown');
+      pressKey(optOf(el, 'a'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'b'));
     });
 
@@ -706,7 +703,7 @@ describe('ForListbox', () => {
 
       const { el, fixture, flush } = renderHost(Host);
       optOf(el, 'a').focus();
-      keyDown(optOf(el, 'a'), 'ArrowDown');
+      pressKey(optOf(el, 'a'), 'ArrowDown');
       flush();
 
       expect(fixture.componentInstance.picked()).toEqual([]);
@@ -854,7 +851,7 @@ describe('ForListbox', () => {
       const c = el.querySelector<HTMLButtonElement>('[data-test-id="c"]')!;
 
       a.focus();
-      a.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      pressKey(a, 'End');
       flush();
 
       // End jumps to the last enabled option, even when it lives in another

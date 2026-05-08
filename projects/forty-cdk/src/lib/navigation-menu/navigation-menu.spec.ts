@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -52,10 +52,6 @@ import { ForNavigationMenuTrigger } from './navigation-menu-trigger';
 class NavMenuHost {
   readonly open = signal('');
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
-}
-
-function key(name: string): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
 }
 
 function pointer(type: 'pointerenter' | 'pointerleave' | 'pointerdown'): PointerEvent {
@@ -198,10 +194,10 @@ describe('ForNavigationMenu', () => {
       flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
-      trigger.dispatchEvent(key('Enter'));
+      pressKey(trigger, 'Enter');
       flush();
       expect(fixture.componentInstance.open()).toBe('products');
-      trigger.dispatchEvent(key(' '));
+      pressKey(trigger, ' ');
       flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
@@ -211,7 +207,7 @@ describe('ForNavigationMenu', () => {
       flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[1]!;
 
-      trigger.dispatchEvent(key('ArrowDown'));
+      pressKey(trigger, 'ArrowDown');
       flush();
       vi.advanceTimersByTime(0);
       flush();
@@ -224,11 +220,11 @@ describe('ForNavigationMenu', () => {
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.focus();
-      triggers[0]!.dispatchEvent(key('ArrowRight'));
+      pressKey(triggers[0]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(triggers[1]);
 
-      triggers[1]!.dispatchEvent(key('ArrowLeft'));
+      pressKey(triggers[1]!, 'ArrowLeft');
       flush();
       expect(document.activeElement).toBe(triggers[0]);
     });
@@ -241,7 +237,7 @@ describe('ForNavigationMenu', () => {
       trigger.click();
       flush();
       trigger.focus();
-      trigger.dispatchEvent(key('Escape'));
+      pressKey(trigger, 'Escape');
       flush();
 
       expect(fixture.componentInstance.open()).toBe('');

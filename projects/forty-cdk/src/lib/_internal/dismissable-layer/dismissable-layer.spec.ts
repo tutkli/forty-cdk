@@ -1,8 +1,5 @@
+import { pressKey } from '../../../test-utils';
 import { DismissableLayer } from './dismissable-layer';
-
-function escape(): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
-}
 
 function pointerDown(target: Node): PointerEvent {
   const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
@@ -50,7 +47,7 @@ describe('DismissableLayer', () => {
         onDismiss: () => calls.push('dismiss'),
       });
 
-      document.dispatchEvent(escape());
+      pressKey(document, 'Escape');
 
       expect(calls).toEqual(['escape', 'dismiss']);
     });
@@ -66,7 +63,7 @@ describe('DismissableLayer', () => {
         onDismiss: () => calls.push('dismiss'),
       });
 
-      document.dispatchEvent(escape());
+      pressKey(document, 'Escape');
 
       expect(calls).toEqual(['escape']);
     });
@@ -76,7 +73,7 @@ describe('DismissableLayer', () => {
       layer = new DismissableLayer(host);
       layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      pressKey(document, 'Enter');
 
       expect(calls).toEqual([]);
     });
@@ -187,7 +184,7 @@ describe('DismissableLayer', () => {
         onPointerDownOutside: () => calls.push('inner-pointer'),
       });
 
-      document.dispatchEvent(escape());
+      pressKey(document, 'Escape');
       document.dispatchEvent(pointerDown(outside));
 
       expect(calls).toEqual(['inner-escape', 'inner-pointer']);
@@ -208,7 +205,7 @@ describe('DismissableLayer', () => {
       innerLayer.activate({ onEscapeKeyDown: () => calls.push('inner') });
 
       innerLayer.deactivate();
-      document.dispatchEvent(escape());
+      pressKey(document, 'Escape');
 
       expect(calls).toEqual(['outer']);
 
@@ -223,7 +220,7 @@ describe('DismissableLayer', () => {
     layer.activate({ onEscapeKeyDown: () => calls.push('once') });
     layer.activate({ onEscapeKeyDown: () => calls.push('twice') });
 
-    document.dispatchEvent(escape());
+    pressKey(document, 'Escape');
 
     expect(calls).toEqual(['once']);
     expect(layer.isActive).toBe(true);
@@ -235,7 +232,7 @@ describe('DismissableLayer', () => {
     layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
     layer.deactivate();
 
-    document.dispatchEvent(escape());
+    pressKey(document, 'Escape');
 
     expect(calls).toEqual([]);
     expect(layer.isActive).toBe(false);

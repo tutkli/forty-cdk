@@ -1,8 +1,8 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
@@ -56,13 +56,6 @@ class PopoverHost {
 })
 class AriaLabelHost {
   readonly open = signal(false);
-}
-
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
 }
 
 describe('ForPopover', () => {
@@ -200,7 +193,7 @@ describe('ForPopover', () => {
       expect(internalEmits).toBe(0);
 
       // Internal transition (Escape) — should fire once.
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(internalEmits).toBe(1);
     });
@@ -319,7 +312,7 @@ describe('ForPopover', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -331,7 +324,7 @@ describe('ForPopover', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -450,7 +443,7 @@ describe('ForPopover', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
@@ -475,7 +468,7 @@ describe('ForPopover', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);

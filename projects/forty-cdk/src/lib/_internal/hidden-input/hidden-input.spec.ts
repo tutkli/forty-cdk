@@ -54,10 +54,6 @@ function setup(): { fixture: ComponentFixture<Host>; host: Host; form: HTMLFormE
   return { fixture, host, form };
 }
 
-function flush(fixture: ComponentFixture<Host>): void {
-  fixture.detectChanges();
-}
-
 function hiddenInputs(form: HTMLFormElement): HTMLInputElement[] {
   return Array.from(form.querySelectorAll<HTMLInputElement>('input[type="hidden"]'));
 }
@@ -70,7 +66,7 @@ describe('injectHiddenInput', () => {
   it('does not mount any input while name is empty', () => {
     const { fixture, host, form } = setup();
     host.values.set(['a']);
-    flush(fixture);
+    fixture.detectChanges();
 
     expect(hiddenInputs(form)).toHaveLength(0);
   });
@@ -78,7 +74,7 @@ describe('injectHiddenInput', () => {
   it('does not mount any input while values is empty', () => {
     const { fixture, host, form } = setup();
     host.name.set('color');
-    flush(fixture);
+    fixture.detectChanges();
 
     expect(hiddenInputs(form)).toHaveLength(0);
   });
@@ -87,7 +83,7 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('color');
     host.values.set(['red']);
-    flush(fixture);
+    fixture.detectChanges();
 
     const inputs = hiddenInputs(form);
     expect(inputs).toHaveLength(1);
@@ -103,7 +99,7 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('tags');
     host.values.set(['a', 'b', 'c']);
-    flush(fixture);
+    fixture.detectChanges();
 
     const inputs = hiddenInputs(form);
     expect(inputs.map((i) => i.value)).toEqual(['a', 'b', 'c']);
@@ -114,7 +110,7 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('tags');
     host.values.set(['x', 'y']);
-    flush(fixture);
+    fixture.detectChanges();
 
     expect(formData(form)).toEqual([
       ['tags', 'x'],
@@ -126,15 +122,15 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('tags');
     host.values.set(['a']);
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form)).toHaveLength(1);
 
     host.values.set(['a', 'b', 'c']);
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form).map((i) => i.value)).toEqual(['a', 'b', 'c']);
 
     host.values.set(['z']);
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form).map((i) => i.value)).toEqual(['z']);
   });
 
@@ -142,11 +138,11 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('color');
     host.values.set(['red']);
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form)).toHaveLength(1);
 
     host.name.set('');
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form)).toHaveLength(0);
   });
 
@@ -155,14 +151,14 @@ describe('injectHiddenInput', () => {
     host.name.set('color');
     host.values.set(['red']);
     host.disabled.set(true);
-    flush(fixture);
+    fixture.detectChanges();
 
     const inputs = hiddenInputs(form);
     expect(inputs[0]!.hasAttribute('disabled')).toBe(true);
     expect(formData(form)).toEqual([]);
 
     host.disabled.set(false);
-    flush(fixture);
+    fixture.detectChanges();
     expect(inputs[0]!.hasAttribute('disabled')).toBe(false);
     expect(formData(form)).toEqual([['color', 'red']]);
   });
@@ -171,7 +167,7 @@ describe('injectHiddenInput', () => {
     const { fixture, host, form } = setup();
     host.name.set('color');
     host.values.set(['red']);
-    flush(fixture);
+    fixture.detectChanges();
     expect(hiddenInputs(form)).toHaveLength(1);
 
     fixture.destroy();

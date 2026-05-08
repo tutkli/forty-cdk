@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForContextMenu } from '../context-menu/context-menu';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
@@ -50,12 +50,6 @@ class SubMenuHost {
   readonly lastSelected = signal<string | null>(null);
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 describe('ForMenuSub', () => {
   afterEach(() => {
@@ -116,7 +110,7 @@ describe('ForMenuSub', () => {
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
@@ -159,7 +153,7 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(false);
 
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(false);
     });
@@ -173,7 +167,7 @@ describe('ForMenuSub', () => {
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.focus();
-      cut.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(cut, 'ArrowDown');
       await flush(r.fixture);
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
@@ -187,7 +181,7 @@ describe('ForMenuSub', () => {
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(more, 'ArrowDown');
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('paste');
@@ -204,7 +198,7 @@ describe('ForMenuSub', () => {
 
       const advanced = document.querySelector<HTMLElement>('#advanced')!;
       advanced.focus();
-      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(advanced, 'ArrowLeft');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
@@ -218,7 +212,7 @@ describe('ForMenuSub', () => {
       r.instance.subOpen.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
@@ -249,7 +243,7 @@ describe('ForMenuSub', () => {
 
       const advanced = document.querySelector<HTMLElement>('#advanced')!;
       advanced.focus();
-      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      pressKey(advanced, 'Tab');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
@@ -381,7 +375,7 @@ describe('ForMenuSub', () => {
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(more, 'ArrowLeft');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
@@ -395,7 +389,7 @@ describe('ForMenuSub', () => {
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
@@ -410,7 +404,7 @@ describe('ForMenuSub', () => {
 
       const advanced = document.querySelector<HTMLElement>('#advanced')!;
       advanced.focus();
-      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(advanced, 'ArrowRight');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
@@ -426,7 +420,7 @@ describe('ForMenuSub', () => {
 
       const advanced = document.querySelector<HTMLElement>('#advanced')!;
       advanced.focus();
-      advanced.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(advanced, 'ArrowLeft');
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
@@ -442,7 +436,7 @@ describe('ForMenuSub', () => {
       more.focus();
 
       // LTR: ArrowRight opens.
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(true);
 
@@ -451,12 +445,12 @@ describe('ForMenuSub', () => {
       r.instance.dir.set('rtl');
       await flush(r.fixture);
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(false);
 
       // ArrowLeft should now open.
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(more, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(true);
     });
@@ -494,7 +488,7 @@ describe('ForMenuSub', () => {
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
       // Sub overrides to rtl; ArrowLeft opens.
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(more, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(true);
     });
@@ -530,7 +524,7 @@ describe('ForMenuSub', () => {
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.focus();
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      pressKey(more, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(true);
     });

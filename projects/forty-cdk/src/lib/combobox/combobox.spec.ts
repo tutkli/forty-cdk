@@ -1,7 +1,7 @@
 import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
@@ -98,12 +98,6 @@ class ComboboxHost {
   });
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 function getOption(testId: string): HTMLElement {
   const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
@@ -188,7 +182,7 @@ describe('ForCombobox', () => {
       const r = renderHost(ComboboxHost);
       const input = getInput();
       input.focus();
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -200,7 +194,7 @@ describe('ForCombobox', () => {
     it('opens on ArrowUp and seeds activedescendant to last enabled', async () => {
       const r = renderHost(ComboboxHost);
       const input = getInput();
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(input, 'ArrowUp');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -250,7 +244,7 @@ describe('ForCombobox', () => {
       r.instance.disabled.set(true);
       await flush(r.fixture);
       const input = getInput();
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
       expect(input.getAttribute('data-disabled')).toBe('');
@@ -267,27 +261,27 @@ describe('ForCombobox', () => {
       input.focus();
 
       // Auto-highlight has set apple. ArrowDown → apricot.
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apricot').id);
 
       // ArrowDown → banana.
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
 
       // ArrowDown → date (cherry is disabled).
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
 
       // ArrowDown wraps with loop=true → apple.
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
 
       // ArrowUp wraps backward → date.
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(input, 'ArrowUp');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
     });
@@ -306,7 +300,7 @@ describe('ForCombobox', () => {
       expect(apple.getAttribute('data-highlighted')).toBe('');
       expect(apricot.hasAttribute('data-highlighted')).toBe(false);
 
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
 
       expect(apricot.getAttribute('data-highlighted')).toBe('');
@@ -319,11 +313,11 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       const input = getInput();
 
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      pressKey(input, 'End');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
 
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      pressKey(input, 'Home');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
     });
@@ -336,10 +330,10 @@ describe('ForCombobox', () => {
       const input = getInput();
       input.focus();
       // Apple is auto-highlighted. ArrowDown → apricot.
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
 
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      pressKey(input, 'Enter');
       await flush(r.fixture);
 
       expect(r.instance.value()).toEqual(['apricot']);
@@ -773,7 +767,7 @@ describe('ForCombobox', () => {
       const input = document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
       input.focus();
       // Auto-highlight has activeId on x. ArrowDown → y (separator is skipped).
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('y').id);
     });
@@ -1908,7 +1902,7 @@ describe('ForCombobox virtualization', () => {
     input.focus();
 
     // Press End → last enabled (index 99). Out of window → emits scrollToIndex.
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    pressKey(input, 'End');
     await flush(r.fixture);
     expect(r.instance.scrollToIndexCalls).toContain(99);
 
@@ -1926,17 +1920,17 @@ describe('ForCombobox virtualization', () => {
     input.focus();
 
     // Auto-highlight is item-0. ArrowDown three times: 0 → 1 → 2 → 4 (3 disabled).
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    pressKey(input, 'ArrowDown');
     await flush(r.fixture);
     expect(input.getAttribute('aria-activedescendant')).toBe(
       document.querySelector<HTMLElement>('[data-test-id="item-1"]')!.id,
     );
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    pressKey(input, 'ArrowDown');
     await flush(r.fixture);
     expect(input.getAttribute('aria-activedescendant')).toBe(
       document.querySelector<HTMLElement>('[data-test-id="item-2"]')!.id,
     );
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    pressKey(input, 'ArrowDown');
     await flush(r.fixture);
     expect(input.getAttribute('aria-activedescendant')).toBe(
       document.querySelector<HTMLElement>('[data-test-id="item-4"]')!.id,
@@ -2032,7 +2026,7 @@ describe('ForCombobox virtualization', () => {
 
     const input = getInput();
     input.focus();
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    pressKey(input, 'End');
     await flush(r.fixture);
 
     expect(r.instance.scrollToIndexCalls.at(-1)).toBe(99);

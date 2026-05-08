@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
 import { ForSelect } from './select';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
@@ -63,12 +63,6 @@ class SelectHost {
   readonly cherryDisabled = signal(false);
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
 
 /**
  * The option directive owns `[id]` (auto-generated) so literal `id="x"`
@@ -188,7 +182,7 @@ describe('ForSelect', () => {
     it('opens on ArrowDown and focuses first option', async () => {
       const r = renderHost(SelectHost);
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(trigger, 'ArrowDown');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -198,7 +192,7 @@ describe('ForSelect', () => {
     it('opens on ArrowUp and focuses last enabled option (no selection)', async () => {
       const r = renderHost(SelectHost);
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(trigger, 'ArrowUp');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -211,7 +205,7 @@ describe('ForSelect', () => {
       await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      pressKey(trigger, 'ArrowUp');
       await flush(r.fixture);
       expect(activeTestId()).toBe('banana');
     });
@@ -226,7 +220,7 @@ describe('ForSelect', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
 
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(trigger, 'ArrowDown');
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
       expect(trigger.getAttribute('data-disabled')).toBe('');
@@ -313,7 +307,7 @@ describe('ForSelect', () => {
 
       const apple = getOption('apple');
       apple.focus();
-      apple.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(apple, 'ArrowDown');
       await flush(r.fixture);
 
       expect(activeTestId()).toBe('banana');
@@ -329,7 +323,7 @@ describe('ForSelect', () => {
 
       const apple = getOption('apple');
       apple.focus();
-      apple.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(apple, 'ArrowDown');
       await flush(r.fixture);
 
       expect(activeTestId()).toBe('banana');
@@ -369,7 +363,7 @@ describe('ForSelect', () => {
 
       const apple = getOption('apple');
       apple.focus();
-      apple.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(apple, 'ArrowDown');
       await flush(r.fixture);
       expect(activeTestId()).toBe('banana');
 
@@ -387,7 +381,7 @@ describe('ForSelect', () => {
 
       const apple = getOption('apple');
       apple.focus();
-      apple.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      pressKey(apple, 'End');
       await flush(r.fixture);
       expect(activeTestId()).toBe('date');
 
@@ -406,7 +400,7 @@ describe('ForSelect', () => {
 
       const banana = getOption('banana');
       banana.focus();
-      banana.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(banana, 'ArrowDown');
       await flush(r.fixture);
       expect(activeTestId()).toBe('date');
     });
@@ -526,7 +520,7 @@ describe('ForSelect', () => {
 
       const apple = getOption('apple');
       apple.focus();
-      apple.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+      pressKey(apple, 'd');
       await flush(r.fixture);
       expect(activeTestId()).toBe('date');
     });
@@ -542,7 +536,7 @@ describe('ForSelect', () => {
       await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+      pressKey(trigger, 'b');
       await flush(r.fixture);
 
       expect(r.instance.value()).toEqual(['banana']);
@@ -555,7 +549,7 @@ describe('ForSelect', () => {
       await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+      pressKey(trigger, 'b');
       await flush(r.fixture);
 
       expect(r.instance.value()).toEqual([]);
@@ -571,7 +565,7 @@ describe('ForSelect', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
@@ -598,7 +592,7 @@ describe('ForSelect', () => {
 
       const r = renderHost(Host);
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(r.instance.open()).toBe(true);
     });
@@ -815,7 +809,7 @@ describe('ForSelect', () => {
 
       const x = getOption('x');
       x.focus();
-      x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      pressKey(x, 'ArrowDown');
       await flush(r.fixture);
       expect(activeTestId()).toBe('y');
     });
@@ -920,22 +914,10 @@ describe('ForSelect', () => {
       readonly position = signal<'popper' | 'item-aligned'>('popper');
     }
 
-    async function settleFloating<T>(fixture: ComponentFixture<T>): Promise<void> {
-      // `autoUpdate` schedules its first computePosition asynchronously —
-      // pump the event loop a few times so the resolved transform / dataset
-      // mutations have flushed before assertions run.
-      for (let i = 0; i < 4; i++) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        fixture.detectChanges();
-        await fixture.whenStable();
-      }
-    }
-
     it('defaults to popper mode and does not set data-position on the content', async () => {
       const r = renderHost(PositionHost);
       r.instance.open.set(true);
-      await flush(r.fixture);
-      await settleFloating(r.fixture);
+      await flushPositioning(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.dataset['position']).toBeUndefined();
@@ -945,8 +927,7 @@ describe('ForSelect', () => {
       const r = renderHost(PositionHost);
       r.instance.position.set('item-aligned');
       r.instance.open.set(true);
-      await flush(r.fixture);
-      await settleFloating(r.fixture);
+      await flushPositioning(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.dataset['position']).toBe('item-aligned');

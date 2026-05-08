@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForSeparator } from './separator';
 
 @Component({
@@ -51,11 +51,14 @@ class FocusableSeparatorHost {
   readonly commitEvents: number[] = [];
 }
 
+/**
+ * Resize separators react to both keydown (the actual step) and keyup (the
+ * "release" that fires `(resizeCommit)`). The shared `pressKey` helper only
+ * dispatches one event; this spec wraps it to dispatch the full cycle.
+ */
 function press(el: HTMLElement, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
-  const down = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
-  el.dispatchEvent(down);
-  const up = new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true, ...init });
-  el.dispatchEvent(up);
+  const down = pressKey(el, key, init);
+  pressKey(el, key, { ...init, type: 'keyup' });
   return down;
 }
 

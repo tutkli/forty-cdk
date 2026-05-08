@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForMenuSub } from '../menu/menu-sub';
@@ -102,18 +102,6 @@ class MenubarWithSubmenuHost {
   readonly recent = signal(false);
 }
 
-async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  fixture.detectChanges();
-}
-
-function key(name: string, target: HTMLElement): KeyboardEvent {
-  const ev = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
-  target.dispatchEvent(ev);
-  return ev;
-}
 
 describe('ForMenubar', () => {
   afterEach(() => {
@@ -241,7 +229,7 @@ describe('ForMenubar', () => {
     it('opens with last item focused on ArrowUp', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
-      key('ArrowUp', file);
+      pressKey(file, 'ArrowUp');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
       expect(document.activeElement?.id).toBe('file-quit');
@@ -250,7 +238,7 @@ describe('ForMenubar', () => {
     it('opens with first item focused on ArrowDown / Enter / Space', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
-      key('ArrowDown', file);
+      pressKey(file, 'ArrowDown');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
       expect(document.activeElement?.id).toBe('file-new');
@@ -283,7 +271,7 @@ describe('ForMenubar', () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('ArrowRight', triggers[0]!);
+      pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
       expect(document.activeElement).toBe(triggers[1]);
     });
@@ -292,7 +280,7 @@ describe('ForMenubar', () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('ArrowLeft', triggers[0]!);
+      pressKey(triggers[0]!, 'ArrowLeft');
       await flush(r.fixture);
       expect(document.activeElement).toBe(triggers[2]);
     });
@@ -303,7 +291,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('ArrowLeft', triggers[0]!);
+      pressKey(triggers[0]!, 'ArrowLeft');
       await flush(r.fixture);
       expect(document.activeElement).toBe(triggers[1]);
     });
@@ -314,7 +302,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('ArrowRight', triggers[0]!);
+      pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
       expect(document.activeElement).toBe(triggers[2]);
     });
@@ -323,7 +311,7 @@ describe('ForMenubar', () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('ArrowRight', triggers[0]!);
+      pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('');
     });
@@ -336,7 +324,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const item = document.getElementById('file-new')!;
       item.focus();
-      key('ArrowRight', item);
+      pressKey(item, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('edit');
       expect(document.activeElement?.id).toBe('edit-undo');
@@ -348,7 +336,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const item = document.getElementById('edit-undo')!;
       item.focus();
-      key('ArrowLeft', item);
+      pressKey(item, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
       expect(document.activeElement?.id).toBe('file-new');
@@ -362,7 +350,7 @@ describe('ForMenubar', () => {
       const item = document.getElementById('file-new')!;
       item.focus();
       // RTL: ArrowLeft is the "next" direction.
-      key('ArrowLeft', item);
+      pressKey(item, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('edit');
     });
@@ -374,7 +362,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const item = document.getElementById('file-new')!;
       item.focus();
-      key('ArrowRight', item);
+      pressKey(item, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('view');
     });
@@ -385,7 +373,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       const item = document.getElementById('view-zoom')!;
       item.focus();
-      key('ArrowRight', item);
+      pressKey(item, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
     });
@@ -426,7 +414,7 @@ describe('ForMenubar', () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
-      key('v', triggers[0]!);
+      pressKey(triggers[0]!, 'v');
       await flush(r.fixture);
       expect(document.activeElement).toBe(triggers[2]);
     });
@@ -437,7 +425,7 @@ describe('ForMenubar', () => {
       const r = renderHost(MenubarHost);
       r.instance.open.set('file');
       await flush(r.fixture);
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('');
       const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
@@ -501,7 +489,7 @@ describe('ForMenubar', () => {
       const trigger = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       expect(trigger).not.toBeNull();
       trigger.focus();
-      key('ArrowRight', trigger);
+      pressKey(trigger, 'ArrowRight');
       await flush(r.fixture);
 
       expect(r.instance.recent()).toBe(true);
@@ -517,7 +505,7 @@ describe('ForMenubar', () => {
       expect(trigger).not.toBeNull();
       trigger.focus();
       // file is the first menubar trigger; loop=true makes 'prev' wrap to edit.
-      key('ArrowLeft', trigger);
+      pressKey(trigger, 'ArrowLeft');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('edit');
@@ -554,7 +542,7 @@ describe('ForMenubar', () => {
       expect(internalEmits).toBe(0);
 
       // Internal transition (Escape) — should fire once.
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(internalEmits).toBe(1);
     });

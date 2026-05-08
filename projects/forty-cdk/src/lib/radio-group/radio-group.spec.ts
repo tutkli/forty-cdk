@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../test-utils/render';
+import { pressKey, renderHost } from '../../test-utils';
 import { ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
 import { ForRadioIndicator } from './radio-indicator';
@@ -58,9 +58,6 @@ const radioOf = (host: HTMLElement, id: string) =>
 
 const groupOf = (host: HTMLElement) =>
   host.querySelector<HTMLElement>('[forRadioGroup]')!;
-
-const keyDown = (target: HTMLElement, key: string) =>
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
 
 describe('ForRadioGroup', () => {
   describe('static accessibility', () => {
@@ -166,17 +163,17 @@ describe('ForRadioGroup', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
 
-      keyDown(radioOf(el, 'red'), 'ArrowDown');
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
       expect(fixture.componentInstance.color()).toBe('green');
 
-      keyDown(radioOf(el, 'green'), 'ArrowDown');
+      pressKey(radioOf(el, 'green'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
 
-      keyDown(radioOf(el, 'blue'), 'ArrowDown');
+      pressKey(radioOf(el, 'blue'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
@@ -185,7 +182,7 @@ describe('ForRadioGroup', () => {
     it('ArrowUp wraps at the beginning', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
-      keyDown(radioOf(el, 'red'), 'ArrowUp');
+      pressKey(radioOf(el, 'red'), 'ArrowUp');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
@@ -200,7 +197,7 @@ describe('ForRadioGroup', () => {
       fixture.componentInstance.color.set('blue');
       flush();
 
-      keyDown(radioOf(el, 'blue'), 'ArrowDown');
+      pressKey(radioOf(el, 'blue'), 'ArrowDown');
       flush();
       // Stays on blue — no wrap.
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
@@ -210,7 +207,7 @@ describe('ForRadioGroup', () => {
       radioOf(el, 'red').focus();
       fixture.componentInstance.color.set('red');
       flush();
-      keyDown(radioOf(el, 'red'), 'ArrowUp');
+      pressKey(radioOf(el, 'red'), 'ArrowUp');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
@@ -219,7 +216,7 @@ describe('ForRadioGroup', () => {
     it('ArrowLeft / ArrowRight are ignored in vertical orientation', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
-      keyDown(radioOf(el, 'red'), 'ArrowRight');
+      pressKey(radioOf(el, 'red'), 'ArrowRight');
       flush();
       expect(fixture.componentInstance.color()).toBe('');
       expect(document.activeElement).toBe(radioOf(el, 'red'));
@@ -229,12 +226,12 @@ describe('ForRadioGroup', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'green').focus();
 
-      keyDown(radioOf(el, 'green'), 'End');
+      pressKey(radioOf(el, 'green'), 'End');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
 
-      keyDown(radioOf(el, 'blue'), 'Home');
+      pressKey(radioOf(el, 'blue'), 'Home');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
@@ -250,7 +247,7 @@ describe('ForRadioGroup', () => {
       flush();
 
       radioOf(el, 'red').focus();
-      keyDown(radioOf(el, 'red'), 'ArrowDown');
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
@@ -267,15 +264,15 @@ describe('ForRadioGroup', () => {
       expect(group.getAttribute('aria-orientation')).toBe('horizontal');
 
       radioOf(el, 'red').focus();
-      keyDown(radioOf(el, 'red'), 'ArrowRight');
+      pressKey(radioOf(el, 'red'), 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
 
-      keyDown(radioOf(el, 'green'), 'ArrowLeft');
+      pressKey(radioOf(el, 'green'), 'ArrowLeft');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
 
-      keyDown(radioOf(el, 'red'), 'ArrowDown');
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
     });
@@ -287,7 +284,7 @@ describe('ForRadioGroup', () => {
       flush();
 
       radioOf(el, 'red').focus();
-      keyDown(radioOf(el, 'red'), 'ArrowLeft');
+      pressKey(radioOf(el, 'red'), 'ArrowLeft');
       flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
     });
