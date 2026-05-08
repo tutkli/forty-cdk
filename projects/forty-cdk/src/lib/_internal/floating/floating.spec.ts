@@ -276,29 +276,99 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
 
-    it('clears nothing on close but stops further updates', async () => {
+    it('clears every style, CSS var, and data-* attr the helper wrote on close', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const arrowEl = fixture.componentInstance.arrowEl().nativeElement;
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.arrow.set(arrowEl);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      // Sanity: helper wrote everything we expect on open.
+      expect(bubbleEl.dataset['placement']).toBe('top');
+      expect(bubbleEl.dataset['side']).toBe('top');
+      expect(bubbleEl.dataset['align']).toBe('center');
+      expect(bubbleEl.style.transform).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-available-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-available-height')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).not.toBe('');
+      expect(arrowEl.style.position).toBe('absolute');
+      expect(arrowEl.dataset['side']).toBeTruthy();
+
+      bubble.open.set(false);
+      await flushPositioning(fixture);
+
+      // Floating element is wiped.
+      expect(bubbleEl.dataset['placement']).toBeUndefined();
+      expect(bubbleEl.dataset['side']).toBeUndefined();
+      expect(bubbleEl.dataset['align']).toBeUndefined();
+      expect(bubbleEl.dataset['occluded']).toBeUndefined();
+      expect(bubbleEl.dataset['detached']).toBeUndefined();
+      expect(bubbleEl.style.transform).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-available-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-available-height')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('');
+
+      // Arrow is wiped too.
+      expect(arrowEl.style.position).toBe('');
+      expect(arrowEl.style.left).toBe('');
+      expect(arrowEl.style.top).toBe('');
+      expect(arrowEl.style.right).toBe('');
+      expect(arrowEl.style.bottom).toBe('');
+      expect(arrowEl.dataset['placement']).toBeUndefined();
+      expect(arrowEl.dataset['side']).toBeUndefined();
+    });
+
+    it('survives a computePosition rejection without leaving the DOM half-written', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
       const bubble = fixture.componentInstance.bubble();
       const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
 
-      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
-      bubble.open.set(true);
-      await flushPositioning(fixture);
-      const firstPlacement = bubbleEl.dataset['placement'];
-      expect(firstPlacement).toBe('top');
+      // Track unhandled rejections — the .catch in injectFloating must
+      // keep these from bubbling.
+      const unhandled: PromiseRejectionEvent[] = [];
+      const onUnhandled = (event: PromiseRejectionEvent): void => {
+        unhandled.push(event);
+        event.preventDefault();
+      };
+      window.addEventListener('unhandledrejection', onUnhandled);
 
-      bubble.open.set(false);
-      bubble.side.set('bottom');
-      await flushPositioning(fixture);
-      // Placement string preserved (no further computePosition while closed).
-      expect(bubbleEl.dataset['placement']).toBe('top');
+      try {
+        // Force a rejection. A reference whose getBoundingClientRect
+        // throws mirrors the shape that virtualization hits when the
+        // reference detaches mid-autoUpdate.
+        const exploding = {
+          getBoundingClientRect: (): DOMRect => {
+            throw new Error('reference detached');
+          },
+          contextElement: undefined,
+        };
+        bubble.reference.set(exploding as unknown as HTMLElement);
+        bubble.open.set(true);
+        await flushPositioning(fixture);
+
+        expect(bubbleEl.style.transform).toBe('');
+        expect(bubbleEl.dataset['placement']).toBeUndefined();
+        expect(unhandled).toHaveLength(0);
+      } finally {
+        window.removeEventListener('unhandledrejection', onUnhandled);
+      }
     });
   });
 
   describe('arrow', () => {
-    it('positions the arrow absolutely with side-aware offset when provided', async () => {
+    it('positions the arrow absolutely with the --for-arrow-offset CSS var on the opposite side', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -313,8 +383,10 @@ describe('injectFloating', () => {
       expect(arrowEl.style.position).toBe('absolute');
       expect(arrowEl.dataset['placement']).toBeTruthy();
       expect(arrowEl.dataset['side']).toBeTruthy();
-      // top placement → opposite is 'bottom' → bottom: -4px should be set.
-      expect(arrowEl.style.bottom).toBe('-4px');
+      // top placement → opposite is 'bottom' → bottom is wired to the
+      // consumer-controlled CSS var, never the legacy `-4px` literal.
+      expect(arrowEl.style.bottom).toBe('var(--for-arrow-offset, 0px)');
+      expect(arrowEl.style.bottom).not.toBe('-4px');
     });
   });
 
