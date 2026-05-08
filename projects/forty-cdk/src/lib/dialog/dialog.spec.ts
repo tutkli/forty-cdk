@@ -367,7 +367,10 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('body scroll lock', () => {
-    it('locks body overflow while mounted and restores on unmount', async () => {
+    it('locks body overflow while mounted and clears the inline style on unmount', async () => {
+      // Pre-existing inline overflow is intentionally NOT restored on unmount:
+      // BodyScrollLock clears the inline style and lets the cascade take over.
+      // See body-scroll-lock.ts and #149 for rationale.
       document.body.style.overflow = 'auto';
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
@@ -378,7 +381,7 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
 
-      expect(document.body.style.overflow).toBe('auto');
+      expect(document.body.style.overflow).toBe('');
     });
   });
 
