@@ -3,6 +3,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -70,6 +71,7 @@ export class ForSlider
   implements FormValueControl<readonly number[]>, ForSliderContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #document = inject(DOCUMENT);
 
   /**
    * Two-way bindable. Selected values, one per thumb. Single-thumb sliders
@@ -303,10 +305,16 @@ export class ForSlider
       e.preventDefault();
       this.setValueAt(index, this.pointerToValue(e.clientX, e.clientY));
     };
+    // Drag tracking listens on the document's defaultView (the window)
+    // so the pointer can leave the slider track without losing the drag.
+    // Read it through the injected DOCUMENT to stay SSR-friendly — pointer
+    // events themselves only fire in the browser, so the optional chain
+    // simply makes this a no-op on the server.
+    const win = this.#document.defaultView;
     const cleanup = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', stop);
-      window.removeEventListener('pointercancel', stop);
+      win?.removeEventListener('pointermove', move);
+      win?.removeEventListener('pointerup', stop);
+      win?.removeEventListener('pointercancel', stop);
       this.#activeDragCleanups.delete(cleanup);
     };
     const stop = (e: PointerEvent) => {
@@ -317,9 +325,9 @@ export class ForSlider
       this.markTouched();
       this.commitInteraction();
     };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', stop);
-    window.addEventListener('pointercancel', stop);
+    win?.addEventListener('pointermove', move);
+    win?.addEventListener('pointerup', stop);
+    win?.addEventListener('pointercancel', stop);
     this.#activeDragCleanups.add(cleanup);
   }
 

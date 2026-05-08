@@ -1,4 +1,7 @@
-import { _resetInertSiblingsForTesting, activateInertSiblings } from './inert-siblings';
+import { provideZonelessChangeDetection } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { InertSiblingsStack } from './inert-siblings';
 
 function appendChild(tag = 'div'): HTMLElement {
   const el = document.createElement(tag);
@@ -6,20 +9,22 @@ function appendChild(tag = 'div'): HTMLElement {
   return el;
 }
 
-describe('inert-siblings', () => {
+describe('InertSiblingsStack', () => {
+  let stack: InertSiblingsStack;
   let cleanup: HTMLElement[] = [];
 
   beforeEach(() => {
-    _resetInertSiblingsForTesting();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    stack = TestBed.inject(InertSiblingsStack);
     cleanup = [];
   });
 
   afterEach(() => {
-    _resetInertSiblingsForTesting();
     for (const el of cleanup) {
       el.remove();
     }
     cleanup = [];
+    TestBed.resetTestingModule();
   });
 
   function track(...els: HTMLElement[]): void {
@@ -32,7 +37,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(sibling1, sibling2, owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
 
     expect(sibling1.hasAttribute('inert')).toBe(true);
     expect(sibling1.getAttribute('aria-hidden')).toBe('true');
@@ -50,7 +55,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(sibling, owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
     expect(sibling.hasAttribute('inert')).toBe(true);
 
     handle.deactivate();
@@ -67,7 +72,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
     expect(sibling.hasAttribute('inert')).toBe(true);
 
     handle.deactivate();
@@ -83,7 +88,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
     expect(sibling.getAttribute('aria-hidden')).toBe('true');
 
     handle.deactivate();
@@ -99,7 +104,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
 
     expect(peer.hasAttribute('inert')).toBe(false);
     expect(peer.hasAttribute('aria-hidden')).toBe(false);
@@ -111,7 +116,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
 
     expect(owner.hasAttribute('inert')).toBe(false);
     expect(owner.hasAttribute('aria-hidden')).toBe(false);
@@ -125,13 +130,13 @@ describe('inert-siblings', () => {
 
     const ownerA = appendChild();
     track(ownerA);
-    const handleA = activateInertSiblings(ownerA);
+    const handleA = stack.activate(ownerA);
     expect(sibling.hasAttribute('inert')).toBe(true);
     expect(ownerA.hasAttribute('inert')).toBe(false);
 
     const ownerB = appendChild();
     track(ownerB);
-    const handleB = activateInertSiblings(ownerB);
+    const handleB = stack.activate(ownerB);
 
     // B is the new topmost: A and the unrelated sibling are both inert.
     expect(ownerA.hasAttribute('inert')).toBe(true);
@@ -156,11 +161,11 @@ describe('inert-siblings', () => {
 
     const ownerA = appendChild();
     track(ownerA);
-    const handleA = activateInertSiblings(ownerA);
+    const handleA = stack.activate(ownerA);
 
     const ownerB = appendChild();
     track(ownerB);
-    const handleB = activateInertSiblings(ownerB);
+    const handleB = stack.activate(ownerB);
 
     // Close A first (atypical, but must not break B's isolation).
     handleA.deactivate();
@@ -184,7 +189,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
     expect(handle.isActive).toBe(true);
 
     handle.deactivate();
@@ -204,7 +209,7 @@ describe('inert-siblings', () => {
     const owner = appendChild();
     track(owner);
 
-    const handle = activateInertSiblings(owner);
+    const handle = stack.activate(owner);
 
     expect(wrapper.hasAttribute('inert')).toBe(true);
     // Inheritance handles deep descendants — we don't separately tag them.
@@ -220,7 +225,7 @@ describe('inert-siblings', () => {
     const otherTopLevel = appendChild();
     track(appShell, otherTopLevel);
 
-    const handle = activateInertSiblings(ownerInPlace);
+    const handle = stack.activate(ownerInPlace);
 
     // The app shell containing the dialog stays interactive...
     expect(appShell.hasAttribute('inert')).toBe(false);

@@ -11,15 +11,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
-import {
-  injectDismissableLayer,
-  suppressDismissableLayerDispatch,
-} from '../_internal/dismissable-layer/dismissable-layer';
+import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
 import {
-  activateInertSiblings,
   type InertSiblingsHandle,
+  InertSiblingsStack,
 } from '../_internal/inert-siblings/inert-siblings';
 import { injectPortal } from '../_internal/portal/portal';
 import {
@@ -175,6 +172,8 @@ export class ForDialog implements ForDialogContext {
   readonly #focusTrap = injectFocusTrap();
   readonly #dismissable = injectDismissableLayer();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #inertStack = inject(InertSiblingsStack);
+  readonly #scrollLock = inject(BodyScrollLock);
 
   // Captured once on mount so cleanup can mirror the same mode regardless
   // of whether the consumer toggles `modal()` on a doomed instance.
@@ -245,12 +244,12 @@ export class ForDialog implements ForDialogContext {
         // Inert + aria-hidden the rest of the document. Pushed BEFORE the
         // focus trap activates so that the trap's `focus()` call lands on
         // an element whose siblings are already isolated from AT.
-        this.#inertHandle = activateInertSiblings(this.#host.nativeElement);
+        this.#inertHandle = this.#inertStack.activate(this.#host.nativeElement);
         this.#focusTrap.activate({
           initialFocus: this.initialFocus(),
           preventInitialFocus: skipInitialFocus,
         });
-        lockBodyScroll();
+        this.#scrollLock.lock();
       } else if (!skipInitialFocus) {
         // Non-modal: still send focus, no trap.
         const host = this.#focusTrap.container;
@@ -277,12 +276,12 @@ export class ForDialog implements ForDialogContext {
         // the synthetic `focusin` triggered by `.focus()`-ing the previous
         // element does not cascade-dismiss whatever dialog is now topmost
         // (a stacked dialog opened above this one).
-        suppressDismissableLayerDispatch(() => {
+        this.#dismissable.suppress(() => {
           this.#focusTrap.deactivate({
             returnFocus: this.returnFocus() && !skipReturnFocus,
           });
         });
-        unlockBodyScroll();
+        this.#scrollLock.unlock();
       }
       // Non-modal mode never activated the trap and never moves focus on
       // close, so there's nothing to veto — `(autoFocusOnClose)` only

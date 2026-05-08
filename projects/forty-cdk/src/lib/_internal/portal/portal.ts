@@ -1,4 +1,12 @@
-import { afterNextRender, DestroyRef, ElementRef, inject } from '@angular/core';
+import {
+  DOCUMENT,
+  PLATFORM_ID,
+  afterNextRender,
+  DestroyRef,
+  ElementRef,
+  inject,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 export interface PortalConfig {
   /**
@@ -23,6 +31,11 @@ export interface PortalConfig {
  * `:host` rules, descendant selectors) won't reach the portaled element.
  * Style it via global CSS or with classes on the host directive itself.
  *
+ * SSR: the portal is a no-op on the server. Overlay primitives use
+ * `afterNextRender` to wire side effects, which doesn't run server-side
+ * either; static markup (role, aria-*, ids, data-state) renders normally
+ * and the portaled position is established once the client takes over.
+ *
  * Implementation note — destroy ordering. The deferred `appendChild` is
  * registered as `afterNextRender`; the destroy hook runs `el.remove()`. If
  * the directive is torn down between construction and the next render
@@ -42,10 +55,14 @@ export interface PortalConfig {
  *      synchronously inside teardown).
  */
 export function injectPortal(config: PortalConfig = {}): void {
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const destroyRef = inject(DestroyRef);
+  const doc = inject(DOCUMENT);
   const el = host.nativeElement;
-  const target = config.target ?? document.body;
+  const target = config.target ?? doc.body;
 
   let destroyed = false;
 

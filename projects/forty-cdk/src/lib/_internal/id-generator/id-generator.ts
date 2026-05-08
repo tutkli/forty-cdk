@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { APP_ID, Injectable, inject } from '@angular/core';
 
 /**
  * Generates unique string IDs scoped to the application instance.
@@ -7,12 +7,15 @@ import { Injectable } from '@angular/core';
  * relationships between pieces — the IDs are stable for the lifetime of the
  * primitive instance.
  *
- * SSR caveat: the counter lives in module scope on the client. Server / client
- * mount order can diverge, producing hydration mismatches. Revisit when SSR
- * support becomes a real requirement.
+ * SSR: the generator is `providedIn: 'root'`, so a fresh instance is
+ * created for each Angular application bootstrap (one per SSR request).
+ * The IDs are salted with the application's `APP_ID` so server and client
+ * produce identical strings for the same render order and identical apps
+ * mounted side-by-side don't collide.
  */
 @Injectable({ providedIn: 'root' })
 export class IdGenerator {
+  readonly #appId = inject(APP_ID);
   #counter = 0;
 
   /**
@@ -21,6 +24,6 @@ export class IdGenerator {
    * @param prefix Optional prefix for the generated ID. Defaults to `for`.
    */
   next(prefix = 'for'): string {
-    return `${prefix}-${++this.#counter}`;
+    return `${prefix}-${this.#appId}-${++this.#counter}`;
   }
 }

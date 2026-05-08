@@ -175,6 +175,24 @@ module.exports = tseslint.config(
       // ---- Filename convention ----
       'forty-cdk/no-suffixed-filenames': 'error',
 
+      // ---- SSR safety: ban raw `document` / `window` globals in library code ----
+      // Use `inject(DOCUMENT)` and `document.defaultView` instead so the
+      // library renders correctly under `provideServerRendering()`. Specs
+      // and test-utils are exempt below.
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'document',
+          message:
+            'SSR-unsafe. Inject `DOCUMENT` from `@angular/core` (or `@angular/common`) instead.',
+        },
+        {
+          name: 'window',
+          message:
+            'SSR-unsafe. Read it via `inject(DOCUMENT).defaultView` (or gate with `isPlatformBrowser`) instead.',
+        },
+      ],
+
       // ---- typescript-eslint hardening ----
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': [
@@ -216,6 +234,9 @@ module.exports = tseslint.config(
       // Specs render bare `<button forX>` triggers as harness fixtures; their
       // "content" is the directive being exercised, not user-visible text.
       '@angular-eslint/template/elements-content': 'off',
+      // Specs run under jsdom and freely poke at `document` to set up
+      // fixtures or assert on the rendered DOM.
+      'no-restricted-globals': 'off',
     },
   },
 

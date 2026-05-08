@@ -1,8 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
 import type {
   VetoableEvent,
   VetoableNativeEvent,
@@ -78,8 +76,8 @@ class StackedDialogsHost {
 
 describe('ForDialog (declarative)', () => {
   afterEach(() => {
-    _resetBodyScrollLockForTesting();
-    _resetInertSiblingsForTesting();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   });
 
   describe('portal cleanup', () => {
@@ -1017,8 +1015,8 @@ describe('ForDialog (declarative)', () => {
 
 describe('ForDialogTrigger', () => {
   afterEach(() => {
-    _resetBodyScrollLockForTesting();
-    _resetInertSiblingsForTesting();
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   });
 
   @Component({

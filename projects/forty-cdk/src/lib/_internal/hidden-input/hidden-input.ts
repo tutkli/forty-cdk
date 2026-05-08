@@ -1,4 +1,4 @@
-import { DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
+import { DOCUMENT, DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
 
 export interface HiddenInputConfig<T = string> {
   /**
@@ -44,6 +44,7 @@ export interface HiddenInputConfig<T = string> {
  */
 export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
+  const doc = inject(DOCUMENT);
   const inputs: HTMLInputElement[] = [];
 
   effect(() => {
@@ -56,7 +57,7 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): voi
       inputs.pop()?.remove();
     }
     while (inputs.length < values.length) {
-      const input = document.createElement('input');
+      const input = doc.createElement('input');
       input.type = 'hidden';
       const anchor = inputs.length === 0 ? host.nativeElement : inputs[inputs.length - 1]!;
       anchor.insertAdjacentElement('afterend', input);

@@ -2,9 +2,6 @@ import { Component, inject, provideZonelessChangeDetection } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from '../../test-utils';
-import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { _resetDismissableLayerForTesting } from '../_internal/dismissable-layer/dismissable-layer';
-import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
 
@@ -58,12 +55,12 @@ function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
 
 describe('ForDialogManager (programmatic)', () => {
   afterEach(() => {
-    _resetBodyScrollLockForTesting();
-    _resetDismissableLayerForTesting();
-    _resetInertSiblingsForTesting();
     document
       .querySelectorAll('[role="dialog"], [role="alertdialog"], #external-trigger')
       .forEach((n) => n.remove());
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    TestBed.resetTestingModule();
   });
 
   describe('open()', () => {

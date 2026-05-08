@@ -90,7 +90,11 @@ function itemAligned(
       const listboxRect = floating.getBoundingClientRect();
       const target = selectedOption() ?? findFirstEnabledOption(floating);
       const padding = paddingFn();
-      const viewportHeight = window.innerHeight;
+      // Read the viewport height through the floating element's own
+      // window so the middleware works in iframes / multiple-document
+      // contexts and stays SSR-safe (the middleware itself only runs
+      // inside a `computePosition` callback, which is browser-only).
+      const viewportHeight = floating.ownerDocument.defaultView?.innerHeight ?? 0;
 
       let y: number;
       if (target) {
@@ -189,7 +193,8 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
         el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);
         el.style.setProperty('--for-anchor-height', `${Math.round(triggerRect.height)}px`);
 
-        const availableHeight = Math.max(0, window.innerHeight - 2 * collisionPadding);
+        const innerHeight = el.ownerDocument.defaultView?.innerHeight ?? 0;
+        const availableHeight = Math.max(0, innerHeight - 2 * collisionPadding);
         el.style.setProperty(
           '--for-select-content-available-height',
           `${Math.round(availableHeight)}px`,

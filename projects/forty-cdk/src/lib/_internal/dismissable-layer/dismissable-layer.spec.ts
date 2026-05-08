@@ -1,5 +1,8 @@
+import { TestBed } from '@angular/core/testing';
+import { provideZonelessChangeDetection } from '@angular/core';
+
 import { pressKey } from '../../../test-utils';
-import { DismissableLayer } from './dismissable-layer';
+import { DismissableLayer, DismissableLayerStack } from './dismissable-layer';
 
 function pointerDown(target: Node): PointerEvent {
   const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
@@ -13,12 +16,17 @@ function focusIn(target: Node): FocusEvent {
   return event;
 }
 
+function makeLayer(host: HTMLElement): DismissableLayer {
+  return new DismissableLayer(host, TestBed.inject(DismissableLayerStack));
+}
+
 describe('DismissableLayer', () => {
   let host: HTMLElement;
   let outside: HTMLElement;
   let layer: DismissableLayer | null = null;
 
   beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     document.body.innerHTML = '';
     host = document.createElement('div');
     host.id = 'host';
@@ -41,7 +49,7 @@ describe('DismissableLayer', () => {
   describe('escape', () => {
     it('invokes onEscapeKeyDown then onDismiss when Escape is pressed', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onEscapeKeyDown: () => calls.push('escape'),
         onDismiss: () => calls.push('dismiss'),
@@ -54,7 +62,7 @@ describe('DismissableLayer', () => {
 
     it('skips onDismiss when the handler calls preventDefault', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onEscapeKeyDown: (event) => {
           calls.push('escape');
@@ -70,7 +78,7 @@ describe('DismissableLayer', () => {
 
     it('ignores other keys', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
 
       pressKey(document, 'Enter');
@@ -82,7 +90,7 @@ describe('DismissableLayer', () => {
   describe('pointer-down outside', () => {
     it('invokes onPointerDownOutside, onInteractOutside, onDismiss for pointers outside the host', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onPointerDownOutside: () => calls.push('pointer'),
         onInteractOutside: () => calls.push('interact'),
@@ -96,7 +104,7 @@ describe('DismissableLayer', () => {
 
     it('does not fire when the pointer goes down inside the host', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onPointerDownOutside: () => calls.push('pointer'),
         onDismiss: () => calls.push('dismiss'),
@@ -109,7 +117,7 @@ describe('DismissableLayer', () => {
 
     it('treats descendants of exemptElements as inside', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         exemptElements: () => [outside],
         onPointerDownOutside: () => calls.push('pointer'),
@@ -123,7 +131,7 @@ describe('DismissableLayer', () => {
 
     it('skips onDismiss when the handler calls preventDefault', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onPointerDownOutside: (event) => {
           calls.push('pointer');
@@ -141,7 +149,7 @@ describe('DismissableLayer', () => {
   describe('focus outside', () => {
     it('invokes onFocusOutside, onInteractOutside, onDismiss when focus moves outside', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onFocusOutside: () => calls.push('focus'),
         onInteractOutside: () => calls.push('interact'),
@@ -155,7 +163,7 @@ describe('DismissableLayer', () => {
 
     it('does not fire when focus moves to a descendant of the host', () => {
       const calls: string[] = [];
-      layer = new DismissableLayer(host);
+      layer = makeLayer(host);
       layer.activate({
         onFocusOutside: () => calls.push('focus'),
         onDismiss: () => calls.push('dismiss'),
@@ -173,12 +181,12 @@ describe('DismissableLayer', () => {
       document.body.appendChild(inner);
 
       const calls: string[] = [];
-      const outerLayer = new DismissableLayer(host);
+      const outerLayer = makeLayer(host);
       outerLayer.activate({
         onEscapeKeyDown: () => calls.push('outer-escape'),
         onPointerDownOutside: () => calls.push('outer-pointer'),
       });
-      const innerLayer = new DismissableLayer(inner);
+      const innerLayer = makeLayer(inner);
       innerLayer.activate({
         onEscapeKeyDown: () => calls.push('inner-escape'),
         onPointerDownOutside: () => calls.push('inner-pointer'),
@@ -199,9 +207,9 @@ describe('DismissableLayer', () => {
       document.body.appendChild(inner);
 
       const calls: string[] = [];
-      const outerLayer = new DismissableLayer(host);
+      const outerLayer = makeLayer(host);
       outerLayer.activate({ onEscapeKeyDown: () => calls.push('outer') });
-      const innerLayer = new DismissableLayer(inner);
+      const innerLayer = makeLayer(inner);
       innerLayer.activate({ onEscapeKeyDown: () => calls.push('inner') });
 
       innerLayer.deactivate();
@@ -216,7 +224,7 @@ describe('DismissableLayer', () => {
 
   it('is idempotent: activate twice has no extra effect', () => {
     const calls: string[] = [];
-    layer = new DismissableLayer(host);
+    layer = makeLayer(host);
     layer.activate({ onEscapeKeyDown: () => calls.push('once') });
     layer.activate({ onEscapeKeyDown: () => calls.push('twice') });
 
@@ -228,7 +236,7 @@ describe('DismissableLayer', () => {
 
   it('detaches all listeners on deactivate', () => {
     const calls: string[] = [];
-    layer = new DismissableLayer(host);
+    layer = makeLayer(host);
     layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
     layer.deactivate();
 
@@ -236,5 +244,31 @@ describe('DismissableLayer', () => {
 
     expect(calls).toEqual([]);
     expect(layer.isActive).toBe(false);
+  });
+
+  it('document listeners are removed when the application injector is destroyed', () => {
+    layer = makeLayer(host);
+    const calls: string[] = [];
+    layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
+    pressKey(document, 'Escape');
+    expect(calls).toEqual(['escape']);
+
+    // Tear the injector down. The next bootstrap should install exactly
+    // one fresh set of listeners; the previous one must be gone.
+    TestBed.resetTestingModule();
+    pressKey(document, 'Escape');
+    // Listener on the previous injector is gone — no extra invocation.
+    expect(calls).toEqual(['escape']);
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const newLayer = makeLayer(host);
+    const calls2: string[] = [];
+    newLayer.activate({ onEscapeKeyDown: () => calls2.push('escape2') });
+
+    pressKey(document, 'Escape');
+    // Exactly one set of listeners after the rebootstrap.
+    expect(calls2).toEqual(['escape2']);
+    newLayer.deactivate();
+    layer = null;
   });
 });

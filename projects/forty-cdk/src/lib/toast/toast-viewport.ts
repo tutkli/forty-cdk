@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -138,6 +139,7 @@ export class ForToastViewport {
   });
 
   constructor() {
+    const doc = inject(DOCUMENT);
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = this.hotkey() || this.#manager.hotkey();
       if (event.key !== key) {
@@ -154,9 +156,9 @@ export class ForToastViewport {
         first.focus();
       }
     };
-    document.addEventListener('keydown', onKeyDown);
+    doc.addEventListener('keydown', onKeyDown);
     inject(DestroyRef).onDestroy(() => {
-      document.removeEventListener('keydown', onKeyDown);
+      doc.removeEventListener('keydown', onKeyDown);
     });
   }
 

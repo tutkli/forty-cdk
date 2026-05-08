@@ -1,4 +1,5 @@
-import { DestroyRef, ElementRef, inject } from '@angular/core';
+import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 /**
  * Options passed to `DismissableLayer.activate`. Each handler receives the
@@ -37,63 +38,102 @@ export interface DismissableLayerActivateOptions {
   exemptElements?: () => readonly Element[];
 }
 
-const layerStack: DismissableLayer[] = [];
-let listenersInstalled = false;
-let suppressDepth = 0;
+/**
+ * Application-scoped registry that owns the document listeners used by
+ * dismissable layers. Created once per Angular bootstrap (one per SSR
+ * request), tied to the root injector lifetime.
+ *
+ * Why a service rather than module-level state:
+ *
+ * - SSR isolation: module-level globals leak between simultaneous server
+ *   requests in the same Node process. A `providedIn: 'root'` service is
+ *   instantiated per application injector.
+ * - Bootstrap-safety: `TestBed.resetTestingModule()`, micro-frontend
+ *   reloads and any other code that destroys `ApplicationRef` should not
+ *   leave stale `document` listeners behind. The service registers its
+ *   listeners in the constructor and removes them via `DestroyRef` so
+ *   every bootstrap has exactly one set of listeners.
+ * - SSR safety: `document` is inaccessible on the server. The service is a
+ *   no-op when `PLATFORM_ID` is not the browser; nothing about this code
+ *   path is reachable until an overlay calls `activate()`, which only
+ *   happens from `afterNextRender`.
+ */
+@Injectable({ providedIn: 'root' })
+export class DismissableLayerStack {
+  readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-function topmost(): DismissableLayer | undefined {
-  return layerStack[layerStack.length - 1];
-}
+  readonly #stack: DismissableLayer[] = [];
+  #suppressDepth = 0;
 
-function installListenersOnce(): void {
-  if (listenersInstalled) {
-    return;
-  }
-  listenersInstalled = true;
-  document.addEventListener('keydown', (event) => {
+  readonly #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape') {
       return;
     }
-    if (suppressDepth > 0) {
+    if (this.#suppressDepth > 0) {
       return;
     }
-    topmost()?.['handleEscape'](event);
-  });
-  document.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (suppressDepth > 0) {
-        return;
-      }
-      topmost()?.['handlePointerDown'](event as PointerEvent);
-    },
-    true,
-  );
-  document.addEventListener('focusin', (event) => {
-    if (suppressDepth > 0) {
+    this.#topmost()?.['handleEscape'](event);
+  };
+  readonly #onPointerDown = (event: Event): void => {
+    if (this.#suppressDepth > 0) {
       return;
     }
-    topmost()?.['handleFocusIn'](event as FocusEvent);
-  });
-}
+    this.#topmost()?.['handlePointerDown'](event as PointerEvent);
+  };
+  readonly #onFocusIn = (event: Event): void => {
+    if (this.#suppressDepth > 0) {
+      return;
+    }
+    this.#topmost()?.['handleFocusIn'](event as FocusEvent);
+  };
 
-/**
- * Runs `fn` with the global dismissable-layer dispatcher suppressed. While
- * suppressed, neither Escape, pointer-down outside, nor focus-outside events
- * are forwarded to the topmost layer.
- *
- * Used by primitives during teardown: returning focus from a closing surface
- * fires `focusin` on the focus-return target, which is "outside" the next
- * topmost layer. Without suppression that would cascade-dismiss the layer
- * underneath the one the consumer actually meant to close. Suppression is
- * refcounted, so nested teardowns nest correctly.
- */
-export function suppressDismissableLayerDispatch<T>(fn: () => T): T {
-  suppressDepth++;
-  try {
-    return fn();
-  } finally {
-    suppressDepth--;
+  constructor() {
+    if (!this.#isBrowser) {
+      return;
+    }
+    this.#document.addEventListener('keydown', this.#onKeyDown);
+    this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
+    this.#document.addEventListener('focusin', this.#onFocusIn);
+
+    inject(DestroyRef).onDestroy(() => {
+      this.#document.removeEventListener('keydown', this.#onKeyDown);
+      this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
+      this.#document.removeEventListener('focusin', this.#onFocusIn);
+      this.#stack.length = 0;
+      this.#suppressDepth = 0;
+    });
+  }
+
+  /** @internal */
+  push(layer: DismissableLayer): void {
+    this.#stack.push(layer);
+  }
+
+  /** @internal */
+  remove(layer: DismissableLayer): void {
+    const idx = this.#stack.indexOf(layer);
+    if (idx >= 0) {
+      this.#stack.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Runs `fn` with the dispatcher suppressed. While suppressed, neither
+   * Escape, pointer-down outside, nor focus-outside events are forwarded
+   * to the topmost layer. Refcounted so nested teardowns nest correctly.
+   */
+  suppress<T>(fn: () => T): T {
+    this.#suppressDepth++;
+    try {
+      return fn();
+    } finally {
+      this.#suppressDepth--;
+    }
+  }
+
+  #topmost(): DismissableLayer | undefined {
+    return this.#stack[this.#stack.length - 1];
   }
 }
 
@@ -113,11 +153,13 @@ export function suppressDismissableLayerDispatch<T>(fn: () => T): T {
  */
 export class DismissableLayer {
   readonly #host: HTMLElement;
+  readonly #stack: DismissableLayerStack;
   #options: DismissableLayerActivateOptions = {};
   #active = false;
 
-  constructor(host: HTMLElement) {
+  constructor(host: HTMLElement, stack: DismissableLayerStack) {
     this.#host = host;
+    this.#stack = stack;
   }
 
   get host(): HTMLElement {
@@ -129,7 +171,7 @@ export class DismissableLayer {
   }
 
   /**
-   * Pushes this layer onto the global stack. Calling `activate` twice
+   * Pushes this layer onto the dispatch stack. Calling `activate` twice
    * without an intervening `deactivate` is a no-op.
    */
   activate(options: DismissableLayerActivateOptions = {}): void {
@@ -138,8 +180,7 @@ export class DismissableLayer {
     }
     this.#active = true;
     this.#options = options;
-    layerStack.push(this);
-    installListenersOnce();
+    this.#stack.push(this);
   }
 
   /** Removes this layer from the stack. */
@@ -148,11 +189,17 @@ export class DismissableLayer {
       return;
     }
     this.#active = false;
-    const idx = layerStack.indexOf(this);
-    if (idx >= 0) {
-      layerStack.splice(idx, 1);
-    }
+    this.#stack.remove(this);
     this.#options = {};
+  }
+
+  /**
+   * Convenience wrapper around the stack's `suppress`. Lets owners
+   * suppress the dispatcher without needing a fresh injection context
+   * (e.g. inside `DestroyRef.onDestroy` or imperative teardown closures).
+   */
+  suppress<T>(fn: () => T): T {
+    return this.#stack.suppress(fn);
   }
 
   protected handleEscape(event: KeyboardEvent): void {
@@ -207,16 +254,15 @@ export class DismissableLayer {
  * Creates a `DismissableLayer` for the directive's host element and wires
  * deactivation into `DestroyRef`. The host primitive owns activation
  * (typically via an `effect()` watching the open state).
+ *
+ * Use `layer.suppress(fn)` to run a callback with the dispatcher
+ * suppressed (e.g. across a focus-return that would otherwise
+ * cascade-dismiss the next topmost layer).
  */
 export function injectDismissableLayer(): DismissableLayer {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const layer = new DismissableLayer(host.nativeElement);
+  const stack = inject(DismissableLayerStack);
+  const layer = new DismissableLayer(host.nativeElement, stack);
   inject(DestroyRef).onDestroy(() => layer.deactivate());
   return layer;
-}
-
-/** @internal — for tests only. Resets the global stack and suppress depth. */
-export function _resetDismissableLayerForTesting(): void {
-  layerStack.length = 0;
-  suppressDepth = 0;
 }
