@@ -1,4 +1,4 @@
-import type { Signal } from '@angular/core';
+﻿import type { Signal } from '@angular/core';
 
 import type { CollectionHandle } from './collection';
 
@@ -13,8 +13,9 @@ export interface DisableableHandle extends CollectionHandle {
 /**
  * Returns the host element of the first non-disabled handle in `items`, or
  * `null` if every handle is disabled (or the list is empty). Iteration
- * follows the order of the input array — pass a DOM-sorted snapshot (e.g.
- * `Collection.items()`) when DOM order matters.
+ * follows the order of the input array — pass `Collection.items()` to get
+ * registration order (which equals DOM order under standard `@for` / `@if`
+ * usage).
  *
  * Used by primitives that pick a roving-tabindex entry point: when there's
  * no selection, the first enabled child becomes the tab stop.
