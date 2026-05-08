@@ -75,9 +75,13 @@ export interface FloatingConfig {
 
   /**
    * Optional arrow element. When non-null, the `arrow` middleware is
-   * registered and the helper writes `position: absolute` plus `left`/`top`
-   * (and a side-aware `-4px` offset on the opposite axis) on the arrow once
-   * floating-ui resolves a position.
+   * registered and the helper writes `position: absolute`, the resolved
+   * `left` / `top` from floating-ui, and a side-aware
+   * `var(--for-arrow-offset, 0px)` on the *opposite* axis once floating-ui
+   * resolves a position. Consumers control how far the arrow pokes out of
+   * the bubble by setting `--for-arrow-offset` (typically a negative `px`
+   * value) on the arrow element or any ancestor — the helper ships no
+   * default visual.
    */
   readonly arrow?: Signal<HTMLElement | null>;
 
@@ -183,8 +187,15 @@ function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
  *    is off-screen), and CSS variables (`--for-anchor-width/-height`,
  *    `--for-available-width/-height`, `--for-content-transform-origin`).
  *
- * Stylistic concerns (which side gets the arrow offset, pointer events,
- * background, animations) stay with the consumer.
+ * Cleanup is symmetric: when `open` flips back to `false` (or the host is
+ * destroyed) the helper clears every style, CSS variable, and `data-*`
+ * attribute it set, on both the floating element and the optional arrow.
+ * That keeps the next open from inheriting stale geometry from the
+ * previous mount.
+ *
+ * Stylistic concerns (which side gets the arrow offset via
+ * `--for-arrow-offset`, pointer events, background, animations) stay with
+ * the consumer.
  */
 export function injectFloating(config: FloatingConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -279,8 +290,8 @@ export function injectFloating(config: FloatingConfig): void {
     }
 
     const cleanup = autoUpdate(reference, el, () => {
-      computePosition(reference, el, { placement: requestedPlacement, middleware }).then(
-        ({ x, y, placement: resolvedPlacement, middlewareData }) => {
+      computePosition(reference, el, { placement: requestedPlacement, middleware })
+        .then(({ x, y, placement: resolvedPlacement, middlewareData }) => {
           // The element may have been hidden again between schedule and
           // resolution — bail so styles aren't clobbered after close.
           if (!config.open()) {
@@ -333,7 +344,7 @@ export function injectFloating(config: FloatingConfig): void {
               top: ay != null ? `${ay}px` : '',
               right: '',
               bottom: '',
-              [opposite]: '-4px',
+              [opposite]: 'var(--for-arrow-offset, 0px)',
             });
             // `data-placement` on the arrow stores the *side* only, for
             // historical reasons (CSS like `[data-placement="top"]`).
@@ -342,10 +353,57 @@ export function injectFloating(config: FloatingConfig): void {
             arrowEl.dataset['placement'] = resolvedSide;
             arrowEl.dataset['side'] = resolvedSide;
           }
-        },
-      );
+        })
+        // The reference can detach mid-frame during virtualization /
+        // autoUpdate scrolls, which makes computePosition reject. Swallow
+        // — autoUpdate will reschedule with the next live frame and the
+        // previous styles are still on the element.
+        .catch(() => {});
     });
 
-    onCleanup(() => cleanup());
+    // Clean up symmetrically with what computePosition wrote so a re-open
+    // doesn't inherit stale geometry from the previous mount.
+    onCleanup(() => {
+      cleanup();
+      resetFloatingStyles(el);
+      if (arrowEl) {
+        resetArrowStyles(arrowEl);
+      }
+    });
   });
+}
+
+/**
+ * Strip every inline style, CSS custom property, and `data-*` attribute
+ * `injectFloating` writes to the floating element. Pairs with the
+ * `autoUpdate` teardown so a closed-then-reopened floating element
+ * starts from a clean slate (no leftover `transform` jumping the next
+ * mount, no stale `--for-anchor-width` poisoning size styles).
+ */
+function resetFloatingStyles(el: HTMLElement): void {
+  el.style.removeProperty('transform');
+  el.style.removeProperty('--for-anchor-width');
+  el.style.removeProperty('--for-anchor-height');
+  el.style.removeProperty('--for-available-width');
+  el.style.removeProperty('--for-available-height');
+  el.style.removeProperty('--for-content-transform-origin');
+  el.removeAttribute('data-placement');
+  el.removeAttribute('data-side');
+  el.removeAttribute('data-align');
+  el.removeAttribute('data-occluded');
+  el.removeAttribute('data-detached');
+}
+
+/**
+ * Strip every inline style and `data-*` attribute `injectFloating` writes
+ * to the optional arrow element. Mirrors `resetFloatingStyles`.
+ */
+function resetArrowStyles(arrowEl: HTMLElement): void {
+  arrowEl.style.removeProperty('position');
+  arrowEl.style.removeProperty('left');
+  arrowEl.style.removeProperty('top');
+  arrowEl.style.removeProperty('right');
+  arrowEl.style.removeProperty('bottom');
+  arrowEl.removeAttribute('data-placement');
+  arrowEl.removeAttribute('data-side');
 }
