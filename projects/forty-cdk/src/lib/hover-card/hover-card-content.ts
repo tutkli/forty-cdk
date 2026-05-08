@@ -1,16 +1,23 @@
 import { Directive } from '@angular/core';
 
-import { injectFloating } from '../_internal/floating/floating';
+import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectHoverCardContext } from './hover-card-context';
 
 /**
  * The hover-card surface. Portaled to `document.body` and positioned by
- * floating-ui. Pointer-enter on the content cancels the pending close, so
- * the user can move the cursor from the trigger into the card to interact
- * with its content (links, buttons, copy targets).
+ * floating-ui (via the shared `injectOverlayShell` helper). Pointer-enter
+ * on the content cancels the pending close, so the user can move the
+ * cursor from the trigger into the card to interact with its content
+ * (links, buttons, copy targets).
  *
  * Mount / unmount via `@if (card.open())` on the consumer side so
  * `animate.enter` / `animate.leave` work natively.
+ *
+ * Hover-cards have no dismissable layer — outside dismissal is handled
+ * implicitly by pointer-leave timing, and Escape is a host-level keydown
+ * (see `(keydown.escape)` below). Initial-focus and return-focus bundles
+ * are also omitted because the surface is informational and never steals
+ * focus.
  */
 @Directive({
   selector: '[forHoverCardContent]',
@@ -26,19 +33,22 @@ export class ForHoverCardContent {
   protected readonly ctx = injectHoverCardContext('ForHoverCardContent');
 
   constructor() {
-    injectFloating({
-      reference: this.ctx.trigger,
-      open: this.ctx.open,
-      side: this.ctx.side,
-      align: this.ctx.align,
-      sideOffset: this.ctx.sideOffset,
-      alignOffset: this.ctx.alignOffset,
-      avoidCollisions: this.ctx.avoidCollisions,
-      collisionPadding: this.ctx.collisionPadding,
-      arrowPadding: this.ctx.arrowPadding,
-      sticky: this.ctx.sticky,
-      hideWhenDetached: this.ctx.hideWhenDetached,
-      arrow: this.ctx.arrow,
+    injectOverlayShell({
+      positioner: {
+        kind: 'floating',
+        reference: this.ctx.trigger,
+        open: this.ctx.open,
+        side: this.ctx.side,
+        align: this.ctx.align,
+        sideOffset: this.ctx.sideOffset,
+        alignOffset: this.ctx.alignOffset,
+        avoidCollisions: this.ctx.avoidCollisions,
+        collisionPadding: this.ctx.collisionPadding,
+        arrowPadding: this.ctx.arrowPadding,
+        sticky: this.ctx.sticky,
+        hideWhenDetached: this.ctx.hideWhenDetached,
+        arrow: this.ctx.arrow,
+      },
     });
   }
 

@@ -1,8 +1,7 @@
-import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { injectFloating } from '../_internal/floating/floating';
+import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectMenuContext } from './menu-context';
 
 /**
@@ -20,6 +19,9 @@ import { injectMenuContext } from './menu-context';
  * The trigger element is exempt from the layer's outside-pointer checks,
  * so clicking the trigger again routes through its own toggle handler
  * without spuriously closing.
+ *
+ * The lifecycle (positioner + dismissable layer + initial focus + return
+ * focus) is owned by the shared `injectOverlayShell` helper.
  */
 @Directive({
   // The same directive serves submenu content too — the behavior is identical
@@ -39,7 +41,6 @@ import { injectMenuContext } from './menu-context';
 export class ForMenuContent {
   protected readonly ctx = injectMenuContext('ForMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #dismissable = injectDismissableLayer();
 
   constructor() {
     registerHandle(
@@ -48,55 +49,48 @@ export class ForMenuContent {
       (el) => this.ctx.unregisterContent(el),
     );
 
-    injectFloating({
-      reference: this.ctx.anchor,
-      open: this.ctx.open,
-      side: this.ctx.side,
-      align: this.ctx.align,
-      sideOffset: this.ctx.sideOffset,
-      alignOffset: this.ctx.alignOffset,
-      avoidCollisions: this.ctx.avoidCollisions,
-      collisionPadding: this.ctx.collisionPadding,
-      arrowPadding: this.ctx.arrowPadding,
-      sticky: this.ctx.sticky,
-      hideWhenDetached: this.ctx.hideWhenDetached,
-    });
-
-    afterNextRender(() => {
-      this.#dismissable.activate({
-        onEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        onPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        onFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        onInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+    injectOverlayShell({
+      positioner: {
+        kind: 'floating',
+        reference: this.ctx.anchor,
+        open: this.ctx.open,
+        side: this.ctx.side,
+        align: this.ctx.align,
+        sideOffset: this.ctx.sideOffset,
+        alignOffset: this.ctx.alignOffset,
+        avoidCollisions: this.ctx.avoidCollisions,
+        collisionPadding: this.ctx.collisionPadding,
+        arrowPadding: this.ctx.arrowPadding,
+        sticky: this.ctx.sticky,
+        hideWhenDetached: this.ctx.hideWhenDetached,
+      },
+      dismiss: {
+        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
+        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
+        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
         // DropdownMenu's trigger is exempt (its own click handler toggles —
         // without exemption pointer-down-outside would race and double-close).
         // ContextMenu exempts nothing so left-clicks on the region close the
         // menu like any other outside click.
         exemptElements: () => this.ctx.dismissableExemptions(),
-      });
-
-      // Consumers can veto the imperative focus move via
-      // `(autoFocusOnOpen)` on the menu root.
-      if (!this.ctx.emitAutoFocusOnOpen()) {
-        const focused =
+      },
+      // Primitive-owned move: focusFirstEnabledItem / focusLastEnabledItem
+      // each return `true` on success. The shell falls back to focusing the
+      // host element on miss, which mirrors the previous hand-rolled code.
+      initialFocus: {
+        move: () =>
           this.ctx.initialFocus() === 'last'
             ? this.ctx.focusLastEnabledItem()
-            : this.ctx.focusFirstEnabledItem();
-        if (!focused) {
-          this.#host.nativeElement.focus();
-        }
-      }
-    });
-
-    inject(DestroyRef).onDestroy(() => {
-      this.#dismissable.deactivate();
-      // Return focus *before* the portal helper removes the DOM node so
-      // the trigger receives the focus event in a stable layout.
-      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
-      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
-      if (this.ctx.returnFocus() && !skipReturnFocus) {
-        this.ctx.trigger()?.focus();
-      }
+            : this.ctx.focusFirstEnabledItem(),
+        veto: () => this.ctx.emitAutoFocusOnOpen(),
+      },
+      returnFocus: {
+        enabled: this.ctx.returnFocus,
+        target: () => this.ctx.trigger(),
+        // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+        veto: () => this.ctx.emitAutoFocusOnClose(),
+      },
     });
   }
 }
