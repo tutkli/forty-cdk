@@ -170,6 +170,20 @@ module.exports = tseslint.config(
           selector: 'ImportSpecifier[imported.name="NgModule"]',
           message: 'NgModule is banned. forty-cdk is standalone-only (CLAUDE.md).',
         },
+        // ---- ARIA truthy-only attributes must be `null` when false, not `"false"` ----
+        // Per CLAUDE.md § "ARIA state attribute emission", these attributes default to
+        // their falsy state when absent; emitting `aria-required="false"` (etc.) forces
+        // consumers to write `[aria-required="false"]` selectors that fight the spec.
+        // Canonical Angular host binding: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`.
+        // This selector matches a Property whose key is the host-binding for one of the
+        // truthy-only attributes (string literal `[attr.aria-<name>]`) and whose value
+        // string contains the literal `"false"` (the wrong falsy branch).
+        {
+          selector:
+            'Property[key.value=/^\\[attr\\.aria-(disabled|readonly|required|invalid|busy|modal|haspopup|multiselectable)\\]$/][value.value=/"false"/]',
+          message:
+            'ARIA truthy-only attributes must be `null` when false, not `"false"`. Use `cond() ? "true" : null` (CLAUDE.md § "ARIA state attribute emission").',
+        },
       ],
 
       // ---- Filename convention ----
