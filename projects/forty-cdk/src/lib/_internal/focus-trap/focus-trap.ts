@@ -1,4 +1,4 @@
-import { ElementRef, inject } from '@angular/core';
+import { DOCUMENT, ElementRef, inject } from '@angular/core';
 
 /**
  * Shared CSS selector for tabbable elements. Single source of truth for the
@@ -84,14 +84,16 @@ export interface FocusTrapDeactivateOptions {
  */
 export class FocusTrap {
   readonly #container: HTMLElement;
+  readonly #document: Document;
   #returnTo: HTMLElement | null = null;
   #active = false;
   #containerHadTabindex = false;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, doc?: Document) {
     this.#container = container;
+    this.#document = doc ?? container.ownerDocument;
   }
 
   get container(): HTMLElement {
@@ -107,8 +109,8 @@ export class FocusTrap {
       return;
     }
     this.#active = true;
-    this.#returnTo = (document.activeElement as HTMLElement | null) ?? null;
-    document.addEventListener('keydown', this.#onKeyDown, true);
+    this.#returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
+    this.#document.addEventListener('keydown', this.#onKeyDown, true);
 
     if (options.preventInitialFocus) {
       // Tab cycling and return-focus are still set up; the imperative
@@ -137,7 +139,7 @@ export class FocusTrap {
       return;
     }
     this.#active = false;
-    document.removeEventListener('keydown', this.#onKeyDown, true);
+    this.#document.removeEventListener('keydown', this.#onKeyDown, true);
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -174,7 +176,7 @@ export class FocusTrap {
     }
     const first = focusables[0]!;
     const last = focusables[focusables.length - 1]!;
-    const active = document.activeElement;
+    const active = this.#document.activeElement;
 
     if (!this.#container.contains(active)) {
       // Focus jumped outside the trap (e.g. user clicked address bar then
@@ -223,5 +225,5 @@ export class FocusTrap {
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  return new FocusTrap(host.nativeElement);
+  return new FocusTrap(host.nativeElement, inject(DOCUMENT));
 }

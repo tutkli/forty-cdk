@@ -1,54 +1,64 @@
+import { DOCUMENT, Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+
 /**
  * Refcounted body scroll lock. Multiple modal surfaces (stacked dialogs,
- * dialog over drawer, etc.) can call `lockBodyScroll()` independently — only
- * the first acquires the lock, only the last release restores.
+ * dialog over drawer, etc.) acquire and release locks independently — only
+ * the first acquire mutates `<body>`, only the last release restores it.
  *
  * Saves and restores the original `overflow` and `padding-right`. The
  * scrollbar-width compensation prevents content jumping when overflow goes
  * from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).
+ *
+ * SSR: the service is `providedIn: 'root'` so its counter is scoped to a
+ * single Angular bootstrap (one per SSR request). Server-side calls are
+ * no-ops.
  */
-let lockCount = 0;
-let savedOverflow: string | null = null;
-let savedPaddingRight: string | null = null;
+@Injectable({ providedIn: 'root' })
+export class BodyScrollLock {
+  readonly #document = inject(DOCUMENT);
+  readonly #window = this.#document.defaultView;
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-export function lockBodyScroll(): void {
-  if (lockCount === 0) {
-    const body = document.body;
-    const docEl = document.documentElement;
-    const scrollbarWidth = window.innerWidth - docEl.clientWidth;
+  #count = 0;
+  #savedOverflow: string | null = null;
+  #savedPaddingRight: string | null = null;
 
-    savedOverflow = body.style.overflow;
-    savedPaddingRight = body.style.paddingRight;
+  lock(): void {
+    if (!this.#isBrowser) {
+      return;
+    }
+    if (this.#count === 0) {
+      const body = this.#document.body;
+      const docEl = this.#document.documentElement;
+      const win = this.#window;
+      const scrollbarWidth = win ? win.innerWidth - docEl.clientWidth : 0;
 
-    body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      const computed = getComputedStyle(body).paddingRight;
-      const currentPx = parseFloat(computed) || 0;
-      body.style.paddingRight = `${currentPx + scrollbarWidth}px`;
+      this.#savedOverflow = body.style.overflow;
+      this.#savedPaddingRight = body.style.paddingRight;
+
+      body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0 && win) {
+        const computed = win.getComputedStyle(body).paddingRight;
+        const currentPx = parseFloat(computed) || 0;
+        body.style.paddingRight = `${currentPx + scrollbarWidth}px`;
+      }
+    }
+    this.#count++;
+  }
+
+  unlock(): void {
+    if (!this.#isBrowser || this.#count === 0) {
+      return;
+    }
+    this.#count--;
+    if (this.#count === 0) {
+      const body = this.#document.body;
+      body.style.overflow = this.#savedOverflow ?? '';
+      body.style.paddingRight = this.#savedPaddingRight ?? '';
+      this.#savedOverflow = null;
+      this.#savedPaddingRight = null;
     }
   }
-  lockCount++;
 }
 
-export function unlockBodyScroll(): void {
-  if (lockCount === 0) {
-    return;
-  }
-  lockCount--;
-  if (lockCount === 0) {
-    const body = document.body;
-    body.style.overflow = savedOverflow ?? '';
-    body.style.paddingRight = savedPaddingRight ?? '';
-    savedOverflow = null;
-    savedPaddingRight = null;
-  }
-}
-
-/** @internal — for tests only. Resets the global counter. */
-export function _resetBodyScrollLockForTesting(): void {
-  lockCount = 0;
-  savedOverflow = null;
-  savedPaddingRight = null;
-  document.body.style.overflow = '';
-  document.body.style.paddingRight = '';
-}

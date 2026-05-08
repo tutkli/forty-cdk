@@ -1,4 +1,4 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
 
 import { ForContextMenu } from './context-menu';
 
@@ -29,6 +29,7 @@ import { ForContextMenu } from './context-menu';
 export class ForContextMenuTrigger {
   protected readonly ctx = inject(ForContextMenu);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #document = inject(DOCUMENT);
 
   constructor() {
     this.ctx.registerTrigger(this.#host.nativeElement);
@@ -57,7 +58,7 @@ export class ForContextMenuTrigger {
     // Stop the browser from opening its own context menu on top of ours.
     event.preventDefault();
     const trigger = this.#host.nativeElement;
-    const focused = document.activeElement as HTMLElement | null;
+    const focused = this.#document.activeElement as HTMLElement | null;
     // Anchor at the focused element when it lives inside the trigger; fall
     // back to the trigger itself otherwise (e.g. focus is on the trigger).
     const anchorEl = focused && trigger.contains(focused) ? focused : trigger;

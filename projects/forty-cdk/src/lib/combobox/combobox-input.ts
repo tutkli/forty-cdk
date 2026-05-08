@@ -1,4 +1,12 @@
-import { computed, DestroyRef, Directive, effect, ElementRef, inject } from '@angular/core';
+import {
+  computed,
+  DestroyRef,
+  Directive,
+  DOCUMENT,
+  effect,
+  ElementRef,
+  inject,
+} from '@angular/core';
 
 import { injectComboboxContext } from './combobox-context';
 
@@ -64,6 +72,8 @@ export class ForComboboxInput {
     this.ctx.registerInput(this.#host.nativeElement);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterInput(this.#host.nativeElement));
 
+    const doc = inject(DOCUMENT);
+
     // Sync DOM input.value to query() when the input doesn't currently have
     // focus (e.g. consumer set [(query)] programmatically, or option
     // activation copied the label into query via commitOnSelect). When the
@@ -72,7 +82,7 @@ export class ForComboboxInput {
     effect(() => {
       const q = this.ctx.query();
       const el = this.#host.nativeElement;
-      if (document.activeElement !== el && el.value !== q) {
+      if (doc.activeElement !== el && el.value !== q) {
         el.value = q;
       }
     });

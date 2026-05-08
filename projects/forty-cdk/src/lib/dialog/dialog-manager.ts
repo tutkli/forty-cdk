@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import {
   ApplicationRef,
   createComponent,
@@ -11,15 +12,15 @@ import {
   type Type,
 } from '@angular/core';
 
-import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
+import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
 import {
   DismissableLayer,
-  suppressDismissableLayerDispatch,
+  DismissableLayerStack,
 } from '../_internal/dismissable-layer/dismissable-layer';
 import { findFirstFocusable, FocusTrap } from '../_internal/focus-trap/focus-trap';
 import {
-  activateInertSiblings,
   type InertSiblingsHandle,
+  InertSiblingsStack,
 } from '../_internal/inert-siblings/inert-siblings';
 import {
   createVetoableEvent,
@@ -103,6 +104,10 @@ export interface ForDialogOpenConfig<D = unknown> {
 export class ForDialogManager {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
+  readonly #document = inject(DOCUMENT);
+  readonly #dismissableStack = inject(DismissableLayerStack);
+  readonly #inertStack = inject(InertSiblingsStack);
+  readonly #scrollLock = inject(BodyScrollLock);
 
   readonly #count = signal(0);
   /** Reactive count of currently open programmatic dialogs (useful for diagnostics). */
@@ -112,12 +117,12 @@ export class ForDialogManager {
     component: Type<C>,
     config: ForDialogOpenConfig<D> = {},
   ): ForDialogRef<R> {
-    const returnTo = (document.activeElement as HTMLElement | null) ?? null;
+    const returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
     const isModal = config.modal !== false;
     const isDismissible = config.dismissible !== false;
     const shouldReturnFocus = config.returnFocus !== false;
 
-    const hostEl = document.createElement(config.hostTag ?? 'div');
+    const hostEl = this.#document.createElement(config.hostTag ?? 'div');
     hostEl.setAttribute('role', config.alert ? 'alertdialog' : 'dialog');
     if (isModal) {
       hostEl.setAttribute('aria-modal', 'true');
@@ -128,7 +133,7 @@ export class ForDialogManager {
     if (!hostEl.hasAttribute('tabindex')) {
       hostEl.setAttribute('tabindex', '-1');
     }
-    document.body.appendChild(hostEl);
+    this.#document.body.appendChild(hostEl);
 
     // The user's component is created BEFORE the ref's teardown logic can be
     // wired up (the teardown depends on `componentRef`, which depends on the
@@ -166,7 +171,7 @@ export class ForDialogManager {
     // `KeyboardEvent`s constructed via `new KeyboardEvent(...)` default to
     // `cancelable: false`, which would silently drop the veto and let
     // sticky dialogs close on Escape.
-    const dismissable = new DismissableLayer(hostEl);
+    const dismissable = new DismissableLayer(hostEl, this.#dismissableStack);
     const dismissFromLayer = (): void => {
       if (!isDismissible || ref.isClosed()) {
         return;
@@ -196,8 +201,8 @@ export class ForDialogManager {
     if (focusTrap) {
       // Inert + aria-hidden body siblings BEFORE the focus trap fires so
       // the synthesized focusin lands on an already-isolated tree.
-      inertHandle = activateInertSiblings(hostEl);
-      lockBodyScroll();
+      inertHandle = this.#inertStack.activate(hostEl);
+      this.#scrollLock.lock();
       focusTrap.activate({
         initialFocus: config.initialFocus ?? 'first',
         preventInitialFocus: skipInitialFocus,
@@ -229,10 +234,10 @@ export class ForDialogManager {
       // step so that the synthetic `focusin` event we generate by moving
       // focus back to the trigger does not cascade-dismiss whatever
       // dialog is now topmost (a stacked dialog opened above this one).
-      suppressDismissableLayerDispatch(() => {
+      dismissable.suppress(() => {
         if (focusTrap) {
           focusTrap.deactivate({ returnFocus: shouldReturnFocus && !skipReturnFocus });
-          unlockBodyScroll();
+          this.#scrollLock.unlock();
         } else if (shouldReturnFocus && !skipReturnFocus && returnTo) {
           returnTo.focus();
         }
@@ -249,10 +254,10 @@ export class ForDialogManager {
     // pull down the layer and reset the focus trap.
     componentRef.onDestroy(() => {
       if (!torn) {
-        suppressDismissableLayerDispatch(() => {
+        dismissable.suppress(() => {
           if (focusTrap?.isActive) {
             focusTrap.deactivate({ returnFocus: false });
-            unlockBodyScroll();
+            this.#scrollLock.unlock();
           }
         });
         inertHandle?.deactivate();

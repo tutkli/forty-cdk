@@ -1,4 +1,13 @@
-import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import {
+  DOCUMENT,
+  PLATFORM_ID,
+  afterNextRender,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { injectScrollAreaContext } from './scroll-area-context';
 
@@ -16,12 +25,12 @@ const HIDE_NATIVE_SCROLLBARS_CSS = `
   }
 `;
 
-function injectHidingStylesOnce(): void {
-  if (document.getElementById(HIDE_NATIVE_SCROLLBARS_STYLE_ID)) return;
-  const style = document.createElement('style');
+function injectHidingStylesOnce(doc: Document): void {
+  if (doc.getElementById(HIDE_NATIVE_SCROLLBARS_STYLE_ID)) return;
+  const style = doc.createElement('style');
   style.id = HIDE_NATIVE_SCROLLBARS_STYLE_ID;
   style.textContent = HIDE_NATIVE_SCROLLBARS_CSS;
-  document.head.appendChild(style);
+  doc.head.appendChild(style);
 }
 
 /**
@@ -39,9 +48,13 @@ function injectHidingStylesOnce(): void {
 export class ForScrollAreaViewport {
   readonly #ctx = injectScrollAreaContext('ForScrollAreaViewport');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
-    injectHidingStylesOnce();
+    if (this.#isBrowser) {
+      injectHidingStylesOnce(this.#document);
+    }
     this.#ctx.registerViewport(this.#host);
     inject(DestroyRef).onDestroy(() => this.#ctx.registerViewport(null));
 
@@ -52,8 +65,8 @@ export class ForScrollAreaViewport {
 
     // Track size changes via ResizeObserver — simpler / lighter than
     // polling, and consistent with the rest of the library's reactive
-    // patterns.
-    if (typeof ResizeObserver !== 'undefined') {
+    // patterns. Browser-only API; no-op on server.
+    if (this.#isBrowser && typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.#syncSize());
       ro.observe(this.#host);
       // Also observe the first child (the content) so scrollWidth /

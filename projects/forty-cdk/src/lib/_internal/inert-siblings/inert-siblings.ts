@@ -1,3 +1,6 @@
+import { DOCUMENT, Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+
 /**
  * Marks every direct child of `document.body` other than the topmost active
  * owner (and any element flagged as a peer-of-owner via the
@@ -30,6 +33,11 @@
  * Peers: any element carrying the `data-for-modal-peer` attribute is
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
  * alongside the dialog).
+ *
+ * SSR: the registry is `providedIn: 'root'` so its state is scoped to a
+ * single Angular bootstrap (one per SSR request). On the server, every
+ * operation is a no-op — overlays only call `activate()` from
+ * `afterNextRender`, which doesn't run server-side.
  */
 
 const PEER_ATTRIBUTE = 'data-for-modal-peer';
@@ -40,9 +48,6 @@ interface SnapshotEntry {
   readonly prevAriaHidden: string | null;
 }
 
-const stack: HTMLElement[] = [];
-let appliedSnapshot: SnapshotEntry[] = [];
-
 export interface InertSiblingsHandle {
   /** Pop this owner off the stack and recompute. */
   deactivate(): void;
@@ -50,95 +55,105 @@ export interface InertSiblingsHandle {
   readonly isActive: boolean;
 }
 
-/**
- * Push `owner` onto the inert-siblings stack and (re)apply the isolation
- * outcome for the new topmost owner. Returns a handle whose `deactivate()`
- * pops this specific owner — order-safe, so closing out of LIFO order works.
- */
-export function activateInertSiblings(owner: HTMLElement): InertSiblingsHandle {
-  // Always revert before mutating the stack so the recompute below starts
-  // from a clean DOM state — otherwise a sibling inerted by the previous
-  // topmost would accumulate a second snapshot entry on the next push.
-  revertAppliedSnapshot();
-  stack.push(owner);
-  applyForCurrentTopmost();
+@Injectable({ providedIn: 'root' })
+export class InertSiblingsStack {
+  readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  let active = true;
-  return {
-    get isActive(): boolean {
-      return active;
-    },
-    deactivate(): void {
-      if (!active) {
-        return;
+  readonly #stack: HTMLElement[] = [];
+  #appliedSnapshot: SnapshotEntry[] = [];
+
+  /**
+   * Push `owner` onto the inert-siblings stack and (re)apply the isolation
+   * outcome for the new topmost owner. Returns a handle whose
+   * `deactivate()` pops this specific owner — order-safe, so closing out
+   * of LIFO order works.
+   */
+  activate(owner: HTMLElement): InertSiblingsHandle {
+    if (!this.#isBrowser) {
+      return { deactivate: () => {}, get isActive(): boolean { return false; } };
+    }
+    // Always revert before mutating the stack so the recompute below
+    // starts from a clean DOM state — otherwise a sibling inerted by the
+    // previous topmost would accumulate a second snapshot entry on the
+    // next push.
+    this.#revertAppliedSnapshot();
+    this.#stack.push(owner);
+    this.#applyForCurrentTopmost();
+
+    let active = true;
+    return {
+      get isActive(): boolean {
+        return active;
+      },
+      deactivate: (): void => {
+        if (!active) {
+          return;
+        }
+        active = false;
+        const idx = this.#stack.indexOf(owner);
+        if (idx === -1) {
+          return;
+        }
+        this.#revertAppliedSnapshot();
+        this.#stack.splice(idx, 1);
+        if (this.#stack.length > 0) {
+          this.#applyForCurrentTopmost();
+        }
+      },
+    };
+  }
+
+  #applyForCurrentTopmost(): void {
+    const top = this.#stack[this.#stack.length - 1];
+    if (!top) {
+      return;
+    }
+    const protectedRoot = this.#bodyLevelAncestor(top) ?? top;
+
+    for (const child of Array.from(this.#document.body.children)) {
+      if (!(child instanceof HTMLElement)) {
+        continue;
       }
-      active = false;
-      const idx = stack.indexOf(owner);
-      if (idx === -1) {
-        return;
+      if (child === protectedRoot) {
+        continue;
       }
-      revertAppliedSnapshot();
-      stack.splice(idx, 1);
-      if (stack.length > 0) {
-        applyForCurrentTopmost();
+      if (child.hasAttribute(PEER_ATTRIBUTE)) {
+        continue;
       }
-    },
-  };
-}
 
-function applyForCurrentTopmost(): void {
-  const top = stack[stack.length - 1];
-  if (!top) {
-    return;
-  }
-  const protectedRoot = bodyLevelAncestor(top) ?? top;
+      this.#appliedSnapshot.push({
+        el: child,
+        hadInert: child.hasAttribute('inert'),
+        prevAriaHidden: child.getAttribute('aria-hidden'),
+      });
 
-  for (const child of Array.from(document.body.children)) {
-    if (!(child instanceof HTMLElement)) {
-      continue;
-    }
-    if (child === protectedRoot) {
-      continue;
-    }
-    if (child.hasAttribute(PEER_ATTRIBUTE)) {
-      continue;
-    }
-
-    appliedSnapshot.push({
-      el: child,
-      hadInert: child.hasAttribute('inert'),
-      prevAriaHidden: child.getAttribute('aria-hidden'),
-    });
-
-    child.setAttribute('inert', '');
-    child.setAttribute('aria-hidden', 'true');
-  }
-}
-
-function revertAppliedSnapshot(): void {
-  for (const entry of appliedSnapshot) {
-    if (!entry.hadInert) {
-      entry.el.removeAttribute('inert');
-    }
-    if (entry.prevAriaHidden === null) {
-      entry.el.removeAttribute('aria-hidden');
-    } else {
-      entry.el.setAttribute('aria-hidden', entry.prevAriaHidden);
+      child.setAttribute('inert', '');
+      child.setAttribute('aria-hidden', 'true');
     }
   }
-  appliedSnapshot = [];
-}
 
-function bodyLevelAncestor(el: HTMLElement): HTMLElement | null {
-  let cur: HTMLElement | null = el;
-  while (cur && cur.parentElement && cur.parentElement !== document.body) {
-    cur = cur.parentElement;
+  #revertAppliedSnapshot(): void {
+    for (const entry of this.#appliedSnapshot) {
+      if (!entry.hadInert) {
+        entry.el.removeAttribute('inert');
+      }
+      if (entry.prevAriaHidden === null) {
+        entry.el.removeAttribute('aria-hidden');
+      } else {
+        entry.el.setAttribute('aria-hidden', entry.prevAriaHidden);
+      }
+    }
+    this.#appliedSnapshot = [];
   }
-  return cur && cur.parentElement === document.body ? cur : null;
+
+  #bodyLevelAncestor(el: HTMLElement): HTMLElement | null {
+    const body = this.#document.body;
+    let cur: HTMLElement | null = el;
+    while (cur && cur.parentElement && cur.parentElement !== body) {
+      cur = cur.parentElement;
+    }
+    return cur && cur.parentElement === body ? cur : null;
+  }
 }
 
-/** @internal — for tests only. Forces the stack and snapshot back to empty. */
-export function _resetInertSiblingsForTesting(): void {
-  revertAppliedSnapshot();
-  stack.length = 0;
-}
