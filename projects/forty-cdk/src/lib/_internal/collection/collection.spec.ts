@@ -1,4 +1,4 @@
-import { Collection } from './collection';
+﻿import { Collection } from './collection';
 
 interface Handle {
   readonly host: HTMLElement;
@@ -37,13 +37,13 @@ describe('Collection', () => {
     expect(col.items()).toEqual([]);
   });
 
-  it('sorts items by DOM document order regardless of registration order', () => {
+  it('returns items in registration order', () => {
     const col = new Collection<Handle>();
     col.register(handle('c', c));
     col.register(handle('a', a));
     col.register(handle('b', b));
 
-    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+    expect(col.items().map((h) => h.id)).toEqual(['c', 'a', 'b']);
   });
 
   it('returns items in registration order when there is fewer than 2', () => {
@@ -75,24 +75,21 @@ describe('Collection', () => {
     expect(col.items()).toEqual([]);
   });
 
-  it('reorders on DOM mutation: items() reflects current document order on read', () => {
+  it('returns the same array reference across consecutive reads (no per-read allocation)', () => {
     const col = new Collection<Handle>();
     col.register(handle('a', a));
     col.register(handle('b', b));
+
+    const first = col.items();
+    const second = col.items();
+    expect(second).toBe(first);
+
+    // A mutation produces a new reference (since `update` swaps the array),
+    // but subsequent reads remain stable.
     col.register(handle('c', c));
-
-    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
-
-    // Move c before a in the DOM, then re-trigger a read by toggling the
-    // signal (mutation alone doesn't invalidate the computed; this matches
-    // the Angular pattern where structural changes go through register /
-    // unregister, but verify the sort takes today's DOM as truth).
-    host.insertBefore(c, a);
-    const ghost = handle('ghost', document.createElement('div'));
-    col.register(ghost);
-    col.unregister(ghost);
-
-    expect(col.items().map((h) => h.id)).toEqual(['c', 'a', 'b']);
+    const third = col.items();
+    expect(third).not.toBe(first);
+    expect(col.items()).toBe(third);
   });
 
   it('findByHost returns the matching handle or undefined', () => {
@@ -104,13 +101,13 @@ describe('Collection', () => {
     expect(col.findByHost(b)).toBeUndefined();
   });
 
-  it('indexOfHost returns the DOM-ordered index', () => {
+  it('indexOfHost returns the registration-order index', () => {
     const col = new Collection<Handle>();
     col.register(handle('c', c));
     col.register(handle('a', a));
 
-    expect(col.indexOfHost(a)).toBe(0);
-    expect(col.indexOfHost(c)).toBe(1);
+    expect(col.indexOfHost(c)).toBe(0);
+    expect(col.indexOfHost(a)).toBe(1);
     expect(col.indexOfHost(b)).toBe(-1);
   });
 });
