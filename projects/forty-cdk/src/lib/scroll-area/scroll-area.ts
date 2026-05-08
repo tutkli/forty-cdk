@@ -20,7 +20,9 @@ import {
  * @example
  * ```html
  * <div forScrollArea>
- *   <div forScrollAreaViewport>… long content …</div>
+ *   <div forScrollAreaViewport>
+ *     <div forScrollAreaContent>… long content …</div>
+ *   </div>
  *   <div forScrollAreaScrollbar orientation="vertical">
  *     <div forScrollAreaThumb></div>
  *   </div>
@@ -60,6 +62,9 @@ export class ForScrollArea implements ForScrollAreaContext {
   readonly #viewport = signal<HTMLElement | null>(null);
   readonly viewport = this.#viewport.asReadonly();
 
+  readonly #content = signal<HTMLElement | null>(null);
+  readonly content = this.#content.asReadonly();
+
   readonly #scrollLeft = signal(0);
   readonly #scrollTop = signal(0);
   readonly scrollLeft = this.#scrollLeft.asReadonly();
@@ -83,6 +88,19 @@ export class ForScrollArea implements ForScrollAreaContext {
 
   registerViewport(el: HTMLElement | null): void {
     this.#viewport.set(el);
+  }
+
+  registerContent(el: HTMLElement): void {
+    this.#content.set(el);
+  }
+
+  unregisterContent(el: HTMLElement): void {
+    // Only clear if the unregistering element is the one we currently track,
+    // so a late teardown of an old content piece doesn't blow away a freshly
+    // registered replacement.
+    if (this.#content() === el) {
+      this.#content.set(null);
+    }
   }
 
   reportScroll(left: number, top: number): void {

@@ -6,13 +6,14 @@ This is the **only** primitive in forty-cdk that ships CSS — a single `<style>
 
 ## Pieces
 
-| Class                    | Selector                   | Role                                                           |
-| ------------------------ | -------------------------- | -------------------------------------------------------------- |
-| `ForScrollArea`          | `[forScrollArea]`          | Root. Owns `type`, `scrollHideDelay`, hover / scrolling state. |
-| `ForScrollAreaViewport`  | `[forScrollAreaViewport]`  | The actual scrolling element.                                  |
-| `ForScrollAreaScrollbar` | `[forScrollAreaScrollbar]` | Synthetic track. Required `orientation`.                       |
-| `ForScrollAreaThumb`     | `[forScrollAreaThumb]`     | Draggable thumb sized & translated automatically.              |
-| `ForScrollAreaCorner`    | `[forScrollAreaCorner]`    | Only shows when both scrollbars are visible.                   |
+| Class                    | Selector                   | Role                                                                                              |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `ForScrollArea`          | `[forScrollArea]`          | Root. Owns `type`, `scrollHideDelay`, hover / scrolling state.                                    |
+| `ForScrollAreaViewport`  | `[forScrollAreaViewport]`  | The actual scrolling element.                                                                     |
+| `ForScrollAreaContent`   | `[forScrollAreaContent]`   | Marks the content element inside the viewport so its size changes drive the synthetic scrollbar. |
+| `ForScrollAreaScrollbar` | `[forScrollAreaScrollbar]` | Synthetic track. Required `orientation`.                                                          |
+| `ForScrollAreaThumb`     | `[forScrollAreaThumb]`     | Draggable thumb sized & translated automatically.                                                 |
+| `ForScrollAreaCorner`    | `[forScrollAreaCorner]`    | Only shows when both scrollbars are visible.                                                      |
 
 ## Inputs (root)
 
@@ -31,6 +32,7 @@ import { Component } from '@angular/core';
 import {
   ForScrollArea,
   ForScrollAreaViewport,
+  ForScrollAreaContent,
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
   ForScrollAreaCorner,
@@ -41,6 +43,7 @@ import {
   imports: [
     ForScrollArea,
     ForScrollAreaViewport,
+    ForScrollAreaContent,
     ForScrollAreaScrollbar,
     ForScrollAreaThumb,
     ForScrollAreaCorner,
@@ -48,7 +51,7 @@ import {
   template: `
     <div forScrollArea>
       <div forScrollAreaViewport>
-        <div class="content">…lots of stuff…</div>
+        <div forScrollAreaContent class="content">…lots of stuff…</div>
       </div>
       <div forScrollAreaScrollbar orientation="vertical">
         <div forScrollAreaThumb></div>
@@ -117,4 +120,4 @@ export class DemoScroll {}
 - **Drag uses pointer-capture** so the cursor doesn't lose the thumb if it briefly leaves the track.
 - **Minimum thumb size is 8px**, matching common UI conventions for very long content.
 - **The corner only shows when both scrollbars are visible.** Otherwise it's removed via `[hidden]` (the only place the rule "primitives never apply `[hidden]`" doesn't apply — the corner has no logical presence without two scrollbars).
-- **Two ResizeObservers per viewport**: one on the viewport itself, one on the first child (the content). This way, content size changes are picked up reactively without polling.
+- **Content observation is opt-in**: the viewport observes its own size automatically, but only observes the content element when the consumer tags it with `[forScrollAreaContent]`. Skipping the directive is allowed (the viewport still scrolls and the scrollbars still render); the scrollbars just won't react to content reflows. The library never guesses `firstElementChild`, since that silently breaks when content is wrapped in a layer or split across siblings.
