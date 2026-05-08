@@ -1,4 +1,13 @@
-import { computed, DestroyRef, Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
+import {
+  afterNextRender,
+  computed,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -51,7 +60,12 @@ export class ForNavigationMenuTrigger {
       disabled: this.disabled,
       id: this.id,
     };
-    this.menu.registerTrigger(handle);
+    // Defer registration so the parent's `triggerIdFor` / `contentIdFor` /
+    // `triggerHostFor` lookups can read `handle.value()` without hitting the
+    // not-yet-bound `input.required` throw on the owning `[forNavigationMenuItem]`.
+    // `unregisterTrigger` is reference-based, so destroy-before-register is a
+    // safe no-op.
+    afterNextRender(() => this.menu.registerTrigger(handle));
     inject(DestroyRef).onDestroy(() => this.menu.unregisterTrigger(handle));
   }
 

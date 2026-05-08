@@ -66,7 +66,11 @@ export class ForNavigationMenuContent {
       value: this.value,
       id: this.id,
     };
-    this.menu.registerContent(handle);
+    // Defer registration so the parent's lookups can read `handle.value()`
+    // without hitting the not-yet-bound `input.required` throw on the owning
+    // `[forNavigationMenuItem]`. `unregisterContent` is reference-based, so
+    // destroy-before-register is a safe no-op.
+    afterNextRender(() => this.menu.registerContent(handle));
     inject(DestroyRef).onDestroy(() => this.menu.unregisterContent(handle));
 
     // Defer the re-parent until after the embedded view is attached to its

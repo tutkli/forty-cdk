@@ -1,4 +1,13 @@
-import { computed, DestroyRef, Directive, ElementRef, inject, input, signal } from '@angular/core';
+import {
+  afterNextRender,
+  computed,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectTabsContext } from './tabs-context';
@@ -44,7 +53,12 @@ export class ForTabsContent {
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     const handle = { host, id: this.id, value: this.value };
-    this.group.registerContent(handle);
+    // Mirror of the registration ordering in `ForTabsTrigger`. Defer until
+    // input bindings have settled so the parent's `triggerIdFor` /
+    // `contentIdFor` can read `handle.value()` without the not-yet-bound
+    // throw. `unregisterContent` is reference-based and tolerant of being
+    // called before the deferred register.
+    afterNextRender(() => this.group.registerContent(handle));
     inject(DestroyRef).onDestroy(() => this.group.unregisterContent(handle));
   }
 }
