@@ -1,7 +1,6 @@
-import { Component, computed, provideZonelessChangeDetection } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { computed } from '@angular/core';
 
-import { injectRovingTabindex, RovingTabindex } from './roving-tabindex';
+import { RovingTabindex } from './roving-tabindex';
 
 describe('RovingTabindex', () => {
   it('starts with no active element', () => {
@@ -78,26 +77,5 @@ describe('RovingTabindex', () => {
     } finally {
       a.remove();
     }
-  });
-
-  describe('injectRovingTabindex', () => {
-    it('returns a usable instance from within an injection context', () => {
-      let captured!: RovingTabindex;
-
-      @Component({ standalone: true, template: '' })
-      class Host {
-        readonly r = (() => {
-          captured = injectRovingTabindex();
-          return captured;
-        })();
-      }
-
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(Host);
-      fixture.detectChanges();
-      expect(captured).toBeInstanceOf(RovingTabindex);
-    });
   });
 });

@@ -1,4 +1,4 @@
-import { DestroyRef, inject, signal } from '@angular/core';
+import { signal } from '@angular/core';
 
 /**
  * Tracks the single "active" element of a roving-tabindex group: the one
@@ -10,10 +10,8 @@ import { DestroyRef, inject, signal } from '@angular/core';
  * a reactive `tabindexFor(el)` for host bindings on each item, plus
  * `setActive` / `focusActive` for the consumer.
  *
- * Lifecycle: there is no internal state to clean up beyond the signal, so
- * `injectRovingTabindex()` exists for symmetry with `injectTypeahead` but
- * does not register anything with `DestroyRef` today. Construct via `new`
- * outside of an injection context if needed.
+ * Construct directly with `new RovingTabindex()` — there is no internal
+ * state requiring an injection context or `DestroyRef` cleanup.
  */
 export class RovingTabindex {
   readonly #active = signal<HTMLElement | null>(null);
@@ -49,16 +47,4 @@ export class RovingTabindex {
     }
     target.focus();
   }
-}
-
-/**
- * Constructs a `RovingTabindex` within an Angular injection context. Reserved
- * for future cleanup hooks — today, equivalent to `new RovingTabindex()`.
- */
-export function injectRovingTabindex(): RovingTabindex {
-  // Touch DestroyRef so we fail loudly outside an injection context, matching
-  // the contract of `injectTypeahead` and keeping a future cleanup hook trivial
-  // to add without breaking callers.
-  inject(DestroyRef);
-  return new RovingTabindex();
 }

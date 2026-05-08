@@ -1,6 +1,7 @@
 import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
+import { findFirstFocusable } from '../_internal/focus-trap/focus-trap';
 import { injectFloating } from '../_internal/floating/floating';
 import { injectPopoverContext } from './popover-context';
 
@@ -82,10 +83,7 @@ export class ForPopoverContent {
         if (initial === 'container') {
           host.focus();
         } else {
-          const first = host.querySelector<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          );
-          (first ?? host).focus();
+          (findFirstFocusable(host) ?? host).focus();
         }
       }
     });
