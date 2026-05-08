@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -9,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectComboboxContext } from './combobox-context';
 
@@ -151,8 +151,11 @@ export class ForComboboxOption<T = string> {
   };
 
   constructor() {
-    this.#ctx.registerOption(this.#handle);
-    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterOption(this.#handle));
+    registerHandle(
+      this.#handle,
+      (h) => this.#ctx.registerOption(h),
+      (h) => this.#ctx.unregisterOption(h),
+    );
   }
 
   protected onClick(): void {

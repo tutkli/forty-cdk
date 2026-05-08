@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive, inject, type Signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yName } from '../_internal/collection/register-handle';
 import { ForComboboxGroup } from './combobox-group';
 
 /**
@@ -16,10 +16,8 @@ import { ForComboboxGroup } from './combobox-group';
   },
 })
 export class ForComboboxGroupLabel {
-  readonly #idGen = inject(IdGenerator);
-
   /** Stable host id used by the parent group's `aria-labelledby`. */
-  readonly id = signal(this.#idGen.next('for-combobox-group-label'));
+  readonly id: Signal<string>;
 
   constructor() {
     const group = inject(ForComboboxGroup, { optional: true });
@@ -28,8 +26,6 @@ export class ForComboboxGroupLabel {
         '[forty-cdk/combobox] ForComboboxGroupLabel must be used inside a [forComboboxGroup] element.',
       );
     }
-    const myId = this.id();
-    group.registerLabel(myId);
-    inject(DestroyRef).onDestroy(() => group.unregisterLabel(myId));
+    this.id = registerA11yName(group, 'for-combobox-group-label');
   }
 }

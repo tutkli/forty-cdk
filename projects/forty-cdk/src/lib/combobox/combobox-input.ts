@@ -1,13 +1,6 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  DOCUMENT,
-  effect,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -69,8 +62,11 @@ export class ForComboboxInput {
   protected readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
 
   constructor() {
-    this.ctx.registerInput(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterInput(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerInput(el),
+      (el) => this.ctx.unregisterInput(el),
+    );
 
     const doc = inject(DOCUMENT);
 

@@ -1,13 +1,6 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  numberAttribute,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectSliderContext, type SliderArrowKey } from './slider-context';
 
 /**
@@ -123,8 +116,11 @@ export class ForSliderThumb {
       host: this.#host.nativeElement,
       index: this.index,
     };
-    this.ctx.registerThumb(handle);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterThumb(handle));
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerThumb(h),
+      (h) => this.ctx.unregisterThumb(h),
+    );
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

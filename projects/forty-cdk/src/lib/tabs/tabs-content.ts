@@ -1,14 +1,6 @@
-import {
-  afterNextRender,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, signal } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectTabsContext } from './tabs-context';
 
@@ -58,7 +50,11 @@ export class ForTabsContent {
     // `contentIdFor` can read `handle.value()` without the not-yet-bound
     // throw. `unregisterContent` is reference-based and tolerant of being
     // called before the deferred register.
-    afterNextRender(() => this.group.registerContent(handle));
-    inject(DestroyRef).onDestroy(() => this.group.unregisterContent(handle));
+    registerHandle(
+      handle,
+      (h) => this.group.registerContent(h),
+      (h) => this.group.unregisterContent(h),
+      'afterNextRender',
+    );
   }
 }

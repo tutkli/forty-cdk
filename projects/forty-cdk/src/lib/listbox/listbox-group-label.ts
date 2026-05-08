@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive, inject, type Signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yName } from '../_internal/collection/register-handle';
 import { ForListboxGroup } from './listbox-group';
 
 /**
@@ -18,10 +18,8 @@ import { ForListboxGroup } from './listbox-group';
   },
 })
 export class ForListboxGroupLabel {
-  readonly #idGen = inject(IdGenerator);
-
   /** Stable host id used by the parent group's `aria-labelledby`. */
-  readonly id = signal(this.#idGen.next('for-listbox-group-label'));
+  readonly id: Signal<string>;
 
   constructor() {
     const group = inject(ForListboxGroup, { optional: true });
@@ -30,8 +28,6 @@ export class ForListboxGroupLabel {
         '[forty-cdk/listbox] ForListboxGroupLabel must be used inside a [forListboxGroup] element.',
       );
     }
-    const myId = this.id();
-    group.registerLabel(myId);
-    inject(DestroyRef).onDestroy(() => group.unregisterLabel(myId));
+    this.id = registerA11yName(group, 'for-listbox-group-label');
   }
 }

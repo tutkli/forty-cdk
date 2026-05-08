@@ -1,5 +1,6 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectMenuContext } from '../menu/menu-context';
 
 /**
@@ -30,8 +31,11 @@ export class ForDropdownMenuTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
-    this.ctx.registerTrigger(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterTrigger(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerTrigger(el),
+      (el) => this.ctx.unregisterTrigger(el),
+    );
   }
 
   protected onClick(): void {

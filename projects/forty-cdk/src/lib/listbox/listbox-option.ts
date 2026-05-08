@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -9,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectListboxContext } from './listbox-context';
@@ -80,8 +80,11 @@ export class ForListboxOption {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.#group.registerOption(handle);
-    inject(DestroyRef).onDestroy(() => this.#group.unregisterOption(handle));
+    registerHandle(
+      handle,
+      (h) => this.#group.registerOption(h),
+      (h) => this.#group.unregisterOption(h),
+    );
   }
 
   protected onClick(): void {

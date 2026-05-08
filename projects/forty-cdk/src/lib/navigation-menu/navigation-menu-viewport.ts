@@ -1,13 +1,6 @@
-import {
-  afterEveryRender,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { afterEveryRender, computed, Directive, ElementRef, inject, signal } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectNavigationMenuContext } from './navigation-menu-context';
 
 /**
@@ -65,8 +58,11 @@ export class ForNavigationMenuViewport {
 
   constructor() {
     const handle = { host: this.host };
-    this.menu.registerViewport(handle);
-    inject(DestroyRef).onDestroy(() => this.menu.unregisterViewport(handle));
+    registerHandle(
+      handle,
+      (h) => this.menu.registerViewport(h),
+      (h) => this.menu.unregisterViewport(h),
+    );
 
     afterEveryRender(() => {
       const active = this.menu.activeContentHost();

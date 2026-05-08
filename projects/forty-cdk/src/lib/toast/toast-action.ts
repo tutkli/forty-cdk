@@ -1,5 +1,6 @@
-import { DestroyRef, Directive, inject, input } from '@angular/core';
+import { Directive, inject, input } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectToastContext } from './toast-context';
 
 /**
@@ -38,8 +39,11 @@ export class ForToastAction {
 
   constructor() {
     const handle = { altText: this.altText };
-    this.ctx.registerAction(handle);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterAction(handle));
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerAction(h),
+      (h) => this.ctx.unregisterAction(h),
+    );
   }
 
   protected onClick(): void {

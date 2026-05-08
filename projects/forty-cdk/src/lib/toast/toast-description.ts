@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yDescription } from '../_internal/collection/register-handle';
 import { injectToastContext } from './toast-context';
 
 /**
@@ -11,15 +11,12 @@ import { injectToastContext } from './toast-context';
   selector: '[forToastDescription]',
   exportAs: 'forToastDescription',
   host: {
-    '[id]': 'id',
+    '[id]': 'id()',
   },
 })
 export class ForToastDescription {
-  protected readonly id = inject(IdGenerator).next('for-toast-description');
-
-  constructor() {
-    const ctx = injectToastContext('ForToastDescription');
-    ctx.registerDescription(this.id);
-    inject(DestroyRef).onDestroy(() => ctx.unregisterDescription(this.id));
-  }
+  protected readonly id = registerA11yDescription(
+    injectToastContext('ForToastDescription'),
+    'for-toast-description',
+  );
 }

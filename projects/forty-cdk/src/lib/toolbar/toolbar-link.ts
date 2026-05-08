@@ -1,13 +1,6 @@
-import {
-  booleanAttribute,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
 
@@ -52,12 +45,16 @@ export class ForToolbarLink {
         '[forty-cdk/toolbar] ForToolbarLink must be used inside a [forToolbar] element.',
       );
     }
+    const toolbar = this.toolbar;
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.disabled,
     };
-    this.toolbar.registerItem(handle);
-    inject(DestroyRef).onDestroy(() => this.toolbar!.unregisterItem(handle));
+    registerHandle(
+      handle,
+      (h) => toolbar.registerItem(h),
+      (h) => toolbar.unregisterItem(h),
+    );
   }
 
   protected onClick(event: MouseEvent): void {

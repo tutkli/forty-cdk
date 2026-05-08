@@ -1,5 +1,6 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -22,7 +23,10 @@ export class ForPopoverArrow {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
-    this.#ctx.registerArrow(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterArrow(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.#ctx.registerArrow(el),
+      (el) => this.#ctx.unregisterArrow(el),
+    );
   }
 }

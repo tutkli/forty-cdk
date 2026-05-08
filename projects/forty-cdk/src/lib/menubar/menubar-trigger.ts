@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -10,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -125,8 +125,11 @@ export class ForMenubarTrigger {
       hideWhenDetached: this.hideWhenDetached,
       ariaLabel: this.ariaLabel,
     };
-    this.menubar.registerTrigger(handle);
-    inject(DestroyRef).onDestroy(() => this.menubar.unregisterTrigger(handle));
+    registerHandle(
+      handle,
+      (h) => this.menubar.registerTrigger(h),
+      (h) => this.menubar.unregisterTrigger(h),
+    );
   }
 
   protected onClick(): void {

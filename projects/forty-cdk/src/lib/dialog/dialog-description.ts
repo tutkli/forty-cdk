@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yDescription } from '../_internal/collection/register-handle';
 import { injectDialogContext } from './dialog-context';
 
 /**
@@ -18,14 +18,8 @@ import { injectDialogContext } from './dialog-context';
   },
 })
 export class ForDialogDescription {
-  readonly #ctx = injectDialogContext('ForDialogDescription');
-  readonly #idGen = inject(IdGenerator);
-
-  protected readonly id = signal(this.#idGen.next('for-dialog-description'));
-
-  constructor() {
-    const myId = this.id();
-    this.#ctx.registerDescription(myId);
-    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterDescription(myId));
-  }
+  protected readonly id = registerA11yDescription(
+    injectDialogContext('ForDialogDescription'),
+    'for-dialog-description',
+  );
 }

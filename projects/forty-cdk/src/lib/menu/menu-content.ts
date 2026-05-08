@@ -1,5 +1,6 @@
 import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
 import { injectMenuContext } from './menu-context';
@@ -41,8 +42,11 @@ export class ForMenuContent {
   readonly #dismissable = injectDismissableLayer();
 
   constructor() {
-    this.ctx.registerContent(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerContent(el),
+      (el) => this.ctx.unregisterContent(el),
+    );
 
     injectFloating({
       reference: this.ctx.anchor,

@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -10,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { emitVetoableEvent, type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
@@ -77,8 +77,11 @@ export class ForMenuItem {
       disabled: this.effectiveDisabled,
       textValue: this.textValue,
     };
-    this.ctx.registerItem(handle);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterItem(handle));
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerItem(h),
+      (h) => this.ctx.unregisterItem(h),
+    );
   }
 
   protected onClick(): void {

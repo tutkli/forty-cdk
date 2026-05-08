@@ -7,6 +7,7 @@ import {
   inject,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
 import { injectComboboxContext } from './combobox-context';
@@ -58,8 +59,11 @@ export class ForComboboxContent {
   });
 
   constructor() {
-    this.ctx.registerContent(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerContent(el),
+      (el) => this.ctx.unregisterContent(el),
+    );
 
     // `injectFloating` portals by default; no need for a separate
     // `injectPortal()` call (registering the helper twice was harmless on

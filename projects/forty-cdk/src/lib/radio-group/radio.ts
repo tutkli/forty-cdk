@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -9,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectRadioGroupContext } from './radio-group-context';
@@ -62,8 +62,11 @@ export class ForRadio {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.group.registerRadio(handle);
-    inject(DestroyRef).onDestroy(() => this.group.unregisterRadio(handle));
+    registerHandle(
+      handle,
+      (h) => this.group.registerRadio(h),
+      (h) => this.group.unregisterRadio(h),
+    );
   }
 
   /**
