@@ -51,7 +51,7 @@ const FRUITS: readonly FruitItem[] = [
       [(query)]="query"
       [(value)]="value"
       [(open)]="open"
-      [autocomplete]="autocomplete()"
+      [autocompleteMode]="autocompleteMode()"
       [autoHighlight]="autoHighlight()"
       [openOnFocus]="openOnFocus()"
       [openOnQuery]="openOnQuery()"
@@ -83,7 +83,7 @@ class ComboboxHost {
   readonly query = signal('');
   readonly value = signal<readonly string[]>([]);
   readonly open = signal(false);
-  readonly autocomplete = signal<'none' | 'list' | 'inline' | 'both'>('list');
+  readonly autocompleteMode = signal<'none' | 'list' | 'inline' | 'both'>('list');
   readonly autoHighlight = signal(true);
   readonly openOnFocus = signal(false);
   readonly openOnQuery = signal(true);
@@ -599,7 +599,7 @@ describe('ForCombobox', () => {
   describe('inline autocomplete', () => {
     it('appends the rest of the first match into the input as selected text', async () => {
       const r = renderHost(ComboboxHost);
-      r.instance.autocomplete.set('both');
+      r.instance.autocompleteMode.set('both');
       // Pre-warm options cache so inline can resolve from the snapshot.
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -618,7 +618,7 @@ describe('ForCombobox', () => {
 
     it('skips inline completion on Backspace so the user can shorten the query', async () => {
       const r = renderHost(ComboboxHost);
-      r.instance.autocomplete.set('both');
+      r.instance.autocompleteMode.set('both');
       r.instance.open.set(true);
       await flush(r.fixture);
 

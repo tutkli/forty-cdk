@@ -142,12 +142,20 @@ export class ForCombobox<T = string>
 
   readonly multiple = input(false, { transform: booleanAttribute });
 
-  readonly autocomplete = input<ForComboboxAutocomplete>('list');
+  /**
+   * Autocomplete mode applied to the input. Mirrors the
+   * [WAI-ARIA `aria-autocomplete` property](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/#wai-ariaroles,states,andproperties)
+   * and drives whether the listbox auto-opens on query and whether the
+   * input gets inline-completed with the first match. Renamed from
+   * `autocomplete` so consumers don't conflate it with the native HTML
+   * `autocomplete` attribute (which the directive forces to `"off"`).
+   */
+  readonly autocompleteMode = input<ForComboboxAutocomplete>('list');
 
   /** Open the listbox when the input gains focus. Off by default — opening on query / arrow keys is the standard ecosystem behavior. */
   readonly openOnFocus = input(false, { transform: booleanAttribute });
 
-  /** Open the listbox when the user starts typing. On by default. Only honored when `autocomplete` includes a listbox (`'list'` or `'both'`). */
+  /** Open the listbox when the user starts typing. On by default. Only honored when `autocompleteMode` includes a listbox (`'list'` or `'both'`). */
   readonly openOnQuery = input(true, { transform: booleanAttribute });
 
   /**
@@ -718,7 +726,7 @@ export class ForCombobox<T = string>
     if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
       this.value.set([]);
     }
-    const mode = this.autocomplete();
+    const mode = this.autocompleteMode();
     const hasListbox = mode === 'list' || mode === 'both';
     if (this.openOnQuery() && hasListbox && query.length > 0 && !this.open()) {
       this.openMenu();
