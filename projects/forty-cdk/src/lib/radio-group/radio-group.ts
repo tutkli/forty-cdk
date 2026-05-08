@@ -11,7 +11,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
@@ -93,12 +92,6 @@ export class ForRadioGroup
         return v ? [v] : [];
       }),
       disabled: this.disabled,
-    });
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
     });
   }
 

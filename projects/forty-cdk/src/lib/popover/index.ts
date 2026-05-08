@@ -11,3 +11,8 @@ export {
   injectPopoverContext,
   type ForPopoverContext,
 } from './popover-context';
+export {
+  FOR_POPOVER_DEFAULTS,
+  provideForPopoverDefaults,
+  type ForPopoverDefaults,
+} from './popover-defaults';

@@ -8,7 +8,8 @@ export {
   type HoverCardScheduleReason,
 } from './hover-card-context';
 export {
+  FOR_HOVER_CARD_DEFAULTS,
   HoverCardCoordinator,
-  provideHoverCardDefaults,
+  provideForHoverCardDefaults,
   type HoverCardDefaults,
 } from './hover-card-defaults';

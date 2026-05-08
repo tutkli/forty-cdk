@@ -14,7 +14,6 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
-import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -185,12 +184,6 @@ export class ForSlider
       name: this.name,
       values: stringValues,
       disabled: this.disabled,
-    });
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
     });
     this.#destroyRef.onDestroy(() => {
       for (const cleanup of this.#activeDragCleanups) {

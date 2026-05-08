@@ -36,7 +36,7 @@ import { HoverCardCoordinator } from './hover-card-defaults';
  * on its own so keyboard-only users miss nothing.
  *
  * Open / close delays default to 700 / 300 ms; the per-injector-scope
- * `provideHoverCardDefaults` configures the cadence and the skip-delay
+ * `provideForHoverCardDefaults` configures the cadence and the skip-delay
  * window for adjacent cards.
  *
  * @example

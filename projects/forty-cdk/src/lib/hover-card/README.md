@@ -22,8 +22,8 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 | `align`       | `input<FloatingAlign>`                                     | Alignment along `side`. Default `'center'`.                                                                                                           |
 | `sideOffset`  | `input<number>`                                            | Gap (px) between trigger and card along the main axis. Default `8`.                                                                                   |
 | `alignOffset` | `input<number>`                                            | Gap (px) along the cross axis. Default `0`.                                                                                                           |
-| `openDelay`   | `input<number \| undefined>`                               | Per-card override for open delay. Falls back to `provideHoverCardDefaults` (700ms).                                                                   |
-| `closeDelay`  | `input<number \| undefined>`                               | Per-card override for close delay. Falls back to `provideHoverCardDefaults` (300ms).                                                                  |
+| `openDelay`   | `input<number \| undefined>`                               | Per-card override for open delay. Falls back to `provideForHoverCardDefaults` (700ms).                                                                |
+| `closeDelay`  | `input<number \| undefined>`                               | Per-card override for close delay. Falls back to `provideForHoverCardDefaults` (300ms).                                                               |
 | `disabled`    | `input<boolean>`                                           | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync). |
 
 ## Outputs
@@ -34,7 +34,7 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 ## Defaults
 
-`provideHoverCardDefaults({ openDelay, closeDelay, skipDelayDuration })` configures the cadence for an injector subtree. Each call establishes a coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
+`provideForHoverCardDefaults({ openDelay, closeDelay, skipDelayDuration })` configures the cadence for an injector subtree. Each call establishes a coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
 
 The HoverCard coordinator is **independent** from `TooltipCoordinator` — the two patterns have different cadences and shouldn't share their skip-delay windows.
 
@@ -79,4 +79,4 @@ export class DemoProfileLink {}
 - **Trigger must stand alone.** Keyboard users don't see hover-only previews. Make sure the trigger's text / `aria-label` already describes its destination or action.
 - **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, whether focus is on the trigger or on a link inside the content.
 - **Pointer interaction inside the card.** Moving the cursor from the trigger to the content cancels the close timer, so users can copy text or follow nested links.
-- **Use `provideHoverCardDefaults` per scope** when you need a different cadence for, e.g., a list of profile cards (faster) vs. a sidebar of glossary entries (slower).
+- **Use `provideForHoverCardDefaults` per scope** when you need a different cadence for, e.g., a list of profile cards (faster) vs. a sidebar of glossary entries (slower).
