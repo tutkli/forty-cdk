@@ -66,6 +66,15 @@ export interface FocusTrapActivateOptions {
    * surface. Default `false`.
    */
   preventInitialFocus?: boolean;
+  /**
+   * Explicit element to restore focus to on `deactivate({ returnFocus: true })`.
+   * When omitted (default), the trap captures `document.activeElement` at
+   * activation time. Pass this when the caller needs to lock the return
+   * target *before* a side-effect that mutates focus — e.g. `ForDialog`
+   * capturing the trigger before applying `inert` on siblings, since
+   * WebKit auto-blurs descendants of a freshly-inert ancestor.
+   */
+  returnFocus?: HTMLElement | null;
 }
 
 export interface FocusTrapDeactivateOptions {
@@ -109,7 +118,10 @@ export class FocusTrap {
       return;
     }
     this.#active = true;
-    this.#returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
+    this.#returnTo =
+      options.returnFocus !== undefined
+        ? options.returnFocus
+        : ((this.#document.activeElement as HTMLElement | null) ?? null);
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
 
     if (options.preventInitialFocus) {
