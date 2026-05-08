@@ -4,11 +4,25 @@ import { isPlatformBrowser } from '@angular/common';
 /**
  * Refcounted body scroll lock. Multiple modal surfaces (stacked dialogs,
  * dialog over drawer, etc.) acquire and release locks independently — only
- * the first acquire mutates `<body>`, only the last release restores it.
+ * the first acquire mutates `<body>`, only the last release un-mutates it.
  *
- * Saves and restores the original `overflow` and `padding-right`. The
- * scrollbar-width compensation prevents content jumping when overflow goes
- * from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).
+ * **Semantic: clear, do not restore.** On the first lock the service writes
+ * `overflow: hidden` and an optional scrollbar-compensating `padding-right`
+ * inline on `<body>`. On the final unlock it _clears_ those two inline
+ * styles (`body.style.overflow = ''`, `body.style.paddingRight = ''`) and
+ * lets the CSS cascade take over again. It does NOT snapshot the values at
+ * lock time and rewrite them at unlock time.
+ *
+ * Why: any code (route transition, theme toggle, the consumer themselves)
+ * that mutates `body.style.overflow` between `lock()` and the final
+ * `unlock()` would otherwise be silently clobbered when we restored the
+ * stale snapshot. Clearing on unlock means the lock owns the inline style
+ * only while it exists; intervening mutations win, and the resting state
+ * is whatever stylesheet rules apply to `<body>`. This matches Radix /
+ * Floating UI semantics. See #149.
+ *
+ * The scrollbar-width compensation prevents content jumping when overflow
+ * goes from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).
  *
  * SSR: the service is `providedIn: 'root'` so its counter is scoped to a
  * single Angular bootstrap (one per SSR request). Server-side calls are
@@ -21,8 +35,6 @@ export class BodyScrollLock {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   #count = 0;
-  #savedOverflow: string | null = null;
-  #savedPaddingRight: string | null = null;
 
   lock(): void {
     if (!this.#isBrowser) {
@@ -33,9 +45,6 @@ export class BodyScrollLock {
       const docEl = this.#document.documentElement;
       const win = this.#window;
       const scrollbarWidth = win ? win.innerWidth - docEl.clientWidth : 0;
-
-      this.#savedOverflow = body.style.overflow;
-      this.#savedPaddingRight = body.style.paddingRight;
 
       body.style.overflow = 'hidden';
       if (scrollbarWidth > 0 && win) {
@@ -54,11 +63,10 @@ export class BodyScrollLock {
     this.#count--;
     if (this.#count === 0) {
       const body = this.#document.body;
-      body.style.overflow = this.#savedOverflow ?? '';
-      body.style.paddingRight = this.#savedPaddingRight ?? '';
-      this.#savedOverflow = null;
-      this.#savedPaddingRight = null;
+      // Clear, do not restore: drop the inline styles we set so the CSS
+      // cascade takes over and any intervening external mutations win.
+      body.style.overflow = '';
+      body.style.paddingRight = '';
     }
   }
 }
-

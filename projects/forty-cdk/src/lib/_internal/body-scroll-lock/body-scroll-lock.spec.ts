@@ -25,16 +25,17 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('hidden');
   });
 
-  it('restores overflow on the last unlock', () => {
+  it('clears the inline overflow style on the last unlock', () => {
+    // Pre-lock inline value is intentionally NOT preserved: the lock
+    // clears the inline style on unlock and lets the cascade take over.
     document.body.style.overflow = 'auto';
     lock.lock();
     expect(document.body.style.overflow).toBe('hidden');
     lock.unlock();
-    expect(document.body.style.overflow).toBe('auto');
+    expect(document.body.style.overflow).toBe('');
   });
 
-  it('refcounts: nested locks only restore on final unlock', () => {
-    document.body.style.overflow = 'scroll';
+  it('refcounts: nested locks only clear on final unlock', () => {
     lock.lock();
     lock.lock();
     expect(document.body.style.overflow).toBe('hidden');
@@ -43,7 +44,7 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('hidden');
 
     lock.unlock();
-    expect(document.body.style.overflow).toBe('scroll');
+    expect(document.body.style.overflow).toBe('');
   });
 
   it('extra unlock calls are no-ops', () => {
@@ -52,17 +53,56 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('restores empty padding-right when none was set', () => {
+  it('clears the inline padding-right style on unlock', () => {
     lock.lock();
     lock.unlock();
     expect(document.body.style.paddingRight).toBe('');
   });
 
-  it('preserves a pre-existing padding-right inline style on unlock', () => {
+  it('clears (does not restore) a pre-existing padding-right inline style on unlock', () => {
+    // Same rationale as overflow: the lock owns the inline style only
+    // while it exists; on unlock we clear and let the cascade take over.
     document.body.style.paddingRight = '24px';
     lock.lock();
     lock.unlock();
-    expect(document.body.style.paddingRight).toBe('24px');
+    expect(document.body.style.paddingRight).toBe('');
+  });
+
+  it('does not restore a stale captured overflow value on unlock (regression #149)', () => {
+    // Pre-lock inline value 'auto' is the value the old implementation
+    // would snapshot. Under the "clear, don't restore" contract we drop
+    // the inline style on the final unlock and let the cascade take over,
+    // so the final state is '' — emphatically NOT the stale 'auto'.
+    document.body.style.overflow = 'auto';
+
+    lock.lock();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // External code (route transition, app-level scroll manager, …) writes
+    // its own value while the lock is active. The old implementation would
+    // silently clobber this on unlock by writing back the stale 'auto'.
+    document.body.style.overflow = 'scroll';
+
+    lock.unlock();
+
+    // Bug-fix invariant: the lock did not write 'auto' back over the
+    // intervening mutation. Final state is '' (cascade wins) — not the
+    // stale captured value.
+    expect(document.body.style.overflow).not.toBe('auto');
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('does not restore a stale captured padding-right value on unlock (regression #149)', () => {
+    document.body.style.paddingRight = '24px';
+
+    lock.lock();
+    document.body.style.paddingRight = '32px';
+    lock.unlock();
+
+    // The old implementation would write back '24px'; the new contract
+    // clears unconditionally and lets the cascade take over.
+    expect(document.body.style.paddingRight).not.toBe('24px');
+    expect(document.body.style.paddingRight).toBe('');
   });
 
   it('isolates state across application bootstraps', () => {

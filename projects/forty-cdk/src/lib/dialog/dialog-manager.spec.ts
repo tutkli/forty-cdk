@@ -288,7 +288,10 @@ describe('ForDialogManager (programmatic)', () => {
   });
 
   describe('body scroll lock', () => {
-    it('locks while modal dialog is open and restores on close', async () => {
+    it('locks while modal dialog is open and clears the inline style on close', async () => {
+      // Pre-existing inline overflow is intentionally NOT restored on close:
+      // BodyScrollLock clears the inline style and lets the cascade take over.
+      // See body-scroll-lock.ts and #149 for rationale.
       document.body.style.overflow = 'auto';
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
@@ -298,7 +301,7 @@ describe('ForDialogManager (programmatic)', () => {
       ref.close();
       await ref.closed;
 
-      expect(document.body.style.overflow).toBe('auto');
+      expect(document.body.style.overflow).toBe('');
     });
 
     it('does NOT lock for non-modal dialogs', () => {
@@ -312,6 +315,9 @@ describe('ForDialogManager (programmatic)', () => {
 
   describe('stacking', () => {
     it('keeps body locked across stacked dialogs until the last closes', async () => {
+      // Pre-existing inline overflow is intentionally NOT restored when the
+      // last dialog closes: BodyScrollLock clears the inline style and lets
+      // the cascade take over. See body-scroll-lock.ts and #149 for rationale.
       document.body.style.overflow = 'auto';
       const { dialogs } = setup();
       const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
@@ -325,7 +331,7 @@ describe('ForDialogManager (programmatic)', () => {
 
       b.close();
       await b.closed;
-      expect(document.body.style.overflow).toBe('auto');
+      expect(document.body.style.overflow).toBe('');
     });
 
     it('Escape only closes the topmost stacked dialog', async () => {
