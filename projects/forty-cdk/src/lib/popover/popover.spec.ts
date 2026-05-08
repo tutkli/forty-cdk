@@ -2,6 +2,10 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
@@ -449,7 +453,7 @@ describe('ForPopover', () => {
       })
       class Host {
         readonly open = signal(true);
-        readonly captured: KeyboardEvent[] = [];
+        readonly captured: VetoableNativeEvent<KeyboardEvent>[] = [];
       }
 
       const r = renderHost(Host);
@@ -458,6 +462,7 @@ describe('ForPopover', () => {
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.event.key).toBe('Escape');
       expect(r.instance.open()).toBe(false);
     });
 
@@ -617,7 +622,7 @@ describe('ForPopover', () => {
       })
       class Host {
         readonly open = signal(false);
-        readonly captured: CustomEvent[] = [];
+        readonly captured: VetoableEvent[] = [];
       }
 
       const r = renderHost(Host);
@@ -625,7 +630,8 @@ describe('ForPopover', () => {
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.type).toBe('autoFocusOnOpen');
+      expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
+      expect(r.instance.captured[0]?.defaultPrevented).toBe(false);
       expect(document.activeElement?.id).toBe('inside');
     });
 
@@ -680,7 +686,7 @@ describe('ForPopover', () => {
       })
       class Host {
         readonly open = signal(false);
-        readonly captured: CustomEvent[] = [];
+        readonly captured: VetoableEvent[] = [];
       }
 
       const r = renderHost(Host);
@@ -698,7 +704,8 @@ describe('ForPopover', () => {
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.type).toBe('autoFocusOnClose');
+      expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
+      expect(r.instance.captured[0]?.defaultPrevented).toBe(true);
       // Return-focus vetoed — focus did not move back to the trigger.
       expect(document.activeElement?.id).toBe('sentinel');
       sentinel.remove();

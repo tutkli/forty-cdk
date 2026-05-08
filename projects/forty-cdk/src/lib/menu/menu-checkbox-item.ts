@@ -12,6 +12,11 @@ import {
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  createVetoableEvent,
+  emitVetoableEvent,
+  type VetoableEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 
@@ -61,7 +66,11 @@ export class ForMenuCheckboxItem {
   /** True while this item has DOM focus. Reflected as `data-highlighted`. */
   readonly highlighted = this.#highlighted.asReadonly();
 
-  readonly select = output<Event>();
+  /**
+   * Fires on click / Enter / Space activation. Call `preventDefault()`
+   * on the emitted veto to keep the menu open after activation.
+   */
+  readonly select = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -78,9 +87,7 @@ export class ForMenuCheckboxItem {
       return;
     }
     this.checked.update((v) => !v);
-    const event = new CustomEvent('forMenuItemSelect', { cancelable: true });
-    this.select.emit(event);
-    if (!event.defaultPrevented) {
+    if (!emitVetoableEvent(this.select)) {
       this.ctx.closeMenu('select');
     }
   }
@@ -106,7 +113,7 @@ export class ForMenuCheckboxItem {
     if (event.key === ' ') {
       event.preventDefault();
       this.checked.update((v) => !v);
-      this.select.emit(new CustomEvent('forMenuItemSelect', { cancelable: true }));
+      this.select.emit(createVetoableEvent());
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });

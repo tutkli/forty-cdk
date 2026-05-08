@@ -11,10 +11,6 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  emitAutoFocusOnClose,
-  emitAutoFocusOnOpen,
-} from '../_internal/auto-focus-event/auto-focus-event';
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';
 import {
   injectDismissableLayer,
@@ -26,7 +22,18 @@ import {
   type InertSiblingsHandle,
 } from '../_internal/inert-siblings/inert-siblings';
 import { injectPortal } from '../_internal/portal/portal';
-import { FOR_DIALOG_CONTEXT, type ForDialogCloseReason, type ForDialogContext } from './dialog-context';
+import {
+  createVetoableNativeEvent,
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
+import {
+  FOR_DIALOG_CONTEXT,
+  type ForDialogCloseReason,
+  type ForDialogContext,
+} from './dialog-context';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
@@ -108,45 +115,50 @@ export class ForDialog implements ForDialogContext {
 
   /**
    * Fires when the user presses Escape while this dialog is the topmost
-   * dismissable layer. Call `event.preventDefault()` to suppress the
-   * subsequent `(close)` emission (e.g. to ask for confirmation first).
+   * dismissable layer. Call `preventDefault()` on the emitted veto to
+   * suppress the subsequent `(close)` emission (e.g. to ask for
+   * confirmation first). The original `KeyboardEvent` is available on
+   * `.event` for inspection.
    */
-  readonly escapeKeyDown = output<KeyboardEvent>();
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
   /**
-   * Fires when a pointer goes down outside the dialog. `preventDefault()`
-   * suppresses the auto `(close)`.
+   * Fires when a pointer goes down outside the dialog. Call
+   * `preventDefault()` on the emitted veto to suppress the auto `(close)`.
+   * The native `PointerEvent` is available on `.event`.
    */
-  readonly pointerDownOutside = output<PointerEvent>();
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
 
   /**
    * Fires when focus moves outside the dialog (e.g. user tabs out of a
-   * non-modal dialog). `preventDefault()` suppresses the auto `(close)`.
+   * non-modal dialog). `preventDefault()` on the veto suppresses the auto
+   * `(close)`. The native `FocusEvent` is available on `.event`.
    */
-  readonly focusOutside = output<FocusEvent>();
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
 
   /**
    * Composite event: fires alongside `pointerDownOutside` and
-   * `focusOutside`. `preventDefault()` suppresses the auto `(close)`.
+   * `focusOutside` and shares their veto state — `preventDefault()` on
+   * either one suppresses the auto `(close)`.
    */
-  readonly interactOutside = output<PointerEvent | FocusEvent>();
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**
    * Fires just before the dialog moves focus into itself on mount.
-   * Call `event.preventDefault()` to skip the imperative focus move
-   * — useful when opening a dialog from an input you want to keep
+   * Call `preventDefault()` on the veto to skip the imperative focus
+   * move — useful when opening a dialog from an input you want to keep
    * focused. The focus trap (modal mode) still cycles Tab inside the
    * dialog once focus enters it.
    */
-  readonly autoFocusOnOpen = output<CustomEvent>();
+  readonly autoFocusOnOpen = output<VetoableEvent>();
 
   /**
    * Fires just before focus returns to the previously focused element
-   * on unmount. Call `event.preventDefault()` to skip the return-focus
-   * — useful when the consumer wants to send focus elsewhere
+   * on unmount. Call `preventDefault()` on the veto to skip the return-
+   * focus — useful when the consumer wants to send focus elsewhere
    * imperatively (e.g. a confirmation toast).
    */
-  readonly autoFocusOnClose = output<CustomEvent>();
+  readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
@@ -190,23 +202,35 @@ export class ForDialog implements ForDialogContext {
       // so that focusin events triggered by our own focus management
       // land on this layer, not on whatever lower layer was previously
       // topmost.
+      //
+      // `pointerDownOutside` / `focusOutside` and `interactOutside` fire
+      // on the same physical interaction; the layer always invokes the
+      // specific listener before the composite one. We build a single
+      // veto wrapper on the specific call and reuse it for the composite
+      // call so a `preventDefault()` in either handler vetoes the close.
+      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
       this.#dismissable.activate({
         onEscapeKeyDown: (event) => {
-          this.escapeKeyDown.emit(event);
-          if (!event.defaultPrevented && this.dismissible()) {
+          const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+          if (!vetoed && this.dismissible()) {
             event.stopPropagation();
             this.requestClose('escape');
           }
         },
         onPointerDownOutside: (event) => {
-          this.pointerDownOutside.emit(event);
+          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          this.pointerDownOutside.emit(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
         },
         onFocusOutside: (event) => {
-          this.focusOutside.emit(event);
+          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          this.focusOutside.emit(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
         },
         onInteractOutside: (event) => {
-          this.interactOutside.emit(event);
-          if (!event.defaultPrevented && this.dismissible()) {
+          const veto =
+            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          pendingOutsideVeto = null;
+          this.interactOutside.emit(veto);
+          if (!veto.defaultPrevented && this.dismissible()) {
             this.requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
           }
         },
@@ -215,7 +239,7 @@ export class ForDialog implements ForDialogContext {
       // Let the consumer veto the imperative focus move. The trap is
       // still set up (Tab cycling, return-focus capture) — only the
       // initial `.focus()` call is skipped.
-      const skipInitialFocus = emitAutoFocusOnOpen(this.autoFocusOnOpen);
+      const skipInitialFocus = emitVetoableEvent(this.autoFocusOnOpen);
 
       if (isModal) {
         // Inert + aria-hidden the rest of the document. Pushed BEFORE the
@@ -289,7 +313,7 @@ export class ForDialog implements ForDialogContext {
     // after Angular has already torn down the OutputEmitterRef, with the
     // listener never reached.
     if (this.#activatedAsModal) {
-      this.#closeAutoFocusVetoed = emitAutoFocusOnClose(this.autoFocusOnClose);
+      this.#closeAutoFocusVetoed = emitVetoableEvent(this.autoFocusOnClose);
     }
     this.close.emit(reason);
   }

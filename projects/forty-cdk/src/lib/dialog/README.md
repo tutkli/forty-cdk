@@ -119,17 +119,17 @@ export class DemoHost {
 
 ## Outputs (`ForDialog`)
 
-`(close)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs receive the native event and are vetoable: call `preventDefault()` to suppress the subsequent `(close)` emission.
+`(close)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 
-| Output               | Payload                      | Fires on                                                                                                                                      |
-| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `close`              | `ForDialogCloseReason`       | Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`. |
-| `escapeKeyDown`      | `KeyboardEvent`              | Escape while this dialog is the topmost dismissable layer.                                                                                    |
-| `pointerDownOutside` | `PointerEvent`               | Pointer-down outside the dialog.                                                                                                              |
-| `focusOutside`       | `FocusEvent`                 | Focus moves outside the dialog.                                                                                                               |
-| `interactOutside`    | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above.                                                                                                 |
-| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves into the dialog on mount. `preventDefault()` skips the move.                                                          |
-| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount (modal mode). `preventDefault()` skips the return-focus.                                  |
+| Output               | Payload                                           | Fires on                                                                                                                                      |
+| -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `close`              | `ForDialogCloseReason`                            | Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`. |
+| `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | Escape while this dialog is the topmost dismissable layer.                                                                                    |
+| `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | Pointer-down outside the dialog.                                                                                                              |
+| `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside the dialog.                                                                                                               |
+| `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite: fires alongside both of the above (and shares their veto state).                                                                   |
+| `autoFocusOnOpen`    | `VetoableEvent`                                   | Just before focus moves into the dialog on mount. `preventDefault()` skips the move.                                                          |
+| `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount (modal mode). `preventDefault()` skips the return-focus.                                  |
 
 ### Open without stealing focus
 
@@ -157,19 +157,19 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 
 ### `ForDialogOpenConfig`
 
-| Field              | Default   | Description                                                                                                      |
-| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `data`             | —         | Payload available as `injectDialogData<T>()`.                                                                    |
-| `dismissible`      | `true`    | Escape closes when `true`.                                                                                       |
-| `modal`            | `true`    | Sets `aria-modal`, locks body scroll, traps focus.                                                               |
-| `alert`            | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                                                                  |
-| `returnFocus`      | `true`    | Focus returns to the previously focused element on close.                                                        |
-| `initialFocus`     | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                                 |
-| `ariaLabel`        | —         | Manual accessible name when no title element is rendered.                                                        |
-| `hostTag`          | `'div'`   | Tag name for the host element (e.g. `'section'`).                                                                |
-| `providers`        | `[]`      | Extra providers for the opened component's injector.                                                             |
-| `autoFocusOnOpen`  | —         | Callback. Receives a cancelable `CustomEvent`; `event.preventDefault()` skips the imperative initial focus move. |
-| `autoFocusOnClose` | —         | Callback. Receives a cancelable `CustomEvent`; `event.preventDefault()` skips the return-focus on close.         |
+| Field              | Default   | Description                                                                                             |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------------- |
+| `data`             | —         | Payload available as `injectDialogData<T>()`.                                                           |
+| `dismissible`      | `true`    | Escape closes when `true`.                                                                              |
+| `modal`            | `true`    | Sets `aria-modal`, locks body scroll, traps focus.                                                      |
+| `alert`            | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                                                         |
+| `returnFocus`      | `true`    | Focus returns to the previously focused element on close.                                               |
+| `initialFocus`     | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                        |
+| `ariaLabel`        | —         | Manual accessible name when no title element is rendered.                                               |
+| `hostTag`          | `'div'`   | Tag name for the host element (e.g. `'section'`).                                                       |
+| `providers`        | `[]`      | Extra providers for the opened component's injector.                                                    |
+| `autoFocusOnOpen`  | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move. |
+| `autoFocusOnClose` | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.         |
 
 ## Keyboard
 

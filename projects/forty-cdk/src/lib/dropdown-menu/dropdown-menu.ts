@@ -11,10 +11,6 @@ import {
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import {
-  emitAutoFocusOnClose,
-  emitAutoFocusOnOpen,
-} from '../_internal/auto-focus-event/auto-focus-event';
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -24,6 +20,13 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
+import {
+  createVetoableNativeEvent,
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import {
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
@@ -134,24 +137,24 @@ export class ForDropdownMenu implements ForMenuContext {
   /** Manual `aria-label` on `[forMenuContent]`. Use when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
-  readonly escapeKeyDown = output<KeyboardEvent>();
-  readonly pointerDownOutside = output<PointerEvent>();
-  readonly focusOutside = output<FocusEvent>();
-  readonly interactOutside = output<PointerEvent | FocusEvent>();
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**
    * Fires just before the menu sends focus to its first / last enabled
-   * item on mount. Call `event.preventDefault()` to skip the imperative
-   * focus move — useful when opening a menu from an input you want to
-   * keep focused.
+   * item on mount. Call `preventDefault()` on the emitted veto to skip
+   * the imperative focus move — useful when opening a menu from an
+   * input you want to keep focused.
    */
-  readonly autoFocusOnOpen = output<CustomEvent>();
+  readonly autoFocusOnOpen = output<VetoableEvent>();
 
   /**
-   * Fires just before focus returns to the trigger on unmount.
-   * `preventDefault()` suppresses the return-focus.
+   * Fires just before focus returns to the trigger on unmount. Call
+   * `preventDefault()` on the veto to suppress the return-focus.
    */
-  readonly autoFocusOnClose = output<CustomEvent>();
+  readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly triggerId = signal(this.#idGen.next('for-dropdown-menu-trigger'));
   readonly contentId = signal(this.#idGen.next('for-dropdown-menu-content'));
@@ -282,34 +285,45 @@ export class ForDropdownMenu implements ForMenuContext {
     this.open.set(false);
   }
 
+  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
+  // the composite `interactOutside`. The dismissable layer always invokes
+  // the specific listener before the composite one for the same physical
+  // event, so a `preventDefault()` in either handler vetoes the close.
+  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
+
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.escapeKeyDown.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed && this.dismissible()) {
       event.stopPropagation();
       this.closeMenu('escape');
     }
   }
 
   emitPointerDownOutside(event: PointerEvent): void {
-    this.pointerDownOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
   }
 
   emitFocusOutside(event: FocusEvent): void {
-    this.focusOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
   }
 
   emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    this.interactOutside.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const veto =
+      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.#pendingOutsideVeto = null;
+    this.interactOutside.emit(veto);
+    if (!veto.defaultPrevented && this.dismissible()) {
       this.closeMenu('pointerDownOutside');
     }
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitAutoFocusOnOpen(this.autoFocusOnOpen);
+    return emitVetoableEvent(this.autoFocusOnOpen);
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitAutoFocusOnClose(this.autoFocusOnClose);
+    return emitVetoableEvent(this.autoFocusOnClose);
   }
 }

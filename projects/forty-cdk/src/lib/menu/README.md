@@ -6,19 +6,19 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Pieces
 
-| Class                 | Selector                                   | Role                                                                                                                                                                   |
-| --------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForMenuContent`      | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
-| `ForMenuItem`         | `[forMenuItem]`                            | One action item. Activation closes the menu.                                                                                                                           |
-| `ForMenuCheckboxItem` | `[forMenuCheckboxItem]`                    | `model<boolean> checked`. Activation toggles + closes.                                                                                                                 |
-| `ForMenuRadioGroup`   | `[forMenuRadioGroup]`                      | `model<string> value` shared by its radio items.                                                                                                                       |
-| `ForMenuRadioItem`    | `[forMenuRadioItem]`                       | One radio option. `value: required<string>`.                                                                                                                           |
-| `ForMenuItemIndicator`| `[forMenuItemIndicator]`                   | Optional. Used inside checkbox / radio items. Hides itself when the parent is unchecked. Mirrors the parent's `data-state`. `[forceMount]` keeps it mounted.            |
-| `ForMenuSeparator`    | `[forMenuSeparator]`                       | Decorative separator, `role="separator"`.                                                                                                                              |
-| `ForMenuGroup`        | `[forMenuGroup]`                           | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                               |
-| `ForMenuGroupLabel`   | `[forMenuGroupLabel]`                      | Label registered with the parent group.                                                                                                                                |
-| `ForMenuSub`          | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
-| `ForMenuSubTrigger`   | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
+| Class                  | Selector                                   | Role                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForMenuContent`       | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
+| `ForMenuItem`          | `[forMenuItem]`                            | One action item. Activation closes the menu.                                                                                                                           |
+| `ForMenuCheckboxItem`  | `[forMenuCheckboxItem]`                    | `model<boolean> checked`. Activation toggles + closes.                                                                                                                 |
+| `ForMenuRadioGroup`    | `[forMenuRadioGroup]`                      | `model<string> value` shared by its radio items.                                                                                                                       |
+| `ForMenuRadioItem`     | `[forMenuRadioItem]`                       | One radio option. `value: required<string>`.                                                                                                                           |
+| `ForMenuItemIndicator` | `[forMenuItemIndicator]`                   | Optional. Used inside checkbox / radio items. Hides itself when the parent is unchecked. Mirrors the parent's `data-state`. `[forceMount]` keeps it mounted.           |
+| `ForMenuSeparator`     | `[forMenuSeparator]`                       | Decorative separator, `role="separator"`.                                                                                                                              |
+| `ForMenuGroup`         | `[forMenuGroup]`                           | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                               |
+| `ForMenuGroupLabel`    | `[forMenuGroupLabel]`                      | Label registered with the parent group.                                                                                                                                |
+| `ForMenuSub`           | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
+| `ForMenuSubTrigger`    | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
 
 ## Mount/visibility convention
 
@@ -26,7 +26,7 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Item activation contract
 
-Every item type emits a vetoable `(select)` event — a `CustomEvent` with `cancelable: true`. The default action is to close the menu after the item's state has been applied (toggle for checkbox, set value for radio). Call `event.preventDefault()` on the event to keep the menu open.
+Every item type emits a vetoable `(select)` event — handlers receive a `VetoableEvent`. The default action is to close the menu after the item's state has been applied (toggle for checkbox, set value for radio). Call `event.preventDefault()` on the veto to keep the menu open.
 
 ```html
 <!-- Closes menu by default -->

@@ -7,6 +7,11 @@
  * secondary entry points can be added later if real bundles ever need them.
  */
 
+export type {
+  VetoableEvent,
+  VetoableNativeEvent,
+} from './lib/_internal/vetoable-event/vetoable-event';
+
 export * from './lib/disclosure';
 export * from './lib/accordion';
 export * from './lib/switch';

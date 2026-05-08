@@ -71,32 +71,32 @@ The actual menu items, content surface, radio groups, separators, and groups com
 
 ## Inputs (`ForDropdownMenu`)
 
-| API           | Default     | Description                                                                                                                                                                    |
-| ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `open`        | `false`     | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
-| `side`        | `'bottom'`  | Anchor side of `[forMenuContent]` against the trigger.                                                                                                                         |
-| `align`       | `'start'`   | Alignment along `side` (`'start'` / `'center'` / `'end'`).                                                                                                                     |
-| `sideOffset`  | `4`         | Gap (px) between the trigger and the content along the main axis.                                                                                                              |
-| `alignOffset` | `0`         | Gap (px) along the cross axis (parallel to `side`).                                                                                                                            |
-| `loop`        | `true`      | Whether arrow navigation wraps at the ends.                                                                                                                                    |
-| `dir`         | `'ltr'`     | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled`    | `false`     | When `true`, trigger interactions are ignored.                                                                                                                                 |
-| `dismissible` | `true`      | When `false`, Escape and outside interactions don't close.                                                                                                                     |
-| `returnFocus` | `true`      | When `true`, focus returns to the trigger on close.                                                                                                                            |
-| `ariaLabel`   | `null`      | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
+| API           | Default    | Description                                                                                                                                                                    |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`        | `false`    | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
+| `side`        | `'bottom'` | Anchor side of `[forMenuContent]` against the trigger.                                                                                                                         |
+| `align`       | `'start'`  | Alignment along `side` (`'start'` / `'center'` / `'end'`).                                                                                                                     |
+| `sideOffset`  | `4`        | Gap (px) between the trigger and the content along the main axis.                                                                                                              |
+| `alignOffset` | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                                                                                            |
+| `loop`        | `true`     | Whether arrow navigation wraps at the ends.                                                                                                                                    |
+| `dir`         | `'ltr'`    | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
+| `disabled`    | `false`    | When `true`, trigger interactions are ignored.                                                                                                                                 |
+| `dismissible` | `true`     | When `false`, Escape and outside interactions don't close.                                                                                                                     |
+| `returnFocus` | `true`     | When `true`, focus returns to the trigger on close.                                                                                                                            |
+| `ariaLabel`   | `null`     | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
 
 ## Outputs (`ForDropdownMenu`)
 
-The four dismiss outputs are vetoable — call `preventDefault()` to suppress the automatic close. The two auto-focus outputs are also vetoable — call `preventDefault()` to skip the imperative focus move.
+Every output below is vetoable — each handler receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 
-| Output               | Payload                      | Fires on                                                           |
-| -------------------- | ---------------------------- | ------------------------------------------------------------------ |
-| `escapeKeyDown`      | `KeyboardEvent`              | Escape pressed while the menu is the topmost dismissable layer.    |
-| `pointerDownOutside` | `PointerEvent`               | Pointer-down on a target outside content + trigger.                |
-| `focusOutside`       | `FocusEvent`                 | Focus moves outside content + trigger.                             |
-| `interactOutside`    | `PointerEvent \| FocusEvent` | Composite — fires alongside the two above.                         |
-| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves to the first / last enabled item on mount. |
-| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount.               |
+| Output               | Payload                                           | Fires on                                                                 |
+| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | Escape pressed while the menu is the topmost dismissable layer.          |
+| `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | Pointer-down on a target outside content + trigger.                      |
+| `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside content + trigger.                                   |
+| `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite — fires alongside the two above (and shares their veto state). |
+| `autoFocusOnOpen`    | `VetoableEvent`                                   | Just before focus moves to the first / last enabled item on mount.       |
+| `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount.                     |
 
 ## Trigger keyboard
 
