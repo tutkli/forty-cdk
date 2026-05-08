@@ -46,6 +46,11 @@ __screenshots__/
 /.audit-issues/
 /.tmp-issue-*.md
 
+# Playwright
+/playwright-report/
+/test-results/
+/playwright/.cache/
+
 # System files
 .DS_Store
 Thumbs.db
