@@ -20,7 +20,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -87,7 +87,7 @@ export class ForListbox
    */
   readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
 
-  readonly roving = injectRovingTabindex();
+  readonly roving = new RovingTabindex();
   readonly #typeahead = injectTypeahead();
 
   readonly #options = new Collection<ForListboxOptionHandle>();

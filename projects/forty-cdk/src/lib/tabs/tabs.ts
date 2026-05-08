@@ -7,7 +7,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import {
   FOR_TABS_CONTEXT,
   type ForTabsContentHandle,
@@ -58,7 +58,7 @@ export class ForTabs implements ForTabsContext {
    */
   readonly loop = input(true, { transform: booleanAttribute });
 
-  readonly roving = injectRovingTabindex();
+  readonly roving = new RovingTabindex();
 
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
   readonly #contents = new Collection<ForTabsContentHandle>();
