@@ -21,6 +21,10 @@ import {
   activateInertSiblings,
   type InertSiblingsHandle,
 } from '../_internal/inert-siblings/inert-siblings';
+import {
+  createVetoableEvent,
+  type VetoableEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { ForDialogRef } from './dialog-ref';
 
 /**
@@ -75,13 +79,13 @@ export interface ForDialogOpenConfig<D = unknown> {
    * focused. The focus trap (modal mode) still cycles Tab once focus
    * enters the dialog.
    */
-  autoFocusOnOpen?: (event: CustomEvent) => void;
+  autoFocusOnOpen?: (event: VetoableEvent) => void;
 
   /**
    * Fires just before focus returns to the previously focused element
    * on unmount. Call `event.preventDefault()` to skip the return-focus.
    */
-  autoFocusOnClose?: (event: CustomEvent) => void;
+  autoFocusOnClose?: (event: VetoableEvent) => void;
 }
 
 /**
@@ -183,10 +187,7 @@ export class ForDialogManager {
     // `autoFocusOnOpen` config callback. The trap is still set up
     // (Tab cycling, return-focus capture) — only the initial `.focus()`
     // call is skipped.
-    const autoFocusOpenEvent = new CustomEvent('autoFocusOnOpen', {
-      cancelable: true,
-      bubbles: false,
-    });
+    const autoFocusOpenEvent = createVetoableEvent();
     config.autoFocusOnOpen?.(autoFocusOpenEvent);
     const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
 
@@ -221,10 +222,7 @@ export class ForDialogManager {
       inertHandle = null;
       // Let the consumer veto the return-focus move (e.g. to send focus
       // to a confirmation toast instead of the trigger).
-      const autoFocusCloseEvent = new CustomEvent('autoFocusOnClose', {
-        cancelable: true,
-        bubbles: false,
-      });
+      const autoFocusCloseEvent = createVetoableEvent();
       config.autoFocusOnClose?.(autoFocusCloseEvent);
       const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
       // Suppress the dismissable-layer dispatcher across the focus-return

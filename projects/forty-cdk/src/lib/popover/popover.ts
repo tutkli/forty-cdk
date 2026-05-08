@@ -10,12 +10,15 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  emitAutoFocusOnClose,
-  emitAutoFocusOnOpen,
-} from '../_internal/auto-focus-event/auto-focus-event';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
+import {
+  createVetoableNativeEvent,
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
 
 /**
@@ -144,42 +147,45 @@ export class ForPopover implements ForPopoverContext {
 
   /**
    * Fires when the user presses Escape while this popover is the topmost
-   * dismissable layer. Call `event.preventDefault()` to suppress the
-   * automatic close.
+   * dismissable layer. Call `preventDefault()` on the emitted veto to
+   * suppress the automatic close. The native `KeyboardEvent` is
+   * available on `.event`.
    */
-  readonly escapeKeyDown = output<KeyboardEvent>();
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
   /**
    * Fires when a pointer goes down outside the popover (and outside the
-   * trigger). `preventDefault()` suppresses the automatic close.
+   * trigger). Call `preventDefault()` on the veto to suppress the
+   * automatic close. The native `PointerEvent` is on `.event`.
    */
-  readonly pointerDownOutside = output<PointerEvent>();
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
 
   /**
-   * Fires when focus moves outside the popover and trigger.
-   * `preventDefault()` suppresses the automatic close.
+   * Fires when focus moves outside the popover and trigger. Call
+   * `preventDefault()` on the veto to suppress the automatic close.
    */
-  readonly focusOutside = output<FocusEvent>();
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
 
   /**
    * Composite event: fires alongside `pointerDownOutside` and
-   * `focusOutside`. `preventDefault()` suppresses the automatic close.
+   * `focusOutside` and shares their veto state — `preventDefault()` on
+   * either one suppresses the automatic close.
    */
-  readonly interactOutside = output<PointerEvent | FocusEvent>();
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**
    * Fires just before the popover sends focus into itself on mount.
-   * Call `event.preventDefault()` to skip the imperative focus move
-   * — useful when opening a popover from an input you want to keep
-   * focused.
+   * Call `preventDefault()` on the veto to skip the imperative focus
+   * move — useful when opening a popover from an input you want to
+   * keep focused.
    */
-  readonly autoFocusOnOpen = output<CustomEvent>();
+  readonly autoFocusOnOpen = output<VetoableEvent>();
 
   /**
-   * Fires just before focus returns to the trigger on unmount.
-   * `preventDefault()` suppresses the return-focus.
+   * Fires just before focus returns to the trigger on unmount. Call
+   * `preventDefault()` on the veto to suppress the return-focus.
    */
-  readonly autoFocusOnClose = output<CustomEvent>();
+  readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly triggerId = signal(this.#idGen.next('for-popover-trigger'));
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
@@ -259,34 +265,45 @@ export class ForPopover implements ForPopoverContext {
     this.open.update((v) => !v);
   }
 
+  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
+  // the composite `interactOutside`. The dismissable layer always invokes
+  // the specific listener before the composite one for the same physical
+  // event, so a `preventDefault()` in either handler vetoes the close.
+  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
+
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.escapeKeyDown.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed && this.dismissible()) {
       event.stopPropagation();
       this.open.set(false);
     }
   }
 
   emitPointerDownOutside(event: PointerEvent): void {
-    this.pointerDownOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
   }
 
   emitFocusOutside(event: FocusEvent): void {
-    this.focusOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
   }
 
   emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    this.interactOutside.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const veto =
+      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.#pendingOutsideVeto = null;
+    this.interactOutside.emit(veto);
+    if (!veto.defaultPrevented && this.dismissible()) {
       this.open.set(false);
     }
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitAutoFocusOnOpen(this.autoFocusOnOpen);
+    return emitVetoableEvent(this.autoFocusOnOpen);
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitAutoFocusOnClose(this.autoFocusOnClose);
+    return emitVetoableEvent(this.autoFocusOnClose);
   }
 }

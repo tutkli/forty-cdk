@@ -140,7 +140,7 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 ## Auto-focus events
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a cancelable `CustomEvent` — call `preventDefault()` to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a `VetoableEvent` — call `preventDefault()` on the veto to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed.
 
 ## Form integration
 

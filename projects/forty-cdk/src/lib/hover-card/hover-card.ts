@@ -16,6 +16,10 @@ import { distinctUntilChanged } from 'rxjs';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
+  emitVetoableNativeEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
+import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,
   type HoverCardScheduleReason,
@@ -131,9 +135,10 @@ export class ForHoverCard implements ForHoverCardContext {
   /**
    * Fires when the user presses Escape while the card is open, regardless of
    * whether focus is on the trigger or inside the portaled content. Call
-   * `event.preventDefault()` to suppress the automatic close.
+   * `preventDefault()` on the emitted veto to suppress the automatic
+   * close. The native `KeyboardEvent` is on `.event`.
    */
-  readonly escapeKeyDown = output<KeyboardEvent>();
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
@@ -254,15 +259,15 @@ export class ForHoverCard implements ForHoverCardContext {
 
   /**
    * Emit `(escapeKeyDown)` and, unless the consumer calls `preventDefault()`
-   * on the event, close immediately. Called by the trigger and the portaled
+   * on the veto, close immediately. Called by the trigger and the portaled
    * content so Escape works no matter where focus currently lives.
    */
   emitEscapeKeyDown(event: KeyboardEvent): void {
     if (!this.open()) {
       return;
     }
-    this.escapeKeyDown.emit(event);
-    if (!event.defaultPrevented) {
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed) {
       event.preventDefault();
       event.stopPropagation();
       this.scheduleClose('escape');

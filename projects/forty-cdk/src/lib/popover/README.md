@@ -82,17 +82,17 @@ export class DemoPopover {
 
 ## Outputs (`ForPopover`)
 
-All four outputs receive the native event and are vetoable: call `preventDefault()` to suppress the automatic close.
+The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
-| Output               | Payload                      | Fires on                                                                                            |
-| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
-| `escapeKeyDown`      | `KeyboardEvent`              | Escape while this popover is the topmost dismissable layer.                                         |
-| `pointerDownOutside` | `PointerEvent`               | Pointer-down outside the content (and outside the trigger).                                         |
-| `focusOutside`       | `FocusEvent`                 | Focus moves outside the content (and outside the trigger).                                          |
-| `interactOutside`    | `PointerEvent \| FocusEvent` | Composite: fires alongside both of the above.                                                       |
-| `autoFocusOnOpen`    | `CustomEvent`                | Just before focus moves into the popover on mount. `preventDefault()` skips the move.               |
-| `autoFocusOnClose`   | `CustomEvent`                | Just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.     |
-| `openChange`         | `boolean`                    | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
+| Output               | Payload                                           | Fires on                                                                                            |
+| -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | Escape while this popover is the topmost dismissable layer.                                         |
+| `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | Pointer-down outside the content (and outside the trigger).                                         |
+| `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside the content (and outside the trigger).                                          |
+| `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite: fires alongside both of the above (and shares their veto state).                         |
+| `autoFocusOnOpen`    | `VetoableEvent`                                   | Just before focus moves into the popover on mount. `preventDefault()` skips the move.               |
+| `autoFocusOnClose`   | `VetoableEvent`                                   | Just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.     |
+| `openChange`         | `boolean`                                         | Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`. |
 
 ### Open without stealing focus
 

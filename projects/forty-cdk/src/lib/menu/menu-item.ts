@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { emitVetoableEvent, type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 
@@ -65,10 +66,10 @@ export class ForMenuItem {
   readonly highlighted = this.#highlighted.asReadonly();
 
   /**
-   * Fires on click / Enter / Space activation. The event is a `CustomEvent`;
-   * call `event.preventDefault()` to keep the menu open after activation.
+   * Fires on click / Enter / Space activation. Call `preventDefault()`
+   * on the emitted veto to keep the menu open after activation.
    */
-  readonly select = output<Event>();
+  readonly select = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -84,9 +85,7 @@ export class ForMenuItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    const event = new CustomEvent('forMenuItemSelect', { cancelable: true });
-    this.select.emit(event);
-    if (!event.defaultPrevented) {
+    if (!emitVetoableEvent(this.select)) {
       this.ctx.closeMenu('select');
     }
   }

@@ -3,6 +3,10 @@ import { TestBed } from '@angular/core/testing';
 
 import { _resetBodyScrollLockForTesting } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { _resetInertSiblingsForTesting } from '../_internal/inert-siblings/inert-siblings';
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
@@ -586,7 +590,7 @@ describe('ForDialog (declarative)', () => {
       })
       class Host {
         readonly open = signal(true);
-        readonly captured: KeyboardEvent[] = [];
+        readonly captured: VetoableNativeEvent<KeyboardEvent>[] = [];
       }
 
       const r = renderHost(Host);
@@ -595,7 +599,7 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.key).toBe('Escape');
+      expect(r.instance.captured[0]?.event.key).toBe('Escape');
       expect(r.instance.open()).toBe(false);
     });
 
@@ -909,7 +913,7 @@ describe('ForDialog (declarative)', () => {
       })
       class Host {
         readonly open = signal(false);
-        readonly captured: CustomEvent[] = [];
+        readonly captured: VetoableEvent[] = [];
       }
 
       const r = renderHost(Host);
@@ -917,7 +921,8 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.type).toBe('autoFocusOnOpen');
+      expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
+      expect(r.instance.captured[0]?.defaultPrevented).toBe(false);
       expect(document.activeElement?.id).toBe('inside');
     });
 

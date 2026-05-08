@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { pressKey, renderHost } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardContent } from './hover-card-content';
@@ -227,7 +228,7 @@ describe('ForHoverCard', () => {
     });
 
     it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', () => {
-      const captured: KeyboardEvent[] = [];
+      const captured: VetoableNativeEvent<KeyboardEvent>[] = [];
 
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
@@ -249,7 +250,7 @@ describe('ForHoverCard', () => {
       })
       class Host {
         readonly isOpen = signal(false);
-        onEscape(event: KeyboardEvent): void {
+        onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
           captured.push(event);
           event.preventDefault();
         }

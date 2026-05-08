@@ -11,6 +11,11 @@ import {
 } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  createVetoableEvent,
+  emitVetoableEvent,
+  type VetoableEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
@@ -64,7 +69,11 @@ export class ForMenuRadioItem {
   /** True while this item has DOM focus. Reflected as `data-highlighted`. */
   readonly highlighted = this.#highlighted.asReadonly();
 
-  readonly select = output<Event>();
+  /**
+   * Fires on click / Enter / Space activation. Call `preventDefault()`
+   * on the emitted veto to keep the menu open after activation.
+   */
+  readonly select = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -81,9 +90,7 @@ export class ForMenuRadioItem {
       return;
     }
     this.group.select(this.value());
-    const event = new CustomEvent('forMenuItemSelect', { cancelable: true });
-    this.select.emit(event);
-    if (!event.defaultPrevented) {
+    if (!emitVetoableEvent(this.select)) {
       this.menu.closeMenu('select');
     }
   }
@@ -109,7 +116,7 @@ export class ForMenuRadioItem {
     if (event.key === ' ') {
       event.preventDefault();
       this.group.select(this.value());
-      this.select.emit(new CustomEvent('forMenuItemSelect', { cancelable: true }));
+      this.select.emit(createVetoableEvent());
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });

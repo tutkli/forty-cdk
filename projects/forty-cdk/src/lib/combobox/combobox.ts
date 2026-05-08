@@ -25,6 +25,11 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
+  createVetoableNativeEvent,
+  emitVetoableNativeEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
+import {
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxAutocomplete,
   type ForComboboxChipHandle,
@@ -250,10 +255,10 @@ export class ForCombobox<T = string>
    */
   readonly scrollToIndex = output<number>();
 
-  readonly escapeKeyDown = output<KeyboardEvent>();
-  readonly pointerDownOutside = output<PointerEvent>();
-  readonly focusOutside = output<FocusEvent>();
-  readonly interactOutside = output<PointerEvent | FocusEvent>();
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   readonly inputId = signal(this.#idGen.next('for-combobox-input'));
   readonly contentId = signal(this.#idGen.next('for-combobox-content'));
@@ -782,25 +787,36 @@ export class ForCombobox<T = string>
     this.#pendingActivePos.set(null);
   }
 
+  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
+  // the composite `interactOutside`. The dismissable layer always invokes
+  // the specific listener before the composite one for the same physical
+  // event, so a `preventDefault()` in either handler vetoes the close.
+  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
+
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.escapeKeyDown.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed && this.dismissible()) {
       event.stopPropagation();
       this.closeMenu('escape');
     }
   }
 
   emitPointerDownOutside(event: PointerEvent): void {
-    this.pointerDownOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
   }
 
   emitFocusOutside(event: FocusEvent): void {
-    this.focusOutside.emit(event);
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
   }
 
   emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    this.interactOutside.emit(event);
-    if (!event.defaultPrevented && this.dismissible()) {
+    const veto =
+      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.#pendingOutsideVeto = null;
+    this.interactOutside.emit(veto);
+    if (!veto.defaultPrevented && this.dismissible()) {
       this.markTouched();
       this.closeMenu('pointerDownOutside');
     }
