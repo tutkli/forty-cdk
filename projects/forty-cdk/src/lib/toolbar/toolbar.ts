@@ -7,6 +7,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
 import {
   FOR_TOOLBAR_CONTEXT,
   type ForToolbarContext,
@@ -54,7 +55,10 @@ import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
   },
-  providers: [{ provide: FOR_TOOLBAR_CONTEXT, useExisting: ForToolbar }],
+  providers: [
+    { provide: FOR_TOOLBAR_CONTEXT, useExisting: ForToolbar },
+    { provide: FOR_HOST_ROVING_CONTEXT, useExisting: FOR_TOOLBAR_CONTEXT },
+  ],
 })
 export class ForToolbar implements ForToolbarContext {
   readonly #defaults = inject(FOR_TOOLBAR_DEFAULTS);
