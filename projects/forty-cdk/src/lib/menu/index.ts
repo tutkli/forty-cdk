@@ -26,3 +26,4 @@ export {
   injectMenuGroupContext,
   type ForMenuGroupContext,
 } from './menu-group-context';
+export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from './menu-defaults';

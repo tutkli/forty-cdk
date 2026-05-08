@@ -1,7 +1,6 @@
 import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 
@@ -56,12 +55,6 @@ export class ForSwitch extends FormUiControlBase implements FormCheckboxControl 
       name: this.name,
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.disabled,
-    });
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
     });
   }
 

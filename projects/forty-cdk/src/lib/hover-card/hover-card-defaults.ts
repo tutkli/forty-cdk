@@ -1,17 +1,10 @@
-import {
-  DestroyRef,
-  inject,
-  Injectable,
-  InjectionToken,
-  Optional,
-  type Provider,
-  signal,
-  SkipSelf,
-} from '@angular/core';
+import { DestroyRef, inject, Injectable, type Provider, signal } from '@angular/core';
+
+import { createDefaults } from '../_internal/defaults/defaults';
 
 /**
  * Defaults inherited by descendant hover-cards in the surrounding injector
- * scope. Configure with `provideHoverCardDefaults` at the app root or in
+ * scope. Configure with `provideForHoverCardDefaults` at the app root or in
  * any component's `providers`.
  */
 export interface HoverCardDefaults {
@@ -27,22 +20,23 @@ export interface HoverCardDefaults {
   skipDelayDuration: number;
 }
 
-const DEFAULT_OPEN_DELAY = 700;
-const DEFAULT_CLOSE_DELAY = 300;
-const DEFAULT_SKIP_DELAY_DURATION = 300;
+const FALLBACK: HoverCardDefaults = {
+  openDelay: 700,
+  closeDelay: 300,
+  skipDelayDuration: 300,
+};
 
-const FOR_HOVER_CARD_DEFAULTS = new InjectionToken<HoverCardDefaults>('FOR_HOVER_CARD_DEFAULTS', {
-  providedIn: 'root',
-  factory: () => ({
-    openDelay: DEFAULT_OPEN_DELAY,
-    closeDelay: DEFAULT_CLOSE_DELAY,
-    skipDelayDuration: DEFAULT_SKIP_DELAY_DURATION,
-  }),
-});
+const { token, provideDefaults } = createDefaults<HoverCardDefaults>(
+  'FOR_HOVER_CARD_DEFAULTS',
+  FALLBACK,
+);
+
+/** Token holding the resolved hover-card defaults for the current scope. */
+export const FOR_HOVER_CARD_DEFAULTS = token;
 
 /**
  * Per-injector-scope coordinator: holds the resolved defaults and the
- * skip-delay flag. Each `provideHoverCardDefaults` call re-provides this
+ * skip-delay flag. Each `provideForHoverCardDefaults` call re-provides this
  * class so the corresponding subtree gets its own coordinator (and its
  * own skip-delay window). Independent from `TooltipCoordinator` —
  * tooltips and hover-cards have different cadences.
@@ -90,18 +84,6 @@ export class HoverCardCoordinator {
  * library defaults at the root). Each call establishes a new coordinator
  * scope.
  */
-export function provideHoverCardDefaults(defaults: Partial<HoverCardDefaults>): Provider[] {
-  return [
-    {
-      provide: FOR_HOVER_CARD_DEFAULTS,
-      useFactory: (parent: HoverCardDefaults | null): HoverCardDefaults => ({
-        openDelay: defaults.openDelay ?? parent?.openDelay ?? DEFAULT_OPEN_DELAY,
-        closeDelay: defaults.closeDelay ?? parent?.closeDelay ?? DEFAULT_CLOSE_DELAY,
-        skipDelayDuration:
-          defaults.skipDelayDuration ?? parent?.skipDelayDuration ?? DEFAULT_SKIP_DELAY_DURATION,
-      }),
-      deps: [[new SkipSelf(), new Optional(), FOR_HOVER_CARD_DEFAULTS]],
-    },
-    HoverCardCoordinator,
-  ];
+export function provideForHoverCardDefaults(defaults: Partial<HoverCardDefaults>): Provider[] {
+  return [...provideDefaults(defaults), HoverCardCoordinator];
 }

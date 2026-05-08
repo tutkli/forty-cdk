@@ -17,3 +17,8 @@ export {
   injectDialogData,
   type ForDialogOpenConfig,
 } from './dialog-manager';
+export {
+  FOR_DIALOG_DEFAULTS,
+  provideForDialogDefaults,
+  type ForDialogDefaults,
+} from './dialog-defaults';

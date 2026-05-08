@@ -15,7 +15,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
@@ -245,12 +244,6 @@ export class ForSelect
       name: this.name,
       values: this.value,
       disabled: this.disabled,
-    });
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
     });
 
     afterEveryRender(() => {

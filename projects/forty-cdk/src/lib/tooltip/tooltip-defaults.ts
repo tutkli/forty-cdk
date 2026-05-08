@@ -1,17 +1,10 @@
-import {
-  DestroyRef,
-  inject,
-  Injectable,
-  InjectionToken,
-  Optional,
-  type Provider,
-  signal,
-  SkipSelf,
-} from '@angular/core';
+import { DestroyRef, inject, Injectable, type Provider, signal } from '@angular/core';
+
+import { createDefaults } from '../_internal/defaults/defaults';
 
 /**
  * Defaults that descendant tooltips inherit from their injector scope.
- * Configure with `provideTooltipDefaults` either at the application root
+ * Configure with `provideForTooltipDefaults` either at the application root
  * or in any component's `providers` array; partial overrides merge with
  * the parent scope.
  */
@@ -26,24 +19,23 @@ export interface TooltipDefaults {
   skipDelayDuration: number;
 }
 
-const DEFAULT_DELAY_DURATION = 700;
-const DEFAULT_SKIP_DELAY_DURATION = 300;
+const FALLBACK: TooltipDefaults = {
+  delayDuration: 700,
+  skipDelayDuration: 300,
+};
 
-const FOR_TOOLTIP_DEFAULTS = new InjectionToken<TooltipDefaults>(
+const { token, provideDefaults } = createDefaults<TooltipDefaults>(
   'FOR_TOOLTIP_DEFAULTS',
-  {
-    providedIn: 'root',
-    factory: () => ({
-      delayDuration: DEFAULT_DELAY_DURATION,
-      skipDelayDuration: DEFAULT_SKIP_DELAY_DURATION,
-    }),
-  },
+  FALLBACK,
 );
+
+/** Token holding the resolved tooltip defaults for the current scope. */
+export const FOR_TOOLTIP_DEFAULTS = token;
 
 /**
  * Per-injector-scope state owned by forty-cdk tooltip. Holds the
  * skip-delay flag and the resolved `TooltipDefaults`. Each call to
- * `provideTooltipDefaults` re-provides this class so the corresponding
+ * `provideForTooltipDefaults` re-provides this class so the corresponding
  * subtree gets its own coordinator (and therefore its own skip-delay
  * window). Tooltips inject it on construction.
  */
@@ -70,10 +62,13 @@ export class TooltipCoordinator {
   startSkipDelay(): void {
     this.cancelSkipDelay();
     this.#skipDelay.set(true);
-    this.#timer = setTimeout(() => {
-      this.#skipDelay.set(false);
-      this.#timer = null;
-    }, Math.max(0, this.skipDelayDuration));
+    this.#timer = setTimeout(
+      () => {
+        this.#skipDelay.set(false);
+        this.#timer = null;
+      },
+      Math.max(0, this.skipDelayDuration),
+    );
   }
 
   /** Cancels any pending skip-delay window. */
@@ -97,28 +92,17 @@ export class TooltipCoordinator {
  * ```ts
  * // application-level
  * bootstrapApplication(App, {
- *   providers: [provideTooltipDefaults({ delayDuration: 500 })],
+ *   providers: [provideForTooltipDefaults({ delayDuration: 500 })],
  * });
  *
  * // component-level override (e.g. a toolbar with its own cadence)
  * @Component({
- *   providers: [provideTooltipDefaults({ skipDelayDuration: 100 })],
+ *   providers: [provideForTooltipDefaults({ skipDelayDuration: 100 })],
  *   ...
  * })
  * class Toolbar {}
  * ```
  */
-export function provideTooltipDefaults(defaults: Partial<TooltipDefaults>): Provider[] {
-  return [
-    {
-      provide: FOR_TOOLTIP_DEFAULTS,
-      useFactory: (parent: TooltipDefaults | null): TooltipDefaults => ({
-        delayDuration: defaults.delayDuration ?? parent?.delayDuration ?? DEFAULT_DELAY_DURATION,
-        skipDelayDuration:
-          defaults.skipDelayDuration ?? parent?.skipDelayDuration ?? DEFAULT_SKIP_DELAY_DURATION,
-      }),
-      deps: [[new SkipSelf(), new Optional(), FOR_TOOLTIP_DEFAULTS]],
-    },
-    TooltipCoordinator,
-  ];
+export function provideForTooltipDefaults(defaults: Partial<TooltipDefaults>): Provider[] {
+  return [...provideDefaults(defaults), TooltipCoordinator];
 }

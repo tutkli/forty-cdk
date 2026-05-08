@@ -1,17 +1,15 @@
-import { computed, inject, Injectable, InjectionToken, signal } from '@angular/core';
+import { computed, inject, Injectable, type Provider, signal } from '@angular/core';
 
+import { createDefaults } from '../_internal/defaults/defaults';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import type {
-  ForToastCloseReason,
-  ForToastConfig,
-  ForToastInstance,
-} from './toast-context';
+import type { ForToastCloseReason, ForToastConfig, ForToastInstance } from './toast-context';
 import { ForToastRef } from './toast-ref';
 
 /**
  * Optional global defaults. Provide via
  * `provideForToastDefaults({ duration: 4000, hotkey: 'F6' })` in your app
- * config to override library defaults.
+ * config to override library defaults. Every key is optional — unspecified
+ * keys inherit from the parent scope (or library defaults at the root).
  */
 export interface ForToastDefaults {
   duration?: number;
@@ -19,9 +17,30 @@ export interface ForToastDefaults {
   maxVisible?: number;
 }
 
-export const FOR_TOAST_DEFAULTS = new InjectionToken<ForToastDefaults>(
+/** @internal Concrete shape stored against the defaults token. */
+interface ResolvedToastDefaults {
+  duration: number;
+  hotkey: string;
+  maxVisible: number;
+}
+
+const FALLBACK: ResolvedToastDefaults = {
+  duration: 5000,
+  hotkey: 'F6',
+  maxVisible: Infinity,
+};
+
+const { token, provideDefaults } = createDefaults<ResolvedToastDefaults>(
   'FOR_TOAST_DEFAULTS',
+  FALLBACK,
 );
+
+/**
+ * Token holding the resolved toast defaults for the current injector scope.
+ * The library always provides a fully-populated value (the fallback at the
+ * root, or the merged result of the nearest `provideForToastDefaults`).
+ */
+export const FOR_TOAST_DEFAULTS = token;
 
 /** @internal The shape stored in the manager's reactive array. */
 interface ToastEntry<R = unknown, D = unknown> {
@@ -42,7 +61,7 @@ interface ToastEntry<R = unknown, D = unknown> {
 @Injectable({ providedIn: 'root' })
 export class ForToastManager {
   readonly #idGen = inject(IdGenerator);
-  readonly #defaults = inject(FOR_TOAST_DEFAULTS, { optional: true }) ?? {};
+  readonly #defaults = inject(FOR_TOAST_DEFAULTS);
 
   readonly #entries = signal<readonly ToastEntry[]>([]);
 
@@ -70,9 +89,7 @@ export class ForToastManager {
       return existing.ref as ForToastRef<R, D>;
     }
 
-    const ref = new ForToastRef<R, D>({ ...config, id }, (reason) =>
-      this.#removeById(id, reason),
-    );
+    const ref = new ForToastRef<R, D>({ ...config, id }, (reason) => this.#removeById(id, reason));
     this.#entries.update((arr) => [...arr, { id, ref: ref as ForToastRef }]);
     return ref;
   }
@@ -92,17 +109,17 @@ export class ForToastManager {
 
   /** @internal Used by the viewport to read the configured hotkey. */
   hotkey(): string {
-    return this.#defaults.hotkey ?? 'F6';
+    return this.#defaults.hotkey;
   }
 
   /** @internal Default duration applied when a toast omits it. */
   defaultDuration(): number {
-    return this.#defaults.duration ?? 5000;
+    return this.#defaults.duration;
   }
 
   /** @internal Default `maxVisible` applied to the viewport. */
   defaultMaxVisible(): number {
-    return this.#defaults.maxVisible ?? Infinity;
+    return this.#defaults.maxVisible;
   }
 
   #removeById(id: string, _reason: ForToastCloseReason): void {
@@ -123,7 +140,11 @@ export class ForToastManager {
   }
 }
 
-/** Provider helper for global toast defaults. */
-export function provideForToastDefaults(defaults: ForToastDefaults) {
-  return { provide: FOR_TOAST_DEFAULTS, useValue: defaults };
+/**
+ * Configures forty-cdk toast defaults for this injector scope. Partial
+ * overrides inherit unspecified keys from the parent scope (or library
+ * defaults at the root).
+ */
+export function provideForToastDefaults(defaults: ForToastDefaults): Provider[] {
+  return provideDefaults(defaults as Partial<ResolvedToastDefaults>);
 }

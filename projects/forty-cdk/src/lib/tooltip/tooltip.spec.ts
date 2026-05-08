@@ -5,7 +5,7 @@ import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils'
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
-import { provideTooltipDefaults } from './tooltip-defaults';
+import { provideForTooltipDefaults } from './tooltip-defaults';
 import { ForTooltipTrigger } from './tooltip-trigger';
 
 @Component({
@@ -123,9 +123,7 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
-      const contents = Array.from(
-        document.querySelectorAll<HTMLElement>('[role="tooltip"]'),
-      );
+      const contents = Array.from(document.querySelectorAll<HTMLElement>('[role="tooltip"]'));
 
       expect(triggers).toHaveLength(2);
       expect(contents).toHaveLength(2);
@@ -437,10 +435,10 @@ describe('ForTooltip', () => {
     });
   });
 
-  describe('provideTooltipDefaults', () => {
+  describe('provideForTooltipDefaults', () => {
     @Component({
       imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-      providers: [provideTooltipDefaults({ skipDelayDuration: 1000 })],
+      providers: [provideForTooltipDefaults({ skipDelayDuration: 1000 })],
       template: `
         <div forTooltip [(open)]="aOpen" [openDelay]="500" [closeDelay]="0">
           <button type="button" forTooltipTrigger>A</button>
@@ -497,7 +495,7 @@ describe('ForTooltip', () => {
     it('uses delayDuration as the openDelay fallback when the input is unset', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-        providers: [provideTooltipDefaults({ delayDuration: 0 })],
+        providers: [provideForTooltipDefaults({ delayDuration: 0 })],
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
@@ -519,7 +517,6 @@ describe('ForTooltip', () => {
       // delayDuration=0 → opens synchronously without any per-tooltip override.
       expect(r.instance.open()).toBe(true);
     });
-
   });
 
   describe('zoneless reactivity', () => {

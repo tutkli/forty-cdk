@@ -98,7 +98,7 @@ export class ForTooltip implements ForTooltipContext {
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`
    * (default), falls back to `TooltipDefaults.delayDuration` from the
-   * surrounding `provideTooltipDefaults` scope (700ms unless configured).
+   * surrounding `provideForTooltipDefaults` scope (700ms unless configured).
    */
   readonly openDelay = input<number | undefined>(undefined);
 
@@ -152,13 +152,11 @@ export class ForTooltip implements ForTooltipContext {
     if (this.open()) {
       return;
     }
-    // Skip the open delay if a peer tooltip in the same provideTooltipDefaults
+    // Skip the open delay if a peer tooltip in the same provideForTooltipDefaults
     // scope just closed within the skipDelayDuration window — keeps
     // toolbar-style tooltips from feeling sluggish on cursor movement.
     const local = this.openDelay();
-    const base = this.#coordinator.skipDelay()
-      ? 0
-      : local ?? this.#coordinator.delayDuration;
+    const base = this.#coordinator.skipDelay() ? 0 : (local ?? this.#coordinator.delayDuration);
     const delay = Math.max(0, base);
     if (delay === 0) {
       this.open.set(true);

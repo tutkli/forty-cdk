@@ -21,3 +21,8 @@ export {
   type ForComboboxContext,
   type ForComboboxOptionHandle,
 } from './combobox-context';
+export {
+  FOR_COMBOBOX_DEFAULTS,
+  provideForComboboxDefaults,
+  type ForComboboxDefaults,
+} from './combobox-defaults';

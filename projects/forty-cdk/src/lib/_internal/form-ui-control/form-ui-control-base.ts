@@ -1,6 +1,8 @@
 import { booleanAttribute, Directive, input, model } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
+import { injectFormControlReflection } from '../form-control-reflection/form-control-reflection';
+
 /**
  * Abstract base for primitives that implement `FormValueControl<T>` or
  * `FormCheckboxControl` from `@angular/forms/signals`. Owns the universal
@@ -12,6 +14,11 @@ import type { ValidationError } from '@angular/forms/signals';
  * `FormValueControl<T>` or `checked: model<boolean>()` for
  * `FormCheckboxControl` — and any control-shape-specific members
  * (`min` / `max` / `pattern`, `multiple`, `orientation`, etc.).
+ *
+ * The base constructor wires `injectFormControlReflection({...})` so each
+ * subclass gets `data-touched` / `data-dirty` / `data-pending` /
+ * `data-invalid` reflection on its host element automatically — subclasses
+ * don't need to opt in.
  *
  * Implemented as an `@Directive()`-decorated abstract class because Angular
  * recognises signal inputs only when `input()` / `model()` calls appear
@@ -50,4 +57,13 @@ export abstract class FormUiControlBase {
 
   /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
   readonly touched = model<boolean>(false);
+
+  constructor() {
+    injectFormControlReflection({
+      touched: this.touched,
+      dirty: this.dirty,
+      pending: this.pending,
+      invalid: this.invalid,
+    });
+  }
 }

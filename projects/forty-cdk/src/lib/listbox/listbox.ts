@@ -12,7 +12,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { injectFormControlReflection } from '../_internal/form-control-reflection/form-control-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
@@ -108,12 +107,6 @@ export class ForListbox
       values: this.value,
       disabled: this.disabled,
     });
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
-    });
   }
 
   isSelected(v: string): boolean {
@@ -126,9 +119,7 @@ export class ForListbox
     }
     if (this.multiple()) {
       const current = this.value();
-      const next = current.includes(v)
-        ? current.filter((x) => x !== v)
-        : [...current, v];
+      const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
       this.value.set(next);
     } else {
       // Single-mode: idempotent select (no deselect on click of selected).
@@ -220,8 +211,7 @@ export class ForListbox
     if (currentIndex < 0) {
       return;
     }
-    const [lo, hi] =
-      edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
+    const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
 
     const next = new Set(this.value());
     let firstEnabled: HTMLElement | null = null;

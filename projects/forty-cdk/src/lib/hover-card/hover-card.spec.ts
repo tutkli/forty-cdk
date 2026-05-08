@@ -6,7 +6,7 @@ import { pressKey, renderHost } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
-import { provideHoverCardDefaults } from './hover-card-defaults';
+import { provideForHoverCardDefaults } from './hover-card-defaults';
 
 @Component({
   imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
@@ -303,7 +303,7 @@ describe('ForHoverCard', () => {
     it('opens instantly during the skip-delay window after a peer card closed', () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
-        providers: [provideHoverCardDefaults({ openDelay: 500, skipDelayDuration: 500 })],
+        providers: [provideForHoverCardDefaults({ openDelay: 500, skipDelayDuration: 500 })],
         template: `
           <span forHoverCard #a="forHoverCard">
             <a forHoverCardTrigger href="/a">A</a>
