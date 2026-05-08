@@ -97,14 +97,16 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('sets role=dialog and aria-modal="false" on content', async () => {
+    it('sets role=dialog and omits aria-modal on the non-modal content', async () => {
       const r = renderHost(PopoverHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
       expect(content.getAttribute('role')).toBe('dialog');
-      expect(content.getAttribute('aria-modal')).toBe('false');
+      // Per the library-wide ARIA emission rule, `aria-modal` is truthy-only:
+      // absent on non-modal dialogs (popover, hover-card), `"true"` on modal ones.
+      expect(content.hasAttribute('aria-modal')).toBe(false);
     });
 
     it('ties aria-labelledby/describedby on content to title/description ids', async () => {

@@ -29,7 +29,7 @@ import { injectTabsContext } from './tabs-context';
     role: 'tab',
     type: 'button',
     '[id]': 'id()',
-    '[attr.aria-selected]': 'selected()',
+    '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-controls]': 'controlsId()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
@@ -53,9 +53,7 @@ export class ForTabsTrigger {
   readonly id = signal(this.#idGen.next('for-tabs-trigger'));
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
-  readonly effectiveDisabled = computed(
-    () => this.disabled() || this.group.disabled(),
-  );
+  readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());
 
   protected readonly controlsId = computed(() => this.group.contentIdFor(this.value()));
 
