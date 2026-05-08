@@ -1,10 +1,7 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import {
-  injectAccordionContext,
-  injectAccordionItemContext,
-} from './accordion-context';
+import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**
  * Header button for a `ForAccordionItem`. Apply on a `<button type="button">`
@@ -19,7 +16,7 @@ import {
   exportAs: 'forAccordionTrigger',
   host: {
     '[id]': 'item.triggerId()',
-    '[attr.aria-expanded]': 'item.expanded()',
+    '[attr.aria-expanded]': 'item.expanded() ? "true" : "false"',
     '[attr.aria-controls]': 'item.contentId()',
     '[attr.aria-disabled]': 'ariaDisabled() ? "true" : null',
     '[attr.disabled]': 'item.disabled() ? "" : null',

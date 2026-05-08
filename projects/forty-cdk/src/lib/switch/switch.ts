@@ -31,7 +31,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
   host: {
     role: 'switch',
     type: 'button',
-    '[attr.aria-checked]': 'checked()',
+    '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.disabled]': 'disabled() ? "" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',

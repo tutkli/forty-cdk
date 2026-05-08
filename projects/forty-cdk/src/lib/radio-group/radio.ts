@@ -27,7 +27,7 @@ import { injectRadioGroupContext } from './radio-group-context';
     role: 'radio',
     type: 'button',
     '[id]': 'id()',
-    '[attr.aria-checked]': 'checked()',
+    '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
@@ -54,9 +54,7 @@ export class ForRadio {
 
   readonly checked = computed(() => this.group.isSelected(this.value()));
 
-  readonly effectiveDisabled = computed(
-    () => this.disabled() || this.group.disabled(),
-  );
+  readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());
 
   constructor() {
     const handle = {

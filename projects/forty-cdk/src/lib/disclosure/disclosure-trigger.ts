@@ -11,7 +11,7 @@ import { injectDisclosureContext } from './disclosure-context';
   exportAs: 'forDisclosureTrigger',
   host: {
     '[id]': 'ctx.triggerId()',
-    '[attr.aria-expanded]': 'ctx.open()',
+    '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.contentId()',
     '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',

@@ -5,7 +5,7 @@ import { injectFloating } from '../_internal/floating/floating';
 import { injectPopoverContext } from './popover-context';
 
 /**
- * The popover surface. Carries `role="dialog"` (`aria-modal="false"`), is
+ * The popover surface. Carries `role="dialog"` (non-modal — `aria-modal` is absent per APG), is
  * portaled to `document.body`, and is positioned by `@floating-ui/dom`
  * against the registered `[forPopoverTrigger]`.
  *
@@ -25,7 +25,6 @@ import { injectPopoverContext } from './popover-context';
   exportAs: 'forPopoverContent',
   host: {
     role: 'dialog',
-    '[attr.aria-modal]': '"false"',
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-labelledby]': 'ctx.labelledBy()',

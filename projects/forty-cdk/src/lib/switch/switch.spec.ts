@@ -48,6 +48,20 @@ describe('ForSwitch', () => {
       expect(sw.getAttribute('aria-checked')).toBe('false');
       expect(sw.getAttribute('data-state')).toBe('unchecked');
     });
+
+    it('omits truthy-only aria attributes when their predicate is false', () => {
+      // Rule: aria-disabled / aria-readonly / aria-required / aria-invalid /
+      // aria-busy MUST be absent (not "false") when falsy. aria-checked is
+      // always emitted because togglable widgets carry an explicit off-state.
+      const { el } = renderHost(SwitchHost);
+      const sw = switchOf(el);
+      expect(sw.hasAttribute('aria-disabled')).toBe(false);
+      expect(sw.hasAttribute('aria-readonly')).toBe(false);
+      expect(sw.hasAttribute('aria-required')).toBe(false);
+      expect(sw.hasAttribute('aria-invalid')).toBe(false);
+      expect(sw.hasAttribute('aria-busy')).toBe(false);
+      expect(sw.hasAttribute('aria-checked')).toBe(true);
+    });
   });
 
   describe('click', () => {
@@ -252,7 +266,11 @@ describe('ForSwitch', () => {
     @Component({
       imports: [ForSwitch, FormField],
       template: `
-        <button forSwitch [formField]="settings.notifications" data-test-id="notifications"></button>
+        <button
+          forSwitch
+          [formField]="settings.notifications"
+          data-test-id="notifications"
+        ></button>
         <button forSwitch [formField]="settings.terms" data-test-id="terms"></button>
       `,
     })

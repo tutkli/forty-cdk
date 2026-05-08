@@ -127,6 +127,27 @@ These keep the surface predictable across primitives. Apply them everywhere; dev
 
 **`data-highlighted` (sibling vocabulary to `data-state`).** Items that participate in roving-tabindex or `aria-activedescendant` navigation expose a boolean `data-highlighted` when they are the current keyboard-focused candidate. This is distinct from `data-state` (which reflects logical state — `checked`, `open`, etc.) and is the _only_ CSS hook combobox consumers have, since `aria-activedescendant` keeps focus on the input rather than on the option (no `:focus`). Roving-tabindex primitives expose it for parity with the activedescendant flow and for hover-uncoupled-from-focus styling (Radix-aligned). Items reflecting `data-highlighted` today: `Listbox` option, `Menu` item / checkbox-item / radio-item, `Select` option, `Combobox` option.
 
+**ARIA state attribute emission.** WAI-ARIA distinguishes attributes whose absence is semantically meaningful (the consumer's assistive tech knows the default) from attributes whose state machine demands an explicit `"true"` / `"false"` on every render. The library normalizes both groups:
+
+| Attribute                                                                                                                    | Truthy value | Falsy value     |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- |
+| `aria-checked`, `aria-pressed`, `aria-expanded`, `aria-selected`                                                             | `"true"`     | `"false"`       |
+| `aria-disabled`, `aria-readonly`, `aria-required`, `aria-invalid`, `aria-busy`, `aria-modal`, `aria-haspopup` (boolean form) | `"true"`     | `null` (absent) |
+
+The first row is **always emit** — togglable widgets (toggle buttons, tabs, treeitems, comboboxes, disclosures) have a defined "off" state that screen readers must announce, so the attribute must be present with `"false"` rather than absent. The second row is **truthy-only** — a missing `aria-required` means "not required", emitting `aria-required="false"` is redundant and forces consumers to write `[aria-required="false"]` selectors that fight the spec.
+
+Canonical Angular host bindings:
+
+- Always-emit: `'[attr.aria-checked]': 'checked() ? "true" : "false"'`
+- Truthy-only: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`
+
+Two notes for edge cases:
+
+- `aria-haspopup` may take token values (`menu`, `listbox`, `dialog`, `tree`, `grid`); when emitted as a token it is always present (e.g. `'"listbox"'`) and the boolean rule does not apply. Only normalize the boolean form against the truthy-only column.
+- `aria-multiselectable` belongs to the truthy-only group. WAI-ARIA defines its default as `false` when the role demands it (`listbox`, `tree`, `grid`), so a missing attribute is unambiguous; emitting `aria-multiselectable="false"` adds noise without changing semantics. Listbox / Combobox / Select content all follow the truthy-only rule.
+
+Consumers styling falsy state must select on **the absence** of the attribute (`:not([aria-disabled])`, `:not([aria-required])`), not on `[aria-disabled="false"]`. The breaking change in [#108](https://github.com/tutkli/forty-cdk/issues/108) enforces this across the library.
+
 **`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires _only_ when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
 
 **Orientation + writing direction.** Primitives whose keyboard navigation has an axis expose `orientation: 'horizontal' | 'vertical'` and `dir: 'ltr' | 'rtl'` inputs and pass them to the shared `_internal/keyboard-navigation` helpers. Default to the orientation that matches the primitive's most common layout (`vertical` for `Accordion`/`RadioGroup`/`Listbox`, `horizontal` for `Tabs`). Reflect `data-orientation` on the root container so the consumer can flip CSS.
