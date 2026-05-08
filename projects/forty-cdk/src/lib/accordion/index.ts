@@ -10,3 +10,8 @@ export {
   type ForAccordionContext,
   type ForAccordionItemContext,
 } from './accordion-context';
+export {
+  FOR_ACCORDION_DEFAULTS,
+  provideForAccordionDefaults,
+  type ForAccordionDefaults,
+} from './accordion-defaults';

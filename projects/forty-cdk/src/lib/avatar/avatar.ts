@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import { FOR_AVATAR_CONTEXT, type ForAvatarContext, type ForAvatarStatus } from './avatar-context';
+import { FOR_AVATAR_DEFAULTS } from './avatar-defaults';
 
 /**
  * Headless avatar root. Tracks the load lifecycle of an inner
@@ -41,13 +42,19 @@ import { FOR_AVATAR_CONTEXT, type ForAvatarContext, type ForAvatarStatus } from 
   providers: [{ provide: FOR_AVATAR_CONTEXT, useExisting: ForAvatar }],
 })
 export class ForAvatar implements ForAvatarContext {
+  readonly #defaults = inject(FOR_AVATAR_DEFAULTS);
+
   /**
    * Milliseconds to defer the fallback for fast loads, avoiding a brief
    * "initials → image" flicker. Set to `0` (default) to show immediately
    * during `idle` / `loading`, or to e.g. `500` to skip rendering during
    * quick cached loads. `error` always shows the fallback immediately.
+   * The default is read from `provideForAvatarDefaults` for the
+   * surrounding scope.
    */
-  readonly fallbackDelayMs = input(0, { transform: numberAttribute });
+  readonly fallbackDelayMs = input(this.#defaults.fallbackDelayMs, {
+    transform: numberAttribute,
+  });
 
   readonly #status = signal<ForAvatarStatus>('idle');
   readonly status = this.#status.asReadonly();

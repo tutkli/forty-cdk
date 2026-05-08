@@ -9,3 +9,8 @@ export {
   type ForSliderThumbHandle,
   type SliderArrowKey,
 } from './slider-context';
+export {
+  FOR_SLIDER_DEFAULTS,
+  provideForSliderDefaults,
+  type ForSliderDefaults,
+} from './slider-defaults';

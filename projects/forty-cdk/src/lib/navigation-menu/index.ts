@@ -17,3 +17,8 @@ export {
   type ForNavigationMenuMotion,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
+export {
+  FOR_NAVIGATION_MENU_DEFAULTS,
+  provideForNavigationMenuDefaults,
+  type ForNavigationMenuDefaults,
+} from './navigation-menu-defaults';

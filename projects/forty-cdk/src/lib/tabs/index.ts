@@ -8,3 +8,4 @@ export {
   type ForTabsContext,
   type TabsActivationMode,
 } from './tabs-context';
+export { FOR_TABS_DEFAULTS, provideForTabsDefaults, type ForTabsDefaults } from './tabs-defaults';

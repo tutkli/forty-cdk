@@ -17,6 +17,8 @@
  *   - All public selectors must use the `for-` prefix.
  */
 
+const fs = require('node:fs');
+const path = require('node:path');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
@@ -49,6 +51,53 @@ const fortyCdkPlugin = {
             const base = filename.split(/[\\/]/).pop() || '';
             if (/\.(component|service|directive)\./.test(base)) {
               context.report({ node, messageId: 'forbidden' });
+            }
+          },
+        };
+      },
+    },
+
+    // Enforces CLAUDE.md § "Defaults providers": every primitive folder under
+    // projects/forty-cdk/src/lib/<name>/ that ships a <name>.ts root file must
+    // also ship a sibling <name>-defaults.ts (empty stub or populated). Skips
+    // _internal (and anything nested under it) and test-utils. Fires once per
+    // primitive root file via a Program-level filesystem check.
+    'require-defaults-sibling': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Each primitive must expose a sibling `<name>-defaults.ts` per CLAUDE.md § "Defaults providers".',
+        },
+        schema: [],
+        messages: {
+          missing:
+            'Primitive `{{name}}` is missing the required `{{name}}-defaults.ts` sibling file (CLAUDE.md § "Defaults providers"). Even when there are no per-scope tunables yet, expose an empty stub so future additions don’t churn the public API.',
+        },
+      },
+      create(context) {
+        return {
+          Program(node) {
+            const filename = context.filename || context.getFilename();
+            const dir = path.dirname(filename);
+            const base = path.basename(filename, '.ts');
+            const dirName = path.basename(dir);
+            // Only fire on root primitive files: <dir>/<dir>.ts.
+            if (base !== dirName) return;
+            // Restrict to the library's primitive folder.
+            const normalized = dir.replace(/\\/g, '/');
+            if (!normalized.includes('/projects/forty-cdk/src/lib/')) return;
+            // Skip cross-cutting helpers and test utilities.
+            if (dirName === '_internal' || dirName === 'test-utils') return;
+            if (normalized.includes('/_internal/')) return;
+            const sibling = path.join(dir, `${dirName}-defaults.ts`);
+            if (!fs.existsSync(sibling)) {
+              context.report({
+                node,
+                loc: { line: 1, column: 0 },
+                messageId: 'missing',
+                data: { name: dirName },
+              });
             }
           },
         };
@@ -188,6 +237,9 @@ module.exports = tseslint.config(
 
       // ---- Filename convention ----
       'forty-cdk/no-suffixed-filenames': 'error',
+
+      // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
+      'forty-cdk/require-defaults-sibling': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the

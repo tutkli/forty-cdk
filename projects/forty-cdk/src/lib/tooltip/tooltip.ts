@@ -97,7 +97,7 @@ export class ForTooltip implements ForTooltipContext {
 
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`
-   * (default), falls back to `TooltipDefaults.delayDuration` from the
+   * (default), falls back to `ForTooltipDefaults.delayDuration` from the
    * surrounding `provideForTooltipDefaults` scope (700ms unless configured).
    */
   readonly openDelay = input<number | undefined>(undefined);

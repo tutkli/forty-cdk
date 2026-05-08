@@ -5,3 +5,8 @@ export {
   type ForProgressContext,
   type ForProgressState,
 } from './progress-context';
+export {
+  FOR_PROGRESS_DEFAULTS,
+  provideForProgressDefaults,
+  type ForProgressDefaults,
+} from './progress-defaults';

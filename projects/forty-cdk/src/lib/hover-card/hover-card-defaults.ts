@@ -7,7 +7,7 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * scope. Configure with `provideForHoverCardDefaults` at the app root or in
  * any component's `providers`.
  */
-export interface HoverCardDefaults {
+export interface ForHoverCardDefaults {
   /** Open delay (ms) for cards that don't override `openDelay` locally. */
   openDelay: number;
   /** Close delay (ms) for cards that don't override `closeDelay` locally. */
@@ -20,13 +20,13 @@ export interface HoverCardDefaults {
   skipDelayDuration: number;
 }
 
-const FALLBACK: HoverCardDefaults = {
+const FALLBACK: ForHoverCardDefaults = {
   openDelay: 700,
   closeDelay: 300,
   skipDelayDuration: 300,
 };
 
-const { token, provideDefaults } = createDefaults<HoverCardDefaults>(
+const { token, provideDefaults } = createDefaults<ForHoverCardDefaults>(
   'FOR_HOVER_CARD_DEFAULTS',
   FALLBACK,
 );
@@ -84,6 +84,6 @@ export class HoverCardCoordinator {
  * library defaults at the root). Each call establishes a new coordinator
  * scope.
  */
-export function provideForHoverCardDefaults(defaults: Partial<HoverCardDefaults>): Provider[] {
+export function provideForHoverCardDefaults(defaults: Partial<ForHoverCardDefaults>): Provider[] {
   return [...provideDefaults(defaults), HoverCardCoordinator];
 }

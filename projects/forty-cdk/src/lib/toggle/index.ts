@@ -7,3 +7,8 @@ export {
   type ForToggleGroupContext,
   type ForToggleGroupItemHandle,
 } from './toggle-group-context';
+export {
+  FOR_TOGGLE_DEFAULTS,
+  provideForToggleDefaults,
+  type ForToggleDefaults,
+} from './toggle-defaults';

@@ -32,6 +32,7 @@ import {
   type ForMenuContext,
   type ForMenuItemHandle,
 } from '../menu/menu-context';
+import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
 
 /**
  * Headless implementation of a right-click / `Shift+F10` menu (variant of
@@ -66,6 +67,7 @@ export class ForContextMenu implements ForMenuContext {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForMenuItemHandle>();
+  readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
 
   readonly open = model<boolean>(false);
 
@@ -78,8 +80,11 @@ export class ForContextMenu implements ForMenuContext {
   /** Alignment along the chosen `side`. Defaults to `'start'`. */
   readonly align = input<FloatingAlign | undefined>('start');
 
-  /** Gap (px) along the main axis. Default `0`. */
-  readonly sideOffset = input(0, { transform: numberAttribute });
+  /**
+   * Gap (px) along the main axis. Default `0`. The default is read from
+   * `provideForContextMenuDefaults` for the surrounding scope.
+   */
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -87,8 +92,14 @@ export class ForContextMenu implements ForMenuContext {
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  /**
+   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
+   * The default is read from `provideForContextMenuDefaults` for the
+   * surrounding scope.
+   */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });

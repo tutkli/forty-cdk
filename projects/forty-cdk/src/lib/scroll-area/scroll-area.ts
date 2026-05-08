@@ -6,6 +6,7 @@ import {
   type ForScrollAreaContext,
   type ForScrollAreaType,
 } from './scroll-area-context';
+import { FOR_SCROLL_AREA_DEFAULTS } from './scroll-area-defaults';
 
 /**
  * Root of the custom-scrollbar primitive. Owns the viewport reference,
@@ -45,6 +46,8 @@ import {
   providers: [{ provide: FOR_SCROLL_AREA_CONTEXT, useExisting: ForScrollArea }],
 })
 export class ForScrollArea implements ForScrollAreaContext {
+  readonly #defaults = inject(FOR_SCROLL_AREA_DEFAULTS);
+
   /**
    * When the synthetic scrollbars are visible:
    * - `auto`: shown only when content overflows.
@@ -54,8 +57,14 @@ export class ForScrollArea implements ForScrollAreaContext {
    */
   readonly type = input<ForScrollAreaType>('hover');
 
-  /** ms after the most recent scroll before scrollbars fade (only `type="scroll"` and `"hover"`). */
-  readonly scrollHideDelay = input(600, { transform: numberAttribute });
+  /**
+   * ms after the most recent scroll before scrollbars fade (only
+   * `type="scroll"` and `"hover"`). The default is read from
+   * `provideForScrollAreaDefaults` for the surrounding scope.
+   */
+  readonly scrollHideDelay = input(this.#defaults.scrollHideDelay, {
+    transform: numberAttribute,
+  });
 
   readonly dir = input<WritingDirection>('ltr');
 

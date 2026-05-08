@@ -6,3 +6,8 @@ export {
   injectDisclosureContext,
   type ForDisclosureContext,
 } from './disclosure-context';
+export {
+  FOR_DISCLOSURE_DEFAULTS,
+  provideForDisclosureDefaults,
+  type ForDisclosureDefaults,
+} from './disclosure-defaults';

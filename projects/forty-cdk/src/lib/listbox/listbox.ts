@@ -26,6 +26,7 @@ import {
   type ForListboxContext,
   type ForListboxOptionHandle,
 } from './listbox-context';
+import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
@@ -64,6 +65,7 @@ export class ForListbox
   implements FormValueControl<string[]>, ForListboxContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
 
   /**
    * Two-way bindable. Selected option values. Single-mode keeps 0 or 1
@@ -83,8 +85,12 @@ export class ForListbox
    * Single-mode only: when true, arrow nav also selects the focused option.
    * APG calls this optional and recommends caution — leave off unless your
    * UX truly benefits from selection following focus. Default `false`.
+   * The default is read from `provideForListboxDefaults` for the surrounding
+   * scope.
    */
-  readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
+  readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
+    transform: booleanAttribute,
+  });
 
   readonly roving = new RovingTabindex();
   readonly #typeahead = injectTypeahead();

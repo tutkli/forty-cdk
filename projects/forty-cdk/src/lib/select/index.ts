@@ -15,3 +15,8 @@ export {
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
 } from './select-context';
+export {
+  FOR_SELECT_DEFAULTS,
+  provideForSelectDefaults,
+  type ForSelectDefaults,
+} from './select-defaults';

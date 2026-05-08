@@ -8,3 +8,8 @@ export {
   injectListboxContext,
   type ForListboxContext,
 } from './listbox-context';
+export {
+  FOR_LISTBOX_DEFAULTS,
+  provideForListboxDefaults,
+  type ForListboxDefaults,
+} from './listbox-defaults';

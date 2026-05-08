@@ -23,6 +23,7 @@ import {
   type ForSliderThumbHandle,
   type SliderArrowKey,
 } from './slider-context';
+import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
@@ -71,6 +72,7 @@ export class ForSlider
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+  readonly #defaults = inject(FOR_SLIDER_DEFAULTS);
 
   /**
    * Two-way bindable. Selected values, one per thumb. Single-thumb sliders
@@ -92,8 +94,11 @@ export class ForSlider
    */
   readonly max = input<number | undefined>(100);
   readonly step = input<number>(1);
-  /** Step used for PageUp / PageDown. Defaults to 10× `step`. */
-  readonly largeStep = input<number>(10);
+  /**
+   * Step used for PageUp / PageDown. Defaults to 10× `step`. The default is
+   * read from `provideForSliderDefaults` for the surrounding scope.
+   */
+  readonly largeStep = input<number>(this.#defaults.largeStep);
 
   /** Effective minimum (defaults `0` when input is unset). Exposed to children via context. */
   readonly minValue = computed(() => this.min() ?? 0);
