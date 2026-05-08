@@ -116,7 +116,7 @@ When present, each `[forNavigationMenuContent]` re-parents its host into the Vie
 
 | Attribute / variable                     | Where            | Meaning                                                   |
 | ---------------------------------------- | ---------------- | --------------------------------------------------------- |
-| `data-state="visible" \| "hidden"`       | Viewport host    | Whether any content is currently mounted in the Viewport. |
+| `data-state="open" \| "closed"`          | Viewport host    | Whether any content is currently mounted in the Viewport. |
 | `--for-navigation-menu-viewport-width`   | Viewport host    | Active content's natural width (px).                      |
 | `--for-navigation-menu-viewport-height`  | Viewport host    | Active content's natural height (px).                     |
 | `data-motion="from-start" \| "from-end"` | Entering Content | Side the previous trigger sat on, relative to this one.   |
