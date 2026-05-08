@@ -65,6 +65,32 @@ They diverge while the user types and resync on activation:
 - Clear button → both reset.
 - `clearOnQueryChange` (off by default, **single mode only**) — flip on to drop `value` automatically whenever the query is edited (useful when the user editing means "I'm picking a new one").
 
+### `commitOnSelect`: single vs multi
+
+The same boolean drives two different behaviours because what counts as "committing the selection" differs by mode. In **single mode** the query is the displayed label of the picked item, so committing means _copying the label_. In **multi mode** the query is the next-item search field, so committing means _clearing it_ to prepare for the next pick. Concrete state walks (starting from `query=""`, `value=[]`):
+
+```text
+Single, commitOnSelect=true (default)
+  user types "ap"        → query="ap"  value=[]
+  user activates "Apple" → query="Apple" value=["apple"]   ← label copied, listbox closes
+
+Single, commitOnSelect=false
+  user types "ap"        → query="ap"  value=[]
+  user activates "Apple" → query="ap"  value=["apple"]     ← query untouched, listbox closes
+
+Multi, commitOnSelect=true (default)
+  user types "ap"        → query="ap"  value=[]
+  user activates "Apple" → query=""    value=["apple"]     ← query cleared, listbox stays open
+  user types "ba"        → query="ba"  value=["apple"]
+  user activates "Banana"→ query=""    value=["apple","banana"]
+
+Multi, commitOnSelect=false
+  user types "ap"        → query="ap"  value=[]
+  user activates "Apple" → query="ap"  value=["apple"]     ← query untouched, listbox stays open
+```
+
+Disable `commitOnSelect` when your filter logic compares against `query` directly and the listbox should keep showing the just-narrowed set after activation, instead of resetting to "everything matches the picked label".
+
 ## Multi mode
 
 Pass `multiple` and let the consumer render chips inside `[forComboboxChips]`. The primitive's `selected()` computed returns `{ value, label }` pairs ready for `@for`:
