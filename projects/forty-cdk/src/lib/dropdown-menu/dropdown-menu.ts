@@ -7,32 +7,14 @@ import {
   model,
   numberAttribute,
   output,
-  signal,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import {
-  type ListNavigationAction,
-  moveIndex,
-  type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import {
-  createVetoableNativeEvent,
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import {
-  FOR_MENU_CONTEXT,
-  type ForMenuCloseReason,
-  type ForMenuContext,
-  type ForMenuItemHandle,
-} from '../menu/menu-context';
+import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
+import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
 import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
 
 /**
@@ -57,6 +39,14 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
  * Selecting a `[forMenuItem]` closes the menu (call `event.preventDefault()`
  * on the item's `(select)` event to keep it open). Escape, pointer-down
  * outside, and focus-outside also close — each emits a vetoable event.
+ *
+ * Most of the directive's body (id generation, item collection, typeahead,
+ * navigate / focus helpers, escape / outside-click veto plumbing) is owned
+ * by the shared `_internal/menu-overlay` helper. The directive contributes
+ * the inputs / outputs / model that make up the public surface, the
+ * trigger-anchored `anchor` and `dismissableExemptions`, and the
+ * `aria-haspopup="menu"` / return-focus semantics specific to the
+ * Menu Button pattern.
  */
 @Directive({
   selector: '[forDropdownMenu]',
@@ -68,9 +58,6 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForDropdownMenu }],
 })
 export class ForDropdownMenu implements ForMenuContext {
-  readonly #idGen = inject(IdGenerator);
-  readonly #typeahead = injectTypeahead();
-  readonly #items = new Collection<ForMenuItemHandle>();
   readonly #defaults = inject(FOR_DROPDOWN_MENU_DEFAULTS);
 
   /**
@@ -165,174 +152,51 @@ export class ForDropdownMenu implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly triggerId = signal(this.#idGen.next('for-dropdown-menu-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-dropdown-menu-content'));
-
-  readonly #initialFocus = signal<'first' | 'last'>('first');
-  readonly initialFocus = this.#initialFocus.asReadonly();
-
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-  readonly anchor = computed<ReferenceElement | null>(() => this.#triggerEl());
-  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() => {
-    const t = this.#triggerEl();
-    return t ? [t] : [];
+  readonly #overlay = createMenuOverlay('for-dropdown-menu', {
+    open: this.open,
+    disabled: this.disabled,
+    dismissible: this.dismissible,
+    loop: this.loop,
+    escapeKeyDown: this.escapeKeyDown,
+    pointerDownOutside: this.pointerDownOutside,
+    focusOutside: this.focusOutside,
+    interactOutside: this.interactOutside,
+    autoFocusOnOpen: this.autoFocusOnOpen,
+    autoFocusOnClose: this.autoFocusOnClose,
   });
 
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly triggerId = this.#overlay.triggerId;
+  readonly contentId = this.#overlay.contentId;
+  readonly initialFocus = this.#overlay.initialFocus;
+  readonly trigger = this.#overlay.trigger;
+  readonly content = this.#overlay.content;
+  readonly anchor = computed<ReferenceElement | null>(() => this.#overlay.trigger());
+  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() => {
+    const t = this.#overlay.trigger();
+    return t ? [t] : [];
+  });
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;
 
-  setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocus.set(target);
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#triggerEl.set(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
-  }
-
-  registerContent(el: HTMLElement): void {
-    this.#contentEl.set(el);
-  }
-  unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
-  }
-
-  registerItem(handle: ForMenuItemHandle): void {
-    this.#items.register(handle);
-  }
-  unregisterItem(handle: ForMenuItemHandle): void {
-    this.#items.unregister(handle);
-  }
-
-  navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((i) => i.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
-  }
-
-  handleTypeahead(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) {
-      return;
-    }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#items.items();
-    const match = items.find((i) => {
-      if (i.disabled()) {
-        return false;
-      }
-      const override = i.textValue?.() ?? '';
-      const source = override !== '' ? override : (i.host.textContent ?? '');
-      return source.trim().toLowerCase().startsWith(buffer);
-    });
-    match?.host.focus();
-  }
-
-  focusFirstEnabledItem(): boolean {
-    const target = this.#items.items().find((i) => !i.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
-  }
-
-  focusLastEnabledItem(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  toggle(initialFocus: 'first' | 'last' = 'first'): void {
-    if (this.disabled()) {
-      return;
-    }
-    if (this.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(initialFocus);
-    }
-  }
-
-  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
-    if (this.disabled()) {
-      return;
-    }
-    this.#initialFocus.set(initialFocus);
-    this.open.set(true);
-  }
-
-  closeMenu(_reason: ForMenuCloseReason): void {
-    this.open.set(false);
-  }
-
-  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
-  // the composite `interactOutside`. The dismissable layer always invokes
-  // the specific listener before the composite one for the same physical
-  // event, so a `preventDefault()` in either handler vetoes the close.
-  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-
-  emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-    if (!vetoed && this.dismissible()) {
-      event.stopPropagation();
-      this.closeMenu('escape');
-    }
-  }
-
-  emitPointerDownOutside(event: PointerEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-  }
-
-  emitFocusOutside(event: FocusEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-  }
-
-  emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    const veto =
-      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#pendingOutsideVeto = null;
-    this.interactOutside.emit(veto);
-    if (!veto.defaultPrevented && this.dismissible()) {
-      this.closeMenu('pointerDownOutside');
-    }
-  }
-
-  emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
-  }
-
-  emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
-  }
+  setInitialFocus = this.#overlay.setInitialFocus.bind(this.#overlay);
+  registerTrigger = this.#overlay.registerTrigger.bind(this.#overlay);
+  unregisterTrigger = this.#overlay.unregisterTrigger.bind(this.#overlay);
+  registerContent = this.#overlay.registerContent.bind(this.#overlay);
+  unregisterContent = this.#overlay.unregisterContent.bind(this.#overlay);
+  registerItem = this.#overlay.registerItem.bind(this.#overlay);
+  unregisterItem = this.#overlay.unregisterItem.bind(this.#overlay);
+  navigate = this.#overlay.navigate.bind(this.#overlay);
+  handleTypeahead = this.#overlay.handleTypeahead.bind(this.#overlay);
+  focusFirstEnabledItem = this.#overlay.focusFirstEnabledItem.bind(this.#overlay);
+  focusLastEnabledItem = this.#overlay.focusLastEnabledItem.bind(this.#overlay);
+  toggle = this.#overlay.toggle.bind(this.#overlay);
+  openMenu = this.#overlay.openMenu.bind(this.#overlay);
+  closeMenu = this.#overlay.closeMenu.bind(this.#overlay);
+  emitEscapeKeyDown = this.#overlay.emitEscapeKeyDown.bind(this.#overlay);
+  emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
+  emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
+  emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
+  emitAutoFocusOnOpen = this.#overlay.emitAutoFocusOnOpen.bind(this.#overlay);
+  emitAutoFocusOnClose = this.#overlay.emitAutoFocusOnClose.bind(this.#overlay);
 }
