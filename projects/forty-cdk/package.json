@@ -10,9 +10,6 @@
   "peerDependenciesMeta": {
     "@angular/forms": {
       "optional": true
-    },
-    "@floating-ui/dom": {
-      "optional": true
     }
   },
   "dependencies": {

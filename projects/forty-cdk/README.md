@@ -15,13 +15,13 @@ Required:
 
 - `@angular/common` `^21.2.0`
 - `@angular/core` `^21.2.0`
+- `@floating-ui/dom` `^1.6.0` — positioned overlays (`Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, etc.) import floating-ui statically. Because the library ships from a single entry point, every consumer's bundle resolves it regardless of which primitives they actually use; flagging it optional would silently break installs that skip it. If per-primitive secondary entry points are introduced later (currently deferred — see `CLAUDE.md`), this peer can become honestly optional for non-overlay consumers.
 
 Optional — install only if you use the matching primitives:
 
 | Peer | Needed by |
 | --- | --- |
 | `@angular/forms` `^21.2.0` | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, plus future `Select` / `Slider` / `Combobox`). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. Consumers using only non-form primitives can skip it. |
-| `@floating-ui/dom` `^1.6.0` | Positioned overlays (`Tooltip` today; future `Popover` / `Menu` / `Select`). Consumers using only `Disclosure`, `Accordion`, `Tabs`, `Switch`, `Checkbox`, `RadioGroup`, `Listbox`, or `Dialog` can skip it. |
 
 `@angular/forms/signals` is `@experimental` in Angular 21, so we pin to the matching minor (`^21.2.0`) and revisit on each Angular bump.
 
