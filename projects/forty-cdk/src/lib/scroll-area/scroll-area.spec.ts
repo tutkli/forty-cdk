@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 
 import { renderHost } from '../../test-utils/render';
 import { ForScrollArea } from './scroll-area';
+import { ForScrollAreaContent } from './scroll-area-content';
 import { ForScrollAreaCorner } from './scroll-area-corner';
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 import { ForScrollAreaThumb } from './scroll-area-thumb';
@@ -32,6 +33,7 @@ class FakeResizeObserver {
   imports: [
     ForScrollArea,
     ForScrollAreaViewport,
+    ForScrollAreaContent,
     ForScrollAreaScrollbar,
     ForScrollAreaThumb,
     ForScrollAreaCorner,
@@ -39,7 +41,7 @@ class FakeResizeObserver {
   template: `
     <div forScrollArea [type]="type()">
       <div forScrollAreaViewport>
-        <div #content style="width: 1000px; height: 1000px;">content</div>
+        <div forScrollAreaContent style="width: 1000px; height: 1000px;">content</div>
       </div>
       <div forScrollAreaScrollbar orientation="vertical" data-testid="vbar">
         <div forScrollAreaThumb data-testid="vthumb"></div>
@@ -54,6 +56,26 @@ class FakeResizeObserver {
 class ScrollAreaHost {
   readonly type = signal<ForScrollAreaType>('always');
 }
+
+@Component({
+  imports: [
+    ForScrollArea,
+    ForScrollAreaViewport,
+    ForScrollAreaScrollbar,
+    ForScrollAreaThumb,
+  ],
+  template: `
+    <div forScrollArea>
+      <div forScrollAreaViewport>
+        <div style="width: 1000px; height: 1000px;">content (no directive)</div>
+      </div>
+      <div forScrollAreaScrollbar orientation="vertical" data-testid="vbar">
+        <div forScrollAreaThumb></div>
+      </div>
+    </div>
+  `,
+})
+class ScrollAreaHostNoContent {}
 
 function setBoxes(viewport: HTMLElement) {
   Object.defineProperty(viewport, 'clientWidth', { configurable: true, value: 200 });
@@ -259,5 +281,43 @@ describe('ForScrollArea', () => {
     viewport.scrollTop = 200;
     flush();
     expect(vthumb.style.transform).not.toBe('translateY(0px)');
+  });
+
+  it('observes the [forScrollAreaContent] element so content resizes update geometry', () => {
+    const { query, flush } = renderHost(ScrollAreaHost);
+    flush();
+
+    const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
+    const content = query<HTMLElement>('[forScrollAreaContent]')!;
+    expect(content).not.toBeNull();
+
+    // The viewport should have observed both itself and the registered
+    // content element via the ResizeObserver.
+    const observed = FakeResizeObserver.instances.flatMap((ro) => ro.observed);
+    expect(observed).toContain(viewport);
+    expect(observed).toContain(content);
+
+    // Simulate a content resize: bump scrollWidth/scrollHeight, fire RO,
+    // and assert the synthetic scrollbar reflects the new overflow.
+    setBoxes(viewport);
+    fireAllObservers();
+    flush();
+
+    const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+    expect(vbar.getAttribute('data-state')).toBe('visible');
+  });
+
+  it('renders without [forScrollAreaContent] and skips content observation', () => {
+    expect(() => renderHost(ScrollAreaHostNoContent)).not.toThrow();
+
+    // Viewport mounts and is observed, but no content element is registered,
+    // so the observer never sees a second target.
+    const observed = FakeResizeObserver.instances.flatMap((ro) => ro.observed);
+    const viewport = document.querySelector<HTMLElement>('[forScrollAreaViewport]')!;
+    expect(observed).toContain(viewport);
+    // Exactly one observation per RO instance — the viewport itself.
+    for (const ro of FakeResizeObserver.instances) {
+      expect(ro.observed.length).toBeLessThanOrEqual(1);
+    }
   });
 });

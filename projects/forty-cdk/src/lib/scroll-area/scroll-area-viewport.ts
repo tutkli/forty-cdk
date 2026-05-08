@@ -4,6 +4,7 @@ import {
   afterNextRender,
   DestroyRef,
   Directive,
+  effect,
   ElementRef,
   inject,
 } from '@angular/core';
@@ -66,14 +67,28 @@ export class ForScrollAreaViewport {
     // Track size changes via ResizeObserver — simpler / lighter than
     // polling, and consistent with the rest of the library's reactive
     // patterns. Browser-only API; no-op on server.
+    //
+    // The content element is observed only when the consumer explicitly
+    // marks it with `[forScrollAreaContent]`. Without that marker we skip
+    // content observation entirely (rather than guessing `firstElementChild`,
+    // which silently breaks on layered / multi-sibling layouts).
     if (this.#isBrowser && typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.#syncSize());
       ro.observe(this.#host);
-      // Also observe the first child (the content) so scrollWidth /
-      // scrollHeight changes are picked up when content resizes.
-      const child = this.#host.firstElementChild;
-      if (child) ro.observe(child);
       inject(DestroyRef).onDestroy(() => ro.disconnect());
+
+      // Re-attach the observer whenever the registered content element
+      // changes (registers, unregisters, or swaps). `effect` is the right
+      // primitive here: this is a DOM imperative side effect, not derived
+      // state — see CLAUDE.md "Never propagate state inside `effect()`".
+      let observedContent: HTMLElement | null = null;
+      effect(() => {
+        const next = this.#ctx.content();
+        if (next === observedContent) return;
+        if (observedContent) ro.unobserve(observedContent);
+        if (next) ro.observe(next);
+        observedContent = next;
+      });
     }
   }
 

@@ -12,6 +12,8 @@ export interface ForScrollAreaContext {
 
   /** The scrolling element (registered by `ForScrollAreaViewport`). */
   readonly viewport: Signal<HTMLElement | null>;
+  /** The content element (registered by `ForScrollAreaContent`, observed by the viewport). */
+  readonly content: Signal<HTMLElement | null>;
   /** Live scroll offset of the viewport. */
   readonly scrollLeft: Signal<number>;
   readonly scrollTop: Signal<number>;
@@ -27,6 +29,8 @@ export interface ForScrollAreaContext {
   readonly scrolling: Signal<boolean>;
 
   registerViewport(el: HTMLElement | null): void;
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
   reportScroll(left: number, top: number): void;
   reportSize(clientW: number, clientH: number, scrollW: number, scrollH: number): void;
   noteUserScroll(): void;
