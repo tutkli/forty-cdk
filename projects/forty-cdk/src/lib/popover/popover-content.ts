@@ -1,8 +1,6 @@
-import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { findFirstFocusable } from '../_internal/focus-trap/focus-trap';
-import { injectFloating } from '../_internal/floating/floating';
+import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -20,6 +18,12 @@ import { injectPopoverContext } from './popover-context';
  * The trigger is exempt from the layer's outside checks, so clicking
  * it again just toggles via the trigger directive — no double-close
  * race.
+ *
+ * The lifecycle (positioner + dismissable layer + initial focus + return
+ * focus) is owned by the shared `injectOverlayShell` helper. The shell's
+ * `'first'` mode routes through the same `findFirstFocusable` helper used
+ * by `FocusTrap`, dropping the local focusable-selector copy that this
+ * directive carried before (see #107).
  */
 @Directive({
   selector: '[forPopoverContent]',
@@ -36,31 +40,29 @@ import { injectPopoverContext } from './popover-context';
 })
 export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #dismissable = injectDismissableLayer();
 
   constructor() {
-    injectFloating({
-      reference: this.ctx.reference,
-      open: this.ctx.open,
-      side: this.ctx.side,
-      align: this.ctx.align,
-      sideOffset: this.ctx.sideOffset,
-      alignOffset: this.ctx.alignOffset,
-      avoidCollisions: this.ctx.avoidCollisions,
-      collisionPadding: this.ctx.collisionPadding,
-      arrowPadding: this.ctx.arrowPadding,
-      sticky: this.ctx.sticky,
-      hideWhenDetached: this.ctx.hideWhenDetached,
-      arrow: this.ctx.arrow,
-    });
-
-    afterNextRender(() => {
-      this.#dismissable.activate({
-        onEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        onPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        onFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        onInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+    injectOverlayShell({
+      positioner: {
+        kind: 'floating',
+        reference: this.ctx.reference,
+        open: this.ctx.open,
+        side: this.ctx.side,
+        align: this.ctx.align,
+        sideOffset: this.ctx.sideOffset,
+        alignOffset: this.ctx.alignOffset,
+        avoidCollisions: this.ctx.avoidCollisions,
+        collisionPadding: this.ctx.collisionPadding,
+        arrowPadding: this.ctx.arrowPadding,
+        sticky: this.ctx.sticky,
+        hideWhenDetached: this.ctx.hideWhenDetached,
+        arrow: this.ctx.arrow,
+      },
+      dismiss: {
+        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
+        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
+        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
         // The trigger lives outside the portaled content but is logically
         // "inside" the popover for outside-pointer / outside-focus checks
         // — without this, clicking the trigger to close would race with
@@ -69,33 +71,20 @@ export class ForPopoverContent {
           const trigger = this.ctx.trigger();
           return trigger ? [trigger] : [];
         },
-      });
-
-      // Send focus into the popover. Non-modal: no trap, so Tab is free
-      // to move out (and `onFocusOutside` will fire and close unless
-      // dismissible is off). Consumers can veto the imperative focus move
-      // via `(autoFocusOnOpen)` (e.g. to keep focus on the input that
-      // opened the popover).
-      if (!this.ctx.emitAutoFocusOnOpen()) {
-        const initial = this.ctx.initialFocus();
-        const host = this.#host.nativeElement;
-        if (initial === 'container') {
-          host.focus();
-        } else {
-          (findFirstFocusable(host) ?? host).focus();
-        }
-      }
-    });
-
-    inject(DestroyRef).onDestroy(() => {
-      this.#dismissable.deactivate();
-      // Return focus *before* the portal helper removes the DOM node so
-      // the trigger receives the focus event in a stable layout.
-      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
-      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
-      if (this.ctx.returnFocus() && !skipReturnFocus) {
-        this.ctx.trigger()?.focus();
-      }
+      },
+      // `initialFocus()` is read once when the content mounts. The directive
+      // re-mounts on every open (consumer wraps with `@if(open())`), so the
+      // value is fresh each time.
+      initialFocus: {
+        move: this.ctx.initialFocus() === 'container' ? 'container' : 'first',
+        veto: () => this.ctx.emitAutoFocusOnOpen(),
+      },
+      returnFocus: {
+        enabled: this.ctx.returnFocus,
+        target: () => this.ctx.trigger(),
+        // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+        veto: () => this.ctx.emitAutoFocusOnClose(),
+      },
     });
   }
 }

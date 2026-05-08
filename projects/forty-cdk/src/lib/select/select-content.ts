@@ -1,9 +1,8 @@
-import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { injectFloating } from '../_internal/floating/floating';
-import { injectItemAlignedPositioner } from '../_internal/floating/item-aligned';
+import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
+import type { OverlayShellPositionerConfig } from '../_internal/overlay-shell/overlay-shell';
 import { injectSelectContext } from './select-context';
 
 /**
@@ -30,6 +29,9 @@ import { injectSelectContext } from './select-context';
  * - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
  *   the selected option's center aligns with the trigger's center. The
  *   anchored-placement inputs are documented as no-ops in this mode.
+ *
+ * The lifecycle (positioner + dismissable layer + initial focus + return
+ * focus) is owned by the shared `injectOverlayShell` helper.
  */
 @Directive({
   selector: '[forSelectContent]',
@@ -49,7 +51,6 @@ import { injectSelectContext } from './select-context';
 export class ForSelectContent {
   protected readonly ctx = injectSelectContext('ForSelectContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #dismissable = injectDismissableLayer();
 
   constructor() {
     registerHandle(
@@ -62,74 +63,69 @@ export class ForSelectContent {
     // modes at runtime would require re-creating the directive (mount /
     // unmount cycle), which is the expected pattern for primitives whose
     // positioning algorithm is structurally different.
-    //
-    // Both positioner helpers portal by default; no separate
-    // `injectPortal()` is needed at the top of this directive.
-    if (this.ctx.position() === 'item-aligned') {
-      injectItemAlignedPositioner({
-        reference: this.ctx.anchor,
-        open: this.ctx.open,
-        selectedOption: this.ctx.selectedOptionEl,
-        collisionPadding: this.ctx.collisionPadding,
-      });
-    } else {
-      injectFloating({
-        reference: this.ctx.anchor,
-        open: this.ctx.open,
-        side: this.ctx.side,
-        align: this.ctx.align,
-        sideOffset: this.ctx.sideOffset,
-        alignOffset: this.ctx.alignOffset,
-        avoidCollisions: this.ctx.avoidCollisions,
-        collisionPadding: this.ctx.collisionPadding,
-        arrowPadding: this.ctx.arrowPadding,
-        sticky: this.ctx.sticky,
-        hideWhenDetached: this.ctx.hideWhenDetached,
-      });
-    }
+    const positioner: OverlayShellPositionerConfig =
+      this.ctx.position() === 'item-aligned'
+        ? {
+            kind: 'item-aligned',
+            reference: this.ctx.anchor,
+            open: this.ctx.open,
+            selectedOption: this.ctx.selectedOptionEl,
+            collisionPadding: this.ctx.collisionPadding,
+          }
+        : {
+            kind: 'floating',
+            reference: this.ctx.anchor,
+            open: this.ctx.open,
+            side: this.ctx.side,
+            align: this.ctx.align,
+            sideOffset: this.ctx.sideOffset,
+            alignOffset: this.ctx.alignOffset,
+            avoidCollisions: this.ctx.avoidCollisions,
+            collisionPadding: this.ctx.collisionPadding,
+            arrowPadding: this.ctx.arrowPadding,
+            sticky: this.ctx.sticky,
+            hideWhenDetached: this.ctx.hideWhenDetached,
+          };
 
-    afterNextRender(() => {
-      this.#dismissable.activate({
-        onEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        onPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        onFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        onInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+    injectOverlayShell({
+      positioner,
+      dismiss: {
+        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
+        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
+        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
         // Trigger button is exempt — its own click handler toggles open/close;
         // without exemption pointer-down-outside would race and double-close.
         exemptElements: () => {
           const t = this.ctx.trigger();
           return t ? [t] : [];
         },
-      });
-
-      // Consumers can veto the imperative focus move via `(autoFocusOnOpen)`.
-      if (!this.ctx.emitAutoFocusOnOpen()) {
-        const target = this.ctx.initialFocus();
-        let focused = false;
-        if (target === 'selected') {
-          focused = this.ctx.focusSelectedOption() || this.ctx.focusFirstEnabledOption();
-        } else if (target === 'last') {
-          focused = this.ctx.focusLastEnabledOption();
-        } else {
-          focused = this.ctx.focusFirstEnabledOption();
-        }
-        if (!focused) {
-          this.#host.nativeElement.focus();
-        }
-      }
-    });
-
-    inject(DestroyRef).onDestroy(() => {
-      this.#dismissable.deactivate();
-      // Return focus *before* the portal helper removes the DOM node so the
-      // trigger receives the focus event in a stable layout. Skip on `'tab'`
-      // closes — Tab already moved focus to the trigger and let the browser
-      // advance from there; re-focusing would steal it back.
-      // `(autoFocusOnClose)` lets the consumer veto the return-focus.
-      const skipReturnFocus = this.ctx.emitAutoFocusOnClose();
-      if (this.ctx.returnFocus() && !skipReturnFocus && this.ctx.lastCloseReason() !== 'tab') {
-        this.ctx.trigger()?.focus();
-      }
+      },
+      // Primitive-owned focus algorithm. `'selected'` falls back to first
+      // when no option is selected, mirroring the previous code.
+      initialFocus: {
+        move: () => {
+          const target = this.ctx.initialFocus();
+          if (target === 'selected') {
+            return this.ctx.focusSelectedOption() || this.ctx.focusFirstEnabledOption();
+          }
+          if (target === 'last') {
+            return this.ctx.focusLastEnabledOption();
+          }
+          return this.ctx.focusFirstEnabledOption();
+        },
+        veto: () => this.ctx.emitAutoFocusOnOpen(),
+      },
+      returnFocus: {
+        enabled: this.ctx.returnFocus,
+        target: () => this.ctx.trigger(),
+        // `(autoFocusOnClose)` lets the consumer veto the return-focus.
+        veto: () => this.ctx.emitAutoFocusOnClose(),
+        // Skip on `'tab'` closes — Tab already moved focus to the trigger
+        // and let the browser advance from there; re-focusing would steal
+        // it back.
+        skip: () => this.ctx.lastCloseReason() === 'tab',
+      },
     });
   }
 }

@@ -1,15 +1,7 @@
-import {
-  afterNextRender,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { injectFloating } from '../_internal/floating/floating';
+import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -28,6 +20,12 @@ import { injectComboboxContext } from './combobox-context';
  * Active-option highlighting is driven by `aria-activedescendant` on the
  * input; the listbox surface itself sets `tabindex="-1"` so screen
  * readers don't try to land on it.
+ *
+ * The lifecycle (positioner + dismissable layer) is owned by the shared
+ * `injectOverlayShell` helper. Combobox opts out of the shell's initial-
+ * and return-focus bundles entirely (focus stays in the input throughout
+ * the open lifecycle) and omits `emitEscapeKeyDown` from the dismiss
+ * bundle (the input directive owns Escape because focus is on it).
  */
 @Directive({
   selector: '[forComboboxContent]',
@@ -46,7 +44,6 @@ import { injectComboboxContext } from './combobox-context';
 export class ForComboboxContent {
   protected readonly ctx = injectComboboxContext('ForComboboxContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #dismissable = injectDismissableLayer();
 
   /**
    * Reflects `aria-setsize` when the consumer wires up `[totalCount]` for
@@ -65,32 +62,28 @@ export class ForComboboxContent {
       (el) => this.ctx.unregisterContent(el),
     );
 
-    // `injectFloating` portals by default; no need for a separate
-    // `injectPortal()` call (registering the helper twice was harmless on
-    // the happy path but doubled the destroy hooks and cost a render
-    // callback).
-    injectFloating({
-      reference: this.ctx.anchor,
-      open: this.ctx.open,
-      side: this.ctx.side,
-      align: this.ctx.align,
-      sideOffset: this.ctx.sideOffset,
-      alignOffset: this.ctx.alignOffset,
-      avoidCollisions: this.ctx.avoidCollisions,
-      collisionPadding: this.ctx.collisionPadding,
-      arrowPadding: this.ctx.arrowPadding,
-      sticky: this.ctx.sticky,
-      hideWhenDetached: this.ctx.hideWhenDetached,
-    });
-
-    afterNextRender(() => {
-      this.#dismissable.activate({
+    injectOverlayShell({
+      positioner: {
+        kind: 'floating',
+        reference: this.ctx.anchor,
+        open: this.ctx.open,
+        side: this.ctx.side,
+        align: this.ctx.align,
+        sideOffset: this.ctx.sideOffset,
+        alignOffset: this.ctx.alignOffset,
+        avoidCollisions: this.ctx.avoidCollisions,
+        collisionPadding: this.ctx.collisionPadding,
+        arrowPadding: this.ctx.arrowPadding,
+        sticky: this.ctx.sticky,
+        hideWhenDetached: this.ctx.hideWhenDetached,
+      },
+      dismiss: {
         // Escape is handled by the input directive (focus stays in the
         // input, so Escape there shouldn't bubble through nested layers
-        // before the input sees it).
-        onPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        onFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        onInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+        // before the input sees it). Omitted here intentionally.
+        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
+        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
+        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
         // The input owns the visible focus and toggles via its own click /
         // focus handlers. Without exemption pointer-down on the input would
         // race the dismissal layer.
@@ -98,11 +91,9 @@ export class ForComboboxContent {
           const i = this.ctx.input();
           return i ? [i] : [];
         },
-      });
-    });
-
-    inject(DestroyRef).onDestroy(() => {
-      this.#dismissable.deactivate();
+      },
+      // No initialFocus / returnFocus — focus stays in the input across the
+      // entire open lifecycle. The shell skips both side effects.
     });
   }
 }
