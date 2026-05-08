@@ -209,12 +209,14 @@ export class ForComboboxInput {
         break;
 
       case 'Escape':
-        // Handled inline (not via the dismissable layer) so it doesn't
-        // bubble through nested layers — Escape from a focused input
-        // belongs to that input.
+        // Routed through emitEscapeKeyDown so the consumer's
+        // (escapeKeyDown) output fires and can veto the close. We still
+        // handle Escape inline (not via the dismissable layer) because
+        // focus stays in the input — the Escape belongs to this input
+        // and shouldn't bubble through nested layers before it sees it.
         if (this.ctx.open()) {
           event.preventDefault();
-          this.ctx.closeMenu('escape');
+          this.ctx.emitEscapeKeyDown(event);
         }
         break;
 

@@ -1,6 +1,7 @@
 import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
@@ -383,6 +384,75 @@ describe('ForCombobox', () => {
 
       expect(r.instance.open()).toBe(false);
       expect(document.activeElement).toBe(input);
+    });
+
+    it('emits (escapeKeyDown) with the native event before closing', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forCombobox
+            [(open)]="open"
+            (escapeKeyDown)="captured.push($event)"
+            ariaLabel="t"
+          >
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly captured: VetoableNativeEvent<KeyboardEvent>[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.event.key).toBe('Escape');
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('keeps open when (escapeKeyDown) is preventDefault-ed', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forCombobox
+            [(open)]="open"
+            (escapeKeyDown)="$event.preventDefault()"
+            ariaLabel="t"
+          >
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
     });
   });
 
