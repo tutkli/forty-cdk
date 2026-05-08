@@ -124,7 +124,7 @@ When the input is empty (no query) and the user presses Backspace, focus jumps t
 
 ## Autocomplete modes
 
-The `autocomplete` input mirrors the WAI-ARIA `aria-autocomplete` property:
+The `autocompleteMode` input mirrors the WAI-ARIA `aria-autocomplete` property:
 
 - **`'none'`** — input is a free-text query; no completion.
 - **`'list'`** _(default)_ — listbox shows filtered options; input shows verbatim what the user typed.

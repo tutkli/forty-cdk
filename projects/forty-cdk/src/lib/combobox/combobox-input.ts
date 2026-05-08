@@ -27,7 +27,7 @@ import { injectComboboxContext } from './combobox-context';
  * - **Enter** (when open) — activate the activedescendant; no-op otherwise.
  * - **Escape** (when open) — close (focus stays in input).
  * - **Tab** (when open) — close and let Tab flow to the next focusable.
- * - Printable keys: update `query` and (if `autocomplete` includes `'inline'`)
+ * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
  *   complete the rest of the first match in the input as selected text.
  */
 @Directive({
@@ -66,7 +66,7 @@ export class ForComboboxInput {
   protected readonly ctx = injectComboboxContext<unknown>('ForComboboxInput');
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
-  protected readonly ariaAutocomplete = computed(() => this.ctx.autocomplete());
+  protected readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
 
   constructor() {
     this.ctx.registerInput(this.#host.nativeElement);
@@ -107,7 +107,7 @@ export class ForComboboxInput {
 
     this.ctx.setQueryFromInput(prefix);
 
-    const mode = this.ctx.autocomplete();
+    const mode = this.ctx.autocompleteMode();
     const inlineActive = !isDelete && (mode === 'inline' || mode === 'both') && prefix.length > 0;
 
     if (inlineActive) {
@@ -209,12 +209,14 @@ export class ForComboboxInput {
         break;
 
       case 'Escape':
-        // Handled inline (not via the dismissable layer) so it doesn't
-        // bubble through nested layers — Escape from a focused input
-        // belongs to that input.
+        // Routed through emitEscapeKeyDown so the consumer's
+        // (escapeKeyDown) output fires and can veto the close. We still
+        // handle Escape inline (not via the dismissable layer) because
+        // focus stays in the input — the Escape belongs to this input
+        // and shouldn't bubble through nested layers before it sees it.
         if (this.ctx.open()) {
           event.preventDefault();
-          this.ctx.closeMenu('escape');
+          this.ctx.emitEscapeKeyDown(event);
         }
         break;
 

@@ -80,7 +80,7 @@ export interface ForComboboxContext<T = unknown> {
   readonly pending: Signal<boolean>;
   readonly dir: Signal<WritingDirection>;
 
-  readonly autocomplete: Signal<ForComboboxAutocomplete>;
+  readonly autocompleteMode: Signal<ForComboboxAutocomplete>;
   readonly openOnFocus: Signal<boolean>;
   readonly openOnQuery: Signal<boolean>;
   readonly commitOnSelect: Signal<boolean>;
