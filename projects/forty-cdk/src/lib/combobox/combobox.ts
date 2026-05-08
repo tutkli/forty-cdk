@@ -520,7 +520,6 @@ export class ForCombobox<T = string>
       this.query.set(handle.label());
       this.#syncInputValue(handle.label());
     }
-    this.#activeId.set(handle.id());
     this.closeMenu('select');
   }
 
