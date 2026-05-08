@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yName } from '../_internal/collection/register-handle';
 import { injectMenuGroupContext } from './menu-group-context';
 
 /**
@@ -15,13 +15,8 @@ import { injectMenuGroupContext } from './menu-group-context';
   },
 })
 export class ForMenuGroupLabel {
-  readonly #idGen = inject(IdGenerator);
-  readonly id = signal(this.#idGen.next('for-menu-group-label'));
-
-  constructor() {
-    const group = injectMenuGroupContext('ForMenuGroupLabel');
-    const id = this.id();
-    group.registerLabel(id);
-    inject(DestroyRef).onDestroy(() => group.unregisterLabel(id));
-  }
+  readonly id = registerA11yName(
+    injectMenuGroupContext('ForMenuGroupLabel'),
+    'for-menu-group-label',
+  );
 }

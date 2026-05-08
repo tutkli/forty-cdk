@@ -1,13 +1,6 @@
-import {
-  booleanAttribute,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_TOOLBAR_CONTEXT } from '../toolbar/toolbar-context';
 import { injectToggleGroupContext } from './toggle-group-context';
@@ -82,21 +75,24 @@ export class ForToggleGroupItem {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.group.registerItem(groupHandle);
+    registerHandle(
+      groupHandle,
+      (h) => this.group.registerItem(h),
+      (h) => this.group.unregisterItem(h),
+    );
 
-    const toolbarHandle = this.#toolbar
-      ? { host: this.#host.nativeElement, disabled: this.effectiveDisabled }
-      : null;
-    if (this.#toolbar && toolbarHandle) {
-      this.#toolbar.registerItem(toolbarHandle);
+    const toolbar = this.#toolbar;
+    if (toolbar) {
+      const toolbarHandle = {
+        host: this.#host.nativeElement,
+        disabled: this.effectiveDisabled,
+      };
+      registerHandle(
+        toolbarHandle,
+        (h) => toolbar.registerItem(h),
+        (h) => toolbar.unregisterItem(h),
+      );
     }
-
-    inject(DestroyRef).onDestroy(() => {
-      this.group.unregisterItem(groupHandle);
-      if (this.#toolbar && toolbarHandle) {
-        this.#toolbar.unregisterItem(toolbarHandle);
-      }
-    });
   }
 
   protected onClick(): void {

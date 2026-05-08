@@ -1,7 +1,6 @@
 import {
   afterNextRender,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -9,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   injectNavigationMenuContext,
@@ -70,8 +70,12 @@ export class ForNavigationMenuContent {
     // without hitting the not-yet-bound `input.required` throw on the owning
     // `[forNavigationMenuItem]`. `unregisterContent` is reference-based, so
     // destroy-before-register is a safe no-op.
-    afterNextRender(() => this.menu.registerContent(handle));
-    inject(DestroyRef).onDestroy(() => this.menu.unregisterContent(handle));
+    registerHandle(
+      handle,
+      (h) => this.menu.registerContent(h),
+      (h) => this.menu.unregisterContent(h),
+      'afterNextRender',
+    );
 
     // Defer the re-parent until after the embedded view is attached to its
     // template anchor — Angular inserts root nodes AFTER directive

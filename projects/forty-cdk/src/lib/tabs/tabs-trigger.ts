@@ -1,8 +1,6 @@
 import {
-  afterNextRender,
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -10,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTabsContext } from './tabs-context';
@@ -93,8 +92,12 @@ export class ForTabsTrigger {
     // in the current pass has had its inputs bound, which makes the lookup
     // deterministic. `unregisterTrigger` is reference-based, so it's a no-op
     // when destroy fires before the deferred register did.
-    afterNextRender(() => this.group.registerTrigger(handle));
-    inject(DestroyRef).onDestroy(() => this.group.unregisterTrigger(handle));
+    registerHandle(
+      handle,
+      (h) => this.group.registerTrigger(h),
+      (h) => this.group.unregisterTrigger(h),
+      'afterNextRender',
+    );
   }
 
   protected onClick(): void {

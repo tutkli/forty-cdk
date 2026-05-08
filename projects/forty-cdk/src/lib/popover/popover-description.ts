@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yDescription } from '../_internal/collection/register-handle';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -16,14 +16,8 @@ import { injectPopoverContext } from './popover-context';
   },
 })
 export class ForPopoverDescription {
-  readonly #ctx = injectPopoverContext('ForPopoverDescription');
-  readonly #idGen = inject(IdGenerator);
-
-  protected readonly id = signal(this.#idGen.next('for-popover-description'));
-
-  constructor() {
-    const myId = this.id();
-    this.#ctx.registerDescription(myId);
-    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterDescription(myId));
-  }
+  protected readonly id = registerA11yDescription(
+    injectPopoverContext('ForPopoverDescription'),
+    'for-popover-description',
+  );
 }

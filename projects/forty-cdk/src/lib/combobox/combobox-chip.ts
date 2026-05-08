@@ -1,5 +1,6 @@
-import { computed, DestroyRef, Directive, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -70,8 +71,11 @@ export class ForComboboxChip<T = string> {
       host: this.#host.nativeElement,
       value: this.value,
     };
-    this.ctx.registerChip(handle);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterChip(handle));
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerChip(h),
+      (h) => this.ctx.unregisterChip(h),
+    );
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

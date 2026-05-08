@@ -1,7 +1,6 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -10,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   createVetoableEvent,
@@ -81,8 +81,11 @@ export class ForMenuRadioItem {
       disabled: this.effectiveDisabled,
       textValue: this.textValue,
     };
-    this.menu.registerItem(handle);
-    inject(DestroyRef).onDestroy(() => this.menu.unregisterItem(handle));
+    registerHandle(
+      handle,
+      (h) => this.menu.registerItem(h),
+      (h) => this.menu.unregisterItem(h),
+    );
   }
 
   protected onClick(): void {

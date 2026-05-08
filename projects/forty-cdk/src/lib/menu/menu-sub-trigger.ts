@@ -1,13 +1,6 @@
-import {
-  booleanAttribute,
-  computed,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectMenuContext } from './menu-context';
 
@@ -67,12 +60,16 @@ export class ForMenuSubTrigger {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
     };
-    parent.registerItem(handle);
-    this.submenu.registerTrigger(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => {
-      parent.unregisterItem(handle);
-      this.submenu.unregisterTrigger(this.#host.nativeElement);
-    });
+    registerHandle(
+      handle,
+      (h) => parent.registerItem(h),
+      (h) => parent.unregisterItem(h),
+    );
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.submenu.registerTrigger(el),
+      (el) => this.submenu.unregisterTrigger(el),
+    );
   }
 
   protected onClick(): void {

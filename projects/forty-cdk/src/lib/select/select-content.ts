@@ -1,5 +1,6 @@
 import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { injectFloating } from '../_internal/floating/floating';
 import { injectItemAlignedPositioner } from '../_internal/floating/item-aligned';
@@ -51,8 +52,11 @@ export class ForSelectContent {
   readonly #dismissable = injectDismissableLayer();
 
   constructor() {
-    this.ctx.registerContent(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerContent(el),
+      (el) => this.ctx.unregisterContent(el),
+    );
 
     // Static branch — `position` is read once on construction. Switching
     // modes at runtime would require re-creating the directive (mount /

@@ -1,5 +1,6 @@
-import { DestroyRef, Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
+import { Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { ForContextMenu } from './context-menu';
 
 /**
@@ -32,8 +33,11 @@ export class ForContextMenuTrigger {
   readonly #document = inject(DOCUMENT);
 
   constructor() {
-    this.ctx.registerTrigger(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterTrigger(this.#host.nativeElement));
+    registerHandle(
+      this.#host.nativeElement,
+      (el) => this.ctx.registerTrigger(el),
+      (el) => this.ctx.unregisterTrigger(el),
+    );
   }
 
   protected onContextMenu(event: MouseEvent): void {

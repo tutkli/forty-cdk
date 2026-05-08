@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, inject, signal } from '@angular/core';
+import { Directive, inject, type Signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { registerA11yName } from '../_internal/collection/register-handle';
 import { ForSelectGroup } from './select-group';
 
 /**
@@ -17,10 +17,8 @@ import { ForSelectGroup } from './select-group';
   },
 })
 export class ForSelectGroupLabel {
-  readonly #idGen = inject(IdGenerator);
-
   /** Stable host id used by the parent group's `aria-labelledby`. */
-  readonly id = signal(this.#idGen.next('for-select-group-label'));
+  readonly id: Signal<string>;
 
   constructor() {
     const group = inject(ForSelectGroup, { optional: true });
@@ -29,8 +27,6 @@ export class ForSelectGroupLabel {
         '[forty-cdk/select] ForSelectGroupLabel must be used inside a [forSelectGroup] element.',
       );
     }
-    const myId = this.id();
-    group.registerLabel(myId);
-    inject(DestroyRef).onDestroy(() => group.unregisterLabel(myId));
+    this.id = registerA11yName(group, 'for-select-group-label');
   }
 }
