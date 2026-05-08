@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -85,7 +86,16 @@ export class ForTabsTrigger {
       value: this.value,
       disabled: this.effectiveDisabled,
     };
-    this.group.registerTrigger(handle);
+    // Defer registration so `input.required` is bound by the time the parent
+    // ever reads `handle.value()` from `triggerIdFor` / `contentIdFor` — both
+    // are evaluated during host-binding CD passes that can interleave with
+    // sibling triggers' input-binding step. Eager registration in the
+    // constructor used to hit the not-yet-bound throw, papered over by a
+    // `try/catch` in the parent. `afterNextRender` runs after every directive
+    // in the current pass has had its inputs bound, which makes the lookup
+    // deterministic. `unregisterTrigger` is reference-based, so it's a no-op
+    // when destroy fires before the deferred register did.
+    afterNextRender(() => this.group.registerTrigger(handle));
     inject(DestroyRef).onDestroy(() => this.group.unregisterTrigger(handle));
   }
 

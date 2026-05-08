@@ -163,10 +163,7 @@ export class ForListbox
     if (this.readonly()) {
       return;
     }
-    const v = readSignalSafe(target.value);
-    if (v === null) {
-      return;
-    }
+    const v = target.value();
     const current = this.value();
     this.value.set(current.includes(v) ? current.filter((x) => x !== v) : [...current, v]);
   }
@@ -190,10 +187,7 @@ export class ForListbox
       if (!opt || opt.disabled()) {
         continue;
       }
-      const v = readSignalSafe(opt.value);
-      if (v !== null) {
-        next.add(v);
-      }
+      next.add(opt.value());
     }
     this.value.set([...next]);
   }
@@ -207,10 +201,7 @@ export class ForListbox
       if (opt.disabled()) {
         continue;
       }
-      const v = readSignalSafe(opt.value);
-      if (v !== null) {
-        enabled.push(v);
-      }
+      enabled.push(opt.value());
     }
     if (enabled.length === 0) {
       return;
@@ -241,10 +232,7 @@ export class ForListbox
       if (!opt || opt.disabled()) {
         continue;
       }
-      const v = readSignalSafe(opt.value);
-      if (v !== null) {
-        next.add(v);
-      }
+      next.add(opt.value());
       if (firstEnabled === null) {
         firstEnabled = opt.host;
       }
@@ -282,7 +270,7 @@ export class ForListbox
     }
     target.host.focus();
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-      this.value.set([readSignalSafe(target.value) ?? '']);
+      this.value.set([target.value()]);
     }
   }
 
@@ -329,16 +317,7 @@ export class ForListbox
   }
 
   #setAnchorByValue(v: string): void {
-    const idx = this.#options.items().findIndex((o) => readSignalSafe(o.value) === v);
+    const idx = this.#options.items().findIndex((o) => o.value() === v);
     this.#anchorIndex.set(idx >= 0 ? idx : null);
-  }
-}
-
-/** Defensive read for an `input.required` signal that may not yet be bound. */
-function readSignalSafe<T>(s: { (): T }): T | null {
-  try {
-    return s();
-  } catch {
-    return null;
   }
 }

@@ -1,11 +1,4 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  input,
-  model,
-  type Signal,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, input, model } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -129,7 +122,7 @@ export class ForTabs implements ForTabsContext {
 
   triggerIdFor(value: string): string | null {
     for (const t of this.#triggers.items()) {
-      if (readSignalSafe(t.value) === value) {
+      if (t.value() === value) {
         return t.id();
       }
     }
@@ -138,7 +131,7 @@ export class ForTabs implements ForTabsContext {
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
-      if (readSignalSafe(c.value) === value) {
+      if (c.value() === value) {
         return c.id();
       }
     }
@@ -147,18 +140,5 @@ export class ForTabs implements ForTabsContext {
 
   isFirstEnabledTrigger(el: HTMLElement): boolean {
     return this.#firstEnabledTriggerHost() === el;
-  }
-}
-
-/**
- * Read a signal that may be a not-yet-bound `input.required`. Returns null
- * during the brief window between handle registration (in a child's
- * constructor) and that child's input-binding step within the same CD pass.
- */
-function readSignalSafe(s: Signal<string>): string | null {
-  try {
-    return s();
-  } catch {
-    return null;
   }
 }

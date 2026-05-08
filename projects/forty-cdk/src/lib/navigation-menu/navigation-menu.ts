@@ -273,7 +273,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
-      if (readSignalSafe(c.value) === value) {
+      if (c.value() === value) {
         return c.id();
       }
     }
@@ -282,7 +282,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   triggerIdFor(value: string): string | null {
     for (const t of this.#triggers.items()) {
-      if (readSignalSafe(t.value) === value) {
+      if (t.value() === value) {
         return t.id();
       }
     }
@@ -291,7 +291,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   triggerHostFor(value: string): HTMLElement | null {
     for (const t of this.#triggers.items()) {
-      if (readSignalSafe(t.value) === value) {
+      if (t.value() === value) {
         return t.host;
       }
     }
@@ -303,7 +303,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     const v = this.value();
     if (v === '') return null;
     for (const t of this.#triggers.items()) {
-      if (readSignalSafe(t.value) === v) return t.host;
+      if (t.value() === v) return t.host;
     }
     return null;
   });
@@ -313,7 +313,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     const v = this.value();
     if (v === '') return null;
     for (const c of this.#contents.items()) {
-      if (readSignalSafe(c.value) === v) return c.host;
+      if (c.value() === v) return c.host;
     }
     return null;
   });
@@ -370,7 +370,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   #triggerIndexFor(value: string): number {
     const triggers = this.#triggers.items();
     for (let i = 0; i < triggers.length; i++) {
-      if (readSignalSafe(triggers[i]!.value) === value) return i;
+      if (triggers[i]!.value() === value) return i;
     }
     return -1;
   }
@@ -400,13 +400,5 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       this.#skipDelayTimer = null;
     }
     this.#skipDelayActive = false;
-  }
-}
-
-function readSignalSafe(s: Signal<string>): string | null {
-  try {
-    return s();
-  } catch {
-    return null;
   }
 }

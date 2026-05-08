@@ -92,6 +92,42 @@ describe('ForTabs', () => {
       }
     });
 
+    // Issue #102 reproduction. Previously, `triggerIdFor` / `contentIdFor`
+    // wrapped each handle's `value()` read in a `try/catch` because triggers
+    // and contents register in their constructors — racing with their own
+    // `input.required` binding step. The catch swallowed legitimate errors
+    // too, and a successful lookup was indistinguishable from "still
+    // bootstrapping". This test pins down two invariants the new code path
+    // must guarantee:
+    //
+    // 1. Every trigger / content with a real pair resolves it on the first
+    //    settled render — no stragglers.
+    // 2. Late inserts (a tab added via `@for` after first render) wire up
+    //    deterministically too, not just the initial set.
+    it('resolves trigger↔content pairing deterministically, including late inserts', () => {
+      const { el, instance, fixture } = renderHost(TabsHost);
+      for (const v of ['a', 'b', 'c']) {
+        const t = triggerOf(el, v);
+        const c = contentOf(el, v);
+        expect(t.getAttribute('aria-controls')).not.toBeNull();
+        expect(c.getAttribute('aria-labelledby')).not.toBeNull();
+        expect(t.getAttribute('aria-controls')).toBe(c.id);
+        expect(c.getAttribute('aria-labelledby')).toBe(t.id);
+      }
+
+      // Late insert exercises the same registration path on a fresh trigger
+      // / content pair after the parent's collection signal has already
+      // emitted at least once. The deferred-registration model has to
+      // settle the new pair within the same CD cycle that mounts them.
+      instance.tabs.update((arr) => [...arr, { value: 'd', label: 'D', disabled: false }]);
+      fixture.detectChanges();
+
+      const lateTrigger = triggerOf(el, 'd');
+      const lateContent = contentOf(el, 'd');
+      expect(lateTrigger.getAttribute('aria-controls')).toBe(lateContent.id);
+      expect(lateContent.getAttribute('aria-labelledby')).toBe(lateTrigger.id);
+    });
+
     it('starts with all panels marked aria-hidden and inert when no value is set', () => {
       const { el } = renderHost(TabsHost);
       for (const v of ['a', 'b', 'c']) {
