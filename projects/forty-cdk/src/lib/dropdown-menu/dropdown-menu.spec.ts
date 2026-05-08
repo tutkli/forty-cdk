@@ -1,5 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
 import { ForMenuContent } from '../menu/menu-content';

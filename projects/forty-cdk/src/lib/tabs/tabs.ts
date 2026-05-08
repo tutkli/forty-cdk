@@ -4,7 +4,7 @@ import {
   Directive,
   input,
   model,
-  Signal,
+  type Signal,
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
@@ -17,10 +17,10 @@ import {
 import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import {
   FOR_TABS_CONTEXT,
-  ForTabsContentHandle,
-  ForTabsContext,
-  ForTabsTriggerHandle,
-  TabsActivationMode,
+  type ForTabsContentHandle,
+  type ForTabsContext,
+  type ForTabsTriggerHandle,
+  type TabsActivationMode,
 } from './tabs-context';
 
 /**

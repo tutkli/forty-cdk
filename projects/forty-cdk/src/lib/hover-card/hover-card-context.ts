@@ -1,4 +1,4 @@
-import { inject, InjectionToken, Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { Placement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';

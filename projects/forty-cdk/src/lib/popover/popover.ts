@@ -17,7 +17,7 @@ import {
 } from '../_internal/auto-focus-event/auto-focus-event';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { FOR_POPOVER_CONTEXT, ForPopoverContext } from './popover-context';
+import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
 
 /**
  * Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),

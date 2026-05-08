@@ -1,4 +1,4 @@
-import { InjectionToken, Signal } from '@angular/core';
+import { InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Quality bucket reflected on `data-quality`. Mirrors the HTML5 `<meter>`

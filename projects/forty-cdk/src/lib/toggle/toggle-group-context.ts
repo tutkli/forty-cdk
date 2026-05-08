@@ -1,4 +1,4 @@
-import { inject, InjectionToken, ModelSignal, Signal } from '@angular/core';
+import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type {

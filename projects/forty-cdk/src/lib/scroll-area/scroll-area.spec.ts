@@ -111,7 +111,7 @@ describe('ForScrollArea', () => {
 
   beforeEach(() => {
     originalRO = globalThis.ResizeObserver;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (globalThis as any).ResizeObserver = FakeResizeObserver as any;
     FakeResizeObserver.instances = [];
     // Reset injected style tag between specs.
@@ -119,7 +119,7 @@ describe('ForScrollArea', () => {
     vi.useFakeTimers();
   });
   afterEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (globalThis as any).ResizeObserver = originalRO;
     vi.useRealTimers();
   });

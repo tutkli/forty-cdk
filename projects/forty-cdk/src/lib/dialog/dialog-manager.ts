@@ -6,9 +6,9 @@ import {
   Injectable,
   InjectionToken,
   Injector,
-  Provider,
+  type Provider,
   signal,
-  Type,
+  type Type,
 } from '@angular/core';
 
 import { lockBodyScroll, unlockBodyScroll } from '../_internal/body-scroll-lock/body-scroll-lock';

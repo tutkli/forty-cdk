@@ -12,7 +12,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { FOR_ACCORDION_CONTEXT, ForAccordionContext } from './accordion-context';
+import { FOR_ACCORDION_CONTEXT, type ForAccordionContext } from './accordion-context';
 
 /**
  * Root of the Accordion primitive. Holds the open value(s) and orchestrates

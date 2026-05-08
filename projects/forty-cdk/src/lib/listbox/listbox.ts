@@ -24,8 +24,8 @@ import { injectRovingTabindex } from '../_internal/roving-tabindex/roving-tabind
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   FOR_LISTBOX_CONTEXT,
-  ForListboxContext,
-  ForListboxOptionHandle,
+  type ForListboxContext,
+  type ForListboxOptionHandle,
 } from './listbox-context';
 
 /**

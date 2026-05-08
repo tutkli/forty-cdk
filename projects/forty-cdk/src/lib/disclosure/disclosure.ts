@@ -1,7 +1,7 @@
 import { booleanAttribute, Directive, inject, input, model, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { FOR_DISCLOSURE_CONTEXT, ForDisclosureContext } from './disclosure-context';
+import { FOR_DISCLOSURE_CONTEXT, type ForDisclosureContext } from './disclosure-context';
 
 /**
  * Root of the Disclosure primitive. Holds the open/disabled state and

@@ -1,6 +1,6 @@
 import { computed, Directive, signal } from '@angular/core';
 
-import { FOR_MENU_GROUP_CONTEXT, ForMenuGroupContext } from './menu-group-context';
+import { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
 
 /**
  * Logical grouping of menu items, exposed to assistive tech as

@@ -9,7 +9,7 @@ import {
   linkedSignal,
   model,
   signal,
-  Signal,
+  type Signal,
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';

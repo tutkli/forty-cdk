@@ -26,7 +26,7 @@ import {
   type InertSiblingsHandle,
 } from '../_internal/inert-siblings/inert-siblings';
 import { injectPortal } from '../_internal/portal/portal';
-import { FOR_DIALOG_CONTEXT, ForDialogCloseReason, ForDialogContext } from './dialog-context';
+import { FOR_DIALOG_CONTEXT, type ForDialogCloseReason, type ForDialogContext } from './dialog-context';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

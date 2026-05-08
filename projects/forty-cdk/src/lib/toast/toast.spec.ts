@@ -3,7 +3,7 @@ import {
   inject,
   provideZonelessChangeDetection,
   signal,
-  TemplateRef,
+  type TemplateRef,
   viewChild,
 } from '@angular/core';
 import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-context';

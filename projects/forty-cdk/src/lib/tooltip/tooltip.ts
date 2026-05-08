@@ -14,8 +14,8 @@ import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_TOOLTIP_CONTEXT,
-  ForTooltipContext,
-  TooltipScheduleReason,
+  type ForTooltipContext,
+  type TooltipScheduleReason,
 } from './tooltip-context';
 import { TooltipCoordinator } from './tooltip-defaults';
 
