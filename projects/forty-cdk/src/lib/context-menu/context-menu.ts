@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement, ReferenceElement, VirtualElement } from '@floating-ui/dom';
+import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
 import {
   emitAutoFocusOnClose,
@@ -67,27 +67,16 @@ export class ForContextMenu implements ForMenuContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Floating-ui placement relative to the pointer. Default `'bottom-start'`
-   * (right-of, below). Legacy API — new code should prefer `side` + `align`.
+   * Side the menu is anchored to relative to the pointer. Defaults to
+   * `'bottom'`. Pair with `align` for the full positioning API.
    */
-  readonly placement = input<Placement>('bottom-start');
+  readonly side = input<FloatingSide | undefined>('bottom');
 
-  /**
-   * Side the menu is anchored to relative to the pointer. When set, takes
-   * precedence over `placement`.
-   */
-  readonly side = input<FloatingSide | undefined>(undefined);
+  /** Alignment along the chosen `side`. Defaults to `'start'`. */
+  readonly align = input<FloatingAlign | undefined>('start');
 
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
-
-  /** Gap (px) along the main axis. Default `0`. Legacy alias for `sideOffset`. */
-  readonly offset = input<number>(0);
-
-  /** Gap (px) along the main axis. When set, overrides the legacy `offset`. */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  /** Gap (px) along the main axis. Default `0`. */
+  readonly sideOffset = input(0, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

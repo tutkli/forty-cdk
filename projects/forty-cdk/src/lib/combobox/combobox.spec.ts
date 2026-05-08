@@ -1254,7 +1254,7 @@ describe('ForCombobox', () => {
     });
   });
 
-  describe('placement default flip under RTL', () => {
+  describe('align default flip under RTL', () => {
     @Component({
       imports: BASE_IMPORTS,
       template: `
@@ -1268,12 +1268,12 @@ describe('ForCombobox', () => {
     @Component({
       imports: BASE_IMPORTS,
       template: `
-        <div forCombobox dir="rtl" placement="top-end">
+        <div forCombobox dir="rtl" align="center">
           <input forComboboxInput />
         </div>
       `,
     })
-    class RtlHostWithPlacement {}
+    class RtlHostWithAlign {}
 
     @Component({
       imports: BASE_IMPORTS,
@@ -1291,19 +1291,20 @@ describe('ForCombobox', () => {
       return debug.injector.get(ForCombobox);
     }
 
-    it('defaults placement to bottom-start in LTR', () => {
+    it('defaults align to start in LTR (side defaults to bottom)', () => {
       const r = renderHost(LtrHost);
-      expect(getCombobox(r).placement()).toBe('bottom-start');
+      expect(getCombobox(r).side()).toBe('bottom');
+      expect(getCombobox(r).align()).toBe('start');
     });
 
-    it('defaults placement to bottom-end when dir="rtl" and consumer omits [placement]', () => {
+    it('defaults align to end when dir="rtl" and consumer omits [align]', () => {
       const r = renderHost(RtlHost);
-      expect(getCombobox(r).placement()).toBe('bottom-end');
+      expect(getCombobox(r).align()).toBe('end');
     });
 
-    it('honors a consumer-provided [placement] in RTL (no auto-flip)', () => {
-      const r = renderHost(RtlHostWithPlacement);
-      expect(getCombobox(r).placement()).toBe('top-end');
+    it('honors a consumer-provided [align] in RTL (no auto-flip)', () => {
+      const r = renderHost(RtlHostWithAlign);
+      expect(getCombobox(r).align()).toBe('center');
     });
   });
 

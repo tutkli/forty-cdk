@@ -1,5 +1,4 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
-import type { Placement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 
@@ -20,11 +19,9 @@ export interface ForPopoverContext {
   readonly returnFocus: Signal<boolean>;
   readonly initialFocus: Signal<'first' | 'container'>;
 
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;

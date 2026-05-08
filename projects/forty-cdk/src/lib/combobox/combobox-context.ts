@@ -1,5 +1,5 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -87,11 +87,9 @@ export interface ForComboboxContext<T = unknown> {
   readonly clearOnQueryChange: Signal<boolean>;
 
   readonly dismissible: Signal<boolean>;
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
-  readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly align: Signal<FloatingAlign>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;

@@ -24,8 +24,8 @@ class FloatingHost {
   readonly arrowEl = viewChild<ElementRef<HTMLElement>>('arrow');
 
   readonly isOpen = signal(false);
-  readonly placement = signal<'top' | 'bottom' | 'left' | 'right'>('top');
-  readonly offset = signal(8);
+  readonly side = signal<'top' | 'bottom' | 'left' | 'right'>('top');
+  readonly sideOffset = signal(8);
   readonly useArrow = signal(false);
 
   readonly reference = signal<HTMLElement | null>(null);
@@ -51,8 +51,8 @@ class FloatingHost {
 class FloatingBubble {
   readonly reference = signal<HTMLElement | null>(null);
   readonly open = signal(false);
-  readonly placement = signal<'top' | 'bottom' | 'left' | 'right'>('top');
-  readonly offset = signal(8);
+  readonly side = signal<'top' | 'bottom' | 'left' | 'right'>('top');
+  readonly sideOffset = signal(8);
   readonly arrow = signal<HTMLElement | null>(null);
   readonly portal = true;
 
@@ -60,8 +60,8 @@ class FloatingBubble {
     injectFloating({
       reference: this.reference,
       open: this.open,
-      placement: this.placement,
-      offset: this.offset,
+      side: this.side,
+      sideOffset: this.sideOffset,
       arrow: this.arrow,
       portal: this.portal,
     });
@@ -138,15 +138,15 @@ class BubbleHost {
 class InPlaceBubble {
   readonly reference = signal<HTMLElement | null>(null);
   readonly open = signal(false);
-  readonly placement = signal<'top'>('top');
-  readonly offset = signal(8);
+  readonly side = signal<'top'>('top');
+  readonly sideOffset = signal(8);
 
   constructor() {
     injectFloating({
       reference: this.reference,
       open: this.open,
-      placement: this.placement,
-      offset: this.offset,
+      side: this.side,
+      sideOffset: this.sideOffset,
       portal: false,
     });
   }
@@ -259,7 +259,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('top');
     });
 
-    it('reacts to placement changes by re-running computePosition', async () => {
+    it('reacts to side changes by re-running computePosition', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -271,7 +271,7 @@ describe('injectFloating', () => {
       await flushPositioning(fixture);
       expect(bubbleEl.dataset['placement']).toBe('top');
 
-      bubble.placement.set('bottom');
+      bubble.side.set('bottom');
       await flushPositioning(fixture);
       expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
@@ -290,7 +290,7 @@ describe('injectFloating', () => {
       expect(firstPlacement).toBe('top');
 
       bubble.open.set(false);
-      bubble.placement.set('bottom');
+      bubble.side.set('bottom');
       await flushPositioning(fixture);
       // Placement string preserved (no further computePosition while closed).
       expect(bubbleEl.dataset['placement']).toBe('top');
@@ -319,7 +319,7 @@ describe('injectFloating', () => {
   });
 
   describe('data-side / data-align', () => {
-    it('reflects data-side and data-align on the host (legacy placement input)', async () => {
+    it('reflects data-side and data-align on the host with default align', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -330,7 +330,7 @@ describe('injectFloating', () => {
       bubble.open.set(true);
       await flushPositioning(fixture);
 
-      // placement='top' (no align suffix) → side='top', align='center'.
+      // side='top' with default align → align='center'.
       expect(bubbleEl.dataset['side']).toBe('top');
       expect(bubbleEl.dataset['align']).toBe('center');
     });

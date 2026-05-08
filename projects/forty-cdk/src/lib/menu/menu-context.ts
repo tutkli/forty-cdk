@@ -1,5 +1,5 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -56,16 +56,14 @@ export interface ForMenuContext {
   readonly returnFocus: Signal<boolean>;
   /**
    * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu
-   * triggers and items, and the default placement of submenus (`'right-start'`
-   * in LTR, `'left-start'` in RTL). On `[forMenuSub]` defaults to the parent
-   * menu's `dir` and can be overridden per-submenu.
+   * triggers and items, and the default `side` of submenus (`'right'` in
+   * LTR, `'left'` in RTL). On `[forMenuSub]` defaults to the parent menu's
+   * `dir` and can be overridden per-submenu.
    */
   readonly dir: Signal<WritingDirection>;
-  readonly placement: Signal<Placement>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign | undefined>;
-  readonly offset: Signal<number>;
-  readonly sideOffset: Signal<number | undefined>;
+  readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;

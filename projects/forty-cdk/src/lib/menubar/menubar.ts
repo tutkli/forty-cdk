@@ -138,7 +138,7 @@ export class ForMenubar implements ForMenubarContext {
 
   /**
    * Single `ForMenuContext` provided to descendant `[forMenuContent]` and
-   * items. Its open / anchor / placement / ids fields are derived from
+   * items. Its open / anchor / side / ids fields are derived from
    * `activeTrigger`, so the same context shape transparently covers
    * whichever trigger's menu is mounted.
    */
@@ -148,11 +148,9 @@ export class ForMenubar implements ForMenubarContext {
     dismissible: signal(true),
     returnFocus: signal(true),
     dir: this.dir,
-    placement: computed(() => this.activeTrigger()?.placement() ?? 'bottom-start'),
     side: computed(() => this.activeTrigger()?.side()),
     align: computed(() => this.activeTrigger()?.align()),
-    offset: computed(() => this.activeTrigger()?.offset() ?? 4),
-    sideOffset: computed(() => this.activeTrigger()?.sideOffset()),
+    sideOffset: computed(() => this.activeTrigger()?.sideOffset() ?? 4),
     alignOffset: computed(() => this.activeTrigger()?.alignOffset() ?? 0),
     avoidCollisions: computed(() => this.activeTrigger()?.avoidCollisions() ?? true),
     collisionPadding: computed(() => this.activeTrigger()?.collisionPadding() ?? 8),

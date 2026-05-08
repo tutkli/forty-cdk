@@ -8,7 +8,7 @@ Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI
 
 | Class | Selector | Role |
 | --- | --- | --- |
-| `ForTooltip` | `[forTooltip]` | Wrapper. Owns `open`, delays, placement. Provides the shared context. |
+| `ForTooltip` | `[forTooltip]` | Wrapper. Owns `open`, delays, side / align positioning. Provides the shared context. |
 | `ForTooltipTrigger` | `[forTooltipTrigger]` | Apply on a `<button>` or other focusable element. Emits the hover / focus / Escape signals. |
 | `ForTooltipContent` | `[forTooltipContent]` | The bubble. Portaled to `document.body`, positioned by floating-ui while open. |
 | `ForTooltipArrow` | `[forTooltipArrow]` | Optional. Render inside the content; floating-ui's `arrow` middleware aligns it with the trigger. |
@@ -20,8 +20,10 @@ Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI
 | API | Type | Description |
 | --- | --- | --- |
 | `open` | `model<boolean>` | Two-way bindable visibility. |
-| `placement` | `input<Placement>` | floating-ui placement (`'top'`, `'bottom-start'`, etc.). Default `'top'`. |
-| `offset` | `input<number>` | Gap (px) between trigger and content. Default `8`. |
+| `side` | `input<FloatingSide>` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Default `'top'`. |
+| `align` | `input<FloatingAlign>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Default `'center'`. |
+| `sideOffset` | `input<number>` | Gap (px) between trigger and content along the main axis. Default `8`. |
+| `alignOffset` | `input<number>` | Gap (px) along the cross axis. Default `0`. |
 | `openDelay` | `input<number>` | ms before showing after hover/focus enters. Default `700`. |
 | `closeDelay` | `input<number>` | ms before hiding after hover/focus leaves. Escape ignores this. Default `300`. |
 | `disabled` | `input<boolean>` | When `true`, all interaction is ignored. |
@@ -45,7 +47,7 @@ import {
   selector: 'demo-save',
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, ForTooltipArrow],
   template: `
-    <span forTooltip placement="top" [openDelay]="400">
+    <span forTooltip side="top" [openDelay]="400">
       <button type="button" forTooltipTrigger aria-label="Save">💾</button>
       <div forTooltipContent class="my-tooltip">
         Save changes

@@ -60,7 +60,7 @@ export class DemoMenubar {
 | `ForMenubar`        | `[forMenubar]`        | Root. Owns `value` (the open trigger), orientation, dir, loop, disabled. Provides the `ForMenubarContext` and a multiplexed `ForMenuContext` to `[forMenuContent]`. |
 | `ForMenubarTrigger` | `[forMenubarTrigger]` | A trigger button. `role="menuitem"` with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`. Participates in roving tabindex and trigger-row keyboard.      |
 
-The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / placement / ids reflect the active trigger.
+The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / side / ids reflect the active trigger.
 
 ## Inputs (`ForMenubar`)
 
@@ -79,7 +79,7 @@ The menu surface, items, separators, groups, and submenus come from the [`menu/`
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `value`                                                                                                                                                            | required               | Identifier for the trigger. The menubar's `value` model holds this when the menu is open.                                      |
 | `disabled`                                                                                                                                                         | `false`                | Per-trigger disabled, in addition to the menubar's `disabled`.                                                                 |
-| `placement` / `side` / `align` / `offset` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | (floating-ui defaults) | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`. |
+| `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | (floating-ui defaults) | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`. |
 | `ariaLabel`                                                                                                                                                        | `null`                 | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                              |
 
 ## Trigger keyboard

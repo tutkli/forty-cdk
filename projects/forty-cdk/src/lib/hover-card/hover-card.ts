@@ -12,7 +12,6 @@ import {
   type WritableSignal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import type { Placement } from '@floating-ui/dom';
 import { distinctUntilChanged } from 'rxjs';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -88,30 +87,19 @@ export class ForHoverCard implements ForHoverCardContext {
   });
 
   /**
-   * Floating-ui placement. Default `'top'`. Legacy single-string API —
-   * new code should prefer the `side` + `align` pair.
+   * Side the card is anchored to. Defaults to `'top'`. Pair with `align`
+   * for the full positioning API.
    */
-  readonly placement = input<Placement>('top');
-
-  /**
-   * Side the card is anchored to. When set, takes precedence over
-   * `placement`. Pair with `align` for the full positioning API.
-   */
-  readonly side = input<FloatingSide | undefined>(undefined);
+  readonly side = input<FloatingSide | undefined>('top');
 
   /** Alignment along the chosen `side`. Defaults to `'center'`. */
   readonly align = input<FloatingAlign | undefined>(undefined);
 
-  /** Gap (px) between trigger and card along the main axis. Default `8`. Legacy alias for `sideOffset`. */
-  readonly offset = input<number>(8);
-
   /**
-   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
-   * Identical semantics to Radix's `sideOffset`.
+   * Gap (px) between trigger and card along the main axis. Default `8`.
+   * Mirrors Radix's `sideOffset`.
    */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  readonly sideOffset = input(8, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

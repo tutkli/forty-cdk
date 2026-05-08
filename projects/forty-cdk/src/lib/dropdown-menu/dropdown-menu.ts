@@ -9,7 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { Placement, ReferenceElement } from '@floating-ui/dom';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   emitAutoFocusOnClose,
@@ -77,30 +77,19 @@ export class ForDropdownMenu implements ForMenuContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Floating-ui placement. Default `'bottom-start'`. Legacy single-string
-   * API — new code should prefer the `side` + `align` pair.
+   * Side the menu is anchored to. Defaults to `'bottom'`. Pair with
+   * `align` for the full positioning API.
    */
-  readonly placement = input<Placement>('bottom-start');
+  readonly side = input<FloatingSide | undefined>('bottom');
+
+  /** Alignment along the chosen `side`. Defaults to `'start'`. */
+  readonly align = input<FloatingAlign | undefined>('start');
 
   /**
-   * Side the menu is anchored to. When set, takes precedence over
-   * `placement`. Pair with `align` for the full positioning API.
+   * Gap (px) between trigger and menu along the main axis. Default `4`.
+   * Mirrors Radix's `sideOffset`.
    */
-  readonly side = input<FloatingSide | undefined>(undefined);
-
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
-
-  /** Gap (px) between trigger and menu along the main axis. Default `4`. Legacy alias for `sideOffset`. */
-  readonly offset = input<number>(4);
-
-  /**
-   * Gap (px) along the main axis. When set, overrides the legacy `offset`.
-   * Identical semantics to Radix's `sideOffset`.
-   */
-  readonly sideOffset = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  readonly sideOffset = input(4, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });

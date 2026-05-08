@@ -30,7 +30,7 @@ import {
     ForPopoverArrow,
   ],
   template: `
-    <div forPopover [(open)]="open" placement="bottom-start">
+    <div forPopover [(open)]="open" side="bottom" align="start">
       <button forPopoverTrigger>Settings</button>
 
       @if (open()) {
@@ -56,7 +56,7 @@ export class DemoPopover {
 
 | Class                   | Selector                  | Role                                                                                                                                                                                                                                                        |
 | ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForPopover`            | `[forPopover]`            | Root. Owns `open`, placement, dismissible, returnFocus, initialFocus.                                                                                                                                                                                       |
+| `ForPopover`            | `[forPopover]`            | Root. Owns `open`, side / align positioning, dismissible, returnFocus, initialFocus.                                                                                                                                                                        |
 | `ForPopoverTrigger`     | `[forPopoverTrigger]`     | Toggles `open` on click. Wires `aria-haspopup` / `aria-expanded` / `aria-controls`. Used as the floating-ui anchor unless a `[forPopoverAnchor]` is registered.                                                                                             |
 | `ForPopoverAnchor`      | `[forPopoverAnchor]`      | Optional. When present, the popover is positioned against this element instead of the trigger — useful when "what opens it" and "where it appears" differ (cursor follower, contextual help anchored to a row, popover anchored to a text-selection range). |
 | `ForPopoverContent`     | `[forPopoverContent]`     | The popover surface. `role="dialog"`, portaled to body, positioned, dismissable.                                                                                                                                                                            |
@@ -70,8 +70,10 @@ export class DemoPopover {
 | API            | Default    | Description                                                                     |
 | -------------- | ---------- | ------------------------------------------------------------------------------- |
 | `open`         | `false`    | Two-way bindable visibility.                                                    |
-| `placement`    | `'bottom'` | floating-ui placement (`'top'`, `'bottom-start'`, ...).                         |
-| `offset`       | `8`        | Gap (px) between trigger and content.                                           |
+| `side`         | `'bottom'` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`).                      |
+| `align`        | `'center'` | Alignment along the chosen side (`'start'` / `'center'` / `'end'`).             |
+| `sideOffset`   | `8`        | Gap (px) between trigger and content along the main axis.                       |
+| `alignOffset`  | `0`        | Gap (px) along the cross axis (parallel to `side`).                             |
 | `disabled`     | `false`    | When `true`, trigger does not toggle.                                           |
 | `dismissible`  | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.            |
 | `returnFocus`  | `true`     | Focus returns to the trigger on close.                                          |

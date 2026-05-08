@@ -525,8 +525,8 @@ describe('ForMenuSub', () => {
       expect(r.instance.subOpen()).toBe(true);
     });
 
-    it('default submenu placement flips to "left-start" in RTL', () => {
-      // Inspect the directive's `placement` computed directly — independent of
+    it('default submenu side flips to "left" in RTL', () => {
+      // Inspect the directive's `side` computed directly — independent of
       // floating-ui's async positioning, which is unreliable in jsdom.
       const r = renderHost(RtlSubMenuHost);
       r.instance.open.set(true);
@@ -535,17 +535,18 @@ describe('ForMenuSub', () => {
       const subDir = TestBed.inject(ForMenuSub, undefined, { optional: true });
       // Locate the submenu instance by querying through Angular's debug API.
       // The subOpen flag must be false here so the submenu is mounted but
-      // before `injectFloating` has resolved — placement should be authored
+      // before `injectFloating` has resolved — side should be authored
       // from `dir` regardless.
       const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
       // Walk to the element's directive instance via Angular debug.
       const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
       const sub = subDebug.injector.get(ForMenuSub);
-      expect(sub.placement()).toBe('left-start');
+      expect(sub.side()).toBe('left');
+      expect(sub.align()).toBe('start');
       void subDir;
     });
 
-    it('a consumer-provided placement overrides the RTL default (no auto-flip)', () => {
+    it('a consumer-provided side overrides the RTL default (no auto-flip)', () => {
       @Component({
         imports: IMPORTS,
         template: `
@@ -553,7 +554,7 @@ describe('ForMenuSub', () => {
             <button forDropdownMenuTrigger>Options</button>
             @if (open()) {
               <div forMenuContent>
-                <div forMenuSub placement="top-end">
+                <div forMenuSub side="top" align="end">
                   <button forMenuSubTrigger>More</button>
                 </div>
               </div>
@@ -569,7 +570,8 @@ describe('ForMenuSub', () => {
       const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
       const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
       const sub = subDebug.injector.get(ForMenuSub);
-      expect(sub.placement()).toBe('top-end');
+      expect(sub.side()).toBe('top');
+      expect(sub.align()).toBe('end');
     });
   });
 
