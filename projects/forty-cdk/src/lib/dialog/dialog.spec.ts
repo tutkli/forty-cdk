@@ -5,7 +5,7 @@ import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { flush, pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
@@ -747,6 +747,39 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(document.querySelector('[forDialog]')).toBeNull();
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+    });
+
+    it('mount/unmount cycle still portals, focuses, and emits (close) under reduced-motion', async () => {
+      const r = renderHost(DialogHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.focus();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      expect(dialog).not.toBeNull();
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.getAttribute('data-state')).toBe('open');
+      expect(document.activeElement?.id).toBe('ok');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.reasons).toEqual(['escape']);
+      expect(document.querySelector('[forDialog]')).toBeNull();
+      expect(document.activeElement).toBe(trigger);
     });
   });
 

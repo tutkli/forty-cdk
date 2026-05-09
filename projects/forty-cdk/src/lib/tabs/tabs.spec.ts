@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../test-utils';
+import { pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { assertRovingTabindexContract } from '../../test-utils/contract';
 import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
@@ -472,6 +472,31 @@ describe('ForTabs', () => {
       flush();
       expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('true');
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('false');
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+    });
+
+    it('clicking a tab still switches aria-selected and aria-hidden under reduced-motion', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.active.set('a');
+      flush();
+
+      triggerOf(el, 'b').click();
+      flush();
+
+      expect(fixture.componentInstance.active()).toBe('b');
+      expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('false');
+      expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
+      expect(contentOf(el, 'a').getAttribute('aria-hidden')).toBe('true');
+      expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
     });
   });
 

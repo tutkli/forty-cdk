@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import { withReducedMotion } from '../../test-utils/reduced-motion';
 import { ForDisclosure } from './disclosure';
 import { ForDisclosureContent } from './disclosure-content';
 import { ForDisclosureTrigger } from './disclosure-trigger';
@@ -259,6 +260,34 @@ describe('ForDisclosure', () => {
       flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restore: () => void;
+    beforeEach(() => {
+      restore = withReducedMotion();
+    });
+    afterEach(() => {
+      restore();
+    });
+
+    it('toggle still flips data-state and aria-expanded under reduced-motion', () => {
+      const { fixture, query, flush } = renderHost(DisclosureHost);
+      const trigger = query<HTMLButtonElement>('button')!;
+      const content = query<HTMLElement>('section')!;
+
+      trigger.click();
+      flush();
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(content.getAttribute('data-state')).toBe('open');
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.click();
+      flush();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(content.getAttribute('data-state')).toBe('closed');
+      expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
 

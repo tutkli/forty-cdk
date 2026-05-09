@@ -10,6 +10,7 @@ import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-co
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import { withReducedMotion } from '../../test-utils/reduced-motion';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
@@ -642,6 +643,28 @@ describe('ForToast (declarative)', () => {
       const region = getLiveAnnouncerRegion('assertive');
       expect(region).not.toBeNull();
       expect(region!.textContent).toBe('Save failed. Network unreachable.. Retry (Cmd+R)');
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+      vi.useRealTimers();
+    });
+
+    it('still auto-dismisses after [duration] under reduced-motion', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      vi.advanceTimersByTime(4_999);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
     });
   });
 });

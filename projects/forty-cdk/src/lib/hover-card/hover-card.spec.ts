@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
-import { pressKey, renderHost } from '../../test-utils';
+import { pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
@@ -343,6 +343,44 @@ describe('ForHoverCard', () => {
       flush();
 
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+    });
+
+    it('still respects openDelay / closeDelay cadence under reduced-motion', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.openDelay.set(700);
+      fixture.componentInstance.closeDelay.set(300);
+      flush();
+
+      const trigger = query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      vi.advanceTimersByTime(699);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(299);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
 
