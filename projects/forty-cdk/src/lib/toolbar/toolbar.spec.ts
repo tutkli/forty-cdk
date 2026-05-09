@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 
 import { pressKey, renderHost } from '../../test-utils';
+import { assertRovingTabindexContract } from '../../test-utils/contract';
 import { ForToggleGroup } from '../toggle/toggle-group';
 import { ForToggleGroupItem } from '../toggle/toggle-group-item';
 import { ForToolbar } from './toolbar';
@@ -41,6 +42,9 @@ class ToolbarHost {
 })
 class ToolbarWithGroupHost {}
 
+const collectFocusables = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forToolbarButton], [forToolbarLink]'));
+
 describe('ForToolbar', () => {
   describe('roles + reflection', () => {
     it('exposes role="toolbar" and reflects orientation', () => {
@@ -75,19 +79,24 @@ describe('ForToolbar', () => {
     });
   });
 
-  describe('roving tabindex', () => {
-    it('only the first enabled item is in the tab sequence', () => {
-      const { query, queryAll, flush } = renderHost(ToolbarHost);
-      flush();
-
-      const buttons = queryAll<HTMLButtonElement>('button');
-      const link = query<HTMLAnchorElement>('a')!;
-      expect(buttons[0]!.getAttribute('tabindex')).toBe('0');
-      expect(buttons[1]!.getAttribute('tabindex')).toBe('-1');
-      expect(link.getAttribute('tabindex')).toBe('-1');
-    });
-
-    it('skips disabled items when computing the entry point', () => {
+  assertRovingTabindexContract({
+    mount: () => {
+      const r = renderHost(ToolbarHost);
+      r.flush();
+      return { items: collectFocusables(r.el), flush: r.flush };
+    },
+    mountWithDisabledMiddle: () => {
+      const r = renderHost(ToolbarHost);
+      r.fixture.componentInstance.middleDisabled.set(true);
+      r.flush();
+      // [One, Two(disabled), Three]
+      return {
+        items: collectFocusables(r.el),
+        enabledIndices: [0, 2],
+        flush: r.flush,
+      };
+    },
+    mountWithDisabledFirst: () => {
       @Component({
         imports: [ForToolbar, ForToolbarButton],
         template: `
@@ -98,18 +107,24 @@ describe('ForToolbar', () => {
         `,
       })
       class Host {}
-
-      const { queryAll, flush } = renderHost(Host);
-      flush();
-      const buttons = queryAll<HTMLButtonElement>('button');
-
-      expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
-      expect(buttons[1]!.getAttribute('tabindex')).toBe('0');
-    });
+      const r = renderHost(Host);
+      r.flush();
+      return {
+        items: collectFocusables(r.el),
+        enabledIndices: [1],
+        flush: r.flush,
+      };
+    },
+    mountRtl: () => {
+      const r = renderHost(ToolbarHost);
+      r.fixture.componentInstance.dir.set('rtl');
+      r.flush();
+      return { items: collectFocusables(r.el), flush: r.flush };
+    },
   });
 
-  describe('arrow-key navigation', () => {
-    it('moves focus right with ArrowRight (horizontal)', () => {
+  describe('arrow-key navigation (toolbar-specific)', () => {
+    it('moves focus right with ArrowRight to the link past the separator', () => {
       const { queryAll, flush } = renderHost(ToolbarHost);
       flush();
       const buttons = queryAll<HTMLButtonElement>('button');
@@ -123,47 +138,6 @@ describe('ForToolbar', () => {
       pressKey(buttons[1]!, 'ArrowRight');
       flush();
       expect(document.activeElement).toBe(link);
-    });
-
-    it('skips disabled items during arrow navigation', () => {
-      const { fixture, queryAll, flush } = renderHost(ToolbarHost);
-      fixture.componentInstance.middleDisabled.set(true);
-      flush();
-      const buttons = queryAll<HTMLButtonElement>('button');
-      const link = document.querySelector<HTMLAnchorElement>('a')!;
-
-      buttons[0]!.focus();
-      pressKey(buttons[0]!, 'ArrowRight');
-      flush();
-      expect(document.activeElement).toBe(link);
-    });
-
-    it('RTL inverts ArrowLeft / ArrowRight', () => {
-      const { fixture, queryAll, flush } = renderHost(ToolbarHost);
-      fixture.componentInstance.dir.set('rtl');
-      flush();
-      const buttons = queryAll<HTMLButtonElement>('button');
-
-      buttons[0]!.focus();
-      pressKey(buttons[0]!, 'ArrowLeft');
-      flush();
-      expect(document.activeElement).toBe(buttons[1]);
-    });
-
-    it('Home / End jump to the first / last enabled item', () => {
-      const { queryAll, flush } = renderHost(ToolbarHost);
-      flush();
-      const buttons = queryAll<HTMLButtonElement>('button');
-      const link = document.querySelector<HTMLAnchorElement>('a')!;
-
-      buttons[0]!.focus();
-      pressKey(buttons[0]!, 'End');
-      flush();
-      expect(document.activeElement).toBe(link);
-
-      pressKey(link, 'Home');
-      flush();
-      expect(document.activeElement).toBe(buttons[0]);
     });
   });
 

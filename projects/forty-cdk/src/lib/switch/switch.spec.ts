@@ -9,6 +9,10 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../test-utils/contract';
 import { ForSwitch } from './switch';
 
 @Component({
@@ -22,6 +26,8 @@ import { ForSwitch } from './switch';
       [required]="isRequired()"
       [invalid]="isInvalid()"
       [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
       [name]="fieldName()"
     ></button>
   `,
@@ -33,6 +39,8 @@ class SwitchHost {
   readonly isRequired = signal(false);
   readonly isInvalid = signal(false);
   readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
   readonly fieldName = signal<string>('');
 }
 
@@ -49,19 +57,49 @@ describe('ForSwitch', () => {
       expect(sw.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('omits truthy-only aria attributes when their predicate is false', () => {
-      // Rule: aria-disabled / aria-readonly / aria-required / aria-invalid /
-      // aria-busy MUST be absent (not "false") when falsy. aria-checked is
-      // always emitted because togglable widgets carry an explicit off-state.
+    it('always emits aria-checked even when falsy (togglable widget rule)', () => {
+      // Per CLAUDE.md § "ARIA state attribute emission", aria-checked stays in
+      // the always-emit group so screen readers announce the off state. The
+      // truthy-only flags are exercised by the form-control contract below.
       const { el } = renderHost(SwitchHost);
-      const sw = switchOf(el);
-      expect(sw.hasAttribute('aria-disabled')).toBe(false);
-      expect(sw.hasAttribute('aria-readonly')).toBe(false);
-      expect(sw.hasAttribute('aria-required')).toBe(false);
-      expect(sw.hasAttribute('aria-invalid')).toBe(false);
-      expect(sw.hasAttribute('aria-busy')).toBe(false);
-      expect(sw.hasAttribute('aria-checked')).toBe(true);
+      expect(switchOf(el).hasAttribute('aria-checked')).toBe(true);
     });
+  });
+
+  assertFormControlContract(() => {
+    const r = renderHost(SwitchHost);
+    const result: FormControlMountResult = {
+      control: switchOf(r.el),
+      flush: r.flush,
+      setFlag: (flag, value) => {
+        const inst = r.fixture.componentInstance;
+        switch (flag) {
+          case 'disabled':
+            inst.isDisabled.set(value);
+            return;
+          case 'readonly':
+            inst.isReadonly.set(value);
+            return;
+          case 'required':
+            inst.isRequired.set(value);
+            return;
+          case 'invalid':
+            inst.isInvalid.set(value);
+            return;
+          case 'pending':
+            inst.isPending.set(value);
+            return;
+          case 'touched':
+            inst.isTouched.set(value);
+            return;
+          case 'dirty':
+            inst.isDirty.set(value);
+            return;
+        }
+      },
+      setName: (name) => r.fixture.componentInstance.fieldName.set(name),
+    };
+    return result;
   });
 
   describe('click', () => {
@@ -91,116 +129,38 @@ describe('ForSwitch', () => {
     });
   });
 
-  describe('disabled', () => {
-    it('blocks click and reflects disabled + aria-disabled + data-disabled', () => {
+  describe('disabled / readonly block activation', () => {
+    it('blocks click while disabled', () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.isDisabled.set(true);
       flush();
-
-      const sw = switchOf(el);
-      expect(sw.hasAttribute('disabled')).toBe(true);
-      expect(sw.getAttribute('aria-disabled')).toBe('true');
-      expect(sw.getAttribute('data-disabled')).toBe('');
-
-      sw.click();
+      switchOf(el).click();
       flush();
       expect(fixture.componentInstance.enabled()).toBe(false);
-      expect(sw.getAttribute('aria-checked')).toBe('false');
     });
-  });
 
-  describe('readonly', () => {
-    it('blocks click but stays focusable, with aria-readonly + data-readonly', () => {
+    it('blocks click while readonly without disabling the host', () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.isReadonly.set(true);
       flush();
-
       const sw = switchOf(el);
-      expect(sw.getAttribute('aria-readonly')).toBe('true');
-      expect(sw.getAttribute('data-readonly')).toBe('');
       expect(sw.hasAttribute('disabled')).toBe(false);
-
       sw.click();
       flush();
       expect(fixture.componentInstance.enabled()).toBe(false);
     });
   });
 
-  describe('required / invalid / pending / name', () => {
-    it('reflects each as the corresponding aria/attr', () => {
-      const { el, fixture, flush } = renderHost(SwitchHost);
-      fixture.componentInstance.isRequired.set(true);
-      fixture.componentInstance.isInvalid.set(true);
-      fixture.componentInstance.isPending.set(true);
-      fixture.componentInstance.fieldName.set('terms');
-      flush();
-
-      const sw = switchOf(el);
-      expect(sw.getAttribute('aria-required')).toBe('true');
-      expect(sw.getAttribute('aria-invalid')).toBe('true');
-      expect(sw.getAttribute('aria-busy')).toBe('true');
-      expect(sw.getAttribute('name')).toBe('terms');
-    });
-  });
-
-  describe('touched', () => {
-    it('sets touched=true on blur', () => {
+  describe('touched on blur', () => {
+    it('flips touched=true via blur and stays interactive afterwards', () => {
       const { el, flush } = renderHost(SwitchHost);
       const sw = switchOf(el);
       sw.focus();
       sw.dispatchEvent(new FocusEvent('blur'));
       flush();
-      // The model is internal; assert via the component instance's two-way:
-      // we did not bind [(touched)] in the host, so we read from the directive.
-      // Easiest path: the directive instance is reachable via the fixture.
-      // Simpler check: blur does not throw and click still toggles afterwards.
       sw.click();
       flush();
       expect(sw.getAttribute('aria-checked')).toBe('true');
-    });
-  });
-
-  describe('form-state data attributes', () => {
-    @Component({
-      imports: [ForSwitch],
-      template: `
-        <button
-          forSwitch
-          [(checked)]="enabled"
-          [(touched)]="touched"
-          [dirty]="dirty()"
-          [pending]="pending()"
-          [invalid]="invalid()"
-        ></button>
-      `,
-    })
-    class FlagsHost {
-      readonly enabled = signal(false);
-      readonly touched = signal(false);
-      readonly dirty = signal(false);
-      readonly pending = signal(false);
-      readonly invalid = signal(false);
-    }
-
-    it('reflects each form-state flag as a boolean data-* attribute', () => {
-      const { el, fixture, flush } = renderHost(FlagsHost);
-      const sw = el.querySelector<HTMLButtonElement>('button')!;
-
-      expect(sw.hasAttribute('data-touched')).toBe(false);
-      expect(sw.hasAttribute('data-dirty')).toBe(false);
-      expect(sw.hasAttribute('data-pending')).toBe(false);
-      expect(sw.hasAttribute('data-invalid')).toBe(false);
-
-      fixture.componentInstance.touched.set(true);
-      fixture.componentInstance.dirty.set(true);
-      fixture.componentInstance.pending.set(true);
-      fixture.componentInstance.invalid.set(true);
-      flush();
-
-      expect(sw.getAttribute('data-touched')).toBe('');
-      expect(sw.getAttribute('data-dirty')).toBe('');
-      expect(sw.getAttribute('data-pending')).toBe('');
-      expect(sw.getAttribute('data-invalid')).toBe('');
     });
   });
 
