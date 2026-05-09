@@ -10,27 +10,29 @@ Currently, the only code is a placeholder (`projects/forty-cdk/src/lib/forty-cdk
 
 ## Commands
 
-All commands run from repo root unless noted. The Angular workspace contains the library project (`forty-cdk`) and a small dev-only application (`forty-cdk-harness`) used by the Playwright E2E suite — `npm run build` and `npm test` are pinned to the library project so the harness never ships.
+All commands run from repo root unless noted. The Angular workspace contains the library project (`forty-cdk`) and a small dev-only application (`forty-cdk-harness`) used by the Playwright E2E suite — `pnpm build` and `pnpm test` are pinned to the library project so the harness never ships.
+
+The repo uses **pnpm** (pinned via `packageManager` in `package.json`, activated through Corepack). With Corepack enabled (`corepack enable`), running `pnpm <cmd>` in this directory will use the correct version automatically. Otherwise install pnpm globally with `npm i -g pnpm@10`.
 
 ```bash
-npm run build              # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
-npm run watch              # ng build forty-cdk --watch --configuration development
-npm test                   # ng test forty-cdk → @angular/build:unit-test (Vitest + jsdom)
-npx ng test forty-cdk --watch  # watch mode for tests
-npm run lint               # eslint . (flat config, codifies CLAUDE.md non-negotiables)
-npm run test:e2e           # playwright test (Chromium + WebKit; spins ng serve forty-cdk-harness)
-npm run test:e2e:ui        # playwright test --ui
-npm run test:e2e:install   # playwright install --with-deps chromium webkit
+pnpm build                 # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
+pnpm watch                 # ng build forty-cdk --watch --configuration development
+pnpm test                  # ng test forty-cdk → @angular/build:unit-test (Vitest + jsdom)
+pnpm exec ng test forty-cdk --watch  # watch mode for tests
+pnpm lint                  # eslint . (flat config, codifies CLAUDE.md non-negotiables)
+pnpm test:e2e              # playwright test (Chromium + WebKit; spins ng serve forty-cdk-harness)
+pnpm test:e2e:ui           # playwright test --ui
+pnpm test:e2e:install      # playwright install --with-deps chromium webkit
 ```
 
 Single-file / single-test runs go through Vitest's CLI filtering (the `@angular/build:unit-test` builder forwards args):
 
 ```bash
-npx ng test -- projects/forty-cdk/src/lib/accordion/accordion.spec.ts
-npx ng test -- -t "opens on Enter"
+pnpm exec ng test -- projects/forty-cdk/src/lib/accordion/accordion.spec.ts
+pnpm exec ng test -- -t "opens on Enter"
 ```
 
-ESLint (`eslint.config.js`, flat config) mechanically enforces the non-negotiables in this file: banned imports (`@angular/{cdk,material,aria}`, `zone.js`), banned syntax (`NgModule`, `@Input` / `@Output` / `@HostBinding` / `@HostListener` decorators, `Service` / `Component` / `Directive` class suffixes), the `for-` selector prefix on directives and components, SSR-unsafe `document` / `window` globals in library code, plus typescript-eslint hardening (`consistent-type-imports` with inline `import type` style, `no-explicit-any`, `no-unused-vars`). Run `npm run lint` before committing — CI runs it on every PR — and `npx eslint . --fix` for auto-fixable rules. Prettier is configured (`.prettierrc`, `printWidth: 100`, single quotes); run it with `npx prettier --write <path>` when needed.
+ESLint (`eslint.config.js`, flat config) mechanically enforces the non-negotiables in this file: banned imports (`@angular/{cdk,material,aria}`, `zone.js`), banned syntax (`NgModule`, `@Input` / `@Output` / `@HostBinding` / `@HostListener` decorators, `Service` / `Component` / `Directive` class suffixes), the `for-` selector prefix on directives and components, SSR-unsafe `document` / `window` globals in library code, plus typescript-eslint hardening (`consistent-type-imports` with inline `import type` style, `no-explicit-any`, `no-unused-vars`). Run `pnpm lint` before committing — CI runs it on every PR — and `pnpm exec eslint . --fix` for auto-fixable rules. Prettier is configured (`.prettierrc`, `printWidth: 100`, single quotes); run it with `pnpm exec prettier --write <path>` when needed.
 
 To consume the built library locally, use the path alias `forty-cdk` → `./dist/forty-cdk` defined in the root `tsconfig.json`.
 
@@ -214,7 +216,7 @@ Combobox is the documented exception that exposes neither hook: `aria-activedesc
 
 - The provider helper is named `provideFor<Primitive>Defaults(overrides?)`. Always present-tense, always plural `Defaults`, always the `For` prefix (e.g. `provideForTooltipDefaults`, `provideForHoverCardDefaults`, `provideForToastDefaults`). Returns `Provider[]` so callers can spread per-scope companions (a `<Primitive>Coordinator`, etc.) into the same array.
 - The injection token is `FOR_<PRIMITIVE>_DEFAULTS` (e.g. `FOR_TOOLTIP_DEFAULTS`, `FOR_HOVER_CARD_DEFAULTS`).
-- The defaults shape lives in `<primitive>/<primitive>-defaults.ts`, and is exported as a named interface following `For<Primitive>Defaults` (e.g. `ForToastDefaults`, `ForDialogDefaults`). The presence of `<primitive>-defaults.ts` is enforced by the `forty-cdk/require-defaults-sibling` ESLint rule in `eslint.config.js` — adding a primitive without it fails `npm run lint` (and therefore CI).
+- The defaults shape lives in `<primitive>/<primitive>-defaults.ts`, and is exported as a named interface following `For<Primitive>Defaults` (e.g. `ForToastDefaults`, `ForDialogDefaults`). The presence of `<primitive>-defaults.ts` is enforced by the `forty-cdk/require-defaults-sibling` ESLint rule in `eslint.config.js` — adding a primitive without it fails `pnpm lint` (and therefore CI).
 - The merge / inheritance behaviour is owned by the single helper at `_internal/defaults/defaults.ts` (`createDefaults<D>(name, fallback)` returning the `{ token, provideDefaults }` pair). Per key it picks `overrides[k] ?? parent[k] ?? fallback[k]`, where the parent is read via `[[new SkipSelf(), new Optional(), TOKEN]]` so component-level overrides layer on top of app-level overrides on top of the library fallback. Don't hand-write the `useFactory` / `SkipSelf` plumbing in primitive code; route it through `createDefaults` so the inheritance semantics stay identical everywhere.
 - Primitives that have no per-scope tunables today still expose a stub (`provideFor<Primitive>Defaults` + `FOR_<PRIMITIVE>_DEFAULTS` + empty `interface`) so future per-scope additions don't churn the public API surface.
 

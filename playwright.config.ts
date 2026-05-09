@@ -25,7 +25,7 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
-    command: `npx ng serve forty-cdk-harness --port ${PORT}`,
+    command: `pnpm exec ng serve forty-cdk-harness --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !isCI,
     stdout: 'pipe',
