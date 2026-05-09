@@ -1,0 +1,115 @@
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import {
+  ForDrawer,
+  ForDrawerBackdrop,
+  type ForDrawerCloseReason,
+  ForDrawerClose,
+  ForDrawerHandle,
+  type ForDrawerSide,
+  type ForDrawerSnapPoint,
+  ForDrawerTrigger,
+  type VetoableEvent,
+} from 'forty-cdk';
+import { queryFlag } from './_query-flag';
+
+@Component({
+  selector: 'app-drawer-fixture',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForDrawer, ForDrawerTrigger, ForDrawerBackdrop, ForDrawerHandle, ForDrawerClose],
+  styles: [
+    `
+      [forDrawerBackdrop] {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+      }
+      [forDrawer] {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 16px;
+        z-index: 1;
+      }
+    `,
+  ],
+  template: `
+    <input id="before" placeholder="before-trigger" />
+    <button id="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
+    <input id="after" placeholder="after-trigger" />
+
+    @if (open()) {
+      <div
+        forDrawer
+        id="drawer"
+        ariaLabel="Test drawer"
+        [side]="side()"
+        [snapPoints]="snapPoints()"
+        [(activeSnapPoint)]="activeSnapPoint"
+        [handleOnly]="handleOnly"
+        [autoFocusOnOpen]="vetoOpen ? veto : undefined"
+        [autoFocusOnClose]="vetoClose ? veto : undefined"
+        (close)="onClose($event)"
+      >
+        @if (backdrop) {
+          <div id="backdrop" forDrawerBackdrop></div>
+        }
+        <div id="handle" forDrawerHandle></div>
+        <button id="first">First</button>
+        <button id="second">Second</button>
+        <input id="text-input" />
+        <button id="close-btn" forDrawerClose>Close</button>
+      </div>
+    }
+
+    <output id="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
+    <output id="active-snap">{{ activeSnapDisplay() }}</output>
+  `,
+})
+export class DrawerFixture {
+  protected readonly open = signal(false);
+  protected readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
+  protected readonly activeSnapPoint = signal<ForDrawerSnapPoint | null>(null);
+
+  readonly #route = inject(ActivatedRoute);
+
+  protected readonly side = signal<ForDrawerSide>(
+    (this.#route.snapshot.queryParamMap.get('side') as ForDrawerSide | null) ?? 'bottom',
+  );
+
+  protected readonly snapPoints = signal<ReadonlyArray<ForDrawerSnapPoint> | undefined>(
+    parseSnapPoints(this.#route.snapshot.queryParamMap.get('snap')),
+  );
+
+  protected readonly vetoOpen = queryFlag('vetoOpen');
+  protected readonly vetoClose = queryFlag('vetoClose');
+  protected readonly handleOnly = queryFlag('handleOnly');
+  protected readonly backdrop = queryFlag('backdrop');
+
+  protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
+
+  protected readonly activeSnapDisplay = computed(() => {
+    const v = this.activeSnapPoint();
+    return v == null ? 'none' : String(v);
+  });
+
+  protected onClose(reason: ForDrawerCloseReason): void {
+    this.lastCloseReason.set(reason);
+    this.open.set(false);
+  }
+}
+
+function parseSnapPoints(raw: string | null): ReadonlyArray<ForDrawerSnapPoint> | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  return raw.split(',').map((piece) => {
+    const trimmed = piece.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      return Number.parseFloat(trimmed);
+    }
+    return trimmed as ForDrawerSnapPoint;
+  });
+}
