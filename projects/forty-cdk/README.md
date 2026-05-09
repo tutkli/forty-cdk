@@ -318,10 +318,10 @@ Build artifacts land in `dist/forty-cdk` (consumed locally via the `forty-cdk` p
 Tests run on Vitest via the Angular CLI builder `@angular/build:unit-test`:
 
 ```bash
-npm test                                       # all specs, single pass
-npx ng test --watch                            # watch mode
-npx ng test -- src/lib/accordion/accordion.spec.ts  # single file
-npx ng test -- -t "opens on Enter"             # single test by name
+pnpm test                                       # all specs, single pass
+pnpm exec ng test --watch                       # watch mode
+pnpm exec ng test -- src/lib/accordion/accordion.spec.ts  # single file
+pnpm exec ng test -- -t "opens on Enter"        # single test by name
 ```
 
 Every primitive's test suite includes a case running under `provideZonelessChangeDetection()` to keep reactivity working without Zone.js.
