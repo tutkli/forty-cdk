@@ -289,6 +289,7 @@ export class ForDrawer implements ForDrawerContext {
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
   readonly #handleEl = signal<HTMLElement | null>(null);
+  readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   readonly #dragging = signal(false);
 
@@ -373,6 +374,17 @@ export class ForDrawer implements ForDrawerContext {
       // this layer, not on whatever lower layer was previously topmost.
       let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
       this.#dismissable.activate({
+        // The backdrop is portaled to body (sibling of the drawer host), so
+        // without exemption a pointer-down on it fires `pointerDownOutside`
+        // BEFORE the backdrop's click handler runs — the drawer would close
+        // with the wrong reason. Marking it exempt routes the gesture
+        // through the backdrop's own click → `requestClose('backdrop')`
+        // path instead. The handle is a child of the host so it's already
+        // covered by `host.contains(target)`.
+        exemptElements: () => {
+          const backdrop = this.#backdropEl();
+          return backdrop ? [backdrop] : [];
+        },
         onEscapeKeyDown: (event) => {
           const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
           if (!vetoed && this.dismissible()) {
@@ -463,6 +475,9 @@ export class ForDrawer implements ForDrawerContext {
   }
   registerHandle(el: HTMLElement | null): void {
     this.#handleEl.set(el);
+  }
+  registerBackdrop(el: HTMLElement | null): void {
+    this.#backdropEl.set(el);
   }
 
   requestClose(reason: ForDrawerCloseReason, _value?: unknown): void {

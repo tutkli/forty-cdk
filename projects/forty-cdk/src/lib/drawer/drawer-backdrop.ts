@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectPortal } from '../_internal/portal/portal';
 import { injectDrawerContext } from './drawer-context';
@@ -31,9 +31,14 @@ import { injectDrawerContext } from './drawer-context';
 })
 export class ForDrawerBackdrop {
   protected readonly ctx = injectDrawerContext('ForDrawerBackdrop');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
     injectPortal();
+    // Register so the drawer's dismissable layer treats pointer-down on the
+    // backdrop as "inside" — see ForDrawerContext#registerBackdrop.
+    this.ctx.registerBackdrop(this.#host.nativeElement);
+    inject(DestroyRef).onDestroy(() => this.ctx.registerBackdrop(null));
   }
 
   protected onClick(event: MouseEvent): void {

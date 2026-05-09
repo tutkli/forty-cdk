@@ -70,6 +70,17 @@ export interface ForDrawerContext {
   registerHandle(el: HTMLElement | null): void;
 
   /**
+   * Register the backdrop element so the dismissable layer treats it as
+   * part of the drawer surface (`exemptElements`) — without this, a
+   * `pointerdown` on the portaled backdrop would fire `pointerDownOutside`
+   * before the backdrop's `click` handler runs, so the consumer would see
+   * close-reason `'pointerDownOutside'` instead of `'backdrop'` (WebKit
+   * was the first to surface this; Chromium happened to dispatch the
+   * events in an order that masked it). Pass `null` to unregister.
+   */
+  registerBackdrop(el: HTMLElement | null): void;
+
+  /**
    * Request that the drawer close. Reasons:
    * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'` /
    *   `'swipe'`: honored only when `dismissible()` is true.
