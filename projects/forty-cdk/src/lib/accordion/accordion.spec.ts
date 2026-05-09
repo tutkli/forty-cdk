@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../test-utils';
+import { pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';
 import { ForAccordionItem } from './accordion-item';
@@ -439,6 +439,36 @@ describe('ForAccordion', () => {
       fixture.componentInstance.value.set([]);
       flush();
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+    });
+
+    it('clicking a trigger still flips aria-expanded and data-state under reduced-motion', () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+
+      triggerOf(el, 'a').click();
+      flush();
+
+      expect(fixture.componentInstance.value()).toEqual(['a']);
+      expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
+      expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('open');
+
+      triggerOf(el, 'b').click();
+      flush();
+
+      expect(fixture.componentInstance.value()).toEqual(['b']);
+      expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
+      expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('closed');
+      expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('true');
+      expect(contentOf(el, 'b')!.getAttribute('data-state')).toBe('open');
     });
   });
 

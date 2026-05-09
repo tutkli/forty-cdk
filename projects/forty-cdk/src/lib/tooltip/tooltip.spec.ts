@@ -1,7 +1,13 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
+import {
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+  withReducedMotion,
+} from '../../test-utils';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
@@ -516,6 +522,43 @@ describe('ForTooltip', () => {
 
       // delayDuration=0 → opens synchronously without any per-tooltip override.
       expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+      vi.useRealTimers();
+    });
+
+    it('still respects openDelay / closeDelay cadence under reduced-motion', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new Event('pointerenter'));
+
+      vi.advanceTimersByTime(699);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new Event('pointerleave'));
+      vi.advanceTimersByTime(299);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
     });
   });
 
