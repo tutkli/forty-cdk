@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/dialog.fixture').then((m) => m.DialogFixture),
   },
   {
+    path: 'drawer',
+    loadComponent: () => import('./fixtures/drawer.fixture').then((m) => m.DrawerFixture),
+  },
+  {
     path: 'popover',
     loadComponent: () => import('./fixtures/popover.fixture').then((m) => m.PopoverFixture),
   },

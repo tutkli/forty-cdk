@@ -1,4 +1,10 @@
-import { attachSwipeDismiss, type SwipeDirection, type SwipeEventDetail } from './swipe-dismiss';
+import {
+  attachSwipeDismiss,
+  isScrollableAtEdge,
+  resolveSnapTarget,
+  type SwipeDirection,
+  type SwipeEventDetail,
+} from './swipe-dismiss';
 
 function pointer(
   el: HTMLElement | Window,
@@ -207,5 +213,177 @@ describe('attachSwipeDismiss', () => {
     expect(rec.moves).toEqual([]);
     expect(rec.ends).toEqual([]);
     expect(rec.cancels).toEqual([]);
+  });
+});
+
+describe('resolveSnapTarget', () => {
+  it('snaps to the closest snap point at low velocity', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      activeSnapPoint: 0.5,
+      position: 380,
+      velocity: 0.05,
+      dimension: 800,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(0.5);
+  });
+
+  it('biases one snap further on a fast positive velocity (away from edge)', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      activeSnapPoint: 0.5,
+      position: 410,
+      velocity: 1, // fast away from edge
+      dimension: 800,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(1);
+  });
+
+  it('biases one snap closer on a fast negative velocity (toward edge)', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      activeSnapPoint: 0.5,
+      position: 380,
+      velocity: -1, // fast toward edge
+      dimension: 800,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(0.25);
+  });
+
+  it('dismisses when released past closeThreshold from the closest-to-edge snap', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      activeSnapPoint: 0.25,
+      position: -50, // way past the lowest snap, toward the edge
+      velocity: 0,
+      dimension: 800,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(true);
+    expect(r.nextSnapPoint).toBe(null);
+  });
+
+  it('does NOT dismiss when released past the threshold but a higher snap is closer', () => {
+    // closestIdx will be index 1 (400) — dismiss check only runs when target == 0.
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      activeSnapPoint: 0.5,
+      position: 350,
+      velocity: 0,
+      dimension: 800,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(0.5);
+  });
+});
+
+describe('isScrollableAtEdge', () => {
+  function makeScrollable(opts: {
+    overflowY?: string;
+    overflowX?: string;
+    scrollHeight?: number;
+    clientHeight?: number;
+    scrollTop?: number;
+    scrollWidth?: number;
+    clientWidth?: number;
+    scrollLeft?: number;
+  }): HTMLElement {
+    const el = document.createElement('div');
+    if (opts.overflowY) el.style.overflowY = opts.overflowY;
+    if (opts.overflowX) el.style.overflowX = opts.overflowX;
+    Object.defineProperty(el, 'scrollHeight', {
+      configurable: true,
+      get: () => opts.scrollHeight ?? 0,
+    });
+    Object.defineProperty(el, 'clientHeight', {
+      configurable: true,
+      get: () => opts.clientHeight ?? 0,
+    });
+    Object.defineProperty(el, 'scrollWidth', {
+      configurable: true,
+      get: () => opts.scrollWidth ?? 0,
+    });
+    Object.defineProperty(el, 'clientWidth', {
+      configurable: true,
+      get: () => opts.clientWidth ?? 0,
+    });
+    Object.defineProperty(el, 'scrollTop', {
+      configurable: true,
+      get: () => opts.scrollTop ?? 0,
+      set: () => {},
+    });
+    Object.defineProperty(el, 'scrollLeft', {
+      configurable: true,
+      get: () => opts.scrollLeft ?? 0,
+      set: () => {},
+    });
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('returns true when a vertical scrollable ancestor has scrolled down', () => {
+    const scroller = makeScrollable({
+      overflowY: 'auto',
+      scrollHeight: 400,
+      clientHeight: 200,
+      scrollTop: 50,
+    });
+    const inner = document.createElement('span');
+    scroller.appendChild(inner);
+    expect(isScrollableAtEdge(inner, 'down')).toBe(true);
+    scroller.remove();
+  });
+
+  it('returns false when scrollable ancestor is at the top edge for a "down" gesture', () => {
+    const scroller = makeScrollable({
+      overflowY: 'auto',
+      scrollHeight: 400,
+      clientHeight: 200,
+      scrollTop: 0,
+    });
+    const inner = document.createElement('span');
+    scroller.appendChild(inner);
+    expect(isScrollableAtEdge(inner, 'down')).toBe(false);
+    scroller.remove();
+  });
+
+  it('returns false when overflow is hidden (not scrollable)', () => {
+    const scroller = makeScrollable({
+      overflowY: 'hidden',
+      scrollHeight: 400,
+      clientHeight: 200,
+      scrollTop: 50,
+    });
+    const inner = document.createElement('span');
+    scroller.appendChild(inner);
+    expect(isScrollableAtEdge(inner, 'down')).toBe(false);
+    scroller.remove();
+  });
+
+  it('stops walking at the boundary', () => {
+    const outer = makeScrollable({
+      overflowY: 'auto',
+      scrollHeight: 400,
+      clientHeight: 200,
+      scrollTop: 50,
+    });
+    const inner = document.createElement('div');
+    outer.appendChild(inner);
+    const target = document.createElement('span');
+    inner.appendChild(target);
+    expect(isScrollableAtEdge(target, 'down', inner)).toBe(false);
+    outer.remove();
   });
 });
