@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../test-utils';
+import { assertRovingTabindexContract } from '../../test-utils/contract';
 import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
 import { ForTabsList } from './tabs-list';
@@ -63,6 +64,9 @@ const contentOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-content="${id}"]`)!;
 
 const tablistOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forTabsList]')!;
+
+const triggers = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forTabsTrigger]'));
 
 describe('ForTabs', () => {
   describe('static accessibility & wiring', () => {
@@ -139,13 +143,41 @@ describe('ForTabs', () => {
     });
   });
 
-  describe('initial tabindex', () => {
-    it('first enabled trigger has tabindex=0 when nothing is selected', () => {
-      const { el } = renderHost(TabsHost);
-      expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('0');
-      expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('-1');
-    });
+  assertRovingTabindexContract({
+    mount: () => {
+      const r = renderHost(TabsHost);
+      r.flush();
+      return { items: triggers(r.el), flush: r.flush };
+    },
+    mountWithDisabledFirst: () => {
+      const r = renderHost(TabsHost);
+      r.fixture.componentInstance.tabs.set([
+        { value: 'a', label: 'A', disabled: true },
+        { value: 'b', label: 'B', disabled: false },
+        { value: 'c', label: 'C', disabled: false },
+      ]);
+      r.flush();
+      return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
+    },
+    mountWithDisabledMiddle: () => {
+      const r = renderHost(TabsHost);
+      r.fixture.componentInstance.tabs.set([
+        { value: 'a', label: 'A', disabled: false },
+        { value: 'b', label: 'B', disabled: true },
+        { value: 'c', label: 'C', disabled: false },
+      ]);
+      r.flush();
+      return { items: triggers(r.el), enabledIndices: [0, 2], flush: r.flush };
+    },
+    mountRtl: () => {
+      const r = renderHost(TabsHost);
+      r.fixture.componentInstance.dir.set('rtl');
+      r.flush();
+      return { items: triggers(r.el), flush: r.flush };
+    },
+  });
 
+  describe('initial tabindex (selection-driven)', () => {
     it('selected trigger has tabindex=0 when there is a selection', () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('b');
@@ -155,18 +187,6 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
       expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
       expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
-    });
-
-    it('skips disabled when picking the first-enabled tab entry', () => {
-      const { el, fixture, flush } = renderHost(TabsHost);
-      fixture.componentInstance.tabs.set([
-        { value: 'a', label: 'A', disabled: true },
-        { value: 'b', label: 'B', disabled: false },
-        { value: 'c', label: 'C', disabled: false },
-      ]);
-      flush();
-      expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('-1');
-      expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('0');
     });
   });
 
@@ -320,21 +340,8 @@ describe('ForTabs', () => {
     });
   });
 
-  describe('horizontal RTL', () => {
-    it('swaps ArrowLeft and ArrowRight', () => {
-      const { el, fixture, flush } = renderHost(TabsHost);
-      fixture.componentInstance.dir.set('rtl');
-      flush();
-
-      triggerOf(el, 'a').focus();
-      pressKey(triggerOf(el, 'a'), 'ArrowLeft');
-      flush();
-      expect(document.activeElement).toBe(triggerOf(el, 'b'));
-    });
-  });
-
   describe('disabled', () => {
-    it('disabled trigger is skipped on arrow nav and ignores click', () => {
+    it('disabled trigger ignores click', () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.tabs.set([
         { value: 'a', label: 'A', disabled: false },
@@ -349,11 +356,6 @@ describe('ForTabs', () => {
       b.click();
       flush();
       expect(fixture.componentInstance.active()).toBe('');
-
-      triggerOf(el, 'a').focus();
-      pressKey(triggerOf(el, 'a'), 'ArrowRight');
-      flush();
-      expect(document.activeElement).toBe(triggerOf(el, 'c'));
     });
 
     it('root disabled cascades to all triggers and blocks selection', () => {

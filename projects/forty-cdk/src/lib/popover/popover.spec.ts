@@ -7,6 +7,7 @@ import type {
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { flush, pressKey, renderHost } from '../../test-utils';
+import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
@@ -60,6 +61,51 @@ class PopoverHost {
 })
 class AriaLabelHost {
   readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+  template: `
+    <div
+      forPopover
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+      ariaLabel="t"
+    >
+      <button forPopoverTrigger>Open</button>
+      @if (open()) {
+        <div forPopoverContent></div>
+      }
+    </div>
+  `,
+})
+class DismissableContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
 }
 
 describe('ForPopover', () => {
@@ -323,49 +369,26 @@ describe('ForPopover', () => {
     });
   });
 
-  describe('Escape key', () => {
-    it('closes the popover when dismissible', async () => {
-      const r = renderHost(PopoverHost);
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DismissableContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
       r.instance.open.set(true);
       await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(false);
-    });
-
-    it('does not close when dismissible=false', async () => {
-      const r = renderHost(PopoverHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-    });
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
   });
 
-  describe('outside dismissal', () => {
-    it('closes on pointer down outside both content and trigger', async () => {
-      const r = renderHost(PopoverHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(false);
-      outside.remove();
-    });
-
+  describe('outside dismissal (popover-specific exemptions)', () => {
     it('does NOT close when the pointer-down lands on the trigger (exempt)', async () => {
       const r = renderHost(PopoverHost);
       r.instance.open.set(true);
@@ -394,23 +417,6 @@ describe('ForPopover', () => {
 
       expect(r.instance.open()).toBe(true);
     });
-
-    it('does not close when dismissible=false even if pointer is outside', async () => {
-      const r = renderHost(PopoverHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-      outside.remove();
-    });
   });
 
   describe('close button', () => {
@@ -437,173 +443,6 @@ describe('ForPopover', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
-    });
-  });
-
-  describe('vetoable dismiss outputs', () => {
-    it('emits (escapeKeyDown) and closes when not prevented', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div forPopover [(open)]="open" (escapeKeyDown)="captured.push($event)" ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent></div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        readonly captured: VetoableNativeEvent<KeyboardEvent>[] = [];
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.event.key).toBe('Escape');
-      expect(r.instance.open()).toBe(false);
-    });
-
-    it('keeps open when (escapeKeyDown) is preventDefault-ed', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div forPopover [(open)]="open" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent></div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-    });
-
-    it('emits (pointerDownOutside) and (interactOutside), then closes', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div
-            forPopover
-            [(open)]="open"
-            (pointerDownOutside)="pointerCount = pointerCount + 1"
-            (interactOutside)="interactCount = interactCount + 1"
-            ariaLabel="t"
-          >
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent></div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        pointerCount = 0;
-        interactCount = 0;
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.pointerCount).toBe(1);
-      expect(r.instance.interactCount).toBe(1);
-      expect(r.instance.open()).toBe(false);
-      outside.remove();
-    });
-
-    it('keeps open when (pointerDownOutside) is preventDefault-ed', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div
-            forPopover
-            [(open)]="open"
-            (pointerDownOutside)="$event.preventDefault()"
-            ariaLabel="t"
-          >
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent></div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-      outside.remove();
-    });
-
-    it('emits (focusOutside) and (interactOutside) when focus moves outside', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div
-            forPopover
-            [(open)]="open"
-            (focusOutside)="focusCount = focusCount + 1"
-            (interactOutside)="interactCount = interactCount + 1"
-            ariaLabel="t"
-          >
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent></div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        focusCount = 0;
-        interactCount = 0;
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.focusCount).toBe(1);
-      expect(r.instance.interactCount).toBe(1);
-      outside.remove();
     });
   });
 

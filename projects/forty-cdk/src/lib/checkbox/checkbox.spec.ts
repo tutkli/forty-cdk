@@ -2,6 +2,10 @@ import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import { renderHost } from '../../test-utils/render';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../test-utils/contract';
 import { ForCheckbox } from './checkbox';
 import { ForCheckboxIndicator } from './checkbox-indicator';
 
@@ -17,6 +21,8 @@ import { ForCheckboxIndicator } from './checkbox-indicator';
       [required]="isRequired()"
       [invalid]="isInvalid()"
       [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
       [name]="fieldName()"
     ></button>
   `,
@@ -29,6 +35,8 @@ class CheckboxHost {
   readonly isRequired = signal(false);
   readonly isInvalid = signal(false);
   readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
   readonly fieldName = signal<string>('');
 }
 
@@ -44,6 +52,42 @@ describe('ForCheckbox', () => {
       expect(cb.getAttribute('aria-checked')).toBe('false');
       expect(cb.getAttribute('data-state')).toBe('unchecked');
     });
+  });
+
+  assertFormControlContract(() => {
+    const r = renderHost(CheckboxHost);
+    const result: FormControlMountResult = {
+      control: checkboxOf(r.el),
+      flush: r.flush,
+      setFlag: (flag, value) => {
+        const inst = r.fixture.componentInstance;
+        switch (flag) {
+          case 'disabled':
+            inst.isDisabled.set(value);
+            return;
+          case 'readonly':
+            inst.isReadonly.set(value);
+            return;
+          case 'required':
+            inst.isRequired.set(value);
+            return;
+          case 'invalid':
+            inst.isInvalid.set(value);
+            return;
+          case 'pending':
+            inst.isPending.set(value);
+            return;
+          case 'touched':
+            inst.isTouched.set(value);
+            return;
+          case 'dirty':
+            inst.isDirty.set(value);
+            return;
+        }
+      },
+      setName: (name) => r.fixture.componentInstance.fieldName.set(name),
+    };
+    return result;
   });
 
   describe('click', () => {
@@ -121,50 +165,25 @@ describe('ForCheckbox', () => {
     });
   });
 
-  describe('disabled', () => {
-    it('blocks click and reflects disabled + aria-disabled', () => {
+  describe('disabled / readonly block activation', () => {
+    it('blocks click while disabled', () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.isDisabled.set(true);
       flush();
-
-      const cb = checkboxOf(el);
-      expect(cb.hasAttribute('disabled')).toBe(true);
-      expect(cb.getAttribute('aria-disabled')).toBe('true');
-      cb.click();
+      checkboxOf(el).click();
       flush();
       expect(fixture.componentInstance.agreed()).toBe(false);
     });
-  });
 
-  describe('readonly', () => {
-    it('blocks click without setting native disabled', () => {
+    it('blocks click while readonly without disabling the host', () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.isReadonly.set(true);
       flush();
-
       const cb = checkboxOf(el);
-      expect(cb.getAttribute('aria-readonly')).toBe('true');
       expect(cb.hasAttribute('disabled')).toBe(false);
       cb.click();
       flush();
       expect(fixture.componentInstance.agreed()).toBe(false);
-    });
-  });
-
-  describe('required / invalid / pending / name', () => {
-    it('reflects each as the corresponding aria/attr', () => {
-      const { el, fixture, flush } = renderHost(CheckboxHost);
-      fixture.componentInstance.isRequired.set(true);
-      fixture.componentInstance.isInvalid.set(true);
-      fixture.componentInstance.isPending.set(true);
-      fixture.componentInstance.fieldName.set('terms');
-      flush();
-
-      const cb = checkboxOf(el);
-      expect(cb.getAttribute('aria-required')).toBe('true');
-      expect(cb.getAttribute('aria-invalid')).toBe('true');
-      expect(cb.getAttribute('aria-busy')).toBe('true');
-      expect(cb.getAttribute('name')).toBe('terms');
     });
   });
 
@@ -219,49 +238,6 @@ describe('ForCheckbox', () => {
       expect(() => renderHost(Orphan)).toThrow(
         /\[forty-cdk\/checkbox\] ForCheckboxIndicator must be used inside a \[forCheckbox\] element\./,
       );
-    });
-  });
-
-  describe('form-state data attributes', () => {
-    @Component({
-      imports: [ForCheckbox],
-      template: `
-        <button
-          forCheckbox
-          [(checked)]="agreed"
-          [(touched)]="touched"
-          [dirty]="dirty()"
-          [pending]="pending()"
-          [invalid]="invalid()"
-        ></button>
-      `,
-    })
-    class FlagsHost {
-      readonly agreed = signal(false);
-      readonly touched = signal(false);
-      readonly dirty = signal(false);
-      readonly pending = signal(false);
-      readonly invalid = signal(false);
-    }
-
-    it('reflects each form-state flag as a boolean data-* attribute', () => {
-      const { el, fixture, flush } = renderHost(FlagsHost);
-      const cb = el.querySelector<HTMLButtonElement>('button')!;
-
-      fixture.componentInstance.touched.set(true);
-      fixture.componentInstance.dirty.set(true);
-      fixture.componentInstance.pending.set(true);
-      fixture.componentInstance.invalid.set(true);
-      flush();
-
-      expect(cb.getAttribute('data-touched')).toBe('');
-      expect(cb.getAttribute('data-dirty')).toBe('');
-      expect(cb.getAttribute('data-pending')).toBe('');
-      expect(cb.getAttribute('data-invalid')).toBe('');
-
-      fixture.componentInstance.touched.set(false);
-      flush();
-      expect(cb.hasAttribute('data-touched')).toBe(false);
     });
   });
 

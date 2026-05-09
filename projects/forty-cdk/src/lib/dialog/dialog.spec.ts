@@ -6,6 +6,7 @@ import type {
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { flush, pressKey, renderHost } from '../../test-utils';
+import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
@@ -72,6 +73,48 @@ class AriaLabelHost {
 class StackedDialogsHost {
   readonly a = signal(false);
   readonly b = signal(false);
+}
+
+@Component({
+  imports: [ForDialog],
+  template: `
+    @if (open()) {
+      <div
+        forDialog
+        [dismissible]="dismissible()"
+        (close)="open.set(false)"
+        (escapeKeyDown)="onEscape($event)"
+        (pointerDownOutside)="onPointer($event)"
+        (focusOutside)="onFocus($event)"
+        (interactOutside)="onInteract($event)"
+        ariaLabel="t"
+      ></div>
+    }
+  `,
+})
+class DismissableContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
 }
 
 describe('ForDialog (declarative)', () => {
@@ -218,7 +261,26 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('Escape key', () => {
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DismissableContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
+
+  describe('Escape key (close-reason payload)', () => {
     it('emits (close) with reason "escape" while dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
@@ -229,19 +291,6 @@ describe('ForDialog (declarative)', () => {
 
       expect(r.instance.open()).toBe(false);
       expect(r.instance.reasons).toEqual(['escape']);
-    });
-
-    it('does not emit (close) when dismissible=false', async () => {
-      const r = renderHost(DialogHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-      expect(r.instance.reasons).toEqual([]);
     });
   });
 
@@ -571,200 +620,6 @@ describe('ForDialog (declarative)', () => {
       // The B dialog only has one focusable, so Tab cycles back to the same
       // button — it must NOT escape into A's tree.
       expect(document.activeElement).toBe(closeB);
-    });
-  });
-
-  describe('dismiss outputs (escapeKeyDown / pointerDownOutside / focusOutside / interactOutside)', () => {
-    it('emits (escapeKeyDown) with the native event before emitting (close)', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              (escapeKeyDown)="captured.push($event)"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        readonly captured: VetoableNativeEvent<KeyboardEvent>[] = [];
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.captured).toHaveLength(1);
-      expect(r.instance.captured[0]?.event.key).toBe('Escape');
-      expect(r.instance.open()).toBe(false);
-    });
-
-    it('keeps the dialog open when the consumer calls preventDefault on (escapeKeyDown)', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              (escapeKeyDown)="$event.preventDefault()"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-    });
-
-    it('emits (pointerDownOutside) and (interactOutside), then (close), when not prevented', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              (pointerDownOutside)="pointerCount = pointerCount + 1"
-              (interactOutside)="interactCount = interactCount + 1"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        pointerCount = 0;
-        interactCount = 0;
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.pointerCount).toBe(1);
-      expect(r.instance.interactCount).toBe(1);
-      expect(r.instance.open()).toBe(false);
-      outside.remove();
-    });
-
-    it('keeps the dialog open when (pointerDownOutside) is preventDefault-ed', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              (pointerDownOutside)="$event.preventDefault()"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-      outside.remove();
-    });
-
-    it('emits (focusOutside) and (interactOutside) when focus moves outside', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              (focusOutside)="focusCount = focusCount + 1"
-              (interactOutside)="interactCount = interactCount + 1"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        focusCount = 0;
-        interactCount = 0;
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-
-      const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.focusCount).toBe(1);
-      expect(r.instance.interactCount).toBe(1);
-      outside.remove();
-    });
-
-    it('still emits the event but suppresses (close) when dismissible=false', async () => {
-      @Component({
-        imports: [ForDialog],
-        template: `
-          @if (open()) {
-            <div
-              forDialog
-              [dismissible]="false"
-              (close)="open.set(false)"
-              (escapeKeyDown)="escapes = escapes + 1"
-              ariaLabel="t"
-            ></div>
-          }
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        escapes = 0;
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.escapes).toBe(1);
-      expect(r.instance.open()).toBe(true);
     });
   });
 
