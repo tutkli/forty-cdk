@@ -41,6 +41,8 @@ __screenshots__/
 
 # Claude Code
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
 
 # Audit working files (issue body drafts kept locally, not part of source)
 /.audit-issues/
