@@ -508,6 +508,59 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('RTL', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [orientation]="orientation()" dir="rtl">
+          <button forSelectTrigger>open</button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+              <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+              <button data-test-id="cherry" forSelectOption value="cherry">Cherry</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class RtlSelectHost {
+      readonly open = signal(false);
+      readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+    }
+
+    it('horizontal: ArrowLeft becomes the forward direction under dir="rtl"', async () => {
+      const r = renderHost(RtlSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('banana');
+    });
+
+    it('vertical: ArrowUp / ArrowDown stay axis-positive (dir does not flip them)', async () => {
+      const r = renderHost(RtlSelectHost);
+      r.instance.orientation.set('vertical');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'ArrowDown');
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('banana');
+
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+      );
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('apple');
+    });
+  });
+
   describe('typeahead', () => {
     it('open: prefix-matches and focuses first match', async () => {
       const r = renderHost(SelectHost);

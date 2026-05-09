@@ -245,6 +245,66 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('RTL', () => {
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+      ],
+      template: `
+        <nav forNavigationMenu [orientation]="orientation()" dir="rtl">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+            </li>
+            <li forNavigationMenuItem value="solutions">
+              <button forNavigationMenuTrigger>Solutions</button>
+            </li>
+            <li forNavigationMenuItem value="about">
+              <button forNavigationMenuTrigger>About</button>
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class RtlNavMenuHost {
+      readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+    }
+
+    it('horizontal: ArrowLeft becomes the forward direction across triggers under dir="rtl"', () => {
+      const { queryAll, flush } = renderHost(RtlNavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowLeft');
+      flush();
+      expect(document.activeElement).toBe(triggers[1]);
+
+      pressKey(triggers[1]!, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(triggers[0]);
+    });
+
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl"', () => {
+      const { fixture, queryAll, flush } = renderHost(RtlNavMenuHost);
+      fixture.componentInstance.orientation.set('vertical');
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowDown');
+      flush();
+      expect(document.activeElement).toBe(triggers[1]);
+
+      pressKey(triggers[1]!, 'ArrowUp');
+      flush();
+      expect(document.activeElement).toBe(triggers[0]);
+    });
+  });
+
   describe('outside dismiss', () => {
     it('closes when the user pointerdowns outside the menu', () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);

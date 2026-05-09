@@ -639,6 +639,18 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
+      expect(document.activeElement).toBe(optOf(el, 'apricot'));
+
+      pressKey(optOf(el, 'apricot'), 'ArrowUp');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+
     it('ignores cross-axis arrows in horizontal mode (ArrowDown/ArrowUp no-op)', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.orientation.set('horizontal');

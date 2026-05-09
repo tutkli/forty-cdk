@@ -290,6 +290,23 @@ describe('ForRadioGroup', () => {
     });
   });
 
+  describe('vertical orientation under dir="rtl"', () => {
+    it('ArrowDown / ArrowUp stay axis-positive (dir does not flip vertical)', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+
+      radioOf(el, 'red').focus();
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
+      flush();
+      expect(document.activeElement).toBe(radioOf(el, 'green'));
+
+      pressKey(radioOf(el, 'green'), 'ArrowUp');
+      flush();
+      expect(document.activeElement).toBe(radioOf(el, 'red'));
+    });
+  });
+
   describe('disabled / readonly', () => {
     it('disabled radio cannot be selected by click and is skipped on nav', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);

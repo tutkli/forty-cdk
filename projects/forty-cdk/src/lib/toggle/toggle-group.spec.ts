@@ -349,6 +349,21 @@ describe('ForToggleGroup', () => {
       pressKey(left, 'ArrowLeft'); // RTL: visually means "next"
       expect(document.activeElement).toBe(itemOf(r.el, 'center'));
     });
+
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.orientation.set('vertical');
+      r.instance.dir.set('rtl');
+      r.flush();
+
+      const left = itemOf(r.el, 'left');
+      left.focus();
+      pressKey(left, 'ArrowDown');
+      expect(document.activeElement).toBe(itemOf(r.el, 'center'));
+
+      pressKey(itemOf(r.el, 'center'), 'ArrowUp');
+      expect(document.activeElement).toBe(left);
+    });
   });
 
   describe('two-way binding', () => {

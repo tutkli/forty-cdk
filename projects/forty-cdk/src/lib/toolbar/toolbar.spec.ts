@@ -139,6 +139,23 @@ describe('ForToolbar', () => {
       flush();
       expect(document.activeElement).toBe(link);
     });
+
+    it('ArrowDown / ArrowUp stay axis-positive in vertical orientation under dir="rtl"', () => {
+      const { fixture, queryAll, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'ArrowDown');
+      flush();
+      expect(document.activeElement).toBe(buttons[1]);
+
+      pressKey(buttons[1]!, 'ArrowUp');
+      flush();
+      expect(document.activeElement).toBe(buttons[0]);
+    });
   });
 
   describe('toggle-group composition', () => {

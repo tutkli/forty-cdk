@@ -300,6 +300,20 @@ describe('ForSlider', () => {
       flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
+
+    it('vertical: ArrowUp / ArrowDown stay axis-positive under dir=rtl (dir does not flip vertical)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      keyDown(thumb(el, 0), 'ArrowUp');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+      keyDown(thumb(el, 0), 'ArrowDown');
+      keyDown(thumb(el, 0), 'ArrowDown');
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
   });
 
   describe('keyboard (inverted)', () => {
