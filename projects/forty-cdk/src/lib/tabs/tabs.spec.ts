@@ -338,6 +338,22 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
       expect(contentOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
     });
+
+    it('ArrowUp / ArrowDown stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+
+      triggerOf(el, 'a').focus();
+      pressKey(triggerOf(el, 'a'), 'ArrowDown');
+      flush();
+      expect(document.activeElement).toBe(triggerOf(el, 'b'));
+
+      pressKey(triggerOf(el, 'b'), 'ArrowUp');
+      flush();
+      expect(document.activeElement).toBe(triggerOf(el, 'a'));
+    });
   });
 
   describe('disabled', () => {
