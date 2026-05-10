@@ -13,6 +13,7 @@ import { injectDisclosureContext } from './disclosure-context';
     '[id]': 'ctx.triggerId()',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.contentId()',
+    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',

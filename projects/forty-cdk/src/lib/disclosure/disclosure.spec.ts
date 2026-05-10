@@ -133,6 +133,7 @@ describe('ForDisclosure', () => {
       const root = query<HTMLElement>('[forDisclosure]')!;
 
       expect(trigger.hasAttribute('disabled')).toBe(true);
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
       expect(root.getAttribute('data-disabled')).toBe('');
 
       trigger.click();
@@ -161,6 +162,8 @@ describe('ForDisclosure', () => {
       expect(root.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(content.hasAttribute('data-disabled')).toBe(false);
+      // aria-disabled is truthy-only — absent (not "false") on the falsy path.
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     });
   });
 
