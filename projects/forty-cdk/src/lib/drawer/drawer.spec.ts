@@ -1282,6 +1282,11 @@ describe('ForDrawerTrigger', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(trigger.hasAttribute('aria-controls')).toBe(false);
     expect(trigger.getAttribute('data-state')).toBe('closed');
+    // Disabled-related attributes are absent when not disabled — never
+    // emitted as "false". Consumers must select on `:not([aria-disabled])`.
+    expect(trigger.hasAttribute('data-disabled')).toBe(false);
+    expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+    expect(trigger.hasAttribute('disabled')).toBe(false);
   });
 
   it('flips aria-expanded, aria-controls, data-state when drawer opens', async () => {
@@ -1298,13 +1303,15 @@ describe('ForDrawerTrigger', () => {
     expect(trigger.getAttribute('data-state')).toBe('open');
   });
 
-  it('ignores clicks and reflects data-disabled when disabled=true', async () => {
+  it('ignores clicks and reflects disabled attributes when disabled=true', async () => {
     const r = renderHost(TriggerHost);
     r.instance.disabled.set(true);
     await flush(r.fixture);
     const trigger = r.query<HTMLButtonElement>('[forDrawerTrigger]')!;
 
     expect(trigger.getAttribute('data-disabled')).toBe('');
+    expect(trigger.getAttribute('aria-disabled')).toBe('true');
+    expect(trigger.getAttribute('disabled')).toBe('');
     trigger.click();
     await flush(r.fixture);
 
