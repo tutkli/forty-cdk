@@ -96,7 +96,7 @@ export class ForDrawerStack {
     const hasDescendant = current.some((other) => other !== node && this.#isDescendant(other, node, current));
     if (hasDescendant) {
       throw new Error(
-        '[forty-cdk/drawer] DrawerStack cleanup desordenado: a parent drawer was destroyed while a nested child is still registered. Make sure the child @if is wrapped inside the parent @if so the child unmounts first.',
+        '[forty-cdk/drawer] DrawerStack out-of-order cleanup: a parent drawer was destroyed while a nested child is still registered. Make sure the child @if is wrapped inside the parent @if so the child unmounts first.',
       );
     }
     const next = current.slice();

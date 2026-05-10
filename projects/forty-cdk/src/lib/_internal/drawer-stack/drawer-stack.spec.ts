@@ -150,7 +150,7 @@ describe('ForDrawerStack', () => {
       parent: root,
     });
 
-    expect(() => rootHandle.cleanup()).toThrow(/cleanup desordenado/);
+    expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
   });
 
   it('parent → cleanup throws even for indirect descendants', async () => {
@@ -178,7 +178,7 @@ describe('ForDrawerStack', () => {
       parent: child,
     });
 
-    expect(() => rootHandle.cleanup()).toThrow(/cleanup desordenado/);
+    expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
   });
 
   it('preserves node metadata (side, scaleBackground, parent)', async () => {
