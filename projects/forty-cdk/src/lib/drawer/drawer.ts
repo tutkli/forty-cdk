@@ -49,57 +49,11 @@ import {
   type ForDrawerSnapPoint,
 } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
-
-const SNAP_POINT_PERCENT_RE = /^(-?\d+(?:\.\d+)?)%$/;
-const SNAP_POINT_PX_RE = /^(-?\d+(?:\.\d+)?)px$/;
-
-/**
- * Convert a snap point to its fractional position along the dismissal axis.
- * Returns `[0, 1]` (or beyond, for fractional values > 1, which Vaul allows
- * as overshoot). Throws on malformed strings or values that aren't finite.
- */
-function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): number {
-  if (typeof p === 'number') {
-    if (!Number.isFinite(p)) {
-      throw new Error(`[forty-cdk/drawer] Snap point must be a finite number, got ${p}.`);
-    }
-    return p;
-  }
-  const pctMatch = SNAP_POINT_PERCENT_RE.exec(p);
-  if (pctMatch) {
-    const n = Number.parseFloat(pctMatch[1]!);
-    return n / 100;
-  }
-  const pxMatch = SNAP_POINT_PX_RE.exec(p);
-  if (pxMatch) {
-    const n = Number.parseFloat(pxMatch[1]!);
-    return dimension === 0 ? 0 : n / dimension;
-  }
-  throw new Error(
-    `[forty-cdk/drawer] Snap point must be a number, "NN%", or "NNpx" string. Got: ${String(p)}.`,
-  );
-}
-
-/**
- * Returns the position of each snap point along the dismissal axis (in CSS
- * pixels measured from the anchored edge). Validates the array is strictly
- * increasing — out-of-order snap points break the snap-resolution algorithm
- * and are almost always a copy-paste error.
- */
-function computeSnapPositions(
-  snapPoints: ReadonlyArray<ForDrawerSnapPoint>,
-  dimension: number,
-): number[] {
-  const positions = snapPoints.map((p) => snapPointToFraction(p, dimension) * dimension);
-  for (let i = 1; i < positions.length; i++) {
-    if (positions[i]! <= positions[i - 1]!) {
-      throw new Error(
-        '[forty-cdk/drawer] snapPoints must be strictly increasing (closest-to-edge first).',
-      );
-    }
-  }
-  return positions;
-}
+import {
+  computeSnapPositions,
+  validateSnapPointsShape,
+  validateSnapPositions,
+} from './snap-points';
 
 function sideToDirections(side: ForDrawerSide): readonly SwipeDirection[] {
   switch (side) {
@@ -412,6 +366,12 @@ export class ForDrawer implements ForDrawerContext {
   #dimensionAtStart = 0;
   #initialOffsetAtStart = 0;
 
+  // Snap positions cache, keyed by the dimension they were resolved against.
+  // First-measurement validation populates this; `#onSwipeStart` refreshes it
+  // when the surface has resized between gestures. Always pre-validated, so
+  // `#onSwipeRelease` can read it without re-running monotonicity checks.
+  #snapPositionsCache: { dimension: number; positions: number[] } | null = null;
+
   constructor() {
     this.#returnFocusTarget =
       this.#document.activeElement instanceof HTMLElement ? this.#document.activeElement : null;
@@ -434,7 +394,8 @@ export class ForDrawer implements ForDrawerContext {
         const amount = this.#defaults.nestedScaleAmount ?? 0.93;
         const translatePx = this.#defaults.nestedTranslateYpx ?? 8;
         const sign = this.side() === 'top' ? 1 : -1;
-        const tx = this.side() === 'left' ? -translatePx : this.side() === 'right' ? translatePx : 0;
+        const tx =
+          this.side() === 'left' ? -translatePx : this.side() === 'right' ? translatePx : 0;
         const ty = this.side() === 'left' || this.side() === 'right' ? 0 : sign * translatePx;
         el.style.transform = `scale(${amount}) translate3d(${tx}px, ${ty}px, 0)`;
         this.#nestedTransformApplied = true;
@@ -464,19 +425,24 @@ export class ForDrawer implements ForDrawerContext {
       // at mount time instead of a silently-broken dismissal threshold.
       const ct = this.closeThreshold();
       if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
-        throw new Error(
-          `[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`,
-        );
+        throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
       }
 
       // Validate snap-point inputs eagerly so consumers get a clear error
-      // at mount time instead of a confusing transform-NaN later.
+      // at mount time instead of a confusing transform-NaN later. Two-phase
+      // scheme:
+      //   1. Shape check — per-point sanity + strict-increase for inputs
+      //      whose ordering is dimension-independent (pure-fraction or
+      //      pure-px). Always runs at mount.
+      //   2. Live-dimension check — strict-increase against the resolved
+      //      pixel positions. Catches mixed `'NNpx'` + fraction arrays
+      //      whose ordering depends on the surface size. Runs once now
+      //      (first measurement), again on `#onSwipeStart` if the surface
+      //      has resized; never on `#onSwipeRelease`, which only reads
+      //      already-validated positions out of `#snapPositionsCache`.
       const points = this.snapPoints();
       if (points && points.length > 0) {
-        // Use a placeholder dimension > 0 so percentage / fraction validation
-        // still catches non-monotonic inputs. Real positions are recomputed
-        // each gesture from the live element size.
-        computeSnapPositions(points, 1000);
+        validateSnapPointsShape(points);
         const idx = this.fadeFromIndex();
         if (idx !== undefined && (idx < 0 || idx >= points.length)) {
           throw new Error(
@@ -486,6 +452,12 @@ export class ForDrawer implements ForDrawerContext {
         if (this.activeSnapPoint() === null) {
           this.activeSnapPoint.set(points[0]!);
         }
+        // Try first measurement. In real browsers `getBoundingClientRect`
+        // returns the laid-out dimension here (we're inside
+        // `afterNextRender`, post-layout). In jsdom layout doesn't run, so
+        // dimension is 0 — defer to `#onSwipeStart`'s rect read, which is
+        // also pre-gesture.
+        this.#refreshSnapPositions(points);
       }
 
       // Push the dismissable layer onto the stack BEFORE moving focus so
@@ -645,11 +617,7 @@ export class ForDrawer implements ForDrawerContext {
   }
 
   requestClose(reason: ForDrawerCloseReason, _value?: unknown): void {
-    if (
-      reason !== 'closeButton' &&
-      reason !== 'programmatic' &&
-      !this.dismissible()
-    ) {
+    if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
     }
     this.close.emit(reason);
@@ -698,7 +666,44 @@ export class ForDrawer implements ForDrawerContext {
     this.#dimensionAtStart = sideAxis(this.side()) === 'y' ? rect.height : rect.width;
     this.#initialOffsetAtStart = this.#dragOffset();
 
+    // Refresh & validate snap positions for this gesture's dimension. If
+    // mount-time first-measurement saw a non-zero dimension equal to the
+    // current one, this is a cache hit and no work runs. Validation throws
+    // here (pre-drag) rather than from the release handler.
+    const points = this.snapPoints();
+    if (points && points.length > 0) {
+      this.#refreshSnapPositions(points);
+    }
+
     this.drag.emit({ percentageDragged: 0, originalEvent: detail.originalEvent });
+  }
+
+  /**
+   * Resolve and validate snap positions against the host's current
+   * dimension. No-op if the cached positions already match. Throws (with
+   * the offending-point error message) when the live dimension flips a
+   * mixed `'NNpx'` + fraction array out of monotonic order.
+   *
+   * Called from `afterNextRender` (first measurement) and from
+   * `#onSwipeStart` (resize between gestures). Never from
+   * `#onSwipeRelease` — by the time release fires, the cache is already
+   * populated for this gesture's dimension.
+   */
+  #refreshSnapPositions(points: ReadonlyArray<ForDrawerSnapPoint>): void {
+    const rect = this.#host.nativeElement.getBoundingClientRect();
+    const dim = sideAxis(this.side()) === 'y' ? rect.height : rect.width;
+    if (dim <= 0) {
+      // No layout yet (jsdom, or display: none). Defer; the next call with
+      // a real dimension will do the work.
+      return;
+    }
+    const cached = this.#snapPositionsCache;
+    if (cached && cached.dimension === dim) {
+      return;
+    }
+    const positions = computeSnapPositions(points, dim);
+    validateSnapPositions(points, positions, dim);
+    this.#snapPositionsCache = { dimension: dim, positions };
   }
 
   #onSwipeMove(detail: SwipeEventDetail): void {
@@ -759,7 +764,15 @@ export class ForDrawer implements ForDrawerContext {
       // anchored edge. With `offset` representing how far the surface has
       // been pulled toward the edge (positive), the effective position from
       // the edge is `currentSnapPosition - offset`.
-      const snapPositions = computeSnapPositions(points, dim);
+      //
+      // Read snap positions from the pre-validated cache populated by
+      // `#refreshSnapPositions` at mount and on `#onSwipeStart`. The
+      // release path is throw-free by construction: any input that would
+      // fail monotonicity at the live dimension has already failed before
+      // we get here.
+      const cached = this.#snapPositionsCache;
+      const snapPositions =
+        cached && cached.dimension === dim ? cached.positions : computeSnapPositions(points, dim);
       const activeSnapPosition = (() => {
         const active = this.activeSnapPoint();
         if (active == null) {
@@ -783,9 +796,7 @@ export class ForDrawer implements ForDrawerContext {
     } else {
       // No snap points: dismiss when dragged past closeThreshold OR fast
       // flick toward edge.
-      willClose =
-        offset >= dim * closeThreshold ||
-        this.#pointerVelocity >= 0.4;
+      willClose = offset >= dim * closeThreshold || this.#pointerVelocity >= 0.4;
     }
 
     this.release.emit({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
