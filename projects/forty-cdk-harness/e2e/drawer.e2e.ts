@@ -8,15 +8,12 @@ import { clickOutside, focusedId, focusInside, gotoFixture } from './_helpers';
  * tiny ARM step (5 px past the helper's 4-px arming distance), then
  * applies the remaining displacement in a single `pointermove`.
  *
- * The single-shot move shape is deliberate. The directive's release path
- * uses the latest move's delta (event.clientY − previous event.clientY)
- * as the gesture offset, not a running sum of every micro-move, and the
- * velocity sample is the same delta divided by the time gap between the
- * arm step and the big move. By capping the gesture at one arm step plus
- * one big move both numbers stay deterministic — the resulting offset is
- * `|delta| − armPx` and the velocity is `(|delta| − armPx) / stepDelayMs`.
- * Tests that need the offset to land on a specific pixel can pass `delta`
- * directly without compensating for sub-pixel drift across many steps.
+ * The drawer integrates pointer movement cumulatively, so the resulting
+ * drag offset is `|delta| − armPx` regardless of how many micro-moves
+ * happen along the way. The single-shot move shape is kept here so the
+ * release-time velocity sample stays deterministic: it's the big move's
+ * delta divided by `stepDelayMs`. Tests that want to exercise the
+ * cumulative integrator (many small moves) use {@link dragFromSteps}.
  *
  * `stepDelayMs` controls the gap between the arm step and the big move so
  * the computed velocity stays below `VELOCITY_THRESHOLD_PX_PER_MS = 0.4`
@@ -55,6 +52,59 @@ async function dragFrom(
   // Big move: covers the remainder of the requested displacement in a
   // single pointermove so the directive's offset == requested distance.
   await page.mouse.move(startX + delta.dx, startY + delta.dy);
+  if (release) {
+    await page.mouse.up();
+  }
+}
+
+/**
+ * Drag a drawer (or its handle) using a multi-step pointer gesture: a
+ * small arming step past the swipe-dismiss helper's 4-px arm distance
+ * followed by `steps` equal `step` moves with `stepDelayMs` between
+ * them. Used to exercise the directive's cumulative-offset integration
+ * (post-#205): the arming pointermove emits with `moveTowardEdge = 0`
+ * and the N subsequent moves each contribute `|step|` to the running
+ * offset, so the final drag offset equals `steps * |step|`.
+ *
+ * Velocity at release is the last move's `|step|` divided by
+ * `stepDelayMs` (the default 50 ms with a 30-px step gives 0.6 px/ms —
+ * past the 0.4-px/ms flick threshold). Tests that need the no-flick
+ * branch pass a larger `stepDelayMs` so per-event velocity stays below
+ * the threshold.
+ */
+async function dragFromSteps(
+  page: Page,
+  start: Locator,
+  step: { dx: number; dy: number },
+  steps: number,
+  options: { release?: boolean; stepDelayMs?: number; armPx?: number } = {},
+): Promise<void> {
+  const box = await start.boundingBox();
+  if (!box) throw new Error('dragFromSteps: start locator has no bounding box');
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const stepDelayMs = options.stepDelayMs ?? 50;
+  const armPx = options.armPx ?? 5;
+  const release = options.release ?? true;
+
+  const len = Math.hypot(step.dx, step.dy) || 1;
+  const armDx = (step.dx / len) * armPx;
+  const armDy = (step.dy / len) * armPx;
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  // Arming step: directs the swipe-dismiss helper at the same axis as
+  // the requested gesture.
+  await page.mouse.move(startX + armDx, startY + armDy);
+
+  let cx = startX + armDx;
+  let cy = startY + armDy;
+  for (let i = 0; i < steps; i++) {
+    await page.waitForTimeout(stepDelayMs);
+    cx += step.dx;
+    cy += step.dy;
+    await page.mouse.move(cx, cy);
+  }
   if (release) {
     await page.mouse.up();
   }
@@ -477,11 +527,12 @@ test.describe('Drawer', () => {
     }) => {
       // Snap positions on a 400px drawer (`?drawerHeight=400`):
       //   '148px' → 148, '50%' → 200, 1 → 400.
-      // Start from `'50%'` (200px from edge). The directive's release math
-      // uses the LATEST `pointermove` delta as the drag offset, so a
-      // dragFrom of 60px yields offset ≈ 55 (60 minus the 5-px arm step).
-      // Position = 200 - 55 = 145 — closest to 148 by 3 px, vs 55 px from
-      // 200 — and (release) snaps to '148px'.
+      // Start from `'50%'` (200px from edge). dragFrom does one arm step
+      // plus one big move; the cumulative drag offset ends at 60 − 5 = 55
+      // (arm step is absorbed by the arming pointermove which fires
+      // onSwipeStart and onSwipeMove with the same event, producing a
+      // moveTowardEdge of 0). Position = 200 − 55 = 145 — closest to 148
+      // by 3 px, vs 55 px from 200 — and (release) snaps to '148px'.
       await gotoFixture(page, 'drawer', {
         drawerHeight: '400',
         snap: '148px,0.5,1',
@@ -537,6 +588,117 @@ test.describe('Drawer', () => {
       await expect(page.locator('#drawer')).toHaveCount(0);
       await expect(page.locator('#last-close-reason')).toHaveText('swipe');
       await expect(page.locator('#last-release-will-close')).toHaveText('true');
+    });
+
+    // Multi-step coverage (#205): the directive must integrate pointer
+    // movement cumulatively across many small moves. The single-big-move
+    // shape of `dragFrom` masks any per-event-vs-cumulative regression
+    // because there is only one delta to read; these specs drive many
+    // pointermoves so a "latest delta" implementation would emit a
+    // near-zero `percentageDragged` and fail at the threshold maths.
+    test('multi-step drag: percentageDragged rises monotonically toward (steps × stepPx) / dim', async ({
+      page,
+    }) => {
+      // 10 × 30 px = 300 px cumulative travel on a 400 px drawer; with
+      // closeThreshold raised to 1 the gesture cannot dismiss, so the
+      // release path just snaps back and we can read the final
+      // `(drag)` percent off the fixture. Final offset is 10 * 30 = 300,
+      // percent = 300 / 400 = 0.75. Polled per-step so a "latest delta"
+      // regression (offset stuck at 30) would surface as a non-monotonic
+      // sequence, not just a wrong terminal value.
+      await gotoFixture(page, 'drawer', { drawerHeight: '400', closeThreshold: '1' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+
+      const handle = page.locator('#handle');
+      const box = await handle.boundingBox();
+      expect(box).not.toBeNull();
+      const startX = box!.x + box!.width / 2;
+      const startY = box!.y + box!.height / 2;
+
+      const stepPx = 30;
+      const steps = 10;
+      const armPx = 5;
+
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      // Arm: the swipe-dismiss helper fires onSwipeStart AND onSwipeMove
+      // with the same event, so the drawer emits (drag) twice (once with
+      // percentageDragged: 0 from #onSwipeStart, once from #onSwipeMove
+      // with moveTowardEdge = 0 ⇒ still 0). drag-count therefore lands
+      // on 2, not 1, after the arming pointermove.
+      await page.mouse.move(startX, startY + armPx);
+      await expect(page.locator('#drag-count')).toHaveText('2');
+      await expect(page.locator('#last-drag-percent')).toHaveText('0.0000');
+
+      let lastPercent = 0;
+      for (let i = 1; i <= steps; i++) {
+        await page.mouse.move(startX, startY + armPx + stepPx * i);
+        await expect(page.locator('#drag-count')).toHaveText(String(2 + i));
+        const percent = Number(await page.locator('#last-drag-percent').textContent());
+        expect(percent).toBeGreaterThan(lastPercent);
+        lastPercent = percent;
+      }
+      // Final cumulative offset = 10 * 30 = 300; percent = 300 / 400 = 0.75.
+      // Allow 1% tolerance for floating-point / sub-pixel rounding.
+      expect(lastPercent).toBeGreaterThan(0.74);
+      expect(lastPercent).toBeLessThan(0.76);
+
+      await page.mouse.up();
+    });
+
+    test('multi-step drag past closeThreshold * dim dismisses with reason "swipe"', async ({
+      page,
+    }) => {
+      // 5 × 15 px = 75 px cumulative travel on a 200 px drawer; the
+      // default closeThreshold 0.25 gives a 50 px dismissal threshold,
+      // which 75 > 50 clears. With the cumulative fix the offset reaches
+      // 75 and willClose flips to true; without the fix the offset would
+      // be stuck at 15 (the per-event delta) and the drawer would stay
+      // mounted.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+
+      await dragFromSteps(page, page.locator('#handle'), { dx: 0, dy: 15 }, 5);
+
+      await expect(page.locator('#drawer')).toHaveCount(0);
+      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+    });
+
+    test('multi-step drag: snap-point selection lands at the snap closest to the cumulative end position', async ({
+      page,
+    }) => {
+      // drawerHeight=400 with snaps {148px, 0.5 → 200, 1 → 400}, starting
+      // active at '0.5' (200 px from edge). 6 × 10 px = 60 px cumulative
+      // travel → position = 200 − 60 = 140. Closest snap by position is
+      // 148 (8 px away) vs 200 (60 px) vs 400 (260 px) → settles on
+      // '148px'. With 100 ms gaps the per-event velocity is 10/100 =
+      // 0.1 px/ms, well below the 0.4 flick threshold, so no velocity
+      // bias kicks in and the position-only check decides the target.
+      // Without the cumulative fix the offset would be stuck at 10, the
+      // end position would be 190, the closest snap would still be 200,
+      // and the test would observe a snap-back to '0.5' rather than the
+      // expected travel to '148px'.
+      await gotoFixture(page, 'drawer', {
+        drawerHeight: '400',
+        snap: '148px,0.5,1',
+        initialSnap: '0.5',
+      });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#active-snap')).toHaveText('0.5');
+
+      await dragFromSteps(page, page.locator('#handle'), { dx: 0, dy: 10 }, 6, {
+        stepDelayMs: 100,
+      });
+
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      await expect(page.locator('#last-release-next-snap')).toHaveText('148px');
+      await expect(page.locator('#active-snap')).toHaveText('148px');
+      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
   });
 });
