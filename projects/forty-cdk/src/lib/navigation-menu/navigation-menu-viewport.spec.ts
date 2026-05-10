@@ -433,9 +433,12 @@ describe('ForNavigationMenuViewport', () => {
         // Viewport still renders and re-parents the active content.
         const products = query<HTMLElement>('[data-id="products"]')!;
         expect(products.parentElement).toBe(viewport);
-        // Size CSS variables fall back to 0 because no measurement runs.
+        // Without RO, the computed width/height still populate from the
+        // initial render (they pull getBoundingClientRect on every read).
+        // What's lost is *live* updates: a subsequent layout mutation will
+        // not refresh the CSS variables until the consumer re-runs CD.
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '0px',
+          '320px',
         );
         // data-state still tracks open/closed.
         expect(viewport.getAttribute('data-state')).toBe('open');
