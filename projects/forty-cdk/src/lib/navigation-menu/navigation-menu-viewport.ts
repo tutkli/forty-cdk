@@ -59,10 +59,9 @@ export class ForNavigationMenuViewport {
   protected readonly menu = injectNavigationMenuContext('ForNavigationMenuViewport');
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  readonly #w = signal(0);
-  readonly #h = signal(0);
-  protected readonly width = this.#w.asReadonly();
-  protected readonly height = this.#h.asReadonly();
+  readonly #measureTick = signal(0);
+  protected readonly width = computed(() => this.#measureSize().width);
+  protected readonly height = computed(() => this.#measureSize().height);
 
   protected readonly state = computed(() => (this.menu.value() ? 'open' : 'closed'));
 
@@ -76,25 +75,24 @@ export class ForNavigationMenuViewport {
       (h) => this.menu.unregisterViewport(h),
     );
 
-    // Track the active content's natural size via ResizeObserver. Avoids the
-    // sub-pixel `getBoundingClientRect` feedback loops that an
-    // `afterEveryRender` measurement would create when CSS consumes the
-    // exposed custom properties. Browser-only API; on SSR / very old runtimes
-    // we simply skip measurement and the viewport still renders.
+    // Track the active content's natural size via ResizeObserver so layout
+    // mutations between renders (e.g. async content load, viewport host
+    // resize from a surrounding column) flow into the exposed CSS variables.
+    // Browser-only API; on SSR / very old runtimes we simply skip the
+    // observation and the `width`/`height` computed signals still settle on
+    // first read because they pull from `getBoundingClientRect` directly.
     if (this.#isBrowser && typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(() => this.#measure());
+      const ro = new ResizeObserver(() => this.#measureTick.update((t) => t + 1));
       // Always observe the viewport host itself so layout changes that affect
       // its own box (e.g. the surrounding column resizing) are picked up.
       ro.observe(this.host);
 
       // Switch which content child is being observed whenever the active
-      // panel changes, and take an immediate measurement so the CSS variables
-      // populate on the same tick (in the browser RO would also fire its
-      // initial-observation callback, but jsdom and some SSR-hydration paths
-      // don't, so we don't rely on it). We deliberately write to `#w` / `#h`
-      // from inside this `effect` because integrating an imperative external
-      // API (ResizeObserver) is the documented exception to the "never
-      // propagate state inside effect()" rule in CLAUDE.md.
+      // panel changes. Pure side effect on the imperative ResizeObserver —
+      // no signal writes from this effect, so the host bindings on
+      // `width`/`height` settle within the same CD pass that the active
+      // content changed in (no CLAUDE.md "state in effects" exception
+      // needed here).
       let observed: HTMLElement | null = null;
       effect(() => {
         const active = this.menu.activeContentHost();
@@ -106,22 +104,18 @@ export class ForNavigationMenuViewport {
           ro.observe(active);
           observed = active;
         }
-        this.#measure();
       });
 
       inject(DestroyRef).onDestroy(() => ro.disconnect());
     }
   }
 
-  #measure(): void {
+  #measureSize(): { width: number; height: number } {
+    // Depend on the manual tick so RO callbacks invalidate the computed.
+    this.#measureTick();
     const active = this.menu.activeContentHost();
-    if (!active) {
-      this.#w.set(0);
-      this.#h.set(0);
-      return;
-    }
+    if (!active) return { width: 0, height: 0 };
     const r = active.getBoundingClientRect();
-    this.#w.set(r.width);
-    this.#h.set(r.height);
+    return { width: r.width, height: r.height };
   }
 }
