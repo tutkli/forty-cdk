@@ -92,10 +92,32 @@ class NoViewportHost {
   readonly open = signal('');
 }
 
+/**
+ * Override `getBoundingClientRect` so the viewport's size bindings can be
+ * exercised in jsdom (which otherwise returns zeros for everything).
+ *
+ * The override patches *both* `Element.prototype` and
+ * `HTMLElement.prototype` because some jsdom builds — notably the one
+ * shipped with the Linux CI runner image — define
+ * `getBoundingClientRect` on `HTMLElement.prototype` too. The
+ * more-specific entry then shadows the `Element.prototype` patch on the
+ * prototype chain (`HTMLDivElement` → `HTMLElement` → `Element`), and a
+ * single-prototype patch is silently bypassed for every `<div>` /
+ * `<button>` / etc. — exactly what made the Linux flake in #193 look
+ * like a CD-ordering bug. Patching both rungs matches whichever level
+ * the runtime actually consults.
+ */
 function stubRectByDataId(sizes: Record<string, { width: number; height: number }>): () => void {
-  const original = Element.prototype.getBoundingClientRect;
-  Element.prototype.getBoundingClientRect = function () {
-    const id = (this as Element).getAttribute?.('data-id');
+  const elDescriptor = Object.getOwnPropertyDescriptor(
+    Element.prototype,
+    'getBoundingClientRect',
+  );
+  const htmlElDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'getBoundingClientRect',
+  );
+  const stub = function (this: Element) {
+    const id = this.getAttribute?.('data-id');
     if (id && sizes[id]) {
       const { width, height } = sizes[id]!;
       return {
@@ -110,10 +132,31 @@ function stubRectByDataId(sizes: Record<string, { width: number; height: number 
         toJSON: () => ({}),
       } as DOMRect;
     }
-    return original.call(this);
+    return new DOMRect(0, 0, 0, 0);
   };
+  Object.defineProperty(Element.prototype, 'getBoundingClientRect', {
+    value: stub,
+    writable: true,
+    configurable: true,
+  });
+  if (htmlElDescriptor) {
+    Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
+      value: stub,
+      writable: true,
+      configurable: true,
+    });
+  }
   return () => {
-    Element.prototype.getBoundingClientRect = original;
+    if (elDescriptor) {
+      Object.defineProperty(Element.prototype, 'getBoundingClientRect', elDescriptor);
+    } else {
+      delete (Element.prototype as { getBoundingClientRect?: unknown }).getBoundingClientRect;
+    }
+    if (htmlElDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', htmlElDescriptor);
+    } else {
+      delete (HTMLElement.prototype as { getBoundingClientRect?: unknown }).getBoundingClientRect;
+    }
   };
 }
 
@@ -175,7 +218,7 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('size CSS variables', () => {
-    it('reflects the active content size into --for-navigation-menu-viewport-{width,height}', async () => {
+    it('reflects the active content size into --for-navigation-menu-viewport-{width,height}', () => {
       const restore = stubRectByDataId({
         products: { width: 320, height: 240 },
         solutions: { width: 480, height: 120 },
@@ -186,11 +229,6 @@ describe('ForNavigationMenuViewport', () => {
 
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
         fixture.componentInstance.open.set('products');
-        // ForNavigationMenuContent registers its handle via afterNextRender,
-        // so the viewport's effect → #w/#h → host-binding chain only settles
-        // after the render scheduler ticks. whenStable drains it.
-        flush();
-        await fixture.whenStable();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -201,8 +239,6 @@ describe('ForNavigationMenuViewport', () => {
         );
 
         fixture.componentInstance.open.set('solutions');
-        flush();
-        await fixture.whenStable();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -315,37 +351,20 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('ResizeObserver-driven measurement', () => {
-    it('observes the active content panel and re-measures when RO fires', async () => {
-      // Initial sizes; we'll mutate them between two fires of the same RO.
+    it('observes the active content panel and re-measures when RO fires', () => {
+      // `stubRectByDataId` captures `sizes` by reference, so mutating it
+      // after the stub is installed is visible to the next
+      // `getBoundingClientRect()` call (we use this to swap the panel's
+      // reported size between RO fires).
       const sizes: Record<string, { width: number; height: number }> = {
         products: { width: 320, height: 240 },
       };
-      const original = Element.prototype.getBoundingClientRect;
-      Element.prototype.getBoundingClientRect = function () {
-        const id = (this as Element).getAttribute?.('data-id');
-        if (id && sizes[id]) {
-          const { width, height } = sizes[id]!;
-          return {
-            left: 0,
-            top: 0,
-            right: width,
-            bottom: height,
-            width,
-            height,
-            x: 0,
-            y: 0,
-            toJSON: () => ({}),
-          } as DOMRect;
-        }
-        return original.call(this);
-      };
+      const restore = stubRectByDataId(sizes);
       try {
         const { fixture, query, flush } = renderHost(MegaMenuHost);
         flush();
 
         fixture.componentInstance.open.set('products');
-        flush();
-        await fixture.whenStable();
         flush();
 
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
@@ -365,8 +384,6 @@ describe('ForNavigationMenuViewport', () => {
         sizes['products'] = { width: 555, height: 333 };
         observingPanel!.fire();
         flush();
-        await fixture.whenStable();
-        flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
           '555px',
@@ -375,7 +392,7 @@ describe('ForNavigationMenuViewport', () => {
           '333px',
         );
       } finally {
-        Element.prototype.getBoundingClientRect = original;
+        restore();
       }
     });
 
