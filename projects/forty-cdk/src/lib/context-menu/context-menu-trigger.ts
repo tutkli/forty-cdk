@@ -23,6 +23,8 @@ import { ForContextMenu } from './context-menu';
   host: {
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },

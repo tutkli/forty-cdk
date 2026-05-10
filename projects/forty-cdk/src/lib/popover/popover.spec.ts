@@ -132,6 +132,11 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
+      // Disabled-related attributes are absent when not disabled — never
+      // emitted as "false". Consumers must select on `:not([aria-disabled])`.
+      expect(trigger.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+      expect(trigger.hasAttribute('disabled')).toBe(false);
 
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -223,6 +228,8 @@ describe('ForPopover', () => {
       const root = r.query<HTMLElement>('[forPopover]')!;
       expect(root.getAttribute('data-disabled')).toBe('');
       expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
     });
 
     it('honors consumer writes via [(open)] without re-emitting (openChange)', async () => {

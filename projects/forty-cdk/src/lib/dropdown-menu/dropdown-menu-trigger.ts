@@ -22,6 +22,8 @@ import { injectMenuContext } from '../menu/menu-context';
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
   },
