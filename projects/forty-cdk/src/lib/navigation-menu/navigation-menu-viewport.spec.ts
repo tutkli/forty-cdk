@@ -175,7 +175,7 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('size CSS variables', () => {
-    it('reflects the active content size into --for-navigation-menu-viewport-{width,height}', () => {
+    it('reflects the active content size into --for-navigation-menu-viewport-{width,height}', async () => {
       const restore = stubRectByDataId({
         products: { width: 320, height: 240 },
         solutions: { width: 480, height: 120 },
@@ -186,10 +186,11 @@ describe('ForNavigationMenuViewport', () => {
 
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
         fixture.componentInstance.open.set('products');
+        // ForNavigationMenuContent registers its handle via afterNextRender,
+        // so the viewport's effect → #w/#h → host-binding chain only settles
+        // after the render scheduler ticks. whenStable drains it.
         flush();
-        // The directive's effect writes #w/#h after the active-content signal
-        // updates, so host bindings need a second CD pass to settle. Some
-        // jsdom hosts coincidentally drain this in one tick; Linux CI does not.
+        await fixture.whenStable();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -201,6 +202,7 @@ describe('ForNavigationMenuViewport', () => {
 
         fixture.componentInstance.open.set('solutions');
         flush();
+        await fixture.whenStable();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -313,7 +315,7 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('ResizeObserver-driven measurement', () => {
-    it('observes the active content panel and re-measures when RO fires', () => {
+    it('observes the active content panel and re-measures when RO fires', async () => {
       // Initial sizes; we'll mutate them between two fires of the same RO.
       const sizes: Record<string, { width: number; height: number }> = {
         products: { width: 320, height: 240 },
@@ -343,6 +345,7 @@ describe('ForNavigationMenuViewport', () => {
 
         fixture.componentInstance.open.set('products');
         flush();
+        await fixture.whenStable();
         flush();
 
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
@@ -362,6 +365,7 @@ describe('ForNavigationMenuViewport', () => {
         sizes['products'] = { width: 555, height: 333 };
         observingPanel!.fire();
         flush();
+        await fixture.whenStable();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
