@@ -164,7 +164,7 @@ Consumers styling falsy state must select on **the absence** of the attribute (`
 
 There are two API shapes for primitives that have a visibility/open concept:
 
-- **Free-floating overlays** (Dialog, Toast): the instance lifecycle is decoupled from the trigger and the directive owns no `[(open)]` model. The consumer's external signal drives `@if`, and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). Mount == open. Setup (focus trap, scroll lock, dismissable layer) runs in `afterNextRender` so input bindings are settled; cleanup runs in `DestroyRef`.
+- **Free-floating overlays** (Dialog, Drawer, Toast): the instance lifecycle is decoupled from the trigger and the directive owns no `[(open)]` model. The consumer's external signal drives `@if`, and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). Mount == open. Setup (focus trap, scroll lock, dismissable layer, portal, inert siblings, return-focus capture) is owned by `_internal/modal-shell` (`injectModalShell({...})`); the directive contributes ARIA + label / description registration on top. Cleanup runs through the shell's own `DestroyRef` hook.
 
   ```html
   @if (open()) {
