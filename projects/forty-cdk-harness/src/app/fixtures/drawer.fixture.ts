@@ -5,7 +5,9 @@ import {
   ForDrawerBackdrop,
   type ForDrawerCloseReason,
   ForDrawerClose,
+  type ForDrawerDragEvent,
   ForDrawerHandle,
+  type ForDrawerReleaseEvent,
   type ForDrawerSide,
   type ForDrawerSnapPoint,
   ForDrawerTrigger,
@@ -46,6 +48,18 @@ import { queryFlag } from './_query-flag';
         /* see the actual requested dimension. */
         box-sizing: border-box;
       }
+      /*
+       * The bare [forDrawerHandle] div renders 0 px tall by default, which
+       * means a Playwright drag started on its bounding box has nowhere to
+       * attach. Visual styling here is purely a fixture-side affordance
+       * so e2e specs can drive page.mouse.down/move/up against the handle.
+       */
+      [forDrawerHandle] {
+        height: 16px;
+        margin-bottom: 8px;
+        background: #ddd;
+        border-radius: 4px;
+      }
       #shell {
         display: block;
         min-height: 200px;
@@ -75,7 +89,10 @@ import { queryFlag } from './_query-flag';
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
         [style.height.px]="drawerHeightPx()"
+        [closeThreshold]="closeThresholdValue()"
         (close)="onClose($event)"
+        (drag)="onDrag($event)"
+        (release)="onRelease($event)"
       >
         @if (backdrop) {
           <div id="backdrop" forDrawerBackdrop></div>
@@ -109,6 +126,11 @@ import { queryFlag } from './_query-flag';
     <output id="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
     <output id="last-child-close-reason">{{ lastChildCloseReason() ?? 'none' }}</output>
     <output id="active-snap">{{ activeSnapDisplay() }}</output>
+    <output id="drag-count">{{ dragCount() }}</output>
+    <output id="last-drag-percent">{{ lastDragPercent() }}</output>
+    <output id="release-count">{{ releaseCount() }}</output>
+    <output id="last-release-will-close">{{ lastReleaseWillClose() }}</output>
+    <output id="last-release-next-snap">{{ lastReleaseNextSnap() }}</output>
   `,
 })
 export class DrawerFixture {
@@ -116,9 +138,22 @@ export class DrawerFixture {
   protected readonly childOpen = signal(false);
   protected readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly lastChildCloseReason = signal<ForDrawerCloseReason | null>(null);
-  protected readonly activeSnapPoint = signal<ForDrawerSnapPoint | null>(null);
+
+  // Drag / release telemetry. Updated from the (drag) / (release) outputs and
+  // mirrored into <output> elements so Playwright specs can poll them as text.
+  // Keep numbers + booleans only — anything richer (e.g. PointerEvent shape)
+  // would have to be serialised by hand on every emit.
+  protected readonly dragCount = signal(0);
+  protected readonly lastDragPercent = signal('none');
+  protected readonly releaseCount = signal(0);
+  protected readonly lastReleaseWillClose = signal('none');
+  protected readonly lastReleaseNextSnap = signal('none');
 
   readonly #route = inject(ActivatedRoute);
+
+  protected readonly activeSnapPoint = signal<ForDrawerSnapPoint | null>(
+    parseInitialSnap(this.#route.snapshot.queryParamMap.get('initialSnap')),
+  );
 
   protected readonly side = signal<ForDrawerSide>(
     (this.#route.snapshot.queryParamMap.get('side') as ForDrawerSide | null) ?? 'bottom',
@@ -130,6 +165,10 @@ export class DrawerFixture {
 
   protected readonly drawerHeightPx = signal<number | null>(
     parseHeight(this.#route.snapshot.queryParamMap.get('drawerHeight')),
+  );
+
+  protected readonly closeThresholdValue = signal<number>(
+    parseCloseThreshold(this.#route.snapshot.queryParamMap.get('closeThreshold')),
   );
 
   protected readonly vetoOpen = queryFlag('vetoOpen');
@@ -158,6 +197,17 @@ export class DrawerFixture {
     this.lastChildCloseReason.set(reason);
     this.childOpen.set(false);
   }
+
+  protected onDrag(event: ForDrawerDragEvent): void {
+    this.dragCount.update((n) => n + 1);
+    this.lastDragPercent.set(event.percentageDragged.toFixed(4));
+  }
+
+  protected onRelease(event: ForDrawerReleaseEvent): void {
+    this.releaseCount.update((n) => n + 1);
+    this.lastReleaseWillClose.set(String(event.willClose));
+    this.lastReleaseNextSnap.set(event.nextSnapPoint == null ? 'null' : String(event.nextSnapPoint));
+  }
 }
 
 function parseSnapPoints(raw: string | null): ReadonlyArray<ForDrawerSnapPoint> | undefined {
@@ -177,4 +227,33 @@ function parseHeight(raw: string | null): number | null {
   if (!raw) return null;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Parse the `?closeThreshold=…` fixture override. Falls back to the
+ * directive's own default (`0.25`) when the param is absent or invalid, so
+ * existing specs that don't set it keep their current behaviour.
+ */
+function parseCloseThreshold(raw: string | null): number {
+  if (!raw) return 0.25;
+  const n = Number.parseFloat(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 1) return 0.25;
+  return n;
+}
+
+/**
+ * Parse the `?initialSnap=…` query param into a `ForDrawerSnapPoint`. Used by
+ * E2E specs that need the drawer to start at a non-default snap entry (e.g.
+ * the snap-point resolution case, where dragging down from the topmost snap
+ * has to land on a middle one). Same shape as `parseSnapPoints` per-entry —
+ * a bare number is parsed as a fraction; everything else stays a string and
+ * the directive validates the shape itself.
+ */
+function parseInitialSnap(raw: string | null): ForDrawerSnapPoint | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return Number.parseFloat(trimmed);
+  }
+  return trimmed as ForDrawerSnapPoint;
 }
