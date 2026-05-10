@@ -519,6 +519,91 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
+  describe('duplicate slot registration', () => {
+    it('throws when two [forDrawerHandle] are mounted inside the same [forDrawer]', () => {
+      @Component({
+        imports: [ForDrawer, ForDrawerHandle],
+        template: `
+          @if (open()) {
+            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+              <div forDrawerHandle></div>
+              <div forDrawerHandle></div>
+            </div>
+          }
+        `,
+      })
+      class TwoHandlesHost {
+        readonly open = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoHandlesHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/drawer\] Multiple \[forDrawerHandle\]/,
+      );
+    });
+
+    it('throws when two [forDrawerBackdrop] are mounted inside the same [forDrawer]', () => {
+      @Component({
+        imports: [ForDrawer, ForDrawerBackdrop],
+        template: `
+          @if (open()) {
+            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+              <div forDrawerBackdrop></div>
+              <div forDrawerBackdrop></div>
+            </div>
+          }
+        `,
+      })
+      class TwoBackdropsHost {
+        readonly open = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoBackdropsHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/drawer\] Multiple \[forDrawerBackdrop\]/,
+      );
+    });
+
+    it('does not throw when a handle is re-registered after the previous unmounted', async () => {
+      @Component({
+        imports: [ForDrawer, ForDrawerHandle],
+        template: `
+          @if (open()) {
+            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+              @if (showFirst()) {
+                <div forDrawerHandle data-which="first"></div>
+              }
+              @if (showSecond()) {
+                <div forDrawerHandle data-which="second"></div>
+              }
+            </div>
+          }
+        `,
+      })
+      class SwapHandleHost {
+        readonly open = signal(false);
+        readonly showFirst = signal(true);
+        readonly showSecond = signal(false);
+      }
+
+      const r = renderHost(SwapHandleHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector('[forDrawerHandle][data-which="first"]')).not.toBeNull();
+
+      // Unmount the first, then mount the second — should not throw.
+      r.instance.showFirst.set(false);
+      await flush(r.fixture);
+      r.instance.showSecond.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forDrawerHandle][data-which="first"]')).toBeNull();
+      expect(document.querySelector('[forDrawerHandle][data-which="second"]')).not.toBeNull();
+    });
+  });
+
   describe('mode flags', () => {
     it('skips aria-modal, focus trap, and body scroll lock when modal=false', async () => {
       @Component({
