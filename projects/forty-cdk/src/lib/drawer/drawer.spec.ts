@@ -423,29 +423,16 @@ describe('ForDrawer (declarative)', () => {
       ).toBe(true);
     });
 
-    describe('cross-dimension validation', () => {
-      // Stub getBoundingClientRect on every drawer host so first-measurement
-      // validation sees a real dimension. jsdom returns zeros for layout
-      // metrics; we patch the prototype so the test controls what the
-      // directive measures.
-      let restoreRect: (() => void) | null = null;
-      function withDrawerHeight(height: number): void {
-        const original = HTMLElement.prototype.getBoundingClientRect;
-        HTMLElement.prototype.getBoundingClientRect = function (): DOMRect {
-          if (this.hasAttribute('forDrawer')) {
-            return new DOMRect(0, 0, 600, height);
-          }
-          return original.call(this);
-        };
-        restoreRect = () => {
-          HTMLElement.prototype.getBoundingClientRect = original;
-        };
-      }
-      afterEach(() => {
-        restoreRect?.();
-        restoreRect = null;
-      });
-
+    // Shape-only validation paths that don't depend on layout — the
+    // strict-increase check and the finite-number check fire before the
+    // directive ever measures the host. The cross-dimension counterparts
+    // (`['200px', 0.5]` non-monotonic at the live dimension) live in
+    // `drawer.e2e.ts`, where real layout produces a real measurement;
+    // jsdom returns zero for `getBoundingClientRect` and faking it via
+    // `*.prototype` overrides would only verify the directive's plumbing
+    // under a forged input, not the behaviour a consumer sees. See
+    // CLAUDE.md "Testing notes" / "E2E (Playwright)" for the rule.
+    describe('snap point shape rejections', () => {
       function captureDrawerErrors(
         host: new (...args: unknown[]) => { open: { set(v: boolean): void } },
       ): Promise<unknown[]> {
@@ -468,141 +455,6 @@ describe('ForDrawer (declarative)', () => {
         return fixture.whenStable().then(() => captured);
       }
 
-      it("throws at first measurement when ['200px', 0.5] is non-monotonic at the live dimension (300px host)", async () => {
-        @Component({
-          imports: [ForDrawer],
-          template: `
-            @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
-            }
-          `,
-        })
-        class BadHost {
-          readonly open = signal(false);
-          readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['200px', 0.5];
-        }
-
-        withDrawerHeight(300);
-        const captured = await captureDrawerErrors(BadHost);
-
-        // 200px on a 300px-tall surface = 200, while 0.5 * 300 = 150.
-        // The error message names both points and the live dimension.
-        const offending = captured.find(
-          (e) =>
-            e instanceof Error &&
-            e.message.startsWith('[forty-cdk/drawer]') &&
-            e.message.includes('"200px"') &&
-            e.message.includes('200px') &&
-            e.message.includes('150px') &&
-            e.message.includes('drawer dimension 300px'),
-        );
-        expect(offending).toBeDefined();
-      });
-
-      it("does NOT throw on swipe release for input that mounted cleanly (['200px', 0.5] on a 1000px host)", async () => {
-        @Component({
-          imports: [ForDrawer],
-          template: `
-            @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
-            }
-          `,
-        })
-        class GoodHost {
-          readonly open = signal(false);
-          readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['200px', 0.5];
-        }
-
-        withDrawerHeight(1000);
-        const captured = await captureDrawerErrors(GoodHost);
-
-        // 200px = 200, 0.5 * 1000 = 500 — strictly increasing. No throw.
-        expect(
-          captured.some((e) => e instanceof Error && /\[forty-cdk\/drawer\]/.test(e.message)),
-        ).toBe(false);
-
-        // Now drive a full pointerdown → pointermove → pointerup cycle and
-        // confirm release does not raise. (Regression guard: the gesture
-        // path must consume already-validated positions.)
-        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
-        drawer.dispatchEvent(
-          new PointerEvent('pointerdown', {
-            bubbles: true,
-            cancelable: true,
-            clientX: 0,
-            clientY: 0,
-            pointerId: 1,
-            pointerType: 'touch',
-          }),
-        );
-        drawer.dispatchEvent(
-          new PointerEvent('pointermove', {
-            bubbles: true,
-            cancelable: true,
-            clientX: 0,
-            clientY: 50,
-            pointerId: 1,
-            pointerType: 'touch',
-          }),
-        );
-        drawer.dispatchEvent(
-          new PointerEvent('pointerup', {
-            bubbles: true,
-            cancelable: true,
-            clientX: 0,
-            clientY: 50,
-            pointerId: 1,
-            pointerType: 'touch',
-          }),
-        );
-        // No new errors after the gesture completes.
-        expect(
-          captured.some((e) => e instanceof Error && /\[forty-cdk\/drawer\]/.test(e.message)),
-        ).toBe(false);
-      });
-
-      it('mounts cleanly with pure-fraction [0.1, 0.5, 0.9] on any dimension', async () => {
-        @Component({
-          imports: [ForDrawer],
-          template: `
-            @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
-            }
-          `,
-        })
-        class GoodHost {
-          readonly open = signal(false);
-          readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = [0.1, 0.5, 0.9];
-        }
-
-        withDrawerHeight(50);
-        const captured = await captureDrawerErrors(GoodHost);
-        expect(
-          captured.some((e) => e instanceof Error && /\[forty-cdk\/drawer\]/.test(e.message)),
-        ).toBe(false);
-      });
-
-      it("mounts cleanly with pure-px ['100px', '200px', '300px'] on a 400px host", async () => {
-        @Component({
-          imports: [ForDrawer],
-          template: `
-            @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
-            }
-          `,
-        })
-        class GoodHost {
-          readonly open = signal(false);
-          readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['100px', '200px', '300px'];
-        }
-
-        withDrawerHeight(400);
-        const captured = await captureDrawerErrors(GoodHost);
-        expect(
-          captured.some((e) => e instanceof Error && /\[forty-cdk\/drawer\]/.test(e.message)),
-        ).toBe(false);
-      });
-
       it("rejects pure-px ['300px', '200px'] at mount via the shape check", async () => {
         @Component({
           imports: [ForDrawer],
@@ -617,8 +469,6 @@ describe('ForDrawer (declarative)', () => {
           readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['300px', '200px'];
         }
 
-        // Note: dimension intentionally not stubbed — the shape check fires
-        // before any first-measurement work, so it doesn't depend on layout.
         const captured = await captureDrawerErrors(BadHost);
         expect(
           captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message)),

@@ -45,6 +45,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/listbox.fixture').then((m) => m.ListboxFixture),
   },
   {
+    path: 'navigation-menu',
+    loadComponent: () =>
+      import('./fixtures/navigation-menu.fixture').then((m) => m.NavigationMenuFixture),
+  },
+  {
     path: 'nested',
     loadComponent: () => import('./fixtures/nested.fixture').then((m) => m.NestedFixture),
   },

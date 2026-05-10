@@ -92,74 +92,6 @@ class NoViewportHost {
   readonly open = signal('');
 }
 
-/**
- * Override `getBoundingClientRect` so the viewport's size bindings can be
- * exercised in jsdom (which otherwise returns zeros for everything).
- *
- * The override patches *both* `Element.prototype` and
- * `HTMLElement.prototype` because some jsdom builds — notably the one
- * shipped with the Linux CI runner image — define
- * `getBoundingClientRect` on `HTMLElement.prototype` too. The
- * more-specific entry then shadows the `Element.prototype` patch on the
- * prototype chain (`HTMLDivElement` → `HTMLElement` → `Element`), and a
- * single-prototype patch is silently bypassed for every `<div>` /
- * `<button>` / etc. — exactly what made the Linux flake in #193 look
- * like a CD-ordering bug. Patching both rungs matches whichever level
- * the runtime actually consults.
- */
-function stubRectByDataId(sizes: Record<string, { width: number; height: number }>): () => void {
-  const elDescriptor = Object.getOwnPropertyDescriptor(
-    Element.prototype,
-    'getBoundingClientRect',
-  );
-  const htmlElDescriptor = Object.getOwnPropertyDescriptor(
-    HTMLElement.prototype,
-    'getBoundingClientRect',
-  );
-  const stub = function (this: Element) {
-    const id = this.getAttribute?.('data-id');
-    if (id && sizes[id]) {
-      const { width, height } = sizes[id]!;
-      return {
-        left: 0,
-        top: 0,
-        right: width,
-        bottom: height,
-        width,
-        height,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-      } as DOMRect;
-    }
-    return new DOMRect(0, 0, 0, 0);
-  };
-  Object.defineProperty(Element.prototype, 'getBoundingClientRect', {
-    value: stub,
-    writable: true,
-    configurable: true,
-  });
-  if (htmlElDescriptor) {
-    Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
-      value: stub,
-      writable: true,
-      configurable: true,
-    });
-  }
-  return () => {
-    if (elDescriptor) {
-      Object.defineProperty(Element.prototype, 'getBoundingClientRect', elDescriptor);
-    } else {
-      delete (Element.prototype as { getBoundingClientRect?: unknown }).getBoundingClientRect;
-    }
-    if (htmlElDescriptor) {
-      Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', htmlElDescriptor);
-    } else {
-      delete (HTMLElement.prototype as { getBoundingClientRect?: unknown }).getBoundingClientRect;
-    }
-  };
-}
-
 describe('ForNavigationMenuViewport', () => {
   let originalRO: typeof ResizeObserver;
 
@@ -214,42 +146,6 @@ describe('ForNavigationMenuViewport', () => {
       const products = query<HTMLElement>('[data-id="products"]')!;
       // Without a viewport, the content stays under its [forNavigationMenuItem] parent.
       expect(products.parentElement?.getAttribute('forNavigationMenuItem')).toBe('');
-    });
-  });
-
-  describe('size CSS variables', () => {
-    it('reflects the active content size into --for-navigation-menu-viewport-{width,height}', () => {
-      const restore = stubRectByDataId({
-        products: { width: 320, height: 240 },
-        solutions: { width: 480, height: 120 },
-      });
-      try {
-        const { fixture, query, flush } = renderHost(MegaMenuHost);
-        flush();
-
-        const viewport = query<HTMLElement>('[data-id="viewport"]')!;
-        fixture.componentInstance.open.set('products');
-        flush();
-
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '320px',
-        );
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-height')).toBe(
-          '240px',
-        );
-
-        fixture.componentInstance.open.set('solutions');
-        flush();
-
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '480px',
-        );
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-height')).toBe(
-          '120px',
-        );
-      } finally {
-        restore();
-      }
     });
   });
 
@@ -350,118 +246,78 @@ describe('ForNavigationMenuViewport', () => {
     });
   });
 
-  describe('ResizeObserver-driven measurement', () => {
-    it('observes the active content panel and re-measures when RO fires', () => {
-      // `stubRectByDataId` captures `sizes` by reference, so mutating it
-      // after the stub is installed is visible to the next
-      // `getBoundingClientRect()` call (we use this to swap the panel's
-      // reported size between RO fires).
-      const sizes: Record<string, { width: number; height: number }> = {
-        products: { width: 320, height: 240 },
-      };
-      const restore = stubRectByDataId(sizes);
-      try {
-        const { fixture, query, flush } = renderHost(MegaMenuHost);
-        flush();
+  describe('ResizeObserver wiring', () => {
+    // Geometry-driven assertions (the actual size populating the CSS
+    // variables, RO callbacks updating those variables on real layout
+    // mutations, the absence-of-RO fallback width) live in
+    // `navigation-menu.e2e.ts`. jsdom returns zeros for layout APIs and
+    // does not run CSS, so faking measurements via `*.prototype` overrides
+    // to assert `'320px'` here was a tautology that hid the real
+    // cross-platform fragility behind a fake input — see CLAUDE.md
+    // "Testing notes" / "E2E (Playwright)" for the rule.
 
-        fixture.componentInstance.open.set('products');
-        flush();
+    it('observes the active content panel via ResizeObserver', () => {
+      const { fixture, query, flush } = renderHost(MegaMenuHost);
+      flush();
 
-        const viewport = query<HTMLElement>('[data-id="viewport"]')!;
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '320px',
-        );
+      fixture.componentInstance.open.set('products');
+      flush();
 
-        // Some RO instance should now be observing the products panel.
-        const productsPanel = query<HTMLElement>('[data-id="products"]')!;
-        const observingPanel = FakeResizeObserver.instances.find((ro) =>
-          ro.observed.includes(productsPanel),
-        );
-        expect(observingPanel).toBeDefined();
-
-        // Mutate the size and fire the RO callback — the CSS variables must
-        // update without an `afterEveryRender` cycle.
-        sizes['products'] = { width: 555, height: 333 };
-        observingPanel!.fire();
-        flush();
-
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '555px',
-        );
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-height')).toBe(
-          '333px',
-        );
-      } finally {
-        restore();
-      }
+      const productsPanel = query<HTMLElement>('[data-id="products"]')!;
+      const observingPanel = FakeResizeObserver.instances.find((ro) =>
+        ro.observed.includes(productsPanel),
+      );
+      expect(observingPanel).toBeDefined();
     });
 
     it('switches the observed element when the active content changes', () => {
-      const restore = stubRectByDataId({
-        products: { width: 320, height: 240 },
-        solutions: { width: 480, height: 120 },
-      });
-      try {
-        const { fixture, query, flush } = renderHost(MegaMenuHost);
-        flush();
+      const { fixture, query, flush } = renderHost(MegaMenuHost);
+      flush();
 
-        fixture.componentInstance.open.set('products');
-        flush();
+      fixture.componentInstance.open.set('products');
+      flush();
 
-        const products = query<HTMLElement>('[data-id="products"]')!;
-        const observingProducts = FakeResizeObserver.instances.some((ro) =>
-          ro.observed.includes(products),
-        );
-        expect(observingProducts).toBe(true);
+      const products = query<HTMLElement>('[data-id="products"]')!;
+      const observingProducts = FakeResizeObserver.instances.some((ro) =>
+        ro.observed.includes(products),
+      );
+      expect(observingProducts).toBe(true);
 
-        fixture.componentInstance.open.set('solutions');
-        flush();
+      fixture.componentInstance.open.set('solutions');
+      flush();
 
-        // The previous active panel is no longer observed.
-        expect(
-          FakeResizeObserver.instances.some((ro) => ro.observed.includes(products)),
-        ).toBe(false);
+      // The previous active panel is no longer observed.
+      expect(
+        FakeResizeObserver.instances.some((ro) => ro.observed.includes(products)),
+      ).toBe(false);
 
-        const solutions = query<HTMLElement>('[data-id="solutions"]')!;
-        const observingSolutions = FakeResizeObserver.instances.some((ro) =>
-          ro.observed.includes(solutions),
-        );
-        expect(observingSolutions).toBe(true);
-      } finally {
-        restore();
-      }
+      const solutions = query<HTMLElement>('[data-id="solutions"]')!;
+      const observingSolutions = FakeResizeObserver.instances.some((ro) =>
+        ro.observed.includes(solutions),
+      );
+      expect(observingSolutions).toBe(true);
     });
 
-    it('renders without measurement when ResizeObserver is unavailable', () => {
-      // Simulate SSR / very old runtime: no global RO.
+    it('renders without crashing when ResizeObserver is unavailable', () => {
+      // Simulate SSR / very old runtime: no global RO. The directive must
+      // skip `new ResizeObserver(...)` entirely and still produce a valid
+      // DOM tree (re-parenting, data-state, orientation). The actual size
+      // populating the CSS variables on first read is asserted in the
+      // Playwright suite (`navigation-menu.e2e.ts`).
       (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
         undefined as unknown as typeof ResizeObserver;
-      const restore = stubRectByDataId({
-        products: { width: 320, height: 240 },
-      });
-      try {
-        const { fixture, query, flush } = renderHost(MegaMenuHost);
-        flush();
+      const { fixture, query, flush } = renderHost(MegaMenuHost);
+      flush();
 
-        fixture.componentInstance.open.set('products');
-        flush();
+      fixture.componentInstance.open.set('products');
+      flush();
 
-        const viewport = query<HTMLElement>('[data-id="viewport"]')!;
-        // Viewport still renders and re-parents the active content.
-        const products = query<HTMLElement>('[data-id="products"]')!;
-        expect(products.parentElement).toBe(viewport);
-        // Without RO, the computed width/height still populate from the
-        // initial render (they pull getBoundingClientRect on every read).
-        // What's lost is *live* updates: a subsequent layout mutation will
-        // not refresh the CSS variables until the consumer re-runs CD.
-        expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
-          '320px',
-        );
-        // data-state still tracks open/closed.
-        expect(viewport.getAttribute('data-state')).toBe('open');
-      } finally {
-        restore();
-      }
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+      // Viewport still renders and re-parents the active content.
+      const products = query<HTMLElement>('[data-id="products"]')!;
+      expect(products.parentElement).toBe(viewport);
+      // data-state still tracks open/closed.
+      expect(viewport.getAttribute('data-state')).toBe('open');
     });
   });
 });
