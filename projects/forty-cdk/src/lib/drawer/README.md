@@ -170,7 +170,7 @@ Pass them in **strictly increasing** order (closest-to-edge first). The directiv
 [fadeFromIndex]="1"                  // backdrop fades once we cross the second snap
 ```
 
-The `model<>()` change emitter (`(activeSnapPointChange)`) fires only on internal transitions (drag release), not on consumer writes.
+The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every drag release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
 ## Swipe-to-dismiss
 

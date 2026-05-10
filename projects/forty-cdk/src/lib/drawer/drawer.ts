@@ -271,9 +271,10 @@ export class ForDrawer implements ForDrawerContext {
   /**
    * Active snap point. Two-way bindable: write via `[(activeSnapPoint)]`
    * to drive the surface programmatically, or just read for analytics.
-   * Initialised to `snapPoints?.[0]` on mount. The implicit
-   * `(activeSnapPointChange)` emitter fires only on internal transitions
-   * (drag release).
+   * Initialised to `snapPoints?.[0]` on mount when the consumer left it
+   * `null`. The implicit `(activeSnapPointChange)` emitter fires on
+   * internal transitions (mount-time default and drag release), and
+   * stays silent on consumer writes through `[(activeSnapPoint)]`.
    */
   readonly activeSnapPoint = model<ForDrawerSnapPoint | null>(null);
 
