@@ -118,6 +118,7 @@ class DismissableContractHost {
         forDrawer
         [snapPoints]="snaps"
         [(activeSnapPoint)]="active"
+        (activeSnapPointChange)="changes.push($event)"
         [fadeFromIndex]="fadeFromIndex()"
         (close)="open.set(false)"
         ariaLabel="t"
@@ -132,6 +133,7 @@ class SnapPointsHost {
   readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['148px', '50%', 1];
   readonly active = signal<ForDrawerSnapPoint | null>(null);
   readonly fadeFromIndex = signal<number | undefined>(undefined);
+  readonly changes: Array<ForDrawerSnapPoint | null> = [];
 }
 
 describe('ForDrawer (declarative)', () => {
@@ -354,6 +356,14 @@ describe('ForDrawer (declarative)', () => {
       expect(r.instance.active()).toBe('148px');
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
       expect(drawer.getAttribute('data-active-snap-point')).toBe('148px');
+    });
+
+    it('emits activeSnapPointChange once with snapPoints[0] when initialised from null', async () => {
+      const r = renderHost(SnapPointsHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.instance.changes).toEqual(['148px']);
     });
 
     it('respects a programmatically-set activeSnapPoint', async () => {
