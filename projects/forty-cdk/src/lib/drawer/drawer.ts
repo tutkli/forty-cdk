@@ -274,6 +274,11 @@ export class ForDrawer implements ForDrawerContext {
   readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   readonly #dragging = signal(false);
+  // Captures the `value` argument from the most recent `requestClose(reason, value)`
+  // call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
+  // into `ForDrawerRef.close(value)`. Plain in declarative usage (no consumer
+  // ever reads it), so the API surface is unchanged.
+  readonly #lastCloseValue = signal<unknown>(undefined);
 
   readonly labelledBy = computed<string | null>(() => {
     const ids = this.#labelIds();
@@ -616,12 +621,23 @@ export class ForDrawer implements ForDrawerContext {
     this.#backdropEl.set(el);
   }
 
-  requestClose(reason: ForDrawerCloseReason, _value?: unknown): void {
+  requestClose(reason: ForDrawerCloseReason, value?: unknown): void {
     if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
     }
+    this.#lastCloseValue.set(value);
     this.close.emit(reason);
   }
+
+  /**
+   * The `value` argument from the most recent `requestClose(reason, value)`
+   * call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
+   * into `ForDrawerRef.close(value)`. Declarative consumers never need this —
+   * it is plumbing for the imperative bootstrap path.
+   *
+   * @internal
+   */
+  readonly lastCloseValue = this.#lastCloseValue.asReadonly();
 
   // ---- Swipe wiring ----
 

@@ -12,22 +12,11 @@ import {
   type Type,
 } from '@angular/core';
 
-import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
-import {
-  DismissableLayer,
-  DismissableLayerStack,
-} from '../_internal/dismissable-layer/dismissable-layer';
-import { findFirstFocusable, FocusTrap } from '../_internal/focus-trap/focus-trap';
-import {
-  type InertSiblingsHandle,
-  InertSiblingsStack,
-} from '../_internal/inert-siblings/inert-siblings';
-import {
-  createVetoableEvent,
-  type VetoableEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
+import { ForDrawer } from './drawer';
 import { type ForDrawerSide, type ForDrawerSnapPoint } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
+import { ForDrawerProgrammaticHost } from './drawer-programmatic-host';
 import { ForDrawerRef } from './drawer-ref';
 
 /**
@@ -81,6 +70,20 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /** When true, swipe only arms on a registered handle element. Default `false`. */
   handleOnly?: boolean;
 
+  /**
+   * When true, asks the registered `[forDrawerWrapper]` to scale and translate
+   * behind this drawer (Vaul-style "shouldScaleBackground"). No effect under
+   * `prefers-reduced-motion: reduce`, and a no-op if no wrapper is mounted.
+   */
+  scaleBackground?: boolean;
+
+  /**
+   * When true (default) and `scaleBackground` is active, paints `<body>` with
+   * `scaleBackgroundColor` so the gap between the scaled wrapper and the
+   * viewport edge does not show through.
+   */
+  setBackgroundColorOnScale?: boolean;
+
   /** Snap points (Vaul semantics). Optional. */
   snapPoints?: ReadonlyArray<ForDrawerSnapPoint>;
 
@@ -112,29 +115,26 @@ export interface ForDrawerOpenConfig<D = unknown> {
 /**
  * Programmatic drawer opener — symmetric with `ForDialogManager`. Inject
  * anywhere, call `open(MyComponent, { data, side, ... })` and get a
- * `ForDrawerRef<R>` back. The same focus trap / scroll lock / Escape /
- * portal behaviours as the declarative `[forDrawer]` apply, applied
- * imperatively to a synthesized host element.
+ * `ForDrawerRef<R>` back. Internally the manager mounts the user component
+ * underneath an internal `[forDrawer]` host directive, so all declarative
+ * primitive behaviours apply identically: focus trap, scroll lock, Escape,
+ * dismissable layer, portal, swipe-dismiss, snap points, scale coordinator,
+ * and `ForDrawerStack` registration (correct `data-depth` /
+ * `data-state-nested` in mixed declarative + programmatic stacks).
  *
- * Inside the opened component, inject `ForDrawerRef` to close (with
- * optional return value) and `FOR_DRAWER_DATA` (or `injectDrawerData<T>()`)
- * for the payload.
+ * Inside the opened component the usual drawer pieces work without any extra
+ * wiring: `[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`,
+ * `[forDrawerHandle]`, `[forDrawerClose]`. `[forDrawerClose] [closeWith]`
+ * propagates through to `ForDrawerRef.close(value)`.
  *
- * Snap-point + swipe-to-dismiss behaviour: the manager opens a host element
- * with the same a11y attributes as the directive but does NOT itself wire
- * the swipe gesture — the opened component is expected to use `[forDrawer]`
- * on its own root element when it wants drag/snap behaviour. Use the manager
- * for the lifecycle (open/close, return-focus, ARIA wiring); compose it with
- * `[forDrawer]` inside the user component for drag.
+ * Inject `ForDrawerRef` to drive close imperatively and `FOR_DRAWER_DATA` (or
+ * `injectDrawerData<T>()`) for the payload.
  */
 @Injectable({ providedIn: 'root' })
 export class ForDrawerManager {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
   readonly #document = inject(DOCUMENT);
-  readonly #dismissableStack = inject(DismissableLayerStack);
-  readonly #inertStack = inject(InertSiblingsStack);
-  readonly #scrollLock = inject(BodyScrollLock);
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
 
   readonly #count = signal(0);
@@ -148,36 +148,23 @@ export class ForDrawerManager {
     if (config.closeThreshold !== undefined) {
       const ct = config.closeThreshold;
       if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
-        throw new Error(
-          `[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`,
-        );
+        throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
       }
     }
 
-    const returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
-    const isModal = config.modal ?? this.#defaults.modal ?? true;
-    const isDismissible = config.dismissible ?? this.#defaults.dismissible ?? true;
-    const shouldReturnFocus = config.returnFocus ?? this.#defaults.returnFocus ?? true;
-    const side: ForDrawerSide = config.side ?? this.#defaults.side ?? 'bottom';
-
     const hostEl = this.#document.createElement(config.hostTag ?? 'div');
-    hostEl.setAttribute('role', config.alert ? 'alertdialog' : 'dialog');
-    if (isModal) {
-      hostEl.setAttribute('aria-modal', 'true');
-    }
-    if (config.ariaLabel) {
-      hostEl.setAttribute('aria-label', config.ariaLabel);
-    }
-    hostEl.setAttribute('data-side', side);
-    hostEl.setAttribute('data-state', 'open');
-    if (!hostEl.hasAttribute('tabindex')) {
-      hostEl.setAttribute('tabindex', '-1');
-    }
+    // The host is parked in body BEFORE the component is created so that the
+    // directive's `afterNextRender` side effects (focus moves, inert siblings,
+    // dismissable-layer push) see a connected element. The directive's own
+    // `injectPortal()` is then a no-op (host already has body as parent).
     this.#document.body.appendChild(hostEl);
 
     let teardown = (): void => {};
     const ref = new ForDrawerRef<R>(() => teardown());
 
+    // The shell injector hosts `FOR_DRAWER_DATA` and `ForDrawerRef` so that
+    // the user component (created beneath it) can `inject(...)` either. We
+    // also surface the user-supplied `providers`.
     const elementInjector = Injector.create({
       parent: this.#envInjector,
       providers: [
@@ -187,50 +174,85 @@ export class ForDrawerManager {
       ],
     });
 
-    const componentRef = createComponent(component, {
+    const shellRef = createComponent(ForDrawerProgrammaticHost, {
       environmentInjector: this.#envInjector,
       elementInjector,
       hostElement: hostEl,
     });
 
-    this.#appRef.attachView(componentRef.hostView);
-    componentRef.changeDetectorRef.detectChanges();
+    // Push every input the consumer wants set BEFORE the first detectChanges
+    // so the directive's `afterNextRender` reads the configured values, not
+    // the default ones. Only set keys the consumer (or defaults provider)
+    // actually specified so the directive's own fallback logic still applies
+    // for unset keys.
+    setIfDefined(shellRef, 'side', config.side ?? this.#defaults.side);
+    setIfDefined(shellRef, 'dismissible', config.dismissible ?? this.#defaults.dismissible);
+    setIfDefined(shellRef, 'modal', config.modal ?? this.#defaults.modal);
+    setIfDefined(shellRef, 'alert', config.alert);
+    setIfDefined(shellRef, 'returnFocus', config.returnFocus ?? this.#defaults.returnFocus);
+    setIfDefined(shellRef, 'initialFocus', config.initialFocus ?? this.#defaults.initialFocus);
+    setIfDefined(shellRef, 'ariaLabel', config.ariaLabel);
+    setIfDefined(shellRef, 'autoFocusOnOpen', config.autoFocusOnOpen);
+    setIfDefined(shellRef, 'autoFocusOnClose', config.autoFocusOnClose);
+    setIfDefined(
+      shellRef,
+      'swipeToDismiss',
+      config.swipeToDismiss ?? this.#defaults.swipeToDismiss,
+    );
+    setIfDefined(shellRef, 'closeThreshold', config.closeThreshold ?? this.#defaults.closeThreshold);
+    setIfDefined(shellRef, 'handleOnly', config.handleOnly ?? this.#defaults.handleOnly);
+    setIfDefined(
+      shellRef,
+      'scaleBackground',
+      config.scaleBackground ?? this.#defaults.scaleBackground,
+    );
+    setIfDefined(
+      shellRef,
+      'setBackgroundColorOnScale',
+      config.setBackgroundColorOnScale ?? this.#defaults.setBackgroundColorOnScale,
+    );
+    setIfDefined(shellRef, 'snapPoints', config.snapPoints);
+    setIfDefined(shellRef, 'activeSnapPoint', config.defaultSnapPoint);
+    setIfDefined(shellRef, 'fadeFromIndex', config.fadeFromIndex);
 
-    const dismissable = new DismissableLayer(hostEl, this.#dismissableStack);
-    const dismissFromLayer = (): void => {
-      if (!isDismissible || ref.isClosed()) {
-        return;
-      }
-      ref.close();
-    };
-    dismissable.activate({
-      onEscapeKeyDown: (event) => {
-        if (isDismissible) {
-          event.stopPropagation();
-          dismissFromLayer();
-        }
-      },
-      onInteractOutside: () => dismissFromLayer(),
+    this.#appRef.attachView(shellRef.hostView);
+    // First detectChanges resolves the `viewChild` ViewContainerRef so we can
+    // mount the user component as a child view.
+    shellRef.changeDetectorRef.detectChanges();
+
+    const drawerInstance = shellRef.injector.get(ForDrawer);
+
+    // Render the user component as a child view of the shell. We deliberately
+    // do NOT pass an explicit `injector` here so the user component inherits
+    // the shell's full element injector chain — including the `ForDrawer`
+    // directive's own `providers: [{ provide: FOR_DRAWER_CONTEXT, useExisting:
+    // ForDrawer }]` AND the `FOR_DRAWER_DATA` / `ForDrawerRef` we added on
+    // top via `elementInjector`. With that, `[forDrawerClose]`,
+    // `[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`,
+    // and `[forDrawerHandle]` resolve `FOR_DRAWER_CONTEXT` exactly as in
+    // declarative usage; `[forDrawerClose] [closeWith]` propagates through
+    // `requestClose(reason, value)` to `ForDrawerRef.close(value)` (see the
+    // `(close)` subscription below).
+    const vc = shellRef.instance.vc();
+    const userRef = vc.createComponent(component);
+
+    // Bridge `(close)` → ForDrawerRef.close(value). The directive captures
+    // the optional `value` argument from `requestClose(reason, value)` in a
+    // signal we read back here.
+    const closeSub = drawerInstance.close.subscribe(() => {
+      ref.close(drawerInstance.lastCloseValue() as R);
     });
 
-    const autoFocusOpenEvent = createVetoableEvent();
-    config.autoFocusOnOpen?.(autoFocusOpenEvent);
-    const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
-
-    const focusTrap = isModal ? new FocusTrap(hostEl) : null;
-    let inertHandle: InertSiblingsHandle | null = null;
-    if (focusTrap) {
-      inertHandle = this.#inertStack.activate(hostEl);
-      this.#scrollLock.lock();
-      focusTrap.activate({
-        initialFocus: config.initialFocus ?? this.#defaults.initialFocus ?? 'first',
-        preventInitialFocus: skipInitialFocus,
-      });
-    } else if (!skipInitialFocus) {
-      const target =
-        config.initialFocus === 'container' ? hostEl : (findFirstFocusable(hostEl) ?? hostEl);
-      target.focus();
-    }
+    // The directive's own `afterNextRender` lifecycle wires the focus trap,
+    // scroll lock, dismissable layer, swipe gesture, scale coordinator, and
+    // ForDrawerStack registration. The first `detectChanges` above runs the
+    // shell's view but does NOT flush the global render queue where
+    // `afterNextRender` callbacks live; `appRef.tick()` does. We tick once
+    // here so consumers calling `manager.open(...)` see the drawer fully
+    // wired by the time the call returns — this matches the synchronous
+    // contract the existing `ForDialogManager` and `drawer-manager.spec`
+    // suite were built around.
+    this.#appRef.tick();
 
     this.#count.update((n) => n + 1);
 
@@ -240,37 +262,26 @@ export class ForDrawerManager {
         return;
       }
       torn = true;
-      inertHandle?.deactivate();
-      inertHandle = null;
-      const autoFocusCloseEvent = createVetoableEvent();
-      config.autoFocusOnClose?.(autoFocusCloseEvent);
-      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
-      dismissable.suppress(() => {
-        if (focusTrap) {
-          focusTrap.deactivate({ returnFocus: shouldReturnFocus && !skipReturnFocus });
-          this.#scrollLock.unlock();
-        } else if (shouldReturnFocus && !skipReturnFocus && returnTo) {
-          returnTo.focus();
-        }
-      });
-      dismissable.deactivate();
-      this.#appRef.detachView(componentRef.hostView);
-      componentRef.destroy();
+      // Tearing down the shell triggers ForDrawer's `DestroyRef.onDestroy`
+      // which deactivates focus trap (with return-focus), inert siblings,
+      // scroll lock, dismissable layer, swipe handlers, scale coordinator,
+      // and pops the drawer-stack node. The user component's view destroys
+      // ahead of the shell because Angular tears down child views first, so
+      // `[forDrawerClose]`, `[forDrawerTitle]`, etc. all unregister cleanly.
+      closeSub.unsubscribe();
+      userRef.destroy();
+      this.#appRef.detachView(shellRef.hostView);
+      shellRef.destroy();
       hostEl.remove();
       this.#count.update((n) => Math.max(0, n - 1));
     };
 
-    componentRef.onDestroy(() => {
+    shellRef.onDestroy(() => {
+      // Defensive: if the host environment destroys the view without going
+      // through ref.close() (TestBed reset, manual ApplicationRef destroy),
+      // run the same teardown path.
       if (!torn) {
-        dismissable.suppress(() => {
-          if (focusTrap?.isActive) {
-            focusTrap.deactivate({ returnFocus: false });
-            this.#scrollLock.unlock();
-          }
-        });
-        inertHandle?.deactivate();
-        inertHandle = null;
-        dismissable.deactivate();
+        ref.close();
       }
     });
 
@@ -279,5 +290,21 @@ export class ForDrawerManager {
     }
 
     return ref;
+  }
+}
+
+/**
+ * Helper: only push an input when the resolved value is not `undefined`. This
+ * preserves the directive's own fallback semantics (its `input()` calls each
+ * read `defaults[key] ?? hardcoded`) for keys the consumer left unset, and
+ * avoids overwriting them with `undefined` from `componentRef.setInput`.
+ */
+function setIfDefined<T>(
+  componentRef: { setInput: (name: string, value: unknown) => void },
+  name: string,
+  value: T | undefined,
+): void {
+  if (value !== undefined) {
+    componentRef.setInput(name, value);
   }
 }
