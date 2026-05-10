@@ -204,6 +204,118 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
+  // The swipe engine's geometry assertions (drag percentage math, willClose
+  // past closeThreshold * dimension, snap-point resolution against a real
+  // dimension, "NNpx" conversion) live in `drawer.e2e.ts`, where a real
+  // browser produces a real `getBoundingClientRect()`. Vitest covers only
+  // what does not depend on a measured layout: the `data-dragging` host
+  // attribute toggles, and the `[handleOnly]` listener-arm wiring. See
+  // CLAUDE.md "Testing notes" / "E2E (Playwright)" and issue #195 for the
+  // geometry-vs-Playwright split.
+  describe('swipe gesture wiring', () => {
+    function dispatchPointer(
+      el: HTMLElement,
+      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      clientX: number,
+      clientY: number,
+    ): void {
+      el.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX,
+          clientY,
+          pointerId: 1,
+          pointerType: 'touch',
+          button: 0,
+        }),
+      );
+    }
+
+    it('reflects data-dragging="" during a swipe and clears it on release', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+      // ARM_DISTANCE_PX inside swipe-dismiss is 4px — the move must clear
+      // that to arm the gesture and let the directive flip `#dragging`.
+      dispatchPointer(drawer, 'pointerdown', 0, 0);
+      dispatchPointer(drawer, 'pointermove', 0, 20);
+      await flush(r.fixture);
+      expect(drawer.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointerup', 0, 20);
+      await flush(r.fixture);
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('does not arm the swipe when [handleOnly]="true" and pointerdown lands off the handle', async () => {
+      // With `handleOnly` on, a pointerdown that does not originate on the
+      // registered `[forDrawerHandle]` element must NOT flip `#dragging`,
+      // emit `(drag)`, or surface `data-dragging`. The drawer host fields
+      // pointer events the same as in the positive case — the gating lives
+      // entirely in `#onSwipeStart`.
+      @Component({
+        imports: [ForDrawer, ForDrawerHandle],
+        template: `
+          @if (open()) {
+            <div forDrawer [handleOnly]="true" (drag)="onDrag()" (close)="open.set(false)" ariaLabel="t">
+              <div forDrawerHandle id="handle"></div>
+              <div id="surface-target">surface</div>
+            </div>
+          }
+        `,
+      })
+      class HandleOnlyHost {
+        readonly open = signal(false);
+        dragCount = 0;
+        onDrag(): void {
+          this.dragCount += 1;
+        }
+      }
+
+      const r = renderHost(HandleOnlyHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      const surface = document.querySelector<HTMLElement>('#surface-target')!;
+
+      // The pointer events must originate on the off-handle target — set
+      // `target` explicitly so `#onSwipeStart` sees a non-handle origin.
+      const downEvent = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 0,
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+      });
+      Object.defineProperty(downEvent, 'target', { value: surface, configurable: true });
+      surface.dispatchEvent(downEvent);
+
+      const moveEvent = new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 20,
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+      });
+      Object.defineProperty(moveEvent, 'target', { value: surface, configurable: true });
+      surface.dispatchEvent(moveEvent);
+      await flush(r.fixture);
+
+      expect(r.instance.dragCount).toBe(0);
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    });
+  });
+
   describe('mount/unmount', () => {
     it('portals the drawer to document.body once opened', async () => {
       const r = renderHost(DrawerHost);

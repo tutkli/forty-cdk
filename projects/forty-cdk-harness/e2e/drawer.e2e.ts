@@ -1,5 +1,64 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { clickOutside, focusedId, focusInside, gotoFixture } from './_helpers';
+
+/**
+ * Drag a drawer surface (or its handle) by `(dx, dy)` pixels using real
+ * pointer events. Works against the bottom-anchored fixture: starts the
+ * gesture at the centre of `start`, arms the swipe-dismiss helper with a
+ * tiny ARM step (5 px past the helper's 4-px arming distance), then
+ * applies the remaining displacement in a single `pointermove`.
+ *
+ * The single-shot move shape is deliberate. The directive's release path
+ * uses the latest move's delta (event.clientY − previous event.clientY)
+ * as the gesture offset, not a running sum of every micro-move, and the
+ * velocity sample is the same delta divided by the time gap between the
+ * arm step and the big move. By capping the gesture at one arm step plus
+ * one big move both numbers stay deterministic — the resulting offset is
+ * `|delta| − armPx` and the velocity is `(|delta| − armPx) / stepDelayMs`.
+ * Tests that need the offset to land on a specific pixel can pass `delta`
+ * directly without compensating for sub-pixel drift across many steps.
+ *
+ * `stepDelayMs` controls the gap between the arm step and the big move so
+ * the computed velocity stays below `VELOCITY_THRESHOLD_PX_PER_MS = 0.4`
+ * unless a test explicitly wants the fast-flick path. With the default
+ * 250 ms gap, a 100-pixel total move resolves at ≈ 0.38 px/ms; tests that
+ * need a non-flick result keep `dy <= 100`, and tests that want a flick
+ * (or that don't care because they're crossing the offset threshold
+ * anyway) use larger `dy` and accept the velocity bias.
+ */
+async function dragFrom(
+  page: Page,
+  start: Locator,
+  delta: { dx: number; dy: number },
+  options: { release?: boolean; stepDelayMs?: number; armPx?: number } = {},
+): Promise<void> {
+  const box = await start.boundingBox();
+  if (!box) throw new Error('dragFrom: start locator has no bounding box');
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const stepDelayMs = options.stepDelayMs ?? 250;
+  const armPx = options.armPx ?? 5;
+  const release = options.release ?? true;
+
+  // Direction unit vector — the arming step travels armPx pixels along
+  // the same axis as the requested delta.
+  const len = Math.hypot(delta.dx, delta.dy) || 1;
+  const armDx = (delta.dx / len) * armPx;
+  const armDy = (delta.dy / len) * armPx;
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  // Arming step: small move past ARM_DISTANCE_PX so the swipe-dismiss
+  // helper detects the direction and emits onSwipeStart.
+  await page.mouse.move(startX + armDx, startY + armDy);
+  await page.waitForTimeout(stepDelayMs);
+  // Big move: covers the remainder of the requested displacement in a
+  // single pointermove so the directive's offset == requested distance.
+  await page.mouse.move(startX + delta.dx, startY + delta.dy);
+  if (release) {
+    await page.mouse.up();
+  }
+}
 
 test.describe('Drawer', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {
@@ -298,5 +357,186 @@ test.describe('Drawer', () => {
     } finally {
       await context.close();
     }
+  });
+
+  // Swipe / snap-resolution coverage moved here from drawer.spec.ts per
+  // issue #178 / #195: the math (`closeThreshold * dimension`,
+  // `'NNpx'` conversion, snap-target picking) all reads
+  // `getBoundingClientRect()` and only makes sense against a real laid-out
+  // surface. The fixture exposes the (drag) / (release) payloads as
+  // `<output>` text so each assertion is just an `expect.poll` on plain
+  // strings.
+  test.describe('swipe to dismiss', () => {
+    test('drag past closeThreshold * dim dismisses with reason "swipe"', async ({ page }) => {
+      // 200px-tall drawer × default closeThreshold 0.25 ⇒ 50px is the
+      // dismissal threshold. Drag 120px down on the handle to clear it
+      // comfortably; (drag) emits along the way, (release) emits with
+      // willClose=true, and (close) follows with reason 'swipe'.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#drag-count')).toHaveText('0');
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 120 });
+
+      await expect(page.locator('#drawer')).toHaveCount(0);
+      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+      // (drag) emits on the arming pointermove and again on every move
+      // after that. A successful dismiss saw at least the start emission
+      // plus the big move ⇒ count >= 2.
+      const dragCount = Number(await page.locator('#drag-count').textContent());
+      expect(dragCount).toBeGreaterThan(1);
+    });
+
+    test('drag short of closeThreshold returns to rest without closing', async ({ page }) => {
+      // 200px × 0.25 = 50px threshold; 30px does not cross it. (release)
+      // emits with willClose=false and the drawer stays mounted at offset 0.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 30 });
+
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-close-reason')).toHaveText('none');
+      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      // No-snap-points branch on a no-close release: nextSnapPoint is null.
+      await expect(page.locator('#last-release-next-snap')).toHaveText('null');
+      // `#clearDragTransform` runs on release, so the inline transform is
+      // wiped back to its empty baseline.
+      const transform = await page
+        .locator('#drawer')
+        .evaluate((el) => (el as HTMLElement).style.transform);
+      expect(transform).toBe('');
+    });
+
+    test('respects custom [closeThreshold]: 0.5 means a 30px drag on a 200px drawer does NOT dismiss', async ({
+      page,
+    }) => {
+      // Same 30px drag that would close at the default threshold (0.25,
+      // dismissal at 50px) holds at 0.5 (dismissal at 100px). Confirms the
+      // input is wired through to the release math, not a constant.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '0.5' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 60 });
+
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+    });
+
+    test('(drag) emits a non-zero percentage during the gesture', async ({ page }) => {
+      // The fixture mirrors the most recent `percentageDragged` into
+      // `#last-drag-percent` (4-decimal string). On a 200px drawer with
+      // closeThreshold lifted to 1.0 (no dismiss), drag 40px down so the
+      // gesture stays well below close territory and the percentage lands
+      // strictly between 0 and 1. We exercise the geometry, not the
+      // dismissal — that's the next test.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '1' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 40, release: false });
+
+      const percentText = await page.locator('#last-drag-percent').textContent();
+      const percent = Number(percentText);
+      expect(percent).toBeGreaterThan(0);
+      expect(percent).toBeLessThanOrEqual(1);
+
+      await page.mouse.up();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+    });
+
+    test('handleOnly: drag starting outside the handle does not arm; on the handle it does', async ({
+      page,
+    }) => {
+      // Two-phase: start a drag on `#first` (a button on the drawer surface
+      // outside the handle) — no `(drag)` ever fires. Then start one on the
+      // handle and confirm the gesture arms (drag-count climbs).
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', handleOnly: '1' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#drag-count')).toHaveText('0');
+
+      await dragFrom(page, page.locator('#first'), { dx: 0, dy: 80 });
+      await expect(page.locator('#drag-count')).toHaveText('0');
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-close-reason')).toHaveText('none');
+
+      // Now arm the gesture on the handle and dismiss past threshold.
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 120 });
+      await expect(page.locator('#drawer')).toHaveCount(0);
+      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+    });
+
+    test('snap point: drag from a higher snap settles on the closest entry by position', async ({
+      page,
+    }) => {
+      // Snap positions on a 400px drawer (`?drawerHeight=400`):
+      //   '148px' → 148, '50%' → 200, 1 → 400.
+      // Start from `'50%'` (200px from edge). The directive's release math
+      // uses the LATEST `pointermove` delta as the drag offset, so a
+      // dragFrom of 60px yields offset ≈ 55 (60 minus the 5-px arm step).
+      // Position = 200 - 55 = 145 — closest to 148 by 3 px, vs 55 px from
+      // 200 — and (release) snaps to '148px'.
+      await gotoFixture(page, 'drawer', {
+        drawerHeight: '400',
+        snap: '148px,0.5,1',
+        initialSnap: '0.5',
+      });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#active-snap')).toHaveText('0.5');
+      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '0.5');
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 60 });
+
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      await expect(page.locator('#last-release-next-snap')).toHaveText('148px');
+      await expect(page.locator('#active-snap')).toHaveText('148px');
+      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '148px');
+    });
+
+    test('snap point: drag past the lowest snap by closeThreshold * dim dismisses', async ({
+      page,
+    }) => {
+      // Initial active is '148px' (the lowest snap). closeThreshold defaults
+      // to 0.25, drawer height 400 ⇒ dismissal threshold = 100px PAST the
+      // lowest snap. Drag down 130px — position = 148 - 130 = 18, less than
+      // 148 - 100 = 48, so resolveSnapTarget returns willClose=true.
+      await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '148px,0.5,1' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#active-snap')).toHaveText('148px');
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 130 });
+
+      await expect(page.locator('#drawer')).toHaveCount(0);
+      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+    });
+
+    test('"NNpx" snap entry resolves against a known live dimension', async ({ page }) => {
+      // Round-trip the px conversion: with `'100px'` first and a 400px
+      // drawer, the lowest snap sits 100px from the edge. closeThreshold
+      // 0.25 × dim 400 = 100px past that lowest snap to dismiss, so a
+      // 200px drag from rest crosses the threshold (offset 200 ⇒
+      // position = 100 - 200 = -100, well below the dismissThreshold of
+      // 100 - 100 = 0). Single fresh-page drag keeps the velocity profile
+      // simple and dodges any per-gesture state weirdness.
+      await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '100px,0.5,1' });
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(page.locator('#active-snap')).toHaveText('100px');
+
+      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 200 });
+      await expect(page.locator('#drawer')).toHaveCount(0);
+      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+    });
   });
 });
