@@ -108,6 +108,9 @@ describe('ForContextMenu', () => {
 
       expect(r.instance.open()).toBe(false);
       expect(event.defaultPrevented).toBe(false);
+      expect(region.getAttribute('data-disabled')).toBe('');
+      expect(region.getAttribute('aria-disabled')).toBe('true');
+      expect(region.getAttribute('disabled')).toBe('');
     });
   });
 
@@ -119,6 +122,16 @@ describe('ForContextMenu', () => {
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       expect(content.getAttribute('role')).toBe('menu');
+    });
+
+    it('omits disabled-related attributes on the trigger by default', () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      // Disabled-related attributes are absent when not disabled — never
+      // emitted as "false". Consumers must select on `:not([aria-disabled])`.
+      expect(region.hasAttribute('data-disabled')).toBe(false);
+      expect(region.hasAttribute('aria-disabled')).toBe(false);
+      expect(region.hasAttribute('disabled')).toBe(false);
     });
   });
 
