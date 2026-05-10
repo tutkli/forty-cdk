@@ -136,7 +136,7 @@ The auto-focus pair is bound as **function references** (input callbacks), not a
 | Input              | Payload                          | Fires on                                                                                                                  |
 | ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.     |
-| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount (modal mode). Call `event.preventDefault()` to skip the return-focus. |
+| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus. |
 
 ### Open without stealing focus
 

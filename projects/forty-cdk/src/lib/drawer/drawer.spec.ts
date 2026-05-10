@@ -916,7 +916,9 @@ describe('ForDrawer (declarative)', () => {
       })
       class Host {
         readonly open = signal(false);
+        callCount = 0;
         readonly vetoClose = (event: VetoableEvent): void => {
+          this.callCount += 1;
           event.preventDefault();
         };
       }
@@ -937,8 +939,80 @@ describe('ForDrawer (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
 
+      // Modal-path regression: callback fires exactly once and the veto is
+      // honoured by the focus-trap deactivate (focus stays on sentinel,
+      // does not return to #trigger).
+      expect(r.instance.callCount).toBe(1);
       expect(document.activeElement?.id).toBe('sentinel');
       sentinel.remove();
+    });
+
+    it('fires [autoFocusOnClose] exactly once on close when [modal]="false" (issue #174)', async () => {
+      // Issue #174: callback was previously skipped on the non-modal close
+      // path because the invocation lived inside the `if (#activatedAsModal)`
+      // branch of the destroy hook. After the fix, the callback fires on
+      // every close path regardless of mode — matching `ForDrawerManager`.
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          <button id="trigger" (click)="open.set(true)">open</button>
+          @if (open()) {
+            <div forDrawer [modal]="false" [autoFocusOnClose]="onClose" ariaLabel="t">
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        callCount = 0;
+        readonly onClose = (_event: VetoableEvent): void => {
+          this.callCount += 1;
+        };
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.callCount).toBe(1);
+    });
+
+    it('exposes the veto state on the non-modal close event for consumer inspection (issue #174)', async () => {
+      // Non-modal mode never moves focus on close, so the veto is purely
+      // informational — but the callback still receives a VetoableEvent so
+      // consumers' code path is identical regardless of mode.
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer [modal]="false" [autoFocusOnClose]="vetoClose" ariaLabel="t">
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        captured: VetoableEvent | null = null;
+        readonly vetoClose = (event: VetoableEvent): void => {
+          event.preventDefault();
+          this.captured = event;
+        };
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.captured).not.toBeNull();
+      expect(r.instance.captured?.defaultPrevented).toBe(true);
     });
   });
 });

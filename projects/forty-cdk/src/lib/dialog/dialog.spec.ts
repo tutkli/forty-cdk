@@ -1010,6 +1010,74 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
+    it('fires [autoFocusOnClose] exactly once on close when [modal]="false" (issue #174)', async () => {
+      // Issue #174: callback was previously skipped on the non-modal close
+      // path because the invocation lived inside the `if (#activatedAsModal)`
+      // branch of the destroy hook. After the fix, the callback fires on
+      // every close path regardless of mode — matching `ForDialogManager`.
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button id="trigger" (click)="open.set(true)">open</button>
+          @if (open()) {
+            <div forDialog [modal]="false" [autoFocusOnClose]="onClose" ariaLabel="t">
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        callCount = 0;
+        readonly onClose = (_event: VetoableEvent): void => {
+          this.callCount += 1;
+        };
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.callCount).toBe(1);
+    });
+
+    it('exposes the veto state on the non-modal close event for consumer inspection (issue #174)', async () => {
+      // Non-modal mode never moves focus on close, so the veto is purely
+      // informational — but the callback still receives a VetoableEvent so
+      // consumers' code path is identical regardless of mode.
+      @Component({
+        imports: [ForDialog],
+        template: `
+          @if (open()) {
+            <div forDialog [modal]="false" [autoFocusOnClose]="vetoClose" ariaLabel="t">
+              <button id="inside">inside</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        captured: VetoableEvent | null = null;
+        readonly vetoClose = (event: VetoableEvent): void => {
+          event.preventDefault();
+          this.captured = event;
+        };
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.captured).not.toBeNull();
+      expect(r.instance.captured?.defaultPrevented).toBe(true);
+    });
+
     describe('zoneless reactivity', () => {
       it('fires [autoFocusOnClose] under provideZonelessChangeDetection on direct signal-flip close', async () => {
         @Component({

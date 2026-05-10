@@ -289,21 +289,26 @@ export class ForDialog implements ForDialogContext {
 
     inject(DestroyRef).onDestroy(() => {
       this.#dismissable.deactivate();
+      // Invoke the consumer's `autoFocusOnClose` callback synchronously
+      // here, BEFORE either the modal or non-modal teardown runs — fires
+      // reliably on every close path regardless of mode (the `(close)`
+      // output flow AND a direct `open.set(false)` from the consumer).
+      // No `OutputEmitterRef`-lifecycle dependency: input signals are
+      // still readable during the destroy hook, and the callback is a
+      // plain function reference. Non-modal flow doesn't move focus on
+      // close, so `skipReturnFocus` is only consulted inside the modal
+      // branch's focus-trap deactivate — but the hook still fires for
+      // symmetry with the manager and so consumers can wire their own
+      // focus moves in non-modal mode.
+      const autoFocusCloseEvent = createVetoableEvent();
+      this.autoFocusOnClose()?.(autoFocusCloseEvent);
+      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
       if (this.#activatedAsModal) {
         // Lift inert + aria-hidden BEFORE moving focus back: an `inert`
         // ancestor blocks `.focus()` on its descendants, so the
         // return-focus target needs to be live again first.
         this.#inertHandle?.deactivate();
         this.#inertHandle = null;
-        // Invoke the consumer's `autoFocusOnClose` callback synchronously
-        // here — fires reliably regardless of close path (the `(close)`
-        // output flow AND a direct `open.set(false)` from the consumer).
-        // No `OutputEmitterRef`-lifecycle dependency: input signals are
-        // still readable during the destroy hook, and the callback is a
-        // plain function reference.
-        const autoFocusCloseEvent = createVetoableEvent();
-        this.autoFocusOnClose()?.(autoFocusCloseEvent);
-        const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
         // Suppress the dismissable-layer dispatcher across focus-return so
         // the synthetic `focusin` triggered by `.focus()`-ing the previous
         // element does not cascade-dismiss whatever dialog is now topmost
@@ -315,9 +320,6 @@ export class ForDialog implements ForDialogContext {
         });
         this.#scrollLock.unlock();
       }
-      // Non-modal mode never activated the trap and never moves focus on
-      // close, so there's nothing to veto — `autoFocusOnClose` only
-      // fires from the modal path.
     });
   }
 
