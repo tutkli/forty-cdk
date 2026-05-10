@@ -100,4 +100,55 @@ test.describe('Drawer', () => {
     await expect(page.locator('#drawer')).toHaveCount(0);
     expect(await focusedId(page)).not.toBe('trigger');
   });
+
+  test('scaleBackground scales the wrapper while open and reverts on close', async ({ page }) => {
+    await gotoFixture(page, 'drawer', { scaleBackground: '1' });
+    const shell = page.locator('#shell');
+    const baseline = await shell.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width);
+
+    await page.locator('#trigger').click();
+    await expect(page.locator('#drawer')).toBeVisible();
+    await expect(shell).toHaveAttribute('data-state', 'scaled');
+
+    const scaledWidth = await shell.evaluate(
+      (el) => (el as HTMLElement).getBoundingClientRect().width,
+    );
+    expect(scaledWidth).toBeLessThan(baseline);
+
+    const drawer = page.locator('#drawer');
+    await expect(drawer).toHaveAttribute('data-scale-background', '');
+
+    await page.locator('#close-btn').click();
+    await expect(page.locator('#drawer')).toHaveCount(0);
+    await expect(shell).toHaveAttribute('data-state', 'idle');
+
+    const restoredWidth = await shell.evaluate(
+      (el) => (el as HTMLElement).getBoundingClientRect().width,
+    );
+    expect(Math.abs(restoredWidth - baseline)).toBeLessThan(1);
+  });
+
+  test('prefers-reduced-motion: reduce suppresses scaleBackground', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    try {
+      await gotoFixture(page, 'drawer', { scaleBackground: '1' });
+      const shell = page.locator('#shell');
+      const baseline = await shell.evaluate(
+        (el) => (el as HTMLElement).getBoundingClientRect().width,
+      );
+
+      await page.locator('#trigger').click();
+      await expect(page.locator('#drawer')).toBeVisible();
+      await expect(shell).toHaveAttribute('data-state', 'idle');
+
+      const widthOpen = await shell.evaluate(
+        (el) => (el as HTMLElement).getBoundingClientRect().width,
+      );
+      expect(Math.abs(widthOpen - baseline)).toBeLessThan(1);
+      await expect(page.locator('#drawer')).not.toHaveAttribute('data-scale-background', '');
+    } finally {
+      await context.close();
+    }
+  });
 });

@@ -21,9 +21,11 @@ import type {
   ForDrawerSnapPoint,
 } from './drawer-context';
 import { ForDrawerDescription } from './drawer-description';
+import { provideForDrawerDefaults } from './drawer-defaults';
 import { ForDrawerHandle } from './drawer-handle';
 import { ForDrawerTitle } from './drawer-title';
 import { ForDrawerTrigger } from './drawer-trigger';
+import { ForDrawerWrapper } from './drawer-wrapper';
 
 @Component({
   imports: [
@@ -785,5 +787,162 @@ describe('ForDrawerTrigger', () => {
     await flush(r.fixture);
 
     expect(r.instance.open()).toBe(false);
+  });
+});
+
+describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
+  @Component({
+    imports: [ForDrawer, ForDrawerWrapper],
+    template: `
+      <div forDrawerWrapper id="shell">
+        <button id="trigger" type="button" (click)="open.set(true)">Open</button>
+      </div>
+      @if (open()) {
+        <div
+          forDrawer
+          id="drawer"
+          [scaleBackground]="scaleBackground()"
+          [setBackgroundColorOnScale]="setBackgroundColorOnScale()"
+          (close)="open.set(false)"
+          ariaLabel="Scaled drawer"
+        ></div>
+      }
+    `,
+  })
+  class ScaleHost {
+    readonly open = signal(false);
+    readonly scaleBackground = signal(true);
+    readonly setBackgroundColorOnScale = signal(true);
+  }
+
+  @Component({
+    imports: [ForDrawer],
+    template: `
+      @if (open()) {
+        <div
+          forDrawer
+          id="drawer"
+          [scaleBackground]="true"
+          (close)="open.set(false)"
+          ariaLabel="Wrapperless"
+        ></div>
+      }
+    `,
+  })
+  class WrapperlessHost {
+    readonly open = signal(false);
+  }
+
+  afterEach(() => {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    document.body.style.backgroundColor = '';
+  });
+
+  it('does not throw when scaleBackground=true but no [forDrawerWrapper] is mounted', async () => {
+    const r = renderHost(WrapperlessHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    expect(drawer).not.toBeNull();
+    expect(drawer.hasAttribute('data-scale-background')).toBe(false);
+  });
+
+  it('applies wrapper transform + body color while drawer is open and reverts on close', async () => {
+    const r = renderHost(ScaleHost);
+    const shell = r.query<HTMLElement>('#shell')!;
+
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    expect(shell.style.transform).toContain('scale(0.95)');
+    expect(shell.style.borderRadius).toBe('8px');
+    expect(shell.getAttribute('data-state')).toBe('scaled');
+    expect(document.body.style.backgroundColor).toBe('black');
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    expect(drawer.getAttribute('data-scale-background')).toBe('');
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    expect(shell.style.transform).toBe('');
+    expect(shell.style.borderRadius).toBe('');
+    expect(shell.getAttribute('data-state')).toBe('idle');
+    expect(document.body.style.backgroundColor).toBe('');
+  });
+
+  it('skips body color when [setBackgroundColorOnScale]="false"', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.setBackgroundColorOnScale.set(false);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toContain('scale(0.95)');
+    expect(document.body.style.backgroundColor).toBe('');
+  });
+
+  it('skips the effect entirely when scaleBackground=false', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.scaleBackground.set(false);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toBe('');
+    expect(document.body.style.backgroundColor).toBe('');
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    expect(drawer.hasAttribute('data-scale-background')).toBe(false);
+  });
+
+  it('respects provideForDrawerDefaults({ scaleAmount }) override', async () => {
+    @Component({
+      imports: [ForDrawer, ForDrawerWrapper],
+      providers: [provideForDrawerDefaults({ scaleAmount: 0.9, scaleTranslateYpx: 20 })],
+      template: `
+        <div forDrawerWrapper id="shell"></div>
+        @if (open()) {
+          <div forDrawer [scaleBackground]="true" (close)="open.set(false)" ariaLabel="t"></div>
+        }
+      `,
+    })
+    class DefaultsHost {
+      readonly open = signal(false);
+    }
+
+    const r = renderHost(DefaultsHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toContain('scale(0.9)');
+    expect(shell.style.transform).toContain('20px');
+  });
+
+  describe('prefers-reduced-motion: reduce', () => {
+    let restoreReducedMotion: () => void;
+    beforeEach(() => {
+      restoreReducedMotion = withReducedMotion();
+    });
+    afterEach(() => {
+      restoreReducedMotion();
+    });
+
+    it('does not transform the wrapper or paint the body', async () => {
+      const r = renderHost(ScaleHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const shell = r.query<HTMLElement>('#shell')!;
+      expect(shell.style.transform).toBe('');
+      expect(shell.getAttribute('data-state')).toBe('idle');
+      expect(document.body.style.backgroundColor).toBe('');
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      expect(drawer.hasAttribute('data-scale-background')).toBe(false);
+    });
   });
 });
