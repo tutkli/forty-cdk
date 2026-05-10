@@ -40,6 +40,11 @@ import { queryFlag } from './_query-flag';
         background: white;
         padding: 16px;
         z-index: 1;
+        /* border-box keeps an explicit height query param (drawerHeight) */
+        /* equal to the rect the directive measures; the default content-box */
+        /* would add 2 * padding (32px) on top, so e2e geometry assertions */
+        /* see the actual requested dimension. */
+        box-sizing: border-box;
       }
       #shell {
         display: block;
@@ -69,6 +74,7 @@ import { queryFlag } from './_query-flag';
         [setBackgroundColorOnScale]="setBackgroundColorOnScale"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
+        [style.height.px]="drawerHeightPx()"
         (close)="onClose($event)"
       >
         @if (backdrop) {
@@ -122,6 +128,10 @@ export class DrawerFixture {
     parseSnapPoints(this.#route.snapshot.queryParamMap.get('snap')),
   );
 
+  protected readonly drawerHeightPx = signal<number | null>(
+    parseHeight(this.#route.snapshot.queryParamMap.get('drawerHeight')),
+  );
+
   protected readonly vetoOpen = queryFlag('vetoOpen');
   protected readonly vetoClose = queryFlag('vetoClose');
   protected readonly handleOnly = queryFlag('handleOnly');
@@ -161,4 +171,10 @@ function parseSnapPoints(raw: string | null): ReadonlyArray<ForDrawerSnapPoint> 
     }
     return trimmed as ForDrawerSnapPoint;
   });
+}
+
+function parseHeight(raw: string | null): number | null {
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }

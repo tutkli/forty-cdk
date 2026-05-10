@@ -240,6 +240,42 @@ test.describe('Drawer', () => {
     expect(nestedTransform).toContain('scale(0.93)');
   });
 
+  test('cross-dimension snap validation throws at first measurement', async ({ page }) => {
+    // ['200px', 0.5] on a 300px-tall surface is non-monotonic at the live
+    // dimension: 200px = 200, 0.5 * 300 = 150. The directive throws inside
+    // `afterNextRender` (post-layout, pre-gesture). The harness installs a
+    // capturing ErrorHandler that records every reported error onto a
+    // window-scoped array — this is the only signal Playwright can pick up
+    // because Angular catches the throw and forwards it to ErrorHandler
+    // rather than letting it escape as an uncaught `pageerror`.
+    await gotoFixture(page, 'drawer', { snap: '200px,0.5', drawerHeight: '300' });
+    await page.locator('#trigger').click();
+
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __fortyCdkHarnessErrors?: string[] })
+              .__fortyCdkHarnessErrors ?? [],
+        ),
+      )
+      .toEqual(expect.arrayContaining([expect.stringContaining('[forty-cdk/drawer]')]));
+
+    const errors = await page.evaluate(
+      () =>
+        (window as unknown as { __fortyCdkHarnessErrors?: string[] }).__fortyCdkHarnessErrors ?? [],
+    );
+    const offending = errors.find(
+      (msg) =>
+        msg.startsWith('[forty-cdk/drawer]') &&
+        msg.includes('"200px"') &&
+        msg.includes('150px') &&
+        msg.includes('200px') &&
+        msg.includes('drawer dimension 300px'),
+    );
+    expect(offending).toBeDefined();
+  });
+
   test('prefers-reduced-motion: reduce suppresses scaleBackground', async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await context.newPage();
