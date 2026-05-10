@@ -81,15 +81,36 @@ Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.le
 
 ### Programmatic — `ForDrawerManager.open()`
 
+The manager mounts the user component underneath the same `[forDrawer]` directive that powers the declarative shape, so every child piece (`[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`, `[forDrawerHandle]`, `[forDrawerClose]`) and every `ForDrawer` input (`side`, `snapPoints`, `swipeToDismiss`, `closeThreshold`, `handleOnly`, `scaleBackground`, `setBackgroundColorOnScale`, `fadeFromIndex`, …) work identically. `[forDrawerClose] [closeWith]` propagates straight through to `ForDrawerRef.close(value)`.
+
 ```ts
 import { Component, inject } from '@angular/core';
-import { ForDrawerManager, ForDrawerRef, injectDrawerData } from 'forty-cdk';
+import {
+  ForDrawerBackdrop,
+  ForDrawerClose,
+  ForDrawerDescription,
+  ForDrawerHandle,
+  ForDrawerManager,
+  ForDrawerRef,
+  ForDrawerTitle,
+  injectDrawerData,
+} from 'forty-cdk';
 
 @Component({
+  imports: [
+    ForDrawerBackdrop,
+    ForDrawerHandle,
+    ForDrawerTitle,
+    ForDrawerDescription,
+    ForDrawerClose,
+  ],
   template: `
-    <p>{{ data.message }}</p>
-    <button (click)="ref.close('cancel')">Cancel</button>
-    <button (click)="ref.close('confirm')">Confirm</button>
+    <div forDrawerBackdrop animate.enter="fade-in" animate.leave="fade-out"></div>
+    <div forDrawerHandle aria-hidden="true"></div>
+    <h2 forDrawerTitle>Delete account?</h2>
+    <p forDrawerDescription>{{ data.message }}</p>
+    <button forDrawerClose [closeWith]="'cancel'">Cancel</button>
+    <button forDrawerClose [closeWith]="'confirm'">Confirm</button>
   `,
 })
 class ConfirmDrawer {
@@ -106,7 +127,7 @@ class DemoHost {
 
   async askToDelete(): Promise<void> {
     const ref = this.#drawers.open<ConfirmDrawer, 'confirm' | 'cancel'>(ConfirmDrawer, {
-      data: { message: 'Delete account?' },
+      data: { message: 'This action cannot be undone.' },
       side: 'bottom',
       snapPoints: ['148px', 1],
     });
@@ -117,6 +138,8 @@ class DemoHost {
   }
 }
 ```
+
+Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissable layer.
 
 ## ForDrawer inputs / models
 

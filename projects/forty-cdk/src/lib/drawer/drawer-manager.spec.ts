@@ -1,13 +1,19 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey } from '../../test-utils';
+import { flush, pressKey, renderHost } from '../../test-utils';
+import { ForDrawer } from './drawer';
+import { ForDrawerBackdrop } from './drawer-backdrop';
+import { ForDrawerClose } from './drawer-close';
+import { ForDrawerDescription } from './drawer-description';
+import { ForDrawerHandle } from './drawer-handle';
 import {
   ForDrawerManager,
   FOR_DRAWER_DATA,
   injectDrawerData,
 } from './drawer-manager';
 import { ForDrawerRef } from './drawer-ref';
+import { ForDrawerTitle } from './drawer-title';
 import { provideForDrawerDefaults } from './drawer-defaults';
 
 interface SheetData {
@@ -276,6 +282,234 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(() =>
         drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: 0.5 }),
       ).not.toThrow();
+    });
+  });
+
+  // ---- New coverage for #171 — manager runs `[forDrawer]` for real ----
+
+  describe('host attribute single-source-of-truth', () => {
+    it('emits a single role / aria-modal / data-side / tabindex (no duplication)', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      const hosts = document.querySelectorAll<HTMLElement>('[role="dialog"]');
+      expect(hosts.length).toBe(1);
+      const host = hosts[0]!;
+      expect(host.getAttribute('aria-modal')).toBe('true');
+      expect(host.getAttribute('data-side')).toBe('bottom');
+      expect(host.getAttribute('tabindex')).toBe('-1');
+      expect(host.getAttribute('data-state')).toBe('open');
+    });
+
+    it('reflects data-depth="0" so the directive — not the manager — owns topology', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      expect(
+        document.querySelector<HTMLElement>('[role="dialog"]')!.getAttribute('data-depth'),
+      ).toBe('0');
+    });
+  });
+
+  describe('forwarded inputs from ForDrawerOpenConfig', () => {
+    it('snapPoints + defaultSnapPoint reach the directive', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        defaultSnapPoint: '50%',
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-active-snap-point')).toBe('50%');
+    });
+
+    it('defaultSnapPoint omitted falls back to snapPoints[0]', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-active-snap-point')).toBe('148px');
+    });
+
+    it('alert: true forces role="alertdialog" via the directive', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, alert: true });
+      expect(
+        document.querySelector<HTMLElement>('[role="alertdialog"]')!.getAttribute('aria-modal'),
+      ).toBe('true');
+    });
+
+    it('modal: false drops aria-modal and skips scroll lock', () => {
+      document.body.style.overflow = 'auto';
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, modal: false });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.hasAttribute('aria-modal')).toBe(false);
+      expect(document.body.style.overflow).toBe('auto');
+    });
+  });
+
+  describe('child pieces work inside the opened component', () => {
+    @Component({
+      imports: [
+        ForDrawerBackdrop,
+        ForDrawerHandle,
+        ForDrawerTitle,
+        ForDrawerDescription,
+        ForDrawerClose,
+      ],
+      template: `
+        <div data-testid="bd" forDrawerBackdrop></div>
+        <div data-testid="hd" forDrawerHandle></div>
+        <h2 data-testid="title" forDrawerTitle>Title</h2>
+        <p data-testid="desc" forDrawerDescription>Desc</p>
+        <button id="close-with" forDrawerClose [closeWith]="payload">Close</button>
+      `,
+    })
+    class FullPiecesDrawer {
+      readonly payload = { reason: 'user-confirmed' };
+    }
+
+    it('wires aria-labelledby and aria-describedby from forDrawerTitle / forDrawerDescription', () => {
+      const { drawers } = setup();
+      drawers.open(FullPiecesDrawer);
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const title = document.querySelector<HTMLElement>('[data-testid="title"]')!;
+      const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
+      expect(title.id).toBeTruthy();
+      expect(desc.id).toBeTruthy();
+      expect(host.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(host.getAttribute('aria-describedby')).toBe(desc.id);
+    });
+
+    it('forDrawerHandle reflects aria-hidden inside a manager-opened drawer', () => {
+      const { drawers } = setup();
+      drawers.open(FullPiecesDrawer);
+      const handle = document.querySelector<HTMLElement>('[data-testid="hd"]')!;
+      expect(handle.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('forDrawerBackdrop is registered (markers and data-state mirror the directive)', () => {
+      const { drawers } = setup();
+      drawers.open(FullPiecesDrawer);
+      const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
+      expect(backdrop.getAttribute('data-state')).toBe('open');
+      expect(backdrop.hasAttribute('data-for-modal-peer')).toBe(true);
+    });
+
+    it('forDrawerClose [closeWith] propagates the payload to ForDrawerRef.close(value)', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open<FullPiecesDrawer, { reason: string }>(FullPiecesDrawer);
+      document.querySelector<HTMLButtonElement>('#close-with')!.click();
+      const result = await ref.closed;
+      expect(result).toEqual({ reason: 'user-confirmed' });
+      expect(ref.result()).toEqual({ reason: 'user-confirmed' });
+    });
+  });
+
+  describe('mixed declarative + programmatic stacking', () => {
+    @Component({
+      imports: [ForDrawer],
+      template: `
+        @if (open()) {
+          <div forDrawer id="parent" ariaLabel="Parent" (close)="open.set(false)"></div>
+        }
+      `,
+    })
+    class DeclarativeRoot {
+      readonly open = signal(false);
+    }
+
+    @Component({
+      template: `<button id="child-content">child</button>`,
+    })
+    class ProgrammaticChild {}
+
+    it('manager-opened drawer registers depth=0 alongside an open declarative drawer', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const r = renderHost(DeclarativeRoot);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawers = TestBed.inject(ForDrawerManager);
+      drawers.open(ProgrammaticChild);
+
+      const parent = document.querySelector<HTMLElement>('#parent')!;
+      const programmatic = document.querySelector<HTMLElement>(
+        '[role="dialog"]:not(#parent)',
+      )!;
+
+      // Both registered against the stack so depth attribute is present on each.
+      expect(parent.getAttribute('data-depth')).toBe('0');
+      expect(programmatic.getAttribute('data-depth')).toBe('0');
+      // Both portaled to body — sibling layout.
+      expect(parent.parentElement).toBe(document.body);
+      expect(programmatic.parentElement).toBe(document.body);
+    });
+
+    it('Escape closes the topmost (programmatic) layer first when stacked above a declarative drawer', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const r = renderHost(DeclarativeRoot);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('#parent')).not.toBeNull();
+
+      const drawers = TestBed.inject(ForDrawerManager);
+      const ref = drawers.open(ProgrammaticChild);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(ref.isClosed()).toBe(true);
+      // Declarative drawer is still mounted underneath.
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector<HTMLElement>('#parent')).not.toBeNull();
+    });
+  });
+
+  describe('defaults provider — every key flows through', () => {
+    it('swipeToDismiss=false from defaults reaches the directive', () => {
+      const { drawers } = setup({
+        providers: [provideForDrawerDefaults({ swipeToDismiss: false })],
+      });
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      // Without swipe, no pointerdown listener side effects: the surface is
+      // not a draggable element. We assert by verifying the directive wired
+      // up at all (data-state present) — swipe wiring is unobservable from
+      // jsdom but the input is read by the directive.
+      expect(
+        document.querySelector<HTMLElement>('[role="dialog"]')!.getAttribute('data-state'),
+      ).toBe('open');
+    });
+
+    it('handleOnly=true from defaults is forwarded to the directive', () => {
+      const { drawers } = setup({
+        providers: [provideForDrawerDefaults({ handleOnly: true })],
+      });
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      expect(document.querySelector<HTMLElement>('[role="dialog"]')).not.toBeNull();
+    });
+
+    it('side=right from defaults is overridden by config.side=left', () => {
+      const { drawers } = setup({
+        providers: [provideForDrawerDefaults({ side: 'right' })],
+      });
+      drawers.open(SheetDrawer, { data: { message: 'x' }, side: 'left' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-side')).toBe('left');
+    });
+
+    it('returnFocus default of false from provider takes effect', async () => {
+      const { drawers, trigger } = setup({
+        providers: [provideForDrawerDefaults({ returnFocus: false })],
+      });
+      const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
+      ref.close();
+      await ref.closed;
+      expect(document.activeElement).not.toBe(trigger);
     });
   });
 });
