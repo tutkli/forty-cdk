@@ -255,4 +255,27 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(host.getAttribute('data-side')).toBe('left');
     });
   });
+
+  describe('closeThreshold validation', () => {
+    it('throws when closeThreshold is greater than 1', () => {
+      const { drawers } = setup();
+      expect(() =>
+        drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: 2 }),
+      ).toThrow('[forty-cdk/drawer] closeThreshold must be in [0, 1], got 2.');
+    });
+
+    it('throws when closeThreshold is NaN', () => {
+      const { drawers } = setup();
+      expect(() =>
+        drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: Number.NaN }),
+      ).toThrow('[forty-cdk/drawer] closeThreshold must be in [0, 1], got NaN.');
+    });
+
+    it('accepts a valid closeThreshold of 0.5', () => {
+      const { drawers } = setup();
+      expect(() =>
+        drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: 0.5 }),
+      ).not.toThrow();
+    });
+  });
 });

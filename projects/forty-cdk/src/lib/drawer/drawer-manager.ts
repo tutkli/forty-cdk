@@ -145,6 +145,15 @@ export class ForDrawerManager {
     component: Type<C>,
     config: ForDrawerOpenConfig<D> = {},
   ): ForDrawerRef<R> {
+    if (config.closeThreshold !== undefined) {
+      const ct = config.closeThreshold;
+      if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
+        throw new Error(
+          `[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`,
+        );
+      }
+    }
+
     const returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
     const isModal = config.modal ?? this.#defaults.modal ?? true;
     const isDismissible = config.dismissible ?? this.#defaults.dismissible ?? true;

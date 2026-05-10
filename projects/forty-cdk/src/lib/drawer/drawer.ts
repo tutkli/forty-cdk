@@ -460,6 +460,15 @@ export class ForDrawer implements ForDrawerContext {
       this.#depth.set(handle.depth);
       this.#stackCleanup = handle.cleanup;
 
+      // Validate `closeThreshold` eagerly so consumers get a clear error
+      // at mount time instead of a silently-broken dismissal threshold.
+      const ct = this.closeThreshold();
+      if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
+        throw new Error(
+          `[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`,
+        );
+      }
+
       // Validate snap-point inputs eagerly so consumers get a clear error
       // at mount time instead of a confusing transform-NaN later.
       const points = this.snapPoints();
