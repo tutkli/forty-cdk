@@ -15,6 +15,7 @@ import {
 
 import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
+import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
 import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
 import {
   type InertSiblingsHandle,
@@ -149,6 +150,7 @@ function sideAxis(side: ForDrawerSide): 'x' | 'y' {
     '[attr.data-side]': 'side()',
     '[attr.data-active-snap-point]': 'activeSnapPointAttr()',
     '[attr.data-dragging]': 'dragging() ? "" : null',
+    '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
     'data-state': 'open',
     tabindex: '-1',
   },
@@ -231,6 +233,27 @@ export class ForDrawer implements ForDrawerContext {
    * contains scrollable content that should keep its scroll gesture.
    */
   readonly handleOnly = input(this.#defaults.handleOnly ?? false, { transform: booleanAttribute });
+
+  /**
+   * When true, asks the registered `[forDrawerWrapper]` to scale and
+   * translate behind this drawer (Vaul-style "shouldScaleBackground"). No
+   * effect under `prefers-reduced-motion: reduce`, and a no-op if no
+   * wrapper is mounted. Default `false` so existing consumers are
+   * untouched.
+   */
+  readonly scaleBackground = input(this.#defaults.scaleBackground ?? false, {
+    transform: booleanAttribute,
+  });
+
+  /**
+   * When true (default) and `scaleBackground` is active, paints
+   * `<body>` with `scaleBackgroundColor` so the gap between the scaled
+   * wrapper and the viewport edge does not show through. Only applies
+   * when `scaleBackground` is `true`.
+   */
+  readonly setBackgroundColorOnScale = input(this.#defaults.setBackgroundColorOnScale ?? true, {
+    transform: booleanAttribute,
+  });
 
   /**
    * Snap points (Vaul semantics): each entry is a `number ∈ [0, 1]`,
@@ -324,11 +347,24 @@ export class ForDrawer implements ForDrawerContext {
   readonly #scrollLock = inject(BodyScrollLock);
   readonly #document = inject(DOCUMENT);
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
+  readonly #scaleCoordinator = inject(ForDrawerScaleCoordinator);
+
+  /**
+   * Reflected as `data-scale-background` on the host: `true` when the
+   * directive opted into the effect AND the coordinator is currently
+   * applying it (wrapper registered, not under reduced-motion). Lets
+   * consumers style the drawer differently in scale mode (e.g. larger
+   * corner radii) without polling the coordinator.
+   */
+  readonly scaleBackgroundActive = computed<boolean>(
+    () => this.scaleBackground() && this.#scaleCoordinator.active(),
+  );
 
   // Captured once on mount so cleanup mirrors the same mode.
   #activatedAsModal = false;
   #inertHandle: InertSiblingsHandle | null = null;
   #swipeCleanup: (() => void) | null = null;
+  #scaleCleanup: (() => void) | null = null;
   // Captured synchronously (see ForDialog#136) for WebKit return-focus.
   readonly #returnFocusTarget: HTMLElement | null;
 
@@ -437,9 +473,25 @@ export class ForDrawer implements ForDrawerContext {
       if (this.swipeToDismiss() && !this.#prefersReducedMotion()) {
         this.#swipeCleanup = this.#attachSwipe();
       }
+
+      // Register with the scale coordinator last so the wrapper transition
+      // composes after every other side effect has stabilised. The
+      // coordinator itself enforces the reduced-motion + wrapper-presence
+      // gates, so we always call it when the consumer opted in.
+      if (this.scaleBackground()) {
+        this.#scaleCleanup = this.#scaleCoordinator.registerDrawer({
+          setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
+          scaleAmount: this.#defaults.scaleAmount ?? 0.95,
+          scaleTranslateYpx: this.#defaults.scaleTranslateYpx ?? 14,
+          scaleBorderRadiusPx: this.#defaults.scaleBorderRadiusPx ?? 8,
+          scaleBackgroundColor: this.#defaults.scaleBackgroundColor ?? 'black',
+        });
+      }
     });
 
     inject(DestroyRef).onDestroy(() => {
+      this.#scaleCleanup?.();
+      this.#scaleCleanup = null;
       this.#swipeCleanup?.();
       this.#swipeCleanup = null;
       this.#dismissable.deactivate();

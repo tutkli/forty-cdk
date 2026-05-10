@@ -13,6 +13,7 @@ Headless side / bottom-sheet drawer with optional swipe-to-dismiss and Vaul-styl
 | `ForDrawerTitle`         | `[forDrawerTitle]`      | Registers an id for `aria-labelledby`.                                                                        |
 | `ForDrawerDescription`   | `[forDrawerDescription]`| Registers an id for `aria-describedby`.                                                                       |
 | `ForDrawerClose`         | `[forDrawerClose]`      | Closes the drawer with reason `'closeButton'`.                                                                |
+| `ForDrawerWrapper`       | `[forDrawerWrapper]`    | Marks the app shell so `[scaleBackground]` drawers can scale + translate it behind them.                      |
 
 ## Two flows, one engine
 
@@ -136,6 +137,8 @@ class DemoHost {
 | `snapPoints`      | `ReadonlyArray<ForDrawerSnapPoint>`         | —           | `number ∈ [0,1]` \| `'NN%'` \| `'NNpx'`. Strictly increasing.               |
 | `activeSnapPoint` | `ModelSignal<ForDrawerSnapPoint \| null>`   | `null`      | Two-way bindable. Initialised to `snapPoints[0]` on mount when null.        |
 | `fadeFromIndex`   | `number`                                    | —           | Backdrop reflects `data-fade-from-active` once active >= this index.        |
+| `scaleBackground` | `boolean`                                   | `false`     | Asks `[forDrawerWrapper]` to scale + translate behind the drawer.           |
+| `setBackgroundColorOnScale` | `boolean`                         | `true`      | Paints `<body>` to mask the gap between scaled wrapper and viewport edge.   |
 
 ## ForDrawer outputs
 
@@ -177,6 +180,39 @@ The `model<>()` change emitter (`(activeSnapPointChange)`) fires only on interna
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
 - **`prefers-reduced-motion: reduce`** disables the swipe listener entirely. Escape, backdrop, outside-pointer, and close button continue to work.
 
+## Scale background (Vaul `shouldScaleBackground`)
+
+Opt in to the "viewport recedes behind the drawer" effect popularised by Vaul: when the drawer opens, the rest of the app shrinks slightly and rounds its corners to read as a layered surface. Two pieces required:
+
+1. Apply `[forDrawerWrapper]` on the element that wraps the rest of the app (typically the root shell). Only one wrapper may be registered at a time.
+2. Set `[scaleBackground]="true"` on the drawer that should drive the effect.
+
+```html
+<!-- Root shell -->
+<div forDrawerWrapper>
+  <header>…</header>
+  <main>…</main>
+</div>
+
+<!-- Anywhere in the tree -->
+@if (open()) {
+  <div
+    forDrawer
+    side="bottom"
+    [scaleBackground]="true"
+    (close)="open.set(false)"
+    animate.enter="slide-up"
+    animate.leave="slide-down"
+  >…</div>
+}
+```
+
+While the effect is active the wrapper reflects `data-state="scaled"` (and `"idle"` at rest); the drawer reflects `data-scale-background` so consumers can style the surface differently when scale is in play (e.g. larger corner radii). `setBackgroundColorOnScale` (default `true`) paints `<body>` so the sliver between the scaled wrapper and the viewport edge does not show through; set it to `false` if your shell already paints a full-bleed backdrop.
+
+`prefers-reduced-motion: reduce` suppresses the effect entirely — wrapper styles, body color, and `data-scale-background` are all bypassed without affecting the rest of the drawer's behaviour.
+
+Tune the magic numbers via `provideForDrawerDefaults` (`scaleAmount`, `scaleTranslateYpx`, `scaleBorderRadiusPx`, `scaleBackgroundColor`).
+
 ## Accessibility
 
 Implements the WAI-ARIA Modal Dialog pattern. `role="dialog"` (or `"alertdialog"` when `alert`), `aria-modal="true"` in modal mode, `aria-labelledby` / `aria-describedby` auto-wired by `[forDrawerTitle]` / `[forDrawerDescription]`. Modal mode applies `inert` and `aria-hidden="true"` to body siblings so AT cannot reach them. The handle is `aria-hidden="true"` because keyboard users dismiss via Escape or `[forDrawerClose]`.
@@ -192,6 +228,11 @@ bootstrapApplication(App, {
       side: 'right',
       closeThreshold: 0.4,
       handleOnly: true,
+      // Scale-background (opt-in per drawer; the keys below tune the visual)
+      scaleAmount: 0.93,
+      scaleTranslateYpx: 16,
+      scaleBorderRadiusPx: 12,
+      scaleBackgroundColor: '#000',
     }),
   ],
 });

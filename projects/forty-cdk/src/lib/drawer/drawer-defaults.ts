@@ -33,6 +33,33 @@ export interface ForDrawerDefaults {
    * registered `[forDrawerHandle]` element instead of the whole surface.
    */
   handleOnly?: boolean;
+  /**
+   * Default `false`. When `true`, an open drawer asks
+   * `[forDrawerWrapper]` to scale + translate behind it (Vaul-style
+   * "shouldScaleBackground"). Suppressed under
+   * `prefers-reduced-motion: reduce`.
+   */
+  scaleBackground?: boolean;
+  /**
+   * Default `true`. When `scaleBackground` is active, paints the body
+   * with `scaleBackgroundColor` so the sliver of viewport between the
+   * scaled wrapper and the screen edge does not show through.
+   */
+  setBackgroundColorOnScale?: boolean;
+  /** Default `0.95`. Scale factor applied to the wrapper. */
+  scaleAmount?: number;
+  /**
+   * Default `14`. Vertical translation (in CSS pixels) added to
+   * `env(safe-area-inset-top)` while the wrapper is scaled.
+   */
+  scaleTranslateYpx?: number;
+  /** Default `8`. Border radius applied to the wrapper while scaled. */
+  scaleBorderRadiusPx?: number;
+  /**
+   * Default `'black'`. Body background colour applied while
+   * `setBackgroundColorOnScale` is active.
+   */
+  scaleBackgroundColor?: string;
 }
 
 const FALLBACK: ForDrawerDefaults = {
@@ -44,6 +71,12 @@ const FALLBACK: ForDrawerDefaults = {
   initialFocus: 'first',
   returnFocus: true,
   handleOnly: false,
+  scaleBackground: false,
+  setBackgroundColorOnScale: true,
+  scaleAmount: 0.95,
+  scaleTranslateYpx: 14,
+  scaleBorderRadiusPx: 8,
+  scaleBackgroundColor: 'black',
 };
 
 const { token, provideDefaults } = createDefaults<ForDrawerDefaults>(

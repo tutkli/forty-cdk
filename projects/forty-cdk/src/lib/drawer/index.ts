@@ -5,6 +5,7 @@ export { ForDrawerHandle } from './drawer-handle';
 export { ForDrawerTitle } from './drawer-title';
 export { ForDrawerDescription } from './drawer-description';
 export { ForDrawerClose } from './drawer-close';
+export { ForDrawerWrapper } from './drawer-wrapper';
 export {
   FOR_DRAWER_CONTEXT,
   injectDrawerContext,

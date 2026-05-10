@@ -9,6 +9,7 @@ import {
   type ForDrawerSide,
   type ForDrawerSnapPoint,
   ForDrawerTrigger,
+  ForDrawerWrapper,
   type VetoableEvent,
 } from 'forty-cdk';
 import { queryFlag } from './_query-flag';
@@ -16,7 +17,14 @@ import { queryFlag } from './_query-flag';
 @Component({
   selector: 'app-drawer-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDrawer, ForDrawerTrigger, ForDrawerBackdrop, ForDrawerHandle, ForDrawerClose],
+  imports: [
+    ForDrawer,
+    ForDrawerTrigger,
+    ForDrawerBackdrop,
+    ForDrawerHandle,
+    ForDrawerClose,
+    ForDrawerWrapper,
+  ],
   styles: [
     `
       [forDrawerBackdrop] {
@@ -33,12 +41,20 @@ import { queryFlag } from './_query-flag';
         padding: 16px;
         z-index: 1;
       }
+      #shell {
+        display: block;
+        min-height: 200px;
+        background: #f5f5f5;
+        padding: 16px;
+      }
     `,
   ],
   template: `
-    <input id="before" placeholder="before-trigger" />
-    <button id="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
-    <input id="after" placeholder="after-trigger" />
+    <div id="shell" forDrawerWrapper>
+      <input id="before" placeholder="before-trigger" />
+      <button id="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
+      <input id="after" placeholder="after-trigger" />
+    </div>
 
     @if (open()) {
       <div
@@ -49,6 +65,8 @@ import { queryFlag } from './_query-flag';
         [snapPoints]="snapPoints()"
         [(activeSnapPoint)]="activeSnapPoint"
         [handleOnly]="handleOnly"
+        [scaleBackground]="scaleBackground"
+        [setBackgroundColorOnScale]="setBackgroundColorOnScale"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
         (close)="onClose($event)"
@@ -87,6 +105,8 @@ export class DrawerFixture {
   protected readonly vetoClose = queryFlag('vetoClose');
   protected readonly handleOnly = queryFlag('handleOnly');
   protected readonly backdrop = queryFlag('backdrop');
+  protected readonly scaleBackground = queryFlag('scaleBackground');
+  protected readonly setBackgroundColorOnScale = !queryFlag('noBgColorOnScale');
 
   protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
 
