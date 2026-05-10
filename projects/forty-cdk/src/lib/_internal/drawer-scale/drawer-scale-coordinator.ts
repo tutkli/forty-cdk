@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 
+import { type ForDrawerSide } from '../../drawer/drawer-context';
+import { ForDrawerStack } from '../drawer-stack/drawer-stack';
 import { injectPrefersReducedMotion } from '../media-query/media-query';
 
 /**
@@ -83,12 +85,20 @@ export class ForDrawerScaleCoordinator {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
+  readonly #drawerStack = inject(ForDrawerStack);
 
   readonly #wrapperEl = signal<HTMLElement | null>(null);
   readonly #stack = signal<readonly ForDrawerScaleConfig[]>([]);
 
   #wrapperSnapshot: WrapperSnapshot | null = null;
   #bodySnapshot: BodySnapshot | null = null;
+  /**
+   * Hosts for which this coordinator currently owns an inline
+   * `style.transform` from the nested-state pass. Used to ensure we only
+   * clear transforms we ourselves applied — drag handlers also write to
+   * `style.transform` and the coordinator must yield to them.
+   */
+  readonly #nestedTransformOwned = new WeakSet<HTMLElement>();
 
   /**
    * `true` when a wrapper is registered, at least one drawer is active,
@@ -122,6 +132,96 @@ export class ForDrawerScaleCoordinator {
         this.#revert();
       }
     });
+
+    // Nested-state visual pass. Mirrors the pre-#180 in-drawer effect but
+    // runs once for the whole stack: every node that has at least one
+    // direct child in the stack gets a `scale + translate3d` applied to
+    // its host, gated by `prefers-reduced-motion: reduce` and by the
+    // node's own `dragging()` signal (the swipe handlers in `ForDrawer`
+    // mutate `style.transform` imperatively during a gesture, so the
+    // coordinator yields the host to them and reapplies on release as a
+    // side effect of the `dragging` flip). Tracking ownership in
+    // `#nestedTransformOwned` keeps cleanup honest — we only clear
+    // transforms we ourselves applied.
+    effect(() => {
+      const stack = this.#drawerStack.stack();
+      const reducedMotion = this.#prefersReducedMotion();
+
+      // Two-pass: figure out which nodes currently want a nested
+      // transform, then reconcile against ownership. Reduced-motion
+      // forces an empty `wantsNested` set so previously-owned hosts get
+      // released cleanly.
+      const wantsNested = new Set<HTMLElement>();
+      if (!reducedMotion) {
+        for (const node of stack) {
+          // Read each node's `dragging` signal so the effect re-runs when
+          // any drawer's gesture flips on or off — yielding to the drag
+          // handlers without dropping the reactive subscription on the
+          // signal (Angular's effect tracking ignores signals only read
+          // inside conditionals that short-circuited last run).
+          const dragging = node.dragging();
+          const hasChild = stack.some((n) => n.parent === node.host);
+          if (hasChild && !dragging) {
+            wantsNested.add(node.host);
+          }
+        }
+      } else {
+        // Subscribe to `dragging` even under reduced-motion so a flip back
+        // to `false` for the preference re-runs this effect with full
+        // reactivity. Cheap to read (no allocation) and keeps the
+        // dependency graph predictable.
+        for (const node of stack) {
+          node.dragging();
+        }
+      }
+
+      // Apply transforms for nodes that want them.
+      for (const node of stack) {
+        if (!wantsNested.has(node.host)) {
+          continue;
+        }
+        node.host.style.transform = this.#nestedTransform(
+          node.side,
+          node.nestedScaleAmount,
+          node.nestedTranslateYpx,
+        );
+        this.#nestedTransformOwned.add(node.host);
+      }
+
+      // Release ownership on hosts we previously applied to but that no
+      // longer want a nested transform. The drag handler may have already
+      // overwritten `style.transform` with its own translate; only clear
+      // when the parent isn't currently dragging (otherwise we'd stomp
+      // the drag mid-gesture).
+      for (const node of stack) {
+        if (
+          this.#nestedTransformOwned.has(node.host) &&
+          !wantsNested.has(node.host) &&
+          !node.dragging()
+        ) {
+          node.host.style.transform = '';
+          this.#nestedTransformOwned.delete(node.host);
+        }
+      }
+    });
+  }
+
+  /**
+   * Build the nested-state transform string for a given drawer side. The
+   * surface translates *away* from its anchored edge:
+   *
+   * - `bottom` (default) → translate up (`-translatePx` on Y).
+   * - `top` → translate down (`+translatePx` on Y).
+   * - `left` → translate left (`-translatePx` on X).
+   * - `right` → translate right (`+translatePx` on X).
+   *
+   * The scale factor is uniform.
+   */
+  #nestedTransform(side: ForDrawerSide, amount: number, translatePx: number): string {
+    const sign = side === 'top' ? 1 : -1;
+    const tx = side === 'left' ? -translatePx : side === 'right' ? translatePx : 0;
+    const ty = side === 'left' || side === 'right' ? 0 : sign * translatePx;
+    return `scale(${amount}) translate3d(${tx}px, ${ty}px, 0)`;
   }
 
   /**

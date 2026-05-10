@@ -1,6 +1,13 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  inject,
+  provideZonelessChangeDetection,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { type DrawerStackNode, ForDrawerStack } from '../drawer-stack/drawer-stack';
 import { flush, withReducedMotion } from '../../../test-utils';
 import {
   ForDrawerScaleCoordinator,
@@ -18,6 +25,7 @@ const DEFAULT_CONFIG: ForDrawerScaleConfig = {
 @Component({ template: `` })
 class CoordinatorHost {
   readonly coordinator = inject(ForDrawerScaleCoordinator);
+  readonly drawerStack = inject(ForDrawerStack);
 }
 
 function makeWrapper(): HTMLElement {
@@ -27,14 +35,53 @@ function makeWrapper(): HTMLElement {
   return el;
 }
 
+function makeDrawerHost(id: string): HTMLElement {
+  const el = document.createElement('div');
+  el.id = id;
+  document.body.appendChild(el);
+  return el;
+}
+
+interface PushedNode {
+  readonly node: DrawerStackNode;
+  readonly dragging: WritableSignal<boolean>;
+  cleanup(): void;
+}
+
+function pushNode(
+  drawerStack: ForDrawerStack,
+  partial: Pick<DrawerStackNode, 'host' | 'parent'> & Partial<DrawerStackNode>,
+): PushedNode {
+  const draggingSig = signal(false);
+  const node: DrawerStackNode = {
+    side: 'bottom',
+    scaleBackground: false,
+    nestedScaleAmount: 0.93,
+    nestedTranslateYpx: 8,
+    dragging: draggingSig.asReadonly(),
+    ...partial,
+  };
+  const handle = drawerStack.push(node);
+  return {
+    node,
+    dragging: draggingSig,
+    cleanup: handle.cleanup,
+  };
+}
+
 async function createHost(): Promise<{
   coordinator: ForDrawerScaleCoordinator;
+  drawerStack: ForDrawerStack;
   fixture: ComponentFixture<CoordinatorHost>;
 }> {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(CoordinatorHost);
   await flush(fixture);
-  return { coordinator: fixture.componentInstance.coordinator, fixture };
+  return {
+    coordinator: fixture.componentInstance.coordinator,
+    drawerStack: fixture.componentInstance.drawerStack,
+    fixture,
+  };
 }
 
 describe('ForDrawerScaleCoordinator', () => {
@@ -202,5 +249,189 @@ describe('ForDrawerScaleCoordinator under prefers-reduced-motion: reduce', () =>
     expect(coordinator.active()).toBe(false);
     expect(wrapper.style.transform).toBe('');
     expect(document.body.style.backgroundColor).toBe('');
+  });
+});
+
+describe('ForDrawerScaleCoordinator nested-state transform', () => {
+  const created: HTMLElement[] = [];
+  function track(el: HTMLElement): HTMLElement {
+    created.push(el);
+    return el;
+  }
+
+  afterEach(() => {
+    for (const el of created.splice(0)) el.remove();
+  });
+
+  it('applies the parent nested-state transform when a child is pushed', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+
+    const parent = pushNode(drawerStack, { host: parentEl, parent: null });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toBe('');
+
+    const childEl = track(makeDrawerHost('child'));
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+    // bottom side → translate up by 8px on Y axis.
+    expect(parentEl.style.transform).toContain('-8px');
+
+    // Sanity: child has no descendants → no transform.
+    expect(childEl.style.transform).toBe('');
+
+    // Sanity: parent kept the visual no matter how the parent's
+    // own dragging signal flips later.
+    expect(parent.dragging()).toBe(false);
+  });
+
+  it('releases the parent transform when the child pops', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: parentEl, parent: null });
+    const child = pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+
+    child.cleanup();
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toBe('');
+  });
+
+  it('honours per-side direction: top → translates down on Y', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: parentEl, parent: null, side: 'top' });
+    pushNode(drawerStack, { host: childEl, parent: parentEl, side: 'top' });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+    // top side → sign +1 → translate down by +8px.
+    expect(parentEl.style.transform).toContain('8px');
+    expect(parentEl.style.transform).not.toContain('-8px');
+  });
+
+  it('honours per-side direction: left → negative X translation', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: parentEl, parent: null, side: 'left' });
+    pushNode(drawerStack, { host: childEl, parent: parentEl, side: 'left' });
+    await flush(fixture);
+
+    // Match the canonical translate3d(-8px, 0px, 0) substring.
+    expect(parentEl.style.transform).toContain('translate3d(-8px, 0px, 0)');
+  });
+
+  it('honours per-side direction: right → positive X translation', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: parentEl, parent: null, side: 'right' });
+    pushNode(drawerStack, { host: childEl, parent: parentEl, side: 'right' });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('translate3d(8px, 0px, 0)');
+  });
+
+  it('uses per-node nestedScaleAmount / nestedTranslateYpx (resolved from its scope)', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, {
+      host: parentEl,
+      parent: null,
+      nestedScaleAmount: 0.85,
+      nestedTranslateYpx: 12,
+    });
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('scale(0.85)');
+    expect(parentEl.style.transform).toContain('-12px');
+  });
+
+  it('does not stomp the host transform while the parent is dragging', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    const parent = pushNode(drawerStack, { host: parentEl, parent: null });
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+
+    // Simulate the swipe handler entering a gesture. The drawer flips
+    // `dragging` to true and writes its own translate3d to style.transform.
+    parent.dragging.set(true);
+    parentEl.style.transform = 'translate3d(0px, 30px, 0)';
+    await flush(fixture);
+
+    // Coordinator must NOT have stomped the imperative transform.
+    expect(parentEl.style.transform).toBe('translate3d(0px, 30px, 0)');
+
+    // Release: dragging flips back to false. Coordinator reapplies the
+    // nested transform.
+    parent.dragging.set(false);
+    await flush(fixture);
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+  });
+
+  it('applies nested transform on grandparent + parent in a 3-level stack', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const grandparentEl = track(makeDrawerHost('grandparent'));
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: grandparentEl, parent: null });
+    pushNode(drawerStack, { host: parentEl, parent: grandparentEl });
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+
+    expect(grandparentEl.style.transform).toContain('scale(0.93)');
+    expect(parentEl.style.transform).toContain('scale(0.93)');
+    expect(childEl.style.transform).toBe('');
+  });
+});
+
+describe('ForDrawerScaleCoordinator nested-state transform under prefers-reduced-motion: reduce', () => {
+  const created: HTMLElement[] = [];
+  function track(el: HTMLElement): HTMLElement {
+    created.push(el);
+    return el;
+  }
+
+  let restoreReducedMotion: () => void;
+
+  beforeEach(() => {
+    restoreReducedMotion = withReducedMotion();
+  });
+
+  afterEach(() => {
+    for (const el of created.splice(0)) el.remove();
+    restoreReducedMotion();
+  });
+
+  it('suppresses the parent transform under reduced-motion', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    pushNode(drawerStack, { host: parentEl, parent: null });
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toBe('');
   });
 });

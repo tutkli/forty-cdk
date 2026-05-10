@@ -7,13 +7,36 @@ import { type ForDrawerSide } from '../../drawer/drawer-context';
  * stack is LIFO ordered (root → topmost) and exposes only what other
  * coordinators need — `host` for ancestry checks, `side` for layout
  * heuristics, `scaleBackground` for visual composition, `parent` for
- * topology.
+ * topology, `dragging` so visual coordinators (e.g.
+ * `ForDrawerScaleCoordinator`'s nested-transform pass) can yield the
+ * surface to imperative drag handlers, and the resolved nested-transform
+ * tunables so the coordinator never needs to re-read scope-dependent
+ * defaults.
  */
 export interface DrawerStackNode {
   readonly host: HTMLElement;
   readonly side: ForDrawerSide;
   readonly scaleBackground: boolean;
   readonly parent: HTMLElement | null;
+  /**
+   * Reactive flag that flips to `true` while a swipe gesture is in flight
+   * on this drawer's surface. Visual coordinators must yield the host's
+   * inline transform to the drag handlers while this is `true`.
+   */
+  readonly dragging: Signal<boolean>;
+  /**
+   * Scale factor applied to *this* drawer's host while it owns one or
+   * more direct child drawers (Vaul's nested-state visual). Resolved from
+   * the drawer's own injector scope at push time so per-scope
+   * `provideForDrawerDefaults` overrides flow through.
+   */
+  readonly nestedScaleAmount: number;
+  /**
+   * Pixels of translation applied to *this* drawer's host while it owns
+   * one or more direct child drawers, in the direction *away* from its
+   * anchored edge.
+   */
+  readonly nestedTranslateYpx: number;
 }
 
 /**
