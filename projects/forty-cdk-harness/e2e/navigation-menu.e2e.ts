@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { gotoFixture } from './_helpers';
 
@@ -8,11 +9,7 @@ import { gotoFixture } from './_helpers';
  * stylesheets and risk false positives when the fixture's own CSS reads the
  * variable. The host bindings are the source of truth we want to assert.
  */
-async function readVar(
-  page: import('@playwright/test').Page,
-  testid: string,
-  name: string,
-): Promise<string> {
+async function readVar(page: Page, testid: string, name: string): Promise<string> {
   return page.evaluate(
     ({ testid, name }) => {
       const el = document.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
