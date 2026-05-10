@@ -1,8 +1,23 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../../../test-utils';
-import { ForDrawerStack } from './drawer-stack';
+import { type DrawerStackNode, ForDrawerStack } from './drawer-stack';
+
+const STILL = signal(false).asReadonly();
+
+function nodeOf(
+  partial: Pick<DrawerStackNode, 'host' | 'parent'> & Partial<DrawerStackNode>,
+): DrawerStackNode {
+  return {
+    side: 'bottom',
+    scaleBackground: false,
+    dragging: STILL,
+    nestedScaleAmount: 0.93,
+    nestedTranslateYpx: 8,
+    ...partial,
+  };
+}
 
 @Component({ template: `` })
 class StackHost {
@@ -46,12 +61,7 @@ describe('ForDrawerStack', () => {
     const { stack, fixture } = await createHost();
     const root = track(makeHost('root'));
 
-    const handle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
+    const handle = stack.push(nodeOf({ host: root, parent: null }));
     await flush(fixture);
 
     expect(handle.depth).toBe(0);
@@ -65,24 +75,9 @@ describe('ForDrawerStack', () => {
     const child = track(makeHost('child'));
     const grandchild = track(makeHost('grandchild'));
 
-    const rootHandle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
-    const childHandle = stack.push({
-      host: child,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: root,
-    });
-    const grandchildHandle = stack.push({
-      host: grandchild,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: child,
-    });
+    const rootHandle = stack.push(nodeOf({ host: root, parent: null }));
+    const childHandle = stack.push(nodeOf({ host: child, parent: root }));
+    const grandchildHandle = stack.push(nodeOf({ host: grandchild, parent: child }));
 
     expect(rootHandle.depth).toBe(0);
     expect(childHandle.depth).toBe(1);
@@ -94,18 +89,8 @@ describe('ForDrawerStack', () => {
     const root = track(makeHost('root'));
     const child = track(makeHost('child'));
 
-    const rootHandle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
-    const childHandle = stack.push({
-      host: child,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: root,
-    });
+    const rootHandle = stack.push(nodeOf({ host: root, parent: null }));
+    const childHandle = stack.push(nodeOf({ host: child, parent: root }));
     await flush(fixture);
     expect(stack.stack()).toHaveLength(2);
 
@@ -121,12 +106,7 @@ describe('ForDrawerStack', () => {
   it('cleanup is idempotent on an already-removed node', async () => {
     const { stack } = await createHost();
     const root = track(makeHost('root'));
-    const handle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
+    const handle = stack.push(nodeOf({ host: root, parent: null }));
     handle.cleanup();
     expect(() => handle.cleanup()).not.toThrow();
     expect(stack.stack()).toEqual([]);
@@ -137,18 +117,8 @@ describe('ForDrawerStack', () => {
     const root = track(makeHost('root'));
     const child = track(makeHost('child'));
 
-    const rootHandle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
-    stack.push({
-      host: child,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: root,
-    });
+    const rootHandle = stack.push(nodeOf({ host: root, parent: null }));
+    stack.push(nodeOf({ host: child, parent: root }));
 
     expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
   });
@@ -159,24 +129,9 @@ describe('ForDrawerStack', () => {
     const child = track(makeHost('child'));
     const grandchild = track(makeHost('grandchild'));
 
-    const rootHandle = stack.push({
-      host: root,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: null,
-    });
-    stack.push({
-      host: child,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: root,
-    });
-    stack.push({
-      host: grandchild,
-      side: 'bottom',
-      scaleBackground: false,
-      parent: child,
-    });
+    const rootHandle = stack.push(nodeOf({ host: root, parent: null }));
+    stack.push(nodeOf({ host: child, parent: root }));
+    stack.push(nodeOf({ host: grandchild, parent: child }));
 
     expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
   });
@@ -186,18 +141,8 @@ describe('ForDrawerStack', () => {
     const root = track(makeHost('root'));
     const child = track(makeHost('child'));
 
-    stack.push({
-      host: root,
-      side: 'right',
-      scaleBackground: true,
-      parent: null,
-    });
-    stack.push({
-      host: child,
-      side: 'top',
-      scaleBackground: false,
-      parent: root,
-    });
+    stack.push(nodeOf({ host: root, side: 'right', scaleBackground: true, parent: null }));
+    stack.push(nodeOf({ host: child, side: 'top', scaleBackground: false, parent: root }));
 
     const [rootNode, childNode] = stack.stack();
     expect(rootNode?.side).toBe('right');
