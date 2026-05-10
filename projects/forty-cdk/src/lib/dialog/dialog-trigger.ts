@@ -28,6 +28,8 @@ import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@
     '[attr.aria-controls]': 'open() ? controls() : null',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.disabled]': 'disabled() ? "" : null',
     '(click)': 'onClick()',
   },
 })
@@ -48,7 +50,12 @@ export class ForDialogTrigger {
    */
   readonly controls = input<string | null>(null);
 
-  /** When true, click is ignored and `data-disabled=""` is reflected. */
+  /**
+   * When true, click is ignored and the host reflects `data-disabled=""`,
+   * `aria-disabled="true"`, and the native `disabled` attribute so the
+   * trigger is announced as disabled by assistive tech and dropped from
+   * the tab order.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
