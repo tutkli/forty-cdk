@@ -110,6 +110,17 @@ test.describe('Drawer', () => {
     await expect(page.locator('#drawer')).toBeVisible();
     await expect(shell).toHaveAttribute('data-state', 'scaled');
 
+    // The coordinator writes `style.transform = 'scale(...)'` from an
+    // `effect()`, which flushes AFTER the host-binding pass that emits
+    // `data-state="scaled"`. The two are sequenced in the same microtask
+    // chain, but WebKit can return control to Playwright between them —
+    // so polling on the inline transform (the actual imperative write,
+    // not the host-binding mirror) is the only timing-stable signal that
+    // the scale has been applied. Once it's set, asserting the painted
+    // box shrank from baseline is straightforward.
+    await expect.poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform)).toMatch(
+      /scale\(/,
+    );
     const scaledWidth = await shell.evaluate(
       (el) => (el as HTMLElement).getBoundingClientRect().width,
     );
@@ -122,6 +133,12 @@ test.describe('Drawer', () => {
     await expect(page.locator('#drawer')).toHaveCount(0);
     await expect(shell).toHaveAttribute('data-state', 'idle');
 
+    // Same scheduling caveat applies on revert — wait for the inline
+    // transform to drop before sampling the bounding rect. Empty-string
+    // is the snapshot value the coordinator restores to (see `#revert`).
+    await expect
+      .poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform))
+      .not.toMatch(/scale\(/);
     const restoredWidth = await shell.evaluate(
       (el) => (el as HTMLElement).getBoundingClientRect().width,
     );
