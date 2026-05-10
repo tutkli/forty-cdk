@@ -422,6 +422,126 @@ describe('ForDrawer (declarative)', () => {
       );
     });
 
+    it('throws when closeThreshold is greater than 1', async () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer [closeThreshold]="2" (close)="open.set(false)" ariaLabel="t"></div>
+          }
+        `,
+      })
+      class BadHost {
+        readonly open = signal(false);
+      }
+
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(BadHost);
+      fixture.detectChanges();
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(
+        captured.some(
+          (e) =>
+            e instanceof Error &&
+            e.message === '[forty-cdk/drawer] closeThreshold must be in [0, 1], got 2.',
+        ),
+      ).toBe(true);
+    });
+
+    it('throws when closeThreshold is NaN', async () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer [closeThreshold]="bad" (close)="open.set(false)" ariaLabel="t"></div>
+          }
+        `,
+      })
+      class BadHost {
+        readonly open = signal(false);
+        readonly bad = Number.NaN;
+      }
+
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(BadHost);
+      fixture.detectChanges();
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(
+        captured.some(
+          (e) =>
+            e instanceof Error &&
+            e.message === '[forty-cdk/drawer] closeThreshold must be in [0, 1], got NaN.',
+        ),
+      ).toBe(true);
+    });
+
+    it('mounts cleanly with closeThreshold = 0.5', async () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer [closeThreshold]="0.5" (close)="open.set(false)" ariaLabel="t"></div>
+          }
+        `,
+      })
+      class GoodHost {
+        readonly open = signal(false);
+      }
+
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(GoodHost);
+      fixture.detectChanges();
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(captured.some((e) => e instanceof Error && /closeThreshold/.test(e.message))).toBe(
+        false,
+      );
+    });
+
     it('throws when fadeFromIndex is out of range', async () => {
       @Component({
         imports: [ForDrawer],
