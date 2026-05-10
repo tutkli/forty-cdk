@@ -187,6 +187,10 @@ describe('ForNavigationMenuViewport', () => {
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
         fixture.componentInstance.open.set('products');
         flush();
+        // The directive's effect writes #w/#h after the active-content signal
+        // updates, so host bindings need a second CD pass to settle. Some
+        // jsdom hosts coincidentally drain this in one tick; Linux CI does not.
+        flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
           '320px',
@@ -196,6 +200,7 @@ describe('ForNavigationMenuViewport', () => {
         );
 
         fixture.componentInstance.open.set('solutions');
+        flush();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -338,6 +343,7 @@ describe('ForNavigationMenuViewport', () => {
 
         fixture.componentInstance.open.set('products');
         flush();
+        flush();
 
         const viewport = query<HTMLElement>('[data-id="viewport"]')!;
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
@@ -355,6 +361,7 @@ describe('ForNavigationMenuViewport', () => {
         // update without an `afterEveryRender` cycle.
         sizes['products'] = { width: 555, height: 333 };
         observingPanel!.fire();
+        flush();
         flush();
 
         expect(viewport.style.getPropertyValue('--for-navigation-menu-viewport-width')).toBe(
