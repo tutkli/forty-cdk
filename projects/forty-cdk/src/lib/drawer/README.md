@@ -130,7 +130,7 @@ class DemoHost {
 | `initialFocus`    | `'first' \| 'container'`                    | `'first'`   |                                                                             |
 | `ariaLabel`       | `string \| null`                            | `null`      | Use when no visible title is rendered.                                      |
 | `autoFocusOnOpen` | `(e: VetoableEvent) => void` \| `undefined` | —           | `event.preventDefault()` skips the imperative focus move.                   |
-| `autoFocusOnClose`| `(e: VetoableEvent) => void` \| `undefined` | —           | `event.preventDefault()` skips return-focus.                                |
+| `autoFocusOnClose`| `(e: VetoableEvent) => void` \| `undefined` | —           | Fires on every close path regardless of mode. In non-modal mode the directive doesn't move focus, so the veto is informational; in modal mode `event.preventDefault()` skips return-focus. |
 | `swipeToDismiss`  | `boolean`                                   | `true`      | Disabled automatically under `prefers-reduced-motion: reduce`.              |
 | `closeThreshold`  | `number`                                    | `0.25`      | Fraction of dimension past which a release dismisses.                       |
 | `handleOnly`      | `boolean`                                   | `false`     | Swipe arms only on the registered `[forDrawerHandle]`.                      |

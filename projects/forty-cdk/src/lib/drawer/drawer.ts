@@ -578,12 +578,21 @@ export class ForDrawer implements ForDrawerContext {
       this.#swipeCleanup?.();
       this.#swipeCleanup = null;
       this.#dismissable.deactivate();
+      // Invoke the consumer's `autoFocusOnClose` callback synchronously here,
+      // BEFORE either the modal or non-modal teardown runs. Fires on every
+      // close path regardless of mode (the `(close)` output flow AND a direct
+      // `open.set(false)` from the consumer). The callback is a plain
+      // function reference so input signals stay readable during destroy.
+      // Non-modal flow doesn't move focus, so `skipReturnFocus` is only
+      // consulted by the modal branch's focus-trap deactivate — but the
+      // hook still fires for symmetry with the manager and so consumers
+      // can wire their own focus moves on close in non-modal mode.
+      const autoFocusCloseEvent = createVetoableEvent();
+      this.autoFocusOnClose()?.(autoFocusCloseEvent);
+      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
       if (this.#activatedAsModal) {
         this.#inertHandle?.deactivate();
         this.#inertHandle = null;
-        const autoFocusCloseEvent = createVetoableEvent();
-        this.autoFocusOnClose()?.(autoFocusCloseEvent);
-        const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
         this.#dismissable.suppress(() => {
           this.#focusTrap.deactivate({
             returnFocus: this.returnFocus() && !skipReturnFocus,
