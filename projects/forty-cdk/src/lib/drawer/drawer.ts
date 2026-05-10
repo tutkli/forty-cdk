@@ -4,7 +4,6 @@ import {
   computed,
   DestroyRef,
   Directive,
-  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -13,17 +12,10 @@ import {
   signal,
 } from '@angular/core';
 
-import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
 import { ForDrawerStack } from '../_internal/drawer-stack/drawer-stack';
-import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
-import {
-  type InertSiblingsHandle,
-  InertSiblingsStack,
-} from '../_internal/inert-siblings/inert-siblings';
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
-import { injectPortal } from '../_internal/portal/portal';
+import { injectModalShell } from '../_internal/modal-shell/modal-shell';
 import {
   attachSwipeDismiss,
   isScrollableAtEdge,
@@ -31,13 +23,7 @@ import {
   type SwipeDirection,
   type SwipeEventDetail,
 } from '../_internal/swipe-dismiss/swipe-dismiss';
-import {
-  createVetoableEvent,
-  createVetoableNativeEvent,
-  emitVetoableNativeEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import { type VetoableEvent, type VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
@@ -303,12 +289,7 @@ export class ForDrawer implements ForDrawerContext {
     return activeIdx >= 0 && activeIdx >= idx;
   });
 
-  readonly #focusTrap = injectFocusTrap();
-  readonly #dismissable = injectDismissableLayer();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #inertStack = inject(InertSiblingsStack);
-  readonly #scrollLock = inject(BodyScrollLock);
-  readonly #document = inject(DOCUMENT);
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #scaleCoordinator = inject(ForDrawerScaleCoordinator);
   readonly #drawerStack = inject(ForDrawerStack);
@@ -352,14 +333,15 @@ export class ForDrawer implements ForDrawerContext {
     () => this.scaleBackground() && this.#scaleCoordinator.active(),
   );
 
-  // Captured once on mount so cleanup mirrors the same mode.
-  #activatedAsModal = false;
-  #inertHandle: InertSiblingsHandle | null = null;
+  // Cleanup refs for drawer-specific side effects (the modal-shell owns its
+  // own portal / dismissable / focus-trap / scroll-lock / inert-siblings
+  // teardown). These three live here because they are layered ON TOP of the
+  // shell: drawer-stack push must run BEFORE the shell's afterNextRender so
+  // descendants see consistent topology, and swipe / scale must run AFTER so
+  // the gesture / coordinator compose on top of a fully-wired surface.
   #swipeCleanup: (() => void) | null = null;
   #scaleCleanup: (() => void) | null = null;
   #stackCleanup: (() => void) | null = null;
-  // Captured synchronously (see ForDialog#136) for WebKit return-focus.
-  readonly #returnFocusTarget: HTMLElement | null;
 
   // Pointer state for velocity tracking.
   #pointerStartTime = 0;
@@ -377,21 +359,30 @@ export class ForDrawer implements ForDrawerContext {
   #snapPositionsCache: { dimension: number; positions: number[] } | null = null;
 
   constructor() {
-    this.#returnFocusTarget =
-      this.#document.activeElement instanceof HTMLElement ? this.#document.activeElement : null;
-    injectPortal();
+    // ---- Destroy hook A (registered FIRST → runs LAST, after the shell's
+    // own destroy block). Pops from the drawer stack so by the time it runs
+    // every nested child has already cleaned up via Angular's
+    // descendants-before-ancestors order. The DrawerStack `cleanup` throws
+    // if a descendant is still registered, surfacing consumer template bugs
+    // (e.g. parent @if flipping while the child sits in a separate branch).
+    inject(DestroyRef).onDestroy(() => {
+      this.#stackCleanup?.();
+      this.#stackCleanup = null;
+    });
 
+    // ---- Pre-shell setup. Runs in its own afterNextRender registered
+    // BEFORE injectModalShell so the drawer-stack push and snap-point
+    // validation precede the shell's dismissable / focus / scroll-lock
+    // wiring. Descendants observing `hasChild` / depth see consistent
+    // topology throughout their own mount sequence; consumers passing bad
+    // closeThreshold / snapPoints get a clear error before the shell tries
+    // to focus an element that may not exist.
     afterNextRender(() => {
-      const isModal = this.modal();
-      this.#activatedAsModal = isModal;
-
-      // Push onto the drawer stack first, before any other side-effect, so
-      // descendants observing `hasChild` / depth see consistent topology
-      // throughout their own mount sequence. The `dragging` signal +
-      // resolved nested-transform tunables ride along so
-      // `ForDrawerScaleCoordinator` owns the `style.transform` write for
-      // the parent surface (issue #180) and reads scope-local defaults
-      // through this node, not through its own injector.
+      // 1. Drawer-stack push. The `dragging` signal + resolved
+      //    nested-transform tunables ride along so
+      //    `ForDrawerScaleCoordinator` owns the `style.transform` write for
+      //    the parent surface (issue #180) and reads scope-local defaults
+      //    through this node, not through its own injector.
       const handle = this.#drawerStack.push({
         host: this.#host.nativeElement,
         side: this.side(),
@@ -404,25 +395,23 @@ export class ForDrawer implements ForDrawerContext {
       this.#depth.set(handle.depth);
       this.#stackCleanup = handle.cleanup;
 
-      // Validate `closeThreshold` eagerly so consumers get a clear error
-      // at mount time instead of a silently-broken dismissal threshold.
+      // 2. closeThreshold validation. Throws here so consumers get a clear
+      //    error at mount time instead of a silently-broken dismissal.
       const ct = this.closeThreshold();
       if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
         throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
       }
 
-      // Validate snap-point inputs eagerly so consumers get a clear error
-      // at mount time instead of a confusing transform-NaN later. Two-phase
-      // scheme:
-      //   1. Shape check — per-point sanity + strict-increase for inputs
-      //      whose ordering is dimension-independent (pure-fraction or
-      //      pure-px). Always runs at mount.
-      //   2. Live-dimension check — strict-increase against the resolved
-      //      pixel positions. Catches mixed `'NNpx'` + fraction arrays
-      //      whose ordering depends on the surface size. Runs once now
-      //      (first measurement), again on `#onSwipeStart` if the surface
-      //      has resized; never on `#onSwipeRelease`, which only reads
-      //      already-validated positions out of `#snapPositionsCache`.
+      // 3. Snap-point validation. Two-phase scheme:
+      //    a. Shape check — per-point sanity + strict-increase for inputs
+      //       whose ordering is dimension-independent (pure-fraction or
+      //       pure-px). Always runs.
+      //    b. Live-dimension check — strict-increase against the resolved
+      //       pixel positions. Catches mixed `'NNpx'` + fraction arrays
+      //       whose ordering depends on the surface size. Runs once here
+      //       (first measurement), again on `#onSwipeStart` if the surface
+      //       has resized; never on `#onSwipeRelease`, which only reads
+      //       already-validated positions out of `#snapPositionsCache`.
       const points = this.snapPoints();
       if (points && points.length > 0) {
         validateSnapPointsShape(points);
@@ -442,70 +431,47 @@ export class ForDrawer implements ForDrawerContext {
         // also pre-gesture.
         this.#refreshSnapPositions(points);
       }
+    });
 
-      // Push the dismissable layer onto the stack BEFORE moving focus so
-      // that focusin events triggered by our own focus management land on
-      // this layer, not on whatever lower layer was previously topmost.
-      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-      this.#dismissable.activate({
+    // ---- The shared modal-shell. Owns: synchronous return-focus capture
+    // (WebKit #136), portal, dismissable layer with the triple-veto pattern
+    // + composite `interactOutside`, modal vs non-modal branching (focus
+    // trap + scroll lock + inert siblings), and the `autoFocusOnOpen` /
+    // `autoFocusOnClose` veto hooks. Anything drawer-specific (drag
+    // gesture, snap points, scale coordinator, drawer-stack registration,
+    // backdrop exemption) stays in this directive.
+    injectModalShell({
+      modal: this.modal,
+      returnFocus: this.returnFocus,
+      initialFocus: this.initialFocus,
+      autoFocusOnOpen: () => this.autoFocusOnOpen(),
+      autoFocusOnClose: () => this.autoFocusOnClose(),
+      dismiss: {
+        dismissible: this.dismissible,
+        requestClose: (reason) => this.requestClose(reason),
+        emitEscapeKeyDown: (veto) => this.escapeKeyDown.emit(veto),
+        emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
+        emitFocusOutside: (veto) => this.focusOutside.emit(veto),
+        emitInteractOutside: (veto) => this.interactOutside.emit(veto),
         // The backdrop is portaled to body (sibling of the drawer host), so
         // without exemption a pointer-down on it fires `pointerDownOutside`
         // BEFORE the backdrop's click handler runs — the drawer would close
         // with the wrong reason. Marking it exempt routes the gesture
         // through the backdrop's own click → `requestClose('backdrop')`
-        // path instead. The handle is a child of the host so it's already
+        // path instead. The handle is a child of the host so it is already
         // covered by `host.contains(target)`.
         exemptElements: () => {
           const backdrop = this.#backdropEl();
           return backdrop ? [backdrop] : [];
         },
-        onEscapeKeyDown: (event) => {
-          const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-          if (!vetoed && this.dismissible()) {
-            event.stopPropagation();
-            this.requestClose('escape');
-          }
-        },
-        onPointerDownOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          this.pointerDownOutside.emit(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-        },
-        onFocusOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          this.focusOutside.emit(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-        },
-        onInteractOutside: (event) => {
-          const veto =
-            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          pendingOutsideVeto = null;
-          this.interactOutside.emit(veto);
-          if (!veto.defaultPrevented && this.dismissible()) {
-            this.requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
-          }
-        },
-      });
+      },
+    });
 
-      const autoFocusOpenEvent = createVetoableEvent();
-      this.autoFocusOnOpen()?.(autoFocusOpenEvent);
-      const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
-
-      if (isModal) {
-        this.#inertHandle = this.#inertStack.activate(this.#host.nativeElement);
-        this.#focusTrap.activate({
-          initialFocus: this.initialFocus(),
-          preventInitialFocus: skipInitialFocus,
-          returnFocus: this.#returnFocusTarget,
-        });
-        this.#scrollLock.lock();
-      } else if (!skipInitialFocus) {
-        const host = this.#focusTrap.container;
-        if (this.initialFocus() === 'container') {
-          host.focus();
-        } else {
-          (findFirstFocusable(host) ?? host).focus();
-        }
-      }
-
+    // ---- Post-shell setup. Runs in its own afterNextRender registered
+    // AFTER injectModalShell so swipe-dismiss arms on a host already
+    // attached to body via the shell's portal, and the scale coordinator
+    // composes on top of a fully-wired surface.
+    afterNextRender(() => {
       // Wire swipe-to-dismiss only when allowed AND the user hasn't asked
       // for reduced motion (drag animations are vestibular-hostile).
       if (this.swipeToDismiss() && !this.#prefersReducedMotion()) {
@@ -527,42 +493,15 @@ export class ForDrawer implements ForDrawerContext {
       }
     });
 
+    // ---- Destroy hook B (registered LAST → runs FIRST, before the
+    // shell's own destroy). Tears down the gesture / coordinator handles
+    // we registered in the post-shell afterNextRender so the shell's
+    // dismissable + focus-trap teardown runs over a fully quiesced surface.
     inject(DestroyRef).onDestroy(() => {
       this.#scaleCleanup?.();
       this.#scaleCleanup = null;
       this.#swipeCleanup?.();
       this.#swipeCleanup = null;
-      this.#dismissable.deactivate();
-      // Invoke the consumer's `autoFocusOnClose` callback synchronously here,
-      // BEFORE either the modal or non-modal teardown runs. Fires on every
-      // close path regardless of mode (the `(close)` output flow AND a direct
-      // `open.set(false)` from the consumer). The callback is a plain
-      // function reference so input signals stay readable during destroy.
-      // Non-modal flow doesn't move focus, so `skipReturnFocus` is only
-      // consulted by the modal branch's focus-trap deactivate — but the
-      // hook still fires for symmetry with the manager and so consumers
-      // can wire their own focus moves on close in non-modal mode.
-      const autoFocusCloseEvent = createVetoableEvent();
-      this.autoFocusOnClose()?.(autoFocusCloseEvent);
-      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
-      if (this.#activatedAsModal) {
-        this.#inertHandle?.deactivate();
-        this.#inertHandle = null;
-        this.#dismissable.suppress(() => {
-          this.#focusTrap.deactivate({
-            returnFocus: this.returnFocus() && !skipReturnFocus,
-          });
-        });
-        this.#scrollLock.unlock();
-      }
-      // Pop from the drawer stack last — Angular destroys descendants
-      // before ancestors, so by the time we get here every nested child
-      // has already cleaned up its own entry. The cleanup throws if a
-      // descendant is still registered, surfacing consumer template bugs
-      // (e.g. parent `@if` flipping while the child sits in a separate
-      // branch) instead of leaking topology to the next mount.
-      this.#stackCleanup?.();
-      this.#stackCleanup = null;
     });
   }
 

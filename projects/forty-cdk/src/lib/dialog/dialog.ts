@@ -1,32 +1,7 @@
-import {
-  afterNextRender,
-  booleanAttribute,
-  computed,
-  DestroyRef,
-  Directive,
-  DOCUMENT,
-  ElementRef,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, input, output, signal } from '@angular/core';
 
-import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
-import {
-  type InertSiblingsHandle,
-  InertSiblingsStack,
-} from '../_internal/inert-siblings/inert-siblings';
-import { injectPortal } from '../_internal/portal/portal';
-import {
-  createVetoableEvent,
-  createVetoableNativeEvent,
-  emitVetoableNativeEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import { injectModalShell } from '../_internal/modal-shell/modal-shell';
+import { type VetoableEvent, type VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,
@@ -183,143 +158,27 @@ export class ForDialog implements ForDialogContext {
     return ids.length === 0 ? null : ids.join(' ');
   });
 
-  readonly #focusTrap = injectFocusTrap();
-  readonly #dismissable = injectDismissableLayer();
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #inertStack = inject(InertSiblingsStack);
-  readonly #scrollLock = inject(BodyScrollLock);
-  readonly #document = inject(DOCUMENT);
-
-  // Captured once on mount so cleanup can mirror the same mode regardless
-  // of whether the consumer toggles `modal()` on a doomed instance.
-  #activatedAsModal = false;
-  #inertHandle: InertSiblingsHandle | null = null;
-  // Captured synchronously in the constructor (before `afterNextRender`).
-  // Required for WebKit return-focus correctness (#136): WebKit blurs the
-  // previously-focused element when an ancestor receives `inert`, so by the
-  // time `afterNextRender` fires (where inert is activated) reading
-  // `document.activeElement` from the focus trap would yield `<body>`. The
-  // constructor reads it before that side-effect, locking in the trigger
-  // as the return target. Combined with `ForDialogTrigger` re-focusing
-  // itself in `onClick` to defeat WebKit's separate mousedown-blurs-button
-  // quirk, this gives a stable target across both browsers.
-  readonly #returnFocusTarget: HTMLElement | null;
-
   constructor() {
-    this.#returnFocusTarget =
-      this.#document.activeElement instanceof HTMLElement ? this.#document.activeElement : null;
-    injectPortal();
-
-    // Run setup *after* Angular has applied input bindings (reading
-    // `this.modal()` in the constructor would always see the default).
-    afterNextRender(() => {
-      const isModal = this.modal();
-      this.#activatedAsModal = isModal;
-
-      // Push the dismissable layer onto the stack *before* moving focus
-      // so that focusin events triggered by our own focus management
-      // land on this layer, not on whatever lower layer was previously
-      // topmost.
-      //
-      // `pointerDownOutside` / `focusOutside` and `interactOutside` fire
-      // on the same physical interaction; the layer always invokes the
-      // specific listener before the composite one. We build a single
-      // veto wrapper on the specific call and reuse it for the composite
-      // call so a `preventDefault()` in either handler vetoes the close.
-      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-      this.#dismissable.activate({
-        onEscapeKeyDown: (event) => {
-          const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-          if (!vetoed && this.dismissible()) {
-            event.stopPropagation();
-            this.requestClose('escape');
-          }
-        },
-        onPointerDownOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          this.pointerDownOutside.emit(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-        },
-        onFocusOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          this.focusOutside.emit(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-        },
-        onInteractOutside: (event) => {
-          const veto =
-            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          pendingOutsideVeto = null;
-          this.interactOutside.emit(veto);
-          if (!veto.defaultPrevented && this.dismissible()) {
-            this.requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
-          }
-        },
-      });
-
-      // Let the consumer veto the imperative focus move. The trap is
-      // still set up (Tab cycling, return-focus capture) — only the
-      // initial `.focus()` call is skipped.
-      const autoFocusOpenEvent = createVetoableEvent();
-      this.autoFocusOnOpen()?.(autoFocusOpenEvent);
-      const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
-
-      if (isModal) {
-        // Inert + aria-hidden the rest of the document. Pushed BEFORE the
-        // focus trap activates so that the trap's `focus()` call lands on
-        // an element whose siblings are already isolated from AT. The
-        // return-focus target was captured synchronously in the constructor
-        // (see `#returnFocusTarget`) — WebKit blurs the previously-focused
-        // element by the time `afterNextRender` fires, so we cannot read
-        // `document.activeElement` here.
-        this.#inertHandle = this.#inertStack.activate(this.#host.nativeElement);
-        this.#focusTrap.activate({
-          initialFocus: this.initialFocus(),
-          preventInitialFocus: skipInitialFocus,
-          returnFocus: this.#returnFocusTarget,
-        });
-        this.#scrollLock.lock();
-      } else if (!skipInitialFocus) {
-        // Non-modal: still send focus, no trap.
-        const host = this.#focusTrap.container;
-        if (this.initialFocus() === 'container') {
-          host.focus();
-        } else {
-          (findFirstFocusable(host) ?? host).focus();
-        }
-      }
-    });
-
-    inject(DestroyRef).onDestroy(() => {
-      this.#dismissable.deactivate();
-      // Invoke the consumer's `autoFocusOnClose` callback synchronously
-      // here, BEFORE either the modal or non-modal teardown runs — fires
-      // reliably on every close path regardless of mode (the `(close)`
-      // output flow AND a direct `open.set(false)` from the consumer).
-      // No `OutputEmitterRef`-lifecycle dependency: input signals are
-      // still readable during the destroy hook, and the callback is a
-      // plain function reference. Non-modal flow doesn't move focus on
-      // close, so `skipReturnFocus` is only consulted inside the modal
-      // branch's focus-trap deactivate — but the hook still fires for
-      // symmetry with the manager and so consumers can wire their own
-      // focus moves in non-modal mode.
-      const autoFocusCloseEvent = createVetoableEvent();
-      this.autoFocusOnClose()?.(autoFocusCloseEvent);
-      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
-      if (this.#activatedAsModal) {
-        // Lift inert + aria-hidden BEFORE moving focus back: an `inert`
-        // ancestor blocks `.focus()` on its descendants, so the
-        // return-focus target needs to be live again first.
-        this.#inertHandle?.deactivate();
-        this.#inertHandle = null;
-        // Suppress the dismissable-layer dispatcher across focus-return so
-        // the synthetic `focusin` triggered by `.focus()`-ing the previous
-        // element does not cascade-dismiss whatever dialog is now topmost
-        // (a stacked dialog opened above this one).
-        this.#dismissable.suppress(() => {
-          this.#focusTrap.deactivate({
-            returnFocus: this.returnFocus() && !skipReturnFocus,
-          });
-        });
-        this.#scrollLock.unlock();
-      }
+    // The shared modal-shell handles portal + dismissable layer (with the
+    // triple-veto pattern this directive used to implement inline) + modal
+    // vs non-modal branching (focus trap + scroll lock + inert siblings) +
+    // return-focus on destroy + the WebKit-#136 sync return-target capture.
+    // Anything dialog-specific (label / description registration, role
+    // binding, ariaLabel) stays here.
+    injectModalShell({
+      modal: this.modal,
+      returnFocus: this.returnFocus,
+      initialFocus: this.initialFocus,
+      autoFocusOnOpen: () => this.autoFocusOnOpen(),
+      autoFocusOnClose: () => this.autoFocusOnClose(),
+      dismiss: {
+        dismissible: this.dismissible,
+        requestClose: (reason) => this.requestClose(reason),
+        emitEscapeKeyDown: (veto) => this.escapeKeyDown.emit(veto),
+        emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
+        emitFocusOutside: (veto) => this.focusOutside.emit(veto),
+        emitInteractOutside: (veto) => this.interactOutside.emit(veto),
+      },
     });
   }
 
