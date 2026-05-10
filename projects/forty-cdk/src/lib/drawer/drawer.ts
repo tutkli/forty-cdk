@@ -350,7 +350,6 @@ export class ForDrawer implements ForDrawerContext {
   #pointerLastTime = 0;
   #pointerVelocity = 0;
   #dimensionAtStart = 0;
-  #initialOffsetAtStart = 0;
 
   // Snap positions cache, keyed by the dimension they were resolved against.
   // First-measurement validation populates this; `#onSwipeStart` refreshes it
@@ -597,7 +596,6 @@ export class ForDrawer implements ForDrawerContext {
     this.#pointerVelocity = 0;
     const rect = this.#host.nativeElement.getBoundingClientRect();
     this.#dimensionAtStart = sideAxis(this.side()) === 'y' ? rect.height : rect.width;
-    this.#initialOffsetAtStart = this.#dragOffset();
 
     // Refresh & validate snap positions for this gesture's dimension. If
     // mount-time first-measurement saw a non-zero dimension equal to the
@@ -668,9 +666,10 @@ export class ForDrawer implements ForDrawerContext {
     this.#pointerLastY = event.clientY;
     this.#pointerLastTime = now;
 
-    // Update offset (clamped at 0 — we never translate "into" the screen
-    // beyond the resting position; the surface only moves toward the edge).
-    const nextOffset = Math.max(0, this.#initialOffsetAtStart + moveTowardEdge);
+    // Integrate the per-event pointer delta into the cumulative drag
+    // offset. Clamped at 0 — we never translate "into" the screen beyond
+    // the resting position; the surface only moves toward the edge.
+    const nextOffset = Math.max(0, this.#dragOffset() + moveTowardEdge);
     this.#dragOffset.set(nextOffset);
 
     const dim = this.#dimensionAtStart || 1;
