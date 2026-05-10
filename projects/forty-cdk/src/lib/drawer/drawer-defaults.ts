@@ -60,6 +60,20 @@ export interface ForDrawerDefaults {
    * `setBackgroundColorOnScale` is active.
    */
   scaleBackgroundColor?: string;
+  /**
+   * Default `0.93`. Scale factor applied to a parent drawer while a
+   * nested child drawer is active. Composes with the wrapper-level
+   * `scaleBackground` effect when both opt in. Suppressed under
+   * `prefers-reduced-motion: reduce`.
+   */
+  nestedScaleAmount?: number;
+  /**
+   * Default `8`. Pixels of additional translation applied to a parent
+   * drawer while a nested child is active, in the direction *away* from
+   * the parent's anchored edge (so a `bottom` drawer slides up by this
+   * amount when its child opens).
+   */
+  nestedTranslateYpx?: number;
 }
 
 const FALLBACK: ForDrawerDefaults = {
@@ -77,6 +91,8 @@ const FALLBACK: ForDrawerDefaults = {
   scaleTranslateYpx: 14,
   scaleBorderRadiusPx: 8,
   scaleBackgroundColor: 'black',
+  nestedScaleAmount: 0.93,
+  nestedTranslateYpx: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForDrawerDefaults>(

@@ -83,9 +83,29 @@ export interface FocusTrapDeactivateOptions {
 }
 
 /**
+ * Module-level LIFO stack of currently-active `FocusTrap` instances.
+ * Each trap registers itself on `activate` and pops on `deactivate`.
+ * The topmost trap is the only one that handles Tab — all earlier
+ * (shallower) traps' keydown listeners are no-ops while shadowed,
+ * which is what makes nested overlays (e.g. a drawer inside a drawer)
+ * trap focus inside the topmost surface instead of the parent's
+ * "focus jumped outside" guard yanking focus back to the parent.
+ *
+ * Module-level (not DI) is fine here: focus traps register their
+ * listeners only on `activate`, which only runs in the browser via
+ * `afterNextRender`, so the stack is never touched on the server.
+ */
+const activeTraps: FocusTrap[] = [];
+
+/**
  * Cycles Tab / Shift+Tab focus inside a container element. Used by Dialog,
  * Drawer, Sheet, and any other primitive that needs to keep keyboard focus
  * scoped to a section of the page.
+ *
+ * When multiple traps are active simultaneously (nested overlays), only
+ * the LIFO topmost trap handles Tab. Outer traps stay registered (so
+ * cleanup ordering is preserved) but their keydown handlers are no-ops
+ * until the deeper trap deactivates.
  *
  * Out of scope: marking the rest of the page `inert` (focus trap alone is
  * enough for keyboard users; pointer-isolation is the consumer's job via
@@ -123,6 +143,7 @@ export class FocusTrap {
         ? options.returnFocus
         : ((this.#document.activeElement as HTMLElement | null) ?? null);
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
+    activeTraps.push(this);
 
     if (options.preventInitialFocus) {
       // Tab cycling and return-focus are still set up; the imperative
@@ -152,6 +173,10 @@ export class FocusTrap {
     }
     this.#active = false;
     this.#document.removeEventListener('keydown', this.#onKeyDown, true);
+    const idx = activeTraps.lastIndexOf(this);
+    if (idx >= 0) {
+      activeTraps.splice(idx, 1);
+    }
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -178,6 +203,12 @@ export class FocusTrap {
 
   #handleKeyDown(event: KeyboardEvent): void {
     if (event.key !== 'Tab') {
+      return;
+    }
+    // Only the topmost active trap handles Tab. Earlier (shadowed) traps
+    // bail so a parent drawer's "focus jumped outside" guard does not
+    // pull focus out of a nested child drawer's surface.
+    if (activeTraps[activeTraps.length - 1] !== this) {
       return;
     }
     const focusables = this.#focusables();
