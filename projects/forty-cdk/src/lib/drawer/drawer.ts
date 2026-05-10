@@ -608,9 +608,21 @@ export class ForDrawer implements ForDrawerContext {
     this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
   }
   registerHandle(el: HTMLElement | null): void {
+    const current = this.#handleEl();
+    if (el !== null && current !== null && current !== el) {
+      throw new Error(
+        '[forty-cdk/drawer] Multiple [forDrawerHandle] inside the same [forDrawer]; only one is allowed.',
+      );
+    }
     this.#handleEl.set(el);
   }
   registerBackdrop(el: HTMLElement | null): void {
+    const current = this.#backdropEl();
+    if (el !== null && current !== null && current !== el) {
+      throw new Error(
+        '[forty-cdk/drawer] Multiple [forDrawerBackdrop] inside the same [forDrawer]; only one is allowed.',
+      );
+    }
     this.#backdropEl.set(el);
   }
 
