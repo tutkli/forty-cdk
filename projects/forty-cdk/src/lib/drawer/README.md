@@ -230,7 +230,9 @@ Opt in to the "viewport recedes behind the drawer" effect popularised by Vaul: w
 }
 ```
 
-While the effect is active the wrapper reflects `data-state="scaled"` (and `"idle"` at rest); the drawer reflects `data-scale-background` so consumers can style the surface differently when scale is in play (e.g. larger corner radii). `setBackgroundColorOnScale` (default `true`) paints `<body>` so the sliver between the scaled wrapper and the viewport edge does not show through; set it to `false` if your shell already paints a full-bleed backdrop.
+While the effect is active the wrapper reflects `data-state="scaled"` (and `"idle"` at rest); the drawer reflects `data-scale-background` so consumers can style the surface differently when scale is in play (e.g. larger corner radii).
+
+`setBackgroundColorOnScale` (default `true`) paints `<body>` with `scaleBackgroundColor` while the effect is active. Disable it (`[setBackgroundColorOnScale]="false"`) when the application shell already covers the viewport edge — a themed `<html>` / `<body>` background, a fixed root layer, or a full-bleed CSS-framework wrapper. In those flows the body-color mutation is redundant and would briefly overwrite a theme-managed value on every open / close; leaving it off keeps the consumer's own paint authoritative, the rounded gap behind the scaled wrapper composes with whatever colour they ship. The flag has no effect under `prefers-reduced-motion: reduce` (the whole effect is suppressed).
 
 `prefers-reduced-motion: reduce` suppresses the effect entirely — wrapper styles, body color, and `data-scale-background` are all bypassed without affecting the rest of the drawer's behaviour.
 
