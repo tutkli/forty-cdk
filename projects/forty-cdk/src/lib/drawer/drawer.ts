@@ -5,6 +5,7 @@ import {
   DestroyRef,
   Directive,
   DOCUMENT,
+  effect,
   ElementRef,
   inject,
   input,
@@ -16,6 +17,7 @@ import {
 import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
 import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
 import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
+import { ForDrawerStack } from '../_internal/drawer-stack/drawer-stack';
 import { findFirstFocusable, injectFocusTrap } from '../_internal/focus-trap/focus-trap';
 import {
   type InertSiblingsHandle,
@@ -151,6 +153,8 @@ function sideAxis(side: ForDrawerSide): 'x' | 'y' {
     '[attr.data-active-snap-point]': 'activeSnapPointAttr()',
     '[attr.data-dragging]': 'dragging() ? "" : null',
     '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
+    '[attr.data-depth]': 'depthAttr()',
+    '[attr.data-state-nested]': 'hasChild() ? "true" : null',
     'data-state': 'open',
     tabindex: '-1',
   },
@@ -348,6 +352,32 @@ export class ForDrawer implements ForDrawerContext {
   readonly #document = inject(DOCUMENT);
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #scaleCoordinator = inject(ForDrawerScaleCoordinator);
+  readonly #drawerStack = inject(ForDrawerStack);
+  readonly #parentDrawer = inject(FOR_DRAWER_CONTEXT, { skipSelf: true, optional: true });
+
+  /** Host element of this drawer surface — exposed via `ForDrawerContext`. */
+  get hostElement(): HTMLElement {
+    return this.#host.nativeElement;
+  }
+
+  /** Depth of this drawer in the nesting stack (0 root, 1 first child, …). */
+  readonly #depth = signal<number>(0);
+  readonly depthAttr = computed<string>(() => String(this.#depth()));
+
+  /**
+   * `true` while at least one descendant `[forDrawer]` is registered with
+   * `ForDrawerStack` underneath this one — reflected as
+   * `data-state-nested="true"` and used to drive the nested-visual
+   * transform on the parent surface. The check is one-level (direct
+   * child) because the visual contract only cares about whether *some*
+   * child is currently covering this drawer; deeper descendants
+   * cascade naturally through their own ancestor chain.
+   */
+  readonly hasChild = computed<boolean>(() => {
+    const stack = this.#drawerStack.stack();
+    const me = this.#host.nativeElement;
+    return stack.some((n) => n.parent === me);
+  });
 
   /**
    * Reflected as `data-scale-background` on the host: `true` when the
@@ -365,6 +395,10 @@ export class ForDrawer implements ForDrawerContext {
   #inertHandle: InertSiblingsHandle | null = null;
   #swipeCleanup: (() => void) | null = null;
   #scaleCleanup: (() => void) | null = null;
+  #stackCleanup: (() => void) | null = null;
+  // Tracks whether the nested-state effect has applied an inline transform
+  // so the cleanup branch only fires when there's something to revert.
+  #nestedTransformApplied = false;
   // Captured synchronously (see ForDialog#136) for WebKit return-focus.
   readonly #returnFocusTarget: HTMLElement | null;
 
@@ -382,9 +416,48 @@ export class ForDrawer implements ForDrawerContext {
       this.#document.activeElement instanceof HTMLElement ? this.#document.activeElement : null;
     injectPortal();
 
+    // Apply / revert the nested-state visual transform on this drawer's
+    // host whenever a child mounts or unmounts. Lives in an effect so the
+    // reactivity to `hasChild` / `dragging` / reduced-motion stays
+    // declarative; the swipe-drag handlers continue to mutate
+    // `style.transform` imperatively while a gesture is in flight (the
+    // effect is a no-op while `dragging()` is true and reapplies on
+    // release as a side effect of the `dragging()` flip).
+    effect(() => {
+      const el = this.#host.nativeElement;
+      const hasChild = this.hasChild();
+      const dragging = this.#dragging();
+      const reducedMotion = this.#prefersReducedMotion();
+
+      if (hasChild && !dragging && !reducedMotion) {
+        const amount = this.#defaults.nestedScaleAmount ?? 0.93;
+        const translatePx = this.#defaults.nestedTranslateYpx ?? 8;
+        const sign = this.side() === 'top' ? 1 : -1;
+        const tx = this.side() === 'left' ? -translatePx : this.side() === 'right' ? translatePx : 0;
+        const ty = this.side() === 'left' || this.side() === 'right' ? 0 : sign * translatePx;
+        el.style.transform = `scale(${amount}) translate3d(${tx}px, ${ty}px, 0)`;
+        this.#nestedTransformApplied = true;
+      } else if (this.#nestedTransformApplied && !dragging) {
+        el.style.transform = '';
+        this.#nestedTransformApplied = false;
+      }
+    });
+
     afterNextRender(() => {
       const isModal = this.modal();
       this.#activatedAsModal = isModal;
+
+      // Push onto the drawer stack first, before any other side-effect, so
+      // descendants observing `hasChild` / depth see consistent topology
+      // throughout their own mount sequence.
+      const handle = this.#drawerStack.push({
+        host: this.#host.nativeElement,
+        side: this.side(),
+        scaleBackground: this.scaleBackground(),
+        parent: this.#parentDrawer?.hostElement ?? null,
+      });
+      this.#depth.set(handle.depth);
+      this.#stackCleanup = handle.cleanup;
 
       // Validate snap-point inputs eagerly so consumers get a clear error
       // at mount time instead of a confusing transform-NaN later.
@@ -508,6 +581,14 @@ export class ForDrawer implements ForDrawerContext {
         });
         this.#scrollLock.unlock();
       }
+      // Pop from the drawer stack last — Angular destroys descendants
+      // before ancestors, so by the time we get here every nested child
+      // has already cleaned up its own entry. The cleanup throws if a
+      // descendant is still registered, surfacing consumer template bugs
+      // (e.g. parent `@if` flipping while the child sits in a separate
+      // branch) instead of leaking topology to the next mount.
+      this.#stackCleanup?.();
+      this.#stackCleanup = null;
     });
   }
 

@@ -79,16 +79,37 @@ import { queryFlag } from './_query-flag';
         <button id="second">Second</button>
         <input id="text-input" />
         <button id="close-btn" forDrawerClose>Close</button>
+
+        @if (nested) {
+          <button id="open-child" type="button" (click)="childOpen.set(true)">Open child</button>
+
+          @if (childOpen()) {
+            <div
+              forDrawer
+              id="child-drawer"
+              ariaLabel="Child drawer"
+              [scaleBackground]="scaleBackground"
+              (close)="onChildClose($event)"
+            >
+              <button id="child-first">Child first</button>
+              <button id="child-second">Child second</button>
+              <button id="child-close" forDrawerClose>Child close</button>
+            </div>
+          }
+        }
       </div>
     }
 
     <output id="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
+    <output id="last-child-close-reason">{{ lastChildCloseReason() ?? 'none' }}</output>
     <output id="active-snap">{{ activeSnapDisplay() }}</output>
   `,
 })
 export class DrawerFixture {
   protected readonly open = signal(false);
+  protected readonly childOpen = signal(false);
   protected readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
+  protected readonly lastChildCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly activeSnapPoint = signal<ForDrawerSnapPoint | null>(null);
 
   readonly #route = inject(ActivatedRoute);
@@ -107,6 +128,7 @@ export class DrawerFixture {
   protected readonly backdrop = queryFlag('backdrop');
   protected readonly scaleBackground = queryFlag('scaleBackground');
   protected readonly setBackgroundColorOnScale = !queryFlag('noBgColorOnScale');
+  protected readonly nested = queryFlag('nested');
 
   protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
 
@@ -118,6 +140,13 @@ export class DrawerFixture {
   protected onClose(reason: ForDrawerCloseReason): void {
     this.lastCloseReason.set(reason);
     this.open.set(false);
+    // Cascade child closure when parent dismisses, so re-opening starts clean.
+    this.childOpen.set(false);
+  }
+
+  protected onChildClose(reason: ForDrawerCloseReason): void {
+    this.lastChildCloseReason.set(reason);
+    this.childOpen.set(false);
   }
 }
 

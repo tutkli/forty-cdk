@@ -213,6 +213,34 @@ While the effect is active the wrapper reflects `data-state="scaled"` (and `"idl
 
 Tune the magic numbers via `provideForDrawerDefaults` (`scaleAmount`, `scaleTranslateYpx`, `scaleBorderRadiusPx`, `scaleBackgroundColor`).
 
+## Nested drawers
+
+A drawer mounted inside another drawer's `@if` is automatically detected as a child and joins a LIFO stack — no `nested` flag required. The directive composes the existing dismissable-layer / focus / scroll-lock stacks (Escape closes the topmost first; focus stays trapped in the topmost; body scroll lock is refcounted so closing the child does not unlock the parent), and adds two visual hooks on the parent surface:
+
+- **`data-state-nested="true"`** while at least one descendant is registered — useful for styling the parent differently when it is "covered" by a child.
+- An inline `transform: scale(N) translate3d(...)` that scales the parent surface and translates it slightly away from its anchored edge, so the child reads as a layer in front. Suppressed under `prefers-reduced-motion: reduce`. Tune via `nestedScaleAmount` (default `0.93`) and `nestedTranslateYpx` (default `8`).
+
+Each drawer also reflects its position in the stack as `data-depth` (`"0"` for the root, `"1"` for the first child, …).
+
+```html
+@if (parentOpen()) {
+  <div forDrawer side="bottom" (close)="parentOpen.set(false)" animate.leave="slide-down">
+    <h2 forDrawerTitle>Filters</h2>
+
+    <button (click)="childOpen.set(true)">Date range</button>
+
+    @if (childOpen()) {
+      <div forDrawer side="bottom" (close)="childOpen.set(false)" animate.leave="slide-down">
+        <h2 forDrawerTitle>Date range</h2>
+        …
+      </div>
+    }
+  </div>
+}
+```
+
+Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular's bottom-up destroy order tears the child down before the parent — the topology stack throws otherwise so the bug is loud at dev time. If both drawers opt into `[scaleBackground]="true"`, the wrapper effect composes with the parent's nested transform automatically.
+
 ## Accessibility
 
 Implements the WAI-ARIA Modal Dialog pattern. `role="dialog"` (or `"alertdialog"` when `alert`), `aria-modal="true"` in modal mode, `aria-labelledby` / `aria-describedby` auto-wired by `[forDrawerTitle]` / `[forDrawerDescription]`. Modal mode applies `inert` and `aria-hidden="true"` to body siblings so AT cannot reach them. The handle is `aria-hidden="true"` because keyboard users dismiss via Escape or `[forDrawerClose]`.

@@ -57,6 +57,14 @@ export interface ForDrawerContext {
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 
+  /**
+   * Host element of the drawer surface. Exposed so a nested child can
+   * register its parent topology with `ForDrawerStack` without piercing
+   * Angular DI to fetch the parent's `ElementRef`. Read-only — pieces
+   * never mutate the host directly.
+   */
+  readonly hostElement: HTMLElement;
+
   registerLabel(id: string): void;
   unregisterLabel(id: string): void;
   registerDescription(id: string): void;

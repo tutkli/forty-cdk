@@ -215,6 +215,76 @@ describe('FocusTrap', () => {
     });
   });
 
+  describe('LIFO with nested traps', () => {
+    let inner: HTMLElement;
+    let innerTrap: FocusTrap | null;
+
+    beforeEach(() => {
+      inner = document.createElement('div');
+      inner.id = 'inner-trap';
+      inner.innerHTML = `
+        <button id="i1">inner one</button>
+        <button id="i2">inner two</button>
+      `;
+      // Inner trap is a sibling of the outer container in the DOM, mirroring
+      // how the drawer primitive portals each layer to body. The outer trap
+      // does NOT contain the inner buttons.
+      document.body.appendChild(inner);
+      innerTrap = null;
+    });
+
+    afterEach(() => {
+      innerTrap?.deactivate({ returnFocus: false });
+      inner.remove();
+    });
+
+    it('only the topmost trap handles Tab while a deeper trap is active', () => {
+      trap = new FocusTrap(container);
+      trap.activate();
+
+      innerTrap = new FocusTrap(inner);
+      innerTrap.activate();
+
+      const i2 = inner.querySelector<HTMLElement>('#i2')!;
+      i2.focus();
+
+      // Tab from inner's last → wraps to inner's first (NOT pulled back into outer).
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('i1');
+    });
+
+    it('outer trap does not pull focus back when the inner trap owns it', () => {
+      trap = new FocusTrap(container);
+      trap.activate();
+
+      innerTrap = new FocusTrap(inner);
+      innerTrap.activate();
+
+      const i1 = inner.querySelector<HTMLElement>('#i1')!;
+      i1.focus();
+
+      // Outer's container does not contain `i1`; without LIFO awareness the
+      // outer would treat this as "focus jumped outside" and yank it back.
+      document.dispatchEvent(tab(true));
+      expect(document.activeElement?.id).toBe('i2');
+    });
+
+    it('outer trap resumes once the inner trap deactivates', () => {
+      trap = new FocusTrap(container);
+      trap.activate();
+
+      innerTrap = new FocusTrap(inner);
+      innerTrap.activate();
+      innerTrap.deactivate({ returnFocus: false });
+      innerTrap = null;
+
+      const last = container.querySelector<HTMLElement>('#b3')!;
+      last.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+    });
+  });
+
   describe('preventInitialFocus', () => {
     it('does not move focus on activate when set', () => {
       outsideBefore.focus();
