@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 
 /**
  * Locator for a `[data-testid="<id>"]` element. Fixtures use `data-testid`
@@ -44,4 +44,286 @@ export async function tabN(
  */
 export async function clickOutside(page: Page): Promise<void> {
   await page.mouse.click(2, 2);
+}
+
+/**
+ * True when the active Playwright project is a mobile project — used by the
+ * drag helpers to branch onto a touch-driven implementation and by any
+ * `@mobile`-tagged spec that needs to special-case touch behaviour. Mobile
+ * project config is added in a sibling Wave 1 issue; until then this helper
+ * is dormant and always returns `false` for the desktop projects.
+ */
+export function isMobileProject(testInfo: TestInfo): boolean {
+  return (
+    testInfo.project.name === 'Mobile Chrome' || testInfo.project.name === 'Mobile Safari'
+  );
+}
+
+/**
+ * Drag a surface (or its handle) by `(dx, dy)` pixels using real pointer
+ * events. Works against bottom-anchored fixtures: starts the gesture at the
+ * centre of `start`, arms the swipe-dismiss helper with a tiny ARM step
+ * (5 px past the helper's 4-px arming distance), then applies the remaining
+ * displacement in a single `pointermove`.
+ *
+ * The drawer integrates pointer movement cumulatively, so the resulting
+ * drag offset is `|delta| − armPx` regardless of how many micro-moves
+ * happen along the way. The single-shot move shape is kept here so the
+ * release-time velocity sample stays deterministic: it's the big move's
+ * delta divided by `stepDelayMs`. Tests that want to exercise the
+ * cumulative integrator (many small moves) use {@link dragFromSteps}.
+ *
+ * `stepDelayMs` controls the gap between the arm step and the big move so
+ * the computed velocity stays below `VELOCITY_THRESHOLD_PX_PER_MS = 0.4`
+ * unless a test explicitly wants the fast-flick path. With the default
+ * 250 ms gap, a 100-pixel total move resolves at ≈ 0.38 px/ms; tests that
+ * need a non-flick result keep `dy <= 100`, and tests that want a flick
+ * (or that don't care because they're crossing the offset threshold
+ * anyway) use larger `dy` and accept the velocity bias.
+ *
+ * Pass `opts.testInfo` to enable the touch branch on mobile projects (see
+ * {@link isMobileProject}). The touch path issues a `pointerdown`
+ * (`pointerType: 'touch'`) on the start locator, then dispatches a
+ * synthetic `pointermove` via `page.evaluate` for the big step, and finally
+ * `pointerup`. Multi-step touch is intentionally simulated through
+ * `dispatchEvent` rather than Playwright's `page.touchscreen` because
+ * `page.touchscreen` exposes only `tap()` (touchstart + touchend with no
+ * touchmove hook) and has no native multi-step API. The mouse path is the
+ * default branch and is byte-equivalent to the inline implementation that
+ * used to live in `drawer.e2e.ts`.
+ */
+export async function dragFrom(
+  page: Page,
+  start: Locator,
+  delta: { dx: number; dy: number },
+  options: {
+    release?: boolean;
+    stepDelayMs?: number;
+    armPx?: number;
+    testInfo?: TestInfo;
+  } = {},
+): Promise<void> {
+  const box = await start.boundingBox();
+  if (!box) throw new Error('dragFrom: start locator has no bounding box');
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const stepDelayMs = options.stepDelayMs ?? 250;
+  const armPx = options.armPx ?? 5;
+  const release = options.release ?? true;
+
+  // Direction unit vector — the arming step travels armPx pixels along
+  // the same axis as the requested delta.
+  const len = Math.hypot(delta.dx, delta.dy) || 1;
+  const armDx = (delta.dx / len) * armPx;
+  const armDy = (delta.dy / len) * armPx;
+
+  if (options.testInfo && isMobileProject(options.testInfo)) {
+    await start.dispatchEvent('pointerdown', { pointerType: 'touch' });
+    await dispatchPointerMoveAt(page, startX + armDx, startY + armDy);
+    await page.waitForTimeout(stepDelayMs);
+    await dispatchPointerMoveAt(page, startX + delta.dx, startY + delta.dy);
+    if (release) {
+      await dispatchPointerUpAt(page, startX + delta.dx, startY + delta.dy);
+    }
+    return;
+  }
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  // Arming step: small move past ARM_DISTANCE_PX so the swipe-dismiss
+  // helper detects the direction and emits onSwipeStart.
+  await page.mouse.move(startX + armDx, startY + armDy);
+  await page.waitForTimeout(stepDelayMs);
+  // Big move: covers the remainder of the requested displacement in a
+  // single pointermove so the directive's offset == requested distance.
+  await page.mouse.move(startX + delta.dx, startY + delta.dy);
+  if (release) {
+    await page.mouse.up();
+  }
+}
+
+/**
+ * Drag a surface (or its handle) using a multi-step pointer gesture: a
+ * small arming step past the swipe-dismiss helper's 4-px arm distance
+ * followed by `steps` equal `step` moves with `stepDelayMs` between
+ * them. Used to exercise the directive's cumulative-offset integration
+ * (post-#205): the arming pointermove emits with `moveTowardEdge = 0`
+ * and the N subsequent moves each contribute `|step|` to the running
+ * offset, so the final drag offset equals `steps * |step|`.
+ *
+ * Velocity at release is the last move's `|step|` divided by
+ * `stepDelayMs` (the default 50 ms with a 30-px step gives 0.6 px/ms —
+ * past the 0.4-px/ms flick threshold). Tests that need the no-flick
+ * branch pass a larger `stepDelayMs` so per-event velocity stays below
+ * the threshold.
+ *
+ * Pass `opts.testInfo` to enable the touch branch on mobile projects
+ * (see {@link dragFrom} for the rationale and limitations of the
+ * touch path).
+ */
+export async function dragFromSteps(
+  page: Page,
+  start: Locator,
+  step: { dx: number; dy: number },
+  steps: number,
+  options: {
+    release?: boolean;
+    stepDelayMs?: number;
+    armPx?: number;
+    testInfo?: TestInfo;
+  } = {},
+): Promise<void> {
+  const box = await start.boundingBox();
+  if (!box) throw new Error('dragFromSteps: start locator has no bounding box');
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const stepDelayMs = options.stepDelayMs ?? 50;
+  const armPx = options.armPx ?? 5;
+  const release = options.release ?? true;
+
+  const len = Math.hypot(step.dx, step.dy) || 1;
+  const armDx = (step.dx / len) * armPx;
+  const armDy = (step.dy / len) * armPx;
+
+  if (options.testInfo && isMobileProject(options.testInfo)) {
+    await start.dispatchEvent('pointerdown', { pointerType: 'touch' });
+    await dispatchPointerMoveAt(page, startX + armDx, startY + armDy);
+
+    let cx = startX + armDx;
+    let cy = startY + armDy;
+    for (let i = 0; i < steps; i++) {
+      await page.waitForTimeout(stepDelayMs);
+      cx += step.dx;
+      cy += step.dy;
+      await dispatchPointerMoveAt(page, cx, cy);
+    }
+    if (release) {
+      await dispatchPointerUpAt(page, cx, cy);
+    }
+    return;
+  }
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  // Arming step: directs the swipe-dismiss helper at the same axis as
+  // the requested gesture.
+  await page.mouse.move(startX + armDx, startY + armDy);
+
+  let cx = startX + armDx;
+  let cy = startY + armDy;
+  for (let i = 0; i < steps; i++) {
+    await page.waitForTimeout(stepDelayMs);
+    cx += step.dx;
+    cy += step.dy;
+    await page.mouse.move(cx, cy);
+  }
+  if (release) {
+    await page.mouse.up();
+  }
+}
+
+/**
+ * Synthetic touch `pointermove` at viewport coordinates `(x, y)`. Used by
+ * the touch branch of {@link dragFrom} / {@link dragFromSteps} because
+ * `page.touchscreen` has no multi-step API — `tap()` is touchstart +
+ * touchend with no `touchmove` hook between them. The event is dispatched
+ * on whatever element `document.elementFromPoint` resolves at `(x, y)` so
+ * the directive's pointer listener (which is attached to the surface, not
+ * `document`) receives it via bubbling.
+ */
+async function dispatchPointerMoveAt(page: Page, x: number, y: number): Promise<void> {
+  await page.evaluate(
+    ({ x, y }) => {
+      const target = document.elementFromPoint(x, y);
+      target?.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerType: 'touch',
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+        }),
+      );
+    },
+    { x, y },
+  );
+}
+
+/**
+ * Synthetic touch `pointerup` at viewport coordinates `(x, y)`. Same
+ * rationale as {@link dispatchPointerMoveAt}: `page.touchscreen` cannot
+ * complete a multi-step touch gesture, so we close the gesture out via
+ * `dispatchEvent` on the element under the final pointer position.
+ */
+async function dispatchPointerUpAt(page: Page, x: number, y: number): Promise<void> {
+  await page.evaluate(
+    ({ x, y }) => {
+      const target = document.elementFromPoint(x, y);
+      target?.dispatchEvent(
+        new PointerEvent('pointerup', {
+          pointerType: 'touch',
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+        }),
+      );
+    },
+    { x, y },
+  );
+}
+
+/**
+ * Long-press the locator's centre: dispatches a touch `pointerdown`, waits
+ * `ms`, then dispatches `pointerup` on the element at the same position.
+ * Default 600 ms because Chromium and WebKit fire the synthetic
+ * `contextmenu` event after roughly 500 ms of sustained touch hold, so this
+ * gives a comfortable margin for ContextMenu mobile coverage.
+ */
+export async function longPress(locator: Locator, ms = 600): Promise<void> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('longPress: locator has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const page = locator.page();
+  await locator.dispatchEvent('pointerdown', { pointerType: 'touch', clientX: x, clientY: y });
+  await page.waitForTimeout(ms);
+  await dispatchPointerUpAt(page, x, y);
+}
+
+/**
+ * Press `Tab` until `document.activeElement` exposes a matching
+ * `data-testid`. Throws after `maxAttempts` presses (default 20) with a
+ * diagnostic message including the last-focused testid, so a regression
+ * surfaces as a clear failure rather than a Playwright timeout. Used by
+ * roving-tabindex specs that need a deterministic "land on the first
+ * focusable item in this primitive" step.
+ */
+export async function rovingFirst(
+  page: Page,
+  testid: string,
+  maxAttempts = 20,
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await page.keyboard.press('Tab');
+    const current = await page.evaluate(
+      () => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null,
+    );
+    if (current === testid) return;
+  }
+  const last = await page.evaluate(
+    () => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null,
+  );
+  throw new Error(
+    `rovingFirst: did not land on data-testid="${testid}" after ${maxAttempts} Tab presses (last focused: ${last ?? 'none'})`,
+  );
+}
+
+/**
+ * Thin wrapper around `expect(locator).toBeFocused()` so specs can write
+ * `await expectFocused(el(page, 'first'))` rather than the longer form. The
+ * caller awaits the returned promise; this function does not await
+ * internally so the assertion participates in Playwright's auto-retry the
+ * same way it would inline.
+ */
+export function expectFocused(locator: Locator): Promise<void> {
+  return expect(locator).toBeFocused();
 }
