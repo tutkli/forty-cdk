@@ -163,7 +163,7 @@ describe('ForMenubar', () => {
       expect(triggers[2]!.getAttribute('tabindex')).toBe('-1');
     });
 
-    it('skips disabled triggers when computing the entry point', async () => {
+    it('skips disabled triggers when computing the entry point', () => {
       @Component({
         imports: [ForMenubar, ForMenubarTrigger],
         template: `

@@ -270,7 +270,7 @@ describe('ForPopover', () => {
   });
 
   describe('mount + portal', () => {
-    it('does not render content while open is false', async () => {
+    it('does not render content while open is false', () => {
       renderHost(PopoverHost);
       expect(document.querySelector('[forPopoverContent]')).toBeNull();
     });

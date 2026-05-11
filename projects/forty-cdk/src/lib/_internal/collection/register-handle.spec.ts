@@ -80,7 +80,7 @@ describe('registerHandle', () => {
     expect(owner.handlesRemoved).toEqual([]);
   });
 
-  it('unregisters when the injection context is destroyed', async () => {
+  it('unregisters when the injection context is destroyed', () => {
     const { owner } = setup();
 
     @Directive({ selector: '[child]' })
@@ -117,7 +117,7 @@ describe('registerHandle', () => {
     expect(owner.handlesAdded[0]).toBe(owner.handlesRemoved[0]);
   });
 
-  it('handles repeated register / unregister cycles without leaking across destroys', async () => {
+  it('handles repeated register / unregister cycles without leaking across destroys', () => {
     const { owner } = setup();
     const ids: string[] = [];
 
@@ -324,7 +324,7 @@ describe('registerA11yName / registerA11yDescription', () => {
     expect(owner.registered).toEqual([id()]);
   });
 
-  it('unregisters the same id on destroy (label)', async () => {
+  it('unregisters the same id on destroy (label)', () => {
     const { owner } = setupOwner();
     let captured = '';
 
@@ -357,7 +357,7 @@ describe('registerA11yName / registerA11yDescription', () => {
     expect(owner.unregistered).toEqual([captured]);
   });
 
-  it('unregisters the same id on destroy (description)', async () => {
+  it('unregisters the same id on destroy (description)', () => {
     const { owner } = setupOwner();
     let captured = '';
 
