@@ -267,7 +267,9 @@ describe('ForNavigationMenuViewport', () => {
       const observingPanel = FakeResizeObserver.instances.find((ro) =>
         ro.observed.includes(productsPanel),
       );
-      expect(observingPanel).toBeDefined();
+      // Concrete: the located RO is observing this exact panel — toBeDefined()
+      // only proved an instance was found, not which element it was tracking.
+      expect(observingPanel?.observed).toContain(productsPanel);
     });
 
     it('switches the observed element when the active content changes', () => {

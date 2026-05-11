@@ -286,7 +286,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.style.getPropertyValue('--for-available-height')).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).not.toBe('');
       expect(arrowEl.style.position).toBe('absolute');
-      expect(arrowEl.dataset['side']).toBeTruthy();
+      expect(arrowEl.dataset['side']).toBe('top');
 
       bubble.open.set(false);
       await flushPositioning(fixture);
@@ -367,8 +367,10 @@ describe('injectFloating', () => {
       await flushPositioning(fixture);
 
       expect(arrowEl.style.position).toBe('absolute');
-      expect(arrowEl.dataset['placement']).toBeTruthy();
-      expect(arrowEl.dataset['side']).toBeTruthy();
+      // FloatingBubble defaults to side='top' → arrow's data-placement /
+      // data-side both store the resolved side.
+      expect(arrowEl.dataset['placement']).toBe('top');
+      expect(arrowEl.dataset['side']).toBe('top');
       // top placement → opposite is 'bottom' → bottom is wired to the
       // consumer-controlled CSS var, never the legacy `-4px` literal.
       expect(arrowEl.style.bottom).toBe('var(--for-arrow-offset, 0px)');
