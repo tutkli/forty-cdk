@@ -148,6 +148,11 @@ export class ForDialog implements ForDialogContext {
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
+  // Captures the `value` argument from the most recent `requestClose(reason, value)`
+  // call. Read by `ForDialogManager` to bridge `[forDialogClose] [closeWith]`
+  // into `ForDialogRef.close(value)`. Plain in declarative usage (no consumer
+  // ever reads it), so the API surface is unchanged.
+  readonly #lastCloseValue = signal<unknown>(undefined);
 
   readonly labelledBy = computed<string | null>(() => {
     const ids = this.#labelIds();
@@ -195,10 +200,11 @@ export class ForDialog implements ForDialogContext {
     this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
   }
 
-  requestClose(reason: ForDialogCloseReason, _value?: unknown): void {
+  requestClose(reason: ForDialogCloseReason, value?: unknown): void {
     if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
       return;
     }
+    this.#lastCloseValue.set(value);
     // The `autoFocusOnClose` callback fires from the destroy hook (after
     // the consumer's `(close)` listener flips the `@if`-gating signal),
     // so it stays consistent across both close paths: this output-driven
@@ -206,4 +212,14 @@ export class ForDialog implements ForDialogContext {
     // entirely.
     this.close.emit(reason);
   }
+
+  /**
+   * The `value` argument from the most recent `requestClose(reason, value)`
+   * call. Read by `ForDialogManager` to bridge `[forDialogClose] [closeWith]`
+   * into `ForDialogRef.close(value)`. Declarative consumers never need this —
+   * it is plumbing for the imperative bootstrap path.
+   *
+   * @internal
+   */
+  readonly lastCloseValue = this.#lastCloseValue.asReadonly();
 }
