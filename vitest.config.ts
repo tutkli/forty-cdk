@@ -34,7 +34,35 @@ import { defineConfig } from 'vitest/config';
  *
  * If a future `@angular/build` release wires user `test.*` invariants through
  * to the runtime config, the setup-file layer becomes redundant but harmless.
+ *
+ * ### Worst-case (nightly) overrides
+ *
+ * When `FORTY_CDK_TEST_WORST_CASE=true` is set in the environment, the config
+ * declares the scheduler-hostile combination intended to expose test leaks
+ * (polyfills, live regions, fake timers) the default isolated schedule masks:
+ * single forked worker, no per-test isolation, no file parallelism, and
+ * randomised file + test order. This is the schedule the nightly
+ * `.github/workflows/test-shuffle.yml` job runs against; locally a contributor
+ * reproduces it with `FORTY_CDK_TEST_WORST_CASE=true pnpm test`. The branch
+ * is intentionally a spread-when-true so the default `pnpm test` path is
+ * byte-identical to before.
+ *
+ * **Builder propagation caveat.** The `@angular/build:unit-test` builder
+ * (verified against `@angular/build@21.2.9`) injects this user config under
+ * `test.projects[0]` rather than at the runner top level. Vitest's runtime
+ * reads `pool` and `isolate` from the per-project config, so those two flags
+ * take effect today (verified by inspecting `__vitest_worker__.config` from a
+ * setup hook). `fileParallelism`, `maxWorkers`, and `sequence.*` are
+ * runner-top-level settings — they are merged into the project config but
+ * silently dropped by the orchestrator, and `sequence.shuffle.{files,tests}`
+ * therefore does **not** activate today. The flags are kept here so they
+ * activate automatically the moment the Angular builder propagates user
+ * config to the runner level; until then the nightly job still exercises a
+ * non-isolated, single-forked schedule, which is enough to surface most
+ * cross-test state leaks (the original motivation of audit #231).
  */
+const worstCase = process.env['FORTY_CDK_TEST_WORST_CASE'] === 'true';
+
 export default defineConfig({
   test: {
     isolate: true,
@@ -42,5 +70,14 @@ export default defineConfig({
     restoreMocks: true,
     unstubGlobals: true,
     unstubEnvs: true,
+    ...(worstCase
+      ? {
+          pool: 'forks',
+          poolOptions: { forks: { singleFork: true } },
+          isolate: false,
+          fileParallelism: false,
+          sequence: { shuffle: { files: true, tests: true } },
+        }
+      : {}),
   },
 });

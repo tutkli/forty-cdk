@@ -1,0 +1,89 @@
+# Nightly worst-case unit-test schedule.
+#
+# Runs the Vitest suite under a scheduler-hostile combination that exposes
+# cross-test state leaks (polyfills, live regions, fake timers, ad-hoc body
+# children) masked by the default isolated-file schedule used in PR CI.
+#
+# ## What is actually exercised today
+#
+# The declared worst-case profile in `vitest.config.ts` is:
+#
+#   - pool: 'forks' + singleFork: true   — one worker, one process
+#   - isolate: false                     — no per-test isolation
+#   - fileParallelism: false             — files run sequentially
+#   - sequence.shuffle: { files, tests } — randomised order each run
+#
+# The `@angular/build:unit-test` builder propagates `pool` and `isolate`
+# through to the runner (verified by reading `__vitest_worker__.config` from
+# a setup hook on `@angular/build@21.2.9`), so those two flags take effect
+# today. `fileParallelism`, `maxWorkers`, and `sequence.*` are runner-
+# top-level settings and the builder currently strips them when wrapping the
+# user config into `test.projects[0]`. They are declared in `vitest.config.ts`
+# so the moment the builder propagates user config to the runner level the
+# full worst-case profile activates without a code change.
+#
+# Even in this partial form, `pool: 'forks'` + `isolate: false` exercises
+# shared in-process state across all specs in the same file (and within the
+# same file, across tests) — which catches most of the leak classes the
+# isolated default would have hidden. See the issue history at #231 for the
+# full rationale.
+#
+# ## Non-blocking by design
+#
+# This workflow is intentionally NOT required for PR merges and is NOT in the
+# merge queue. Per issue #231 the job runs nightly + on manual dispatch only.
+# Promotion to a required check is gated on two weeks of green runs — until
+# then a red nightly is a signal to investigate, not a merge blocker.
+#
+# ## Action plan on failure
+#
+# A failing run usually means a spec (or a recently-touched helper) leaks
+# state across the test boundary. The checklist lives in CLAUDE.md under the
+# `### Test isolation — non-negotiables` heading (anchor
+# `#test-isolation--non-negotiables`). Walk it top-to-bottom against the
+# specs in the failing run's neighbourhood; the leaking spec is almost always
+# the one immediately before the one that fails (with `isolate: false`,
+# state survives the file boundary).
+#
+# To reproduce locally, set the env var and run the regular test command
+# (Bash):
+#
+#   FORTY_CDK_TEST_WORST_CASE=true pnpm test
+#
+# On Windows PowerShell:
+#
+#   $env:FORTY_CDK_TEST_WORST_CASE='true'; pnpm test
+
+name: Test (worst-case schedule)
+
+on:
+  schedule:
+    # 03:00 UTC daily. Matches the cron suggested in issue #231.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: test-shuffle-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-worst-case:
+    name: Test (forks + isolate=false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORTY_CDK_TEST_WORST_CASE: 'true'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run Vitest under worst-case schedule
+        run: pnpm test
+      - name: Failure pointer
+        if: failure()
+        run: |
+          echo "::error::Worst-case nightly failed. Walk CLAUDE.md → 'Test isolation — non-negotiables' (anchor #test-isolation--non-negotiables) against the specs near the failure. With isolate: false the leaking spec is almost always immediately upstream of the failing one. Reproduce locally with FORTY_CDK_TEST_WORST_CASE=true pnpm test."
