@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { flush } from '../../../test-utils';
 import { injectElementSize } from './element-size';
 
 class FakeResizeObserver {
@@ -80,9 +81,7 @@ describe('injectElementSize', () => {
     Object.defineProperty(div, 'scrollHeight', { configurable: true, value: 50 });
 
     fixture.componentInstance.attach();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
+    await flush(fixture);
 
     expect(fixture.componentInstance.size()).toEqual({
       width: 200,

@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { flush } from '../../../test-utils';
 import { Collection } from './collection';
 import {
   registerA11yDescription,
@@ -191,8 +192,7 @@ describe('registerHandle', () => {
     // Construction runs but `afterNextRender` hasn't fired yet.
     expect(owner.handlesAdded).toEqual([]);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
+    await flush(fixture);
     expect(owner.handlesAdded.length).toBe(1);
   });
 
@@ -224,8 +224,7 @@ describe('registerHandle', () => {
     }
 
     const fixture = TestBed.createComponent(HostCmp);
-    fixture.detectChanges();
-    await fixture.whenStable();
+    await flush(fixture);
     expect(owner.handlesAdded.length).toBe(1);
 
     fixture.componentInstance.mounted.set(false);

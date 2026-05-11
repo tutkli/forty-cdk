@@ -527,8 +527,7 @@ describe('ForDrawer (declarative)', () => {
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await flush(fixture);
 
       expect(
         captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message)),
@@ -563,8 +562,7 @@ describe('ForDrawer (declarative)', () => {
         const fixture = TestBed.createComponent(host);
         fixture.detectChanges();
         fixture.componentInstance.open.set(true);
-        fixture.detectChanges();
-        return fixture.whenStable().then(() => captured);
+        return flush(fixture).then(() => captured);
       }
 
       it("rejects pure-px ['300px', '200px'] at mount via the shape check", async () => {
@@ -661,8 +659,7 @@ describe('ForDrawer (declarative)', () => {
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await flush(fixture);
 
       expect(
         captured.some(
@@ -703,8 +700,7 @@ describe('ForDrawer (declarative)', () => {
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await flush(fixture);
 
       expect(
         captured.some(
@@ -744,8 +740,7 @@ describe('ForDrawer (declarative)', () => {
       const fixture = TestBed.createComponent(GoodHost);
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await flush(fixture);
 
       expect(captured.some((e) => e instanceof Error && /closeThreshold/.test(e.message))).toBe(
         false,
@@ -788,8 +783,7 @@ describe('ForDrawer (declarative)', () => {
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
-      fixture.detectChanges();
-      await fixture.whenStable();
+      await flush(fixture);
 
       expect(captured.some((e) => e instanceof Error && /fadeFromIndex/.test(e.message))).toBe(
         true,
