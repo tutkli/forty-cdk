@@ -23,6 +23,16 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'], hasTouch: true },
+      grep: /@mobile/,
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'], hasTouch: true },
+      grep: /@mobile/,
+    },
   ],
   webServer: {
     command: `pnpm exec ng serve forty-cdk-harness --port ${PORT}`,
