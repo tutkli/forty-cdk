@@ -584,11 +584,10 @@ describe('ForToast (declarative)', () => {
   describe('action altText (WCAG 2.2.1 announcement)', () => {
     afterEach(() => {
       // LiveAnnouncer keeps two off-screen regions in document.body across
-      // tests; clear them so assertions about announcement text are scoped to
-      // the current toast's emission.
-      document.querySelectorAll('[aria-live]').forEach((n) => {
-        n.textContent = '';
-      });
+      // tests by design; detach them so `getLiveAnnouncerRegion(...)` returns
+      // null in the next test rather than matching a stale (text-cleared)
+      // region from a previous emission.
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     });
 
     it('keeps the host aria-live polite when no action carries altText', () => {
