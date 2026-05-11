@@ -13,27 +13,27 @@ import { queryFlag } from './_query-flag';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDialog, ForDialogTrigger, ForDialogClose],
   template: `
-    <input id="before" placeholder="before-trigger" />
-    <button id="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
-    <input id="after" placeholder="after-trigger" />
+    <input data-testid="before" placeholder="before-trigger" />
+    <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+    <input data-testid="after" placeholder="after-trigger" />
 
     @if (open()) {
       <div
         forDialog
-        id="dialog"
+        data-testid="dialog"
         ariaLabel="Test dialog"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
         (close)="onClose($event)"
       >
-        <button id="first">First</button>
-        <button id="second">Second</button>
-        <input id="text-input" />
-        <button id="close-btn" forDialogClose>Close</button>
+        <button data-testid="first">First</button>
+        <button data-testid="second">Second</button>
+        <input data-testid="text-input" />
+        <button data-testid="close-btn" forDialogClose>Close</button>
       </div>
     }
 
-    <output id="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
+    <output data-testid="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
   `,
 })
 export class DialogFixture {

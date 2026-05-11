@@ -54,7 +54,7 @@ test.describe('ContextMenu', () => {
     await el(page, 'region').click({ button: 'right' });
     await expect(el(page, 'menu')).toBeVisible();
 
-    await page.locator('#after').click();
+    await el(page, 'after').click();
     await expect(el(page, 'menu')).toHaveCount(0);
   });
 
@@ -151,7 +151,7 @@ test.describe('ContextMenu', () => {
       // Park focus on a sibling outside the trigger. The directive's
       // `activeElement && trigger.contains(activeElement)` check fails, so
       // the trigger's own rect is used as the fallback anchor.
-      await page.locator('#before').focus();
+      await el(page, 'before').focus();
       await region.dispatchEvent('keydown', { key: 'F10', shiftKey: true });
       await expect(el(page, 'menu')).toBeVisible();
 

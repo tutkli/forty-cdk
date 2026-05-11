@@ -1,5 +1,11 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { clickOutside, focusedId, focusInside, gotoFixture } from './_helpers';
+import {
+  clickOutside,
+  el,
+  focusedTestId,
+  focusInsideTestId,
+  gotoFixture,
+} from './_helpers';
 
 /**
  * Drag a drawer surface (or its handle) by `(dx, dy)` pixels using real
@@ -113,110 +119,110 @@ async function dragFromSteps(
 test.describe('Drawer', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {
     await gotoFixture(page, 'drawer');
-    await page.locator('#trigger').click();
-    await expect(page.locator('#first')).toBeFocused();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
   });
 
   test('Tab cycles within the drawer (focus trap)', async ({ page }) => {
     await gotoFixture(page, 'drawer');
-    await page.locator('#trigger').click();
-    await expect(page.locator('#first')).toBeFocused();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
 
     await page.keyboard.press('Tab');
-    await expect(page.locator('#second')).toBeFocused();
+    await expect(el(page, 'second')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#text-input')).toBeFocused();
+    await expect(el(page, 'text-input')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#close-btn')).toBeFocused();
+    await expect(el(page, 'close-btn')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#first')).toBeFocused();
+    await expect(el(page, 'first')).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');
-    await expect(page.locator('#close-btn')).toBeFocused();
+    await expect(el(page, 'close-btn')).toBeFocused();
   });
 
   test('Escape closes and returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'drawer');
-    await page.locator('#trigger').focus();
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
+    await el(page, 'trigger').focus();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    await expect(page.locator('#last-close-reason')).toHaveText('escape');
-    await expect(page.locator('#trigger')).toBeFocused();
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('escape');
+    await expect(el(page, 'trigger')).toBeFocused();
   });
 
   test('close button closes with reason "closeButton"', async ({ page }) => {
     await gotoFixture(page, 'drawer');
-    await page.locator('#trigger').focus();
-    await page.locator('#trigger').click();
-    await page.locator('#close-btn').click();
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    await expect(page.locator('#last-close-reason')).toHaveText('closeButton');
-    await expect(page.locator('#trigger')).toBeFocused();
+    await el(page, 'trigger').focus();
+    await el(page, 'trigger').click();
+    await el(page, 'close-btn').click();
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('closeButton');
+    await expect(el(page, 'trigger')).toBeFocused();
   });
 
   test('backdrop click closes with reason "backdrop"', async ({ page }) => {
     await gotoFixture(page, 'drawer', { backdrop: '1' });
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
 
-    await page.locator('#backdrop').click({ position: { x: 5, y: 5 } });
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    await expect(page.locator('#last-close-reason')).toHaveText('backdrop');
+    await el(page, 'backdrop').click({ position: { x: 5, y: 5 } });
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('backdrop');
   });
 
   test('pointerdown outside closes (pointerDownOutside reason)', async ({ page }) => {
     await gotoFixture(page, 'drawer');
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
 
     await clickOutside(page);
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    await expect(page.locator('#last-close-reason')).toHaveText('pointerDownOutside');
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('pointerDownOutside');
   });
 
   test('reflects data-side from query param', async ({ page }) => {
     await gotoFixture(page, 'drawer', { side: 'right' });
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toHaveAttribute('data-side', 'right');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toHaveAttribute('data-side', 'right');
   });
 
   test('snap points: initialises to snap[0] and reflects data-active-snap-point', async ({
     page,
   }) => {
     await gotoFixture(page, 'drawer', { snap: '148px,355px,1' });
-    await page.locator('#trigger').click();
+    await el(page, 'trigger').click();
 
-    await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '148px');
-    await expect(page.locator('#active-snap')).toHaveText('148px');
+    await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
+    await expect(el(page, 'active-snap')).toHaveText('148px');
   });
 
   test('[autoFocusOnOpen] preventDefault skips imperative focus move', async ({ page }) => {
     await gotoFixture(page, 'drawer', { vetoOpen: '1' });
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
-    expect(await focusInside(page, '#drawer')).toBe(false);
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+    expect(await focusInsideTestId(page, 'drawer')).toBe(false);
   });
 
   test('[autoFocusOnClose] preventDefault skips return-focus', async ({ page }) => {
     await gotoFixture(page, 'drawer', { vetoClose: '1' });
-    await page.locator('#trigger').click();
-    await expect(page.locator('#first')).toBeFocused();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
 
-    await page.locator('#close-btn').click();
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    expect(await focusedId(page)).not.toBe('trigger');
+    await el(page, 'close-btn').click();
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    expect(await focusedTestId(page)).not.toBe('trigger');
   });
 
   test('scaleBackground scales the wrapper while open and reverts on close', async ({ page }) => {
     await gotoFixture(page, 'drawer', { scaleBackground: '1' });
-    const shell = page.locator('#shell');
+    const shell = el(page, 'shell');
     const baseline = await shell.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width);
 
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
     await expect(shell).toHaveAttribute('data-state', 'scaled');
 
     // The coordinator writes `style.transform = 'scale(...)'` from an
@@ -235,11 +241,11 @@ test.describe('Drawer', () => {
     );
     expect(scaledWidth).toBeLessThan(baseline);
 
-    const drawer = page.locator('#drawer');
+    const drawer = el(page, 'drawer');
     await expect(drawer).toHaveAttribute('data-scale-background', '');
 
-    await page.locator('#close-btn').click();
-    await expect(page.locator('#drawer')).toHaveCount(0);
+    await el(page, 'close-btn').click();
+    await expect(el(page, 'drawer')).toHaveCount(0);
     await expect(shell).toHaveAttribute('data-state', 'idle');
 
     // Same scheduling caveat applies on revert — wait for the inline
@@ -258,36 +264,36 @@ test.describe('Drawer', () => {
     page,
   }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    await expect(page.locator('#drawer')).toBeVisible();
-    await expect(page.locator('#drawer')).toHaveAttribute('data-depth', '0');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+    await expect(el(page, 'drawer')).toHaveAttribute('data-depth', '0');
 
-    await page.locator('#open-child').click();
-    await expect(page.locator('#child-drawer')).toBeVisible();
-    await expect(page.locator('#child-drawer')).toHaveAttribute('data-depth', '1');
-    await expect(page.locator('#drawer')).toHaveAttribute('data-state-nested', 'true');
+    await el(page, 'open-child').click();
+    await expect(el(page, 'child-drawer')).toBeVisible();
+    await expect(el(page, 'child-drawer')).toHaveAttribute('data-depth', '1');
+    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', 'true');
   });
 
   test('nested: focus moves into child on open', async ({ page }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    await page.locator('#open-child').click();
+    await el(page, 'trigger').click();
+    await el(page, 'open-child').click();
 
-    await expect(page.locator('#child-first')).toBeFocused();
+    await expect(el(page, 'child-first')).toBeFocused();
   });
 
   test('nested: Tab cycle is trapped inside the child while it is open', async ({ page }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    await page.locator('#open-child').click();
-    await expect(page.locator('#child-first')).toBeFocused();
+    await el(page, 'trigger').click();
+    await el(page, 'open-child').click();
+    await expect(el(page, 'child-first')).toBeFocused();
 
     await page.keyboard.press('Tab');
-    await expect(page.locator('#child-second')).toBeFocused();
+    await expect(el(page, 'child-second')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#child-close')).toBeFocused();
+    await expect(el(page, 'child-close')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#child-first')).toBeFocused();
+    await expect(el(page, 'child-first')).toBeFocused();
   });
 
   test('nested: first Escape closes child only; second Escape closes parent', async ({
@@ -295,54 +301,54 @@ test.describe('Drawer', () => {
     browserName,
   }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    await page.locator('#open-child').click();
-    await expect(page.locator('#child-drawer')).toBeVisible();
+    await el(page, 'trigger').click();
+    await el(page, 'open-child').click();
+    await expect(el(page, 'child-drawer')).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.locator('#child-drawer')).toHaveCount(0);
-    await expect(page.locator('#drawer')).toBeVisible();
-    await expect(page.locator('#last-child-close-reason')).toHaveText('escape');
-    await expect(page.locator('#last-close-reason')).toHaveText('none');
+    await expect(el(page, 'child-drawer')).toHaveCount(0);
+    await expect(el(page, 'drawer')).toBeVisible();
+    await expect(el(page, 'last-child-close-reason')).toHaveText('escape');
+    await expect(el(page, 'last-close-reason')).toHaveText('none');
     // WebKit auto-blurs descendants of a freshly-inert ancestor and the
     // race when un-inerting + return-focus prevents the trigger from
     // regaining focus inside a still-modal parent. Same root cause as the
     // existing Dialog return-focus race noted in CLAUDE.md; tracked for
     // a library-level fix rather than papered over here.
     if (browserName !== 'webkit') {
-      await expect(page.locator('#open-child')).toBeFocused();
+      await expect(el(page, 'open-child')).toBeFocused();
     }
 
     await page.keyboard.press('Escape');
-    await expect(page.locator('#drawer')).toHaveCount(0);
-    await expect(page.locator('#last-close-reason')).toHaveText('escape');
+    await expect(el(page, 'drawer')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('escape');
     if (browserName !== 'webkit') {
-      await expect(page.locator('#trigger')).toBeFocused();
+      await expect(el(page, 'trigger')).toBeFocused();
     }
   });
 
   test('nested: closing child reverts data-state-nested on the parent', async ({ page }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    await page.locator('#open-child').click();
-    await expect(page.locator('#drawer')).toHaveAttribute('data-state-nested', 'true');
+    await el(page, 'trigger').click();
+    await el(page, 'open-child').click();
+    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', 'true');
 
-    await page.locator('#child-close').click();
-    await expect(page.locator('#child-drawer')).toHaveCount(0);
-    await expect(page.locator('#drawer')).not.toHaveAttribute('data-state-nested', 'true');
+    await el(page, 'child-close').click();
+    await expect(el(page, 'child-drawer')).toHaveCount(0);
+    await expect(el(page, 'drawer')).not.toHaveAttribute('data-state-nested', 'true');
   });
 
   test('nested + scaleBackground: parent receives an inline transform while child is open', async ({
     page,
   }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
-    await page.locator('#trigger').click();
-    const drawer = page.locator('#drawer');
+    await el(page, 'trigger').click();
+    const drawer = el(page, 'drawer');
     await expect(drawer).toBeVisible();
     const baseTransform = await drawer.evaluate((el) => (el as HTMLElement).style.transform);
 
-    await page.locator('#open-child').click();
-    await expect(page.locator('#child-drawer')).toBeVisible();
+    await el(page, 'open-child').click();
+    await expect(el(page, 'child-drawer')).toBeVisible();
 
     const nestedTransform = await drawer.evaluate((el) => (el as HTMLElement).style.transform);
     expect(nestedTransform).not.toBe(baseTransform);
@@ -358,7 +364,7 @@ test.describe('Drawer', () => {
     // because Angular catches the throw and forwards it to ErrorHandler
     // rather than letting it escape as an uncaught `pageerror`.
     await gotoFixture(page, 'drawer', { snap: '200px,0.5', drawerHeight: '300' });
-    await page.locator('#trigger').click();
+    await el(page, 'trigger').click();
 
     await expect
       .poll(async () =>
@@ -390,20 +396,20 @@ test.describe('Drawer', () => {
     const page = await context.newPage();
     try {
       await gotoFixture(page, 'drawer', { scaleBackground: '1' });
-      const shell = page.locator('#shell');
+      const shell = el(page, 'shell');
       const baseline = await shell.evaluate(
         (el) => (el as HTMLElement).getBoundingClientRect().width,
       );
 
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
       await expect(shell).toHaveAttribute('data-state', 'idle');
 
       const widthOpen = await shell.evaluate(
         (el) => (el as HTMLElement).getBoundingClientRect().width,
       );
       expect(Math.abs(widthOpen - baseline)).toBeLessThan(1);
-      await expect(page.locator('#drawer')).not.toHaveAttribute('data-scale-background', '');
+      await expect(el(page, 'drawer')).not.toHaveAttribute('data-scale-background', '');
     } finally {
       await context.close();
     }
@@ -423,19 +429,19 @@ test.describe('Drawer', () => {
       // comfortably; (drag) emits along the way, (release) emits with
       // willClose=true, and (close) follows with reason 'swipe'.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#drag-count')).toHaveText('0');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 120 });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
 
-      await expect(page.locator('#drawer')).toHaveCount(0);
-      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
-      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
       // (drag) emits on the arming pointermove and again on every move
       // after that. A successful dismiss saw at least the start emission
       // plus the big move ⇒ count >= 2.
-      const dragCount = Number(await page.locator('#drag-count').textContent());
+      const dragCount = Number(await el(page, 'drag-count').textContent());
       expect(dragCount).toBeGreaterThan(1);
     });
 
@@ -443,21 +449,21 @@ test.describe('Drawer', () => {
       // 200px × 0.25 = 50px threshold; 30px does not cross it. (release)
       // emits with willClose=false and the drawer stays mounted at offset 0.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 30 });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 30 });
 
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-close-reason')).toHaveText('none');
-      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
       // No-snap-points branch on a no-close release: nextSnapPoint is null.
-      await expect(page.locator('#last-release-next-snap')).toHaveText('null');
+      await expect(el(page, 'last-release-next-snap')).toHaveText('null');
       // `#clearDragTransform` runs on release, so the inline transform is
       // wiped back to its empty baseline.
-      const transform = await page
-        .locator('#drawer')
-        .evaluate((el) => (el as HTMLElement).style.transform);
+      const transform = await el(page, 'drawer').evaluate(
+        (el) => (el as HTMLElement).style.transform,
+      );
       expect(transform).toBe('');
     });
 
@@ -468,58 +474,58 @@ test.describe('Drawer', () => {
       // dismissal at 50px) holds at 0.5 (dismissal at 100px). Confirms the
       // input is wired through to the release math, not a constant.
       await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '0.5' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 60 });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 });
 
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
     });
 
     test('(drag) emits a non-zero percentage during the gesture', async ({ page }) => {
       // The fixture mirrors the most recent `percentageDragged` into
-      // `#last-drag-percent` (4-decimal string). On a 200px drawer with
+      // `last-drag-percent` (4-decimal string). On a 200px drawer with
       // closeThreshold lifted to 1.0 (no dismiss), drag 40px down so the
       // gesture stays well below close territory and the percentage lands
       // strictly between 0 and 1. We exercise the geometry, not the
       // dismissal — that's the next test.
       await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '1' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 40, release: false });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40, release: false });
 
-      const percentText = await page.locator('#last-drag-percent').textContent();
+      const percentText = await el(page, 'last-drag-percent').textContent();
       const percent = Number(percentText);
       expect(percent).toBeGreaterThan(0);
       expect(percent).toBeLessThanOrEqual(1);
 
       await page.mouse.up();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
     });
 
     test('handleOnly: drag starting outside the handle does not arm; on the handle it does', async ({
       page,
     }) => {
-      // Two-phase: start a drag on `#first` (a button on the drawer surface
+      // Two-phase: start a drag on the `first` button (on the drawer surface
       // outside the handle) — no `(drag)` ever fires. Then start one on the
       // handle and confirm the gesture arms (drag-count climbs).
       await gotoFixture(page, 'drawer', { drawerHeight: '200', handleOnly: '1' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#drag-count')).toHaveText('0');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
 
-      await dragFrom(page, page.locator('#first'), { dx: 0, dy: 80 });
-      await expect(page.locator('#drag-count')).toHaveText('0');
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-close-reason')).toHaveText('none');
+      await dragFrom(page, el(page, 'first'), { dx: 0, dy: 80 });
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
 
       // Now arm the gesture on the handle and dismiss past threshold.
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 120 });
-      await expect(page.locator('#drawer')).toHaveCount(0);
-      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
     });
 
     test('snap point: drag from a higher snap settles on the closest entry by position', async ({
@@ -538,18 +544,18 @@ test.describe('Drawer', () => {
         snap: '148px,0.5,1',
         initialSnap: '0.5',
       });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#active-snap')).toHaveText('0.5');
-      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '0.5');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('0.5');
+      await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '0.5');
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 60 });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 });
 
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-release-will-close')).toHaveText('false');
-      await expect(page.locator('#last-release-next-snap')).toHaveText('148px');
-      await expect(page.locator('#active-snap')).toHaveText('148px');
-      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '148px');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-release-next-snap')).toHaveText('148px');
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+      await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
 
     test('snap point: drag past the lowest snap by closeThreshold * dim dismisses', async ({
@@ -560,15 +566,15 @@ test.describe('Drawer', () => {
       // lowest snap. Drag down 130px — position = 148 - 130 = 18, less than
       // 148 - 100 = 48, so resolveSnapTarget returns willClose=true.
       await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '148px,0.5,1' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#active-snap')).toHaveText('148px');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('148px');
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 130 });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 130 });
 
-      await expect(page.locator('#drawer')).toHaveCount(0);
-      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
-      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
     });
 
     test('"NNpx" snap entry resolves against a known live dimension', async ({ page }) => {
@@ -580,14 +586,14 @@ test.describe('Drawer', () => {
       // 100 - 100 = 0). Single fresh-page drag keeps the velocity profile
       // simple and dodges any per-gesture state weirdness.
       await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '100px,0.5,1' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#active-snap')).toHaveText('100px');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('100px');
 
-      await dragFrom(page, page.locator('#handle'), { dx: 0, dy: 200 });
-      await expect(page.locator('#drawer')).toHaveCount(0);
-      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
-      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 200 });
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
     });
 
     // Multi-step coverage (#205): the directive must integrate pointer
@@ -607,10 +613,10 @@ test.describe('Drawer', () => {
       // regression (offset stuck at 30) would surface as a non-monotonic
       // sequence, not just a wrong terminal value.
       await gotoFixture(page, 'drawer', { drawerHeight: '400', closeThreshold: '1' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
 
-      const handle = page.locator('#handle');
+      const handle = el(page, 'handle');
       const box = await handle.boundingBox();
       expect(box).not.toBeNull();
       const startX = box!.x + box!.width / 2;
@@ -628,14 +634,14 @@ test.describe('Drawer', () => {
       // with moveTowardEdge = 0 ⇒ still 0). drag-count therefore lands
       // on 2, not 1, after the arming pointermove.
       await page.mouse.move(startX, startY + armPx);
-      await expect(page.locator('#drag-count')).toHaveText('2');
-      await expect(page.locator('#last-drag-percent')).toHaveText('0.0000');
+      await expect(el(page, 'drag-count')).toHaveText('2');
+      await expect(el(page, 'last-drag-percent')).toHaveText('0.0000');
 
       let lastPercent = 0;
       for (let i = 1; i <= steps; i++) {
         await page.mouse.move(startX, startY + armPx + stepPx * i);
-        await expect(page.locator('#drag-count')).toHaveText(String(2 + i));
-        const percent = Number(await page.locator('#last-drag-percent').textContent());
+        await expect(el(page, 'drag-count')).toHaveText(String(2 + i));
+        const percent = Number(await el(page, 'last-drag-percent').textContent());
         expect(percent).toBeGreaterThan(lastPercent);
         lastPercent = percent;
       }
@@ -657,14 +663,14 @@ test.describe('Drawer', () => {
       // be stuck at 15 (the per-event delta) and the drawer would stay
       // mounted.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFromSteps(page, page.locator('#handle'), { dx: 0, dy: 15 }, 5);
+      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: 15 }, 5);
 
-      await expect(page.locator('#drawer')).toHaveCount(0);
-      await expect(page.locator('#last-close-reason')).toHaveText('swipe');
-      await expect(page.locator('#last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
     });
 
     test('multi-step drag: snap-point selection lands at the snap closest to the cumulative end position', async ({
@@ -686,19 +692,19 @@ test.describe('Drawer', () => {
         snap: '148px,0.5,1',
         initialSnap: '0.5',
       });
-      await page.locator('#trigger').click();
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#active-snap')).toHaveText('0.5');
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('0.5');
 
-      await dragFromSteps(page, page.locator('#handle'), { dx: 0, dy: 10 }, 6, {
+      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: 10 }, 6, {
         stepDelayMs: 100,
       });
 
-      await expect(page.locator('#drawer')).toBeVisible();
-      await expect(page.locator('#last-release-will-close')).toHaveText('false');
-      await expect(page.locator('#last-release-next-snap')).toHaveText('148px');
-      await expect(page.locator('#active-snap')).toHaveText('148px');
-      await expect(page.locator('#drawer')).toHaveAttribute('data-active-snap-point', '148px');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-release-next-snap')).toHaveText('148px');
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+      await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
   });
 });

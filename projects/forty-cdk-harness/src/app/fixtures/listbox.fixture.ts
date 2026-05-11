@@ -6,7 +6,7 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForListbox, ForListboxOption],
   template: `
-    <input id="before" placeholder="before-listbox" />
+    <input data-testid="before" placeholder="before-listbox" />
     <ul forListbox [(value)]="value" aria-label="Fruit listbox">
       <li>
         <button data-testid="opt-apple" type="button" forListboxOption value="apple">
@@ -27,7 +27,7 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
         <button data-testid="opt-date" type="button" forListboxOption value="date">Date</button>
       </li>
     </ul>
-    <input id="after" placeholder="after-listbox" />
+    <input data-testid="after" placeholder="after-listbox" />
   `,
 })
 export class ListboxFixture {

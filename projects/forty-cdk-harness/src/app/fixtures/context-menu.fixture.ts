@@ -11,7 +11,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
   template: `
-    <input id="before" placeholder="before-region" />
+    <input data-testid="before" placeholder="before-region" />
     <div forContextMenu [(open)]="open" ariaLabel="Context menu">
       <div
         data-testid="region"
@@ -40,7 +40,7 @@ import {
         </div>
       }
     </div>
-    <input id="after" placeholder="after-region" />
+    <input data-testid="after" placeholder="after-region" />
   `,
 })
 export class ContextMenuFixture {

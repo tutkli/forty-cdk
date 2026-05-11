@@ -14,7 +14,7 @@ type Fruit = (typeof ALL_FRUITS)[number];
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
   template: `
-    <input id="before" placeholder="before-trigger" />
+    <input data-testid="before" placeholder="before-trigger" />
     <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" ariaLabel="Fruit search">
       <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
       @if (open()) {
@@ -32,7 +32,7 @@ type Fruit = (typeof ALL_FRUITS)[number];
         </div>
       }
     </div>
-    <input id="after" placeholder="after-trigger" />
+    <input data-testid="after" placeholder="after-trigger" />
   `,
 })
 export class ComboboxFixture {
