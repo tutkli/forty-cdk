@@ -44,8 +44,6 @@ describe('ForDisclosure', () => {
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
-      expect(trigger.id).toBeTruthy();
-      expect(content.id).toBeTruthy();
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 

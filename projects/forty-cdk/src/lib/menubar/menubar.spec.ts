@@ -102,7 +102,6 @@ class MenubarWithSubmenuHost {
   readonly recent = signal(false);
 }
 
-
 describe('ForMenubar', () => {
   afterEachOverlayCleanup();
 
@@ -166,7 +165,7 @@ describe('ForMenubar', () => {
 
     it('skips disabled triggers when computing the entry point', async () => {
       @Component({
-        imports: IMPORTS,
+        imports: [ForMenubar, ForMenubarTrigger],
         template: `
           <div forMenubar [(value)]="open">
             <button forMenubarTrigger value="a" disabled>A</button>
@@ -484,7 +483,6 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       const trigger = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
-      expect(trigger).not.toBeNull();
       trigger.focus();
       pressKey(trigger, 'ArrowRight');
       await flush(r.fixture);
@@ -499,7 +497,6 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       const trigger = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
-      expect(trigger).not.toBeNull();
       trigger.focus();
       // file is the first menubar trigger; loop=true makes 'prev' wrap to edit.
       pressKey(trigger, 'ArrowLeft');

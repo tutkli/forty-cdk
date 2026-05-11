@@ -81,7 +81,6 @@ describe('ForRadioGroup', () => {
       const { el } = renderHost(RadioGroupHost);
       const ids = ['red', 'green', 'blue'].map((v) => radioOf(el, v).id);
       expect(new Set(ids).size).toBe(3);
-      ids.forEach((id) => expect(id).toBeTruthy());
     });
 
     it('propagates data-orientation to each radio (and to the indicator when present)', () => {

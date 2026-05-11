@@ -396,7 +396,7 @@ describe('ForCombobox', () => {
 
     it('emits (escapeKeyDown) with the native event before closing', async () => {
       @Component({
-        imports: BASE_IMPORTS,
+        imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
         template: `
           <div
             forCombobox
@@ -432,7 +432,7 @@ describe('ForCombobox', () => {
 
     it('keeps open when (escapeKeyDown) is preventDefault-ed', async () => {
       @Component({
-        imports: BASE_IMPORTS,
+        imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
         template: `
           <div
             forCombobox
@@ -1338,7 +1338,7 @@ describe('ForCombobox', () => {
     // consumers style against (and the only observable counterpart to the
     // directive's internal `side()` / `align()` computed signals).
     @Component({
-      imports: BASE_IMPORTS,
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
       template: `
         <div forCombobox [(open)]="open" dir="rtl">
           <input forComboboxInput />
@@ -1353,7 +1353,7 @@ describe('ForCombobox', () => {
     }
 
     @Component({
-      imports: BASE_IMPORTS,
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
       template: `
         <div forCombobox [(open)]="open" dir="rtl" align="center">
           <input forComboboxInput />
@@ -1368,7 +1368,7 @@ describe('ForCombobox', () => {
     }
 
     @Component({
-      imports: BASE_IMPORTS,
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
       template: `
         <div forCombobox [(open)]="open">
           <input forComboboxInput />

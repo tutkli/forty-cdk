@@ -1200,7 +1200,6 @@ describe('ForDrawer (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
 
-      expect(r.instance.captured).not.toBeNull();
       expect(r.instance.captured?.defaultPrevented).toBe(true);
     });
   });
@@ -1330,7 +1329,6 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
     await flush(r.fixture);
 
     const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
-    expect(drawer).not.toBeNull();
     expect(drawer.hasAttribute('data-scale-background')).toBe(false);
   });
 

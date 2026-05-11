@@ -204,7 +204,6 @@ describe('injectFloating', () => {
 
       const parent = fixture.nativeElement.querySelector('#parent');
       const bubble = parent.querySelector('inplace-bubble');
-      expect(bubble).toBeTruthy();
       expect(bubble.parentElement).toBe(parent);
     });
   });

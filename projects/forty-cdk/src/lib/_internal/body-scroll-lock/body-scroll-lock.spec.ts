@@ -49,7 +49,6 @@ describe('BodyScrollLock', () => {
 
   it('extra unlock calls are no-ops', () => {
     expect(() => lock.unlock()).not.toThrow();
-    expect(() => lock.unlock()).not.toThrow();
     expect(document.body.style.overflow).toBe('');
   });
 

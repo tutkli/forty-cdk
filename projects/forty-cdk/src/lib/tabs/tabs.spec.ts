@@ -566,7 +566,6 @@ describe('ForTabs', () => {
       const { el, fixture, flush } = renderHost(IfHost);
 
       const aPanel = el.querySelector<HTMLElement>('[data-test-content="a"]')!;
-      expect(aPanel).not.toBeNull();
       expect(aPanel.hasAttribute('aria-hidden')).toBe(false);
       expect(aPanel.hasAttribute('inert')).toBe(false);
       expect(el.querySelector('[data-test-content="b"]')).toBeNull();
@@ -576,7 +575,6 @@ describe('ForTabs', () => {
 
       expect(el.querySelector('[data-test-content="a"]')).toBeNull();
       const bPanel = el.querySelector<HTMLElement>('[data-test-content="b"]')!;
-      expect(bPanel).not.toBeNull();
       expect(bPanel.hasAttribute('aria-hidden')).toBe(false);
       expect(bPanel.hasAttribute('inert')).toBe(false);
     });

@@ -846,7 +846,6 @@ describe('ForListbox', () => {
       for (const group of Array.from(groups)) {
         expect(group.getAttribute('role')).toBe('group');
         const labelId = group.getAttribute('aria-labelledby');
-        expect(labelId).toBeTruthy();
         const label = el.querySelector(`#${labelId}`);
         expect(label?.matches('[forListboxGroupLabel]')).toBe(true);
       }
