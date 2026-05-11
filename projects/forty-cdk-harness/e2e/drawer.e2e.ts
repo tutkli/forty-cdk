@@ -308,7 +308,7 @@ test.describe('Drawer', () => {
     // race when un-inerting + return-focus prevents the trigger from
     // regaining focus inside a still-modal parent. Same root cause as the
     // existing Dialog return-focus race noted in CLAUDE.md; tracked for
-    // a library-level fix rather than papered over here.
+    // a library-level fix rather than papered over here (see #136).
     if (browserName !== 'webkit') {
       await expect(el(page, 'open-child')).toBeFocused();
     }
@@ -316,6 +316,7 @@ test.describe('Drawer', () => {
     await page.keyboard.press('Escape');
     await expect(el(page, 'drawer')).toHaveCount(0);
     await expect(el(page, 'last-close-reason')).toHaveText('escape');
+    // Same WebKit return-focus race as above (see #136).
     if (browserName !== 'webkit') {
       await expect(el(page, 'trigger')).toBeFocused();
     }

@@ -6,7 +6,7 @@ test.describe('Combobox', () => {
     await gotoFixture(page, 'combobox');
     const input = el(page, 'combo-input');
     await input.click();
-    await input.type('ap');
+    await input.pressSequentially('ap');
     await expect(el(page, 'content')).toBeVisible();
     await expect(el(page, 'opt-apple')).toBeVisible();
     await expect(el(page, 'opt-apricot')).toBeVisible();
@@ -32,7 +32,7 @@ test.describe('Combobox', () => {
     await gotoFixture(page, 'combobox');
     const input = el(page, 'combo-input');
     await input.click();
-    await input.type('a');
+    await input.pressSequentially('a');
     await expect(el(page, 'content')).toBeVisible();
 
     await input.press('Escape');
@@ -44,7 +44,7 @@ test.describe('Combobox', () => {
     await gotoFixture(page, 'combobox');
     const input = el(page, 'combo-input');
     await input.click();
-    await input.type('a');
+    await input.pressSequentially('a');
     await expect(el(page, 'content')).toBeVisible();
 
     await el(page, 'after').click();
