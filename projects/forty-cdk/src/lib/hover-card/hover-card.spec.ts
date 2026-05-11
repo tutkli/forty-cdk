@@ -38,15 +38,16 @@ function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
 }
 
 describe('ForHoverCard', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe('open / close lifecycle', () => {
+    // Scoped fake timers: only the delay-driven cases install them, so a
+    // future `await flush(r.fixture)` here doesn't hang on a frozen
+    // macrotask queue.
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('opens after the open delay on pointerenter and closes after the close delay on pointerleave', () => {
+      vi.useFakeTimers();
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.openDelay.set(700);
       fixture.componentInstance.closeDelay.set(300);
@@ -91,6 +92,7 @@ describe('ForHoverCard', () => {
     });
 
     it('ignores reopen attempts while disabled', () => {
+      vi.useFakeTimers();
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isDisabled.set(true);
       flush();
@@ -117,6 +119,13 @@ describe('ForHoverCard', () => {
   });
 
   describe('content interaction', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('cancels pending close when the cursor enters the content', () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.closeDelay.set(300);
@@ -162,6 +171,13 @@ describe('ForHoverCard', () => {
   });
 
   describe('focus / blur', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('opens on focus of the trigger', () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       flush();
@@ -300,6 +316,13 @@ describe('ForHoverCard', () => {
   });
 
   describe('skip-delay coordinator', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('opens instantly during the skip-delay window after a peer card closed', () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
@@ -350,9 +373,11 @@ describe('ForHoverCard', () => {
     let restoreReducedMotion: () => void;
     beforeEach(() => {
       restoreReducedMotion = withReducedMotion();
+      vi.useFakeTimers();
     });
     afterEach(() => {
       restoreReducedMotion();
+      vi.useRealTimers();
     });
 
     it('still respects openDelay / closeDelay cadence under reduced-motion', () => {
@@ -385,6 +410,13 @@ describe('ForHoverCard', () => {
   });
 
   describe('zoneless reactivity', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('reflects open state changes after detectChanges without Zone.js', () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       flush();

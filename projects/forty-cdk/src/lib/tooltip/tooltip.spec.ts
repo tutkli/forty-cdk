@@ -84,6 +84,13 @@ describe('ForTooltip', () => {
   });
   afterAll(() => restoreObservers());
 
+  // Every `vi.useFakeTimers()` in this file is scoped to an individual `it`;
+  // resetting once at the top-level guarantees real timers between specs
+  // without scattering the cleanup across every delay-driven describe.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('a11y baseline', () => {
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
       const r = renderHost(TooltipHost);
@@ -148,10 +155,6 @@ describe('ForTooltip', () => {
   });
 
   describe('hover open/close with delays', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it('opens after openDelay on pointerenter', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -205,10 +208,6 @@ describe('ForTooltip', () => {
   });
 
   describe('focus interaction', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it('opens on focus respecting openDelay', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -267,10 +266,6 @@ describe('ForTooltip', () => {
   });
 
   describe('disabled', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it('ignores hover and focus while disabled', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isDisabled.set(true);
@@ -518,7 +513,6 @@ describe('ForTooltip', () => {
     });
     afterEach(() => {
       restoreReducedMotion();
-      vi.useRealTimers();
     });
 
     it('still respects openDelay / closeDelay cadence under reduced-motion', async () => {
