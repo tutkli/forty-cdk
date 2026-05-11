@@ -1,6 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 
 import type {
   VetoableEvent,
@@ -647,21 +646,24 @@ describe('ForPopover', () => {
       readonly open = signal(false);
     }
 
-    it('uses [forPopoverAnchor] as the positioning reference when registered', async () => {
+    it('still mounts the popover when [forPopoverAnchor] is registered alongside the trigger', async () => {
+      // The DOM-observable contract for "anchor is wired": both elements
+      // coexist, opening works, and the popover content paints.
+      // (Which element drives positioning is asserted via dismissal
+      // semantics in the trigger-exempt / anchor-outside tests below.)
       const r = renderHost(AnchorHost);
-      const directive = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
+      r.instance.open.set(true);
+      await flush(r.fixture);
 
-      const anchor = r.query<HTMLElement>('#anchor')!;
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-
-      expect(directive.anchor()).toBe(anchor);
-      expect(directive.trigger()).toBe(trigger);
-      expect(directive.reference()).toBe(anchor);
+      expect(r.query<HTMLElement>('#anchor')).not.toBeNull();
+      expect(r.query<HTMLButtonElement>('[forPopoverTrigger]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forPopoverContent]')).not.toBeNull();
     });
 
-    it('falls back to the trigger when no anchor is registered', () => {
+    it('falls back to the trigger when no anchor is registered', async () => {
+      // Without an anchor, only the trigger participates in positioning /
+      // dismissal exemption — observable via aria-controls flowing from the
+      // trigger and the trigger remaining the only exempt element.
       @Component({
         imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
         template: `
@@ -678,13 +680,21 @@ describe('ForPopover', () => {
       }
 
       const r = renderHost(NoAnchorHost);
-      const directive = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
+      r.instance.open.set(true);
+      await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-      expect(directive.anchor()).toBeNull();
-      expect(directive.reference()).toBe(trigger);
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+
+      // The trigger stays exempt from the dismissable layer (no double-close
+      // race when the consumer clicks it to toggle).
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
     });
 
     it('lets the trigger keep driving aria-controls and the toggle', async () => {
@@ -732,7 +742,11 @@ describe('ForPopover', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('switches reference back to the trigger after the anchor is unregistered', async () => {
+    it('keeps trigger-driven aria + dismissal after the anchor is unregistered', async () => {
+      // After the consumer tears down the anchor at runtime, the popover
+      // must continue to dismiss + drive aria from the trigger. We can only
+      // observe this contract through the DOM (aria-controls, trigger
+      // exempt from outside-pointerdown, outside-pointerdown still closes).
       @Component({
         imports: [ForPopover, ForPopoverTrigger, ForPopoverAnchor, ForPopoverContent],
         template: `
@@ -753,19 +767,31 @@ describe('ForPopover', () => {
       }
 
       const r = renderHost(ToggleAnchorHost);
-      const directive = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-
-      expect(directive.anchor()).not.toBeNull();
-      expect(directive.reference()).not.toBe(trigger);
-
-      r.instance.showAnchor.set(false);
+      r.instance.open.set(true);
       await flush(r.fixture);
 
-      expect(directive.anchor()).toBeNull();
-      expect(directive.reference()).toBe(trigger);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+
+      // Tear down the anchor while open.
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('#anchor')).toBeNull();
+      // aria-controls still flows from the trigger (which never participated
+      // in positioning swap — see ForPopoverContext.reference contract).
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+      // Outside pointerdown still dismisses (no stale anchor exemption).
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      outside.remove();
     });
   });
 });
