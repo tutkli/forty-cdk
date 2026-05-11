@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../../test-utils';
+import { flush, nextMacrotask } from '../../../test-utils';
 import { injectPortal } from './portal';
 
 @Component({
@@ -115,7 +115,7 @@ describe('injectPortal', () => {
     // Drain any queued render/macrotask work that might have escaped the
     // destroy. Without the cancellation in `injectPortal`, `appendChild`
     // would fire here and leak the element into `document.body`.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    await nextMacrotask();
 
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
   });

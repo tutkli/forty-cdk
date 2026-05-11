@@ -152,9 +152,10 @@ class AltTextHost {
 const $ = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-id="${id}"]`);
 
-function flushMicrotasks(): Promise<void> {
-  return Promise.resolve();
-}
+// LiveAnnouncer schedules every text write through `queueMicrotask`, so the
+// altText announcement specs below need a single microtask hop after the
+// first render — not the canonical `flush(fixture)` render drain. Spell the
+// hop inline (`await Promise.resolve()`) so the WHY is obvious at the call.
 
 function getLiveAnnouncerRegion(politeness: 'polite' | 'assertive'): HTMLElement | null {
   // The toast directive itself binds aria-live to its host. LiveAnnouncer
@@ -598,7 +599,7 @@ describe('ForToast (declarative)', () => {
 
     it('does not announce via LiveAnnouncer when altText is the empty string', async () => {
       const r = renderHost(AltTextHost);
-      await flushMicrotasks();
+      await Promise.resolve();
 
       expect(getLiveAnnouncerRegion('polite')).toBeNull();
       expect(getLiveAnnouncerRegion('assertive')).toBeNull();
@@ -615,7 +616,7 @@ describe('ForToast (declarative)', () => {
       // alt text on its first (and only) firing.
       fixture.componentInstance.altText.set('Undo (Cmd+Z)');
       fixture.detectChanges();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
       expect(t.getAttribute('aria-live')).toBe('off');
@@ -634,7 +635,7 @@ describe('ForToast (declarative)', () => {
       fixture.componentInstance.description.set('Network unreachable.');
       fixture.componentInstance.altText.set('Retry (Cmd+R)');
       fixture.detectChanges();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
       expect(t.getAttribute('aria-live')).toBe('off');
