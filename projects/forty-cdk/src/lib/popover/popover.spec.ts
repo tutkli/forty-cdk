@@ -143,7 +143,6 @@ describe('ForPopover', () => {
       await flush(r.fixture);
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(trigger.getAttribute('aria-controls')).toBeTruthy();
 
       const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);

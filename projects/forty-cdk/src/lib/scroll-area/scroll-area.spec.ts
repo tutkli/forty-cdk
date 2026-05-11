@@ -286,7 +286,6 @@ describe('ForScrollArea', () => {
 
     const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
     const content = query<HTMLElement>('[forScrollAreaContent]')!;
-    expect(content).not.toBeNull();
 
     // The viewport should have observed both itself and the registered
     // content element via the ResizeObserver.

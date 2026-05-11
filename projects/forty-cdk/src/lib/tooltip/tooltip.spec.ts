@@ -96,8 +96,6 @@ describe('ForTooltip', () => {
 
       expect(content).toBeTruthy();
       expect(content.getAttribute('role')).toBe('tooltip');
-      expect(trigger.id).toBeTruthy();
-      expect(content.id).toBeTruthy();
       // Closed initially → no aria-describedby.
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
 

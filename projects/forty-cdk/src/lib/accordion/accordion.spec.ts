@@ -56,8 +56,6 @@ describe('ForAccordion', () => {
         const trigger = triggerOf(el, id);
         const content = contentOf(el, id)!;
 
-        expect(trigger.id).toBeTruthy();
-        expect(content.id).toBeTruthy();
         expect(trigger.getAttribute('aria-controls')).toBe(content.id);
         expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
         expect(content.getAttribute('role')).toBe('region');

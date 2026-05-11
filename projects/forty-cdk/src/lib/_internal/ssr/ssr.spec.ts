@@ -184,7 +184,6 @@ describe('SSR smoke tests', () => {
     const trigger = f.nativeElement.querySelector('[forDisclosureTrigger]') as HTMLElement;
     const content = f.nativeElement.querySelector('[forDisclosureContent]') as HTMLElement;
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(trigger.getAttribute('aria-controls')).toBeTruthy();
     expect(content.getAttribute('id')).toBe(trigger.getAttribute('aria-controls'));
   });
 

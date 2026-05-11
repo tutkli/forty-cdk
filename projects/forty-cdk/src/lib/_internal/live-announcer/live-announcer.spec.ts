@@ -53,7 +53,6 @@ describe('LiveAnnouncer', () => {
     const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
 
     expect(polite).toBeNull();
-    expect(assertive).not.toBeNull();
     expect(assertive!.textContent).toBe('boom');
     expect(assertive!.getAttribute('role')).toBe('alert');
   });

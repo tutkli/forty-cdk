@@ -143,7 +143,6 @@ describe('ForAvatar', () => {
       vi.advanceTimersByTime(500);
       flush();
 
-      expect(query<HTMLElement>('[forAvatarFallback]')).not.toBeNull();
       expect(query<HTMLElement>('[forAvatarFallback]')!.getAttribute('data-status')).toBe(
         'loading',
       );
@@ -161,7 +160,6 @@ describe('ForAvatar', () => {
       flush();
 
       const fallback = query<HTMLElement>('[forAvatarFallback]')!;
-      expect(fallback).not.toBeNull();
       expect(fallback.getAttribute('data-status')).toBe('error');
     });
 

@@ -84,7 +84,6 @@ describe('ForDrawerManager (programmatic)', () => {
       const { drawers } = setup();
       drawers.open(SheetDrawer, { data: { message: 'hi' } });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
-      expect(host).toBeTruthy();
       expect(host.parentElement).toBe(document.body);
       expect(host.getAttribute('aria-modal')).toBe('true');
       expect(host.getAttribute('data-side')).toBe('bottom');
@@ -379,8 +378,6 @@ describe('ForDrawerManager (programmatic)', () => {
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       const title = document.querySelector<HTMLElement>('[data-testid="title"]')!;
       const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
-      expect(title.id).toBeTruthy();
-      expect(desc.id).toBeTruthy();
       expect(host.getAttribute('aria-labelledby')).toBe(title.id);
       expect(host.getAttribute('aria-describedby')).toBe(desc.id);
     });

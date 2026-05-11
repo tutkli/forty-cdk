@@ -768,7 +768,6 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
 
       const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
-      expect(dialog).not.toBeNull();
       expect(dialog.getAttribute('aria-modal')).toBe('true');
       expect(dialog.getAttribute('data-state')).toBe('open');
       expect(document.activeElement?.id).toBe('ok');
@@ -1074,7 +1073,6 @@ describe('ForDialog (declarative)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
 
-      expect(r.instance.captured).not.toBeNull();
       expect(r.instance.captured?.defaultPrevented).toBe(true);
     });
 

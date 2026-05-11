@@ -622,7 +622,6 @@ describe('ForToast (declarative)', () => {
       expect(t.getAttribute('aria-live')).toBe('off');
 
       const region = getLiveAnnouncerRegion('polite');
-      expect(region).not.toBeNull();
       expect(region!.textContent).toBe('Saved. Your changes are live.. Undo (Cmd+Z)');
     });
 
@@ -641,7 +640,6 @@ describe('ForToast (declarative)', () => {
       expect(t.getAttribute('aria-live')).toBe('off');
 
       const region = getLiveAnnouncerRegion('assertive');
-      expect(region).not.toBeNull();
       expect(region!.textContent).toBe('Save failed. Network unreachable.. Retry (Cmd+R)');
     });
   });
