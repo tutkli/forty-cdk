@@ -16,6 +16,13 @@ describe('LiveAnnouncer', () => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
+  afterEach(() => {
+    // LiveAnnouncer keeps its regions for the application's lifetime by
+    // design; in tests we must detach them so the next spec file does not
+    // inherit them. Pairs with the defensive cleanup in beforeEach.
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
   it('lazily creates a single polite region in document.body', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(0);
