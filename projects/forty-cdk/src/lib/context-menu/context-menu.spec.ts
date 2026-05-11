@@ -4,7 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import {
   afterEachOverlayCleanup,
   flush,
-  flushPositioning,
   pressKey,
   renderHost,
 } from '../../test-utils';
@@ -37,32 +36,6 @@ class ContextMenuHost {
   readonly disabled = signal(false);
   readonly lastSelected = signal<string | null>(null);
 }
-
-function stubRect(
-  el: HTMLElement,
-  rect: { left?: number; top?: number; width?: number; height?: number } = {},
-): DOMRect {
-  const left = rect.left ?? 0;
-  const top = rect.top ?? 0;
-  const width = rect.width ?? 100;
-  const height = rect.height ?? 24;
-  const stubbed = {
-    left,
-    top,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height,
-    x: left,
-    y: top,
-    toJSON() {
-      return this;
-    },
-  } as DOMRect;
-  el.getBoundingClientRect = () => stubbed;
-  return stubbed;
-}
-
 
 function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
   const event = new MouseEvent('contextmenu', {
@@ -139,10 +112,15 @@ describe('ForContextMenu', () => {
   });
 
   describe('keyboard activator', () => {
+    // Geometry-driven assertions (anchor rect → `--for-anchor-width/-height`
+    // and resolved `transform`) live in the Playwright suite — see
+    // `projects/forty-cdk-harness/e2e/context-menu.e2e.ts`. The Vitest layer
+    // covers the non-geometry wiring (menu opens, defaultPrevented, focused
+    // descendant gets the activation) without faking layout.
+
     it('Shift+F10 on the focused trigger opens the menu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
-      stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
       region.focus();
 
       const ev = pressKey(region, 'F10', { shiftKey: true });
@@ -152,31 +130,9 @@ describe('ForContextMenu', () => {
       expect(ev.defaultPrevented).toBe(true);
     });
 
-    it('Shift+F10 anchors the menu at the focused element rect, not at (0,0)', async () => {
-      const r = renderHost(ContextMenuHost);
-      const region = r.query<HTMLElement>('#region')!;
-      stubRect(region, { left: 30, top: 50, width: 200, height: 80 });
-      region.focus();
-
-      pressKey(region, 'F10', { shiftKey: true });
-      await flushPositioning(r.fixture);
-
-      // The anchor's rect is observable through the floating positioner's
-      // CSS variables on the content host (`--for-anchor-width/-height` are
-      // written verbatim from `reference.getBoundingClientRect()` — no
-      // middleware adjustment). The resolved `style.transform` is sensitive
-      // to viewport/middleware in jsdom and not asserted; e2e covers it.
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(content.style.getPropertyValue('--for-anchor-width')).toBe('200px');
-      expect(content.style.getPropertyValue('--for-anchor-height')).toBe('80px');
-      // Sanity: the positioner produced *some* transform (positioning ran).
-      expect(content.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
-    });
-
     it('ContextMenu key opens the menu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
-      stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
       region.focus();
 
       const ev = pressKey(region, 'ContextMenu');
@@ -186,59 +142,41 @@ describe('ForContextMenu', () => {
       expect(ev.defaultPrevented).toBe(true);
     });
 
-    it('ContextMenu key anchors at the focused element rect', async () => {
+    it('a Shift+F10 on a focused descendant inside the trigger still opens the menu', async () => {
+      // Wiring check for the descendant branch in
+      // `ForContextMenuTrigger.onKeyDown` — when `activeElement` is inside the
+      // trigger, the directive anchors at the descendant rather than the
+      // trigger. The geometry effect of that decision (the `--for-anchor-*`
+      // CSS vars reflect the descendant's rect, not the trigger's) is covered
+      // in the Playwright suite; here we only assert the open path runs.
       const r = renderHost(ContextMenuHost);
-      const region = r.query<HTMLElement>('#region')!;
-      stubRect(region, { left: 10, top: 10, width: 50, height: 50 });
-      region.focus();
-
-      pressKey(region, 'ContextMenu');
-      await flushPositioning(r.fixture);
-
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(content.style.getPropertyValue('--for-anchor-width')).toBe('50px');
-      expect(content.style.getPropertyValue('--for-anchor-height')).toBe('50px');
-      expect(content.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
-    });
-
-    it('anchors at a focused descendant rather than the trigger when focus is inside', async () => {
-      const r = renderHost(ContextMenuHost);
-      const region = r.query<HTMLElement>('#region')!;
       const inner = r.query<HTMLElement>('#inner-btn')!;
-      stubRect(region, { left: 0, top: 0, width: 300, height: 200 });
-      stubRect(inner, { left: 110, top: 90, width: 60, height: 24 });
       inner.focus();
 
-      pressKey(inner, 'F10', { shiftKey: true });
-      await flushPositioning(r.fixture);
+      const ev = pressKey(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      // The descendant's rect (60×24) — not the trigger's (300×200) — is
-      // what the floating positioner uses, observable via the CSS vars.
-      // (Not the trigger's 300/200 width/height.)
-      expect(content.style.getPropertyValue('--for-anchor-width')).toBe('60px');
-      expect(content.style.getPropertyValue('--for-anchor-height')).toBe('24px');
+      expect(ev.defaultPrevented).toBe(true);
     });
 
-    it('falls back to the trigger rect when document.activeElement is outside the trigger', async () => {
+    it('falls back to the trigger when document.activeElement is outside the trigger', async () => {
+      // The fallback branch — `activeElement` is not contained by the trigger,
+      // so the directive uses the trigger's rect. Same split as above: this
+      // assertion is wiring (menu opens via the trigger fallback); the
+      // geometry consequence is covered in e2e.
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
-      stubRect(region, { left: 5, top: 7, width: 11, height: 13 });
 
-      // Focus an element outside the trigger, then dispatch the key on the trigger
-      // (simulating a programmatic dispatch where activeElement isn't the source).
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       outside.focus();
 
-      pressKey(region, 'F10', { shiftKey: true });
-      await flushPositioning(r.fixture);
+      const ev = pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
 
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      // Trigger fallback: anchor is the trigger's stubbed rect (11×13).
-      expect(content.style.getPropertyValue('--for-anchor-width')).toBe('11px');
-      expect(content.style.getPropertyValue('--for-anchor-height')).toBe('13px');
+      expect(r.instance.open()).toBe(true);
+      expect(ev.defaultPrevented).toBe(true);
       outside.remove();
     });
 
