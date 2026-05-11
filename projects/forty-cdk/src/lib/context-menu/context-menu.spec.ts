@@ -1,7 +1,13 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForContextMenu } from './context-menu';
@@ -71,6 +77,8 @@ function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
 }
 
 describe('ForContextMenu', () => {
+  afterEachOverlayCleanup();
+
   describe('right-click trigger', () => {
     it('opens the menu on contextmenu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);

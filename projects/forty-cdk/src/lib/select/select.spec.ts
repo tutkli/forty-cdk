@@ -1,7 +1,13 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../test-utils';
 import { ForSelect } from './select';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
@@ -82,6 +88,8 @@ function activeTestId(): string | null {
 }
 
 describe('ForSelect', () => {
+  afterEachOverlayCleanup();
+
   describe('a11y baseline', () => {
     it('wires combobox role + aria-haspopup + aria-expanded + aria-controls', async () => {
       const r = renderHost(SelectHost);
@@ -1020,6 +1028,8 @@ describe('ForSelect', () => {
 });
 
 describe('ForSelectIndicator', () => {
+  afterEachOverlayCleanup();
+
   @Component({
     imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectIndicator],
     template: `

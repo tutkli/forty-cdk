@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
 import { ForMenuCheckboxItem } from './menu-checkbox-item';
@@ -137,6 +137,8 @@ class TypeaheadOverrideHost {
 
 
 describe('Menu items / content', () => {
+  afterEachOverlayCleanup();
+
   describe('a11y baseline', () => {
     it('sets role=menu on content and aria-labelledby to the trigger', async () => {
       const r = renderHost(MenuHost);
@@ -730,6 +732,8 @@ describe('Menu items / content', () => {
 });
 
 describe('ForMenuItemIndicator', () => {
+  afterEachOverlayCleanup();
+
   @Component({
     imports: [
       ForDropdownMenu,

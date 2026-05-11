@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForDropdownMenu } from './dropdown-menu';
@@ -32,6 +32,8 @@ class DropdownHost {
 
 
 describe('ForDropdownMenu', () => {
+  afterEachOverlayCleanup();
+
   describe('a11y baseline', () => {
     it('wires aria-haspopup, aria-expanded, aria-controls on the trigger', async () => {
       const r = renderHost(DropdownHost);

@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, pressKey, renderHost } from '../../test-utils';
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
@@ -67,6 +67,8 @@ const optOf = (host: HTMLElement, id: string) =>
 const listboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forListbox]')!;
 
 describe('ForListbox', () => {
+  afterEachOverlayCleanup();
+
   describe('static accessibility', () => {
     it('sets role=listbox + role=option, aria-orientation=vertical default', () => {
       const { el } = renderHost(ListboxHost);

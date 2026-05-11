@@ -1,7 +1,13 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../test-utils';
 import { ForContextMenu } from '../context-menu/context-menu';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
@@ -52,6 +58,8 @@ class SubMenuHost {
 
 
 describe('ForMenuSub', () => {
+  afterEachOverlayCleanup();
+
   describe('a11y baseline', () => {
     it('wires aria-haspopup, aria-expanded, aria-controls on the SubTrigger', async () => {
       const r = renderHost(SubMenuHost);
