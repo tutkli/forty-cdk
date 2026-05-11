@@ -24,7 +24,12 @@ class AvatarHost {
   readonly emitted: ForAvatarStatus[] = [];
 }
 
-const flushMicro = () => Promise.resolve();
+// `ForAvatarImage` reports its initial lifecycle status from an
+// `afterNextRender` callback, which re-enters on the next microtask. These
+// specs run under `vi.useFakeTimers()`, so the canonical `flush(fixture)`
+// (which awaits a `setTimeout(0)` macrotask) would hang — a single microtask
+// hop is exactly the boundary we need. Spell it inline (`await Promise.resolve()`)
+// so future readers see the WHY.
 
 describe('ForAvatar', () => {
   beforeEach(() => {
@@ -38,7 +43,7 @@ describe('ForAvatar', () => {
     it('starts in idle when src is empty', async () => {
       const { query, flush } = renderHost(AvatarHost);
       flush();
-      await flushMicro();
+      await Promise.resolve();
 
       const root = query<HTMLElement>('[forAvatar]')!;
       expect(root.getAttribute('data-status')).toBe('idle');
@@ -48,7 +53,7 @@ describe('ForAvatar', () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.src.set('https://example.test/me.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       const img = query<HTMLImageElement>('img')!;
@@ -68,7 +73,7 @@ describe('ForAvatar', () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.src.set('https://example.test/missing.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       const img = query<HTMLImageElement>('img')!;
@@ -110,7 +115,7 @@ describe('ForAvatar', () => {
       fixture.componentInstance.delay.set(500);
       fixture.componentInstance.src.set('https://example.test/me.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       vi.advanceTimersByTime(100);
@@ -130,7 +135,7 @@ describe('ForAvatar', () => {
       fixture.componentInstance.delay.set(500);
       fixture.componentInstance.src.set('https://example.test/slow.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       expect(query<HTMLElement>('[forAvatarFallback]')).toBeNull();
@@ -149,7 +154,7 @@ describe('ForAvatar', () => {
       fixture.componentInstance.delay.set(1000);
       fixture.componentInstance.src.set('https://example.test/missing.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       query<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
@@ -185,7 +190,7 @@ describe('ForAvatar', () => {
 
       fixture.componentInstance.src.set('https://example.test/me.png');
       flush();
-      await flushMicro();
+      await Promise.resolve();
       flush();
 
       expect(root.getAttribute('data-status')).toBe('loading');

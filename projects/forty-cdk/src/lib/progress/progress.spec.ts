@@ -26,7 +26,9 @@ class ProgressHost {
   readonly announce = signal(false);
 }
 
-const flushMicrotasks = () => Promise.resolve();
+// LiveAnnouncer (driven by [announceCompletion]) schedules every text write
+// through `queueMicrotask`, so the announcement specs need a single microtask
+// hop after `flush()` — not the canonical `flush(fixture)` render drain.
 
 describe('ForProgress', () => {
   describe('determinate', () => {
@@ -141,7 +143,7 @@ describe('ForProgress', () => {
       fixture.componentInstance.announce.set(true);
       fixture.componentInstance.value.set(50);
       flush();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       // Initial transition (null → loading) should not announce.
       let region = document.querySelector<HTMLElement>('[aria-live="polite"]');
@@ -149,7 +151,7 @@ describe('ForProgress', () => {
 
       fixture.componentInstance.value.set(100);
       flush();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region!.textContent).toBe('Complete');
@@ -161,11 +163,11 @@ describe('ForProgress', () => {
       fixture.componentInstance.getLabel.set((v, m) => `Done: ${v}/${m}`);
       fixture.componentInstance.value.set(50);
       flush();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       fixture.componentInstance.value.set(100);
       flush();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region!.textContent).toBe('Done: 100/100');
@@ -177,7 +179,7 @@ describe('ForProgress', () => {
       flush();
       fixture.componentInstance.value.set(100);
       flush();
-      await flushMicrotasks();
+      await Promise.resolve();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region?.textContent ?? '').toBe('');

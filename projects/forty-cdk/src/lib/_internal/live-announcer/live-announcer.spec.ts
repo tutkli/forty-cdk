@@ -3,9 +3,10 @@ import { TestBed } from '@angular/core/testing';
 
 import { LiveAnnouncer } from './live-announcer';
 
-function flushMicrotasks(): Promise<void> {
-  return Promise.resolve();
-}
+// LiveAnnouncer schedules every text write through `queueMicrotask`, so a
+// single microtask hop is exactly the drain pattern these specs need —
+// `flush(fixture)` would be wrong (there is no fixture / render pipeline
+// involved). Spell the hop inline so future readers see the WHY.
 
 describe('LiveAnnouncer', () => {
   beforeEach(() => {
@@ -28,7 +29,7 @@ describe('LiveAnnouncer', () => {
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(0);
 
     announcer.announce('hello');
-    await flushMicrotasks();
+    await Promise.resolve();
 
     const regions = document.querySelectorAll<HTMLElement>('[aria-live="polite"]');
     expect(regions.length).toBe(1);
@@ -37,7 +38,7 @@ describe('LiveAnnouncer', () => {
     expect(regions[0]!.getAttribute('role')).toBe('status');
 
     announcer.announce('there');
-    await flushMicrotasks();
+    await Promise.resolve();
 
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(1);
     expect(regions[0]!.textContent).toBe('there');
@@ -46,7 +47,7 @@ describe('LiveAnnouncer', () => {
   it('creates a separate assertive region with role="alert"', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('boom', 'assertive');
-    await flushMicrotasks();
+    await Promise.resolve();
 
     const polite = document.querySelector('[aria-live="polite"]');
     const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
@@ -60,14 +61,14 @@ describe('LiveAnnouncer', () => {
   it('flushes identical consecutive messages through an empty state', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('repeat');
-    await flushMicrotasks();
+    await Promise.resolve();
     const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
     expect(region.textContent).toBe('repeat');
 
     // Second call: synchronously clears, then writes the same value via microtask.
     announcer.announce('repeat');
     expect(region.textContent).toBe('');
-    await flushMicrotasks();
+    await Promise.resolve();
     expect(region.textContent).toBe('repeat');
   });
 
@@ -75,7 +76,7 @@ describe('LiveAnnouncer', () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('p');
     announcer.announce('a', 'assertive');
-    await flushMicrotasks();
+    await Promise.resolve();
 
     announcer.clear();
 

@@ -25,6 +25,23 @@ export async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
 }
 
 /**
+ * Park the current async chain behind a single macrotask boundary.
+ *
+ * The use-case is narrow: a spec needs to assert that work scheduled via
+ * `setTimeout(..., 0)` (or any other macrotask) has *not* leaked past the
+ * boundary. Examples include "render-queued callback was cancelled by an
+ * earlier `destroy()`" or "queued microtask was drained before the next
+ * macrotask hop". For the much more common "drain Angular's render pipeline"
+ * shape, use `flush(fixture)` instead — `nextMacrotask()` is deliberately
+ * minimal and does *not* run `detectChanges` / `whenStable`.
+ *
+ * Internal to the test suite — never re-exported from `public-api.ts`.
+ */
+export function nextMacrotask(): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+/**
  * Drain pattern for primitives that depend on `@floating-ui/dom`'s
  * `computePosition` / `autoUpdate`. computePosition resolves across
  * several microtask hops and autoUpdate's RAF polyfill in jsdom uses

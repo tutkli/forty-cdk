@@ -68,11 +68,6 @@ class TooltipWithArrowHost {
 })
 class TwoTooltipHost {}
 
-async function nextTick(): Promise<void> {
-  await Promise.resolve();
-  await Promise.resolve();
-}
-
 describe('ForTooltip', () => {
   // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
   // still doesn't ship them. Install no-op polyfills for this spec only; the
