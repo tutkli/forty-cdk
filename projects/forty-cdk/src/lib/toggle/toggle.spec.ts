@@ -25,7 +25,7 @@ describe('ForToggle', () => {
       expect(btn.getAttribute('type')).toBe('button');
     });
 
-    it('reflects pressed state changes', async () => {
+    it('reflects pressed state changes', () => {
       const r = renderHost(ToggleHost);
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
 
