@@ -137,7 +137,7 @@ describe('injectOverlayShell', () => {
 
       // No throw, no listener — pressing Escape is a no-op for this surface.
       pressKey(document, 'Escape');
-      expect(ctx.surface()).toBeTruthy();
+      expect(document.body.contains(ctx.surface()!)).toBe(true);
       ctx.destroy();
     });
 
@@ -208,7 +208,7 @@ describe('injectOverlayShell', () => {
       // Surface still mounted because no onDismiss was wired (we only check
       // the handler ran and event.defaultPrevented is honored — the
       // dismissable layer itself owns the contract).
-      expect(ctx.surface()).toBeTruthy();
+      expect(document.body.contains(ctx.surface()!)).toBe(true);
       ctx.destroy();
     });
   });

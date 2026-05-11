@@ -297,7 +297,9 @@ describe('ForTooltip', () => {
 
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
       expect(content.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
-      expect(content.dataset['placement']).toBeTruthy();
+      // ForTooltip defaults to side='top' + align='center' → resolved
+      // placement collapses to the bare side.
+      expect(content.dataset['placement']).toBe('top');
     });
   });
 
@@ -311,7 +313,8 @@ describe('ForTooltip', () => {
       expect(arrow).toBeTruthy();
       expect(arrow.getAttribute('aria-hidden')).toBe('true');
       expect(arrow.style.position).toBe('absolute');
-      expect(arrow.dataset['placement']).toBeTruthy();
+      // Arrow's data-placement mirrors the resolved side (default 'top').
+      expect(arrow.dataset['placement']).toBe('top');
     });
   });
 

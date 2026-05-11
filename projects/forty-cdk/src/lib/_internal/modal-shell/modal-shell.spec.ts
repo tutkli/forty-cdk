@@ -133,7 +133,7 @@ describe('injectModalShell', () => {
         initialFocus: signal('first'),
       }));
       await flush(ctx.fixture);
-      expect(ctx.surface()).toBeTruthy();
+      expect(document.body.contains(ctx.surface()!)).toBe(true);
 
       ctx.close();
       expect(ctx.surface()).toBeNull();

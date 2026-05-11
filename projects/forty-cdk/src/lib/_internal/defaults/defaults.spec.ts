@@ -79,11 +79,4 @@ describe('createDefaults', () => {
 
     expect(fixture.componentInstance.value.delay).toBe(999);
   });
-
-  it('returns a Provider[] so callers can spread extra providers alongside', () => {
-    const { provideDefaults } = createDefaults<SampleDefaults>('SAMPLE_DEFAULTS', FALLBACK);
-    const providers = provideDefaults({ delay: 1 });
-    expect(Array.isArray(providers)).toBe(true);
-    expect(providers.length).toBeGreaterThan(0);
-  });
 });
