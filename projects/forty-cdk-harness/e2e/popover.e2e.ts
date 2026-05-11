@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, el, focusInsideTestId, gotoFixture } from './_helpers';
+import { clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('Popover', () => {
   test('moves focus into the popover on open', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('Popover', () => {
     await gotoFixture(page, 'popover', { vetoOpen: '1' });
     await el(page, 'trigger').click();
     await expect(el(page, 'popover')).toBeVisible();
-    expect(await focusInsideTestId(page, 'popover')).toBe(false);
+    await expect(el(page, 'popover').locator('*:focus')).toHaveCount(0);
   });
 
   test('(autoFocusOnClose) preventDefault skips return-focus', async ({ page }) => {

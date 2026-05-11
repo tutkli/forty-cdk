@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, el, focusInsideTestId, gotoFixture } from './_helpers';
+import { clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('Select', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {
@@ -55,7 +55,7 @@ test.describe('Select', () => {
     await gotoFixture(page, 'select', { vetoOpen: '1' });
     await el(page, 'trigger').click();
     await expect(el(page, 'content')).toBeVisible();
-    expect(await focusInsideTestId(page, 'content')).toBe(false);
+    await expect(el(page, 'content').locator('*:focus')).toHaveCount(0);
   });
 
   // Item-aligned positioner coverage (was `_internal/floating/item-aligned.spec.ts`
