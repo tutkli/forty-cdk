@@ -20,6 +20,17 @@ import {
         style="width: 240px; height: 80px; background: #eef; border: 1px solid #99c; padding: 8px;"
       >
         Right-click here
+        <!-- Focusable descendant for the keyboard-activator "anchor at focused
+             descendant" e2e cases. Sits inside the trigger with its own
+             explicit dimensions so the anchor rect (60x24) is comfortably
+             distinct from the trigger's (240x80). -->
+        <button
+          data-testid="inner-btn"
+          type="button"
+          style="width: 60px; height: 24px;"
+        >
+          Inner
+        </button>
       </div>
       @if (open()) {
         <div forMenuContent data-testid="menu">

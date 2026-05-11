@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   ForSelect,
   ForSelectContent,
@@ -13,18 +14,36 @@ import { queryFlag } from './_query-flag';
   selector: 'app-select-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption],
+  styles: [
+    `
+      [forSelectContent] {
+        background: white;
+        border: 1px solid #ccc;
+        min-width: 160px;
+      }
+      [forSelectOption] {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 6px 8px;
+        height: 32px;
+        box-sizing: border-box;
+      }
+    `,
+  ],
   template: `
     <input id="before" placeholder="before-trigger" />
     <div
       forSelect
       [(value)]="value"
       [(open)]="open"
+      [position]="position"
       placeholder="Pick a fruit"
       ariaLabel="Fruit picker"
       (autoFocusOnOpen)="onAutoOpen($event)"
       (autoFocusOnClose)="onAutoClose($event)"
     >
-      <button data-testid="trigger" forSelectTrigger>
+      <button data-testid="trigger" forSelectTrigger style="width: 160px; height: 32px;">
         <span forSelectValue></span>
       </button>
       @if (open()) {
@@ -42,6 +61,14 @@ import { queryFlag } from './_query-flag';
 export class SelectFixture {
   protected readonly value = signal<readonly string[]>([]);
   protected readonly open = signal(false);
+
+  // `?position=item-aligned` switches the [forSelectContent] positioner to
+  // the macOS-style overlay mode so e2e specs can exercise the
+  // `injectItemAlignedPositioner` math against real browser layout.
+  protected readonly position: 'popper' | 'item-aligned' =
+    inject(ActivatedRoute).snapshot.queryParamMap.get('position') === 'item-aligned'
+      ? 'item-aligned'
+      : 'popper';
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
