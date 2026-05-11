@@ -57,6 +57,583 @@ const fortyCdkPlugin = {
       },
     },
 
+    // ====================================================================
+    // @forty-cdk-test-isolation-rules
+    //
+    // The five rules below codify the test-isolation invariants documented
+    // in `CLAUDE.md` → "Testing notes" → "Test isolation — non-negotiables"
+    // (the eleven numbered items immediately under that heading). Without
+    // mechanical enforcement those invariants decay back into PR-review
+    // knowledge — the audit that surfaced them (May 11, 2026) already had
+    // to remove regressions from each category.
+    //
+    // Cross-link (every rule below repeats this anchor in its messages):
+    //   https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    //
+    // Style match: each rule keeps the same shape as the original
+    // `require-defaults-sibling` above — inline `meta` + a single AST
+    // selector (or a tiny `create()`) — so the plugin stays dependency-free
+    // and the file remains the single source of truth for forty-cdk's
+    // lint policy. Fixtures that intentionally violate each rule live at
+    // `projects/forty-cdk/eslint-rules-fixtures/<rule>.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#230
+    // ====================================================================
+
+    // Rule 1 — `forty-cdk/no-bare-whenstable`.
+    //
+    // Forbids `fixture.whenStable()` (and aliases — any `X.whenStable()` call
+    // expression) outside the canonical waiter in
+    // `projects/forty-cdk/src/test-utils/flush.ts`. Every spec must `await
+    // flush(fixture)` instead so the underlying drain shape
+    // (`detectChanges → whenStable → macrotask → detectChanges`) can evolve
+    // without churning every spec.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 7
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    'no-bare-whenstable': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid `fixture.whenStable()` outside `test-utils/flush.ts`; specs must `await flush(fixture)`.',
+        },
+        schema: [],
+        messages: {
+          forbidden:
+            'Do not call `whenStable()` directly in specs. Use `await flush(fixture)` from `projects/forty-cdk/src/test-utils/flush.ts` — it owns the drain shape and may evolve without churning every spec. (CLAUDE.md § "Test isolation — non-negotiables" rule 7.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        // The canonical waiter itself is the only place where `whenStable()`
+        // may be invoked directly.
+        if (filename.endsWith('/projects/forty-cdk/src/test-utils/flush.ts')) {
+          return {};
+        }
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (
+              callee.type === 'MemberExpression' &&
+              !callee.computed &&
+              callee.property.type === 'Identifier' &&
+              callee.property.name === 'whenStable'
+            ) {
+              context.report({ node, messageId: 'forbidden' });
+            }
+          },
+        };
+      },
+    },
+
+    // Rule 2 — `forty-cdk/no-prototype-rect-stub`.
+    //
+    // Forbids prototype-level layout patches:
+    //   - `Element.prototype.getBoundingClientRect = …`
+    //   - `HTMLElement.prototype.offsetWidth = …` (and `offsetHeight`,
+    //     `clientWidth`, `clientHeight`, `scrollWidth`, `scrollHeight`)
+    //   - `Object.defineProperty(Element.prototype, 'getBoundingClientRect', …)`
+    //     and the same `defineProperty` form for any of the layout
+    //     properties above.
+    //
+    // jsdom returns zero for every layout API, and patching a single
+    // prototype is cross-platform fragile (Linux jsdom defines the
+    // descriptor on `HTMLElement.prototype`, macOS/Windows on
+    // `Element.prototype` — see #193). Geometry assertions belong in
+    // Playwright; the Vitest layer asserts wiring only.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 8
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#193, tutkli/forty-cdk#195
+    'no-prototype-rect-stub': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid prototype-level layout stubs (`*.prototype.getBoundingClientRect`, `offsetWidth`, etc.). Geometry runs in Playwright.',
+        },
+        schema: [],
+        messages: {
+          forbiddenAssignment:
+            'Do not stub `*.prototype.{{ prop }}` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (Linux defines the descriptor on `HTMLElement.prototype`, macOS/Windows on `Element.prototype` — see #193). Move geometry assertions to Playwright. (CLAUDE.md § "Test isolation — non-negotiables" rule 8.)',
+          forbiddenDefineProperty:
+            'Do not `Object.defineProperty(*.prototype, "{{ prop }}", …)` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (see #193). Move geometry assertions to Playwright. (CLAUDE.md § "Test isolation — non-negotiables" rule 8.)',
+        },
+      },
+      create(context) {
+        const LAYOUT_PROPS = new Set([
+          'getBoundingClientRect',
+          'getClientRects',
+          'offsetWidth',
+          'offsetHeight',
+          'offsetLeft',
+          'offsetTop',
+          'clientWidth',
+          'clientHeight',
+          'clientLeft',
+          'clientTop',
+          'scrollWidth',
+          'scrollHeight',
+        ]);
+        // Match the left-hand of `X.prototype.<layout> = …` or
+        // `X.prototype['<layout>'] = …`.
+        function isPrototypeLayoutAccess(node) {
+          if (node.type !== 'MemberExpression') return null;
+          // node is e.g. (Element.prototype).getBoundingClientRect
+          const propName =
+            !node.computed && node.property.type === 'Identifier'
+              ? node.property.name
+              : node.property.type === 'Literal' && typeof node.property.value === 'string'
+                ? node.property.value
+                : null;
+          if (!propName || !LAYOUT_PROPS.has(propName)) return null;
+          const obj = node.object;
+          if (
+            obj.type === 'MemberExpression' &&
+            !obj.computed &&
+            obj.property.type === 'Identifier' &&
+            obj.property.name === 'prototype'
+          ) {
+            return propName;
+          }
+          return null;
+        }
+        return {
+          AssignmentExpression(node) {
+            const prop = isPrototypeLayoutAccess(node.left);
+            if (prop) {
+              context.report({
+                node,
+                messageId: 'forbiddenAssignment',
+                data: { prop },
+              });
+            }
+          },
+          CallExpression(node) {
+            // Object.defineProperty(<X>.prototype, '<layoutProp>', …)
+            const callee = node.callee;
+            if (
+              callee.type !== 'MemberExpression' ||
+              callee.computed ||
+              callee.property.type !== 'Identifier' ||
+              callee.property.name !== 'defineProperty' ||
+              callee.object.type !== 'Identifier' ||
+              callee.object.name !== 'Object'
+            ) {
+              return;
+            }
+            const [target, key] = node.arguments;
+            if (!target || !key) return;
+            // target must be `<X>.prototype`
+            if (
+              target.type !== 'MemberExpression' ||
+              target.computed ||
+              target.property.type !== 'Identifier' ||
+              target.property.name !== 'prototype'
+            ) {
+              return;
+            }
+            const keyName =
+              key.type === 'Literal' && typeof key.value === 'string' ? key.value : null;
+            if (keyName && LAYOUT_PROPS.has(keyName)) {
+              context.report({
+                node,
+                messageId: 'forbiddenDefineProperty',
+                data: { prop: keyName },
+              });
+            }
+          },
+        };
+      },
+    },
+
+    // Rule 3 — `forty-cdk/observer-polyfill-must-restore`.
+    //
+    // If a spec file assigns to `globalThis.ResizeObserver` (or
+    // `IntersectionObserver`, `MutationObserver`, `fetch`, `matchMedia`) at
+    // top level, in a `beforeAll`, or in a `beforeEach`, it must also
+    // restore the global — either:
+    //   - an `afterAll` that `delete`s the global (when the spec installed
+    //     a polyfill on top of jsdom's missing global), or
+    //   - a paired `beforeEach` capture + `afterEach` restore (when the
+    //     spec swaps the global per test).
+    //
+    // Prefer the `installObserverPolyfills()` helper in
+    // `projects/forty-cdk/src/test-utils/observers.ts`, which already pairs
+    // install with restore and is a no-op for cases where jsdom already
+    // ships the global.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 2
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    'observer-polyfill-must-restore': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'A spec that installs a global polyfill (`globalThis.X = …`) must restore it via `afterAll`/`afterEach`.',
+        },
+        schema: [],
+        messages: {
+          unrestored:
+            'Spec installs `globalThis.{{ name }}` but does not restore it. Pair with `afterEach`/`afterAll` (capture before, restore after) or use `installObserverPolyfills()` from `test-utils/observers.ts`. (CLAUDE.md § "Test isolation — non-negotiables" rule 2.)',
+        },
+      },
+      create(context) {
+        const POLYFILL_TARGETS = new Set([
+          'ResizeObserver',
+          'IntersectionObserver',
+          'MutationObserver',
+          'fetch',
+          'matchMedia',
+        ]);
+        // The helper file owns its own install/restore contract and is exempt.
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        if (filename.endsWith('/projects/forty-cdk/src/test-utils/observers.ts')) {
+          return {};
+        }
+        const installs = new Map(); // name -> node[]
+        let sourceText = '';
+        function recordInstall(name, node) {
+          if (!installs.has(name)) installs.set(name, []);
+          installs.get(name).push(node);
+        }
+        // Unwrap (globalThis as ...).X / (globalThis as unknown as { ... }).X /
+        // (<paren-cast>).X — TypeScript `as` casts surface as `TSAsExpression`
+        // in the AST. Returns the rightmost member-expression access of
+        // `globalThis` (or its alias), or null.
+        function unwrapCasts(node) {
+          while (node && (node.type === 'TSAsExpression' || node.type === 'TSTypeAssertion')) {
+            node = node.expression;
+          }
+          return node;
+        }
+        function memberAccessOfGlobal(node) {
+          // node should be a MemberExpression whose object resolves to
+          // `globalThis` (or `window`, `global`) — possibly wrapped in
+          // `as`/`as unknown as`/`as any` casts.
+          if (!node || node.type !== 'MemberExpression') return null;
+          const obj = unwrapCasts(node.object);
+          if (!obj) return null;
+          const isGlobalLike =
+            obj.type === 'Identifier' &&
+            (obj.name === 'globalThis' || obj.name === 'window' || obj.name === 'global');
+          if (!isGlobalLike) return null;
+          if (!node.computed && node.property.type === 'Identifier') {
+            return node.property.name;
+          }
+          if (
+            node.computed &&
+            node.property.type === 'Literal' &&
+            typeof node.property.value === 'string'
+          ) {
+            return node.property.value;
+          }
+          return null;
+        }
+        return {
+          Program(node) {
+            sourceText = context.sourceCode
+              ? context.sourceCode.getText(node)
+              : context.getSourceCode().getText(node);
+          },
+          AssignmentExpression(node) {
+            // (globalThis as …).X = … or globalThis.X = …
+            const left = node.left;
+            const target = unwrapCasts(left);
+            const name = memberAccessOfGlobal(target);
+            if (name && POLYFILL_TARGETS.has(name)) {
+              recordInstall(name, node);
+            }
+          },
+          'Program:exit'() {
+            if (installs.size === 0) return;
+            for (const [name, nodes] of installs) {
+              // A "restore" is any of:
+              //   - `delete globalThis.<name>` / `delete (globalThis as …).<name>`
+              //   - a sibling reassignment back from a captured original
+              //     (best signalled by a literal restore call inside an
+              //     `afterEach`/`afterAll`). We detect either pattern by
+              //     scanning the source text for `afterEach(` or `afterAll(`
+              //     plus a reassignment of the same name — strict-enough
+              //     heuristic for the patterns observed in the codebase
+              //     (capture in `beforeEach`, restore in `afterEach`).
+              const hasDelete = new RegExp(
+                String.raw`delete\s+\(?\s*\(?\s*(?:globalThis|window|global)\b[^)]*\)?[^.\[]*[.\[]\s*['"]?${name}\b`,
+              ).test(sourceText);
+              const hasAfterHookRestore =
+                /\bafter(?:Each|All)\s*\(/.test(sourceText) &&
+                new RegExp(
+                  String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
+                  'g',
+                ).test(sourceText) &&
+                // Ensure there are at least 2 assignments to this name (the
+                // install + the restore). The install we already captured;
+                // any second assignment under an `after*` hook counts.
+                (sourceText.match(
+                  new RegExp(
+                    String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
+                    'g',
+                  ),
+                ) || []).length >= 2;
+              if (!hasDelete && !hasAfterHookRestore) {
+                for (const n of nodes) {
+                  context.report({ node: n, messageId: 'unrestored', data: { name } });
+                }
+              }
+            }
+          },
+        };
+      },
+    },
+
+    // Rule 4 — `forty-cdk/scoped-fake-timers` (warn, not error).
+    //
+    // The audit's literal phrasing is "warn when `vi.useFakeTimers()`
+    // appears in a top-level `beforeEach` outside a `describe('… timers …')`
+    // / `describe('… delay …')` block." That predicate would flag two
+    // currently-merged spec files (`avatar.spec.ts`, `typeahead.spec.ts`)
+    // whose outer describe names are `'ForAvatar'` / `'Typeahead'` — those
+    // files already pair install with restore, which is the real isolation
+    // invariant. We scope the rule down to the underlying contract:
+    //
+    //   Warn when `vi.useFakeTimers()` appears inside a `beforeEach` /
+    //   `beforeAll` callback whose enclosing `describe` does NOT have a
+    //   matching `afterEach` / `afterAll` that calls `vi.useRealTimers()`.
+    //
+    // That's the property the audit's H3 finding actually penalised
+    // (install-without-restore leaks timers across specs). The narrower
+    // "scope to a delay-named describe" guidance is documentation, not a
+    // mechanical rule.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 1
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    'scoped-fake-timers': {
+      meta: {
+        type: 'suggestion',
+        docs: {
+          description:
+            'Warn when `vi.useFakeTimers()` in a `before*` hook is not paired with `vi.useRealTimers()` in a sibling `after*` hook.',
+        },
+        schema: [],
+        messages: {
+          unpaired:
+            '`vi.useFakeTimers()` in a `{{ hook }}` hook is not paired with a sibling `vi.useRealTimers()` call in `afterEach` / `afterAll` of the same `describe`. Pair install with restore — an inline restore at the end of an `it` leaks if the test throws first. (CLAUDE.md § "Test isolation — non-negotiables" rule 1.)',
+        },
+      },
+      create(context) {
+        // Walk the spec source: each `describe()` callback opens a scope.
+        // A scope owns its direct `beforeEach`/`beforeAll`/`afterEach`/
+        // `afterAll` hooks (children of its body, not nested describes).
+        function getCalleeName(callee) {
+          if (callee.type === 'Identifier') return callee.name;
+          if (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') {
+            return callee.property.name;
+          }
+          return null;
+        }
+        function isViCall(call, method) {
+          if (call.type !== 'CallExpression') return false;
+          const c = call.callee;
+          return (
+            c.type === 'MemberExpression' &&
+            !c.computed &&
+            c.object.type === 'Identifier' &&
+            c.object.name === 'vi' &&
+            c.property.type === 'Identifier' &&
+            c.property.name === method
+          );
+        }
+        // Recursively scan a function body for any direct CallExpression
+        // matching vi.<method>() — stops descending into nested
+        // FunctionExpression / ArrowFunctionExpression bodies that belong
+        // to a child describe / it / beforeEach so we count the hook's own
+        // calls only.
+        function bodyContainsViCall(fnNode, method) {
+          if (!fnNode || !fnNode.body) return false;
+          const stack = [fnNode.body];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
+            }
+            if (
+              node.type === 'CallExpression' &&
+              isViCall(node, method) &&
+              node.arguments.length === 0
+            ) {
+              return true;
+            }
+            // Don't descend into nested describe/it/before/after callback
+            // bodies — they own their own pairing contract.
+            if (
+              node.type === 'CallExpression' &&
+              ['describe', 'it', 'test', 'beforeEach', 'beforeAll', 'afterEach', 'afterAll'].includes(
+                getCalleeName(node.callee) || '',
+              )
+            ) {
+              // Skip — its hooks are checked when we visit its describe.
+              continue;
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return false;
+        }
+        // Direct-child statements of a describe callback's body: hook calls.
+        function collectDirectHookCalls(describeCallbackNode) {
+          if (!describeCallbackNode || !describeCallbackNode.body) return [];
+          const stmts =
+            describeCallbackNode.body.type === 'BlockStatement'
+              ? describeCallbackNode.body.body
+              : [describeCallbackNode.body];
+          const hooks = [];
+          for (const stmt of stmts) {
+            if (
+              stmt.type === 'ExpressionStatement' &&
+              stmt.expression.type === 'CallExpression'
+            ) {
+              const name = getCalleeName(stmt.expression.callee);
+              if (
+                name === 'beforeEach' ||
+                name === 'beforeAll' ||
+                name === 'afterEach' ||
+                name === 'afterAll'
+              ) {
+                hooks.push({ name, call: stmt.expression });
+              }
+            }
+          }
+          return hooks;
+        }
+        function checkDescribeScope(callbackNode) {
+          if (!callbackNode) return;
+          const hooks = collectDirectHookCalls(callbackNode);
+          const installs = [];
+          let restores = false;
+          for (const h of hooks) {
+            const cb = h.call.arguments[0];
+            if (!cb) continue;
+            if (h.name === 'beforeEach' || h.name === 'beforeAll') {
+              if (bodyContainsViCall(cb, 'useFakeTimers')) {
+                installs.push({ hook: h.name, node: h.call });
+              }
+            } else if (h.name === 'afterEach' || h.name === 'afterAll') {
+              if (bodyContainsViCall(cb, 'useRealTimers')) {
+                restores = true;
+              }
+            }
+          }
+          if (installs.length > 0 && !restores) {
+            for (const i of installs) {
+              context.report({
+                node: i.node,
+                messageId: 'unpaired',
+                data: { hook: i.hook },
+              });
+            }
+          }
+        }
+        // Visit every describe() CallExpression and check its direct hooks.
+        return {
+          CallExpression(node) {
+            if (getCalleeName(node.callee) !== 'describe') return;
+            const cb = node.arguments[1];
+            if (
+              !cb ||
+              (cb.type !== 'FunctionExpression' && cb.type !== 'ArrowFunctionExpression')
+            ) {
+              return;
+            }
+            checkDescribeScope(cb);
+          },
+        };
+      },
+    },
+
+    // Rule 5 — `forty-cdk/no-directive-internal-signal-read`.
+    //
+    // Forbids reading directive internal signals from a spec — the
+    // contract is the DOM (ARIA, `data-state`, `data-side`, focus, host
+    // classes), not the directive's private signal shape. The literal
+    // pattern targeted is the chained call:
+    //
+    //   fixture.componentRef.injector.get(ForFoo).someSignal()
+    //
+    // ...where the result of `injector.get(For<X>)` is immediately invoked
+    // as a property access ending in `()`. Imperative method calls
+    // (`directive.close()`) on a stored variable are intentionally NOT
+    // flagged — they remain allowed per the audit's H6 finding.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 6
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    'no-directive-internal-signal-read': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid `injector.get(For<X>).signal()` inline chains in specs — assert against the DOM instead.',
+        },
+        schema: [],
+        messages: {
+          forbidden:
+            'Do not read directive internal signals from a spec — assert against the rendered DOM (ARIA, `data-state`, focus, host classes) instead. The chained pattern `.injector.get({{ token }}).{{ accessor }}()` locks the directive\'s private shape into the spec. (CLAUDE.md § "Test isolation — non-negotiables" rule 6.)',
+        },
+      },
+      create(context) {
+        // Match: <anything>.injector.get(For…)  .<accessor>()
+        // i.e. a CallExpression whose callee is a MemberExpression whose
+        // object is itself a CallExpression to `…injector.get(For<X>)`.
+        function isInjectorGetOfForToken(call) {
+          if (call.type !== 'CallExpression') return null;
+          const c = call.callee;
+          if (
+            c.type !== 'MemberExpression' ||
+            c.computed ||
+            c.property.type !== 'Identifier' ||
+            c.property.name !== 'get' ||
+            c.object.type !== 'MemberExpression' ||
+            c.object.computed ||
+            c.object.property.type !== 'Identifier' ||
+            c.object.property.name !== 'injector'
+          ) {
+            return null;
+          }
+          const arg = call.arguments[0];
+          if (arg && arg.type === 'Identifier' && /^For[A-Z]/.test(arg.name)) {
+            return arg.name;
+          }
+          return null;
+        }
+        return {
+          CallExpression(node) {
+            const outer = node;
+            const callee = outer.callee;
+            if (
+              callee.type !== 'MemberExpression' ||
+              callee.computed ||
+              callee.property.type !== 'Identifier'
+            ) {
+              return;
+            }
+            const accessor = callee.property.name;
+            const token = isInjectorGetOfForToken(callee.object);
+            if (token) {
+              context.report({
+                node: outer,
+                messageId: 'forbidden',
+                data: { token, accessor },
+              });
+            }
+          },
+        };
+      },
+    },
+
     // Enforces CLAUDE.md § "Defaults providers": every primitive folder under
     // projects/forty-cdk/src/lib/<name>/ that ships a <name>.ts root file must
     // also ship a sibling <name>-defaults.ts (empty stub or populated). Skips
@@ -116,6 +693,13 @@ module.exports = tseslint.config(
       'coverage/**',
       '.audit-issues/**',
       'projects/**/dist/**',
+      // ESLint rule fixtures intentionally violate exactly one forty-cdk/*
+      // test-isolation rule each (see `@forty-cdk-test-isolation-rules` block
+      // below + `projects/forty-cdk/eslint-rules-fixtures/README.md`). They
+      // must NOT be included in the default `pnpm lint` run — they would
+      // always fail. Use `pnpm lint:rule-fixtures` to confirm each rule
+      // still fires on its fixture.
+      'projects/forty-cdk/eslint-rules-fixtures/**',
     ],
   },
 
@@ -241,6 +825,14 @@ module.exports = tseslint.config(
       // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
 
+      // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
+      // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
+      'forty-cdk/no-bare-whenstable': 'error',
+      'forty-cdk/no-prototype-rect-stub': 'error',
+      'forty-cdk/observer-polyfill-must-restore': 'error',
+      'forty-cdk/scoped-fake-timers': 'warn',
+      'forty-cdk/no-directive-internal-signal-read': 'error',
+
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the
       // library renders correctly under `provideServerRendering()`. Specs
@@ -341,6 +933,41 @@ module.exports = tseslint.config(
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
       'forty-cdk/no-suffixed-filenames': 'off',
+      // The Vitest-focused test-isolation invariants don't apply to
+      // Playwright E2E specs: those run in real browsers (no jsdom
+      // polyfill leakage between specs), use Playwright `BrowserContext`
+      // lifecycles rather than Vitest hooks, and `addInitScript` writes to
+      // `window` inside the browser process — not the worker globalThis.
+      'forty-cdk/no-bare-whenstable': 'off',
+      'forty-cdk/no-prototype-rect-stub': 'off',
+      'forty-cdk/observer-polyfill-must-restore': 'off',
+      'forty-cdk/scoped-fake-timers': 'off',
+      'forty-cdk/no-directive-internal-signal-read': 'off',
+    },
+  },
+
+  // ---------- ESLint rule fixtures (typed-parsing override) ----------
+  // The fixtures are listed in the top-level `ignores` block so `pnpm lint`
+  // skips them by default (each one intentionally violates exactly one
+  // `forty-cdk/*` test-isolation rule). This override exists for the
+  // explicit `pnpm lint:rule-fixtures` script: it disables typed linting
+  // (the fixtures live outside every Angular tsconfig project) and turns
+  // off rules that would otherwise drown each fixture in unrelated errors,
+  // leaving only the one `forty-cdk/*` rule the fixture is exercising.
+  {
+    files: ['projects/forty-cdk/eslint-rules-fixtures/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: null,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-restricted-globals': 'off',
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 
