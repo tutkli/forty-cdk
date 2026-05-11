@@ -344,6 +344,24 @@ module.exports = tseslint.config(
     },
   },
 
+  // ---------- Repo-root Vitest config ----------
+  // Loaded by the `@angular/build:unit-test` builder via `runnerConfig: true`.
+  // Lives outside any Angular tsconfig project (the library's tsconfig.spec.json
+  // only includes `src/**`), so disable typed linting to avoid adding it to a
+  // project just for ESLint — matching the playwright.config.ts treatment above.
+  {
+    files: ['vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: null,
+      },
+    },
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
   // ---------- HTML templates ----------
   {
     files: ['**/*.html'],
