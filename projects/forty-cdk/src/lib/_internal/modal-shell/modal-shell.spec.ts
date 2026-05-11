@@ -1,8 +1,19 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../../test-utils';
 import { injectModalShell, type ModalShellConfig, type ModalShellHandle } from './modal-shell';
+
+/**
+ * Tracks the most recently rendered fixture so `afterEach` can `destroy()` it
+ * before wiping `document.body.innerHTML`. Without this, the shell's
+ * `DestroyRef` hooks (dismissable layer / focus trap / scroll lock / inert
+ * siblings) don't fire until the next test's `resetTestingModule`, leaving
+ * body-style residue and global document listeners across the test boundary.
+ * `ComponentFixture#destroy` is idempotent, so tests that call `ctx.destroy()`
+ * themselves remain safe.
+ */
+let activeFixture: ComponentFixture<unknown> | null = null;
 
 /**
  * Closure-shaped fixture: each spec hands `mountShell` a config builder. The
@@ -48,6 +59,7 @@ function mountShell(buildConfig: () => ModalShellConfig) {
   }
 
   const r = renderHost(Host);
+  activeFixture = r.fixture;
 
   return {
     fixture: r.fixture,
@@ -87,6 +99,15 @@ describe('injectModalShell', () => {
   });
 
   afterEach(() => {
+    // Destroy the fixture FIRST so the shell's DestroyRef hooks
+    // (DismissableLayerStack.unregister, InertSiblingsStack.deactivate,
+    // BodyScrollLock.unlock, FocusTrap.deactivate) fire inside this test's
+    // boundary rather than at the next test's setup. Then clear the body
+    // styles + DOM the trap / scroll lock may have touched.
+    activeFixture?.destroy();
+    activeFixture = null;
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
     document.body.innerHTML = '';
   });
 
