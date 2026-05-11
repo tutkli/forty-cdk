@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flushPositioning } from '../../../test-utils';
+import { flushPositioning, installObserverPolyfills } from '../../../test-utils';
 import { injectItemAlignedPositioner } from './item-aligned';
 
 interface MockRect {
@@ -80,15 +80,15 @@ class Host {
 const ORIGINAL_INNER_HEIGHT = window.innerHeight;
 
 describe('injectItemAlignedPositioner', () => {
+  // The positioner construction reads `ResizeObserver` — jsdom 28 still doesn't
+  // ship it. Install a no-op polyfill for this spec only; the helper restores
+  // `globalThis` in `afterAll` so the stub can't leak across files when Vitest
+  // shares a worker (CI `pool: 'forks'` or `isolate: false`).
+  let restoreObservers: () => void;
   beforeAll(() => {
-    if (typeof globalThis.ResizeObserver === 'undefined') {
-      globalThis.ResizeObserver = class {
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-      } as unknown as typeof ResizeObserver;
-    }
+    restoreObservers = installObserverPolyfills();
   });
+  afterAll(() => restoreObservers());
 
   afterEach(() => {
     Object.defineProperty(window, 'innerHeight', {

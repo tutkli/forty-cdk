@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flushPositioning } from '../../../test-utils';
+import { flushPositioning, installObserverPolyfills } from '../../../test-utils';
 import { injectFloating } from './floating';
 
 @Component({
@@ -165,29 +165,15 @@ class InPlaceHost {
 }
 
 describe('injectFloating', () => {
+  // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
+  // still doesn't ship them. Install no-op polyfills for this spec only; the
+  // helper restores `globalThis` in `afterAll` so the stubs can't leak across
+  // files when Vitest shares a worker (CI `pool: 'forks'` or `isolate: false`).
+  let restoreObservers: () => void;
   beforeAll(() => {
-    if (typeof globalThis.ResizeObserver === 'undefined') {
-      globalThis.ResizeObserver = class {
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-      } as unknown as typeof ResizeObserver;
-    }
-    if (typeof globalThis.IntersectionObserver === 'undefined') {
-      globalThis.IntersectionObserver = class {
-        readonly root = null;
-        readonly rootMargin = '';
-        readonly thresholds: readonly number[] = [];
-        constructor(_cb: IntersectionObserverCallback, _opts?: IntersectionObserverInit) {}
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-        takeRecords(): IntersectionObserverEntry[] {
-          return [];
-        }
-      } as unknown as typeof IntersectionObserver;
-    }
+    restoreObservers = installObserverPolyfills();
   });
+  afterAll(() => restoreObservers());
 
   describe('portal', () => {
     it('moves the floating element to document.body once mounted', async () => {

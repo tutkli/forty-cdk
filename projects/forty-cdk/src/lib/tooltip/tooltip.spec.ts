@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   flush,
   flushPositioning,
+  installObserverPolyfills,
   pressKey,
   renderHost,
   withReducedMotion,
@@ -73,30 +74,15 @@ async function nextTick(): Promise<void> {
 }
 
 describe('ForTooltip', () => {
+  // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
+  // still doesn't ship them. Install no-op polyfills for this spec only; the
+  // helper restores `globalThis` in `afterAll` so the stubs can't leak across
+  // files when Vitest shares a worker (CI `pool: 'forks'` or `isolate: false`).
+  let restoreObservers: () => void;
   beforeAll(() => {
-    // floating-ui's autoUpdate uses these — jsdom 28 still doesn't ship them.
-    if (typeof globalThis.ResizeObserver === 'undefined') {
-      globalThis.ResizeObserver = class {
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-      } as unknown as typeof ResizeObserver;
-    }
-    if (typeof globalThis.IntersectionObserver === 'undefined') {
-      globalThis.IntersectionObserver = class {
-        readonly root = null;
-        readonly rootMargin = '';
-        readonly thresholds: readonly number[] = [];
-        constructor(_cb: IntersectionObserverCallback, _opts?: IntersectionObserverInit) {}
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-        takeRecords(): IntersectionObserverEntry[] {
-          return [];
-        }
-      } as unknown as typeof IntersectionObserver;
-    }
+    restoreObservers = installObserverPolyfills();
   });
+  afterAll(() => restoreObservers());
 
   describe('a11y baseline', () => {
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
