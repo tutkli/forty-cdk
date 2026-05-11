@@ -959,6 +959,10 @@ describe('global defaults via provideForToastDefaults', () => {
 });
 
 describe('zoneless', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('show() + auto-dismiss work without Zone.js', () => {
     vi.useFakeTimers();
     TestBed.resetTestingModule();
@@ -974,6 +978,5 @@ describe('zoneless', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance.toasts.count()).toBe(0);
     expect(ref.isClosed()).toBe(true);
-    vi.useRealTimers();
   });
 });
