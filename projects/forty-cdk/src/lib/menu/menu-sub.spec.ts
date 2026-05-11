@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
 import { ForContextMenu } from '../context-menu/context-menu';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
@@ -525,28 +525,23 @@ describe('ForMenuSub', () => {
       expect(r.instance.subOpen()).toBe(true);
     });
 
-    it('default submenu side flips to "left" in RTL', () => {
-      // Inspect the directive's `side` computed directly — independent of
-      // floating-ui's async positioning, which is unreliable in jsdom.
+    it('default submenu side flips to "left" in RTL', async () => {
+      // Assert against the DOM contract reflected by `injectFloating` on the
+      // submenu content: `data-side` / `data-align` mirror the resolved
+      // placement. In RTL the submenu defaults to side="left" align="start"
+      // (no consumer override).
       const r = renderHost(RtlSubMenuHost);
       r.instance.open.set(true);
-      r.flush();
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flushPositioning(r.fixture);
 
-      const subDir = TestBed.inject(ForMenuSub, undefined, { optional: true });
-      // Locate the submenu instance by querying through Angular's debug API.
-      // The subOpen flag must be false here so the submenu is mounted but
-      // before `injectFloating` has resolved — side should be authored
-      // from `dir` regardless.
-      const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
-      // Walk to the element's directive instance via Angular debug.
-      const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
-      const sub = subDebug.injector.get(ForMenuSub);
-      expect(sub.side()).toBe('left');
-      expect(sub.align()).toBe('start');
-      void subDir;
+      const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
+      expect(subContent.dataset['side']).toBe('left');
+      expect(subContent.dataset['align']).toBe('start');
     });
 
-    it('a consumer-provided side overrides the RTL default (no auto-flip)', () => {
+    it('a consumer-provided side overrides the RTL default (no auto-flip)', async () => {
       @Component({
         imports: IMPORTS,
         template: `
@@ -554,8 +549,13 @@ describe('ForMenuSub', () => {
             <button forDropdownMenuTrigger>Options</button>
             @if (open()) {
               <div forMenuContent>
-                <div forMenuSub side="top" align="end">
+                <div forMenuSub [(open)]="subOpen" side="top" align="end">
                   <button forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <button forMenuItem>Leaf</button>
+                    </div>
+                  }
                 </div>
               </div>
             }
@@ -564,14 +564,15 @@ describe('ForMenuSub', () => {
       })
       class Host {
         readonly open = signal(true);
+        readonly subOpen = signal(true);
       }
 
       const r = renderHost(Host);
-      const subEl = document.querySelector<HTMLElement>('[forMenuSub]')!;
-      const subDebug = r.fixture.debugElement.queryAll((node) => node.nativeElement === subEl)[0]!;
-      const sub = subDebug.injector.get(ForMenuSub);
-      expect(sub.side()).toBe('top');
-      expect(sub.align()).toBe('end');
+      await flushPositioning(r.fixture);
+
+      const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
+      expect(subContent.dataset['side']).toBe('top');
+      expect(subContent.dataset['align']).toBe('end');
     });
   });
 

@@ -2,7 +2,7 @@ import { Component, computed, provideZonelessChangeDetection, signal } from '@an
 import { TestBed } from '@angular/core/testing';
 
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
@@ -1325,56 +1325,77 @@ describe('ForCombobox', () => {
   });
 
   describe('align default flip under RTL', () => {
+    // Hosts mount the content so `injectFloating` resolves and reflects
+    // `data-side` / `data-align` on the content host — the DOM contract
+    // consumers style against (and the only observable counterpart to the
+    // directive's internal `side()` / `align()` computed signals).
     @Component({
       imports: BASE_IMPORTS,
       template: `
-        <div forCombobox dir="rtl">
+        <div forCombobox [(open)]="open" dir="rtl">
           <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent></div>
+          }
         </div>
       `,
     })
-    class RtlHost {}
-
-    @Component({
-      imports: BASE_IMPORTS,
-      template: `
-        <div forCombobox dir="rtl" align="center">
-          <input forComboboxInput />
-        </div>
-      `,
-    })
-    class RtlHostWithAlign {}
-
-    @Component({
-      imports: BASE_IMPORTS,
-      template: `
-        <div forCombobox>
-          <input forComboboxInput />
-        </div>
-      `,
-    })
-    class LtrHost {}
-
-    function getCombobox<T>(r: ReturnType<typeof renderHost<T>>): ForCombobox {
-      const el = r.query<HTMLElement>('[forCombobox]')!;
-      const debug = r.fixture.debugElement.queryAll((node) => node.nativeElement === el)[0]!;
-      return debug.injector.get(ForCombobox);
+    class RtlHost {
+      readonly open = signal(true);
     }
 
-    it('defaults align to start in LTR (side defaults to bottom)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox [(open)]="open" dir="rtl" align="center">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent></div>
+          }
+        </div>
+      `,
+    })
+    class RtlHostWithAlign {
+      readonly open = signal(true);
+    }
+
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox [(open)]="open">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent></div>
+          }
+        </div>
+      `,
+    })
+    class LtrHost {
+      readonly open = signal(true);
+    }
+
+    function getContent(): HTMLElement {
+      return document.querySelector<HTMLElement>('[forComboboxContent]')!;
+    }
+
+    it('defaults align to start in LTR (side defaults to bottom)', async () => {
       const r = renderHost(LtrHost);
-      expect(getCombobox(r).side()).toBe('bottom');
-      expect(getCombobox(r).align()).toBe('start');
+      await flushPositioning(r.fixture);
+      const content = getContent();
+      expect(content.dataset['side']).toBe('bottom');
+      expect(content.dataset['align']).toBe('start');
     });
 
-    it('defaults align to end when dir="rtl" and consumer omits [align]', () => {
+    it('defaults align to end when dir="rtl" and consumer omits [align]', async () => {
       const r = renderHost(RtlHost);
-      expect(getCombobox(r).align()).toBe('end');
+      await flushPositioning(r.fixture);
+      expect(getContent().dataset['align']).toBe('end');
     });
 
-    it('honors a consumer-provided [align] in RTL (no auto-flip)', () => {
+    it('honors a consumer-provided [align] in RTL (no auto-flip)', async () => {
       const r = renderHost(RtlHostWithAlign);
-      expect(getCombobox(r).align()).toBe('center');
+      await flushPositioning(r.fixture);
+      expect(getContent().dataset['align']).toBe('center');
     });
   });
 
@@ -2007,86 +2028,13 @@ describe('ForCombobox virtualization', () => {
     expect(r.instance.scrollToIndexCalls).toEqual([]);
   });
 
-  it('typeahead / inline autocomplete sees off-window labels through the snapshot', async () => {
-    const r = renderHost(VirtHost);
-    r.instance.open.set(true);
-    await flush(r.fixture);
-    // Walk the consumer-visible window [0, 10) → [50, 60) so the snapshot
-    // captures both ranges. (Selection follows but isn't asserted here.)
-    r.instance.range.set([50, 60]);
-    await flush(r.fixture);
-    r.instance.range.set([0, 10]);
-    await flush(r.fixture);
-
-    // Look up the directive instance to inspect its merged cache.
-    const root = r.query<HTMLElement>('[forCombobox]')!;
-    const debug = r.fixture.debugElement.queryAll((n) => n.nativeElement === root)[0]!;
-    const cb = debug.injector.get(ForCombobox);
-    const cached = cb.cachedOptions();
-    const cachedIds = cached.map((o) => o.id);
-    // Should include both windows' option ids — the off-window snapshot
-    // is folded in even though only [0,10) is currently in the DOM.
-    expect(cached.some((o) => o.label === 'Item 55')).toBe(true);
-    expect(cachedIds.length).toBeGreaterThanOrEqual(20);
-  });
-
-  it('totalCount change resets the indexed snapshot', async () => {
-    @Component({
-      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
-      template: `
-        <div forCombobox [(open)]="open" [totalCount]="total()">
-          <input forComboboxInput />
-          @if (open()) {
-            <div forComboboxContent>
-              @for (it of windowed(); track it.id) {
-                <div
-                  [attr.data-test-id]="it.id"
-                  forComboboxOption
-                  [value]="it.id"
-                  [label]="it.label"
-                  [posInSet]="it.posInSet"
-                >
-                  {{ it.label }}
-                </div>
-              }
-            </div>
-          }
-        </div>
-      `,
-    })
-    class ResetHost {
-      readonly open = signal(true);
-      readonly total = signal(100);
-      readonly range = signal<readonly [number, number]>([50, 55]);
-      readonly windowed = computed(() => {
-        const [start, end] = this.range();
-        return Array.from({ length: end - start }, (_, i) => ({
-          id: `r-${start + i}`,
-          label: `Row ${start + i}`,
-          posInSet: start + i,
-        }));
-      });
-    }
-
-    const r = renderHost(ResetHost);
-    await flush(r.fixture);
-
-    const root = r.query<HTMLElement>('[forCombobox]')!;
-    const debug = r.fixture.debugElement.queryAll((n) => n.nativeElement === root)[0]!;
-    const cb = debug.injector.get(ForCombobox);
-    expect(cb.cachedOptions().some((o) => o.label === 'Row 52')).toBe(true);
-
-    // Flip totalCount → snapshot resets. Move to a fresh window so the new
-    // cache is built from scratch.
-    r.instance.total.set(20);
-    r.instance.range.set([0, 5]);
-    await flush(r.fixture);
-
-    // Old entries from the previous totalCount are gone; only [0,5) appear.
-    const labels = cb.cachedOptions().map((o) => o.label);
-    expect(labels.some((l) => l === 'Row 52')).toBe(false);
-    expect(labels.some((l) => l === 'Row 0')).toBe(true);
-  });
+  // Off-window snapshot merging and totalCount-based reset are covered by
+  // `combobox-snapshot.spec.ts` directly against `ComboboxSnapshot` (see
+  // `cachedOptions persistence` / `snapshotByPos and merged cachedOptions`).
+  // Re-asserting via `directive.cachedOptions()` from this spec would
+  // duplicate that coverage AND reach into a directive-internal signal —
+  // the headless contract is the DOM (`aria-activedescendant`, inline
+  // autocomplete completion, etc.), not the snapshot cache shape.
 
   it('zoneless: virtualized navigation works without Zone.js', async () => {
     const r = renderHost(VirtHost);
