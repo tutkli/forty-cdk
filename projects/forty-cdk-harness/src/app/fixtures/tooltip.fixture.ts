@@ -6,14 +6,14 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
   template: `
-    <input id="before" placeholder="before-trigger" />
+    <input data-testid="before" placeholder="before-trigger" />
     <span forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0">
       <button data-testid="trigger" forTooltipTrigger>Save</button>
       @if (open()) {
         <div forTooltipContent data-testid="tooltip">Save changes</div>
       }
     </span>
-    <input id="after" placeholder="after-trigger" />
+    <input data-testid="after" placeholder="after-trigger" />
   `,
 })
 export class TooltipFixture {

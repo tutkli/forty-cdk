@@ -4,7 +4,7 @@ import { el, gotoFixture } from './_helpers';
 test.describe('Listbox', () => {
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {
     await gotoFixture(page, 'listbox');
-    await page.locator('#before').focus();
+    await el(page, 'before').focus();
     await page.keyboard.press('Tab');
     // Roving-tabindex: the listbox itself owns the tab stop; the first option is focused.
     await expect(el(page, 'opt-apple')).toBeFocused();
@@ -29,6 +29,6 @@ test.describe('Listbox', () => {
     await gotoFixture(page, 'listbox');
     await el(page, 'opt-apple').focus();
     await page.keyboard.press('Tab');
-    await expect(page.locator('#after')).toBeFocused();
+    await expect(el(page, 'after')).toBeFocused();
   });
 });

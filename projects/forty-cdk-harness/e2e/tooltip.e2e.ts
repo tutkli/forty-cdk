@@ -7,7 +7,7 @@ test.describe('Tooltip', () => {
     await el(page, 'trigger').hover();
     await expect(el(page, 'tooltip')).toBeVisible();
 
-    await page.locator('#after').hover();
+    await el(page, 'after').hover();
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
 
@@ -16,7 +16,7 @@ test.describe('Tooltip', () => {
     await el(page, 'trigger').focus();
     await expect(el(page, 'tooltip')).toBeVisible();
 
-    await page.locator('#after').focus();
+    await el(page, 'after').focus();
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
 

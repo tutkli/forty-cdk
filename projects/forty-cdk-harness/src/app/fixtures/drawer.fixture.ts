@@ -60,7 +60,7 @@ import { queryFlag } from './_query-flag';
         background: #ddd;
         border-radius: 4px;
       }
-      #shell {
+      [data-testid='shell'] {
         display: block;
         min-height: 200px;
         background: #f5f5f5;
@@ -69,16 +69,16 @@ import { queryFlag } from './_query-flag';
     `,
   ],
   template: `
-    <div id="shell" forDrawerWrapper>
-      <input id="before" placeholder="before-trigger" />
-      <button id="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
-      <input id="after" placeholder="after-trigger" />
+    <div data-testid="shell" forDrawerWrapper>
+      <input data-testid="before" placeholder="before-trigger" />
+      <button data-testid="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
+      <input data-testid="after" placeholder="after-trigger" />
     </div>
 
     @if (open()) {
       <div
         forDrawer
-        id="drawer"
+        data-testid="drawer"
         ariaLabel="Test drawer"
         [side]="side()"
         [snapPoints]="snapPoints()"
@@ -95,42 +95,44 @@ import { queryFlag } from './_query-flag';
         (release)="onRelease($event)"
       >
         @if (backdrop) {
-          <div id="backdrop" forDrawerBackdrop></div>
+          <div data-testid="backdrop" forDrawerBackdrop></div>
         }
-        <div id="handle" forDrawerHandle></div>
-        <button id="first">First</button>
-        <button id="second">Second</button>
-        <input id="text-input" />
-        <button id="close-btn" forDrawerClose>Close</button>
+        <div data-testid="handle" forDrawerHandle></div>
+        <button data-testid="first">First</button>
+        <button data-testid="second">Second</button>
+        <input data-testid="text-input" />
+        <button data-testid="close-btn" forDrawerClose>Close</button>
 
         @if (nested) {
-          <button id="open-child" type="button" (click)="childOpen.set(true)">Open child</button>
+          <button data-testid="open-child" type="button" (click)="childOpen.set(true)">
+            Open child
+          </button>
 
           @if (childOpen()) {
             <div
               forDrawer
-              id="child-drawer"
+              data-testid="child-drawer"
               ariaLabel="Child drawer"
               [scaleBackground]="scaleBackground"
               (close)="onChildClose($event)"
             >
-              <button id="child-first">Child first</button>
-              <button id="child-second">Child second</button>
-              <button id="child-close" forDrawerClose>Child close</button>
+              <button data-testid="child-first">Child first</button>
+              <button data-testid="child-second">Child second</button>
+              <button data-testid="child-close" forDrawerClose>Child close</button>
             </div>
           }
         }
       </div>
     }
 
-    <output id="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
-    <output id="last-child-close-reason">{{ lastChildCloseReason() ?? 'none' }}</output>
-    <output id="active-snap">{{ activeSnapDisplay() }}</output>
-    <output id="drag-count">{{ dragCount() }}</output>
-    <output id="last-drag-percent">{{ lastDragPercent() }}</output>
-    <output id="release-count">{{ releaseCount() }}</output>
-    <output id="last-release-will-close">{{ lastReleaseWillClose() }}</output>
-    <output id="last-release-next-snap">{{ lastReleaseNextSnap() }}</output>
+    <output data-testid="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
+    <output data-testid="last-child-close-reason">{{ lastChildCloseReason() ?? 'none' }}</output>
+    <output data-testid="active-snap">{{ activeSnapDisplay() }}</output>
+    <output data-testid="drag-count">{{ dragCount() }}</output>
+    <output data-testid="last-drag-percent">{{ lastDragPercent() }}</output>
+    <output data-testid="release-count">{{ releaseCount() }}</output>
+    <output data-testid="last-release-will-close">{{ lastReleaseWillClose() }}</output>
+    <output data-testid="last-release-next-snap">{{ lastReleaseNextSnap() }}</output>
   `,
 })
 export class DrawerFixture {

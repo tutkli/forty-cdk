@@ -47,7 +47,7 @@ test.describe('Combobox', () => {
     await input.type('a');
     await expect(el(page, 'content')).toBeVisible();
 
-    await page.locator('#after').click();
+    await el(page, 'after').click();
     await expect(el(page, 'content')).toHaveCount(0);
   });
 });
