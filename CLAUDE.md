@@ -246,6 +246,22 @@ Vitest runs through the Angular CLI builder `@angular/build:unit-test` (configur
 
 Every primitive's test suite must include a case running under `provideZonelessChangeDetection()` to guarantee reactivity works without Zone.js.
 
+### Test isolation — non-negotiables
+
+These invariants are the rationale behind the mechanical enforcement (ESLint rules, Vitest setup file). They exist because each one was, at some point, a bug that bled state across specs or a contract leak that made a refactor harder than it needed to be. A new spec must clear them all.
+
+1. Every `vi.useFakeTimers()` has a matching `vi.useRealTimers()` in `afterEach` of the same `describe` — never inline at the end of an `it`. Inline restores leak timers when the `it` fails before reaching the call.
+2. Every `globalThis` polyfill (observers, `fetch`, `matchMedia`) has a matching `afterAll` restore. Prefer the `installObserverPolyfills()` helper in `projects/forty-cdk/src/test-utils/observers.ts` — it already pairs install with restore.
+3. Every `addEventListener` installed by test code (not by the directive under test) has a matching `removeEventListener` in `try/finally`. A throwing assertion mid-test must not leave a global listener attached for the next spec.
+4. Every `appendChild` to `document.body` from test code is removed in `afterEach` (or `try/finally` in the same `it`). The `TestBed` fixture host is cleaned up for you; ad-hoc body children are not.
+5. Overlay specs (any primitive that portals content to `document.body`) call `afterEachOverlayCleanup()` from `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`. It is a leak detector for failing-mid-render scenarios — without it a thrown assertion can orphan the portal and the next spec sees stale ARIA.
+6. **No reading directive internal signals from a spec.** The contract is the DOM: ARIA attributes, `data-state`, `data-side`, focus, host-bound classes. Accessing `directive.signalX()` is implementation leakage that locks the directive's private shape into the spec; assert against the rendered DOM instead.
+7. `fixture.whenStable()` is used only inside `projects/forty-cdk/src/test-utils/flush.ts`. In specs, always `await flush(fixture)` — it is the canonical waiter and is the only place where the underlying API may change without churning every spec.
+8. Geometry assertions (measured dimensions and math derived from them) run in Playwright, not Vitest. Vitest covers wiring (listener attached, callback fired, signal updated) without faking measurements. See the `### E2E (Playwright)` subsection below and [#195](https://github.com/tutkli/forty-cdk/issues/195) for the full rationale and the `*.prototype.getBoundingClientRect` cross-platform trap.
+9. E2E selectors use `data-testid="…"`. `#id` selectors are reserved for elements outside any directive — several directives host-bind `[id]` for `aria-controls` wiring and would silently shadow a static `id`.
+10. `expect(x).not.toBeNull()` followed by `x!.foo` is noise — drop the assertion. The non-null assertion is already telling the reader (and the compiler) what you know; doubling it adds nothing.
+11. Placement / direction assertions use concrete values (`.toBe('top')`, `.toBe('rtl')`), not `.toBeTruthy()`. A truthy check passes for the wrong value just as eagerly as the right one.
+
 ### E2E (Playwright)
 
 The Vitest + jsdom suite is the contract layer for ARIA, signals, and the data-state vocabulary, but jsdom mis-models `document.activeElement`, `inert`, and the focus-event order. Real focus management — focus trap, return focus, vetoable `autoFocusOnOpen` / `autoFocusOnClose`, layered Escape, click-outside, disabled-skip in keyboard navigation — runs against real browsers via Playwright.
