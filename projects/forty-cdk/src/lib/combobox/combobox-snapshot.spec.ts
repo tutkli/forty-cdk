@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { afterEachOverlayCleanup } from '../../test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import { ComboboxSnapshot } from './combobox-snapshot';
 
@@ -99,6 +100,8 @@ function createHarness(
 }
 
 describe('ComboboxSnapshot', () => {
+  afterEachOverlayCleanup();
+
   describe('cachedOptions persistence', () => {
     it('starts empty', () => {
       const h = createHarness();

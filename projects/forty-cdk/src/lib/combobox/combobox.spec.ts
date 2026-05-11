@@ -2,7 +2,13 @@ import { Component, computed, provideZonelessChangeDetection, signal } from '@an
 import { TestBed } from '@angular/core/testing';
 
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
-import { flush, flushPositioning, pressKey, renderHost } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
@@ -120,6 +126,8 @@ function typeInto(input: HTMLInputElement, text: string): void {
 }
 
 describe('ForCombobox', () => {
+  afterEachOverlayCleanup();
+
   describe('portal cleanup', () => {
     it('removes the portaled content from document.body on close', async () => {
       // Issue #89 reproduction. Combobox previously called `injectPortal()`
@@ -1449,6 +1457,8 @@ describe('ForCombobox', () => {
 });
 
 describe('ForCombobox object values', () => {
+  afterEachOverlayCleanup();
+
   interface City {
     readonly id: string;
     readonly name: string;
@@ -1688,6 +1698,8 @@ describe('ForCombobox object values', () => {
 });
 
 describe('ForComboboxStatus', () => {
+  afterEachOverlayCleanup();
+
   @Component({
     imports: [
       ForCombobox,
@@ -1796,6 +1808,8 @@ describe('ForComboboxStatus', () => {
 });
 
 describe('ForComboboxIndicator', () => {
+  afterEachOverlayCleanup();
+
   @Component({
     imports: [
       ForCombobox,
@@ -1894,6 +1908,8 @@ describe('ForComboboxIndicator', () => {
 });
 
 describe('ForCombobox virtualization', () => {
+  afterEachOverlayCleanup();
+
   // Synthetic 100-item source. Cherry at index 3 is disabled across all
   // tests so virtualized navigation has a stable disabled boundary.
   interface VItem {

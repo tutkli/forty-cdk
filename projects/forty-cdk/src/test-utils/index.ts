@@ -9,5 +9,6 @@ export { flush, flushPositioning } from './flush';
 export { pressKey, type PressKeyOptions } from './keyboard';
 export { assertA11yLabelledBy } from './a11y';
 export { mountOverlay, type MountOverlayResult } from './overlay';
+export { afterEachOverlayCleanup } from './overlay-cleanup';
 export { installObserverPolyfills } from './observers';
 export { withReducedMotion } from './reduced-motion';

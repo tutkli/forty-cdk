@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
-import { pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import { afterEachOverlayCleanup, pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
@@ -38,6 +38,8 @@ function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
 }
 
 describe('ForHoverCard', () => {
+  afterEachOverlayCleanup();
+
   describe('open / close lifecycle', () => {
     // Scoped fake timers: only the delay-driven cases install them, so a
     // future `await flush(r.fixture)` here doesn't hang on a frozen

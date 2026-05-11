@@ -5,7 +5,7 @@ import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
@@ -108,6 +108,8 @@ class DismissableContractHost {
 }
 
 describe('ForPopover', () => {
+  afterEachOverlayCleanup();
+
   describe('portal cleanup', () => {
     it('removes the portaled content from document.body on close', async () => {
       // Issue #89 reproduction.
