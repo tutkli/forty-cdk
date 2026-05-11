@@ -1,11 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import {
-  clickOutside,
-  el,
-  focusedTestId,
-  focusInsideTestId,
-  gotoFixture,
-} from './_helpers';
+import { clickOutside, el, gotoFixture } from './_helpers';
 
 /**
  * Drag a drawer surface (or its handle) by `(dx, dy)` pixels using real
@@ -203,7 +197,7 @@ test.describe('Drawer', () => {
     await gotoFixture(page, 'drawer', { vetoOpen: '1' });
     await el(page, 'trigger').click();
     await expect(el(page, 'drawer')).toBeVisible();
-    expect(await focusInsideTestId(page, 'drawer')).toBe(false);
+    await expect(el(page, 'drawer').locator('*:focus')).toHaveCount(0);
   });
 
   test('[autoFocusOnClose] preventDefault skips return-focus', async ({ page }) => {
@@ -213,7 +207,7 @@ test.describe('Drawer', () => {
 
     await el(page, 'close-btn').click();
     await expect(el(page, 'drawer')).toHaveCount(0);
-    expect(await focusedTestId(page)).not.toBe('trigger');
+    await expect(el(page, 'trigger')).not.toBeFocused();
   });
 
   test('scaleBackground scales the wrapper while open and reverts on close', async ({ page }) => {

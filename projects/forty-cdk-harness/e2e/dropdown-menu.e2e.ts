@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, el, focusInsideTestId, gotoFixture } from './_helpers';
+import { clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('DropdownMenu', () => {
   test('opens on trigger click and highlights the first enabled item', async ({ page }) => {
@@ -43,6 +43,6 @@ test.describe('DropdownMenu', () => {
     await gotoFixture(page, 'menu', { vetoOpen: '1' });
     await el(page, 'trigger').click();
     await expect(el(page, 'menu')).toBeVisible();
-    expect(await focusInsideTestId(page, 'menu')).toBe(false);
+    await expect(el(page, 'menu').locator('*:focus')).toHaveCount(0);
   });
 });

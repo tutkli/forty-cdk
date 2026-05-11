@@ -28,11 +28,6 @@ export async function gotoFixture(
   await page.goto(qs ? `/${path}?${qs}` : `/${path}`, { waitUntil: 'networkidle' });
 }
 
-/** Returns the `id` of the currently-focused element, or `null` if none. */
-export async function focusedId(page: Page): Promise<string | null> {
-  return page.evaluate(() => document.activeElement?.id ?? null);
-}
-
 /** Press Tab `n` times. Pass `'Shift+Tab'` for backwards navigation. */
 export async function tabN(
   page: Page,
@@ -49,32 +44,4 @@ export async function tabN(
  */
 export async function clickOutside(page: Page): Promise<void> {
   await page.mouse.click(2, 2);
-}
-
-/**
- * `true` if `document.activeElement` is contained by the element matching
- * `selector`. Used to assert focus position when a veto skips the directive's
- * default imperative move — focus may legitimately land on `body` (e.g. when
- * the trigger gets `inert`-blurred on modal open), so the right contract is
- * "focus is not inside the overlay" rather than "focus is on a specific id".
- */
-export async function focusInside(page: Page, selector: string): Promise<boolean> {
-  return page.evaluate((sel) => {
-    const root = document.querySelector(sel);
-    return root != null && root.contains(document.activeElement);
-  }, selector);
-}
-
-/** As `focusInside`, but takes a test id (data-testid="…"). */
-export async function focusInsideTestId(page: Page, testid: string): Promise<boolean> {
-  return focusInside(page, `[data-testid="${testid}"]`);
-}
-
-/** Returns the value of `data-testid` of the currently-focused element. */
-export async function focusedTestId(page: Page): Promise<string | null> {
-  return page.evaluate(() =>
-    document.activeElement instanceof HTMLElement
-      ? (document.activeElement.dataset['testid'] ?? null)
-      : null,
-  );
 }

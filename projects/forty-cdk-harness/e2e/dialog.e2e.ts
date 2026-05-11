@@ -1,11 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  clickOutside,
-  el,
-  focusedTestId,
-  focusInsideTestId,
-  gotoFixture,
-} from './_helpers';
+import { clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('Dialog', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {
@@ -73,7 +67,7 @@ test.describe('Dialog', () => {
     // Modal mode applies `inert` to siblings on open, so the trigger may be
     // blurred even when the veto fires — what matters is that the dialog
     // didn't pull focus into itself.
-    expect(await focusInsideTestId(page, 'dialog')).toBe(false);
+    await expect(el(page, 'dialog').locator('*:focus')).toHaveCount(0);
   });
 
   test('[autoFocusOnClose] preventDefault skips return-focus to the trigger', async ({ page }) => {
@@ -83,6 +77,6 @@ test.describe('Dialog', () => {
 
     await el(page, 'close-btn').click();
     await expect(el(page, 'dialog')).toHaveCount(0);
-    expect(await focusedTestId(page)).not.toBe('trigger');
+    await expect(el(page, 'trigger')).not.toBeFocused();
   });
 });
