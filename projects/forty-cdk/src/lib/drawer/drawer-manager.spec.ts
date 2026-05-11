@@ -63,8 +63,11 @@ function setup(extraProviders: Parameters<typeof TestBed.configureTestingModule>
 describe('ForDrawerManager (programmatic)', () => {
   afterEach(() => {
     document
-      .querySelectorAll('[role="dialog"], [role="alertdialog"], #external-trigger')
+      .querySelectorAll(
+        '[role="dialog"], [role="alertdialog"], [forDrawer], #external-trigger',
+      )
       .forEach((n) => n.remove());
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
     TestBed.resetTestingModule();

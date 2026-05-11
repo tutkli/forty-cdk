@@ -60,8 +60,11 @@ function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
 describe('ForDialogManager (programmatic)', () => {
   afterEach(() => {
     document
-      .querySelectorAll('[role="dialog"], [role="alertdialog"], #external-trigger')
+      .querySelectorAll(
+        '[role="dialog"], [role="alertdialog"], [data-for-dialog-backdrop], [forDialog], #external-trigger',
+      )
       .forEach((n) => n.remove());
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
     TestBed.resetTestingModule();
