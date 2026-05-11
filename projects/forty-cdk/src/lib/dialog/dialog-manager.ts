@@ -12,20 +12,9 @@ import {
   type Type,
 } from '@angular/core';
 
-import { BodyScrollLock } from '../_internal/body-scroll-lock/body-scroll-lock';
-import {
-  DismissableLayer,
-  DismissableLayerStack,
-} from '../_internal/dismissable-layer/dismissable-layer';
-import { findFirstFocusable, FocusTrap } from '../_internal/focus-trap/focus-trap';
-import {
-  type InertSiblingsHandle,
-  InertSiblingsStack,
-} from '../_internal/inert-siblings/inert-siblings';
-import {
-  createVetoableEvent,
-  type VetoableEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
+import { ForDialog } from './dialog';
+import { ForDialogProgrammaticHost } from './dialog-programmatic-host';
 import { ForDialogRef } from './dialog-ref';
 
 /**
@@ -92,22 +81,26 @@ export interface ForDialogOpenConfig<D = unknown> {
 /**
  * Programmatic dialog opener — the headless equivalent of CDK's `Dialog`.
  * Inject anywhere, call `open(MyComponent, { data, ... })` and get a
- * `ForDialogRef<R>` back. The same focus trap / scroll lock / Escape /
- * portal behaviors as the declarative `[forDialog]` apply, applied
- * imperatively to a synthesized host element.
+ * `ForDialogRef<R>` back. Internally the manager mounts the user component
+ * underneath an internal `[forDialog]` host directive, so all declarative
+ * primitive behaviours apply identically: focus trap, scroll lock, Escape,
+ * dismissable layer (with the triple-veto + composite `interactOutside`
+ * pattern), portal, return-focus, and the WebKit-#136 sync return-target
+ * capture.
  *
- * Inside the opened component, inject `ForDialogRef` to close (with
- * optional return value) and `FOR_DIALOG_DATA` (or `injectDialogData<T>()`)
- * for the payload.
+ * Inside the opened component the usual dialog pieces work without any extra
+ * wiring: `[forDialogTitle]`, `[forDialogDescription]`, `[forDialogBackdrop]`,
+ * `[forDialogClose]`. `[forDialogClose] [closeWith]` propagates through to
+ * `ForDialogRef.close(value)`.
+ *
+ * Inject `ForDialogRef` to drive close imperatively and `FOR_DIALOG_DATA` (or
+ * `injectDialogData<T>()`) for the payload.
  */
 @Injectable({ providedIn: 'root' })
 export class ForDialogManager {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
   readonly #document = inject(DOCUMENT);
-  readonly #dismissableStack = inject(DismissableLayerStack);
-  readonly #inertStack = inject(InertSiblingsStack);
-  readonly #scrollLock = inject(BodyScrollLock);
 
   readonly #count = signal(0);
   /** Reactive count of currently open programmatic dialogs (useful for diagnostics). */
@@ -117,32 +110,19 @@ export class ForDialogManager {
     component: Type<C>,
     config: ForDialogOpenConfig<D> = {},
   ): ForDialogRef<R> {
-    const returnTo = (this.#document.activeElement as HTMLElement | null) ?? null;
-    const isModal = config.modal !== false;
-    const isDismissible = config.dismissible !== false;
-    const shouldReturnFocus = config.returnFocus !== false;
-
     const hostEl = this.#document.createElement(config.hostTag ?? 'div');
-    hostEl.setAttribute('role', config.alert ? 'alertdialog' : 'dialog');
-    if (isModal) {
-      hostEl.setAttribute('aria-modal', 'true');
-    }
-    if (config.ariaLabel) {
-      hostEl.setAttribute('aria-label', config.ariaLabel);
-    }
-    if (!hostEl.hasAttribute('tabindex')) {
-      hostEl.setAttribute('tabindex', '-1');
-    }
+    // The host is parked in body BEFORE the component is created so that the
+    // directive's `afterNextRender` side effects (focus moves, inert siblings,
+    // dismissable-layer push) see a connected element. The directive's own
+    // `injectPortal()` is then a no-op (host already has body as parent).
     this.#document.body.appendChild(hostEl);
 
-    // The user's component is created BEFORE the ref's teardown logic can be
-    // wired up (the teardown depends on `componentRef`, which depends on the
-    // injector that needs `ref` available for `inject(ForDialogRef)`). We
-    // bridge with a mutable closure: the ref's constructor takes
-    // `() => teardown()`, and we replace `teardown` once everything exists.
     let teardown = (): void => {};
     const ref = new ForDialogRef<R>(() => teardown());
 
+    // The shell injector hosts `FOR_DIALOG_DATA` and `ForDialogRef` so that
+    // the user component (created beneath it) can `inject(...)` either. We
+    // also surface the user-supplied `providers`.
     const elementInjector = Injector.create({
       parent: this.#envInjector,
       providers: [
@@ -152,66 +132,62 @@ export class ForDialogManager {
       ],
     });
 
-    const componentRef = createComponent(component, {
+    const shellRef = createComponent(ForDialogProgrammaticHost, {
       environmentInjector: this.#envInjector,
       elementInjector,
       hostElement: hostEl,
     });
 
-    this.#appRef.attachView(componentRef.hostView);
-    componentRef.changeDetectorRef.detectChanges();
+    // Push every input the consumer wants set BEFORE the first detectChanges
+    // so the directive's `afterNextRender` reads the configured values, not
+    // the default ones. Only set keys the consumer actually specified so the
+    // directive's own fallback logic still applies for unset keys.
+    setIfDefined(shellRef, 'dismissible', config.dismissible);
+    setIfDefined(shellRef, 'modal', config.modal);
+    setIfDefined(shellRef, 'alert', config.alert);
+    setIfDefined(shellRef, 'returnFocus', config.returnFocus);
+    setIfDefined(shellRef, 'initialFocus', config.initialFocus);
+    setIfDefined(shellRef, 'ariaLabel', config.ariaLabel);
+    setIfDefined(shellRef, 'autoFocusOnOpen', config.autoFocusOnOpen);
+    setIfDefined(shellRef, 'autoFocusOnClose', config.autoFocusOnClose);
 
-    // Push the dismissable layer onto the stack BEFORE moving focus so that
-    // focusin events triggered by our own focus management land on this
-    // layer, not on whatever lower layer was previously topmost. Same
-    // ordering invariant as the declarative `[forDialog]` directive.
-    //
-    // Dismissal is gated on `isDismissible` directly (not through the
-    // layer's `event.preventDefault()` veto path) because synthetic
-    // `KeyboardEvent`s constructed via `new KeyboardEvent(...)` default to
-    // `cancelable: false`, which would silently drop the veto and let
-    // sticky dialogs close on Escape.
-    const dismissable = new DismissableLayer(hostEl, this.#dismissableStack);
-    const dismissFromLayer = (): void => {
-      if (!isDismissible || ref.isClosed()) {
-        return;
-      }
-      ref.close();
-    };
-    dismissable.activate({
-      onEscapeKeyDown: (event) => {
-        if (isDismissible) {
-          event.stopPropagation();
-          dismissFromLayer();
-        }
-      },
-      onInteractOutside: () => dismissFromLayer(),
+    this.#appRef.attachView(shellRef.hostView);
+    // First detectChanges resolves the `viewChild` ViewContainerRef so we can
+    // mount the user component as a child view.
+    shellRef.changeDetectorRef.detectChanges();
+
+    const dialogInstance = shellRef.injector.get(ForDialog);
+
+    // Render the user component as a child view of the shell. We deliberately
+    // do NOT pass an explicit `injector` here so the user component inherits
+    // the shell's full element injector chain — including the `ForDialog`
+    // directive's own `providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting:
+    // ForDialog }]` AND the `FOR_DIALOG_DATA` / `ForDialogRef` we added on
+    // top via `elementInjector`. With that, `[forDialogClose]`,
+    // `[forDialogTitle]`, `[forDialogDescription]`, and `[forDialogBackdrop]`
+    // resolve `FOR_DIALOG_CONTEXT` exactly as in declarative usage;
+    // `[forDialogClose] [closeWith]` propagates through `requestClose(reason,
+    // value)` to `ForDialogRef.close(value)` (see the `(close)` subscription
+    // below).
+    const vc = shellRef.instance.vc();
+    const userRef = vc.createComponent(component);
+
+    // Bridge `(close)` → ForDialogRef.close(value). The directive captures
+    // the optional `value` argument from `requestClose(reason, value)` in a
+    // signal we read back here.
+    const closeSub = dialogInstance.close.subscribe(() => {
+      ref.close(dialogInstance.lastCloseValue() as R);
     });
 
-    // Let the consumer veto the imperative focus move via the
-    // `autoFocusOnOpen` config callback. The trap is still set up
-    // (Tab cycling, return-focus capture) — only the initial `.focus()`
-    // call is skipped.
-    const autoFocusOpenEvent = createVetoableEvent();
-    config.autoFocusOnOpen?.(autoFocusOpenEvent);
-    const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
-
-    const focusTrap = isModal ? new FocusTrap(hostEl) : null;
-    let inertHandle: InertSiblingsHandle | null = null;
-    if (focusTrap) {
-      // Inert + aria-hidden body siblings BEFORE the focus trap fires so
-      // the synthesized focusin lands on an already-isolated tree.
-      inertHandle = this.#inertStack.activate(hostEl);
-      this.#scrollLock.lock();
-      focusTrap.activate({
-        initialFocus: config.initialFocus ?? 'first',
-        preventInitialFocus: skipInitialFocus,
-      });
-    } else if (!skipInitialFocus) {
-      const target =
-        config.initialFocus === 'container' ? hostEl : (findFirstFocusable(hostEl) ?? hostEl);
-      target.focus();
-    }
+    // The directive's own `afterNextRender` lifecycle wires the focus trap,
+    // scroll lock, dismissable layer, inert siblings, and return-focus
+    // capture. The first `detectChanges` above runs the shell's view but does
+    // NOT flush the global render queue where `afterNextRender` callbacks
+    // live; `appRef.tick()` does. We tick once here so consumers calling
+    // `manager.open(...)` see the dialog fully wired by the time the call
+    // returns — this matches the synchronous contract the existing
+    // `dialog-manager.spec` suite was built around.
+    this.#appRef.tick();
 
     this.#count.update((n) => n + 1);
 
@@ -221,57 +197,49 @@ export class ForDialogManager {
         return;
       }
       torn = true;
-      // Lift inert + aria-hidden BEFORE focus return — `inert` ancestors
-      // block `.focus()` on the return target.
-      inertHandle?.deactivate();
-      inertHandle = null;
-      // Let the consumer veto the return-focus move (e.g. to send focus
-      // to a confirmation toast instead of the trigger).
-      const autoFocusCloseEvent = createVetoableEvent();
-      config.autoFocusOnClose?.(autoFocusCloseEvent);
-      const skipReturnFocus = autoFocusCloseEvent.defaultPrevented;
-      // Suppress the dismissable-layer dispatcher across the focus-return
-      // step so that the synthetic `focusin` event we generate by moving
-      // focus back to the trigger does not cascade-dismiss whatever
-      // dialog is now topmost (a stacked dialog opened above this one).
-      dismissable.suppress(() => {
-        if (focusTrap) {
-          focusTrap.deactivate({ returnFocus: shouldReturnFocus && !skipReturnFocus });
-          this.#scrollLock.unlock();
-        } else if (shouldReturnFocus && !skipReturnFocus && returnTo) {
-          returnTo.focus();
-        }
-      });
-      dismissable.deactivate();
-      this.#appRef.detachView(componentRef.hostView);
-      componentRef.destroy();
+      // Tearing down the shell triggers ForDialog's `DestroyRef.onDestroy`
+      // (registered by `injectModalShell`) which deactivates focus trap (with
+      // return-focus), inert siblings, scroll lock, and dismissable layer.
+      // The user component's view destroys ahead of the shell because Angular
+      // tears down child views first, so `[forDialogClose]`, `[forDialogTitle]`,
+      // etc. all unregister cleanly.
+      closeSub.unsubscribe();
+      userRef.destroy();
+      this.#appRef.detachView(shellRef.hostView);
+      shellRef.destroy();
       hostEl.remove();
       this.#count.update((n) => Math.max(0, n - 1));
     };
 
-    // If the host environment destroys the view (TestBed reset, manual
-    // ApplicationRef destruction) without going through ref.close(), still
-    // pull down the layer and reset the focus trap.
-    componentRef.onDestroy(() => {
+    shellRef.onDestroy(() => {
+      // Defensive: if the host environment destroys the view without going
+      // through ref.close() (TestBed reset, manual ApplicationRef destroy),
+      // run the same teardown path.
       if (!torn) {
-        dismissable.suppress(() => {
-          if (focusTrap?.isActive) {
-            focusTrap.deactivate({ returnFocus: false });
-            this.#scrollLock.unlock();
-          }
-        });
-        inertHandle?.deactivate();
-        inertHandle = null;
-        dismissable.deactivate();
+        ref.close();
       }
     });
 
-    // Edge case: the user's component may have called ref.close() during its
-    // own constructor (before we wired up the real teardown). Run it now.
     if (ref.isClosed()) {
       teardown();
     }
 
     return ref;
+  }
+}
+
+/**
+ * Helper: only push an input when the resolved value is not `undefined`. This
+ * preserves the directive's own fallback semantics (its `input()` defaults)
+ * for keys the consumer left unset, and avoids overwriting them with
+ * `undefined` from `componentRef.setInput`.
+ */
+function setIfDefined<T>(
+  componentRef: { setInput: (name: string, value: unknown) => void },
+  name: string,
+  value: T | undefined,
+): void {
+  if (value !== undefined) {
+    componentRef.setInput(name, value);
   }
 }

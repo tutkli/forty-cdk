@@ -2,8 +2,12 @@ import { Component, inject, provideZonelessChangeDetection } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from '../../test-utils';
+import { ForDialogBackdrop } from './dialog-backdrop';
+import { ForDialogClose } from './dialog-close';
+import { ForDialogDescription } from './dialog-description';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
+import { ForDialogTitle } from './dialog-title';
 
 interface ConfirmData {
   message: string;
@@ -431,6 +435,91 @@ describe('ForDialogManager (programmatic)', () => {
       // the directive) lists `a[href]` — any pre-existing manager-only
       // selector is gone, so a leading link should be picked up first.
       expect(document.activeElement?.id).toBe('link');
+    });
+  });
+
+  // ---- New coverage for #206 — manager runs `[forDialog]` for real ----
+
+  describe('child pieces work inside the opened component', () => {
+    @Component({
+      imports: [ForDialogTitle, ForDialogDescription, ForDialogBackdrop, ForDialogClose],
+      template: `
+        <div data-testid="bd" forDialogBackdrop></div>
+        <h2 data-testid="title" forDialogTitle>Title</h2>
+        <p data-testid="desc" forDialogDescription>Desc</p>
+        <button id="close-with" forDialogClose [closeWith]="payload">Close</button>
+      `,
+    })
+    class FullPiecesDialog {
+      readonly payload = { reason: 'user-confirmed' };
+    }
+
+    it('wires aria-labelledby and aria-describedby from forDialogTitle / forDialogDescription', () => {
+      const { dialogs } = setup();
+      dialogs.open(FullPiecesDialog);
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const title = document.querySelector<HTMLElement>('[data-testid="title"]')!;
+      const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
+      expect(title.id).toBeTruthy();
+      expect(desc.id).toBeTruthy();
+      expect(host.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(host.getAttribute('aria-describedby')).toBe(desc.id);
+    });
+
+    it('forDialogBackdrop is registered (markers and data-state mirror the directive)', () => {
+      const { dialogs } = setup();
+      dialogs.open(FullPiecesDialog);
+      const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
+      expect(backdrop.getAttribute('data-state')).toBe('open');
+      expect(backdrop.hasAttribute('data-for-modal-peer')).toBe(true);
+    });
+
+    it('forDialogClose actually closes a programmatic dialog (was a silent no-op pre-#206)', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(FullPiecesDialog);
+      document.querySelector<HTMLButtonElement>('#close-with')!.click();
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+    });
+
+    it('forDialogClose [closeWith] propagates the payload to ForDialogRef.close(value)', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open<FullPiecesDialog, { reason: string }>(FullPiecesDialog);
+      document.querySelector<HTMLButtonElement>('#close-with')!.click();
+      const result = await ref.closed;
+      expect(result).toEqual({ reason: 'user-confirmed' });
+      expect(ref.result()).toEqual({ reason: 'user-confirmed' });
+    });
+
+    it('forDialogBackdrop click closes a dismissible programmatic dialog', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(FullPiecesDialog);
+      const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
+      backdrop.click();
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+    });
+  });
+
+  describe('host attribute single-source-of-truth', () => {
+    it('emits a single role / aria-modal / tabindex / data-state (no duplication)', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      const hosts = document.querySelectorAll<HTMLElement>('[role="dialog"]');
+      expect(hosts.length).toBe(1);
+      const host = hosts[0]!;
+      expect(host.getAttribute('aria-modal')).toBe('true');
+      expect(host.getAttribute('tabindex')).toBe('-1');
+      expect(host.getAttribute('data-state')).toBe('open');
+    });
+
+    it('modal: false drops aria-modal and skips scroll lock', () => {
+      document.body.style.overflow = 'auto';
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, modal: false });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.hasAttribute('aria-modal')).toBe(false);
+      expect(document.body.style.overflow).toBe('auto');
     });
   });
 });
