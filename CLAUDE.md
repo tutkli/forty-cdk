@@ -25,6 +25,8 @@ pnpm test:e2e:ui           # playwright test --ui
 pnpm test:e2e:install      # playwright install --with-deps chromium webkit
 ```
 
+The `@angular/build:unit-test` builder is configured in `angular.json` to load `vitest.config.ts` from the repo root (`runnerConfig: true`) and to run `projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts` before every spec (`setupFiles`). Together they enforce Vitest's mock-reset / unstub invariants (`clearMocks`, `restoreMocks`, `unstubGlobals`, `unstubEnvs`) so `vi.fn()` call history, `vi.spyOn` patches, and `vi.stubGlobal` / `vi.stubEnv` are reset at the test boundary without relying on per-spec discipline. The setup-file layer is the load-bearing one — at the time of writing the builder does not propagate user `test.*` invariants to the runtime config — and `vitest.config.ts` documents the intended invariants in one canonical place.
+
 Single-file / single-test runs go through Vitest's CLI filtering (the `@angular/build:unit-test` builder forwards args):
 
 ```bash
