@@ -58,12 +58,7 @@ class ScrollAreaHost {
 }
 
 @Component({
-  imports: [
-    ForScrollArea,
-    ForScrollAreaViewport,
-    ForScrollAreaScrollbar,
-    ForScrollAreaThumb,
-  ],
+  imports: [ForScrollArea, ForScrollAreaViewport, ForScrollAreaScrollbar, ForScrollAreaThumb],
   template: `
     <div forScrollArea>
       <div forScrollAreaViewport>
@@ -133,16 +128,17 @@ describe('ForScrollArea', () => {
 
   beforeEach(() => {
     originalRO = globalThis.ResizeObserver;
-     
+
     (globalThis as any).ResizeObserver = FakeResizeObserver as any;
     FakeResizeObserver.instances = [];
     // Reset injected style tag between specs.
     document.getElementById('for-scroll-area-hide-native')?.remove();
-    vi.useFakeTimers();
   });
   afterEach(() => {
-     
     (globalThis as any).ResizeObserver = originalRO;
+    // Defensive: only the scrollHideDelay test installs fake timers, but
+    // resetting here keeps a future delay-driven case from leaking across
+    // describes if it forgets the per-`it` reset.
     vi.useRealTimers();
   });
 
@@ -204,6 +200,7 @@ describe('ForScrollArea', () => {
   });
 
   it('shows scrollbars during scroll then fades after scrollHideDelay (type="scroll")', () => {
+    vi.useFakeTimers();
     const { query, fixture, flush } = renderHost(ScrollAreaHost);
     fixture.componentInstance.type.set('scroll');
     flush();

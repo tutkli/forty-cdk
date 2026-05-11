@@ -59,13 +59,6 @@ function pointer(type: 'pointerenter' | 'pointerleave' | 'pointerdown'): Pointer
 }
 
 describe('ForNavigationMenu', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe('basic rendering', () => {
     it('reflects aria-label, data-orientation, and trigger ↔ content ids', () => {
       const { query, queryAll, fixture, flush } = renderHost(NavMenuHost);
@@ -123,6 +116,13 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('hover open / close with delay', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('opens after delayDuration on pointerenter', () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       flush();
@@ -189,6 +189,10 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('keyboard', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('Enter / Space toggle the open state', () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       flush();
@@ -203,6 +207,7 @@ describe('ForNavigationMenu', () => {
     });
 
     it('ArrowDown opens the disclosure (horizontal orientation)', () => {
+      vi.useFakeTimers();
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[1]!;
