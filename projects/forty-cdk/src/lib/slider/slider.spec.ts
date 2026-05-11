@@ -95,59 +95,12 @@ const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =
     new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true, ...init }),
   );
 
-const stubTrackRect = (
-  el: HTMLElement,
-  rect: { left?: number; top?: number; width?: number; height?: number } = {},
-) => {
-  const left = rect.left ?? 0;
-  const top = rect.top ?? 0;
-  const width = rect.width ?? 200;
-  const height = rect.height ?? 20;
-  el.getBoundingClientRect = () =>
-    ({
-      left,
-      top,
-      width,
-      height,
-      right: left + width,
-      bottom: top + height,
-      x: left,
-      y: top,
-      toJSON: () => ({}),
-    }) as DOMRect;
-};
-
-const pointer = (
-  el: HTMLElement,
-  type: 'pointerdown' | 'pointermove' | 'pointerup',
-  init: { clientX?: number; clientY?: number; pointerId?: number; button?: number } = {},
-) => {
-  const ev = new PointerEvent(type, {
-    bubbles: true,
-    cancelable: true,
-    clientX: init.clientX ?? 0,
-    clientY: init.clientY ?? 0,
-    pointerId: init.pointerId ?? 1,
-    button: init.button ?? 0,
-  });
-  el.dispatchEvent(ev);
-  return ev;
-};
-
-const pointerOnWindow = (
-  type: 'pointermove' | 'pointerup' | 'pointercancel',
-  init: { clientX?: number; clientY?: number; pointerId?: number } = {},
-) => {
-  window.dispatchEvent(
-    new PointerEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      clientX: init.clientX ?? 0,
-      clientY: init.clientY ?? 0,
-      pointerId: init.pointerId ?? 1,
-    }),
-  );
-};
+// Pointer / drag math is covered against real browser layout in
+// `projects/forty-cdk-harness/e2e/slider.e2e.ts` — per CLAUDE.md "Testing
+// notes", jsdom returns zeros from `getBoundingClientRect()` and stubbing it
+// here would tautologically assert the math against the stubbed rect rather
+// than a real laid-out track. The keyboard / ARIA / form-control coverage
+// below does not need geometry and stays in Vitest.
 
 describe('ForSlider', () => {
   describe('static accessibility', () => {
@@ -406,124 +359,11 @@ describe('ForSlider', () => {
     });
   });
 
-  describe('pointer (drag on thumb)', () => {
-    it('pointerdown on thumb followed by pointermove on window updates the value', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 75 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([75]);
-      pointerOnWindow('pointerup', { clientX: 75 });
-    });
-
-    it('pointermove past track edges clamps to min / max', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: -50 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([0]);
-      pointerOnWindow('pointermove', { clientX: 200 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([100]);
-      pointerOnWindow('pointerup');
-    });
-
-    it('pointerup detaches listeners — further moves do nothing', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 60 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([60]);
-      pointerOnWindow('pointerup', { clientX: 60 });
-      pointerOnWindow('pointermove', { clientX: 90 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([60]);
-    });
-
-    it('pointerdown does nothing when disabled', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      fixture.componentInstance.disabled.set(true);
-      flush();
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 75 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([50]);
-    });
-
-    it('pointerdown on a non-primary button is ignored', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50, button: 2 });
-      pointerOnWindow('pointermove', { clientX: 80 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([50]);
-      pointerOnWindow('pointerup');
-    });
-  });
-
-  describe('pointer (track click)', () => {
-    it('moves the nearest thumb to the click position and starts drag', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      fixture.componentInstance.picked.set([20, 80]);
-      flush();
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(track(el), 'pointerdown', { clientX: 30 });
-      flush();
-      // Closer to 20 than 80, lower thumb moves.
-      expect(fixture.componentInstance.picked()).toEqual([30, 80]);
-      pointerOnWindow('pointermove', { clientX: 40 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([40, 80]);
-      pointerOnWindow('pointerup');
-    });
-
-    it('ignores track pointerdown when disabled', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      fixture.componentInstance.disabled.set(true);
-      flush();
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      pointer(track(el), 'pointerdown', { clientX: 30 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([50]);
-    });
-  });
-
-  describe('pointer (RTL)', () => {
-    it('flips horizontal mapping under dir=rtl', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      fixture.componentInstance.dir.set('rtl');
-      flush();
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      // Click at the visual right edge → minimum value under RTL.
-      pointer(track(el), 'pointerdown', { clientX: 100 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([0]);
-      pointerOnWindow('pointerup');
-    });
-  });
-
-  describe('pointer (vertical)', () => {
-    it('maps clientY: bottom = min, top = max', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      fixture.componentInstance.orientation.set('vertical');
-      flush();
-      stubTrackRect(track(el), { top: 0, height: 100 });
-      // clientY = 0 → top = max
-      pointer(track(el), 'pointerdown', { clientY: 0 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([100]);
-      pointerOnWindow('pointerup');
-      // clientY = 100 → bottom = min
-      pointer(track(el), 'pointerdown', { clientY: 100 });
-      flush();
-      expect(fixture.componentInstance.picked()).toEqual([0]);
-      pointerOnWindow('pointerup');
-    });
-  });
+  // Pointer-driven value math (drag on thumb, track click, RTL flip,
+  // vertical clientY mapping) is covered against real browser layout in
+  // `projects/forty-cdk-harness/e2e/slider.e2e.ts`. The Vitest layer can't
+  // assert it without stubbing `track.getBoundingClientRect()`, which would
+  // tautologically check the math against the stub.
 
   describe('CSS variable exposure', () => {
     it('thumb exposes --for-slider-thumb-position as a fraction', () => {
@@ -573,52 +413,11 @@ describe('ForSlider', () => {
   });
 
   describe('valueCommit contract', () => {
-    it('fires once per drag with the final value, not per pointermove step', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      fixture.componentInstance.valueCommits.length = 0;
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 60 });
-      pointerOnWindow('pointermove', { clientX: 70 });
-      pointerOnWindow('pointermove', { clientX: 75 });
-      flush();
-      // Many valueChange ticks, but no commit yet — drag is still active.
-      expect(fixture.componentInstance.valueCommits).toEqual([]);
-      pointerOnWindow('pointerup', { clientX: 75 });
-      flush();
-      expect(fixture.componentInstance.valueCommits).toEqual([[75]]);
-    });
-
-    it('fires on pointercancel as well', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      fixture.componentInstance.valueCommits.length = 0;
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 80 });
-      pointerOnWindow('pointercancel', { clientX: 80 });
-      flush();
-      expect(fixture.componentInstance.valueCommits).toEqual([[80]]);
-    });
-
-    it('does not fire when pointerdown / pointerup occur without movement', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      fixture.componentInstance.valueCommits.length = 0;
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointerup', { clientX: 50 });
-      flush();
-      expect(fixture.componentInstance.valueCommits).toEqual([]);
-    });
-
-    it('fires on track click + release because the value mutates on pointerdown', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      fixture.componentInstance.valueCommits.length = 0;
-      pointer(track(el), 'pointerdown', { clientX: 30 });
-      pointerOnWindow('pointerup', { clientX: 30 });
-      flush();
-      expect(fixture.componentInstance.valueCommits).toEqual([[30]]);
-    });
+    // Pointer-driven commit cases (commit-once-per-drag with the final value,
+    // pointercancel commit, no commit without movement, track-click commit)
+    // live in `slider.e2e.ts` — they require a laid-out track to map
+    // clientX/Y back to a value. The keyboard-driven contract below stays
+    // in Vitest because no geometry is involved.
 
     it('fires once on keyup after a navigation key', () => {
       const { el, fixture, flush } = renderHost(SliderHost);
@@ -697,16 +496,8 @@ describe('ForSlider', () => {
       expect(fixture.componentInstance.touchedChanges).toEqual([]);
     });
 
-    it('drag end marks touched', () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
-      stubTrackRect(track(el), { left: 0, width: 100 });
-      fixture.componentInstance.touchedChanges.length = 0;
-      pointer(thumb(el, 0), 'pointerdown', { clientX: 50 });
-      pointerOnWindow('pointermove', { clientX: 60 });
-      pointerOnWindow('pointerup', { clientX: 60 });
-      flush();
-      expect(fixture.componentInstance.touchedChanges).toContain(true);
-    });
+    // "drag end marks touched" requires laid-out track geometry to drive a
+    // pointer drag through `pointerToValue`, so it lives in `slider.e2e.ts`.
   });
 
   describe('form integration', () => {
