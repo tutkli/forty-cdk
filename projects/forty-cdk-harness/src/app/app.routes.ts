@@ -98,4 +98,8 @@ export const routes: Routes = [
     path: 'tabs',
     loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
   },
+  {
+    path: 'toast',
+    loadComponent: () => import('./fixtures/toast.fixture').then((m) => m.ToastFixture),
+  },
 ];
