@@ -43,41 +43,57 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (registryEntry(); as entry) {
-      <article class="primitive-page">
-        <nav class="primitive-page__crumbs">
-          <a routerLink="/components">Components</a>
+      <article class="block">
+        <nav class="mb-6 flex gap-2 text-[0.85rem] opacity-70">
+          <a routerLink="/components" class="text-inherit no-underline hover:underline">
+            Components
+          </a>
           <span aria-hidden="true">/</span>
           <span>{{ entry.title }}</span>
         </nav>
-        <header class="primitive-page__header">
-          <h1 class="primitive-page__title">{{ entry.title }}</h1>
-          <p class="primitive-page__lede">{{ entry.description }}</p>
-          <p class="primitive-page__meta">
-            <a [href]="entry.apgUrl" target="_blank" rel="noreferrer noopener">
+        <header>
+          <h1 class="m-0 text-[clamp(2rem,4vw,2.75rem)] tracking-tighter">{{ entry.title }}</h1>
+          <p class="my-3 max-w-[60ch] text-[1.1rem] opacity-85">{{ entry.description }}</p>
+          <p class="m-0 mb-8 flex items-center gap-3 text-[0.9rem] opacity-75">
+            <a
+              [href]="entry.apgUrl"
+              target="_blank"
+              rel="noreferrer noopener"
+              class="text-inherit"
+            >
               WAI-ARIA pattern ↗
             </a>
             <span aria-hidden="true">·</span>
-            <span class="primitive-page__family">{{ entry.family }}</span>
+            <span class="capitalize">{{ entry.family }}</span>
           </p>
         </header>
 
         @if (entry.examples?.length) {
-          <section class="primitive-page__examples">
-            <h2>Examples</h2>
-            <div forTabs [(value)]="activeExample" class="examples-tabs">
-              <div forTabsList class="examples-tabs__list">
+          <section class="mt-12 border-t border-border-soft pt-8">
+            <h2 class="mb-2 mt-0 text-2xl">Examples</h2>
+            <div forTabs [(value)]="activeExample" class="mt-4">
+              <div forTabsList class="mb-4 flex gap-1 border-b border-border-soft">
                 @for (example of entry.examples; track example.name) {
-                  <button forTabsTrigger [value]="example.name">{{ example.title }}</button>
+                  <button
+                    forTabsTrigger
+                    [value]="example.name"
+                    class="
+                      -mb-px cursor-pointer border-0 border-b-2 border-transparent
+                      bg-transparent px-4 py-2 font-[inherit] text-[0.9rem] text-inherit
+                      opacity-65
+                      data-[state=active]:border-b-accent data-[state=active]:opacity-100
+                      focus-visible:rounded focus-visible:outline focus-visible:outline-2
+                      focus-visible:outline-offset-2 focus-visible:outline-accent
+                    "
+                  >
+                    {{ example.title }}
+                  </button>
                 }
               </div>
               @for (example of entry.examples; track example.name) {
-                <div
-                  forTabsContent
-                  [value]="example.name"
-                  class="examples-tabs__panel"
-                >
+                <div forTabsContent [value]="example.name" class="data-[state=inactive]:hidden">
                   @if (example.description) {
-                    <p class="primitive-page__example-desc">{{ example.description }}</p>
+                    <p class="my-1 mb-3 text-[0.9rem] opacity-75">{{ example.description }}</p>
                   }
                   <for-example [src]="entry.slug + '/' + example.name" />
                 </div>
@@ -87,137 +103,34 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
         }
 
         @if (post$ | async; as post) {
-          <section class="primitive-page__usage">
-            <h2>Usage</h2>
+          <section class="mt-12 border-t border-border-soft pt-8">
+            <h2 class="mb-2 mt-0 text-2xl">Usage</h2>
             <analog-markdown [content]="asString(post.content)" />
           </section>
         }
 
         @if (apiMetadata.value(); as metadata) {
-          <section class="primitive-page__api">
-            <h2>API reference</h2>
+          <section class="mt-12 border-t border-border-soft pt-8">
+            <h2 class="mb-2 mt-0 text-2xl">API reference</h2>
             <for-api-table [metadata]="metadata" />
           </section>
         } @else if (apiMetadata.isLoading()) {
-          <p class="primitive-page__loading">Loading API metadata…</p>
+          <p class="mt-8 opacity-70">Loading API metadata…</p>
         } @else if (apiMetadata.error()) {
-          <p class="primitive-page__error">
+          <p class="mt-8 text-danger">
             Could not load API metadata for <code>{{ slug() }}</code>. Did you run
             <code>pnpm docs:prebuild</code>?
           </p>
         }
       </article>
     } @else {
-      <section class="primitive-page__not-found">
+      <section>
         <h1>Component not found</h1>
         <p>
           <code>{{ slug() }}</code> is not a known primitive.
           <a routerLink="/components">Back to the components index.</a>
         </p>
       </section>
-    }
-  `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .primitive-page__crumbs {
-      display: flex;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-bottom: 1.5rem;
-    }
-    .primitive-page__crumbs a {
-      color: inherit;
-      text-decoration: none;
-    }
-    .primitive-page__crumbs a:hover {
-      text-decoration: underline;
-    }
-    .primitive-page__title {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 2.75rem);
-      letter-spacing: -0.02em;
-    }
-    .primitive-page__lede {
-      font-size: 1.1rem;
-      opacity: 0.85;
-      max-width: 60ch;
-      margin: 0.75rem 0;
-    }
-    .primitive-page__meta {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-      font-size: 0.9rem;
-      opacity: 0.75;
-      margin: 0 0 2rem;
-    }
-    .primitive-page__meta a {
-      color: inherit;
-    }
-    .primitive-page__family {
-      text-transform: capitalize;
-    }
-    .primitive-page__api,
-    .primitive-page__examples,
-    .primitive-page__usage {
-      margin-top: 3rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--for-border);
-    }
-    .primitive-page__api h2,
-    .primitive-page__examples h2,
-    .primitive-page__usage h2 {
-      font-size: 1.5rem;
-      margin: 0 0 0.5rem;
-    }
-    .examples-tabs {
-      margin-top: 1rem;
-    }
-    .examples-tabs__list {
-      display: flex;
-      gap: 0.25rem;
-      border-bottom: 1px solid var(--for-border);
-      margin-bottom: 1rem;
-    }
-    .examples-tabs__list [forTabsTrigger] {
-      padding: 0.5rem 1rem;
-      font: inherit;
-      font-size: 0.9rem;
-      background: transparent;
-      border: none;
-      color: inherit;
-      opacity: 0.65;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-    }
-    .examples-tabs__list [forTabsTrigger][data-state='active'] {
-      opacity: 1;
-      border-bottom-color: var(--for-accent);
-    }
-    .examples-tabs__list [forTabsTrigger]:focus-visible {
-      outline: 2px solid var(--for-accent);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-    .examples-tabs__panel[data-state='inactive'] {
-      display: none;
-    }
-    .primitive-page__example-desc {
-      margin: 0.25rem 0 0.75rem;
-      opacity: 0.75;
-      font-size: 0.9rem;
-    }
-    .primitive-page__loading,
-    .primitive-page__error {
-      opacity: 0.7;
-      margin-top: 2rem;
-    }
-    .primitive-page__error {
-      color: var(--for-danger);
     }
   `,
 })

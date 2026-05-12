@@ -33,55 +33,91 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
   selector: 'for-api-table',
   imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    :host {
+      display: block;
+      font-size: 0.95rem;
+    }
+  `,
   template: `
-    <div forAccordion multiple [(value)]="expanded" class="api-accordion">
+    <div forAccordion multiple [(value)]="expanded">
       @for (piece of pieces(); track piece.class) {
-        <section forAccordionItem [value]="piece.class" class="api-piece">
-          <h3 class="api-piece__heading">
-            <button forAccordionTrigger class="api-piece__trigger">
-              <span class="api-piece__title">
-                <code>{{ piece.class }}</code>
+        <section
+          forAccordionItem
+          [value]="piece.class"
+          class="border-t border-border-soft last:border-b last:border-b-border-soft"
+        >
+          <h3 class="m-0">
+            <button
+              forAccordionTrigger
+              class="
+                group flex w-full cursor-pointer items-center justify-between gap-4
+                border-0 bg-transparent px-0 py-4 text-left
+                font-[inherit] text-inherit
+                focus-visible:rounded focus-visible:outline focus-visible:outline-2
+                focus-visible:outline-offset-2 focus-visible:outline-accent
+              "
+            >
+              <span class="flex flex-wrap items-baseline gap-3 text-xl font-semibold">
+                <code class="bg-transparent p-0">{{ piece.class }}</code>
                 @if (piece.selector) {
-                  <span class="api-piece__selector">{{ piece.selector }}</span>
+                  <span class="font-mono text-[0.85rem] font-normal opacity-65">
+                    {{ piece.selector }}
+                  </span>
                 }
               </span>
-              <span class="api-piece__chevron" aria-hidden="true">▾</span>
+              <span
+                aria-hidden="true"
+                class="
+                  text-[0.9rem] opacity-65 transition-transform duration-200 ease-out
+                  group-data-[state=open]:rotate-180
+                "
+              >
+                ▾
+              </span>
             </button>
           </h3>
-          <div forAccordionContent class="api-piece__body">
+          <div forAccordionContent class="pb-6 data-[state=closed]:hidden">
             @if (piece.doc) {
-              <p class="api-piece__doc">{{ piece.doc }}</p>
+              <p class="m-0 mb-4 opacity-85">{{ piece.doc }}</p>
             }
 
             @if (piece.inputs.length) {
-              <h4 class="api-section__title">Inputs</h4>
-              <table class="api-table">
+              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
+                Inputs
+              </h4>
+              <table class="w-full border-collapse text-[0.9rem]">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Default</th>
-                    <th>Description</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Type</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Default</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (input of piece.inputs; track input.name) {
                     <tr>
-                      <td>
-                        <code>{{ input.name }}</code>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.name }}</code>
                         @if (input.kind === 'inputRequired') {
-                          <span class="api-required">required</span>
+                          <span class="
+                              ml-1.5 inline-block rounded-[3px] bg-surface-muted
+                              px-1.5 text-[0.7em] uppercase tracking-[0.04em]
+                            ">required</span>
                         }
                       </td>
-                      <td><code>{{ input.type }}</code></td>
-                      <td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.type }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
                         @if (input.defaultValue !== null) {
-                          <code>{{ input.defaultValue }}</code>
+                          <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.defaultValue }}</code>
                         } @else {
-                          <span class="api-empty">—</span>
+                          <span class="opacity-40">—</span>
                         }
                       </td>
-                      <td>{{ input.doc || '—' }}</td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ input.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -89,34 +125,41 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.models.length) {
-              <h4 class="api-section__title">Models (two-way bindable)</h4>
-              <table class="api-table">
+              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
+                Models (two-way bindable)
+              </h4>
+              <table class="w-full border-collapse text-[0.9rem]">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Default</th>
-                    <th>Description</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Type</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Default</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (model of piece.models; track model.name) {
                     <tr>
-                      <td>
-                        <code>{{ model.name }}</code>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.name }}</code>
                         @if (model.kind === 'modelRequired') {
-                          <span class="api-required">required</span>
+                          <span class="
+                              ml-1.5 inline-block rounded-[3px] bg-surface-muted
+                              px-1.5 text-[0.7em] uppercase tracking-[0.04em]
+                            ">required</span>
                         }
                       </td>
-                      <td><code>{{ model.type }}</code></td>
-                      <td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.type }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
                         @if (model.defaultValue !== null) {
-                          <code>{{ model.defaultValue }}</code>
+                          <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.defaultValue }}</code>
                         } @else {
-                          <span class="api-empty">—</span>
+                          <span class="opacity-40">—</span>
                         }
                       </td>
-                      <td>{{ model.doc || '—' }}</td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ model.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -124,21 +167,27 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.outputs.length) {
-              <h4 class="api-section__title">Outputs</h4>
-              <table class="api-table">
+              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
+                Outputs
+              </h4>
+              <table class="w-full border-collapse text-[0.9rem]">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Payload</th>
-                    <th>Description</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Payload</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (output of piece.outputs; track output.name) {
                     <tr>
-                      <td><code>{{ output.name }}</code></td>
-                      <td><code>{{ output.type }}</code></td>
-                      <td>{{ output.doc || '—' }}</td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ output.name }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ output.type }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ output.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -146,19 +195,23 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.methods.length) {
-              <h4 class="api-section__title">Methods</h4>
-              <table class="api-table">
+              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
+                Methods
+              </h4>
+              <table class="w-full border-collapse text-[0.9rem]">
                 <thead>
                   <tr>
-                    <th>Signature</th>
-                    <th>Description</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Signature</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (method of piece.methods; track method.name) {
                     <tr>
-                      <td><code>{{ method.signature }}</code></td>
-                      <td>{{ method.doc || '—' }}</td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ method.signature }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ method.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -166,19 +219,25 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (hostKeys(piece).length) {
-              <h4 class="api-section__title">Host bindings</h4>
-              <table class="api-table">
+              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
+                Host bindings
+              </h4>
+              <table class="w-full border-collapse text-[0.9rem]">
                 <thead>
                   <tr>
-                    <th>Binding</th>
-                    <th>Expression</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Binding</th>
+                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Expression</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (key of hostKeys(piece); track key) {
                     <tr>
-                      <td><code>{{ key }}</code></td>
-                      <td><code>{{ piece.host[key] }}</code></td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ key }}</code>
+                      </td>
+                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ piece.host[key] }}</code>
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -188,118 +247,6 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
         </section>
       }
     </div>
-  `,
-  styles: `
-    :host {
-      display: block;
-      font-size: 0.95rem;
-    }
-    .api-piece {
-      border-top: 1px solid var(--for-border);
-    }
-    .api-piece:last-of-type {
-      border-bottom: 1px solid var(--for-border);
-    }
-    .api-piece__heading {
-      margin: 0;
-    }
-    .api-piece__trigger {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 1rem 0;
-      background: transparent;
-      border: none;
-      color: inherit;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .api-piece__trigger:focus-visible {
-      outline: 2px solid var(--for-accent);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-    .api-piece__title {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: baseline;
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .api-piece__title code {
-      background: transparent;
-      padding: 0;
-    }
-    .api-piece__selector {
-      font-family: var(--for-font-mono);
-      font-size: 0.85rem;
-      opacity: 0.65;
-      font-weight: 400;
-    }
-    .api-piece__chevron {
-      font-size: 0.9rem;
-      opacity: 0.65;
-      transition: transform 160ms ease;
-    }
-    .api-piece__trigger[data-state='open'] .api-piece__chevron {
-      transform: rotate(180deg);
-    }
-    .api-piece__body[data-state='closed'] {
-      display: none;
-    }
-    .api-piece__body {
-      padding: 0 0 1.5rem;
-    }
-    .api-piece__doc {
-      margin: 0 0 1rem;
-      opacity: 0.85;
-    }
-    .api-section__title {
-      margin: 1.25rem 0 0.5rem;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      opacity: 0.65;
-    }
-    .api-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-    .api-table th,
-    .api-table td {
-      padding: 0.5rem 0.75rem;
-      text-align: left;
-      vertical-align: top;
-      border-bottom: 1px solid var(--for-border);
-    }
-    .api-table th {
-      font-weight: 600;
-      opacity: 0.75;
-    }
-    .api-table code {
-      background: var(--for-surface-muted);
-      padding: 0.05rem 0.3rem;
-      border-radius: 3px;
-      font-size: 0.85em;
-    }
-    .api-required {
-      display: inline-block;
-      margin-left: 0.4rem;
-      padding: 0 0.4rem;
-      border-radius: 3px;
-      background: var(--for-surface-muted);
-      font-size: 0.7em;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .api-empty {
-      opacity: 0.4;
-    }
   `,
 })
 export class ForApiTable {

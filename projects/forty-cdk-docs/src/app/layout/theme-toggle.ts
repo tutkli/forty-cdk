@@ -34,8 +34,15 @@ const STORAGE_KEY = 'forty-cdk-docs-theme';
     <button
       forToggle
       [(pressed)]="isDark"
-      class="theme-toggle"
       [attr.aria-label]="ariaLabel()"
+      class="
+        inline-flex h-8 w-8 cursor-pointer items-center justify-center
+        rounded-sm border border-border-soft bg-surface-elevated
+        p-0 text-[0.95rem] text-on-surface-muted
+        transition-colors duration-100
+        hover:border-border-strong hover:text-on-surface
+        data-[state=checked]:text-on-surface
+      "
     >
       @if (isDark()) {
         <span aria-hidden="true">☀</span>
@@ -45,41 +52,6 @@ const STORAGE_KEY = 'forty-cdk-docs-theme';
         <span class="sr-only">Switch to dark mode</span>
       }
     </button>
-  `,
-  styles: `
-    .theme-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      border: 1px solid var(--for-border);
-      border-radius: var(--for-radius-sm);
-      background: var(--for-surface-elevated);
-      color: var(--for-on-surface-muted);
-      cursor: pointer;
-      transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
-      font-size: 0.95rem;
-    }
-    .theme-toggle:hover {
-      color: var(--for-on-surface);
-      border-color: var(--for-border-strong);
-    }
-    .theme-toggle[data-state='checked'] {
-      color: var(--for-on-surface);
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
-    }
   `,
 })
 export class ThemeToggle {

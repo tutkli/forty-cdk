@@ -49,115 +49,76 @@ interface ExampleResource {
   selector: 'for-example',
   imports: [NgComponentOutlet, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div forTabs [(value)]="tab" class="for-example">
-      <div forTabsList class="for-example__tabs">
-        <button forTabsTrigger value="preview">Preview</button>
-        <button forTabsTrigger value="code">Code</button>
-      </div>
-
-      @if (loaded.value(); as data) {
-        <div forTabsContent value="preview" class="for-example__panel for-example__preview">
-          <ng-container *ngComponentOutlet="data.component" />
-        </div>
-        <div forTabsContent value="code" class="for-example__panel for-example__code">
-          <button
-            type="button"
-            class="for-example__copy"
-            [attr.data-copied]="copied() ? '' : null"
-            (click)="copy(data.source)"
-          >
-            {{ copied() ? 'Copied' : 'Copy' }}
-          </button>
-          <pre><code>{{ data.source }}</code></pre>
-        </div>
-      } @else if (loaded.isLoading()) {
-        <div class="for-example__status for-example__loading">Loading example…</div>
-      } @else if (loaded.error()) {
-        <div class="for-example__status for-example__error">
-          Example not found: <code>{{ src() }}</code>
-        </div>
-      }
-    </div>
-  `,
   styles: `
     :host {
       display: block;
       margin: 1.5rem 0;
     }
-    .for-example {
-      border: 1px solid var(--for-border);
-      border-radius: 10px;
-      overflow: hidden;
-      background: var(--for-surface-elevated);
-    }
-    .for-example__tabs {
-      display: flex;
-      gap: 0.25rem;
-      padding: 0.5rem 0.5rem 0;
-      border-bottom: 1px solid var(--for-border);
-    }
-    .for-example__tabs [forTabsTrigger] {
-      padding: 0.4rem 0.9rem;
-      font: inherit;
-      font-size: 0.85rem;
-      background: transparent;
-      border: none;
-      border-radius: 6px 6px 0 0;
-      color: inherit;
-      opacity: 0.65;
-      cursor: pointer;
-    }
-    .for-example__tabs [forTabsTrigger][data-state='active'] {
-      opacity: 1;
-      background: var(--for-surface-muted);
-    }
-    .for-example__tabs [forTabsTrigger]:focus-visible {
-      outline: 2px solid var(--for-accent);
-      outline-offset: -2px;
-    }
-    .for-example__panel[data-state='inactive'] {
-      display: none;
-    }
-    .for-example__preview {
-      padding: 1.5rem;
-    }
-    .for-example__code {
-      position: relative;
-    }
-    .for-example__copy {
-      position: absolute;
-      top: 0.6rem;
-      right: 0.75rem;
-      padding: 0.3rem 0.65rem;
-      font: inherit;
-      font-size: 0.75rem;
-      border: 1px solid var(--for-border-strong);
-      border-radius: 4px;
-      background: var(--for-surface-muted);
-      color: inherit;
-      cursor: pointer;
-    }
-    .for-example__copy[data-copied] {
-      background: color-mix(in oklch, var(--for-success) 28%, transparent);
-    }
-    .for-example__code pre {
-      margin: 0;
-      padding: 1rem 1.25rem;
-      overflow-x: auto;
-      font-size: 0.85rem;
-      background: var(--for-surface-muted);
-    }
-    .for-example__status {
-      padding: 1.5rem;
-      opacity: 0.7;
-      font-size: 0.9rem;
-    }
-    .for-example__error code {
-      background: var(--for-border);
-      padding: 0.05rem 0.3rem;
-      border-radius: 3px;
-    }
+  `,
+  template: `
+    <div
+      forTabs
+      [(value)]="tab"
+      class="overflow-hidden rounded-[10px] border border-border-soft bg-surface-elevated"
+    >
+      <div forTabsList class="flex gap-1 border-b border-border-soft px-2 pt-2">
+        <button
+          forTabsTrigger
+          value="preview"
+          class="
+            cursor-pointer rounded-t-[6px] border-0 bg-transparent
+            px-3.5 py-1.5 font-[inherit] text-[0.85rem] text-inherit opacity-65
+            data-[state=active]:bg-surface-muted data-[state=active]:opacity-100
+            focus-visible:outline focus-visible:outline-2
+            focus-visible:-outline-offset-2 focus-visible:outline-accent
+          "
+        >
+          Preview
+        </button>
+        <button
+          forTabsTrigger
+          value="code"
+          class="
+            cursor-pointer rounded-t-[6px] border-0 bg-transparent
+            px-3.5 py-1.5 font-[inherit] text-[0.85rem] text-inherit opacity-65
+            data-[state=active]:bg-surface-muted data-[state=active]:opacity-100
+            focus-visible:outline focus-visible:outline-2
+            focus-visible:-outline-offset-2 focus-visible:outline-accent
+          "
+        >
+          Code
+        </button>
+      </div>
+
+      @if (loaded.value(); as data) {
+        <div forTabsContent value="preview" class="p-6 data-[state=inactive]:hidden">
+          <ng-container *ngComponentOutlet="data.component" />
+        </div>
+        <div forTabsContent value="code" class="relative data-[state=inactive]:hidden">
+          <button
+            type="button"
+            [attr.data-copied]="copied() ? '' : null"
+            (click)="copy(data.source)"
+            class="
+              absolute right-3 top-2.5 cursor-pointer rounded
+              border border-border-strong bg-surface-muted
+              px-2.5 py-1 font-[inherit] text-[0.75rem] text-inherit
+              data-[copied]:bg-[color-mix(in_oklch,var(--for-success)_28%,transparent)]
+            "
+          >
+            {{ copied() ? 'Copied' : 'Copy' }}
+          </button>
+          <pre class="m-0 overflow-x-auto bg-surface-muted px-5 py-4 text-[0.85rem]"><code>{{ data.source }}</code></pre>
+        </div>
+      } @else if (loaded.isLoading()) {
+        <div class="p-6 text-[0.9rem] opacity-70">Loading example…</div>
+      } @else if (loaded.error()) {
+        <div class="p-6 text-[0.9rem] opacity-70">
+          Example not found:
+          <code class="rounded-[3px] bg-border-soft px-1 py-0.5">{{ src() }}</code>
+        </div>
+      }
+    </div>
   `,
 })
 export class ForExample {

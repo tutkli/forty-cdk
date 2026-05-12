@@ -32,117 +32,68 @@ import { ForDialog, ForDialogBackdrop, ForDialogClose } from 'forty-cdk';
   template: `
     <button
       type="button"
-      class="search-trigger"
       [attr.aria-label]="'Open search (Ctrl+K)'"
       (click)="open()"
+      class="
+        inline-flex cursor-pointer items-center gap-2
+        rounded-sm border border-border-soft bg-surface-elevated
+        px-2.5 py-1.5 text-[0.85rem] font-[inherit] text-on-surface-muted
+        transition-colors duration-100
+        hover:border-border-strong hover:text-on-surface
+      "
     >
       <span aria-hidden="true">⌕</span>
-      <span class="search-trigger__label">Search</span>
-      <kbd>Ctrl K</kbd>
+      <span class="max-[720px]:hidden">Search</span>
+      <kbd
+        class="
+          rounded-[3px] border border-border-soft bg-surface-muted
+          px-1.5 py-0 font-mono text-[0.7rem]
+          max-[720px]:hidden
+        "
+      >
+        Ctrl K
+      </kbd>
     </button>
 
     @if (isOpen()) {
       <div
         forDialog
         ariaLabel="Search documentation"
-        class="search-dialog"
         (close)="isOpen.set(false)"
+        class="
+          fixed left-1/2 top-16 z-[100] w-[min(100%-2rem,640px)]
+          -translate-x-1/2 rounded-lg border border-border-soft
+          bg-surface-elevated px-5 pb-5 pt-4
+          text-on-surface shadow-2xl
+        "
       >
-        <div forDialogBackdrop class="search-backdrop"></div>
-        <button forDialogClose type="button" class="search-close" aria-label="Close search">
+        <div forDialogBackdrop class="fixed inset-0 z-[99] bg-black/50"></div>
+        <button
+          forDialogClose
+          type="button"
+          aria-label="Close search"
+          class="
+            absolute right-2.5 top-2 cursor-pointer border-0 bg-transparent
+            text-2xl leading-none text-on-surface-muted
+            hover:text-on-surface
+          "
+        >
           ×
         </button>
         @if (status() === 'unavailable') {
-          <p class="search-unavailable">
+          <p
+            class="
+              my-2 mb-4 rounded-md bg-surface-muted px-4 py-3
+              text-[0.9rem] text-on-surface-muted
+            "
+          >
             Pagefind index is generated as a postbuild step. Run
-            <code>pnpm docs:build</code> + <code>pnpm docs:postbuild</code> to
-            enable search locally.
+            <code>pnpm docs:build</code> + <code>pnpm docs:postbuild</code> to enable search
+            locally.
           </p>
         }
-        <div #mount class="pagefind-mount"></div>
+        <div #mount class="min-h-32"></div>
       </div>
-    }
-  `,
-  styles: `
-    :host {
-      display: inline-flex;
-    }
-    .search-trigger {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.65rem;
-      background: var(--for-surface-elevated);
-      border: 1px solid var(--for-border);
-      border-radius: var(--for-radius-sm);
-      color: var(--for-on-surface-muted);
-      font: inherit;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: border-color 120ms ease, color 120ms ease;
-    }
-    .search-trigger:hover {
-      border-color: var(--for-border-strong);
-      color: var(--for-on-surface);
-    }
-    .search-trigger kbd {
-      font-family: var(--for-font-mono);
-      font-size: 0.7rem;
-      padding: 0.05rem 0.35rem;
-      background: var(--for-surface-muted);
-      border: 1px solid var(--for-border);
-      border-radius: 3px;
-    }
-    @media (max-width: 720px) {
-      .search-trigger__label,
-      .search-trigger kbd {
-        display: none;
-      }
-    }
-    .search-backdrop {
-      position: fixed;
-      inset: 0;
-      background: oklch(0% 0 0 / 50%);
-      z-index: 99;
-    }
-    .search-dialog {
-      position: fixed;
-      top: 4rem;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(100% - 2rem, 640px);
-      background: var(--for-surface-elevated);
-      color: var(--for-on-surface);
-      border: 1px solid var(--for-border);
-      border-radius: var(--for-radius-lg);
-      padding: 1rem 1.25rem 1.25rem;
-      box-shadow: 0 30px 60px -20px oklch(0% 0 0 / 35%);
-      z-index: 100;
-    }
-    .search-close {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.6rem;
-      background: transparent;
-      border: none;
-      color: var(--for-on-surface-muted);
-      cursor: pointer;
-      font-size: 1.5rem;
-      line-height: 1;
-    }
-    .search-close:hover {
-      color: var(--for-on-surface);
-    }
-    .search-unavailable {
-      margin: 0.5rem 0 1rem;
-      padding: 0.75rem 1rem;
-      background: var(--for-surface-muted);
-      border-radius: var(--for-radius-md);
-      color: var(--for-on-surface-muted);
-      font-size: 0.9rem;
-    }
-    .pagefind-mount {
-      min-height: 8rem;
     }
   `,
 })

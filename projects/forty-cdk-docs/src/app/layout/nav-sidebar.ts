@@ -46,6 +46,19 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
   'data-display': 'Data display',
 };
 
+/**
+ * Active-link utilities reused by every `routerLinkActive` anchor below.
+ * `routerLinkActive` adds the `is-active` class; the `[&.is-active]:…`
+ * arbitrary variant targets it without leaving a local stylesheet.
+ */
+const NAV_LINK_CLASSES = `
+  block rounded-sm px-2.5 py-1.5 leading-tight
+  text-on-surface-muted no-underline
+  transition-colors duration-100
+  hover:bg-surface-muted hover:text-on-surface hover:no-underline
+  [&.is-active]:bg-accent-soft [&.is-active]:font-semibold [&.is-active]:text-accent
+`;
+
 @Component({
   selector: 'for-docs-nav-sidebar',
   imports: [
@@ -58,10 +71,17 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="docs-nav" aria-label="Documentation">
-      <section class="docs-nav__section">
-        <h3 class="docs-nav__heading">Guides</h3>
-        <ul class="docs-nav__list">
+    <nav class="flex flex-col gap-6 text-sm" aria-label="Documentation">
+      <section class="flex flex-col gap-1.5">
+        <h3
+          class="
+            m-0 text-[0.8rem] font-bold uppercase tracking-[0.06em]
+            text-on-surface-muted
+          "
+        >
+          Guides
+        </h3>
+        <ul class="m-0 flex list-none flex-col gap-px p-0">
           @for (link of docsLinks; track link.route) {
             <li>
               <a
@@ -69,6 +89,7 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
                 routerLinkActive="is-active"
                 [routerLinkActiveOptions]="{ exact: true }"
                 (click)="navigate.emit()"
+                [class]="navLinkClasses"
               >
                 {{ link.title }}
               </a>
@@ -77,23 +98,46 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
         </ul>
       </section>
 
-      <section class="docs-nav__section">
-        <h3 class="docs-nav__heading">
-          <a routerLink="/components" (click)="navigate.emit()">Components</a>
+      <section class="flex flex-col gap-1.5">
+        <h3
+          class="
+            m-0 text-[0.8rem] font-bold uppercase tracking-[0.06em]
+            text-on-surface-muted
+          "
+        >
+          <a
+            routerLink="/components"
+            (click)="navigate.emit()"
+            class="text-inherit no-underline hover:text-on-surface"
+          >
+            Components
+          </a>
         </h3>
       </section>
 
-      <div forAccordion multiple [(value)]="openSections" class="docs-nav__accordion">
+      <div forAccordion multiple [(value)]="openSections" class="flex flex-col gap-2">
         @for (section of sections(); track section.family) {
-          <section
-            forAccordionItem
-            [value]="section.family"
-            class="docs-nav__accordion-item"
-          >
-            <h4 class="docs-nav__subheading">
-              <button type="button" forAccordionTrigger class="docs-nav__subheading-trigger">
+          <section forAccordionItem [value]="section.family" class="flex flex-col gap-1">
+            <h4 class="m-0 text-[0.72rem] font-semibold">
+              <button
+                type="button"
+                forAccordionTrigger
+                class="
+                  group flex w-full cursor-pointer items-center gap-1.5
+                  rounded-sm border-0 bg-transparent
+                  px-2.5 py-1.5 font-[inherit]
+                  text-[0.72rem] font-semibold uppercase tracking-[0.08em]
+                  text-on-surface-muted opacity-85
+                  hover:bg-surface-muted hover:text-on-surface hover:opacity-100
+                  focus-visible:outline-2 focus-visible:outline-offset-1
+                  focus-visible:outline-accent
+                "
+              >
                 <svg
-                  class="docs-nav__chevron"
+                  class="
+                    opacity-70 transition-transform duration-200 ease-out
+                    group-data-[state=closed]:-rotate-90
+                  "
                   width="10"
                   height="10"
                   viewBox="0 0 24 24"
@@ -109,14 +153,15 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
                 <span>{{ section.label }}</span>
               </button>
             </h4>
-            <div forAccordionContent class="docs-nav__accordion-content">
-              <ul class="docs-nav__list">
+            <div forAccordionContent class="pl-1.5 data-[state=closed]:hidden">
+              <ul class="m-0 flex list-none flex-col gap-px p-0">
                 @for (primitive of section.primitives; track primitive.slug) {
                   <li>
                     <a
                       [routerLink]="['/components', primitive.slug]"
                       routerLinkActive="is-active"
                       (click)="navigate.emit()"
+                      [class]="navLinkClasses"
                     >
                       {{ primitive.title }}
                     </a>
@@ -129,123 +174,12 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
       </div>
     </nav>
   `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .docs-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      font-size: 0.875rem;
-    }
-    .docs-nav__section {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-    .docs-nav__heading {
-      margin: 0;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--for-on-surface-muted);
-    }
-    .docs-nav__heading a {
-      color: inherit;
-      text-decoration: none;
-    }
-    .docs-nav__heading a:hover {
-      color: var(--for-on-surface);
-    }
-    .docs-nav__subheading {
-      margin: 0;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-    .docs-nav__subheading-trigger {
-      all: unset;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      width: 100%;
-      padding: 0.3rem 0.6rem;
-      border-radius: var(--for-radius-sm);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--for-on-surface-muted);
-      opacity: 0.85;
-      font: inherit;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-    .docs-nav__subheading-trigger:hover {
-      background: var(--for-surface-muted);
-      color: var(--for-on-surface);
-    }
-    .docs-nav__subheading-trigger:focus-visible {
-      outline: 2px solid var(--for-accent);
-      outline-offset: 1px;
-    }
-    .docs-nav__chevron {
-      transition: transform 160ms ease;
-      opacity: 0.7;
-    }
-    .docs-nav__subheading-trigger[data-state='closed'] .docs-nav__chevron {
-      transform: rotate(-90deg);
-    }
-    .docs-nav__accordion {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .docs-nav__accordion-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .docs-nav__accordion-content[data-state='closed'] {
-      display: none;
-    }
-    .docs-nav__accordion-content {
-      padding-left: 0.4rem;
-    }
-    .docs-nav__list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.05rem;
-    }
-    .docs-nav__list a {
-      display: block;
-      padding: 0.3rem 0.6rem;
-      border-radius: var(--for-radius-sm);
-      color: var(--for-on-surface-muted);
-      text-decoration: none;
-      line-height: 1.4;
-      transition: background 0.12s ease, color 0.12s ease;
-    }
-    .docs-nav__list a:hover {
-      color: var(--for-on-surface);
-      background: var(--for-surface-muted);
-      text-decoration: none;
-    }
-    .docs-nav__list a.is-active {
-      color: var(--for-accent);
-      background: var(--for-accent-soft);
-      font-weight: 600;
-    }
-  `,
 })
 export class NavSidebar {
   readonly navigate = output<void>();
 
   protected readonly docsLinks = DOCS_LINKS;
+  protected readonly navLinkClasses = NAV_LINK_CLASSES;
 
   protected readonly sections = computed<readonly FamilySection[]>(() =>
     FAMILY_ORDER.map((family) => ({

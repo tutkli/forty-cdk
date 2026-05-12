@@ -35,84 +35,48 @@ const FAMILY_ORDER: readonly PrimitiveFamily[] = [
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="components-index__header">
-      <h1>Components</h1>
-      <p>
-        29 headless primitives, one composable surface per WAI-ARIA pattern. Pick a primitive
-        below to read its usage notes, full API reference, and accessibility contract.
+    <header class="mb-10">
+      <h1 class="m-0 text-[clamp(2rem,4vw,2.5rem)] tracking-tight">Components</h1>
+      <p class="max-w-[60ch] opacity-85">
+        29 headless primitives, one composable surface per WAI-ARIA pattern. Pick a primitive below
+        to read its usage notes, full API reference, and accessibility contract.
       </p>
     </header>
 
     @for (group of groups(); track group.family) {
-      <section class="components-family">
-        <h2 class="components-family__title">{{ group.label }}</h2>
-        <ul class="components-grid">
+      <section class="[&_+_section]:mt-8">
+        <h2
+          class="
+            mb-3 mt-0 text-[0.85rem] uppercase tracking-[0.08em]
+            opacity-65
+          "
+        >
+          {{ group.label }}
+        </h2>
+        <ul
+          class="
+            m-0 grid list-none gap-3 p-0
+            grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))]
+          "
+        >
           @for (entry of group.entries; track entry.slug) {
             <li>
-              <a class="components-card" [routerLink]="'/components/' + entry.slug">
-                <div class="components-card__title">{{ entry.title }}</div>
-                <p class="components-card__description">{{ entry.description }}</p>
+              <a
+                [routerLink]="'/components/' + entry.slug"
+                class="
+                  block rounded-lg border border-border-soft px-4 py-3.5
+                  text-inherit no-underline
+                  transition-colors duration-100
+                  hover:border-border-strong hover:bg-surface-muted
+                "
+              >
+                <div class="font-semibold">{{ entry.title }}</div>
+                <p class="m-0 mt-1.5 text-[0.9rem] opacity-80">{{ entry.description }}</p>
               </a>
             </li>
           }
         </ul>
       </section>
-    }
-  `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .components-index__header {
-      margin-bottom: 2.5rem;
-    }
-    .components-index__header h1 {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 2.5rem);
-      letter-spacing: -0.02em;
-    }
-    .components-index__header p {
-      max-width: 60ch;
-      opacity: 0.85;
-    }
-    .components-family + .components-family {
-      margin-top: 2rem;
-    }
-    .components-family__title {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      opacity: 0.65;
-      margin: 0 0 0.75rem;
-    }
-    .components-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-      gap: 0.75rem;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .components-card {
-      display: block;
-      padding: 0.9rem 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--for-border);
-      text-decoration: none;
-      color: inherit;
-      transition: background 120ms ease, border-color 120ms ease;
-    }
-    .components-card:hover {
-      background: var(--for-surface-muted);
-      border-color: var(--for-border-strong);
-    }
-    .components-card__title {
-      font-weight: 600;
-    }
-    .components-card__description {
-      margin: 0.3rem 0 0;
-      opacity: 0.8;
-      font-size: 0.9rem;
     }
   `,
 })
