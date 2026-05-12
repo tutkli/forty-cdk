@@ -81,6 +81,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/nested.fixture').then((m) => m.NestedFixture),
   },
   {
+    path: 'separator',
+    loadComponent: () =>
+      import('./fixtures/separator.fixture').then((m) => m.SeparatorFixture),
+  },
+  {
     path: 'slider',
     loadComponent: () => import('./fixtures/slider.fixture').then((m) => m.SliderFixture),
   },
