@@ -169,4 +169,27 @@ test.describe('Toast', () => {
     const ariaLive = await el(page, 'toast-0').getAttribute('aria-live');
     expect(ariaLive === 'polite' || ariaLive === 'assertive').toBe(true);
   });
+
+  // Touch-only branch of the shared swipe-dismiss helper. The toast
+  // swipe path is identical to the drawer's (same `_internal/swipe-
+  // dismiss/swipe-dismiss.ts` and same `pointerType === 'mouse'` arming
+  // guard), so this block is the mobile-projects regression for the
+  // non-mouse branch on the toast surface. Mobile Chrome / Mobile
+  // Safari run only the `@mobile`-tagged tests (per `playwright.config
+  // .ts` `grep: /@mobile/`); the desktop projects re-run them as a
+  // regression guard via the mouse fallback inside `dragFrom`.
+  test.describe('@mobile touch swipe', () => {
+    test('@mobile swipe-dismiss in touch real: drag past 50 px threshold dismisses', async ({
+      page,
+    }, testInfo) => {
+      await gotoFixture(page, 'toast', { swipe: 'right' });
+      await el(page, 'enqueue').click();
+      await expect(el(page, 'toast-0')).toBeVisible();
+
+      await dragFrom(page, el(page, 'toast-0'), { dx: 200, dy: 0 }, { testInfo });
+
+      await expect(el(page, 'toast-0')).toHaveCount(0);
+      await expect(el(page, 'toast-count')).toHaveText('0');
+    });
+  });
 });

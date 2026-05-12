@@ -233,3 +233,26 @@ test.describe('Separator (horizontal orientation)', () => {
     expect(topAfter.height - topBefore.height).toBeLessThanOrEqual(82);
   });
 });
+
+// Touch path coverage for the resizer variant's pointer drag. The
+// resizer uses `setPointerCapture` plus listeners for `pointermove` /
+// `pointerup` — under the mobile projects the `dragFrom` touch branch
+// dispatches `pointerType: 'touch'` events via `document.element
+// FromPoint` so the directive's handlers receive them via bubbling.
+// Desktop projects re-run the test as a regression guard via the mouse
+// branch.
+test.describe('Separator (@mobile touch drag)', () => {
+  test('@mobile touch drag resizes panes', async ({ page }, testInfo) => {
+    await gotoFixture(page, 'separator');
+    const leftBefore = (await el(page, 'left-pane').boundingBox())!;
+
+    await dragFrom(page, el(page, 'resizer'), { dx: 80, dy: 0 }, { testInfo });
+
+    const leftAfter = (await el(page, 'left-pane').boundingBox())!;
+    // Same arithmetic as the desktop "drag 100px right grows left pane"
+    // case scaled down to 80 px. Left pane grew by ~80 px (within a few
+    // px tolerance for the arming step and sub-pixel rounding).
+    expect(leftAfter.width - leftBefore.width).toBeGreaterThanOrEqual(70);
+    expect(leftAfter.width - leftBefore.width).toBeLessThanOrEqual(85);
+  });
+});

@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { dragFrom, el, gotoFixture } from './_helpers';
 
 /**
  * Pointer / drag math coverage for `[forSlider]`. The Vitest layer used to
@@ -504,5 +504,33 @@ test.describe('Slider (step granularity)', () => {
     await expect(el(page, 'last-value')).toHaveText('60');
     await page.keyboard.press('ArrowRight');
     await expect(el(page, 'last-value')).toHaveText('70');
+  });
+});
+
+// Touch path coverage for the slider thumb's `(pointerdown)` and the
+// window-bound `pointermove` / `pointerup` listeners. The desktop
+// blocks above use `page.mouse` directly; the `@mobile` block routes
+// through `dragFrom`'s touch branch (synthetic `pointerType: 'touch'`
+// events via `dispatchEvent`) on the mobile projects, while falling
+// back to the mouse branch on desktop projects as a regression guard.
+test.describe('Slider (@mobile touch drag)', () => {
+  test('@mobile touch drag of the thumb updates aria-valuenow', async ({
+    page,
+  }, testInfo) => {
+    await gotoFixture(page, 'slider');
+    // Initial value [50]; touch drag 50 px right on a 200 px track maps
+    // to roughly +25 value (allowing for the 5 px arming step and
+    // browser sub-pixel rounding).
+    await dragFrom(page, el(page, 'thumb-0'), { dx: 50, dy: 0 }, { testInfo });
+
+    const v = Number(await el(page, 'last-value').textContent());
+    // Same tolerance as the desktop "dragging the thumb to mid-track"
+    // case — Chromium vs WebKit can disagree by ~2 units due to event
+    // coalescing, and the arming step adds ~5 px upstream.
+    expect(v).toBeGreaterThan(50);
+    expect(v).toBeLessThanOrEqual(100);
+    // The thumb's `aria-valuenow` mirrors the new value verbatim, so it
+    // must match what `last-value` reports.
+    await expect(el(page, 'thumb-0')).toHaveAttribute('aria-valuenow', String(v));
   });
 });

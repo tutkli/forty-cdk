@@ -593,4 +593,69 @@ test.describe('Drawer', () => {
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
   });
+
+  // Touch-only branch of the swipe-dismiss helper (see
+  // `_internal/swipe-dismiss/swipe-dismiss.ts`, line 136: `pointerType
+  // === 'mouse'` gates the primary-button check, so the touch path
+  // takes the opposite branch). Desktop projects exercise the mouse
+  // branch via the existing swipe-to-dismiss block above; these
+  // `@mobile` specs drive `dragFrom` with `testInfo` so the helper
+  // engages its synthetic-touch path on `Mobile Chrome` / `Mobile
+  // Safari` while remaining a regression guard under desktop (where
+  // `isMobileProject(testInfo)` returns false and the mouse path runs
+  // exactly as before).
+  test.describe('@mobile touch swipe', () => {
+    test('@mobile swipe-to-close: drag past closeThreshold * dim dismisses with reason "swipe"', async ({
+      page,
+    }, testInfo) => {
+      // Same maths as the desktop "drag past closeThreshold * dim
+      // dismisses" case: 200 px drawer × default 0.25 threshold ⇒ 50 px
+      // dismissal threshold, a 120 px drag down clears it.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 }, { testInfo });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+    });
+
+    test('@mobile flick velocity dismisses below the position threshold', async ({
+      page,
+    }, testInfo) => {
+      // Multi-step touch drag where total travel stays under the
+      // 50 px position threshold (5 × 8 = 40 px) but the per-event
+      // velocity at release (8 px / 16 ms = 0.5 px/ms) clears the
+      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` flick gate in
+      // `swipe-dismiss.ts`. Releasing while moving fast biases the
+      // snap target one entry toward the edge — with no snap points
+      // configured that means dismissal.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: 8 }, 5, {
+        stepDelayMs: 16,
+        testInfo,
+      });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+    });
+
+    // The fixture does not currently expose a scrollable inner area —
+    // the drawer content (`first`, `second`, `text-input`, `close-btn`)
+    // has no overflow, so there is no way to drive a touchmove that the
+    // inner scroller consumes (which is exactly what the test would
+    // verify the swipe-dismiss helper ignores). Adding a scrollable
+    // child belongs to the original drawer wave (#269 explicitly tells
+    // us not to modify fixtures in this PR); parked with `test.fixme`
+    // so the audit row stays honest and the gap is discoverable.
+    test.fixme('@mobile scroll-inside-drawer does NOT dismiss', async () => {
+      // Will be implemented once the drawer fixture exposes a
+      // scrollable inner area (see #269 acceptance criterion).
+    });
+  });
 });

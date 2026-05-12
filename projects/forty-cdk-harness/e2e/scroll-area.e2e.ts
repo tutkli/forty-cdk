@@ -166,4 +166,45 @@ test.describe('ScrollArea (geometry + drag)', () => {
     await expect(el(page, 'scrollbar-vertical')).toBeHidden();
     await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
   });
+
+  // Touch path coverage for the synthetic thumb's pointer drag. The
+  // viewport hides native scrollbars via the global stylesheet
+  // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the
+  // contract under @mobile is "touch drag of the SYNTHETIC thumb moves
+  // scrollTop, with no native-momentum continuation after pointerup".
+  // Native momentum would keep scrollTop climbing past the moment the
+  // pointer is released; we snapshot scrollTop on release and assert
+  // it doesn't change after a short settle window. `dragFrom`'s touch
+  // branch is used on mobile projects, mouse branch on desktop
+  // (regression guard).
+  test.describe('@mobile touch drag', () => {
+    test('@mobile touch drag of the synthetic thumb scrolls without native momentum', async ({
+      page,
+    }, testInfo) => {
+      await gotoFixture(page, 'scroll-area');
+      await waitForOverflowMeasured(page);
+
+      const viewport = el(page, 'viewport');
+      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
+
+      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 }, { testInfo });
+
+      const scrollTopAfter = await viewport.evaluate(
+        (node) => (node as HTMLElement).scrollTop,
+      );
+      // Same lower bound as the desktop drag case — the synthetic thumb
+      // drag math doesn't depend on pointer type, just `clientY`.
+      expect(scrollTopAfter).toBeGreaterThan(50);
+
+      // No native momentum: synthetic scrollbars run on programmatic
+      // scrollTop writes, not on the browser's native overscroll-driven
+      // momentum. Wait a short settle window and assert scrollTop did
+      // not continue to climb past the drag endpoint.
+      await page.waitForTimeout(300);
+      const scrollTopSettled = await viewport.evaluate(
+        (node) => (node as HTMLElement).scrollTop,
+      );
+      expect(scrollTopSettled).toBe(scrollTopAfter);
+    });
+  });
 });
