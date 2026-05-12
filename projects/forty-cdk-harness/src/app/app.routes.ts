@@ -33,6 +33,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/tooltip.fixture').then((m) => m.TooltipFixture),
   },
   {
+    path: 'toolbar',
+    loadComponent: () => import('./fixtures/toolbar.fixture').then((m) => m.ToolbarFixture),
+  },
+  {
     path: 'hover-card',
     loadComponent: () => import('./fixtures/hover-card.fixture').then((m) => m.HoverCardFixture),
   },
