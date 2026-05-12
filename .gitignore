@@ -47,6 +47,7 @@ __screenshots__/
 # Audit working files (issue body drafts kept locally, not part of source)
 /.audit-issues/
 /.tmp-issue-*.md
+/*-AUDIT-*.md
 
 # Playwright
 /playwright-report/
