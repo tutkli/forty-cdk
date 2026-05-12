@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, gotoFixture, isMobileProject } from './_helpers';
 
 test.describe('HoverCard', () => {
   test('opens on hover (openDelay=0)', async ({ page }) => {
@@ -29,19 +29,23 @@ test.describe('HoverCard', () => {
   // path is the touch-accessible fallback — it still opens the card the
   // same way it does under desktop. Mobile projects exercise the real
   // touch primitive via `locator.tap()` (`hasTouch: true` in
-  // `playwright.config.ts`); desktop projects route the same call
-  // through emulated tap-as-click and the assertions still hold (a click
-  // does not engage `pointerenter` / hover state either, so the card
-  // remains closed there as well — regression guard).
+  // `playwright.config.ts`). Desktop projects (`chromium` / `webkit`)
+  // do NOT have `hasTouch: true`, so `locator.tap()` throws there —
+  // gate the tap assertion behind `isMobileProject(testInfo)`. The
+  // desktop "opens on hover (openDelay=0)" / "opens on keyboard focus"
+  // tests above already cover the non-touch surface area.
   test.describe('@mobile no-hover-on-touch', () => {
-    test('@mobile a simple tap does NOT open the card', async ({ page }) => {
+    test('@mobile a simple tap does NOT open the card', async ({ page }, testInfo) => {
+      test.skip(
+        !isMobileProject(testInfo),
+        'locator.tap() requires hasTouch:true; desktop projects have hover/focus coverage above',
+      );
       await gotoFixture(page, 'hover-card');
       await el(page, 'trigger').tap();
-      // HoverCard opens on pointer-enter / focus. A tap engages neither
-      // on mobile (no hover hardware) and on desktop produces a click
-      // without a sustained pointer-enter signal, so the card must stay
-      // unmounted. Assert a brief no-mount window to give any erroneous
-      // open path time to surface.
+      // HoverCard opens on pointer-enter / focus. A tap engages
+      // neither on mobile (no hover hardware), so the card must stay
+      // unmounted. Assert a brief no-mount window to give any
+      // erroneous open path time to surface.
       await page.waitForTimeout(100);
       await expect(el(page, 'card')).toHaveCount(0);
     });

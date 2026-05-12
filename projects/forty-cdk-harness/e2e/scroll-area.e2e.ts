@@ -174,20 +174,33 @@ test.describe('ScrollArea (geometry + drag)', () => {
   // scrollTop, with no native-momentum continuation after pointerup".
   // Native momentum would keep scrollTop climbing past the moment the
   // pointer is released; we snapshot scrollTop on release and assert
-  // it doesn't change after a short settle window. `dragFrom`'s touch
-  // branch is used on mobile projects, mouse branch on desktop
-  // (regression guard).
+  // it doesn't change after a short settle window. On `Mobile Chrome` /
+  // `Mobile Safari` (`hasTouch: true` + `isMobile: true` from the
+  // device descriptor) `page.mouse` emits pointer events with
+  // `pointerType: 'touch'` via the browser's mobile emulation, so the
+  // raw `mouse.*` drag below drives the touch code path natively
+  // without `dragFrom`'s synthetic-touch branch (which bypasses
+  // `setPointerCapture` and is unreliable on Mobile Safari). Desktop
+  // projects re-run the test as a regression guard via the same
+  // `mouse.*` calls under `pointerType: 'mouse'`.
   test.describe('@mobile touch drag', () => {
     test('@mobile touch drag of the synthetic thumb scrolls without native momentum', async ({
       page,
-    }, testInfo) => {
+    }) => {
       await gotoFixture(page, 'scroll-area');
       await waitForOverflowMeasured(page);
 
       const viewport = el(page, 'viewport');
       expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
 
-      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 }, { testInfo });
+      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const sx = thumbBox.x + thumbBox.width / 2;
+      const sy = thumbBox.y + thumbBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5); // arm
+      await page.mouse.move(sx, sy + 60);
+      await page.mouse.up();
 
       const scrollTopAfter = await viewport.evaluate(
         (node) => (node as HTMLElement).scrollTop,

@@ -174,19 +174,33 @@ test.describe('Toast', () => {
   // swipe path is identical to the drawer's (same `_internal/swipe-
   // dismiss/swipe-dismiss.ts` and same `pointerType === 'mouse'` arming
   // guard), so this block is the mobile-projects regression for the
-  // non-mouse branch on the toast surface. Mobile Chrome / Mobile
-  // Safari run only the `@mobile`-tagged tests (per `playwright.config
-  // .ts` `grep: /@mobile/`); the desktop projects re-run them as a
-  // regression guard via the mouse fallback inside `dragFrom`.
+  // non-mouse branch on the toast surface. On `Mobile Chrome` /
+  // `Mobile Safari` (`hasTouch: true` + `isMobile: true` from the
+  // device descriptor) `page.mouse` emits pointer events with
+  // `pointerType: 'touch'` via the browser's mobile emulation, so
+  // the raw `mouse.*` drag below drives the touch code path natively
+  // without `dragFrom`'s synthetic-touch branch (which bypasses
+  // `setPointerCapture` and is unreliable on Mobile Safari). Mobile
+  // Chrome / Mobile Safari run only the `@mobile`-tagged tests (per
+  // `playwright.config.ts` `grep: /@mobile/`); the desktop projects
+  // re-run them as a regression guard via the same `mouse.*` calls
+  // under `pointerType: 'mouse'`.
   test.describe('@mobile touch swipe', () => {
     test('@mobile swipe-dismiss in touch real: drag past 50 px threshold dismisses', async ({
       page,
-    }, testInfo) => {
+    }) => {
       await gotoFixture(page, 'toast', { swipe: 'right' });
       await el(page, 'enqueue').click();
       await expect(el(page, 'toast-0')).toBeVisible();
 
-      await dragFrom(page, el(page, 'toast-0'), { dx: 200, dy: 0 }, { testInfo });
+      const toastBox = (await el(page, 'toast-0').boundingBox())!;
+      const sx = toastBox.x + toastBox.width / 2;
+      const sy = toastBox.y + toastBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx + 5, sy); // arm
+      await page.mouse.move(sx + 200, sy);
+      await page.mouse.up();
 
       await expect(el(page, 'toast-0')).toHaveCount(0);
       await expect(el(page, 'toast-count')).toHaveText('0');

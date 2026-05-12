@@ -599,11 +599,9 @@ test.describe('Drawer', () => {
   // === 'mouse'` gates the primary-button check, so the touch path
   // takes the opposite branch). Desktop projects exercise the mouse
   // branch via the existing swipe-to-dismiss block above; these
-  // `@mobile` specs drive `dragFrom` with `testInfo` so the helper
-  // engages its synthetic-touch path on `Mobile Chrome` / `Mobile
-  // Safari` while remaining a regression guard under desktop (where
-  // `isMobileProject(testInfo)` returns false and the mouse path runs
-  // exactly as before).
+  // `@mobile` specs drive the gesture so it engages the touch path on
+  // `Mobile Chrome` / `Mobile Safari` while remaining a regression
+  // guard under desktop.
   test.describe('@mobile touch swipe', () => {
     test('@mobile swipe-to-close: drag past closeThreshold * dim dismisses with reason "swipe"', async ({
       page,
@@ -624,22 +622,42 @@ test.describe('Drawer', () => {
 
     test('@mobile flick velocity dismisses below the position threshold', async ({
       page,
-    }, testInfo) => {
-      // Multi-step touch drag where total travel stays under the
-      // 50 px position threshold (5 × 8 = 40 px) but the per-event
-      // velocity at release (8 px / 16 ms = 0.5 px/ms) clears the
-      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` flick gate in
-      // `swipe-dismiss.ts`. Releasing while moving fast biases the
-      // snap target one entry toward the edge — with no snap points
-      // configured that means dismissal.
+    }) => {
+      // The directive computes pointer velocity per `pointermove` as
+      // `moveTowardEdge / dt` where `dt = now - lastEventTime`. The
+      // release reads `#pointerVelocity` set by the LAST move, so the
+      // gesture needs to land back-to-back consecutive moves at the
+      // very end: the final move's `dt` against the preceding move
+      // is sub-millisecond (Playwright's CDP transport overhead), so
+      // even a small final delta yields a velocity well above the
+      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` flick gate.
+      //
+      // Total displacement = 5 (arm) + 10 (intermediate) + 25 (flick)
+      // = 40 px, below the 50 px (200 × 0.25) position threshold —
+      // so the only way for the drawer to dismiss is via the velocity
+      // branch of `#onSwipeRelease` (`offset >= dim * closeThreshold
+      // || #pointerVelocity >= 0.4`).
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: 8 }, 5, {
-        stepDelayMs: 16,
-        testInfo,
-      });
+      const handleBox = (await el(page, 'handle').boundingBox())!;
+      const sx = handleBox.x + handleBox.width / 2;
+      const sy = handleBox.y + handleBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5); // arm
+      // Settle so the next move's `dt` is non-trivial — anchors the
+      // intermediate event with a known timestamp gap so the flick's
+      // tight dt below stands out unambiguously.
+      await page.waitForTimeout(120);
+      await page.mouse.move(sx, sy + 15); // intermediate (slow, velocity here is small)
+      // Back-to-back final move + release: the directive recomputes
+      // `#pointerVelocity` on this move with `dt` ≈ sub-millisecond
+      // CDP transport, so velocity ≈ 25 px / ~1 ms = 25 px/ms (way
+      // above 0.4).
+      await page.mouse.move(sx, sy + 40);
+      await page.mouse.up();
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
