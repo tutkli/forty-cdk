@@ -128,24 +128,26 @@ test.describe('Toast', () => {
     page,
   }) => {
     // Strategy:
-    //   1. Enqueue a 500 ms toast.
-    //   2. Hover it immediately (well within 500 ms). The `pointerenter`
-    //      host listener calls `onPause('hover')` → host gets
-    //      `data-paused`, timer is cancelled and remaining is captured.
-    //   3. Wait 700 ms — well past the original 500 ms duration. If the
+    //   1. Enqueue a 2000 ms toast — long enough that Playwright's
+    //      enqueue → visibility-check → hit-test → hover sequence (which
+    //      eats 200–400 ms on CI) cannot race the auto-dismiss timer.
+    //   2. Hover it. The `pointerenter` host listener calls
+    //      `onPause('hover')` → host gets `data-paused`, timer is
+    //      cancelled and the remaining ms is captured.
+    //   3. Wait 2500 ms — well past the original 2000 ms duration. If the
     //      pause is honoured the toast is still mounted because no timer
-    //      is running; if it isn't, the toast unmounts at 500 ms.
+    //      is running; if it isn't, the toast unmounts at ~2000 ms.
     //   4. Leave the toast. `pointerleave` → `onResume('hover')` →
-    //      remaining ms is rescheduled. The toast unmounts within the
-    //      next ~500 ms.
-    await gotoFixture(page, 'toast', { duration: '500' });
+    //      the captured remaining ms is rescheduled. The toast unmounts
+    //      within Playwright's default 5 s expect timeout.
+    await gotoFixture(page, 'toast', { duration: '2000' });
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-0')).toBeVisible();
 
     await el(page, 'toast-0').hover();
     await expect(el(page, 'toast-0')).toHaveAttribute('data-paused', '');
 
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(2500);
     await expect(el(page, 'toast-0')).toBeVisible();
     await expect(el(page, 'toast-0')).toHaveAttribute('data-paused', '');
 

@@ -7,6 +7,7 @@ import {
   DOCUMENT,
   inject,
   signal,
+  ViewEncapsulation,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -36,8 +37,11 @@ import {
  * Query params:
  *  - `?side=top-right|top-left|top-center|bottom-right|bottom-left|bottom-center`
  *    — picks the corner / edge where the viewport anchors. Default `top-right`.
- *  - `?duration=500` — auto-dismiss duration (ms). Default `0` (sticky), so
+ *  - `?duration=N` — auto-dismiss duration (ms). Default `0` (sticky), so
  *    specs that don't care about auto-dismiss are not subject to the timer.
+ *    The auto-dismiss spec uses `500`; the hover-pause spec uses a longer
+ *    `2000` so Playwright's enqueue → visibility-check → hit-test → hover
+ *    sequence cannot race the timer on slow CI.
  *  - `?autoDismiss=1` — shorthand for `?duration=500`. Used by tests that
  *    just want "auto-dismiss on" without picking a specific number.
  *  - `?swipe=right` — opt-in swipe direction wired through both the viewport
@@ -46,18 +50,31 @@ import {
 @Component({
   selector: 'app-toast-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // `ViewEncapsulation.None` is load-bearing here: the `[forToast]` hosts are
+  // rendered inside `<for-toast-viewport>`'s template, NOT inside this
+  // fixture's template, so they carry the viewport component's `_ngcontent-*`
+  // attribute rather than the fixture's. With default emulated encapsulation,
+  // the `[forToast] { width: 280px; pointer-events: auto; touch-action: none;
+  // ... }` rule below would be scoped to the fixture's attribute and silently
+  // skip the actual toast elements — leaving them at near-zero content width
+  // and making Playwright's hit test at the toast's bbox centre return the
+  // fixture host (`<app-toast-fixture> intercepts pointer events`) instead of
+  // the toast. That swallowed every pointer event the swipe-dismiss and
+  // hover-pause specs depend on. Encapsulation `None` lets the rule apply to
+  // the toast elements regardless of where they render in the DOM.
+  encapsulation: ViewEncapsulation.None,
   imports: [ForToastViewport],
   styles: [
     `
-      :host {
+      app-toast-fixture {
         display: block;
         padding: 24px;
         min-height: 100vh;
       }
-      [data-testid='enqueue'] {
+      app-toast-fixture [data-testid='enqueue'] {
         padding: 8px 16px;
       }
-      for-toast-viewport {
+      app-toast-fixture for-toast-viewport {
         position: fixed;
         display: flex;
         flex-direction: column;
@@ -66,33 +83,33 @@ import {
         padding: 16px;
         pointer-events: none;
       }
-      for-toast-viewport[data-side='top-right'] {
+      app-toast-fixture for-toast-viewport[data-side='top-right'] {
         top: 0;
         right: 0;
       }
-      for-toast-viewport[data-side='top-left'] {
+      app-toast-fixture for-toast-viewport[data-side='top-left'] {
         top: 0;
         left: 0;
       }
-      for-toast-viewport[data-side='top-center'] {
+      app-toast-fixture for-toast-viewport[data-side='top-center'] {
         top: 0;
         left: 50%;
         transform: translateX(-50%);
       }
-      for-toast-viewport[data-side='bottom-right'] {
+      app-toast-fixture for-toast-viewport[data-side='bottom-right'] {
         bottom: 0;
         right: 0;
       }
-      for-toast-viewport[data-side='bottom-left'] {
+      app-toast-fixture for-toast-viewport[data-side='bottom-left'] {
         bottom: 0;
         left: 0;
       }
-      for-toast-viewport[data-side='bottom-center'] {
+      app-toast-fixture for-toast-viewport[data-side='bottom-center'] {
         bottom: 0;
         left: 50%;
         transform: translateX(-50%);
       }
-      [forToast] {
+      app-toast-fixture [forToast] {
         display: block;
         width: 280px;
         padding: 12px 16px;
@@ -107,7 +124,7 @@ import {
           var(--toast-swipe-movement-y, 0px)
         );
       }
-      [forToast][data-swipe='cancel'] {
+      app-toast-fixture [forToast][data-swipe='cancel'] {
         transition: transform 200ms ease;
         transform: translate(0, 0);
       }
