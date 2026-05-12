@@ -68,6 +68,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/listbox.fixture').then((m) => m.ListboxFixture),
   },
   {
+    path: 'menubar',
+    loadComponent: () => import('./fixtures/menubar.fixture').then((m) => m.MenubarFixture),
+  },
+  {
     path: 'navigation-menu',
     loadComponent: () =>
       import('./fixtures/navigation-menu.fixture').then((m) => m.NavigationMenuFixture),
