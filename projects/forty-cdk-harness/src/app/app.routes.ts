@@ -7,6 +7,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/dialog.fixture').then((m) => m.DialogFixture),
   },
   {
+    path: 'accordion',
+    loadComponent: () =>
+      import('./fixtures/accordion.fixture').then((m) => m.AccordionFixture),
+  },
+  {
     path: 'drawer',
     loadComponent: () => import('./fixtures/drawer.fixture').then((m) => m.DrawerFixture),
   },
