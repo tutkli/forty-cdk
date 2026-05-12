@@ -30,6 +30,10 @@ export const routes: Routes = [
       import('./fixtures/dropdown-menu.fixture').then((m) => m.DropdownMenuFixture),
   },
   {
+    path: 'menu-base',
+    loadComponent: () => import('./fixtures/menu-base.fixture').then((m) => m.MenuBaseFixture),
+  },
+  {
     path: 'context-menu',
     loadComponent: () =>
       import('./fixtures/context-menu.fixture').then((m) => m.ContextMenuFixture),
