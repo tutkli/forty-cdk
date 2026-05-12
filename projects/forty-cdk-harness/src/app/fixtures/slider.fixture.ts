@@ -21,6 +21,11 @@ import {
  *  - `?dir=rtl` — sets `dir="rtl"` for the RTL pointer-mapping case.
  *  - `?initial=20,80` — comma-separated initial values (single thumb or N).
  *  - `?disabled=1` — applies `disabled` so pointer events are ignored.
+ *  - `?min=N` — overrides the directive's default min (`0`).
+ *  - `?max=N` — overrides the directive's default max (`100`).
+ *  - `?step=N` — overrides the directive's default step (`1`). Used by the
+ *    step-granularity / keyboard specs that need a coarser snap so an
+ *    `ArrowRight` increments by `step` rather than `1`.
  */
 @Component({
   selector: 'app-slider-fixture',
@@ -93,6 +98,9 @@ import {
       [orientation]="orientation"
       [dir]="dir"
       [disabled]="disabled"
+      [min]="min"
+      [max]="max"
+      [step]="step"
       (valueChange)="onValueChange($event)"
       (valueCommit)="onValueCommit($event)"
       (touchedChange)="onTouchedChange($event)"
@@ -129,6 +137,13 @@ export class SliderFixture {
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
   protected readonly disabled =
     this.#route.snapshot.queryParamMap.get('disabled') === '1';
+
+  protected readonly min =
+    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('min')) ?? 0;
+  protected readonly max =
+    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('max')) ?? 100;
+  protected readonly step =
+    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('step')) ?? 1;
 
   protected readonly value = signal<readonly number[]>(
     parseInitial(this.#route.snapshot.queryParamMap.get('initial')) ?? [50],
@@ -169,4 +184,10 @@ function parseInitial(raw: string | null): readonly number[] | null {
     .map((s) => Number.parseFloat(s.trim()))
     .filter((n) => Number.isFinite(n));
   return parts.length > 0 ? parts : null;
+}
+
+function parseFiniteNumber(raw: string | null): number | null {
+  if (raw == null) return null;
+  const n = Number.parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
 }
