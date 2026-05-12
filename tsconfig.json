@@ -34,6 +34,9 @@
     },
     {
       "path": "./projects/forty-cdk-harness/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/forty-cdk-docs/tsconfig.app.json"
     }
   ]
 }

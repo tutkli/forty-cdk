@@ -1,0 +1,164 @@
+{
+  "primitive": "toolbar",
+  "pieces": [
+    {
+      "class": "ForToolbarButton",
+      "kind": "directive",
+      "selector": "[forToolbarButton]",
+      "exportAs": "forToolbarButton",
+      "host": {
+        "type": "button",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-orientation]": "toolbar?.orientation()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Plain push button inside `[forToolbar]`. Apply on `<button>` so Enter / Space activate via native semantics. The directive forces `type=\"button\"` to avoid accidental form submission inside a `<form>`.",
+      "source": "toolbar/toolbar-button.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Per-item disabled (in addition to the toolbar's `disabled`)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToolbarLink",
+      "kind": "directive",
+      "selector": "[forToolbarLink]",
+      "exportAs": "forToolbarLink",
+      "host": {
+        "[attr.tabindex]": "tabindex()",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-orientation]": "toolbar?.orientation()",
+        "(keydown)": "onKeyDown($event)",
+        "(click)": "onClick($event)"
+      },
+      "doc": "Hyperlink inside `[forToolbar]`. Apply on `<a>`. Honors the toolbar's roving tabindex and arrow-key navigation; `Enter` follows the link via native semantics.",
+      "source": "toolbar/toolbar-link.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true the link is announced as disabled and clicks are suppressed. Native `<a>` doesn't have a `disabled` attribute — we rely on `aria-disabled` and prevent navigation in the click handler."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToolbarSeparator",
+      "kind": "directive",
+      "selector": "[forToolbarSeparator]",
+      "exportAs": "forToolbarSeparator",
+      "host": {
+        "[attr.role]": "decorative() ? \"none\" : \"separator\"",
+        "[attr.aria-orientation]": "ariaOrientation()",
+        "[attr.data-orientation]": "effectiveOrientation()"
+      },
+      "doc": "Visual separator inside a toolbar. Defaults `orientation` to the opposite of the toolbar's main axis (a vertical line in a horizontal toolbar, and vice versa) — pass `orientation` explicitly to override.",
+      "source": "toolbar/toolbar-separator.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical' | undefined",
+          "defaultValue": "undefined",
+          "doc": "Axis the separator divides along. When omitted, falls back to the cross-axis of the parent toolbar (horizontal toolbar → vertical separator, and vice versa)."
+        },
+        {
+          "name": "decorative",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, the separator is purely visual: it gets `role=\"none\"` and no `aria-orientation`, so assistive tech treats surrounding content as a single flow."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToolbar",
+      "kind": "directive",
+      "selector": "[forToolbar]",
+      "exportAs": "forToolbar",
+      "host": {
+        "role": "toolbar",
+        "[attr.aria-orientation]": "orientation()",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Toolbar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/).",
+      "source": "toolbar/toolbar.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.loop",
+          "doc": "Whether arrow navigation wraps around past the first / last enabled item. Default `true`. The default is read from `provideForToolbarDefaults` for the surrounding scope."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "navigate",
+          "signature": "navigate(currentItem: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "isFirstFocusableItem",
+          "signature": "isFirstFocusableItem(el: HTMLElement): boolean",
+          "doc": ""
+        },
+        {
+          "name": "registerItem",
+          "signature": "registerItem(handle: ForToolbarItemHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterItem",
+          "signature": "unregisterItem(handle: ForToolbarItemHandle): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

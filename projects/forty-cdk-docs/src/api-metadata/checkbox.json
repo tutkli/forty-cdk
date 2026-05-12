@@ -1,0 +1,65 @@
+{
+  "primitive": "checkbox",
+  "pieces": [
+    {
+      "class": "ForCheckboxIndicator",
+      "kind": "directive",
+      "selector": "[forCheckboxIndicator]",
+      "exportAs": "forCheckboxIndicator",
+      "host": {
+        "[attr.data-state]": "state()",
+        "[attr.hidden]": "visible() ? null : \"\""
+      },
+      "doc": "Optional indicator slot inside a `ForCheckbox`. Apply on the element the consumer wants to show only while the checkbox is `checked` or `indeterminate` (typically a check icon, dash, or filled square). The directive flips `[hidden]` and mirrors `data-state` from the parent so the consumer can style transitions without per-state bindings.",
+      "source": "checkbox/checkbox-indicator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForCheckbox",
+      "kind": "directive",
+      "selector": "[forCheckbox]",
+      "exportAs": "forCheckbox",
+      "host": {
+        "role": "checkbox",
+        "type": "button",
+        "[attr.aria-checked]": "ariaChecked()",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.name]": "name() || null",
+        "[attr.data-state]": "dataState()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-readonly]": "readonly() ? \"\" : null",
+        "(click)": "onClick()",
+        "(blur)": "touched.set(true)"
+      },
+      "doc": "Headless checkbox implementing the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/) with optional tri-state (`indeterminate`) support, plus Angular's `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "checkbox/checkbox.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [
+        {
+          "name": "checked",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable on/off state. Required by `FormCheckboxControl`."
+        },
+        {
+          "name": "indeterminate",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable indeterminate state. When true, `aria-checked=\"mixed\"` is announced regardless of `checked`. Activation clears it."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

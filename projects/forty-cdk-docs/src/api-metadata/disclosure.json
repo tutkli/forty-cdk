@@ -1,0 +1,84 @@
+{
+  "primitive": "disclosure",
+  "pieces": [
+    {
+      "class": "ForDisclosureContent",
+      "kind": "directive",
+      "selector": "[forDisclosureContent]",
+      "exportAs": "forDisclosureContent",
+      "host": {
+        "[id]": "ctx.contentId()",
+        "[attr.aria-hidden]": "ctx.open() ? null : \"true\"",
+        "[attr.inert]": "ctx.open() ? null : \"\"",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null"
+      },
+      "doc": "Disclosed content panel for a `ForDisclosure`. The directive does not manage DOM presence — wrap with `@if (open())` so the panel mounts and unmounts with the disclosure state, and use `animate.enter` / `animate.leave` for transitions if desired. If the consumer prefers to keep the panel mounted (for CSS-only transitions or to preserve internal state), the directive reflects `aria-hidden=\"true\"` and `inert` while closed so the panel is removed from the accessibility tree and focus order automatically.",
+      "source": "disclosure/disclosure-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDisclosureTrigger",
+      "kind": "directive",
+      "selector": "[forDisclosureTrigger]",
+      "exportAs": "forDisclosureTrigger",
+      "host": {
+        "[id]": "ctx.triggerId()",
+        "[attr.aria-expanded]": "ctx.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "ctx.contentId()",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "(click)": "ctx.toggle()"
+      },
+      "doc": "Trigger button for a `ForDisclosure`. Apply on a `<button type=\"button\">` so Enter/Space toggling come from native button behavior.",
+      "source": "disclosure/disclosure-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDisclosure",
+      "kind": "directive",
+      "selector": "[forDisclosure]",
+      "exportAs": "forDisclosure",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Root of the Disclosure primitive. Holds the open/disabled state and the IDs that wire the trigger to its content.",
+      "source": "disclosure/disclosure.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, click on the trigger is ignored and `data-disabled` is reflected."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable open state. Use `[(open)]` for both read & write, or `(openChange)` alone to observe transitions when the directive itself toggles state (trigger click). The `model()` change emitter does NOT fire for consumer-driven writes via `[(open)]`, so subscribing to `(openChange)` is safe and only sees internal transitions."
+        }
+      ],
+      "methods": [
+        {
+          "name": "toggle",
+          "signature": "toggle(): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

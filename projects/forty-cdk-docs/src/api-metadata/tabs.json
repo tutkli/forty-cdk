@@ -1,0 +1,206 @@
+{
+  "primitive": "tabs",
+  "pieces": [
+    {
+      "class": "ForTabsContent",
+      "kind": "directive",
+      "selector": "[forTabsContent]",
+      "exportAs": "forTabsContent",
+      "host": {
+        "role": "tabpanel",
+        "tabindex": "0",
+        "[id]": "id()",
+        "[attr.aria-labelledby]": "labelledBy()",
+        "[attr.aria-hidden]": "selected() ? null : \"true\"",
+        "[attr.inert]": "selected() ? null : \"\"",
+        "[attr.data-state]": "selected() ? \"active\" : \"inactive\"",
+        "[attr.data-orientation]": "group.orientation()"
+      },
+      "doc": "Panel for one tab. The directive does not manage DOM presence — leave the panel mounted (idiomatic for tabs, preserves scroll/input state across activations) and either toggle visibility in CSS via `[data-state=\"inactive\"]` or wrap with `@if (selected())` to unmount it. While inactive, the directive reflects `aria-hidden=\"true\"` and `inert` so the mounted-but-inactive panel is removed from the accessibility tree and focus order automatically.",
+      "source": "tabs/tabs-content.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTabsList",
+      "kind": "directive",
+      "selector": "[forTabsList]",
+      "exportAs": "forTabsList",
+      "host": {
+        "role": "tablist",
+        "[attr.aria-orientation]": "group.orientation()",
+        "[attr.data-orientation]": "group.orientation()"
+      },
+      "doc": "The `role=\"tablist\"` container — wraps the `ForTabsTrigger` elements (and only those — panels live as siblings of the list). Reflects the parent's orientation as `aria-orientation`.",
+      "source": "tabs/tabs-list.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTabsTrigger",
+      "kind": "directive",
+      "selector": "[forTabsTrigger]",
+      "exportAs": "forTabsTrigger",
+      "host": {
+        "role": "tab",
+        "type": "button",
+        "[id]": "id()",
+        "[attr.aria-selected]": "selected() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "controlsId()",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.data-state]": "selected() ? \"active\" : \"inactive\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-orientation]": "group.orientation()",
+        "(click)": "onClick()",
+        "(focus)": "onFocus()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Header button for one tab. Apply on a `<button type=\"button\">` so Enter / Space activation come from native button behavior.",
+      "source": "tabs/tabs-trigger.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTabs",
+      "kind": "directive",
+      "selector": "[forTabs]",
+      "exportAs": "forTabs",
+      "host": {
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Root of the Tabs primitive. Owns the selected value, activation mode, orientation, and disabled state. Provides the shared context to descendant `ForTabsList` / `ForTabsTrigger` / `ForTabsContent` directives.",
+      "source": "tabs/tabs.ts",
+      "inputs": [
+        {
+          "name": "activationMode",
+          "kind": "input",
+          "type": "TabsActivationMode",
+          "defaultValue": "this.#defaults.activationMode",
+          "doc": ""
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.loop",
+          "doc": "Whether arrow navigation wraps around past the first / last enabled trigger. Default `true` — matches the WAI-ARIA Tabs APG. Set to `false` for a non-wrapping tablist. The default is read from `provideForTabsDefaults` for the surrounding scope."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. The selected tab's value. The `model()` change emitter (`(valueChange)`) fires only on internal selection changes (trigger click or automatic-mode arrow nav), never on consumer writes via `[(value)]` — observe transitions without binding back."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "select",
+          "signature": "select(v: string): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(handle: ForTabsTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(handle: ForTabsTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(handle: ForTabsContentHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(handle: ForTabsContentHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "triggerIdFor",
+          "signature": "triggerIdFor(value: string): string | null",
+          "doc": ""
+        },
+        {
+          "name": "contentIdFor",
+          "signature": "contentIdFor(value: string): string | null",
+          "doc": ""
+        },
+        {
+          "name": "isFirstEnabledTrigger",
+          "signature": "isFirstEnabledTrigger(el: HTMLElement): boolean",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

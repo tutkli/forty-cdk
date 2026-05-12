@@ -1,0 +1,270 @@
+{
+  "primitive": "toast",
+  "pieces": [
+    {
+      "class": "ForToastAction",
+      "kind": "directive",
+      "selector": "[forToastAction]",
+      "exportAs": "forToastAction",
+      "host": {
+        "type": "button",
+        "(click)": "onClick()"
+      },
+      "doc": "Action button inside a toast (e.g. \"Undo\"). Apply on a `<button type=\"button\">` so Space / Enter dispatch a native click.",
+      "source": "toast/toast-action.ts",
+      "inputs": [
+        {
+          "name": "altText",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Self-contained text read aloud in place of the visible label so the user knows how to recover the action after the toast is gone. Required for time-limited toasts per WCAG 2.2.1; defaults to `''` (no alt text)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToastClose",
+      "kind": "directive",
+      "selector": "[forToastClose]",
+      "exportAs": "forToastClose",
+      "host": {
+        "type": "button",
+        "aria-label": "Close",
+        "(click)": "onClick()"
+      },
+      "doc": "Close button inside a toast. Apply on a `<button type=\"button\">` so Space / Enter dispatch a native click. Clicking emits `(close)` from the parent `[forToast]` with reason `'manual'`.",
+      "source": "toast/toast-close.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToastDescription",
+      "kind": "directive",
+      "selector": "[forToastDescription]",
+      "exportAs": "forToastDescription",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Supplementary description for the toast. Registers its generated id with the parent `[forToast]` so `aria-describedby` is wired automatically.",
+      "source": "toast/toast-description.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToastTitle",
+      "kind": "directive",
+      "selector": "[forToastTitle]",
+      "exportAs": "forToastTitle",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Element holding the toast's accessible name. Registers its generated id with the parent `[forToast]` so `aria-labelledby` is wired automatically. Apply on whatever heading element fits (`<strong>`, `<h2>`, `<div>`).",
+      "source": "toast/toast-title.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToastViewport",
+      "kind": "component",
+      "selector": "for-toast-viewport, [forToastViewport]",
+      "exportAs": "forToastViewport",
+      "host": {
+        "role": "region",
+        "[attr.aria-label]": "label()",
+        "tabindex": "-1",
+        "[attr.data-toast-count]": "visible().length"
+      },
+      "doc": "Mounted once near the root of the app — typically inside `app.html`. Listens to `ForToastManager.toasts()` and renders each programmatic toast inline. Position the viewport from CSS (`position: fixed`, `top|bottom`, `left|right`) — the directive doesn't impose any.",
+      "source": "toast/toast-viewport.ts",
+      "inputs": [
+        {
+          "name": "label",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "'Notifications'",
+          "doc": "Accessible name for the viewport region. Default `'Notifications'`."
+        },
+        {
+          "name": "hotkey",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Hotkey to focus the viewport. Default reads from `provideForToastDefaults`, falling back to `F6`."
+        },
+        {
+          "name": "maxVisible",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "Infinity",
+          "doc": "Maximum number of toasts rendered at once. Older toasts collapse out of the visible stack but stay in `manager.toasts()` until dismissed. `Infinity` (default) renders all live toasts."
+        },
+        {
+          "name": "swipeDirection",
+          "kind": "input",
+          "type": "ForToastSwipeDirection",
+          "defaultValue": "null",
+          "doc": "Default swipe direction(s) applied to every programmatic toast that doesn't override `swipeDirection` in its own config. `null` (default) keeps swipe disabled unless explicitly opted into per-toast."
+        },
+        {
+          "name": "swipeThreshold",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "50",
+          "doc": "Default dismiss-distance in pixels applied to every programmatic toast that doesn't override `swipeThreshold` in its own config."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToast",
+      "kind": "directive",
+      "selector": "[forToast]",
+      "exportAs": "forToast",
+      "host": {
+        "[attr.role]": "computedRole()",
+        "[attr.aria-live]": "ariaLive()",
+        "aria-atomic": "true",
+        "[attr.aria-labelledby]": "labelledBy()",
+        "[attr.aria-describedby]": "describedBy()",
+        "tabindex": "0",
+        "[attr.data-state]": "\"open\"",
+        "[attr.data-variant]": "variant()",
+        "[attr.data-paused]": "paused() ? \"\" : null",
+        "[attr.data-swipe]": "swipeState()",
+        "[attr.data-swipe-direction]": "swipeActiveDirection()",
+        "[style.--toast-swipe-movement-x.px]": "swipeMovementX()",
+        "[style.--toast-swipe-movement-y.px]": "swipeMovementY()",
+        "(pointerenter)": "onPause(\"hover\")",
+        "(pointerleave)": "onResume(\"hover\")",
+        "(focusin)": "onPause(\"focus\")",
+        "(focusout)": "onMaybeResumeFocus($event)",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "One toast notification. Apply on a `<div>` (or `<output>`, `<section>`) — the directive sets `role=\"status\"` (`'info'` / `'success'` / `'warning'`) or `role=\"alert\"` (`'error'`), `aria-live`, and the timer / pause machinery.",
+      "source": "toast/toast.ts",
+      "inputs": [
+        {
+          "name": "variant",
+          "kind": "input",
+          "type": "ForToastVariant",
+          "defaultValue": "'info'",
+          "doc": ""
+        },
+        {
+          "name": "duration",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "5000",
+          "doc": "Auto-dismiss timer in ms. `0` keeps the toast sticky."
+        },
+        {
+          "name": "closable",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "Whether Escape and the close button can dismiss the toast. Defaults to `true`. Set `false` for a sticky / forced-action toast — the consumer must dismiss programmatically (e.g. via the `(close)` output after the action button has been clicked)."
+        },
+        {
+          "name": "swipeDirection",
+          "kind": "input",
+          "type": "ForToastSwipeDirection",
+          "defaultValue": "null",
+          "doc": "Direction(s) the user can swipe to dismiss the toast. Pass a single direction (`'right'`) or an array of directions (`['right', 'down']`). `null` (default) disables swipe."
+        },
+        {
+          "name": "swipeThreshold",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "50",
+          "doc": "Pixels of pointer travel along the active swipe direction needed to commit a dismissal. Defaults to `50` — matches Radix."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "close",
+          "kind": "output",
+          "type": "ForToastCloseReason",
+          "defaultValue": null,
+          "doc": "Emitted when the toast wants to be unmounted. The consumer reacts by removing it from the rendered list."
+        },
+        {
+          "name": "swipeStart",
+          "kind": "output",
+          "type": "SwipeEventDetail",
+          "defaultValue": null,
+          "doc": "Fired once on the move that arms the swipe."
+        },
+        {
+          "name": "swipeMove",
+          "kind": "output",
+          "type": "SwipeEventDetail",
+          "defaultValue": null,
+          "doc": "Fired on every pointer move while the swipe is active."
+        },
+        {
+          "name": "swipeEnd",
+          "kind": "output",
+          "type": "SwipeEventDetail",
+          "defaultValue": null,
+          "doc": "Fired on pointer-up after the threshold is crossed (immediately followed by `(close)`)."
+        },
+        {
+          "name": "swipeCancel",
+          "kind": "output",
+          "type": "SwipeEventDetail",
+          "defaultValue": null,
+          "doc": "Fired on pointer-up before the threshold, or on `pointercancel`."
+        }
+      ],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerDescription",
+          "signature": "registerDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterDescription",
+          "signature": "unregisterDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerAction",
+          "signature": "registerAction(handle: ForToastActionHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterAction",
+          "signature": "unregisterAction(handle: ForToastActionHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "requestClose",
+          "signature": "requestClose(reason: ForToastCloseReason): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

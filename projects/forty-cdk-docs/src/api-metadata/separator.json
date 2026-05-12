@@ -1,0 +1,142 @@
+{
+  "primitive": "separator",
+  "pieces": [
+    {
+      "class": "ForSeparator",
+      "kind": "directive",
+      "selector": "[forSeparator]",
+      "exportAs": "forSeparator",
+      "host": {
+        "[attr.role]": "roleAttr()",
+        "[attr.aria-orientation]": "ariaOrientationAttr()",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.tabindex]": "tabindexAttr()",
+        "[attr.aria-valuenow]": "ariaValueAttr(value())",
+        "[attr.aria-valuemin]": "ariaValueAttr(min())",
+        "[attr.aria-valuemax]": "ariaValueAttr(max())",
+        "[attr.aria-valuetext]": "focusable() ? valueText() : null",
+        "[attr.aria-controls]": "focusable() ? controls() : null",
+        "[attr.aria-disabled]": "focusable() && disabled() ? \"true\" : null",
+        "[attr.data-disabled]": "focusable() && disabled() ? \"\" : null",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null",
+        "(keydown)": "onKeyDown($event)",
+        "(keyup)": "onKeyUp($event)",
+        "(pointerdown)": "onPointerDown($event)"
+      },
+      "doc": "Headless separator implementing both variants of the [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/apg/patterns/separator/):",
+      "source": "separator/separator.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": "Axis the separator divides along. `horizontal` splits content stacked vertically; `vertical` splits content arranged horizontally. Defaults to `horizontal`, matching the `<hr>` element."
+        },
+        {
+          "name": "decorative",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, the separator is purely visual: it gets `role=\"none\"` and no ARIA, so assistive tech treats surrounding content as a single flow. Use when the line is redundant with adjacent semantics. Always wins over `focusable` — a decorative separator never participates in keyboard / pointer interaction."
+        },
+        {
+          "name": "focusable",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Switch from the static APG variant (default) to the focusable resizer variant. When true, the separator becomes tabbable, exposes `aria-valuenow` / `valuemin` / `valuemax`, and emits `(resize)` / `(resizeCommit)` on keyboard or pointer drag. Ignored when `decorative`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Disables the focusable variant: the separator drops out of tab order, no keyboard or pointer mutation fires, and `aria-disabled` / `data-disabled` are reflected. No-op when the separator is static or decorative."
+        },
+        {
+          "name": "min",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Lower bound for `value`. Default `0`."
+        },
+        {
+          "name": "max",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "100",
+          "doc": "Upper bound for `value`. Default `100` (matches a percentage default)."
+        },
+        {
+          "name": "step",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "1",
+          "doc": "Step applied by ArrowKeys along the resize axis. Default `1`."
+        },
+        {
+          "name": "largeStep",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "10",
+          "doc": "Step applied by `Page Up` / `Page Down`. Default `10`."
+        },
+        {
+          "name": "valueText",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Optional human-readable value for `aria-valuetext`. Use when the bare number is not meaningful to AT (e.g. `\"30 percent of viewport\"`). When `null`, AT reads `aria-valuenow`."
+        },
+        {
+          "name": "controls",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Space-separated list of element ids the separator splits. Surfaces as `aria-controls`. Recommended for the focusable variant per APG so AT can relate the resizer to the panes it affects."
+        },
+        {
+          "name": "collapsible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Opt-in `Enter` (and `Space`) toggle: collapses the value to `min` and restores the last non-min value on the next press. APG-optional behaviour for separators that back a collapsible pane. Off by default — enabling it changes the meaning of `Enter`."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Reading direction. RTL inverts ArrowLeft / ArrowRight on a vertical separator (horizontal pane stack) and the horizontal axis of pointer drag. Default `'ltr'`."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resize",
+          "kind": "output",
+          "type": "number",
+          "defaultValue": null,
+          "doc": "Verb-named alias for the model change emitter. Fires on every value mutation (keyboard step, pointer-move tick). Emits the same value as `(valueChange)`; pick one or the other based on whether you want two-way binding (`[(value)]`) or one-shot observation."
+        },
+        {
+          "name": "resizeCommit",
+          "kind": "output",
+          "type": "number",
+          "defaultValue": null,
+          "doc": "Fires once at the end of a resize burst — when the user releases the pointer (or it is cancelled) or releases an arrow / page key. Useful for persisting the final size after a drag, where `(resize)` may fire 60+ times per second."
+        }
+      ],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Two-way bindable. The current value along the resize axis. Units are consumer-defined (px, %, fr, rem, …) — the directive treats this as an opaque number constrained by `min` / `max`. Pointer drag adds raw px deltas, so use px units when wiring drag directly; keyboard navigation is unit-agnostic."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

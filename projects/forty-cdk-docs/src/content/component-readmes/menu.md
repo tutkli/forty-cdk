@@ -1,0 +1,105 @@
+---
+title: Menu (shared pieces)
+slug: menu
+source: projects/forty-cdk/src/lib/menu/README.md
+---
+
+# Menu (shared pieces)
+
+Shared surface and item directives consumed by `[forDropdownMenu]` (button trigger) and `[forContextMenu]` (right-click). The folder doesn't expose its own root primitive — open the menu via one of those two flavors.
+
+Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) for the surface (`role="menu"`) and for items (`menuitem` / `menuitemcheckbox` / `menuitemradio`).
+
+## Pieces
+
+| Class                  | Selector                                   | Role                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForMenuContent`       | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
+| `ForMenuItem`          | `[forMenuItem]`                            | One action item. Activation closes the menu.                                                                                                                           |
+| `ForMenuCheckboxItem`  | `[forMenuCheckboxItem]`                    | `model&lt;boolean&gt; checked`. Activation toggles + closes.                                                                                                                 |
+| `ForMenuRadioGroup`    | `[forMenuRadioGroup]`                      | `model&lt;string&gt; value` shared by its radio items.                                                                                                                       |
+| `ForMenuRadioItem`     | `[forMenuRadioItem]`                       | One radio option. `value: required&lt;string&gt;`.                                                                                                                           |
+| `ForMenuItemIndicator` | `[forMenuItemIndicator]`                   | Optional. Used inside checkbox / radio items. Hides itself when the parent is unchecked. Mirrors the parent's `data-state`. `[forceMount]` keeps it mounted.           |
+| `ForMenuSeparator`     | `[forMenuSeparator]`                       | Decorative separator, `role="separator"`.                                                                                                                              |
+| `ForMenuGroup`         | `[forMenuGroup]`                           | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                               |
+| `ForMenuGroupLabel`    | `[forMenuGroupLabel]`                      | Label registered with the parent group.                                                                                                                                |
+| `ForMenuSub`           | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
+| `ForMenuSubTrigger`    | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
+
+## Mount/visibility convention
+
+`[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits `(close)` (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.
+
+## Item activation contract
+
+Every item type emits a vetoable `(select)` event — handlers receive a `VetoableEvent`. The default action is to close the menu after the item's state has been applied (toggle for checkbox, set value for radio). Call `event.preventDefault()` on the veto to keep the menu open.
+
+```html
+<!-- Closes menu by default -->
+<button forMenuItem (select)="save()">Save</button>
+
+<!-- Stays open -->
+<button forMenuCheckboxItem [(checked)]="bold" (select)="$event.preventDefault()">Bold</button>
+```
+
+## Keyboard
+
+- **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
+- **Home / End** — jump to first / last enabled item.
+- **Enter / click** — activate the focused item via native `&lt;button&gt;` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(select)`.
+- **Space** — activates the focused item:
+  - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
+  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(select)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(select)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
+- **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
+- **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
+- **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
+- **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
+- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's `textContent`; pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when the DOM contains icons, kbd hints, or badges that would otherwise bleed into it.
+
+  ```html
+  <!-- Without textValue, prefix-match would compare against "3 Archive" -->
+  <button forMenuItem textValue="Archive">
+    <span class="badge">3</span>
+    Archive
+  </button>
+  ```
+
+## Submenu
+
+A nested menu is opened by a `[forMenuSubTrigger]` — itself a `menuitem` in the parent menu. The `[forMenuSub]` root owns the submenu's open state, item collection, and dismissable layer.
+
+```html
+<div forDropdownMenu [(open)]="open">
+  <button forDropdownMenuTrigger>File</button>
+  @if (open()) {
+  <div forMenuContent>
+    <button forMenuItem (select)="open()">Open</button>
+    <div forMenuSub [(open)]="recent">
+      <button forMenuSubTrigger>Open recent</button>
+      @if (recent()) {
+      <div forMenuSubContent>
+        <button forMenuItem (select)="open('a.txt')">a.txt</button>
+        <button forMenuItem (select)="open('b.txt')">b.txt</button>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+```
+
+The `[forMenuSubTrigger]` is registered as a `menuitem` in the **parent** menu's collection, so parent navigation (ArrowDown/Up, typeahead) reaches it. Reading open state from the **submenu**, it wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls` to the submenu's content.
+
+Closing semantics propagate upward by default: activating an item inside a submenu (or pressing Tab, or clicking outside both menus) tears down the entire chain. Escape closes only the level that has focus — Escape inside a submenu closes the submenu and returns focus to the `[forMenuSubTrigger]`, leaving the parent open.
+
+The submenu's dismissable layer exempts the **parent menu's content** — clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`.
+
+## Accessibility notes
+
+- Apply each item directive to a `&lt;button&gt;` so Space / Enter activation come from native button behavior.
+- Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.
+- `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
+- `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
+- Submenus use `side="right"` `align="start"` by default in LTR and `side="left"` `align="start"` in RTL — set `[dir]="'rtl'"` on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested `[forMenuSub]` inherits it (and flips `side`, ArrowLeft/Right semantics, etc.). Override per-submenu with `[dir]` or `[side]` if a specific submenu needs to render against the opposite direction.
+- In RTL, ArrowLeft opens a submenu and ArrowRight closes it back to the parent — the swap mirrors the visual flip of the menu chain.
+- **`data-highlighted=""`** is reflected on the focused `[forMenuItem]` / `[forMenuCheckboxItem]` / `[forMenuRadioItem]` so consumers can paint a uniform focus ring shared with the listbox / select / combobox primitives.

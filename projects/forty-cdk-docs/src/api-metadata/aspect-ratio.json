@@ -1,0 +1,26 @@
+{
+  "primitive": "aspect-ratio",
+  "pieces": [
+    {
+      "class": "ForAspectRatio",
+      "kind": "directive",
+      "selector": "[forAspectRatio]",
+      "exportAs": "forAspectRatio",
+      "host": {},
+      "doc": "Headless aspect-ratio container. Locks the host element's box to a fixed `width / height` ratio via the native CSS `aspect-ratio` property — useful for media (video, image, iframe) and skeletons that must reserve space before content loads.",
+      "source": "aspect-ratio/aspect-ratio.ts",
+      "inputs": [
+        {
+          "name": "ratio",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "1",
+          "doc": "Width / height ratio, e.g. `16 / 9`, `4 / 3`, `1`. Accepts numeric inputs (`[ratio]=\"16 / 9\"`) and string attributes (`ratio=\"1.5\"`). Defaults to `1` (square)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    }
+  ]
+}

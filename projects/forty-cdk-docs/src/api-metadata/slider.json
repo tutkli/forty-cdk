@@ -1,0 +1,262 @@
+{
+  "primitive": "slider",
+  "pieces": [
+    {
+      "class": "ForSliderRange",
+      "kind": "directive",
+      "selector": "[forSliderRange]",
+      "exportAs": "forSliderRange",
+      "host": {
+        "[attr.data-orientation]": "ctx.orientation()",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "[style.--for-slider-range-start]": "ctx.rangeStart()",
+        "[style.--for-slider-range-end]": "ctx.rangeEnd()",
+        "[style.--for-slider-range-size]": "ctx.rangeEnd() - ctx.rangeStart()"
+      },
+      "doc": "Optional decorative band between the slider's lowest and highest thumbs (or `0 → thumb` for single-thumb sliders). The directive doesn't paint anything — it exposes start / end fractions as CSS variables and `data-*` so the consumer can size and position it from styles.",
+      "source": "slider/slider-range.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSliderThumb",
+      "kind": "directive",
+      "selector": "[forSliderThumb]",
+      "exportAs": "forSliderThumb",
+      "host": {
+        "role": "slider",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.aria-valuemin]": "ariaValueMin()",
+        "[attr.aria-valuemax]": "ariaValueMax()",
+        "[attr.aria-valuenow]": "ariaValueNow()",
+        "[attr.aria-valuetext]": "valueText()",
+        "[attr.aria-orientation]": "ctx.orientation()",
+        "[attr.aria-label]": "label() || null",
+        "[attr.aria-labelledby]": "labelledby() || null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "ctx.readonly() ? \"true\" : null",
+        "[attr.data-orientation]": "ctx.orientation()",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.data-readonly]": "ctx.readonly() ? \"\" : null",
+        "[attr.data-index]": "index()",
+        "[style.--for-slider-thumb-position]": "fraction()",
+        "(keydown)": "onKeyDown($event)",
+        "(keyup)": "onKeyUp($event)",
+        "(pointerdown)": "onPointerDown($event)"
+      },
+      "doc": "One slider thumb. Apply on any focusable element (commonly `<span>` / `<div>` with the directive's auto-injected `tabindex`). The directive sets `role=\"slider\"`, the live `aria-value*` attributes, keyboard handling, and starts a drag on pointerdown.",
+      "source": "slider/slider-thumb.ts",
+      "inputs": [
+        {
+          "name": "index",
+          "kind": "inputRequired",
+          "type": "number",
+          "defaultValue": null,
+          "doc": "Position in the parent slider's `value()` array (0-based)."
+        },
+        {
+          "name": "label",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Optional fixed label for assistive tech (e.g. \"Minimum price\", \"Maximum price\"). Mirrored as `aria-label`. Use `[labelledby]` instead if the label lives elsewhere in the DOM."
+        },
+        {
+          "name": "labelledby",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": ""
+        },
+        {
+          "name": "valueText",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Optional human-readable value override (e.g. \"$1,200\" instead of \"1200\"). Mirrored as `aria-valuetext`. Falls back to the numeric value."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSliderTrack",
+      "kind": "directive",
+      "selector": "[forSliderTrack]",
+      "exportAs": "forSliderTrack",
+      "host": {
+        "[attr.data-orientation]": "ctx.orientation()",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "(pointerdown)": "onPointerDown($event)"
+      },
+      "doc": "The clickable track surface. PointerDown anywhere on the track that isn't a thumb finds the nearest thumb, jumps it to the clicked position, focuses it, and starts a drag (so the user can keep refining without releasing).",
+      "source": "slider/slider-track.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSlider",
+      "kind": "directive",
+      "selector": "[forSlider]",
+      "exportAs": "forSlider",
+      "host": {
+        "role": "group",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-readonly]": "readonly() ? \"\" : null",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) (single thumb) and [Slider (Multi-Thumb)](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multi-thumb/) (range / N thumbs). Implements `FormValueControl<readonly number[]>` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "slider/slider.ts",
+      "inputs": [
+        {
+          "name": "min",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "0",
+          "doc": "Minimum value. Typed `number | undefined` to satisfy `FormUiControl.min` (signal forms passes `undefined` when no min validator is bound). Falls back to `0` internally."
+        },
+        {
+          "name": "max",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "100",
+          "doc": "Maximum value. Typed `number | undefined` to satisfy `FormUiControl.max`. Falls back to `100` internally."
+        },
+        {
+          "name": "step",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "1",
+          "doc": ""
+        },
+        {
+          "name": "largeStep",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.largeStep",
+          "doc": "Step used for PageUp / PageDown. Defaults to 10× `step`. The default is read from `provideForSliderDefaults` for the surrounding scope."
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "inverted",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Visual inversion. Flips the mapping between value and screen position (e.g. horizontal LTR with `inverted=true`: max sits on the left). Keyboard semantics still target \"toward max\" with ArrowUp / ArrowRight (LTR), independent of visual flip."
+        },
+        {
+          "name": "minStepsBetweenThumbs",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Multi-thumb only: minimum gap between adjacent thumbs, in step units. Default `0` (touch but never cross — non-passing per APG)."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "valueCommit",
+          "kind": "output",
+          "type": "readonly number[]",
+          "defaultValue": null,
+          "doc": "Emitted at the end of a value-changing interaction — pointerup / pointercancel after a drag, or keyup after one or more keyboard adjustments — with the final value array. Mirrors Radix / Base UI `onValueCommit`. Use it to defer expensive work (network calls, history entries) to the trailing edge of the interaction instead of running it per step. Stays silent when nothing changed (e.g. press + release without movement, or a non-navigation key on a focused thumb)."
+        }
+      ],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "readonly number[]",
+          "defaultValue": "[0]",
+          "doc": "Two-way bindable. Selected values, one per thumb. Single-thumb sliders keep one entry, range sliders two, multi-thumb N. Values must be sorted ascending for multi-thumb; thumb-by-thumb clamping keeps the order during interaction. Defaults to `[min]`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "setValueAt",
+          "signature": "setValueAt(index: number, raw: number): void",
+          "doc": ""
+        },
+        {
+          "name": "bumpAt",
+          "signature": "bumpAt(index: number, key: SliderArrowKey, large: boolean): void",
+          "doc": ""
+        },
+        {
+          "name": "setExtreme",
+          "signature": "setExtreme(index: number, which: 'min' | 'max'): void",
+          "doc": ""
+        },
+        {
+          "name": "pointerToValue",
+          "signature": "pointerToValue(clientX: number, clientY: number): number",
+          "doc": ""
+        },
+        {
+          "name": "nearestThumbIndex",
+          "signature": "nearestThumbIndex(target: number): number",
+          "doc": ""
+        },
+        {
+          "name": "beginDrag",
+          "signature": "beginDrag(index: number, event: PointerEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "setTrack",
+          "signature": "setTrack(el: HTMLElement | null): void",
+          "doc": ""
+        },
+        {
+          "name": "trackElement",
+          "signature": "trackElement(): HTMLElement | null",
+          "doc": ""
+        },
+        {
+          "name": "markTouched",
+          "signature": "markTouched(): void",
+          "doc": ""
+        },
+        {
+          "name": "commitInteraction",
+          "signature": "commitInteraction(): void",
+          "doc": "Emit `valueCommit` if the running interaction mutated the value at least once, and clear the flag. Pointer drags call this on pointerup; thumbs call it on keyup of a navigation key."
+        },
+        {
+          "name": "registerThumb",
+          "signature": "registerThumb(handle: ForSliderThumbHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterThumb",
+          "signature": "unregisterThumb(handle: ForSliderThumbHandle): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

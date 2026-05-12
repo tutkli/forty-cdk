@@ -1,0 +1,68 @@
+{
+  "primitive": "avatar",
+  "pieces": [
+    {
+      "class": "ForAvatarFallback",
+      "kind": "directive",
+      "selector": "[forAvatarFallback]",
+      "exportAs": "forAvatarFallback",
+      "host": {
+        "[attr.data-status]": "parent.status()"
+      },
+      "doc": "Marker for the avatar's fallback content (initials, generic icon, …). Reflects `data-status` from the parent `[forAvatar]` so the consumer can style for the `error` state separately from `idle` / `loading` if needed.",
+      "source": "avatar/avatar-fallback.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForAvatarImage",
+      "kind": "directive",
+      "selector": "img[forAvatarImage]",
+      "exportAs": "forAvatarImage",
+      "host": {
+        "[attr.data-status]": "status()",
+        "(load)": "onLoad()",
+        "(error)": "onError()"
+      },
+      "doc": "Wraps an `<img>` and reports its load lifecycle to the surrounding `[forAvatar]`. The native `src` / `alt` bindings are owned by the consumer — this directive only observes.",
+      "source": "avatar/avatar-image.ts",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "loadStatusChanged",
+          "kind": "output",
+          "type": "ForAvatarStatus",
+          "defaultValue": null,
+          "doc": "Emits whenever the image lifecycle transitions to a new state. Useful if the consumer wants to log analytics, swap to a different src on error, etc."
+        }
+      ],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForAvatar",
+      "kind": "directive",
+      "selector": "[forAvatar]",
+      "exportAs": "forAvatar",
+      "host": {
+        "[attr.data-status]": "status()"
+      },
+      "doc": "Headless avatar root. Tracks the load lifecycle of an inner `[forAvatarImage]` and exposes `status` + `shouldShowFallback` so the consumer can swap the image for fallback content (initials, generic icon) via `@if`.",
+      "source": "avatar/avatar.ts",
+      "inputs": [
+        {
+          "name": "fallbackDelayMs",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.fallbackDelayMs",
+          "doc": "Milliseconds to defer the fallback for fast loads, avoiding a brief \"initials → image\" flicker. Set to `0` (default) to show immediately during `idle` / `loading`, or to e.g. `500` to skip rendering during quick cached loads. `error` always shows the fallback immediately. The default is read from `provideForAvatarDefaults` for the surrounding scope."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    }
+  ]
+}

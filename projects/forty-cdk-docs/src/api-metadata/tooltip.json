@@ -1,0 +1,206 @@
+{
+  "primitive": "tooltip",
+  "pieces": [
+    {
+      "class": "ForTooltipArrow",
+      "kind": "directive",
+      "selector": "[forTooltipArrow]",
+      "exportAs": "forTooltipArrow",
+      "host": {
+        "aria-hidden": "true",
+        "data-tooltip-arrow": ""
+      },
+      "doc": "Optional visual arrow inside `ForTooltipContent`. Registers itself with the tooltip context so floating-ui's `arrow` middleware can position it along the bubble edge that points at the trigger. Style size and color yourself — the directive only sets `position`, `left`/`top`, and the opposite-side offset.",
+      "source": "tooltip/tooltip-arrow.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTooltipContent",
+      "kind": "directive",
+      "selector": "[forTooltipContent]",
+      "exportAs": "forTooltipContent",
+      "host": {
+        "role": "tooltip",
+        "[id]": "ctx.contentId()",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "style": "pointer-events: none;"
+      },
+      "doc": "The tooltip bubble. Carries `role=\"tooltip\"`, is portaled to `document.body`, and is positioned by `@floating-ui/dom` (via the shared `injectOverlayShell` helper) while mounted.",
+      "source": "tooltip/tooltip-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTooltipTrigger",
+      "kind": "directive",
+      "selector": "[forTooltipTrigger]",
+      "exportAs": "forTooltipTrigger",
+      "host": {
+        "[id]": "ctx.triggerId()",
+        "[attr.aria-describedby]": "ctx.open() ? ctx.contentId() : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "(pointerenter)": "onPointerEnter()",
+        "(pointerleave)": "onPointerLeave()",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()",
+        "(keydown.escape)": "onEscape($event)"
+      },
+      "doc": "Element that activates the tooltip on hover or focus. Apply on a focusable element — preferably a `<button>` so keyboard users can reach it. Receives `aria-describedby` only while the tooltip is open, per APG.",
+      "source": "tooltip/tooltip-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForTooltip",
+      "kind": "directive",
+      "selector": "[forTooltip]",
+      "exportAs": "forTooltip",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).",
+      "source": "tooltip/tooltip.ts",
+      "inputs": [
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'top'",
+          "doc": "Side the tooltip is anchored to. Defaults to `'top'`. Pair with `align` for the full positioning API."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "undefined",
+          "doc": "Alignment along the chosen `side`. Defaults to `'center'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Gap (px) between trigger and content along the main axis. Default `8`. Mirrors Radix's `sideOffset`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis (parallel to `side`). Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the tooltip inside the viewport. Disable for strict positioning where overflow is acceptable."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Padding (px) applied uniformly to the `flip`, `shift`, and `size` middlewares. Default `8`."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. `'partial'` (default) lets the tooltip shift to stay visible. `'always'` keeps the requested placement even off-screen."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the trigger has scrolled off all clipping ancestors."
+        },
+        {
+          "name": "openDelay",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "undefined",
+          "doc": "Per-tooltip override for the open delay (ms). When `undefined` (default), falls back to `ForTooltipDefaults.delayDuration` from the surrounding `provideForTooltipDefaults` scope (700ms unless configured)."
+        },
+        {
+          "name": "closeDelay",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "300",
+          "doc": "ms before the tooltip closes after hover or focus leaves. `Escape` ignores this. Default `300`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, all hover / focus interaction is ignored and any open tooltip is forced closed."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the tooltip is currently shown. The `model()` change emitter (`(openChange)`) fires only on internal transitions (hover/focus delays, Escape), never on consumer writes via `[(open)]` — observe state changes without binding back."
+        }
+      ],
+      "methods": [
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerArrow",
+          "signature": "registerArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterArrow",
+          "signature": "unregisterArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleOpen",
+          "signature": "scheduleOpen(_reason: TooltipScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleClose",
+          "signature": "scheduleClose(reason: TooltipScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "cancelPending",
+          "signature": "cancelPending(): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "primitive": "context-menu",
+  "pieces": [
+    {
+      "class": "ForContextMenuTrigger",
+      "kind": "directive",
+      "selector": "[forContextMenuTrigger]",
+      "exportAs": "forContextMenuTrigger",
+      "host": {
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "(contextmenu)": "onContextMenu($event)",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Region that opens its parent `[forContextMenu]` on the `contextmenu` event (right-click / long-press on touch) and on the keyboard equivalents `Shift+F10` and the dedicated `ContextMenu` key. Pointer activations are anchored at the cursor; keyboard activations are anchored at the bounding rect of the focused element, so screen-reader / keyboard-only users get the menu next to whatever they're working on. The native context menu is suppressed via `event.preventDefault()`.",
+      "source": "context-menu/context-menu-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForContextMenu",
+      "kind": "directive",
+      "selector": "[forContextMenu]",
+      "exportAs": "forContextMenu",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless implementation of a right-click / `Shift+F10` menu (variant of the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)). Apply on a wrapper that contains a `[forContextMenuTrigger]` and an `@if`-mounted `[forMenuContent]`.",
+      "source": "context-menu/context-menu.ts",
+      "inputs": [
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'bottom'",
+          "doc": "Side the menu is anchored to relative to the pointer. Defaults to `'bottom'`. Pair with `align` for the full positioning API."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "'start'",
+          "doc": "Alignment along the chosen `side`. Defaults to `'start'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.sideOffset",
+          "doc": "Gap (px) along the main axis. Default `0`. The default is read from `provideForContextMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the menu inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.collisionPadding",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`. The default is read from `provideForContextMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the virtual anchor is off-screen."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu triggers and items underneath this menu (in RTL, ArrowLeft opens a submenu and ArrowRight closes it back). Default `'ltr'`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, the contextmenu event is allowed to fall through to the native browser menu. Useful for letting the OS-provided context menu appear on certain regions while keeping the directive mounted."
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before the menu sends focus to its first / last enabled item on mount. Call `preventDefault()` on the emitted veto to skip the imperative focus move."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before focus returns to the trigger on unmount. Call `preventDefault()` on the veto to suppress the return-focus."
+        }
+      ],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "methods": [
+        {
+          "name": "setVirtualAnchor",
+          "signature": "setVirtualAnchor(x: number, y: number): void",
+          "doc": "Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates."
+        },
+        {
+          "name": "setVirtualAnchorFromRect",
+          "signature": "setVirtualAnchorFromRect(rect: DOMRect): void",
+          "doc": "Updates the virtual anchor to a snapshot of `rect`. Used by the keyboard activators (`Shift+F10`, `ContextMenu` key) so the menu floats off the focused element instead of the pointer position. The rect is captured by value, so subsequent layout changes don't shift the anchor."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "primitive": "accordion",
+  "pieces": [
+    {
+      "class": "ForAccordionContent",
+      "kind": "directive",
+      "selector": "[forAccordionContent]",
+      "exportAs": "forAccordionContent",
+      "host": {
+        "[id]": "item.contentId()",
+        "[attr.role]": "\"region\"",
+        "[attr.aria-labelledby]": "item.triggerId()",
+        "[attr.aria-hidden]": "item.expanded() ? null : \"true\"",
+        "[attr.inert]": "item.expanded() ? null : \"\"",
+        "[attr.data-state]": "item.expanded() ? \"open\" : \"closed\"",
+        "[attr.data-orientation]": "parent.orientation()"
+      },
+      "doc": "Panel revealed by a `ForAccordionTrigger`. The directive does not manage DOM presence — wrap with `@if (item.expanded())` so panels mount and unmount with the expanded state and `animate.enter` / `animate.leave` work natively. If the consumer prefers to keep the panel mounted (for CSS-only transitions or to preserve internal state), the directive reflects `aria-hidden=\"true\"` and `inert` while closed so the panel is removed from the accessibility tree and focus order automatically.",
+      "source": "accordion/accordion-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForAccordionItem",
+      "kind": "directive",
+      "selector": "[forAccordionItem]",
+      "exportAs": "forAccordionItem",
+      "host": {
+        "[attr.data-state]": "expanded() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-orientation]": "parent.orientation()"
+      },
+      "doc": "One section of a `ForAccordion`. Owns the unique `value` identifying this item to the root and exposes the per-item context that the trigger and content read.",
+      "source": "accordion/accordion-item.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Unique identifier of this item within the accordion. Required."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, the trigger ignores clicks and reflects `disabled`."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "toggle",
+          "signature": "toggle(): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "class": "ForAccordionTrigger",
+      "kind": "directive",
+      "selector": "[forAccordionTrigger]",
+      "exportAs": "forAccordionTrigger",
+      "host": {
+        "[id]": "item.triggerId()",
+        "[attr.aria-expanded]": "item.expanded() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "item.contentId()",
+        "[attr.aria-disabled]": "ariaDisabled() ? \"true\" : null",
+        "[attr.disabled]": "item.disabled() ? \"\" : null",
+        "[attr.data-state]": "item.expanded() ? \"open\" : \"closed\"",
+        "[attr.data-orientation]": "parent.orientation()",
+        "(click)": "item.toggle()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Header button for a `ForAccordionItem`. Apply on a `<button type=\"button\">` wrapped in a heading element (`<h2>`–`<h6>`) so APG landmark navigation works.",
+      "source": "accordion/accordion-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForAccordion",
+      "kind": "directive",
+      "selector": "[forAccordion]",
+      "exportAs": "forAccordion",
+      "host": {
+        "[attr.data-orientation]": "orientation()"
+      },
+      "doc": "Root of the Accordion primitive. Holds the open value(s) and orchestrates single/multiple expansion, collapse rules, and keyboard navigation between triggers.",
+      "source": "accordion/accordion.ts",
+      "inputs": [
+        {
+          "name": "multiple",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, multiple items can be expanded simultaneously."
+        },
+        {
+          "name": "collapsible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Single mode only: when true, the open item can be collapsed by clicking its trigger. When false, exactly one item stays open at all times once any has been opened."
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'vertical'",
+          "doc": "Layout direction of the trigger list. `'vertical'` (default) maps ArrowUp/Down to prev/next; `'horizontal'` maps ArrowLeft/Right (with RTL swap when `dir='rtl'`)."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Writing direction. Only relevant when `orientation='horizontal'`."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "readonly string[]",
+          "defaultValue": "[]",
+          "doc": "Two-way bindable. List of currently expanded item values. In single mode the array has 0 or 1 element. The `model()` change emitter (`(valueChange)`) fires only on internal toggles, never on consumer writes via `[(value)]` — observe transitions without binding back."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isExpanded",
+          "signature": "isExpanded(itemValue: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(itemValue: string): void",
+          "doc": ""
+        },
+        {
+          "name": "canCollapse",
+          "signature": "canCollapse(_itemValue: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "focusByOffset",
+          "signature": "focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

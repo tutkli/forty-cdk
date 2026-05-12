@@ -1,0 +1,610 @@
+{
+  "primitive": "menu",
+  "pieces": [
+    {
+      "class": "ForMenuCheckboxItem",
+      "kind": "directive",
+      "selector": "[forMenuCheckboxItem]",
+      "exportAs": "forMenuCheckboxItem",
+      "host": {
+        "role": "menuitemcheckbox",
+        "type": "button",
+        "tabindex": "-1",
+        "[attr.aria-checked]": "checked() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.data-state]": "checked() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()"
+      },
+      "doc": "Tri-state-free checkbox item. Click and Enter toggle `checked`, emit `(select)`, and close the menu — `event.preventDefault()` on the emitted event keeps the menu open. Per APG, **Space** toggles `checked` and emits `(select)` without closing the menu, so users can flip several options in one open without consumer glue.",
+      "source": "menu/menu-checkbox-item.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "textValue",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Override the string used for typeahead matching. Defaults to `''`, which falls back to the item's `textContent`. See `[forMenuItem]` for the rationale."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "select",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires on click / Enter / Space activation. Call `preventDefault()` on the emitted veto to keep the menu open after activation."
+        }
+      ],
+      "models": [
+        {
+          "name": "checked",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable."
+        }
+      ],
+      "methods": []
+    },
+    {
+      "class": "ForMenuContent",
+      "kind": "directive",
+      "selector": "[forMenuContent], [forMenuSubContent]",
+      "exportAs": "forMenuContent",
+      "host": {
+        "role": "menu",
+        "[id]": "ctx.contentId()",
+        "[attr.aria-labelledby]": "ctx.triggerId()",
+        "[attr.aria-label]": "ctx.ariaLabel()",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "tabindex": "-1"
+      },
+      "doc": "The menu surface. Carries `role=\"menu\"`, is portaled to `document.body`, and is positioned by `@floating-ui/dom` against the registered anchor — the trigger button for `[forDropdownMenu]`, or a virtual pointer element for `[forContextMenu]`.",
+      "source": "menu/menu-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuGroupLabel",
+      "kind": "directive",
+      "selector": "[forMenuGroupLabel]",
+      "exportAs": null,
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Accessible name for `[forMenuGroup]`. Generates an id on the host and registers it with the parent group so `aria-labelledby` resolves to this element.",
+      "source": "menu/menu-group-label.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuGroup",
+      "kind": "directive",
+      "selector": "[forMenuGroup]",
+      "exportAs": "forMenuGroup",
+      "host": {
+        "role": "group",
+        "[attr.aria-labelledby]": "labelledBy()"
+      },
+      "doc": "Logical grouping of menu items, exposed to assistive tech as `role=\"group\"`. Use with `[forMenuGroupLabel]` for an accessible name (rendered as a section header in most designs).",
+      "source": "menu/menu-group.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "class": "ForMenuItemIndicator",
+      "kind": "directive",
+      "selector": "[forMenuItemIndicator]",
+      "exportAs": "forMenuItemIndicator",
+      "host": {
+        "aria-hidden": "true",
+        "[attr.data-state]": "checked() ? \"checked\" : \"unchecked\"",
+        "[hidden]": "!checked() && !forceMount()"
+      },
+      "doc": "Visibility helper inside `[forMenuCheckboxItem]` or `[forMenuRadioItem]`. The directive flips a `[hidden]` host binding so the consumer can keep the checkmark / dot inline without extra `@if` glue:",
+      "source": "menu/menu-item-indicator.ts",
+      "inputs": [
+        {
+          "name": "forceMount",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Keep the indicator mounted even when the parent item is unchecked."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuItem",
+      "kind": "directive",
+      "selector": "[forMenuItem]",
+      "exportAs": "forMenuItem",
+      "host": {
+        "role": "menuitem",
+        "type": "button",
+        "tabindex": "-1",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()"
+      },
+      "doc": "A single action inside `[forMenuContent]`. Apply on a `<button>` so Space / Enter activation come from native button semantics.",
+      "source": "menu/menu-item.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Per-item disabled, in addition to the menu's `disabled`."
+        },
+        {
+          "name": "textValue",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Override the string used for typeahead matching. Defaults to `''`, which falls back to the item's `textContent`. Set this when the item DOM contains icons, kbd hints, or other text that shouldn't bleed into the match — e.g. `<button forMenuItem textValue=\"New file\">…</button>` for an item rendered as `New file ⌘N`."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "select",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires on click / Enter / Space activation. Call `preventDefault()` on the emitted veto to keep the menu open after activation."
+        }
+      ],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuRadioGroup",
+      "kind": "directive",
+      "selector": "[forMenuRadioGroup]",
+      "exportAs": "forMenuRadioGroup",
+      "host": {
+        "role": "group"
+      },
+      "doc": "Container for a set of `[forMenuRadioItem]` elements. Acts as a `role=\"group\"` plus a coordination point for the shared `value`.",
+      "source": "menu/menu-radio-group.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. The selected radio item's `value`. The `model()` change emitter (`(valueChange)`) fires only on internal selection."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "select",
+          "signature": "select(v: string): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "class": "ForMenuRadioItem",
+      "kind": "directive",
+      "selector": "[forMenuRadioItem]",
+      "exportAs": "forMenuRadioItem",
+      "host": {
+        "role": "menuitemradio",
+        "type": "button",
+        "tabindex": "-1",
+        "[attr.aria-checked]": "checked() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.data-state]": "checked() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()"
+      },
+      "doc": "One radio option inside `[forMenuRadioGroup]`. Click and Enter set the group's `value` to this item's `value`, emit `(select)`, and close the menu — call `event.preventDefault()` on the emitted event to keep the menu open. Per APG, **Space** sets the value and emits `(select)` without closing the menu.",
+      "source": "menu/menu-radio-item.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Identifier added to / read from the radio group's `value`. Required."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "textValue",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Override the string used for typeahead matching. Defaults to `''`, which falls back to the item's `textContent`. See `[forMenuItem]` for the rationale."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "select",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires on click / Enter / Space activation. Call `preventDefault()` on the emitted veto to keep the menu open after activation."
+        }
+      ],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuSeparator",
+      "kind": "directive",
+      "selector": "[forMenuSeparator]",
+      "exportAs": null,
+      "host": {
+        "role": "separator",
+        "aria-orientation": "horizontal"
+      },
+      "doc": "Visual + semantic separator between menu items. Decorative — never focused, never registers with the menu's item collection.",
+      "source": "menu/menu-separator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuSubTrigger",
+      "kind": "directive",
+      "selector": "[forMenuSubTrigger]",
+      "exportAs": "forMenuSubTrigger",
+      "host": {
+        "role": "menuitem",
+        "type": "button",
+        "tabindex": "-1",
+        "[id]": "submenu.triggerId()",
+        "[attr.aria-haspopup]": "\"menu\"",
+        "[attr.aria-expanded]": "submenu.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "submenu.open() ? submenu.contentId() : null",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.data-state]": "submenu.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "The `menuitem` inside the parent menu that opens its `[forMenuSub]`. Apply on a `<button>` so Space / Enter dispatch native click events that toggle the submenu via `(click)`.",
+      "source": "menu/menu-sub-trigger.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenuSub",
+      "kind": "directive",
+      "selector": "[forMenuSub]",
+      "exportAs": "forMenuSub",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Root for a nested submenu inside a parent `[forDropdownMenu]` / `[forContextMenu]` (or another `[forMenuSub]`). Owns its own open state, ids, and item collection — items inside the submenu register here, not in the parent.",
+      "source": "menu/menu-sub.ts",
+      "inputs": [
+        {
+          "name": "_dirInput",
+          "kind": "input",
+          "type": "WritingDirection | undefined",
+          "defaultValue": "undefined",
+          "doc": "Writing direction. When unset, inherits from the enclosing menu — set `[dir]` once on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested submenu picks it up. Override per-submenu only when a specific submenu needs to render against the opposite direction."
+        },
+        {
+          "name": "_sideInput",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "undefined",
+          "doc": "Side the submenu opens on. When unset, defaults to `'right'` in LTR and `'left'` in RTL (per `dir`). Set explicitly to pin a side regardless of writing direction."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "'start'",
+          "doc": "Alignment along the chosen `side`. Defaults to `'start'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the main axis. Default `0`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the submenu inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the parent item is scrolled off-screen."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before the submenu sends focus to its first / last enabled item on mount. Call `preventDefault()` on the emitted veto to skip the imperative focus move."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before focus returns to the parent item on unmount. Call `preventDefault()` on the veto to suppress the return-focus."
+        }
+      ],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "methods": [
+        {
+          "name": "setInitialFocus",
+          "signature": "setInitialFocus(target: 'first' | 'last'): void",
+          "doc": ""
+        },
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerItem",
+          "signature": "registerItem(handle: ForMenuItemHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterItem",
+          "signature": "unregisterItem(handle: ForMenuItemHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentItem: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "handleTypeahead",
+          "signature": "handleTypeahead(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "focusFirstEnabledItem",
+          "signature": "focusFirstEnabledItem(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "focusLastEnabledItem",
+          "signature": "focusLastEnabledItem(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(initialFocus: 'first' | 'last' = 'first'): void",
+          "doc": ""
+        },
+        {
+          "name": "openMenu",
+          "signature": "openMenu(initialFocus: 'first' | 'last' = 'first'): void",
+          "doc": ""
+        },
+        {
+          "name": "closeMenu",
+          "signature": "closeMenu(reason: ForMenuCloseReason): void",
+          "doc": ""
+        },
+        {
+          "name": "emitEscapeKeyDown",
+          "signature": "emitEscapeKeyDown(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitPointerDownOutside",
+          "signature": "emitPointerDownOutside(event: PointerEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitFocusOutside",
+          "signature": "emitFocusOutside(event: FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitInteractOutside",
+          "signature": "emitInteractOutside(event: PointerEvent | FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnOpen",
+          "signature": "emitAutoFocusOnOpen(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnClose",
+          "signature": "emitAutoFocusOnClose(): boolean",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

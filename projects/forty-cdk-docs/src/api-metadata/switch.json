@@ -1,0 +1,42 @@
+{
+  "primitive": "switch",
+  "pieces": [
+    {
+      "class": "ForSwitch",
+      "kind": "directive",
+      "selector": "[forSwitch]",
+      "exportAs": "forSwitch",
+      "host": {
+        "role": "switch",
+        "type": "button",
+        "[attr.aria-checked]": "checked() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.name]": "name() || null",
+        "[attr.data-state]": "checked() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-readonly]": "readonly() ? \"\" : null",
+        "(click)": "onClick()",
+        "(blur)": "touched.set(true)"
+      },
+      "doc": "Headless on/off switch implementing the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) and Angular's `FormCheckboxControl` from `@angular/forms/signals` so it auto-wires with `[formField]`.",
+      "source": "switch/switch.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [
+        {
+          "name": "checked",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable on/off state. Required by `FormCheckboxControl`."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

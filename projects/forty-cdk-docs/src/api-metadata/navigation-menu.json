@@ -1,0 +1,351 @@
+{
+  "primitive": "navigation-menu",
+  "pieces": [
+    {
+      "class": "ForNavigationMenuContent",
+      "kind": "directive",
+      "selector": "[forNavigationMenuContent]",
+      "exportAs": "forNavigationMenuContent",
+      "host": {
+        "[id]": "id()",
+        "[attr.aria-labelledby]": "triggerId()",
+        "[attr.data-state]": "menu.isOpen(value()) ? \"open\" : \"closed\"",
+        "[attr.data-motion]": "motion()",
+        "(pointerenter)": "menu.cancelPending()",
+        "(pointerleave)": "menu.scheduleClose(\"hover\")",
+        "(keydown.escape)": "onEscape($any($event))"
+      },
+      "doc": "The disclosure panel for a navigation-menu item. Mounted via `@if` (consumer drives it from `forNavigationMenu.value()` or `forNavigationMenuItem`'s state) so animations work natively.",
+      "source": "navigation-menu/navigation-menu-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuIndicator",
+      "kind": "directive",
+      "selector": "[forNavigationMenuIndicator]",
+      "exportAs": "forNavigationMenuIndicator",
+      "host": {
+        "aria-hidden": "true",
+        "[attr.data-state]": "state()",
+        "[attr.data-orientation]": "menu.orientation()",
+        "[style.--for-navigation-menu-indicator-x.px]": "x()",
+        "[style.--for-navigation-menu-indicator-y.px]": "y()",
+        "[style.--for-navigation-menu-indicator-width.px]": "width()",
+        "[style.--for-navigation-menu-indicator-height.px]": "height()"
+      },
+      "doc": "Optional visual indicator (underline, pill) that follows the active trigger. Computes geometry from the trigger's position relative to `[forNavigationMenuList]` and exposes it via CSS custom properties:",
+      "source": "navigation-menu/navigation-menu-indicator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuItem",
+      "kind": "directive",
+      "selector": "[forNavigationMenuItem]",
+      "exportAs": "forNavigationMenuItem",
+      "host": {
+        "[attr.data-state]": "state()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Wrapper around one trigger + its content. Owns the item's `value` (the id used to coordinate which item is open) and its disabled state, then exposes them downstream so the trigger and content can share a single source of truth.",
+      "source": "navigation-menu/navigation-menu-item.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Identifier matched against the menu's `value`. Required."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Per-item disabled (in addition to the menu-level `disabled`)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuLink",
+      "kind": "directive",
+      "selector": "[forNavigationMenuLink]",
+      "exportAs": "forNavigationMenuLink",
+      "host": {
+        "[attr.data-active]": "active() ? \"\" : null",
+        "[attr.aria-current]": "active() ? ariaCurrent() : null"
+      },
+      "doc": "Decorative marker for links inside a navigation-menu content. Reflects `data-active` for CSS hooks (the consumer flips it based on the router's current URL — the directive doesn't know about routing).",
+      "source": "navigation-menu/navigation-menu-link.ts",
+      "inputs": [
+        {
+          "name": "active",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, this link points at the current page. Reflects `aria-current`."
+        },
+        {
+          "name": "ariaCurrent",
+          "kind": "input",
+          "type": "'page' | 'step' | 'location' | 'date' | 'time' | 'true'",
+          "defaultValue": "'page'",
+          "doc": "Value forwarded to `aria-current` when `active` is true. Defaults to `'page'` (the most common case for top-level navigation)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuList",
+      "kind": "directive",
+      "selector": "[forNavigationMenuList]",
+      "exportAs": "forNavigationMenuList",
+      "host": {
+        "[attr.data-orientation]": "ctx.orientation()"
+      },
+      "doc": "Wrapper around the row / column of items. Carries `data-orientation` so the consumer can flip CSS layout. No semantic role — this is a layout helper, not a `menubar` (the disclosure pattern doesn't use one).",
+      "source": "navigation-menu/navigation-menu-list.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuTrigger",
+      "kind": "directive",
+      "selector": "[forNavigationMenuTrigger]",
+      "exportAs": "forNavigationMenuTrigger",
+      "host": {
+        "type": "button",
+        "[id]": "id()",
+        "[attr.aria-expanded]": "isOpen() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "isOpen() ? contentId() : null",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "[attr.data-state]": "isOpen() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(pointerenter)": "onPointerEnter()",
+        "(pointerleave)": "onPointerLeave()",
+        "(focus)": "onFocus()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Disclosure trigger. Apply on `<button>`. Hover / focus / click open the paired `[forNavigationMenuContent]`; arrow keys move focus across siblings; Escape closes; Enter / Space toggle.",
+      "source": "navigation-menu/navigation-menu-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenuViewport",
+      "kind": "directive",
+      "selector": "[forNavigationMenuViewport]",
+      "exportAs": "forNavigationMenuViewport",
+      "host": {
+        "aria-hidden": "false",
+        "[attr.data-state]": "state()",
+        "[attr.data-orientation]": "menu.orientation()",
+        "[style.--for-navigation-menu-viewport-width.px]": "width()",
+        "[style.--for-navigation-menu-viewport-height.px]": "height()"
+      },
+      "doc": "Optional shared surface for mega-menu style navigation. When present, `[forNavigationMenuContent]` re-parents itself into this host on mount, so all active content panels live inside a single visual container that can animate width/height between trigger groups (Radix `Viewport`).",
+      "source": "navigation-menu/navigation-menu-viewport.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForNavigationMenu",
+      "kind": "directive",
+      "selector": "[forNavigationMenu]",
+      "exportAs": "forNavigationMenu",
+      "host": {
+        "[attr.aria-label]": "ariaLabel() || null",
+        "[attr.data-state]": "value() === \"\" ? \"closed\" : \"open\"",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/).",
+      "source": "navigation-menu/navigation-menu.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Optional accessible name for the surrounding `<nav>`."
+        },
+        {
+          "name": "delayDuration",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.delayDuration",
+          "doc": "ms before a hover/focus opens an item. Default `200`. The default is read from `provideForNavigationMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "closeDelay",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.closeDelay",
+          "doc": "ms before an item closes after hover leaves. Default `150`. The default is read from `provideForNavigationMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "skipDelayDuration",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.skipDelayDuration",
+          "doc": "ms after a peer item closed during which the next open is instant. Keeps fluid hover-across-triggers feeling responsive. Default `300`. The default is read from `provideForNavigationMenuDefaults` for the surrounding scope."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. The id of the open item, or `''` for none. The `model()` change emitter (`(valueChange)`) fires only on internal transitions (trigger click, hover delay, Escape, outside click), never on consumer writes via `[(value)]`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isOpen",
+          "signature": "isOpen(value: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(value: string): void",
+          "doc": ""
+        },
+        {
+          "name": "open",
+          "signature": "open(value: string): void",
+          "doc": ""
+        },
+        {
+          "name": "close",
+          "signature": "close(): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleOpen",
+          "signature": "scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleClose",
+          "signature": "scheduleClose(reason: NavigationMenuScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "cancelPending",
+          "signature": "cancelPending(): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "focusTrigger",
+          "signature": "focusTrigger(value: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(handle: ForNavigationMenuTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(handle: ForNavigationMenuTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(handle: ForNavigationMenuContentHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(handle: ForNavigationMenuContentHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "registerViewport",
+          "signature": "registerViewport(handle: ForNavigationMenuViewportHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterViewport",
+          "signature": "unregisterViewport(handle: ForNavigationMenuViewportHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "contentIdFor",
+          "signature": "contentIdFor(value: string): string | null",
+          "doc": ""
+        },
+        {
+          "name": "triggerIdFor",
+          "signature": "triggerIdFor(value: string): string | null",
+          "doc": ""
+        },
+        {
+          "name": "triggerHostFor",
+          "signature": "triggerHostFor(value: string): HTMLElement | null",
+          "doc": ""
+        },
+        {
+          "name": "motionFor",
+          "signature": "motionFor(value: string): ForNavigationMenuMotion | null",
+          "doc": "`data-motion` direction for the content with the given `value`."
+        }
+      ]
+    }
+  ]
+}

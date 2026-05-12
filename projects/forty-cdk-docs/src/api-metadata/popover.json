@@ -1,0 +1,377 @@
+{
+  "primitive": "popover",
+  "pieces": [
+    {
+      "class": "ForPopoverAnchor",
+      "kind": "directive",
+      "selector": "[forPopoverAnchor]",
+      "exportAs": "forPopoverAnchor",
+      "host": {},
+      "doc": "Optional positioning anchor. When present, the popover is positioned against this element instead of `[forPopoverTrigger]` — useful when \"what opens it\" and \"where it appears\" are different elements (a button opens the popover but it's anchored to a row, a text-selection range, a cursor follower, etc.).",
+      "source": "popover/popover-anchor.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverArrow",
+      "kind": "directive",
+      "selector": "[forPopoverArrow]",
+      "exportAs": "forPopoverArrow",
+      "host": {
+        "aria-hidden": "true",
+        "data-popover-arrow": ""
+      },
+      "doc": "Optional visual arrow inside `ForPopoverContent`. Registers itself with the popover context so floating-ui's `arrow` middleware can position it along the surface edge that points at the trigger. Style size and color yourself — the directive only sets `position`, `left`/`top`, and the opposite-side offset.",
+      "source": "popover/popover-arrow.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverClose",
+      "kind": "directive",
+      "selector": "[forPopoverClose]",
+      "exportAs": "forPopoverClose",
+      "host": {
+        "type": "button",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that closes the surrounding popover when clicked. Apply on a `<button>` inside `[forPopoverContent]`. Bypasses `dismissible` — an explicit close button is always honored.",
+      "source": "popover/popover-close.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverContent",
+      "kind": "directive",
+      "selector": "[forPopoverContent]",
+      "exportAs": "forPopoverContent",
+      "host": {
+        "role": "dialog",
+        "[id]": "ctx.contentId()",
+        "[attr.aria-label]": "ctx.ariaLabel()",
+        "[attr.aria-labelledby]": "ctx.labelledBy()",
+        "[attr.aria-describedby]": "ctx.describedBy()",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "tabindex": "-1"
+      },
+      "doc": "The popover surface. Carries `role=\"dialog\"` (non-modal — `aria-modal` is absent per APG), is portaled to `document.body`, and is positioned by `@floating-ui/dom` against the registered `[forPopoverTrigger]`.",
+      "source": "popover/popover-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverDescription",
+      "kind": "directive",
+      "selector": "[forPopoverDescription]",
+      "exportAs": "forPopoverDescription",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the popover's accessible description (`aria-describedby`). Apply on a paragraph or similar text element inside `[forPopoverContent]`.",
+      "source": "popover/popover-description.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverTitle",
+      "kind": "directive",
+      "selector": "[forPopoverTitle]",
+      "exportAs": "forPopoverTitle",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the popover's accessible name (`aria-labelledby`). Apply on a heading element (`<h2>`, `<h3>`...) inside `[forPopoverContent]`.",
+      "source": "popover/popover-title.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopoverTrigger",
+      "kind": "directive",
+      "selector": "[forPopoverTrigger]",
+      "exportAs": "forPopoverTrigger",
+      "host": {
+        "type": "button",
+        "[id]": "ctx.triggerId()",
+        "[attr.aria-haspopup]": "\"dialog\"",
+        "[attr.aria-expanded]": "ctx.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "ctx.open() ? ctx.contentId() : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that toggles the popover when clicked. Apply on a focusable element — preferably a `<button>` — so keyboard users can reach it.",
+      "source": "popover/popover-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForPopover",
+      "kind": "directive",
+      "selector": "[forPopover]",
+      "exportAs": "forPopover",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), positioned against an internal trigger via `@floating-ui/dom`.",
+      "source": "popover/popover.ts",
+      "inputs": [
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "undefined",
+          "doc": "Side the popover is anchored to. Defaults to `'bottom'`. Pair with `align` for the full positioning API (`side=\"bottom\" align=\"start\"`)."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "undefined",
+          "doc": "Alignment along the chosen `side`. Defaults to `'center'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Gap (px) between trigger and content along the *main* axis (perpendicular to `side`). Default `8`. Forwarded to floating-ui's `offset` middleware. Mirrors Radix's `sideOffset`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis (parallel to `side`). Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the popover inside the viewport. Disable for strict positioning where overflow is acceptable."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Padding (px) applied uniformly to the `flip`, `shift`, and `size` middlewares. Default `8`. Mirrors Radix's `collisionPadding`."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware so the arrow stays inside any rounded corners on the popover content. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. `'partial'` (default) lets the popover shift to stay visible. `'always'` disables `shift` so the popover keeps its requested placement even off-screen. `false` is treated as `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` on the content while the trigger has scrolled off all clipping ancestors. Use to fade out popovers tied to scrolled-away triggers."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, trigger interaction is ignored and any open popover stays open until the consumer flips `open` themselves. Disable on the trigger side; the content side keeps its dismissable behavior unaffected."
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), Escape, pointer-down outside, and focus outside close the popover. Disable for confirm flows that must be answered via `[forPopoverClose]` (or by setting `open` programmatically)."
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), focus returns to the trigger on close."
+        },
+        {
+          "name": "initialFocus",
+          "kind": "input",
+          "type": "'first' | 'container'",
+          "defaultValue": "'first'",
+          "doc": "Where to send focus when content mounts. `'first'` (default) finds the first focusable descendant; `'container'` focuses the content box itself (useful when there's nothing focusable inside)."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label` on the content. Use this when no visible title element exists."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": "Fires when the user presses Escape while this popover is the topmost dismissable layer. Call `preventDefault()` on the emitted veto to suppress the automatic close. The native `KeyboardEvent` is available on `.event`."
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": "Fires when a pointer goes down outside the popover (and outside the trigger). Call `preventDefault()` on the veto to suppress the automatic close. The native `PointerEvent` is on `.event`."
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": "Fires when focus moves outside the popover and trigger. Call `preventDefault()` on the veto to suppress the automatic close."
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": "Composite event: fires alongside `pointerDownOutside` and `focusOutside` and shares their veto state — `preventDefault()` on either one suppresses the automatic close."
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before the popover sends focus into itself on mount. Call `preventDefault()` on the veto to skip the imperative focus move — useful when opening a popover from an input you want to keep focused."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before focus returns to the trigger on unmount. Call `preventDefault()` on the veto to suppress the return-focus."
+        }
+      ],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the popover is currently shown. The `model()` change emitter (`(openChange)`) fires only on internal transitions (trigger click, Escape, outside dismissal), never on consumer writes via `[(open)]` — observe state changes without binding back."
+        }
+      ],
+      "methods": [
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerAnchor",
+          "signature": "registerAnchor(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterAnchor",
+          "signature": "unregisterAnchor(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerArrow",
+          "signature": "registerArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterArrow",
+          "signature": "unregisterArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerDescription",
+          "signature": "registerDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterDescription",
+          "signature": "unregisterDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(): void",
+          "doc": ""
+        },
+        {
+          "name": "emitEscapeKeyDown",
+          "signature": "emitEscapeKeyDown(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitPointerDownOutside",
+          "signature": "emitPointerDownOutside(event: PointerEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitFocusOutside",
+          "signature": "emitFocusOutside(event: FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitInteractOutside",
+          "signature": "emitInteractOutside(event: PointerEvent | FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnOpen",
+          "signature": "emitAutoFocusOnOpen(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnClose",
+          "signature": "emitAutoFocusOnClose(): boolean",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

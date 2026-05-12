@@ -1,0 +1,242 @@
+{
+  "primitive": "menubar",
+  "pieces": [
+    {
+      "class": "ForMenubarTrigger",
+      "kind": "directive",
+      "selector": "[forMenubarTrigger]",
+      "exportAs": "forMenubarTrigger",
+      "host": {
+        "role": "menuitem",
+        "type": "button",
+        "[id]": "triggerId()",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.aria-haspopup]": "\"menu\"",
+        "[attr.aria-expanded]": "isOpen() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "isOpen() ? contentId() : null",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-state]": "isOpen() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-orientation]": "menubar.orientation()",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(pointerenter)": "onPointerEnter()"
+      },
+      "doc": "One trigger inside `[forMenubar]`. Apply on a `<button>` so Space / Enter dispatch native click events that route through `(click)`.",
+      "source": "menubar/menubar-trigger.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Identifies this trigger in the menubar's `value` model."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Per-trigger disabled, in addition to the menubar's `disabled`."
+        },
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'bottom'",
+          "doc": "Anchor side. Default `'bottom'`."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "'start'",
+          "doc": "Alignment along `side`. Default `'start'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "4",
+          "doc": "Gap (px) along the main axis. Default `4`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": ""
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": ""
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": ""
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label` on `[forMenuContent]` when the trigger isn't a meaningful name."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMenubar",
+      "kind": "directive",
+      "selector": "[forMenubar]",
+      "exportAs": "forMenubar",
+      "host": {
+        "role": "menubar",
+        "[attr.aria-orientation]": "orientation()",
+        "[attr.aria-label]": "ariaLabel() || null",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.data-state]": "value() === \"\" ? \"closed\" : \"open\"",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/).",
+      "source": "menubar/menubar.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Optional accessible name for the menubar."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. The value of the open trigger, or `''` when none. The `model()` change emitter (`(valueChange)`) fires only on internal transitions (trigger interaction, item activation, Escape, outside dismissal, cross-menu nav), never on consumer writes via `[(value)]`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(handle: ForMenubarTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(handle: ForMenubarTriggerHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "triggerFor",
+          "signature": "triggerFor(value: string): ForMenubarTriggerHandle | null",
+          "doc": ""
+        },
+        {
+          "name": "tabindexFor",
+          "signature": "tabindexFor(el: HTMLElement): 0 | -1",
+          "doc": ""
+        },
+        {
+          "name": "setFocusedTrigger",
+          "signature": "setFocusedTrigger(el: HTMLElement | null): void",
+          "doc": ""
+        },
+        {
+          "name": "navigateTriggers",
+          "signature": "navigateTriggers(currentTrigger: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "openTrigger",
+          "signature": "openTrigger(value: string, initialFocus: 'first' | 'last'): void",
+          "doc": ""
+        },
+        {
+          "name": "closeOpen",
+          "signature": "closeOpen(): void",
+          "doc": ""
+        },
+        {
+          "name": "switchToSibling",
+          "signature": "switchToSibling(direction: 'next' | 'prev'): void",
+          "doc": ""
+        },
+        {
+          "name": "pointerEnterTrigger",
+          "signature": "pointerEnterTrigger(value: string): void",
+          "doc": ""
+        },
+        {
+          "name": "handleTriggerTypeahead",
+          "signature": "handleTriggerTypeahead(event: KeyboardEvent): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

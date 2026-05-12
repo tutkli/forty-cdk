@@ -1,0 +1,704 @@
+{
+  "primitive": "combobox",
+  "pieces": [
+    {
+      "class": "ForComboboxChipRemove",
+      "kind": "directive",
+      "selector": "[forComboboxChipRemove]",
+      "exportAs": "forComboboxChipRemove",
+      "host": {
+        "type": "button",
+        "tabindex": "-1",
+        "[attr.aria-label]": "ariaLabel()",
+        "[attr.disabled]": "ctx.disabled() || ctx.readonly() ? \"\" : null",
+        "(click)": "onClick($event)"
+      },
+      "doc": "Remove button inside a `[forComboboxChip]`. Apply on a `<button type=\"button\">` so click and Space / Enter (when focused) all trigger the same removal flow. The button is out of the Tab cycle (`tabindex=\"-1\"`) so the user navigates the chip cluster via the chip's own ArrowLeft/Right + Backspace/Delete keys; this button exists for mouse / touch users.",
+      "source": "combobox/combobox-chip-remove.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxChip",
+      "kind": "directive",
+      "selector": "[forComboboxChip]",
+      "exportAs": "forComboboxChip",
+      "host": {
+        "tabindex": "-1",
+        "[attr.data-value]": "dataValue()",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "One chip representing a selected value in multi mode. Apply on a `<span>` (or any inline-block element) inside `[forComboboxChips]`. The chip is **out of the Tab cycle** (`tabindex=\"-1\"`) by design: the user reaches it via the input's Backspace heuristic (Backspace on an empty input focuses the last chip), then navigates between chips with ArrowLeft / ArrowRight or removes them with Backspace / Delete.",
+      "source": "combobox/combobox-chip.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "T",
+          "defaultValue": null,
+          "doc": "The value this chip represents — must match an entry in `[forCombobox][(value)]` per the parent's `[isItemEqualToValue]`. Generic over `T` (default `string`); inferred from the binding (`[value]=\"someObject\"` specializes `T`)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxChips",
+      "kind": "directive",
+      "selector": "[forComboboxChips]",
+      "exportAs": "forComboboxChips",
+      "host": {
+        "role": "group",
+        "[attr.aria-label]": "ariaLabel()"
+      },
+      "doc": "Multi-mode chips area. Wrap the chips and the `<input>` together so the combobox visually presents a single editable region:",
+      "source": "combobox/combobox-chips.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxClear",
+      "kind": "directive",
+      "selector": "[forComboboxClear]",
+      "exportAs": "forComboboxClear",
+      "host": {
+        "type": "button",
+        "aria-label": "Clear",
+        "[hidden]": "!hasContent()",
+        "[attr.disabled]": "ctx.disabled() || ctx.readonly() ? \"\" : null",
+        "[attr.tabindex]": "-1",
+        "(click)": "onClick()"
+      },
+      "doc": "Optional clear button. Apply on a `<button type=\"button\">` so Space / Enter dispatch a native click. Clicking calls `clear()` on the root, which resets `[(value)]` and `[(query)]` and the activedescendant.",
+      "source": "combobox/combobox-clear.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxContent",
+      "kind": "directive",
+      "selector": "[forComboboxContent]",
+      "exportAs": "forComboboxContent",
+      "host": {
+        "role": "listbox",
+        "tabindex": "-1",
+        "[id]": "ctx.contentId()",
+        "[attr.aria-labelledby]": "ctx.ariaLabel() ? null : ctx.inputId()",
+        "[attr.aria-label]": "ctx.ariaLabel()",
+        "[attr.aria-multiselectable]": "ctx.multiple() ? \"true\" : null",
+        "[attr.aria-setsize]": "ariaSetSize()",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\""
+      },
+      "doc": "The listbox surface. Carries `role=\"listbox\"`, is portaled to `document.body`, and is positioned by `@floating-ui/dom` against the input.",
+      "source": "combobox/combobox-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxEmpty",
+      "kind": "directive",
+      "selector": "[forComboboxEmpty]",
+      "exportAs": "forComboboxEmpty",
+      "host": {
+        "role": "status",
+        "aria-live": "polite",
+        "[hidden]": "!shouldShow()"
+      },
+      "doc": "Empty-state slot, shown when the listbox has no registered options. The directive flips a `[hidden]` host binding so the consumer can keep the empty message inline in the template — no `@if` needed:",
+      "source": "combobox/combobox-empty.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxGroupLabel",
+      "kind": "directive",
+      "selector": "[forComboboxGroupLabel]",
+      "exportAs": "forComboboxGroupLabel",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Visible label for a `[forComboboxGroup]`. Generates a stable id and registers with its parent group so the group's `aria-labelledby` points at this element.",
+      "source": "combobox/combobox-group-label.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxGroup",
+      "kind": "directive",
+      "selector": "[forComboboxGroup]",
+      "exportAs": "forComboboxGroup",
+      "host": {
+        "role": "group",
+        "[attr.aria-labelledby]": "labelId() || null"
+      },
+      "doc": "Optional grouping wrapper inside a `[forComboboxContent]`. Renders `role=\"group\"` and references the descendant `[forComboboxGroupLabel]` (if any) via `aria-labelledby`. Options inside a group still register with the root listbox normally, so keyboard navigation traverses across groups in DOM order without special handling.",
+      "source": "combobox/combobox-group.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": "Called by `ForComboboxGroupLabel` on mount."
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": "Called by `ForComboboxGroupLabel` on destroy. Idempotent."
+        }
+      ]
+    },
+    {
+      "class": "ForComboboxIndicator",
+      "kind": "directive",
+      "selector": "[forComboboxIndicator]",
+      "exportAs": "forComboboxIndicator",
+      "host": {
+        "aria-hidden": "true",
+        "[attr.data-state]": "option.selected() ? \"checked\" : \"unchecked\"",
+        "[hidden]": "!option.selected() && !forceMount()"
+      },
+      "doc": "Visibility helper inside a `[forComboboxOption]`. The directive flips a `[hidden]` host binding so the consumer can keep the checkmark / icon inline without extra `@if` glue:",
+      "source": "combobox/combobox-indicator.ts",
+      "inputs": [
+        {
+          "name": "forceMount",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Keep the indicator mounted even when the option is unselected."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxInput",
+      "kind": "directive",
+      "selector": "[forComboboxInput]",
+      "exportAs": "forComboboxInput",
+      "host": {
+        "type": "text",
+        "role": "combobox",
+        "autocomplete": "off",
+        "autocorrect": "off",
+        "spellcheck": "false",
+        "[id]": "ctx.inputId()",
+        "[attr.aria-haspopup]": "\"listbox\"",
+        "[attr.aria-expanded]": "ctx.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "ctx.contentId()",
+        "[attr.aria-autocomplete]": "ariaAutocomplete()",
+        "[attr.aria-activedescendant]": "ctx.open() ? (ctx.activeId() ?? null) : null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "ctx.readonly() ? \"true\" : null",
+        "[attr.aria-required]": "ctx.required() ? \"true\" : null",
+        "[attr.aria-invalid]": "ctx.invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "ctx.pending() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.readonly]": "ctx.readonly() ? \"\" : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "(input)": "onInput($event)",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(click)": "onClick()"
+      },
+      "doc": "The combobox `<input role=\"combobox\">`. Owns the visible text and all keyboard interaction. Apply on a real `<input>` so the browser's native caret / selection semantics drive inline-autocomplete and so the form still behaves like a text field for screen readers.",
+      "source": "combobox/combobox-input.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxOption",
+      "kind": "directive",
+      "selector": "[forComboboxOption]",
+      "exportAs": "forComboboxOption",
+      "host": {
+        "role": "option",
+        "[id]": "id()",
+        "[attr.aria-selected]": "ariaSelected()",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.aria-posinset]": "ariaPosInSet()",
+        "[attr.aria-setsize]": "ariaSetSize()",
+        "[attr.data-state]": "selected() ? \"checked\" : \"unchecked\"",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(pointermove)": "onPointerMove()"
+      },
+      "doc": "One option inside a `[forComboboxContent]`. Apply on whatever element fits the design — typically a `<div>` or `<li>`. Click activates: single mode replaces `[(value)]` and closes the listbox; multi mode toggles the value in/out and keeps the listbox open.",
+      "source": "combobox/combobox-option.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "T",
+          "defaultValue": null,
+          "doc": "Stable identifier serialized into `[(value)]` and the hidden input. Defaults to `string` for back-compat; bind an object to specialize the parent `[forCombobox]` over a richer `T`. The parent's `[isItemEqualToValue]` decides how options are matched against the committed selection."
+        },
+        {
+          "name": "label",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Visible label used by `[forComboboxInput]` for inline autocomplete matching, by `commitOnSelect` to populate the input on selection, and by typeahead / display utilities. When omitted: for string `value` falls back to the trimmed `textContent` of the host element; for object `value` falls back to the parent's `itemToStringLabel(value)`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "posInSet",
+          "kind": "input",
+          "type": "number | null",
+          "defaultValue": "null",
+          "doc": "Absolute index of this option in the consumer's source array. Required when wiring up a virtualized listbox so navigation past the rendered window can resolve indices to options (and emit `(scrollToIndex)` when needed). Leave `null` for non-virtualized lists — the directive then falls back to DOM order."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxSeparator",
+      "kind": "directive",
+      "selector": "[forComboboxSeparator]",
+      "exportAs": "forComboboxSeparator",
+      "host": {
+        "role": "separator",
+        "aria-orientation": "horizontal"
+      },
+      "doc": "Decorative separator between options or groups inside a `[forComboboxContent]`. Carries `role=\"separator\"` and is intentionally not registered with the listbox's option collection, so keyboard navigation skips it automatically.",
+      "source": "combobox/combobox-separator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForComboboxStatus",
+      "kind": "directive",
+      "selector": "[forComboboxStatus]",
+      "exportAs": "forComboboxStatus",
+      "host": {
+        "role": "status",
+        "aria-live": "polite",
+        "aria-atomic": "true"
+      },
+      "doc": "Live-region slot for async-filtering feedback (loading, result count, \"no matches\", error messages). Apply on a `<div>` inside the listbox or next to the input. The directive sets `role=\"status\"` and `aria-live=\"polite\"` so messages projected as content are announced to screen readers when they change.",
+      "source": "combobox/combobox-status.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForCombobox",
+      "kind": "directive",
+      "selector": "[forCombobox]",
+      "exportAs": "forCombobox",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). Implements `FormValueControl<readonly T[]>` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "combobox/combobox.ts",
+      "inputs": [
+        {
+          "name": "isItemEqualToValue",
+          "kind": "input",
+          "type": "(a: T, b: T) => boolean",
+          "defaultValue": "(a, b) => a === b",
+          "doc": "Compare two items for equality. Defaults to `===`, which is the correct identity for primitive `T` (e.g. strings, numbers). Override when binding object items so the directive can locate selected / removed entries by id (or any other stable key) instead of by reference: `[isItemEqualToValue]=\"(a, b) => a.id === b.id\"`."
+        },
+        {
+          "name": "itemToStringLabel",
+          "kind": "input",
+          "type": "(item: T) => string",
+          "defaultValue": "(item) => String(item)",
+          "doc": "Render an item as a string label. Defaults to `String(item)`, which is identity for strings. Drives the visible input text after activation (when `commitOnSelect`) and the chip label fallback in multi mode. Override when binding object items so the directive can fall back to a meaningful label without relying on the option cache being warm: `[itemToStringLabel]=\"(it) => it.name\"`."
+        },
+        {
+          "name": "itemToFormValue",
+          "kind": "input",
+          "type": "(item: T) => string",
+          "defaultValue": "(item) =>\r\n    typeof item === 'string' ? item : JSON.stringify(item)",
+          "doc": "Serialize an item for the hidden input that participates in native form submission. Defaults to identity for strings and to `JSON.stringify` for non-string items so the primitive works out of the box round-tripping objects. Override to emit a specific wire format — typically a per-item id — when the backend expects that: `[itemToFormValue]=\"(it) => it.id\"`."
+        },
+        {
+          "name": "multiple",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "autocompleteMode",
+          "kind": "input",
+          "type": "ForComboboxAutocomplete",
+          "defaultValue": "'list'",
+          "doc": "Autocomplete mode applied to the input. Mirrors the [WAI-ARIA `aria-autocomplete` property](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/#wai-ariaroles,states,andproperties) and drives whether the listbox auto-opens on query and whether the input gets inline-completed with the first match. Renamed from `autocomplete` so consumers don't conflate it with the native HTML `autocomplete` attribute (which the directive forces to `\"off\"`)."
+        },
+        {
+          "name": "openOnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Open the listbox when the input gains focus. Off by default — opening on query / arrow keys is the standard ecosystem behavior."
+        },
+        {
+          "name": "openOnQuery",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "Open the listbox when the user starts typing. On by default. Only honored when `autocompleteMode` includes a listbox (`'list'` or `'both'`)."
+        },
+        {
+          "name": "commitOnSelect",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "In single mode, copy the activated option's label into `query`. In multi mode, instead **clear** the query so the user can search the next item. On by default in both. Set `false` to leave `query` untouched on activation in either mode."
+        },
+        {
+          "name": "clearOnQueryChange",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When the user edits the query, automatically clear the committed `value`. Off by default — most apps want the value preserved across query edits. Single-mode only."
+        },
+        {
+          "name": "autoHighlight",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "Auto-highlight the first enabled option whenever the listbox is open and no activedescendant is set (e.g. after the consumer's filter removed the previously-active option). On by default — matches the Headless UI / Material Autocomplete behavior. Set `false` for Radix-style \"user must arrow before anything is highlighted\"."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Writing direction. Default `'ltr'`. Drives chip-cluster keyboard navigation (ArrowLeft / ArrowRight semantics swap in RTL so they follow the visual order, not DOM order) and the default `align` of the listbox (anchors to the right edge of the input in RTL)."
+        },
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'bottom'",
+          "doc": "Side the listbox is anchored to. Defaults to `'bottom'`. Pair with `align` for the full positioning API."
+        },
+        {
+          "name": "_alignInput",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "undefined",
+          "doc": "Alignment along the chosen `side`. When unset, defaults to `'start'` in LTR and `'end'` in RTL (per `dir`). Set explicitly to pin an alignment regardless of writing direction."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "4",
+          "doc": "Gap (px) between input and listbox along the main axis. Default `4`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the listbox inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the input is scrolled off-screen."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), Escape, pointer-down outside, and focus outside close the listbox."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label` on `[forComboboxContent]` when the input isn't a meaningful name."
+        },
+        {
+          "name": "totalCount",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "undefined",
+          "doc": "Total number of options in the consumer's source array. Set when wiring up a virtualized listbox (only the visible window is rendered) so the directive can reflect `aria-setsize` and walk the snapshot for navigation past the rendered range. Defaults to `undefined`, in which case the directive falls back to `options().length` (the live registry)."
+        },
+        {
+          "name": "visibleRange",
+          "kind": "input",
+          "type": "readonly [number, number] | undefined",
+          "defaultValue": "undefined",
+          "doc": "Inclusive-exclusive `[start, end)` range of options currently rendered in the DOM. Used by `navigate()` to translate \"move to absolute position N\" into either an in-window highlight update or a request to the consumer to scroll N into view (`(scrollToIndex)`). When `undefined` (default), navigation assumes every option in the snapshot is rendered — appropriate for non-virtualized lists."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "scrollToIndex",
+          "kind": "output",
+          "type": "number",
+          "defaultValue": null,
+          "doc": "Emitted when keyboard navigation needs to land on an option whose absolute index falls outside `visibleRange()`. Wire this to the consumer's virtualizer (`scrollToIndex(idx)` on `@tanstack/virtual`, `virtua`, etc.); once the option mounts, the directive seeds `aria-activedescendant` automatically."
+        },
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        }
+      ],
+      "models": [
+        {
+          "name": "query",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. Visible input text. The `model()` change emitter (`(queryChange)`) fires only on internal mutations (option activation commit, `clear()`, multi-mode select reset), never on consumer writes via `[(query)]`."
+        },
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "readonly T[]",
+          "defaultValue": "[]",
+          "doc": "Two-way bindable. Selected option values. Single mode (`multiple=false`) keeps 0 or 1 element; multi mode keeps any number. The `model()` change emitter (`(valueChange)`) fires only on internal selection changes, never on consumer writes via `[(value)]`."
+        },
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the listbox is currently shown. Internal transitions: input typing (when `openOnQuery`), focus (when `openOnFocus`), ArrowDown / ArrowUp, Escape, outside dismissal, single-mode option activation."
+        }
+      ],
+      "methods": [
+        {
+          "name": "registerInput",
+          "signature": "registerInput(el: HTMLInputElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterInput",
+          "signature": "unregisterInput(el: HTMLInputElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerOption",
+          "signature": "registerOption(handle: ForComboboxOptionHandle<T>): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterOption",
+          "signature": "unregisterOption(handle: ForComboboxOptionHandle<T>): void",
+          "doc": ""
+        },
+        {
+          "name": "registerChip",
+          "signature": "registerChip(handle: ForComboboxChipHandle<T>): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterChip",
+          "signature": "unregisterChip(handle: ForComboboxChipHandle<T>): void",
+          "doc": ""
+        },
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: T): boolean",
+          "doc": ""
+        },
+        {
+          "name": "isActive",
+          "signature": "isActive(id: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "activate",
+          "signature": "activate(handle: ForComboboxOptionHandle<T>): void",
+          "doc": ""
+        },
+        {
+          "name": "removeValue",
+          "signature": "removeValue(v: T): void",
+          "doc": ""
+        },
+        {
+          "name": "activateActive",
+          "signature": "activateActive(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(direction: 'next' | 'prev' | 'first' | 'last'): void",
+          "doc": ""
+        },
+        {
+          "name": "setQueryFromInput",
+          "signature": "setQueryFromInput(query: string): void",
+          "doc": ""
+        },
+        {
+          "name": "setActiveId",
+          "signature": "setActiveId(id: string | null): void",
+          "doc": ""
+        },
+        {
+          "name": "cachedOptions",
+          "signature": "cachedOptions(): readonly { id: string; value: T; label: string }[]",
+          "doc": ""
+        },
+        {
+          "name": "clear",
+          "signature": "clear(clearQuery: boolean = true): void",
+          "doc": ""
+        },
+        {
+          "name": "setInitialFocus",
+          "signature": "setInitialFocus(target: 'first' | 'last'): void",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(): void",
+          "doc": ""
+        },
+        {
+          "name": "openMenu",
+          "signature": "openMenu(initialFocus: 'first' | 'last' = 'first'): void",
+          "doc": ""
+        },
+        {
+          "name": "closeMenu",
+          "signature": "closeMenu(_reason: ForComboboxCloseReason): void",
+          "doc": ""
+        },
+        {
+          "name": "emitEscapeKeyDown",
+          "signature": "emitEscapeKeyDown(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitPointerDownOutside",
+          "signature": "emitPointerDownOutside(event: PointerEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitFocusOutside",
+          "signature": "emitFocusOutside(event: FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitInteractOutside",
+          "signature": "emitInteractOutside(event: PointerEvent | FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "markTouched",
+          "signature": "markTouched(): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

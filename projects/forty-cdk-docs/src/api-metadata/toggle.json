@@ -1,0 +1,173 @@
+{
+  "primitive": "toggle",
+  "pieces": [
+    {
+      "class": "ForToggleGroupItem",
+      "kind": "directive",
+      "selector": "[forToggleGroupItem]",
+      "exportAs": "forToggleGroupItem",
+      "host": {
+        "type": "button",
+        "[attr.aria-pressed]": "pressed() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.data-state]": "pressed() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-orientation]": "group.orientation()",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "One toggle button inside a `[forToggleGroup]`. Apply on a `<button>`.",
+      "source": "toggle/toggle-group-item.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Identifier added to / removed from the group's `value`. Required."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Per-item disabled (in addition to the group's `disabled`)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForToggleGroup",
+      "kind": "directive",
+      "selector": "[forToggleGroup]",
+      "exportAs": "forToggleGroup",
+      "host": {
+        "role": "group",
+        "[attr.aria-orientation]": "orientation()",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Headless implementation of a [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/) of toggle buttons. Owns the selected-values set, navigation policy, and the registry of `[forToggleGroupItem]` children. Implements `FormValueControl<readonly string[]>` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "toggle/toggle-group.ts",
+      "inputs": [
+        {
+          "name": "multiple",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When false (default), only one item can be pressed at a time. Clicking an already-pressed item clears the selection. When true, clicks toggle each item independently."
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'horizontal'",
+          "doc": "Layout direction for keyboard navigation."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Reading direction. RTL swaps ArrowLeft/ArrowRight."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), arrow nav wraps at the ends."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "readonly string[]",
+          "defaultValue": "[]",
+          "doc": "Two-way bindable. The currently pressed values, in arbitrary order. In single mode the array holds 0 or 1 entries. The `model()` change emitter (`(valueChange)`) fires only on internal transitions (item click), never on consumer writes via `[(value)]`. Required by `FormValueControl<readonly string[]>`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(v: string): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentItem: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "isFirstFocusableItem",
+          "signature": "isFirstFocusableItem(el: HTMLElement): boolean",
+          "doc": "Tabindex policy: with at least one selection, the first selected item is the entry point; otherwise the first enabled item in DOM order."
+        },
+        {
+          "name": "registerItem",
+          "signature": "registerItem(handle: ForToggleGroupItemHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterItem",
+          "signature": "unregisterItem(handle: ForToggleGroupItemHandle): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "class": "ForToggle",
+      "kind": "directive",
+      "selector": "[forToggle]",
+      "exportAs": "forToggle",
+      "host": {
+        "type": "button",
+        "[attr.aria-pressed]": "pressed() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "[attr.data-state]": "pressed() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "(click)": "onClick()"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Toggle Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) — a single-purpose `<button>` whose pressed state is reflected via `aria-pressed`.",
+      "source": "toggle/toggle.ts",
+      "inputs": [
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, the toggle is disabled and click is ignored."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "pressed",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the toggle is pressed. The `model()` change emitter (`(pressedChange)`) fires only on internal transitions (user click), never on consumer writes via `[(pressed)]`."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

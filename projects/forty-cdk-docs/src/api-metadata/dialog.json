@@ -1,0 +1,277 @@
+{
+  "primitive": "dialog",
+  "pieces": [
+    {
+      "class": "ForDialogBackdrop",
+      "kind": "directive",
+      "selector": "[forDialogBackdrop]",
+      "exportAs": "forDialogBackdrop",
+      "host": {
+        "data-for-dialog-backdrop": "",
+        "data-for-modal-peer": "",
+        "data-state": "open",
+        "(click)": "onClick($event)"
+      },
+      "doc": "Optional backdrop overlay. Portaled to `document.body` so it sits underneath the dialog regardless of where it's declared. While mounted the backdrop is visible; mount/unmount it alongside the dialog with the same `@if` so `animate.enter` / `animate.leave` works on both.",
+      "source": "dialog/dialog-backdrop.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDialogClose",
+      "kind": "directive",
+      "selector": "[forDialogClose]",
+      "exportAs": "forDialogClose",
+      "host": {
+        "type": "button",
+        "data-state": "open",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that closes the surrounding dialog when clicked. Apply on a `<button>` inside `[forDialog]`. Pass `[closeWith]` to propagate a return value to `ForDialogRef.close()` in programmatic usage; ignored in declarative usage.",
+      "source": "dialog/dialog-close.ts",
+      "inputs": [
+        {
+          "name": "closeWith",
+          "kind": "input",
+          "type": "unknown",
+          "defaultValue": "undefined",
+          "doc": "Optional value passed to `ForDialogRef.close()` (programmatic mode)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDialogDescription",
+      "kind": "directive",
+      "selector": "[forDialogDescription]",
+      "exportAs": "forDialogDescription",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the dialog's accessible description (`aria-describedby`). Apply on a `<p>` or other element inside `[forDialog]`. Optional — only use when there's non-title supporting copy (the question of a confirm, the rationale of an alert).",
+      "source": "dialog/dialog-description.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDialogProgrammaticHost",
+      "kind": "component",
+      "selector": null,
+      "exportAs": null,
+      "host": {},
+      "doc": "Internal shell mounted by `ForDialogManager.open()` so that `[forDialog]` runs as a real Angular host directive — focus trap, dismissable layer, portal, scroll lock, inert siblings, return-focus and the modal-shell triple-veto are all owned by the same code path as the declarative case. The shell forwards every `ForDialog` input / output via the `hostDirectives` mechanism so the manager can drive them with `componentRef.setInput(...)` and read the directive instance back via `componentRef.injector.get(ForDialog)`. The user component is then created inside this shell's `ViewContainerRef`, which puts the user's element injector beneath the wrapper's — so `[forDialogClose]`, `[forDialogTitle]`, `[forDialogDescription]`, and `[forDialogBackdrop]` resolve `FOR_DIALOG_CONTEXT` (provided by `ForDialog` via its directive `providers`) without any extra wiring.",
+      "source": "dialog/dialog-programmatic-host.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDialogTitle",
+      "kind": "directive",
+      "selector": "[forDialogTitle]",
+      "exportAs": "forDialogTitle",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the dialog's accessible name (`aria-labelledby`). Apply on a heading element (`<h2>`, `<h3>`...) inside `[forDialog]`.",
+      "source": "dialog/dialog-title.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDialogTrigger",
+      "kind": "directive",
+      "selector": "[forDialogTrigger]",
+      "exportAs": "forDialogTrigger",
+      "host": {
+        "type": "button",
+        "[attr.aria-haspopup]": "\"dialog\"",
+        "[attr.aria-expanded]": "open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "open() ? controls() : null",
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that toggles the dialog when clicked. Apply on a focusable element — preferably a `<button>` — so keyboard users can reach it.",
+      "source": "dialog/dialog-trigger.ts",
+      "inputs": [
+        {
+          "name": "controls",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Id of the controlled dialog box. Mirrored to `aria-controls` while the dialog is open. The consumer is responsible for setting the same `id` on `[forDialog]`. Has no effect on focus or behavior — purely the accessibility relationship between trigger and box."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, click is ignored and the host reflects `data-disabled=\"\"`, `aria-disabled=\"true\"`, and the native `disabled` attribute so the trigger is announced as disabled by assistive tech and dropped from the tab order."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Bind to the same signal that gates the surrounding `@if` around `[forDialog]`. The `model()` change emitter (`(openChange)`) fires only on internal transitions (trigger click), never on consumer writes via `[(open)]`."
+        }
+      ],
+      "methods": []
+    },
+    {
+      "class": "ForDialog",
+      "kind": "directive",
+      "selector": "[forDialog]",
+      "exportAs": "forDialog",
+      "host": {
+        "[attr.role]": "alert() ? \"alertdialog\" : \"dialog\"",
+        "[attr.aria-modal]": "modal() ? \"true\" : null",
+        "[attr.aria-label]": "ariaLabel()",
+        "[attr.aria-labelledby]": "labelledBy()",
+        "[attr.aria-describedby]": "describedBy()",
+        "data-state": "open",
+        "tabindex": "-1"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).",
+      "source": "dialog/dialog.ts",
+      "inputs": [
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), Escape, backdrop click, pointer-down outside, and focus outside emit `(close)`. Disable for critical confirm flows that must be answered explicitly via `[forDialogClose]`."
+        },
+        {
+          "name": "modal",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), sets `aria-modal=\"true\"`, locks body scroll, and traps focus. Set to `false` for non-modal popups (rare for dialogs)."
+        },
+        {
+          "name": "alert",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, role becomes `alertdialog` (interrupts assistive tech)."
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), focus returns to the previously focused element on close."
+        },
+        {
+          "name": "initialFocus",
+          "kind": "input",
+          "type": "'first' | 'container'",
+          "defaultValue": "'first'",
+          "doc": "Where to send focus on mount. `'first'` (default) finds the first focusable descendant; `'container'` focuses the dialog box itself (useful when there's nothing focusable inside)."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label`. Use this when no visible title element exists."
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "input",
+          "type": "((event: VetoableEvent) => void) | undefined",
+          "defaultValue": "undefined",
+          "doc": "Callback invoked just before the dialog moves focus into itself on mount. Receives a `VetoableEvent`; call `event.preventDefault()` to skip the imperative focus move — useful when opening a dialog from an input you want to keep focused. The focus trap (modal mode) still cycles Tab inside the dialog once focus enters it."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "input",
+          "type": "((event: VetoableEvent) => void) | undefined",
+          "defaultValue": "undefined",
+          "doc": "Callback invoked just before focus returns to the previously focused element on unmount. Receives a `VetoableEvent`; call `event.preventDefault()` to skip the return-focus — useful when the consumer wants to send focus elsewhere imperatively (e.g. a confirmation toast)."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "close",
+          "kind": "output",
+          "type": "ForDialogCloseReason",
+          "defaultValue": null,
+          "doc": "Emitted when the dialog wants to close. Consumers wire this to flip the signal that gates the surrounding `@if`. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`."
+        },
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": "Fires when the user presses Escape while this dialog is the topmost dismissable layer. Call `preventDefault()` on the emitted veto to suppress the subsequent `(close)` emission (e.g. to ask for confirmation first). The original `KeyboardEvent` is available on `.event` for inspection."
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": "Fires when a pointer goes down outside the dialog. Call `preventDefault()` on the emitted veto to suppress the auto `(close)`. The native `PointerEvent` is available on `.event`."
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": "Fires when focus moves outside the dialog (e.g. user tabs out of a non-modal dialog). `preventDefault()` on the veto suppresses the auto `(close)`. The native `FocusEvent` is available on `.event`."
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": "Composite event: fires alongside `pointerDownOutside` and `focusOutside` and shares their veto state — `preventDefault()` on either one suppresses the auto `(close)`."
+        }
+      ],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerDescription",
+          "signature": "registerDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterDescription",
+          "signature": "unregisterDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "requestClose",
+          "signature": "requestClose(reason: ForDialogCloseReason, value?: unknown): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

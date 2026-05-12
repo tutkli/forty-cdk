@@ -1,0 +1,165 @@
+{
+  "primitive": "scroll-area",
+  "pieces": [
+    {
+      "class": "ForScrollAreaContent",
+      "kind": "directive",
+      "selector": "[forScrollAreaContent]",
+      "exportAs": "forScrollAreaContent",
+      "host": {},
+      "doc": "Marks the content element inside `[forScrollAreaViewport]`. The viewport observes this element with a `ResizeObserver` so `scrollWidth` / `scrollHeight` updates when content reflows.",
+      "source": "scroll-area/scroll-area-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForScrollAreaCorner",
+      "kind": "directive",
+      "selector": "[forScrollAreaCorner]",
+      "exportAs": "forScrollAreaCorner",
+      "host": {
+        "[hidden]": "!visible()"
+      },
+      "doc": "Filler in the corner where horizontal and vertical scrollbars meet. Mounted only when both axes overflow.",
+      "source": "scroll-area/scroll-area-corner.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForScrollAreaScrollbar",
+      "kind": "directive",
+      "selector": "[forScrollAreaScrollbar]",
+      "exportAs": "forScrollAreaScrollbar",
+      "host": {
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-state]": "state()",
+        "[hidden]": "!hasOverflow()"
+      },
+      "doc": "Synthetic scrollbar track. Reflects `data-orientation`, `data-state` (`visible` / `hidden`), and exposes its host element via the orientation input so the thumb can compute geometry.",
+      "source": "scroll-area/scroll-area-scrollbar.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "inputRequired",
+          "type": "ForScrollbarOrientation",
+          "defaultValue": null,
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForScrollAreaThumb",
+      "kind": "directive",
+      "selector": "[forScrollAreaThumb]",
+      "exportAs": "forScrollAreaThumb",
+      "host": {
+        "[style.position]": "\"absolute\"",
+        "[style.width.px]": "widthPx()",
+        "[style.height.px]": "heightPx()",
+        "[style.transform]": "transformValue()",
+        "[attr.data-orientation]": "scrollbar.orientation()",
+        "[attr.data-state]": "scrollbar.state()",
+        "(pointerdown)": "onPointerDown($event)"
+      },
+      "doc": "The draggable thumb inside a `[forScrollAreaScrollbar]`. Sizes itself proportionally to viewport / content and translates along the track based on `scrollLeft` / `scrollTop`. Pointer-drag scrolls the viewport proportionally.",
+      "source": "scroll-area/scroll-area-thumb.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForScrollAreaViewport",
+      "kind": "directive",
+      "selector": "[forScrollAreaViewport]",
+      "exportAs": "forScrollAreaViewport",
+      "host": {
+        "(scroll)": "onScroll()"
+      },
+      "doc": "The actually-scrolling element. Hides native scrollbars (the only place in forty-cdk that ships CSS — see README), tracks scroll position, and reports geometry to the root so the synthetic scrollbar can render.",
+      "source": "scroll-area/scroll-area-viewport.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForScrollArea",
+      "kind": "directive",
+      "selector": "[forScrollArea]",
+      "exportAs": "forScrollArea",
+      "host": {
+        "[attr.data-type]": "type()",
+        "[attr.dir]": "dir() === \"rtl\" ? \"rtl\" : null",
+        "(pointerenter)": "onPointerEnter()",
+        "(pointerleave)": "onPointerLeave()"
+      },
+      "doc": "Root of the custom-scrollbar primitive. Owns the viewport reference, scroll geometry signals, and visibility state for the synthetic scrollbars.",
+      "source": "scroll-area/scroll-area.ts",
+      "inputs": [
+        {
+          "name": "type",
+          "kind": "input",
+          "type": "ForScrollAreaType",
+          "defaultValue": "'hover'",
+          "doc": "When the synthetic scrollbars are visible: - `auto`: shown only when content overflows. - `always`: shown whenever there is overflow, regardless of interaction. - `scroll`: shown during scroll, faded after `scrollHideDelay` ms. - `hover`: shown while the cursor is over the area (and during scroll)."
+        },
+        {
+          "name": "scrollHideDelay",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.scrollHideDelay",
+          "doc": "ms after the most recent scroll before scrollbars fade (only `type=\"scroll\"` and `\"hover\"`). The default is read from `provideForScrollAreaDefaults` for the surrounding scope."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerViewport",
+          "signature": "registerViewport(el: HTMLElement | null): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "reportScroll",
+          "signature": "reportScroll(left: number, top: number): void",
+          "doc": ""
+        },
+        {
+          "name": "reportSize",
+          "signature": "reportSize(clientW: number, clientH: number, scrollW: number, scrollH: number): void",
+          "doc": ""
+        },
+        {
+          "name": "noteUserScroll",
+          "signature": "noteUserScroll(): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

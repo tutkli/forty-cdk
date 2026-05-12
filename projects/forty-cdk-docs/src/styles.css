@@ -1,0 +1,240 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+@plugin "@tailwindcss/typography";
+
+/* Map the brand tokens into Tailwind's `theme` so utility classes inherit
+ * the same values. Dark mode flips the tokens via .dark on <html>; Tailwind
+ * utilities that reference the variables (e.g. `bg-surface`) flip with it.
+ */
+@theme inline {
+  --color-surface: var(--for-surface);
+  --color-surface-elevated: var(--for-surface-elevated);
+  --color-surface-muted: var(--for-surface-muted);
+  --color-on-surface: var(--for-on-surface);
+  --color-on-surface-muted: var(--for-on-surface-muted);
+  --color-border-soft: var(--for-border);
+  --color-border-strong: var(--for-border-strong);
+  --color-accent: var(--for-accent);
+  --color-accent-soft: var(--for-accent-soft);
+  --color-danger: var(--for-danger);
+
+  --font-sans: var(--for-font-sans);
+  --font-mono: var(--for-font-mono);
+
+  --radius-sm: var(--for-radius-sm);
+  --radius-md: var(--for-radius-md);
+  --radius-lg: var(--for-radius-lg);
+}
+
+/* Dark mode variant: opt-in via class on <html> rather than the
+ * media-query default, so the theme toggle's localStorage preference wins. */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    background: var(--for-surface);
+    color: var(--for-on-surface);
+    font-family: var(--for-font-sans);
+    line-height: 1.6;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  a {
+    color: var(--for-accent);
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  code {
+    font-family: var(--for-font-mono);
+  }
+}
+
+/* Markdown `prose` rendered by analog-markdown. The directive injects its own
+ * `<div class="analog-markdown">` wrapper; we style it generically so any MD
+ * (conceptual pages + per-primitive READMEs) inherits the same look. */
+.analog-markdown {
+  color: var(--for-on-surface);
+  line-height: 1.7;
+}
+.analog-markdown h1,
+.analog-markdown h2,
+.analog-markdown h3,
+.analog-markdown h4 {
+  color: var(--for-on-surface);
+  margin: 1.6rem 0 0.5rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.analog-markdown h1 {
+  font-size: 1.85rem;
+  margin-top: 0;
+}
+.analog-markdown h2 {
+  font-size: 1.35rem;
+  padding-top: 0.5rem;
+}
+.analog-markdown h3 {
+  font-size: 1.1rem;
+}
+.analog-markdown p,
+.analog-markdown ul,
+.analog-markdown ol {
+  margin: 0.75rem 0;
+  color: var(--for-on-surface);
+}
+.analog-markdown ul,
+.analog-markdown ol {
+  padding-left: 1.5rem;
+}
+.analog-markdown li {
+  margin: 0.25rem 0;
+}
+.analog-markdown code {
+  background: var(--for-surface-muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--for-radius-sm);
+  font-size: 0.9em;
+  color: var(--for-on-surface);
+}
+.analog-markdown pre {
+  background: var(--for-surface-elevated);
+  border: 1px solid var(--for-border);
+  border-radius: var(--for-radius-md);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+.analog-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+.analog-markdown blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--for-accent);
+  background: var(--for-surface-muted);
+  border-radius: 0 var(--for-radius-md) var(--for-radius-md) 0;
+}
+.analog-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+.analog-markdown th,
+.analog-markdown td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--for-border);
+}
+.analog-markdown th {
+  font-weight: 600;
+  color: var(--for-on-surface-muted);
+  border-bottom-color: var(--for-border-strong);
+}
+.analog-markdown a {
+  color: var(--for-accent);
+}
+
+/* Prism syntax colors — light + dark via tokens. Mirrors prismjs default
+ * token names so we only override colors; spacing/sizing stays in `pre`. */
+.analog-markdown .token.comment,
+.analog-markdown .token.prolog,
+.analog-markdown .token.doctype,
+.analog-markdown .token.cdata {
+  color: var(--for-on-surface-muted);
+  font-style: italic;
+}
+.analog-markdown .token.keyword,
+.analog-markdown .token.boolean,
+.analog-markdown .token.atrule,
+.analog-markdown .token.attr-name {
+  color: oklch(60% 0.18 290);
+}
+.analog-markdown .token.string,
+.analog-markdown .token.template-string,
+.analog-markdown .token.attr-value,
+.analog-markdown .token.regex {
+  color: oklch(60% 0.16 145);
+}
+.analog-markdown .token.function,
+.analog-markdown .token.class-name {
+  color: oklch(65% 0.15 50);
+}
+.analog-markdown .token.tag {
+  color: oklch(60% 0.18 30);
+}
+.analog-markdown .token.punctuation,
+.analog-markdown .token.operator {
+  color: var(--for-on-surface-muted);
+}
+.analog-markdown .token.number {
+  color: oklch(65% 0.13 80);
+}
+
+/* App chrome. */
+.docs-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--for-surface);
+  border-bottom: 1px solid var(--for-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: saturate(180%) blur(8px);
+}
+.docs-header__brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--for-on-surface);
+  letter-spacing: -0.01em;
+  font-size: 1.05rem;
+}
+.docs-header__nav {
+  display: flex;
+  gap: 1.25rem;
+  flex: 1;
+}
+.docs-header__nav a {
+  color: var(--for-on-surface-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.docs-header__nav a:hover {
+  color: var(--for-on-surface);
+}
+.docs-header__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.docs-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 6rem;
+}
+
+@media (max-width: 720px) {
+  .docs-header {
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+  }
+  .docs-header__nav {
+    gap: 0.75rem;
+  }
+  .docs-main {
+    padding: 1.5rem 1rem 4rem;
+  }
+}

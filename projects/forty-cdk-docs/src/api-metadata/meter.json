@@ -1,0 +1,100 @@
+{
+  "primitive": "meter",
+  "pieces": [
+    {
+      "class": "ForMeterIndicator",
+      "kind": "directive",
+      "selector": "[forMeterIndicator]",
+      "exportAs": "forMeterIndicator",
+      "host": {
+        "[attr.data-quality]": "context.quality()",
+        "[attr.data-value]": "context.clampedValue()",
+        "[attr.data-min]": "context.min()",
+        "[attr.data-max]": "context.max()",
+        "[attr.data-percentage]": "percentageAttr()",
+        "[style.--for-meter-percentage]": "percentageStyle()"
+      },
+      "doc": "Visual fill paired with `[forMeter]`. Reflects `data-quality`, `data-percentage`, and the CSS custom property `--for-meter-percentage` so the consumer can drive width / transform from CSS.",
+      "source": "meter/meter-indicator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForMeter",
+      "kind": "directive",
+      "selector": "[forMeter]",
+      "exportAs": "forMeter",
+      "host": {
+        "role": "meter",
+        "[attr.aria-valuemin]": "min()",
+        "[attr.aria-valuemax]": "max()",
+        "[attr.aria-valuenow]": "clampedValue()",
+        "[attr.aria-valuetext]": "ariaValueText()",
+        "[attr.data-quality]": "quality()",
+        "[attr.data-value]": "clampedValue()",
+        "[attr.data-min]": "min()",
+        "[attr.data-max]": "max()",
+        "[attr.data-percentage]": "percentageAttr()"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/), mirroring the HTML5 `<meter>` element semantics.",
+      "source": "meter/meter.ts",
+      "inputs": [
+        {
+          "name": "min",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Lower bound. Defaults to `0`."
+        },
+        {
+          "name": "max",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "100",
+          "doc": "Upper bound. Defaults to `100`."
+        },
+        {
+          "name": "low",
+          "kind": "input",
+          "type": "number | null",
+          "defaultValue": "null",
+          "doc": "Optional lower boundary of the \"OK\" range. Values below `low` are treated as below the comfortable region. `null` means no lower band."
+        },
+        {
+          "name": "high",
+          "kind": "input",
+          "type": "number | null",
+          "defaultValue": "null",
+          "doc": "Optional upper boundary of the \"OK\" range. Values above `high` are treated as above the comfortable region. `null` means no upper band."
+        },
+        {
+          "name": "optimum",
+          "kind": "input",
+          "type": "number | null",
+          "defaultValue": "null",
+          "doc": "Optional point at which the value is considered ideal. Falls back to the midpoint of `[min, max]`. Determines which region is `optimum`, which is `sub-optimum`, and which is `even-less-good` (see HTML5 spec)."
+        },
+        {
+          "name": "getValueLabel",
+          "kind": "input",
+          "type": "((value: number, min: number, max: number) => string) | null",
+          "defaultValue": "null",
+          "doc": "Optional override for `aria-valuetext`. Receives the clamped value, `min`, and `max`."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Two-way bindable. Current measurement, clamped to `[min, max]` for everything reflected on the host. The model retains what the consumer wrote so external bindings are not surprised."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

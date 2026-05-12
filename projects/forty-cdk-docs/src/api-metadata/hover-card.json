@@ -1,0 +1,220 @@
+{
+  "primitive": "hover-card",
+  "pieces": [
+    {
+      "class": "ForHoverCardArrow",
+      "kind": "directive",
+      "selector": "[forHoverCardArrow]",
+      "exportAs": "forHoverCardArrow",
+      "host": {},
+      "doc": "Arrow pointing from the card back to its trigger. Floating-ui places it along the right edge so the consumer only has to give it a size and a background — no positioning math required.",
+      "source": "hover-card/hover-card-arrow.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForHoverCardContent",
+      "kind": "directive",
+      "selector": "[forHoverCardContent]",
+      "exportAs": "forHoverCardContent",
+      "host": {
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "(pointerenter)": "onPointerEnter()",
+        "(pointerleave)": "onPointerLeave()",
+        "(keydown.escape)": "onEscape($event)"
+      },
+      "doc": "The hover-card surface. Portaled to `document.body` and positioned by floating-ui (via the shared `injectOverlayShell` helper). Pointer-enter on the content cancels the pending close, so the user can move the cursor from the trigger into the card to interact with its content (links, buttons, copy targets).",
+      "source": "hover-card/hover-card-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForHoverCardTrigger",
+      "kind": "directive",
+      "selector": "[forHoverCardTrigger]",
+      "exportAs": "forHoverCardTrigger",
+      "host": {
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "(pointerenter)": "onPointerEnter()",
+        "(pointerleave)": "onPointerLeave()",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()",
+        "(keydown.escape)": "onEscape($event)"
+      },
+      "doc": "Element that activates the hover-card on hover or focus. Apply on a link, a button, or any focusable element that already conveys the underlying action (the card adds preview, not meaning).",
+      "source": "hover-card/hover-card-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForHoverCard",
+      "kind": "directive",
+      "selector": "[forHoverCard]",
+      "exportAs": "forHoverCard",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless hover-preview card. Use it to surface rich, interactive previews (profile snapshots, link previews, definition cards) on hover or focus of an already-meaningful trigger (a link, a name).",
+      "source": "hover-card/hover-card.ts",
+      "inputs": [
+        {
+          "name": "_openInput",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Backing input for `[(open)]` two-way binding. Internal — read the user-facing `open` writable signal instead, which derives its value from this input plus `disabled` via `linkedSignal`."
+        },
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'top'",
+          "doc": "Side the card is anchored to. Defaults to `'top'`. Pair with `align` for the full positioning API."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "undefined",
+          "doc": "Alignment along the chosen `side`. Defaults to `'center'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Gap (px) between trigger and card along the main axis. Default `8`. Mirrors Radix's `sideOffset`."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the card inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "8",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the trigger is scrolled off-screen."
+        },
+        {
+          "name": "openDelay",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "undefined",
+          "doc": "Per-card override for open delay (ms). Falls back to coordinator (700ms)."
+        },
+        {
+          "name": "closeDelay",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "undefined",
+          "doc": "Per-card override for close delay (ms). Falls back to coordinator (300ms)."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, all hover / focus interaction is ignored and any open card is forced closed."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "openChange",
+          "kind": "output",
+          "type": "boolean",
+          "defaultValue": null,
+          "doc": "Emits when the directive itself transitions `open`. See `open` JSDoc."
+        },
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": "Fires when the user presses Escape while the card is open, regardless of whether focus is on the trigger or inside the portaled content. Call `preventDefault()` on the emitted veto to suppress the automatic close. The native `KeyboardEvent` is on `.event`."
+        }
+      ],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerArrow",
+          "signature": "registerArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterArrow",
+          "signature": "unregisterArrow(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleOpen",
+          "signature": "scheduleOpen(_reason: HoverCardScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "scheduleClose",
+          "signature": "scheduleClose(reason: HoverCardScheduleReason): void",
+          "doc": ""
+        },
+        {
+          "name": "cancelPending",
+          "signature": "cancelPending(): void",
+          "doc": ""
+        },
+        {
+          "name": "emitEscapeKeyDown",
+          "signature": "emitEscapeKeyDown(event: KeyboardEvent): void",
+          "doc": "Emit `(escapeKeyDown)` and, unless the consumer calls `preventDefault()` on the veto, close immediately. Called by the trigger and the portaled content so Escape works no matter where focus currently lives."
+        }
+      ]
+    }
+  ]
+}

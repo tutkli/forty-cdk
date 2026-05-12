@@ -1,0 +1,223 @@
+{
+  "primitive": "listbox",
+  "pieces": [
+    {
+      "class": "ForListboxGroupLabel",
+      "kind": "directive",
+      "selector": "[forListboxGroupLabel]",
+      "exportAs": "forListboxGroupLabel",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Visible label for a `ForListboxGroup`. Generates a stable id and registers with its parent group so the group's `aria-labelledby` points at this element. Apply on whatever heading element fits the design (often `<div>` styled as a small caption — `<h3>`/`<h4>` if the surrounding document has a sensible heading hierarchy).",
+      "source": "listbox/listbox-group-label.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForListboxGroup",
+      "kind": "directive",
+      "selector": "[forListboxGroup]",
+      "exportAs": "forListboxGroup",
+      "host": {
+        "role": "group",
+        "[attr.aria-labelledby]": "labelId() || null"
+      },
+      "doc": "Optional grouping wrapper inside a `ForListbox`. Renders `role=\"group\"` and references the descendant `[forListboxGroupLabel]` (if any) via `aria-labelledby`. Options inside a group still register with the listbox normally, so keyboard navigation traverses across groups in DOM order without special handling.",
+      "source": "listbox/listbox-group.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": "Called by `ForListboxGroupLabel` on mount."
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": "Called by `ForListboxGroupLabel` on destroy. Idempotent."
+        }
+      ]
+    },
+    {
+      "class": "ForListboxOptionIndicator",
+      "kind": "directive",
+      "selector": "[forListboxOptionIndicator]",
+      "exportAs": "forListboxOptionIndicator",
+      "host": {
+        "[attr.data-state]": "parent.selected() ? \"checked\" : \"unchecked\"",
+        "[attr.hidden]": "parent.selected() ? null : \"\""
+      },
+      "doc": "Optional indicator slot inside a `ForListboxOption`. Apply on the element the consumer wants to show only while this option is selected (typically a check icon to the left of the label). Flips `[hidden]` and mirrors `data-state`.",
+      "source": "listbox/listbox-option-indicator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForListboxOption",
+      "kind": "directive",
+      "selector": "[forListboxOption]",
+      "exportAs": "forListboxOption",
+      "host": {
+        "role": "option",
+        "type": "button",
+        "[id]": "id()",
+        "[attr.aria-selected]": "selected() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.data-state]": "selected() ? \"checked\" : \"unchecked\"",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(focus)": "onFocus()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "One option inside a `ForListbox`. Apply on a `<button type=\"button\">` so Space / Enter activation come from native button behavior — printable keys fall through to the parent listbox for typeahead matching.",
+      "source": "listbox/listbox-option.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForListbox",
+      "kind": "directive",
+      "selector": "[forListbox]",
+      "exportAs": "forListbox",
+      "host": {
+        "role": "listbox",
+        "[attr.aria-orientation]": "orientation()",
+        "[attr.aria-multiselectable]": "multiple() ? \"true\" : null",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). Implements `FormValueControl<string[]>` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "listbox/listbox.ts",
+      "inputs": [
+        {
+          "name": "multiple",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'vertical' | 'horizontal'",
+          "defaultValue": "'vertical'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "selectionFollowsFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.selectionFollowsFocus",
+          "doc": "Single-mode only: when true, arrow nav also selects the focused option. APG calls this optional and recommends caution — leave off unless your UX truly benefits from selection following focus. Default `false`. The default is read from `provideForListboxDefaults` for the surrounding scope."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string[]",
+          "defaultValue": "[]",
+          "doc": "Two-way bindable. Selected option values. Single-mode keeps 0 or 1 element. The `model()` change emitter (`(valueChange)`) fires only on internal selection changes (option activation or `selectionFollowsFocus` nav), never on consumer writes via `[(value)]` — observe transitions without binding back."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "activate",
+          "signature": "activate(v: string): void",
+          "doc": ""
+        },
+        {
+          "name": "extendByArrow",
+          "signature": "extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void",
+          "doc": ""
+        },
+        {
+          "name": "selectRangeToFocused",
+          "signature": "selectRangeToFocused(currentOption: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "selectAll",
+          "signature": "selectAll(): void",
+          "doc": ""
+        },
+        {
+          "name": "selectFromCurrentToEdge",
+          "signature": "selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentOption: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "handleTypeahead",
+          "signature": "handleTypeahead(event: KeyboardEvent): boolean",
+          "doc": ""
+        },
+        {
+          "name": "isFirstEnabledOption",
+          "signature": "isFirstEnabledOption(el: HTMLElement): boolean",
+          "doc": ""
+        },
+        {
+          "name": "registerOption",
+          "signature": "registerOption(handle: ForListboxOptionHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterOption",
+          "signature": "unregisterOption(handle: ForListboxOptionHandle): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

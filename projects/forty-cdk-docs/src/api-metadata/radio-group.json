@@ -1,0 +1,149 @@
+{
+  "primitive": "radio-group",
+  "pieces": [
+    {
+      "class": "ForRadioGroup",
+      "kind": "directive",
+      "selector": "[forRadioGroup]",
+      "exportAs": "forRadioGroup",
+      "host": {
+        "role": "radiogroup",
+        "[attr.aria-orientation]": "orientation()",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "readonly() ? \"true\" : null",
+        "[attr.aria-required]": "required() ? \"true\" : null",
+        "[attr.aria-invalid]": "invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "pending() ? \"true\" : null",
+        "[attr.data-orientation]": "orientation()",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.data-readonly]": "readonly() ? \"\" : null",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Root of the Radio Group primitive. Owns the selected value, orientation, and disabled / readonly / form-state inputs. Provides the shared context to descendant `ForRadio` directives.",
+      "source": "radio-group/radio-group.ts",
+      "inputs": [
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'horizontal' | 'vertical'",
+          "defaultValue": "'vertical'",
+          "doc": "Layout direction for keyboard navigation."
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Reading direction for horizontal orientation."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.loop",
+          "doc": "Whether arrow navigation wraps around past the first / last enabled radio. Default `true` — matches the WAI-ARIA Radio Group APG. Set to `false` for a non-wrapping group. The default is read from `provideForRadioGroupDefaults` for the surrounding scope."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Two-way bindable. Selected radio's value. Empty string = none selected."
+        }
+      ],
+      "methods": [
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "select",
+          "signature": "select(v: string): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentRadio: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "isFirstEnabledRadio",
+          "signature": "isFirstEnabledRadio(el: HTMLElement): boolean",
+          "doc": ""
+        },
+        {
+          "name": "registerRadio",
+          "signature": "registerRadio(handle: ForRadioHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterRadio",
+          "signature": "unregisterRadio(handle: ForRadioHandle): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "class": "ForRadioIndicator",
+      "kind": "directive",
+      "selector": "[forRadioIndicator]",
+      "exportAs": "forRadioIndicator",
+      "host": {
+        "[attr.data-state]": "parent.checked() ? \"checked\" : \"unchecked\"",
+        "[attr.data-orientation]": "parent.group.orientation()",
+        "[attr.hidden]": "parent.checked() ? null : \"\""
+      },
+      "doc": "Optional indicator slot inside a `ForRadio`. Apply on the element the consumer wants to show only while this radio is selected (typically a filled dot inside the radio circle). The directive flips `[hidden]` and mirrors `data-state` from the parent radio.",
+      "source": "radio-group/radio-indicator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForRadio",
+      "kind": "directive",
+      "selector": "[forRadio]",
+      "exportAs": "forRadio",
+      "host": {
+        "role": "radio",
+        "type": "button",
+        "[id]": "id()",
+        "[attr.aria-checked]": "checked() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.tabindex]": "tabindex()",
+        "[attr.data-state]": "checked() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-orientation]": "group.orientation()",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "One radio inside a `ForRadioGroup`. Apply on a `<button type=\"button\">`.",
+      "source": "radio-group/radio.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Unique identifier for this radio's value. Required."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, this radio is disabled (independent of the group's disabled)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "primitive": "dropdown-menu",
+  "pieces": [
+    {
+      "class": "ForDropdownMenuTrigger",
+      "kind": "directive",
+      "selector": "[forDropdownMenuTrigger]",
+      "exportAs": "forDropdownMenuTrigger",
+      "host": {
+        "type": "button",
+        "[id]": "ctx.triggerId()",
+        "[attr.aria-haspopup]": "\"menu\"",
+        "[attr.aria-expanded]": "ctx.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "ctx.open() ? ctx.contentId() : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)"
+      },
+      "doc": "Button that toggles the dropdown menu when clicked, opens via ArrowDown (focus first item) or ArrowUp (focus last item).",
+      "source": "dropdown-menu/dropdown-menu-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDropdownMenu",
+      "kind": "directive",
+      "selector": "[forDropdownMenu]",
+      "exportAs": "forDropdownMenu",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/). Apply on a wrapper that contains the trigger and the `@if`-mounted `[forMenuContent]`. The directive owns open state, ids, and the registries that wire trigger / content / items together.",
+      "source": "dropdown-menu/dropdown-menu.ts",
+      "inputs": [
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'bottom'",
+          "doc": "Side the menu is anchored to. Defaults to `'bottom'`. Pair with `align` for the full positioning API."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "'start'",
+          "doc": "Alignment along the chosen `side`. Defaults to `'start'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.sideOffset",
+          "doc": "Gap (px) between trigger and menu along the main axis. Default `4`. Mirrors Radix's `sideOffset`. The default is read from `provideForDropdownMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the menu inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.collisionPadding",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`. The default is read from `provideForDropdownMenuDefaults` for the surrounding scope."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the trigger is scrolled off-screen."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": "Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu triggers and items underneath this menu (in RTL, ArrowLeft opens a submenu and ArrowRight closes it back). Default `'ltr'`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, trigger interaction is ignored and any open menu stays open until the consumer flips `open` themselves. The trigger reflects `data-disabled`; the items keep their per-item disabled semantics."
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), Escape, pointer-down outside, and focus outside close the menu."
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), focus returns to the trigger on close."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label` on `[forMenuContent]`. Use when the trigger isn't a meaningful name."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before the menu sends focus to its first / last enabled item on mount. Call `preventDefault()` on the emitted veto to skip the imperative focus move — useful when opening a menu from an input you want to keep focused."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before focus returns to the trigger on unmount. Call `preventDefault()` on the veto to suppress the return-focus."
+        }
+      ],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the menu is currently shown. The `model()` change emitter (`(openChange)`) fires only on internal transitions (trigger toggle, Escape, outside dismissal, item selection), never on consumer writes via `[(open)]`."
+        }
+      ],
+      "methods": []
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+{
+  "primitive": "select",
+  "pieces": [
+    {
+      "class": "ForSelectContent",
+      "kind": "directive",
+      "selector": "[forSelectContent]",
+      "exportAs": "forSelectContent",
+      "host": {
+        "role": "listbox",
+        "tabindex": "-1",
+        "[id]": "ctx.contentId()",
+        "[attr.aria-labelledby]": "ctx.ariaLabel() ? null : ctx.triggerId()",
+        "[attr.aria-label]": "ctx.ariaLabel()",
+        "[attr.aria-multiselectable]": "ctx.multiple() ? \"true\" : null",
+        "[attr.aria-orientation]": "ctx.orientation()",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-orientation]": "ctx.orientation()"
+      },
+      "doc": "The listbox surface. Carries `role=\"listbox\"`, is portaled to `document.body`, and is positioned by `@floating-ui/dom` against the trigger.",
+      "source": "select/select-content.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectGroupLabel",
+      "kind": "directive",
+      "selector": "[forSelectGroupLabel]",
+      "exportAs": "forSelectGroupLabel",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Visible label for a `[forSelectGroup]`. Generates a stable id and registers with its parent group so the group's `aria-labelledby` points at this element. Apply on whatever heading element fits the design (often `<div>` styled as a small caption).",
+      "source": "select/select-group-label.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectGroup",
+      "kind": "directive",
+      "selector": "[forSelectGroup]",
+      "exportAs": "forSelectGroup",
+      "host": {
+        "role": "group",
+        "[attr.aria-labelledby]": "labelId() || null"
+      },
+      "doc": "Optional grouping wrapper inside a `[forSelectContent]`. Renders `role=\"group\"` and references the descendant `[forSelectGroupLabel]` (if any) via `aria-labelledby`. Options inside a group still register with the root listbox normally, so keyboard navigation traverses across groups in DOM order without special handling.",
+      "source": "select/select-group.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": "Called by `ForSelectGroupLabel` on mount."
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": "Called by `ForSelectGroupLabel` on destroy. Idempotent."
+        }
+      ]
+    },
+    {
+      "class": "ForSelectIndicator",
+      "kind": "directive",
+      "selector": "[forSelectIndicator]",
+      "exportAs": "forSelectIndicator",
+      "host": {
+        "aria-hidden": "true",
+        "[attr.data-state]": "option.selected() ? \"checked\" : \"unchecked\"",
+        "[hidden]": "!option.selected() && !forceMount()"
+      },
+      "doc": "Visibility helper inside a `[forSelectOption]`. The directive flips a `[hidden]` host binding so the consumer can keep the checkmark / icon inline without extra `@if` glue:",
+      "source": "select/select-indicator.ts",
+      "inputs": [
+        {
+          "name": "forceMount",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Keep the indicator mounted even when the option is unselected."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectOption",
+      "kind": "directive",
+      "selector": "[forSelectOption]",
+      "exportAs": "forSelectOption",
+      "host": {
+        "role": "option",
+        "type": "button",
+        "tabindex": "-1",
+        "[id]": "id()",
+        "[attr.aria-selected]": "selected() ? \"true\" : \"false\"",
+        "[attr.aria-disabled]": "effectiveDisabled() ? \"true\" : null",
+        "[attr.disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-state]": "selected() ? \"checked\" : \"unchecked\"",
+        "[attr.data-disabled]": "effectiveDisabled() ? \"\" : null",
+        "[attr.data-highlighted]": "highlighted() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focus)": "onFocus()",
+        "(blur)": "onBlur()"
+      },
+      "doc": "One option inside a `[forSelectContent]`. Apply on a `<button type=\"button\">` so Space / Enter activation come from native button behavior — printable keys fall through to the listbox for typeahead matching.",
+      "source": "select/select-option.ts",
+      "inputs": [
+        {
+          "name": "value",
+          "kind": "inputRequired",
+          "type": "string",
+          "defaultValue": null,
+          "doc": "Stable string identifier serialized into `[(value)]` and the hidden input."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectSeparator",
+      "kind": "directive",
+      "selector": "[forSelectSeparator]",
+      "exportAs": "forSelectSeparator",
+      "host": {
+        "role": "separator",
+        "aria-orientation": "horizontal"
+      },
+      "doc": "Decorative separator between options or groups inside a `[forSelectContent]`. Carries `role=\"separator\"` and is intentionally not registered with the listbox's option collection, so keyboard navigation and typeahead skip it automatically.",
+      "source": "select/select-separator.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectTrigger",
+      "kind": "directive",
+      "selector": "[forSelectTrigger]",
+      "exportAs": "forSelectTrigger",
+      "host": {
+        "type": "button",
+        "role": "combobox",
+        "[id]": "ctx.triggerId()",
+        "[attr.aria-haspopup]": "\"listbox\"",
+        "[attr.aria-expanded]": "ctx.open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "ctx.open() ? ctx.contentId() : null",
+        "[attr.aria-disabled]": "ctx.disabled() ? \"true\" : null",
+        "[attr.aria-readonly]": "ctx.readonly() ? \"true\" : null",
+        "[attr.aria-required]": "ctx.required() ? \"true\" : null",
+        "[attr.aria-invalid]": "ctx.invalid() ? \"true\" : null",
+        "[attr.aria-busy]": "ctx.pending() ? \"true\" : null",
+        "[attr.disabled]": "ctx.disabled() ? \"\" : null",
+        "[attr.data-state]": "ctx.open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "ctx.disabled() ? \"\" : null",
+        "(click)": "onClick()",
+        "(keydown)": "onKeyDown($event)",
+        "(focusout)": "onFocusOut($event)"
+      },
+      "doc": "Combobox button that opens the listbox. Apply on a `<button>` so Space / Enter dispatch native click events that toggle via `(click)`.",
+      "source": "select/select-trigger.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelectValue",
+      "kind": "directive",
+      "selector": "[forSelectValue]",
+      "exportAs": "forSelectValue",
+      "host": {
+        "[textContent]": "displayText()",
+        "[attr.data-placeholder]": "isPlaceholder() ? \"\" : null"
+      },
+      "doc": "Renders the currently-selected option's text — or the configured placeholder when nothing is selected — into its host element via `textContent`. Apply on a `<span>` (or any inline element) inside `[forSelectTrigger]`:",
+      "source": "select/select-value.ts",
+      "inputs": [
+        {
+          "name": "placeholder",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Text shown when nothing is selected. Falls back to `[forSelect][placeholder]`."
+        },
+        {
+          "name": "separator",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "', '",
+          "doc": "Joiner for multi-mode label rendering. Default `', '`."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForSelect",
+      "kind": "directive",
+      "selector": "[forSelect]",
+      "exportAs": "forSelect",
+      "host": {
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/). Implements `FormValueControl<readonly string[]>` from `@angular/forms/signals` for `[formField]` auto-wiring.",
+      "source": "select/select.ts",
+      "inputs": [
+        {
+          "name": "multiple",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": ""
+        },
+        {
+          "name": "position",
+          "kind": "input",
+          "type": "'popper' | 'item-aligned'",
+          "defaultValue": "'popper'",
+          "doc": "Positioning algorithm."
+        },
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "FloatingSide | undefined",
+          "defaultValue": "'bottom'",
+          "doc": "Side the listbox is anchored to. Defaults to `'bottom'`. Pair with `align` for the full positioning API. Ignored when `position=\"item-aligned\"`."
+        },
+        {
+          "name": "align",
+          "kind": "input",
+          "type": "FloatingAlign | undefined",
+          "defaultValue": "'start'",
+          "doc": "Alignment along the chosen `side`. Defaults to `'start'`."
+        },
+        {
+          "name": "sideOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.sideOffset",
+          "doc": "Gap (px) between trigger and listbox along the main axis. Default `4`. Mirrors Radix's `sideOffset`. The default is read from `provideForSelectDefaults` for the surrounding scope."
+        },
+        {
+          "name": "alignOffset",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Gap (px) along the cross axis. Default `0`."
+        },
+        {
+          "name": "avoidCollisions",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When `true` (default), `flip` and `shift` keep the listbox inside the viewport."
+        },
+        {
+          "name": "collisionPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.collisionPadding",
+          "doc": "Padding (px) applied uniformly to flip / shift / size. Default `8`. The default is read from `provideForSelectDefaults` for the surrounding scope."
+        },
+        {
+          "name": "arrowPadding",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "0",
+          "doc": "Padding (px) for the `arrow` middleware. Default `0`."
+        },
+        {
+          "name": "sticky",
+          "kind": "input",
+          "type": "'partial' | 'always' | false",
+          "defaultValue": "'partial'",
+          "doc": "Stickiness behaviour for `shift`. Default `'partial'`."
+        },
+        {
+          "name": "hideWhenDetached",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When `true`, sets `data-detached=\"\"` while the trigger is scrolled off-screen."
+        },
+        {
+          "name": "loop",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": ""
+        },
+        {
+          "name": "orientation",
+          "kind": "input",
+          "type": "'vertical' | 'horizontal'",
+          "defaultValue": "'vertical'",
+          "doc": ""
+        },
+        {
+          "name": "dir",
+          "kind": "input",
+          "type": "WritingDirection",
+          "defaultValue": "'ltr'",
+          "doc": ""
+        },
+        {
+          "name": "selectionFollowsFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Single-mode only. When true, arrow nav also selects the focused option while the listbox is open. APG calls this optional and recommends caution — leave off unless your UX truly benefits. Default `false`."
+        },
+        {
+          "name": "placeholder",
+          "kind": "input",
+          "type": "string",
+          "defaultValue": "''",
+          "doc": "Placeholder shown by `[forSelectValue]` when no option is selected."
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), Escape, pointer-down outside, and focus outside close the listbox."
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "true",
+          "doc": "When true (default), focus returns to the trigger on close."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label` on `[forSelectContent]` when the trigger isn't a meaningful name."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": ""
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before the listbox sends focus to the selected option (or first / last enabled) on mount. Call `preventDefault()` on the emitted veto to skip the imperative focus move."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "output",
+          "type": "VetoableEvent",
+          "defaultValue": null,
+          "doc": "Fires just before focus returns to the trigger on unmount. Call `preventDefault()` on the veto to suppress the return-focus."
+        }
+      ],
+      "models": [
+        {
+          "name": "value",
+          "kind": "model",
+          "type": "readonly string[]",
+          "defaultValue": "[]",
+          "doc": "Two-way bindable. Selected option values. Single-mode keeps 0 or 1 element. The `model()` change emitter (`(valueChange)`) fires only on internal selection changes, never on consumer writes via `[(value)]`."
+        },
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Whether the listbox is currently shown. The `model()` change emitter (`(openChange)`) fires only on internal transitions (trigger toggle, Escape, outside dismissal, single-mode option select), never on consumer writes via `[(open)]`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "setInitialFocus",
+          "signature": "setInitialFocus(target: ForSelectInitialFocus): void",
+          "doc": ""
+        },
+        {
+          "name": "registerTrigger",
+          "signature": "registerTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterTrigger",
+          "signature": "unregisterTrigger(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerContent",
+          "signature": "registerContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterContent",
+          "signature": "unregisterContent(el: HTMLElement): void",
+          "doc": ""
+        },
+        {
+          "name": "registerOption",
+          "signature": "registerOption(handle: ForSelectOptionHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterOption",
+          "signature": "unregisterOption(handle: ForSelectOptionHandle): void",
+          "doc": ""
+        },
+        {
+          "name": "isSelected",
+          "signature": "isSelected(v: string): boolean",
+          "doc": ""
+        },
+        {
+          "name": "activate",
+          "signature": "activate(v: string): void",
+          "doc": ""
+        },
+        {
+          "name": "navigate",
+          "signature": "navigate(currentOption: HTMLElement, action: ListNavigationAction): void",
+          "doc": ""
+        },
+        {
+          "name": "handleTypeahead",
+          "signature": "handleTypeahead(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "handleClosedTypeahead",
+          "signature": "handleClosedTypeahead(event: KeyboardEvent): boolean",
+          "doc": ""
+        },
+        {
+          "name": "focusFirstEnabledOption",
+          "signature": "focusFirstEnabledOption(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "focusLastEnabledOption",
+          "signature": "focusLastEnabledOption(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "focusSelectedOption",
+          "signature": "focusSelectedOption(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "toggle",
+          "signature": "toggle(initialFocus: ForSelectInitialFocus = 'selected'): void",
+          "doc": ""
+        },
+        {
+          "name": "openMenu",
+          "signature": "openMenu(initialFocus: ForSelectInitialFocus = 'selected'): void",
+          "doc": ""
+        },
+        {
+          "name": "closeMenu",
+          "signature": "closeMenu(reason: ForSelectCloseReason): void",
+          "doc": ""
+        },
+        {
+          "name": "commitOnTab",
+          "signature": "commitOnTab(value: string): void",
+          "doc": ""
+        },
+        {
+          "name": "emitEscapeKeyDown",
+          "signature": "emitEscapeKeyDown(event: KeyboardEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitPointerDownOutside",
+          "signature": "emitPointerDownOutside(event: PointerEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitFocusOutside",
+          "signature": "emitFocusOutside(event: FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitInteractOutside",
+          "signature": "emitInteractOutside(event: PointerEvent | FocusEvent): void",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnOpen",
+          "signature": "emitAutoFocusOnOpen(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "emitAutoFocusOnClose",
+          "signature": "emitAutoFocusOnClose(): boolean",
+          "doc": ""
+        },
+        {
+          "name": "markTouched",
+          "signature": "markTouched(): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

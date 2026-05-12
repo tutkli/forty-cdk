@@ -1,0 +1,403 @@
+{
+  "primitive": "drawer",
+  "pieces": [
+    {
+      "class": "ForDrawerBackdrop",
+      "kind": "directive",
+      "selector": "[forDrawerBackdrop]",
+      "exportAs": "forDrawerBackdrop",
+      "host": {
+        "data-for-drawer-backdrop": "",
+        "data-for-modal-peer": "",
+        "data-state": "open",
+        "[attr.data-fade-from-active]": "ctx.fadeFromActive() ? \"\" : null",
+        "(click)": "onClick($event)"
+      },
+      "doc": "Optional backdrop overlay. Portaled to `document.body` so it sits underneath the drawer regardless of where it's declared. While mounted the backdrop is visible; mount/unmount it alongside the drawer with the same `@if` so `animate.enter` / `animate.leave` works on both.",
+      "source": "drawer/drawer-backdrop.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerClose",
+      "kind": "directive",
+      "selector": "[forDrawerClose]",
+      "exportAs": "forDrawerClose",
+      "host": {
+        "type": "button",
+        "data-state": "open",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that closes the surrounding drawer when clicked. Apply on a `<button>` inside `[forDrawer]`. Pass `[closeWith]` to propagate a return value to `ForDrawerRef.close()` in programmatic usage; ignored in declarative usage.",
+      "source": "drawer/drawer-close.ts",
+      "inputs": [
+        {
+          "name": "closeWith",
+          "kind": "input",
+          "type": "unknown",
+          "defaultValue": "undefined",
+          "doc": "Optional value passed to `ForDrawerRef.close()` (programmatic mode)."
+        }
+      ],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerDescription",
+      "kind": "directive",
+      "selector": "[forDrawerDescription]",
+      "exportAs": "forDrawerDescription",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the drawer's accessible description (`aria-describedby`). Apply on a `<p>` or other element inside `[forDrawer]`. Optional — only use when there's non-title supporting copy.",
+      "source": "drawer/drawer-description.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerHandle",
+      "kind": "directive",
+      "selector": "[forDrawerHandle]",
+      "exportAs": "forDrawerHandle",
+      "host": {
+        "aria-hidden": "true",
+        "data-for-drawer-handle": ""
+      },
+      "doc": "Visual swipe handle (the \"grabber\" pill at the top of a bottom sheet). Registers itself with the drawer so that `[handleOnly]=\"true\"` can scope the swipe gesture to gestures starting on this element. Reflects `aria-hidden=\"true\"` because the handle is a decorative styling target — keyboard users dismiss via Escape / a `[forDrawerClose]` button.",
+      "source": "drawer/drawer-handle.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerProgrammaticHost",
+      "kind": "component",
+      "selector": null,
+      "exportAs": null,
+      "host": {},
+      "doc": "Internal shell mounted by `ForDrawerManager.open()` so that `[forDrawer]` runs as a real Angular host directive — focus trap, dismissable layer, portal, swipe-dismiss, scale coordinator registration, snap-point validation, and `ForDrawerStack` push are all owned by the same code path as the declarative case. The shell forwards every `ForDrawer` input / output via the `hostDirectives` mechanism so the manager can drive them with `componentRef.setInput(...)` and read the directive instance back via `componentRef.injector.get(ForDrawer)`. The user component is then created inside this shell's `ViewContainerRef`, which puts the user's element injector beneath the wrapper's — so `[forDrawerClose]`, `[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`, and `[forDrawerHandle]` resolve `FOR_DRAWER_CONTEXT` (provided by `ForDrawer` via its directive `providers`) without any extra wiring.",
+      "source": "drawer/drawer-programmatic-host.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerTitle",
+      "kind": "directive",
+      "selector": "[forDrawerTitle]",
+      "exportAs": "forDrawerTitle",
+      "host": {
+        "[id]": "id()"
+      },
+      "doc": "Convenience: gives the host element a stable id and registers it as the drawer's accessible name (`aria-labelledby`). Apply on a heading element (`<h2>`, `<h3>`...) inside `[forDrawer]`.",
+      "source": "drawer/drawer-title.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerTrigger",
+      "kind": "directive",
+      "selector": "[forDrawerTrigger]",
+      "exportAs": "forDrawerTrigger",
+      "host": {
+        "type": "button",
+        "[attr.aria-haspopup]": "\"dialog\"",
+        "[attr.aria-expanded]": "open() ? \"true\" : \"false\"",
+        "[attr.aria-controls]": "open() ? controls() : null",
+        "[attr.data-state]": "open() ? \"open\" : \"closed\"",
+        "[attr.data-disabled]": "disabled() ? \"\" : null",
+        "[attr.aria-disabled]": "disabled() ? \"true\" : null",
+        "[attr.disabled]": "disabled() ? \"\" : null",
+        "(click)": "onClick()"
+      },
+      "doc": "Button that toggles the drawer when clicked. Apply on a focusable element — preferably a `<button>` — so keyboard users can reach it.",
+      "source": "drawer/drawer-trigger.ts",
+      "inputs": [
+        {
+          "name": "controls",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Id of the controlled drawer surface. Mirrored to `aria-controls` while the drawer is open. The consumer is responsible for setting the same `id` on `[forDrawer]`."
+        },
+        {
+          "name": "disabled",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, click is ignored and the host reflects `data-disabled=\"\"`, `aria-disabled=\"true\"`, and the native `disabled` attribute so the trigger is announced as disabled by assistive tech and dropped from the tab order."
+        }
+      ],
+      "outputs": [],
+      "models": [
+        {
+          "name": "open",
+          "kind": "model",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "Two-way bindable. Bind to the same signal that gates the surrounding `@if` around `[forDrawer]`. The `model()` change emitter (`(openChange)`) fires only on internal transitions (trigger click)."
+        }
+      ],
+      "methods": []
+    },
+    {
+      "class": "ForDrawerWrapper",
+      "kind": "directive",
+      "selector": "[forDrawerWrapper]",
+      "exportAs": "forDrawerWrapper",
+      "host": {
+        "[attr.data-state]": "state()"
+      },
+      "doc": "Marks the consumer's app-shell wrapper so {@link ForDrawer}'s `scaleBackground` effect can transform the rest of the page when a drawer opens — inspired by Vaul's `[data-vaul-drawer-wrapper]` and Base UI's `Drawer.Indent`, but wired through Angular DI instead of a global selector.",
+      "source": "drawer/drawer-wrapper.ts",
+      "inputs": [],
+      "outputs": [],
+      "models": [],
+      "methods": []
+    },
+    {
+      "class": "ForDrawer",
+      "kind": "directive",
+      "selector": "[forDrawer]",
+      "exportAs": "forDrawer",
+      "host": {
+        "[attr.role]": "alert() ? \"alertdialog\" : \"dialog\"",
+        "[attr.aria-modal]": "modal() ? \"true\" : null",
+        "[attr.aria-label]": "ariaLabel()",
+        "[attr.aria-labelledby]": "labelledBy()",
+        "[attr.aria-describedby]": "describedBy()",
+        "[attr.data-side]": "side()",
+        "[attr.data-active-snap-point]": "activeSnapPointAttr()",
+        "[attr.data-dragging]": "dragging() ? \"\" : null",
+        "[attr.data-scale-background]": "scaleBackgroundActive() ? \"\" : null",
+        "[attr.data-depth]": "depthAttr()",
+        "[attr.data-state-nested]": "hasChild() ? \"true\" : null",
+        "data-state": "open",
+        "tabindex": "-1"
+      },
+      "doc": "Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), specialised as a side / bottom-sheet drawer with optional swipe-to-dismiss and Vaul-style snap points.",
+      "source": "drawer/drawer.ts",
+      "inputs": [
+        {
+          "name": "side",
+          "kind": "input",
+          "type": "ForDrawerSide",
+          "defaultValue": "this.#defaults.side ?? 'bottom'",
+          "doc": "Edge the drawer is anchored to. Default `'bottom'` — the most common mobile-first pattern. The keyboard navigation axis (for swipe direction) derives from this, as does the `data-side` attribute on the host."
+        },
+        {
+          "name": "dismissible",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.dismissible ?? true",
+          "doc": "When true (default), Escape, backdrop click, pointer-down outside, focus outside, and a swipe past the close threshold all emit `(close)`. Disable for confirm flows that must be answered explicitly."
+        },
+        {
+          "name": "modal",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.modal ?? true",
+          "doc": "When true (default), sets `aria-modal=\"true\"`, locks body scroll, traps focus, and inerts body siblings. Set to `false` for a non-modal navigation drawer that coexists with the rest of the page."
+        },
+        {
+          "name": "alert",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "false",
+          "doc": "When true, role becomes `alertdialog` (interrupts assistive tech)."
+        },
+        {
+          "name": "returnFocus",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.returnFocus ?? true",
+          "doc": "When true (default), focus returns to the previously focused element on close."
+        },
+        {
+          "name": "initialFocus",
+          "kind": "input",
+          "type": "'first' | 'container'",
+          "defaultValue": "this.#defaults.initialFocus ?? 'first'",
+          "doc": "Where to send focus on mount. `'first'` (default) finds the first focusable descendant; `'container'` focuses the drawer surface itself (useful when there's nothing focusable inside)."
+        },
+        {
+          "name": "ariaLabel",
+          "kind": "input",
+          "type": "string | null",
+          "defaultValue": "null",
+          "doc": "Manual `aria-label`. Use this when no visible title element exists."
+        },
+        {
+          "name": "autoFocusOnOpen",
+          "kind": "input",
+          "type": "((event: VetoableEvent) => void) | undefined",
+          "defaultValue": "undefined",
+          "doc": "Callback invoked just before focus moves into the drawer on mount. `event.preventDefault()` skips the imperative move (Tab cycling and return-focus capture still wire up). See Dialog for the same shape and the rationale for `input<>` rather than `output<>` on free-floating overlays."
+        },
+        {
+          "name": "autoFocusOnClose",
+          "kind": "input",
+          "type": "((event: VetoableEvent) => void) | undefined",
+          "defaultValue": "undefined",
+          "doc": "Callback invoked just before focus returns to the previously focused element on unmount. `event.preventDefault()` skips the return-focus."
+        },
+        {
+          "name": "swipeToDismiss",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.swipeToDismiss ?? true",
+          "doc": "When true (default), swipe toward the anchored edge dismisses past `closeThreshold`."
+        },
+        {
+          "name": "closeThreshold",
+          "kind": "input",
+          "type": "number",
+          "defaultValue": "this.#defaults.closeThreshold ?? 0.25",
+          "doc": "Fraction of the drawer's dimension along the dismissal axis past which a release dismisses instead of snapping back. Vaul-aligned default `0.25` (i.e. dragged > 25% of the surface size)."
+        },
+        {
+          "name": "handleOnly",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.handleOnly ?? false",
+          "doc": "When true, the swipe gesture only arms on a pointerdown that started on the registered `[forDrawerHandle]` element. Useful when the surface contains scrollable content that should keep its scroll gesture."
+        },
+        {
+          "name": "scaleBackground",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.scaleBackground ?? false",
+          "doc": "When true, asks the registered `[forDrawerWrapper]` to scale and translate behind this drawer (Vaul-style \"shouldScaleBackground\"). No effect under `prefers-reduced-motion: reduce`, and a no-op if no wrapper is mounted. Default `false` so existing consumers are untouched."
+        },
+        {
+          "name": "setBackgroundColorOnScale",
+          "kind": "input",
+          "type": "boolean",
+          "defaultValue": "this.#defaults.setBackgroundColorOnScale ?? true",
+          "doc": "When true (default) and `scaleBackground` is active, paints `<body>` with `scaleBackgroundColor` so the gap between the scaled wrapper and the viewport edge does not show through. Only applies when `scaleBackground` is `true`."
+        },
+        {
+          "name": "snapPoints",
+          "kind": "input",
+          "type": "ReadonlyArray<ForDrawerSnapPoint> | undefined",
+          "defaultValue": "undefined",
+          "doc": "Snap points (Vaul semantics): each entry is a `number ∈ [0, 1]`, a `'NN%'` string, or a `'NNpx'` string. Strictly increasing (closest-to-edge first). The surface settles at the nearest snap on release; dragging past the lowest snap by `closeThreshold * dimension` dismisses."
+        },
+        {
+          "name": "fadeFromIndex",
+          "kind": "input",
+          "type": "number | undefined",
+          "defaultValue": "undefined",
+          "doc": "First index of `snapPoints` from which the backdrop should reflect `data-fade-from-active`. Consumers tie a CSS opacity transition to that attribute. Out-of-range values throw on mount."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "close",
+          "kind": "output",
+          "type": "ForDrawerCloseReason",
+          "defaultValue": null,
+          "doc": "Emitted when the drawer wants to close. Consumer wires this to flip the signal that gates the surrounding `@if`."
+        },
+        {
+          "name": "escapeKeyDown",
+          "kind": "output",
+          "type": "VetoableNativeEvent<KeyboardEvent>",
+          "defaultValue": null,
+          "doc": "Vetoable Escape. `preventDefault()` suppresses the auto `(close)`."
+        },
+        {
+          "name": "pointerDownOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent>",
+          "defaultValue": null,
+          "doc": "Vetoable pointer-down outside. `preventDefault()` suppresses the auto `(close)`."
+        },
+        {
+          "name": "focusOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<FocusEvent>",
+          "defaultValue": null,
+          "doc": "Vetoable focus-outside. `preventDefault()` suppresses the auto `(close)`."
+        },
+        {
+          "name": "interactOutside",
+          "kind": "output",
+          "type": "VetoableNativeEvent<PointerEvent | FocusEvent>",
+          "defaultValue": null,
+          "doc": "Composite event: fires alongside `pointerDownOutside` and `focusOutside` and shares their veto state — `preventDefault()` on either suppresses the auto `(close)`."
+        },
+        {
+          "name": "drag",
+          "kind": "output",
+          "type": "ForDrawerDragEvent",
+          "defaultValue": null,
+          "doc": "Drag stream. `percentageDragged` ∈ `[0, 1]`."
+        },
+        {
+          "name": "release",
+          "kind": "output",
+          "type": "ForDrawerReleaseEvent",
+          "defaultValue": null,
+          "doc": "Release event. The directive has already updated `activeSnapPoint` / requested close."
+        }
+      ],
+      "models": [
+        {
+          "name": "activeSnapPoint",
+          "kind": "model",
+          "type": "ForDrawerSnapPoint | null",
+          "defaultValue": "null",
+          "doc": "Active snap point. Two-way bindable: write via `[(activeSnapPoint)]` to drive the surface programmatically, or just read for analytics. Initialised to `snapPoints?.[0]` on mount when the consumer left it `null`. The implicit `(activeSnapPointChange)` emitter fires on internal transitions (mount-time default and drag release), and stays silent on consumer writes through `[(activeSnapPoint)]`."
+        }
+      ],
+      "methods": [
+        {
+          "name": "registerLabel",
+          "signature": "registerLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterLabel",
+          "signature": "unregisterLabel(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerDescription",
+          "signature": "registerDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "unregisterDescription",
+          "signature": "unregisterDescription(id: string): void",
+          "doc": ""
+        },
+        {
+          "name": "registerHandle",
+          "signature": "registerHandle(el: HTMLElement | null): void",
+          "doc": ""
+        },
+        {
+          "name": "registerBackdrop",
+          "signature": "registerBackdrop(el: HTMLElement | null): void",
+          "doc": ""
+        },
+        {
+          "name": "requestClose",
+          "signature": "requestClose(reason: ForDrawerCloseReason, value?: unknown): void",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}
