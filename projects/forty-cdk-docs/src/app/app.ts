@@ -7,6 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { NavSidebar } from './layout/nav-sidebar';
 import { SearchBox } from './layout/search-box';
 import { ThemeToggle } from './layout/theme-toggle';
+import { TableOfContents } from './layout/toc';
 
 @Component({
   selector: 'for-docs-root',
@@ -16,6 +17,7 @@ import { ThemeToggle } from './layout/theme-toggle';
     NavSidebar,
     SearchBox,
     ThemeToggle,
+    TableOfContents,
     ForDrawer,
     ForDrawerBackdrop,
     ForDrawerClose,
@@ -94,6 +96,9 @@ import { ThemeToggle } from './layout/theme-toggle';
       <main [class]="mainClasses()">
         <router-outlet />
       </main>
+      @if (showToc()) {
+        <for-docs-toc class="hidden xl:block" />
+      }
     </div>
 
     @if (mobileNavOpen()) {
@@ -164,15 +169,34 @@ export class App {
   });
 
   /**
-   * Layout shell classes. With sidebar: two-column grid above the `nav`
-   * breakpoint. Without sidebar: plain centered container so the landing
-   * can use the full reading width.
+   * TOC shows on content-bearing routes: `/docs/*` (markdown) and
+   * `/components/:slug` (primitive page). Omitted on the landing and the
+   * `/components` cards index where there are no in-page sections worth
+   * scrolling between. The TOC also self-hides if it finds no
+   * id-bearing headings, so a stricter URL check is unnecessary.
    */
-  protected readonly shellClasses = computed(() =>
-    this.showSidebar()
-      ? 'mx-auto grid max-w-[1440px] grid-cols-1 nav:grid-cols-[260px_minmax(0,1fr)]'
-      : 'mx-auto max-w-[1440px]',
-  );
+  protected readonly showToc = computed(() => {
+    const url = this.#url().split('?')[0]?.split('#')[0] ?? '/';
+    return url.startsWith('/docs/') || /^\/components\/[^/]+/.test(url);
+  });
+
+  /**
+   * Layout shell classes. Three modes:
+   *
+   * - Landing (no sidebar): single centered container.
+   * - Docs without TOC (`/components` index, `/docs`): two-column grid
+   *   above `nav:` (260px sidebar + main).
+   * - Docs with TOC (`/docs/*`, `/components/:slug`): two-column grid
+   *   above `nav:` (sidebar + main), three-column above `xl:` (sidebar +
+   *   main + TOC). The TOC drops out below `xl:` so the main column
+   *   doesn't get squeezed.
+   */
+  protected readonly shellClasses = computed(() => {
+    if (!this.showSidebar()) return 'mx-auto max-w-[1440px]';
+    return this.showToc()
+      ? 'mx-auto grid max-w-[1440px] grid-cols-1 nav:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_220px]'
+      : 'mx-auto grid max-w-[1440px] grid-cols-1 nav:grid-cols-[260px_minmax(0,1fr)]';
+  });
 
   /**
    * Main-column classes. The reading max-width is narrower on docs pages

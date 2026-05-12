@@ -47,7 +47,11 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
           [value]="piece.class"
           class="border-t border-border-soft last:border-b last:border-b-border-soft"
         >
-          <h3 class="m-0">
+          <h3
+            class="m-0"
+            [id]="'api-' + piece.class.toLowerCase()"
+            [attr.data-toc-title]="piece.class"
+          >
             <button
               forAccordionTrigger
               class="

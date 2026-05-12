@@ -70,7 +70,7 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
 
         @if (entry.examples?.length) {
           <section class="mt-12 border-t border-border-soft pt-8">
-            <h2 class="mb-2 mt-0 text-2xl">Examples</h2>
+            <h2 id="examples" class="mb-2 mt-0 text-2xl">Examples</h2>
             <div forTabs [(value)]="activeExample" class="mt-4">
               <div forTabsList class="mb-4 flex gap-1 border-b border-border-soft">
                 @for (example of entry.examples; track example.name) {
@@ -103,14 +103,14 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
 
         @if (post$ | async; as post) {
           <section class="mt-12 border-t border-border-soft pt-8">
-            <h2 class="mb-2 mt-0 text-2xl">Usage</h2>
+            <h2 id="usage" class="mb-2 mt-0 text-2xl">Usage</h2>
             <analog-markdown [content]="asString(post.content)" />
           </section>
         }
 
         @if (apiMetadata.value(); as metadata) {
           <section class="mt-12 border-t border-border-soft pt-8">
-            <h2 class="mb-2 mt-0 text-2xl">API reference</h2>
+            <h2 id="api-reference" class="mb-2 mt-0 text-2xl">API reference</h2>
             <for-api-table [metadata]="metadata" />
           </section>
         } @else if (apiMetadata.isLoading()) {
