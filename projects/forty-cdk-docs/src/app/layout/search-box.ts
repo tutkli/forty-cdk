@@ -37,22 +37,14 @@ import { ForDialog, ForDialogBackdrop, ForDialogClose } from 'forty-cdk';
       class="
         inline-flex cursor-pointer items-center gap-2
         rounded-sm border border-border-soft bg-surface-elevated
-        px-2.5 py-1.5 text-[0.85rem] font-[inherit] text-on-surface-muted
+        px-2.5 py-1.5 text-sm font-[inherit] text-on-surface-muted
         transition-colors duration-100
         hover:border-border-strong hover:text-on-surface
       "
     >
       <span aria-hidden="true">⌕</span>
       <span class="max-[720px]:hidden">Search</span>
-      <kbd
-        class="
-          rounded-[3px] border border-border-soft bg-surface-muted
-          px-1.5 py-0 font-mono text-[0.7rem]
-          max-[720px]:hidden
-        "
-      >
-        Ctrl K
-      </kbd>
+      <kbd class="docs-kbd max-[720px]:hidden">Ctrl K</kbd>
     </button>
 
     @if (isOpen()) {
@@ -84,7 +76,8 @@ import { ForDialog, ForDialogBackdrop, ForDialogClose } from 'forty-cdk';
           <p
             class="
               my-2 mb-4 rounded-md bg-surface-muted px-4 py-3
-              text-[0.9rem] text-on-surface-muted
+              text-sm text-on-surface-muted
+              [&_code]:docs-inline-code
             "
           >
             Pagefind index is generated as a postbuild step. Run

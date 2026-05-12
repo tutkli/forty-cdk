@@ -44,7 +44,7 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
   template: `
     @if (registryEntry(); as entry) {
       <article class="block">
-        <nav class="mb-6 flex gap-2 text-[0.85rem] opacity-70">
+        <nav class="mb-6 flex gap-2 text-sm text-on-surface-muted">
           <a routerLink="/components" class="text-inherit no-underline hover:underline">
             Components
           </a>
@@ -52,9 +52,9 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
           <span>{{ entry.title }}</span>
         </nav>
         <header>
-          <h1 class="m-0 text-[clamp(2rem,4vw,2.75rem)] tracking-tighter">{{ entry.title }}</h1>
-          <p class="my-3 max-w-[60ch] text-[1.1rem] opacity-85">{{ entry.description }}</p>
-          <p class="m-0 mb-8 flex items-center gap-3 text-[0.9rem] opacity-75">
+          <h1 class="m-0 text-display-md tracking-tight">{{ entry.title }}</h1>
+          <p class="my-3 max-w-[60ch] text-lg text-on-surface-muted">{{ entry.description }}</p>
+          <p class="m-0 mb-8 flex items-center gap-3 text-sm text-on-surface-muted">
             <a
               [href]="entry.apgUrl"
               target="_blank"
@@ -79,10 +79,9 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
                     [value]="example.name"
                     class="
                       -mb-px cursor-pointer border-0 border-b-2 border-transparent
-                      bg-transparent px-4 py-2 font-[inherit] text-[0.9rem] text-inherit
-                      opacity-65
-                      data-[state=active]:border-b-accent data-[state=active]:opacity-100
-                      focus-visible:rounded focus-visible:outline focus-visible:outline-2
+                      bg-transparent px-4 py-2 font-[inherit] text-sm text-on-surface-muted
+                      data-[state=active]:border-b-accent data-[state=active]:text-on-surface
+                      focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2
                       focus-visible:outline-offset-2 focus-visible:outline-accent
                     "
                   >
@@ -93,7 +92,7 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
               @for (example of entry.examples; track example.name) {
                 <div forTabsContent [value]="example.name" class="data-[state=inactive]:hidden">
                   @if (example.description) {
-                    <p class="my-1 mb-3 text-[0.9rem] opacity-75">{{ example.description }}</p>
+                    <p class="my-1 mb-3 text-sm text-on-surface-muted">{{ example.description }}</p>
                   }
                   <for-example [src]="entry.slug + '/' + example.name" />
                 </div>
@@ -115,9 +114,9 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
             <for-api-table [metadata]="metadata" />
           </section>
         } @else if (apiMetadata.isLoading()) {
-          <p class="mt-8 opacity-70">Loading API metadata…</p>
+          <p class="mt-8 text-on-surface-muted">Loading API metadata…</p>
         } @else if (apiMetadata.error()) {
-          <p class="mt-8 text-danger">
+          <p class="mt-8 text-danger [&_code]:docs-inline-code">
             Could not load API metadata for <code>{{ slug() }}</code>. Did you run
             <code>pnpm docs:prebuild</code>?
           </p>
@@ -126,7 +125,7 @@ const apiMetadataLoaders = import.meta.glob<{ default: PrimitiveMetadata }>(
     } @else {
       <section>
         <h1>Component not found</h1>
-        <p>
+        <p class="[&_code]:docs-inline-code">
           <code>{{ slug() }}</code> is not a known primitive.
           <a routerLink="/components">Back to the components index.</a>
         </p>

@@ -46,19 +46,6 @@ const FAMILY_LABELS: Record<PrimitiveFamily, string> = {
   'data-display': 'Data display',
 };
 
-/**
- * Active-link utilities reused by every `routerLinkActive` anchor below.
- * `routerLinkActive` adds the `is-active` class; the `[&.is-active]:…`
- * arbitrary variant targets it without leaving a local stylesheet.
- */
-const NAV_LINK_CLASSES = `
-  block rounded-sm px-2.5 py-1.5 leading-tight
-  text-on-surface-muted no-underline
-  transition-colors duration-100
-  hover:bg-surface-muted hover:text-on-surface hover:no-underline
-  [&.is-active]:bg-accent-soft [&.is-active]:font-semibold [&.is-active]:text-accent
-`;
-
 @Component({
   selector: 'for-docs-nav-sidebar',
   imports: [
@@ -73,14 +60,7 @@ const NAV_LINK_CLASSES = `
   template: `
     <nav class="flex flex-col gap-6 text-sm" aria-label="Documentation">
       <section class="flex flex-col gap-1.5">
-        <h3
-          class="
-            m-0 text-[0.8rem] font-bold uppercase tracking-[0.06em]
-            text-on-surface-muted
-          "
-        >
-          Guides
-        </h3>
+        <h3 class="docs-eyebrow">Guides</h3>
         <ul class="m-0 flex list-none flex-col gap-px p-0">
           @for (link of docsLinks; track link.route) {
             <li>
@@ -89,7 +69,7 @@ const NAV_LINK_CLASSES = `
                 routerLinkActive="is-active"
                 [routerLinkActiveOptions]="{ exact: true }"
                 (click)="navigate.emit()"
-                [class]="navLinkClasses"
+                class="docs-nav-link"
               >
                 {{ link.title }}
               </a>
@@ -99,12 +79,7 @@ const NAV_LINK_CLASSES = `
       </section>
 
       <section class="flex flex-col gap-1.5">
-        <h3
-          class="
-            m-0 text-[0.8rem] font-bold uppercase tracking-[0.06em]
-            text-on-surface-muted
-          "
-        >
+        <h3 class="docs-eyebrow">
           <a
             routerLink="/components"
             (click)="navigate.emit()"
@@ -118,24 +93,22 @@ const NAV_LINK_CLASSES = `
       <div forAccordion multiple [(value)]="openSections" class="flex flex-col gap-2">
         @for (section of sections(); track section.family) {
           <section forAccordionItem [value]="section.family" class="flex flex-col gap-1">
-            <h4 class="m-0 text-[0.72rem] font-semibold">
+            <h4 class="m-0">
               <button
                 type="button"
                 forAccordionTrigger
                 class="
-                  group flex w-full cursor-pointer items-center gap-1.5
-                  rounded-sm border-0 bg-transparent
-                  px-2.5 py-1.5 font-[inherit]
-                  text-[0.72rem] font-semibold uppercase tracking-[0.08em]
-                  text-on-surface-muted opacity-85
-                  hover:bg-surface-muted hover:text-on-surface hover:opacity-100
+                  docs-eyebrow group flex w-full cursor-pointer items-center
+                  gap-1.5 rounded-sm border-0 bg-transparent px-2.5 py-1.5
+                  font-[inherit] text-left
+                  hover:bg-surface-muted hover:text-on-surface
                   focus-visible:outline-2 focus-visible:outline-offset-1
                   focus-visible:outline-accent
                 "
               >
                 <svg
                   class="
-                    opacity-70 transition-transform duration-200 ease-out
+                    text-on-surface-subtle transition-transform duration-200 ease-out
                     group-data-[state=closed]:-rotate-90
                   "
                   width="10"
@@ -161,7 +134,7 @@ const NAV_LINK_CLASSES = `
                       [routerLink]="['/components', primitive.slug]"
                       routerLinkActive="is-active"
                       (click)="navigate.emit()"
-                      [class]="navLinkClasses"
+                      class="docs-nav-link"
                     >
                       {{ primitive.title }}
                     </a>
@@ -179,7 +152,6 @@ export class NavSidebar {
   readonly navigate = output<void>();
 
   protected readonly docsLinks = DOCS_LINKS;
-  protected readonly navLinkClasses = NAV_LINK_CLASSES;
 
   protected readonly sections = computed<readonly FamilySection[]>(() =>
     FAMILY_ORDER.map((family) => ({

@@ -59,16 +59,16 @@ interface ExampleResource {
     <div
       forTabs
       [(value)]="tab"
-      class="overflow-hidden rounded-[10px] border border-border-soft bg-surface-elevated"
+      class="overflow-hidden rounded-md border border-border-soft bg-surface-elevated"
     >
       <div forTabsList class="flex gap-1 border-b border-border-soft px-2 pt-2">
         <button
           forTabsTrigger
           value="preview"
           class="
-            cursor-pointer rounded-t-[6px] border-0 bg-transparent
-            px-3.5 py-1.5 font-[inherit] text-[0.85rem] text-inherit opacity-65
-            data-[state=active]:bg-surface-muted data-[state=active]:opacity-100
+            cursor-pointer rounded-t-sm border-0 bg-transparent
+            px-3.5 py-1.5 font-[inherit] text-sm text-on-surface-muted
+            data-[state=active]:bg-surface-muted data-[state=active]:text-on-surface
             focus-visible:outline focus-visible:outline-2
             focus-visible:-outline-offset-2 focus-visible:outline-accent
           "
@@ -79,9 +79,9 @@ interface ExampleResource {
           forTabsTrigger
           value="code"
           class="
-            cursor-pointer rounded-t-[6px] border-0 bg-transparent
-            px-3.5 py-1.5 font-[inherit] text-[0.85rem] text-inherit opacity-65
-            data-[state=active]:bg-surface-muted data-[state=active]:opacity-100
+            cursor-pointer rounded-t-sm border-0 bg-transparent
+            px-3.5 py-1.5 font-[inherit] text-sm text-on-surface-muted
+            data-[state=active]:bg-surface-muted data-[state=active]:text-on-surface
             focus-visible:outline focus-visible:outline-2
             focus-visible:-outline-offset-2 focus-visible:outline-accent
           "
@@ -100,22 +100,21 @@ interface ExampleResource {
             [attr.data-copied]="copied() ? '' : null"
             (click)="copy(data.source)"
             class="
-              absolute right-3 top-2.5 cursor-pointer rounded
+              absolute right-3 top-2.5 cursor-pointer rounded-sm
               border border-border-strong bg-surface-muted
-              px-2.5 py-1 font-[inherit] text-[0.75rem] text-inherit
+              px-2.5 py-1 font-[inherit] text-xs text-inherit
               data-[copied]:bg-[color-mix(in_oklch,var(--for-success)_28%,transparent)]
             "
           >
             {{ copied() ? 'Copied' : 'Copy' }}
           </button>
-          <pre class="m-0 overflow-x-auto bg-surface-muted px-5 py-4 text-[0.85rem]"><code>{{ data.source }}</code></pre>
+          <pre class="m-0 overflow-x-auto bg-surface-muted px-5 py-4 text-sm"><code>{{ data.source }}</code></pre>
         </div>
       } @else if (loaded.isLoading()) {
-        <div class="p-6 text-[0.9rem] opacity-70">Loading example…</div>
+        <div class="p-6 text-sm text-on-surface-muted">Loading example…</div>
       } @else if (loaded.error()) {
-        <div class="p-6 text-[0.9rem] opacity-70">
-          Example not found:
-          <code class="rounded-[3px] bg-border-soft px-1 py-0.5">{{ src() }}</code>
+        <div class="p-6 text-sm text-on-surface-muted">
+          Example not found: <code class="docs-inline-code">{{ src() }}</code>
         </div>
       }
     </div>

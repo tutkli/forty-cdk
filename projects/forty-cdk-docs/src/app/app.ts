@@ -63,7 +63,7 @@ import { ThemeToggle } from './layout/theme-toggle';
       }
       <a
         routerLink="/"
-        class="flex-1 text-[1.05rem] font-bold tracking-tight text-on-surface no-underline"
+        class="flex-1 text-base font-bold tracking-tight text-on-surface no-underline"
       >
         forty-cdk
       </a>

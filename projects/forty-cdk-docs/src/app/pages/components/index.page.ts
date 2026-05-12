@@ -36,8 +36,8 @@ const FAMILY_ORDER: readonly PrimitiveFamily[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="mb-10">
-      <h1 class="m-0 text-[clamp(2rem,4vw,2.5rem)] tracking-tight">Components</h1>
-      <p class="max-w-[60ch] opacity-85">
+      <h1 class="m-0 text-display-md tracking-tight">Components</h1>
+      <p class="max-w-[60ch] text-on-surface-muted">
         29 headless primitives, one composable surface per WAI-ARIA pattern. Pick a primitive below
         to read its usage notes, full API reference, and accessibility contract.
       </p>
@@ -45,14 +45,7 @@ const FAMILY_ORDER: readonly PrimitiveFamily[] = [
 
     @for (group of groups(); track group.family) {
       <section class="[&_+_section]:mt-8">
-        <h2
-          class="
-            mb-3 mt-0 text-[0.85rem] uppercase tracking-[0.08em]
-            opacity-65
-          "
-        >
-          {{ group.label }}
-        </h2>
+        <h2 class="docs-eyebrow mb-3">{{ group.label }}</h2>
         <ul
           class="
             m-0 grid list-none gap-3 p-0
@@ -61,17 +54,9 @@ const FAMILY_ORDER: readonly PrimitiveFamily[] = [
         >
           @for (entry of group.entries; track entry.slug) {
             <li>
-              <a
-                [routerLink]="'/components/' + entry.slug"
-                class="
-                  block rounded-lg border border-border-soft px-4 py-3.5
-                  text-inherit no-underline
-                  transition-colors duration-100
-                  hover:border-border-strong hover:bg-surface-muted
-                "
-              >
+              <a [routerLink]="'/components/' + entry.slug" class="docs-card-link">
                 <div class="font-semibold">{{ entry.title }}</div>
-                <p class="m-0 mt-1.5 text-[0.9rem] opacity-80">{{ entry.description }}</p>
+                <p class="m-0 mt-1.5 text-sm text-on-surface-muted">{{ entry.description }}</p>
               </a>
             </li>
           }

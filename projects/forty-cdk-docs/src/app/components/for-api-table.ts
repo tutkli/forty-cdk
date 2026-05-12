@@ -54,14 +54,14 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
                 group flex w-full cursor-pointer items-center justify-between gap-4
                 border-0 bg-transparent px-0 py-4 text-left
                 font-[inherit] text-inherit
-                focus-visible:rounded focus-visible:outline focus-visible:outline-2
+                focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2
                 focus-visible:outline-offset-2 focus-visible:outline-accent
               "
             >
               <span class="flex flex-wrap items-baseline gap-3 text-xl font-semibold">
                 <code class="bg-transparent p-0">{{ piece.class }}</code>
                 @if (piece.selector) {
-                  <span class="font-mono text-[0.85rem] font-normal opacity-65">
+                  <span class="font-mono text-sm font-normal text-on-surface-muted">
                     {{ piece.selector }}
                   </span>
                 }
@@ -69,7 +69,7 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
               <span
                 aria-hidden="true"
                 class="
-                  text-[0.9rem] opacity-65 transition-transform duration-200 ease-out
+                  text-sm text-on-surface-subtle transition-transform duration-200 ease-out
                   group-data-[state=open]:rotate-180
                 "
               >
@@ -79,45 +79,40 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
           </h3>
           <div forAccordionContent class="pb-6 data-[state=closed]:hidden">
             @if (piece.doc) {
-              <p class="m-0 mb-4 opacity-85">{{ piece.doc }}</p>
+              <p class="m-0 mb-4 text-on-surface-muted">{{ piece.doc }}</p>
             }
 
             @if (piece.inputs.length) {
-              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
-                Inputs
-              </h4>
-              <table class="w-full border-collapse text-[0.9rem]">
+              <h4 class="docs-eyebrow mt-5 mb-2">Inputs</h4>
+              <table class="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Type</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Default</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
+                    <th class="docs-api-th">Name</th>
+                    <th class="docs-api-th">Type</th>
+                    <th class="docs-api-th">Default</th>
+                    <th class="docs-api-th">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (input of piece.inputs; track input.name) {
                     <tr>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.name }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ input.name }}</code>
                         @if (input.kind === 'inputRequired') {
-                          <span class="
-                              ml-1.5 inline-block rounded-[3px] bg-surface-muted
-                              px-1.5 text-[0.7em] uppercase tracking-[0.04em]
-                            ">required</span>
+                          <span class="docs-badge ml-1.5">required</span>
                         }
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.type }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ input.type }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                      <td class="docs-api-td">
                         @if (input.defaultValue !== null) {
-                          <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ input.defaultValue }}</code>
+                          <code class="docs-inline-code">{{ input.defaultValue }}</code>
                         } @else {
-                          <span class="opacity-40">—</span>
+                          <span class="text-on-surface-subtle">—</span>
                         }
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ input.doc || '—' }}</td>
+                      <td class="docs-api-td">{{ input.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -125,41 +120,36 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.models.length) {
-              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
-                Models (two-way bindable)
-              </h4>
-              <table class="w-full border-collapse text-[0.9rem]">
+              <h4 class="docs-eyebrow mt-5 mb-2">Models (two-way bindable)</h4>
+              <table class="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Type</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Default</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
+                    <th class="docs-api-th">Name</th>
+                    <th class="docs-api-th">Type</th>
+                    <th class="docs-api-th">Default</th>
+                    <th class="docs-api-th">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (model of piece.models; track model.name) {
                     <tr>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.name }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ model.name }}</code>
                         @if (model.kind === 'modelRequired') {
-                          <span class="
-                              ml-1.5 inline-block rounded-[3px] bg-surface-muted
-                              px-1.5 text-[0.7em] uppercase tracking-[0.04em]
-                            ">required</span>
+                          <span class="docs-badge ml-1.5">required</span>
                         }
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.type }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ model.type }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
+                      <td class="docs-api-td">
                         @if (model.defaultValue !== null) {
-                          <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ model.defaultValue }}</code>
+                          <code class="docs-inline-code">{{ model.defaultValue }}</code>
                         } @else {
-                          <span class="opacity-40">—</span>
+                          <span class="text-on-surface-subtle">—</span>
                         }
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ model.doc || '—' }}</td>
+                      <td class="docs-api-td">{{ model.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -167,27 +157,25 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.outputs.length) {
-              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
-                Outputs
-              </h4>
-              <table class="w-full border-collapse text-[0.9rem]">
+              <h4 class="docs-eyebrow mt-5 mb-2">Outputs</h4>
+              <table class="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Name</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Payload</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
+                    <th class="docs-api-th">Name</th>
+                    <th class="docs-api-th">Payload</th>
+                    <th class="docs-api-th">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (output of piece.outputs; track output.name) {
                     <tr>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ output.name }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ output.name }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ output.type }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ output.type }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ output.doc || '—' }}</td>
+                      <td class="docs-api-td">{{ output.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -195,23 +183,21 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (piece.methods.length) {
-              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
-                Methods
-              </h4>
-              <table class="w-full border-collapse text-[0.9rem]">
+              <h4 class="docs-eyebrow mt-5 mb-2">Methods</h4>
+              <table class="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Signature</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Description</th>
+                    <th class="docs-api-th">Signature</th>
+                    <th class="docs-api-th">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (method of piece.methods; track method.name) {
                     <tr>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ method.signature }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ method.signature }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">{{ method.doc || '—' }}</td>
+                      <td class="docs-api-td">{{ method.doc || '—' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -219,24 +205,22 @@ import type { PrimitiveMetadata } from '../tokens/api-metadata-types';
             }
 
             @if (hostKeys(piece).length) {
-              <h4 class="mb-2 mt-5 text-[0.85rem] uppercase tracking-wider opacity-65">
-                Host bindings
-              </h4>
-              <table class="w-full border-collapse text-[0.9rem]">
+              <h4 class="docs-eyebrow mt-5 mb-2">Host bindings</h4>
+              <table class="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Binding</th>
-                    <th class="border-b border-border-soft px-3 py-2 text-left align-top font-semibold opacity-75">Expression</th>
+                    <th class="docs-api-th">Binding</th>
+                    <th class="docs-api-th">Expression</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (key of hostKeys(piece); track key) {
                     <tr>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ key }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ key }}</code>
                       </td>
-                      <td class="border-b border-border-soft px-3 py-2 align-top">
-                        <code class="rounded-[3px] bg-surface-muted px-1.5 py-0.5 text-[0.85em]">{{ piece.host[key] }}</code>
+                      <td class="docs-api-td">
+                        <code class="docs-inline-code">{{ piece.host[key] }}</code>
                       </td>
                     </tr>
                   }

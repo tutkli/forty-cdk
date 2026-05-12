@@ -38,7 +38,7 @@ const STORAGE_KEY = 'forty-cdk-docs-theme';
       class="
         inline-flex h-8 w-8 cursor-pointer items-center justify-center
         rounded-sm border border-border-soft bg-surface-elevated
-        p-0 text-[0.95rem] text-on-surface-muted
+        p-0 text-sm text-on-surface-muted
         transition-colors duration-100
         hover:border-border-strong hover:text-on-surface
         data-[state=checked]:text-on-surface
