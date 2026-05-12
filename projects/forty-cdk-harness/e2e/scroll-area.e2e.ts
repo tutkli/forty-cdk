@@ -1,0 +1,169 @@
+import { expect, test, type Page } from '@playwright/test';
+import { dragFrom, el, gotoFixture } from './_helpers';
+
+/**
+ * Geometry coverage for `[forScrollArea]`. The synthetic thumb's size,
+ * position, and visibility are all derived from `clientWidth` / `scrollWidth`
+ * / `clientHeight` / `scrollHeight` and `scrollTop` / `scrollLeft`, all of
+ * which jsdom returns as zeros. Drag also uses `setPointerCapture` and
+ * track-relative `getBoundingClientRect`. The Vitest layer covers wiring
+ * (listeners attached, signals updated); this spec covers the math against a
+ * real browser layout.
+ *
+ * Fixture defaults: 300×200 viewport with 1000×800 content, so both axes
+ * overflow and the corner is visible. The viewport uses `type="always"` so
+ * neither scrollbar fades behind hover state.
+ *
+ * Tolerance: ±2 CSS pixels on geometry assertions. The thumb size is
+ * `Math.floor(trackLength * ratio)` with an 8-pixel minimum, so small
+ * rounding differences across Chromium / WebKit are expected.
+ */
+
+async function waitForOverflowMeasured(page: Page): Promise<void> {
+  // The viewport reports sizes in `afterNextRender` + on each `ResizeObserver`
+  // tick. Wait for the synthetic thumb to render at a non-zero height before
+  // a spec measures it — without this, the very first `boundingBox()` call
+  // can land in the window between mount and the first measurement.
+  await expect.poll(async () => {
+    const box = await el(page, 'thumb-vertical').boundingBox();
+    return box?.height ?? 0;
+  }).toBeGreaterThan(0);
+}
+
+test.describe('ScrollArea (geometry + drag)', () => {
+  test('vertical thumb is visible when content overflows; scrollbar is in the visible state', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+
+    await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
+    await expect(el(page, 'thumb-vertical')).toHaveAttribute('data-state', 'visible');
+    await expect(el(page, 'thumb-vertical')).toBeVisible();
+  });
+
+  test('vertical thumb size reflects the viewport / content ratio', async ({ page }) => {
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+
+    const trackBox = await el(page, 'scrollbar-vertical').boundingBox();
+    const thumbBox = await el(page, 'thumb-vertical').boundingBox();
+
+    // Viewport 200 / content 800 = 0.25 ratio; track ≈ 200px tall (matches the
+    // viewport height) → expected thumb ≈ 50px. The implementation uses
+    // `Math.floor(trackLength * ratio)` with an 8-pixel minimum, so the
+    // assertion allows ±2px slack for browser sub-pixel rounding.
+    const expectedThumbHeight = Math.floor(trackBox!.height * (200 / 800));
+    expect(thumbBox!.height).toBeGreaterThanOrEqual(expectedThumbHeight - 2);
+    expect(thumbBox!.height).toBeLessThanOrEqual(expectedThumbHeight + 2);
+  });
+
+  test('dragging the vertical thumb downward scrolls the viewport down', async ({ page }) => {
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+
+    const viewport = el(page, 'viewport');
+    expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
+
+    // Drag the thumb 60px down. The drag math is
+    // `scrollDelta = (pointerDelta / (track - thumb)) * (scrollHeight - clientHeight)`,
+    // so 60px on a ~150px usable track (200 − 50 thumb) against an 800−200 = 600
+    // scroll range gives ≈ 240px of scrollTop. We assert a loose lower bound
+    // because the exact number depends on browser-specific thumb rounding.
+    await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 });
+
+    const scrollTop = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
+    expect(scrollTop).toBeGreaterThan(50);
+  });
+
+  test('programmatic scroll on the viewport moves the thumb (scroll → thumb sync)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+
+    const trackBox = await el(page, 'scrollbar-vertical').boundingBox();
+    const thumbBoxBefore = await el(page, 'thumb-vertical').boundingBox();
+
+    // The thumb starts at the top of the track. Driving the viewport halfway
+    // down its scroll range should translate the thumb to roughly the centre
+    // of the track-minus-thumb usable range.
+    await el(page, 'viewport').evaluate((node) => {
+      (node as HTMLElement).scrollTop = 300; // half of (800 - 200) scroll range
+    });
+
+    // Wait for the thumb's transform to update — the scroll handler calls
+    // reportScroll synchronously but Angular's host binding flushes on the
+    // next change-detection tick.
+    await expect.poll(async () => {
+      const box = await el(page, 'thumb-vertical').boundingBox();
+      return box?.y ?? 0;
+    }).toBeGreaterThan(thumbBoxBefore!.y + 10);
+
+    const thumbBoxAfter = await el(page, 'thumb-vertical').boundingBox();
+    const usable = trackBox!.height - thumbBoxAfter!.height;
+    const expectedOffset = trackBox!.y + usable * 0.5;
+    // ±5px slack: ratio rounding compounds with track measurement.
+    expect(thumbBoxAfter!.y).toBeGreaterThanOrEqual(expectedOffset - 5);
+    expect(thumbBoxAfter!.y).toBeLessThanOrEqual(expectedOffset + 5);
+  });
+
+  test('resizing the viewport via query-param navigation recalculates thumb size', async ({
+    page,
+  }) => {
+    // Baseline: 200px viewport against 800px content → ~50px thumb on a 200px track.
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+    const before = await el(page, 'thumb-vertical').boundingBox();
+
+    // Re-navigate with a taller viewport. 400px / 800px = 0.5 ratio → ~200px
+    // thumb on a ~400px track. The ResizeObserver path is what feeds the new
+    // measurements back to the directive.
+    await gotoFixture(page, 'scroll-area', { viewportHeight: '400' });
+    await waitForOverflowMeasured(page);
+    const after = await el(page, 'thumb-vertical').boundingBox();
+
+    expect(after!.height).toBeGreaterThan(before!.height + 50);
+  });
+
+  test('horizontal axis: thumb is visible, sized by ratio, and drag scrolls horizontally', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'scroll-area');
+    await waitForOverflowMeasured(page);
+
+    await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'visible');
+
+    const trackBox = await el(page, 'scrollbar-horizontal').boundingBox();
+    const thumbBox = await el(page, 'thumb-horizontal').boundingBox();
+
+    // Viewport 300 / content 1000 = 0.3 ratio → expected ≈ 0.3 × track width.
+    const expectedThumbWidth = Math.floor(trackBox!.width * (300 / 1000));
+    expect(thumbBox!.width).toBeGreaterThanOrEqual(expectedThumbWidth - 2);
+    expect(thumbBox!.width).toBeLessThanOrEqual(expectedThumbWidth + 2);
+
+    const viewport = el(page, 'viewport');
+    expect(await viewport.evaluate((node) => (node as HTMLElement).scrollLeft)).toBe(0);
+
+    await dragFrom(page, el(page, 'thumb-horizontal'), { dx: 80, dy: 0 });
+
+    const scrollLeft = await viewport.evaluate((node) => (node as HTMLElement).scrollLeft);
+    expect(scrollLeft).toBeGreaterThan(50);
+  });
+
+  test('content fitting inside the viewport hides the synthetic scrollbar', async ({ page }) => {
+    // Content smaller than the viewport → no overflow on either axis. The
+    // scrollbar directive applies `[hidden]` and `data-state="hidden"`.
+    await gotoFixture(page, 'scroll-area', {
+      viewportWidth: '300',
+      viewportHeight: '200',
+      contentWidth: '150',
+      contentHeight: '100',
+    });
+
+    await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
+    await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'hidden');
+    await expect(el(page, 'scrollbar-vertical')).toBeHidden();
+    await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
+  });
+});

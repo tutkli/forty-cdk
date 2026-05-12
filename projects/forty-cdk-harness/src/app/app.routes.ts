@@ -85,6 +85,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/slider.fixture').then((m) => m.SliderFixture),
   },
   {
+    path: 'scroll-area',
+    loadComponent: () =>
+      import('./fixtures/scroll-area.fixture').then((m) => m.ScrollAreaFixture),
+  },
+  {
     path: 'tabs',
     loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
   },
