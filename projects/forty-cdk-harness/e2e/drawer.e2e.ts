@@ -593,4 +593,87 @@ test.describe('Drawer', () => {
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
   });
+
+  // Touch-only branch of the swipe-dismiss helper (see
+  // `_internal/swipe-dismiss/swipe-dismiss.ts`, line 136: `pointerType
+  // === 'mouse'` gates the primary-button check, so the touch path
+  // takes the opposite branch). Desktop projects exercise the mouse
+  // branch via the existing swipe-to-dismiss block above; these
+  // `@mobile` specs drive the gesture so it engages the touch path on
+  // `Mobile Chrome` / `Mobile Safari` while remaining a regression
+  // guard under desktop.
+  test.describe('@mobile touch swipe', () => {
+    test('@mobile swipe-to-close: drag past closeThreshold * dim dismisses with reason "swipe"', async ({
+      page,
+    }, testInfo) => {
+      // Same maths as the desktop "drag past closeThreshold * dim
+      // dismisses" case: 200 px drawer × default 0.25 threshold ⇒ 50 px
+      // dismissal threshold, a 120 px drag down clears it.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 }, { testInfo });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+    });
+
+    test('@mobile flick velocity dismisses below the position threshold', async ({
+      page,
+    }) => {
+      // The directive computes pointer velocity per `pointermove` as
+      // `moveTowardEdge / dt` where `dt = now - lastEventTime`. The
+      // release reads `#pointerVelocity` set by the LAST move, so the
+      // gesture needs to land back-to-back consecutive moves at the
+      // very end: the final move's `dt` against the preceding move
+      // is sub-millisecond (Playwright's CDP transport overhead), so
+      // even a small final delta yields a velocity well above the
+      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` flick gate.
+      //
+      // Total displacement = 5 (arm) + 10 (intermediate) + 25 (flick)
+      // = 40 px, below the 50 px (200 × 0.25) position threshold —
+      // so the only way for the drawer to dismiss is via the velocity
+      // branch of `#onSwipeRelease` (`offset >= dim * closeThreshold
+      // || #pointerVelocity >= 0.4`).
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      const handleBox = (await el(page, 'handle').boundingBox())!;
+      const sx = handleBox.x + handleBox.width / 2;
+      const sy = handleBox.y + handleBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5); // arm
+      // Settle so the next move's `dt` is non-trivial — anchors the
+      // intermediate event with a known timestamp gap so the flick's
+      // tight dt below stands out unambiguously.
+      await page.waitForTimeout(120);
+      await page.mouse.move(sx, sy + 15); // intermediate (slow, velocity here is small)
+      // Back-to-back final move + release: the directive recomputes
+      // `#pointerVelocity` on this move with `dt` ≈ sub-millisecond
+      // CDP transport, so velocity ≈ 25 px / ~1 ms = 25 px/ms (way
+      // above 0.4).
+      await page.mouse.move(sx, sy + 40);
+      await page.mouse.up();
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+    });
+
+    // The fixture does not currently expose a scrollable inner area —
+    // the drawer content (`first`, `second`, `text-input`, `close-btn`)
+    // has no overflow, so there is no way to drive a touchmove that the
+    // inner scroller consumes (which is exactly what the test would
+    // verify the swipe-dismiss helper ignores). Adding a scrollable
+    // child belongs to the original drawer wave (#269 explicitly tells
+    // us not to modify fixtures in this PR); parked with `test.fixme`
+    // so the audit row stays honest and the gap is discoverable.
+    test.fixme('@mobile scroll-inside-drawer does NOT dismiss', async () => {
+      // Will be implemented once the drawer fixture exposes a
+      // scrollable inner area (see #269 acceptance criterion).
+    });
+  });
 });

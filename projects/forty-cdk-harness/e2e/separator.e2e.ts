@@ -233,3 +233,37 @@ test.describe('Separator (horizontal orientation)', () => {
     expect(topAfter.height - topBefore.height).toBeLessThanOrEqual(82);
   });
 });
+
+// Touch path coverage for the resizer variant's pointer drag. The
+// resizer uses `setPointerCapture` plus listeners for `pointermove` /
+// `pointerup`; on `Mobile Chrome` / `Mobile Safari` (`hasTouch: true`
+// + `isMobile: true` from the device descriptor) Playwright's
+// `page.mouse` dispatches pointer events with `pointerType: 'touch'`
+// via the browser's mobile emulation, so the raw `mouse.*` drag
+// below drives the touch code path natively without bypassing
+// `setPointerCapture` the way `dragFrom`'s synthetic-touch branch
+// (which dispatches via `document.elementFromPoint`) does. Desktop
+// projects re-run the test as a regression guard via the same
+// `mouse.*` calls under `pointerType: 'mouse'`.
+test.describe('Separator (@mobile touch drag)', () => {
+  test('@mobile touch drag resizes panes', async ({ page }) => {
+    await gotoFixture(page, 'separator');
+    const leftBefore = (await el(page, 'left-pane').boundingBox())!;
+
+    const resizerBox = (await el(page, 'resizer').boundingBox())!;
+    const sx = resizerBox.x + resizerBox.width / 2;
+    const sy = resizerBox.y + resizerBox.height / 2;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    await page.mouse.move(sx + 5, sy); // arm
+    await page.mouse.move(sx + 80, sy);
+    await page.mouse.up();
+
+    const leftAfter = (await el(page, 'left-pane').boundingBox())!;
+    // Same arithmetic as the desktop "drag 100px right grows left pane"
+    // case scaled down to 80 px. Left pane grew by ~80 px (within a few
+    // px tolerance for the arming step and sub-pixel rounding).
+    expect(leftAfter.width - leftBefore.width).toBeGreaterThanOrEqual(70);
+    expect(leftAfter.width - leftBefore.width).toBeLessThanOrEqual(85);
+  });
+});

@@ -166,4 +166,58 @@ test.describe('ScrollArea (geometry + drag)', () => {
     await expect(el(page, 'scrollbar-vertical')).toBeHidden();
     await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
   });
+
+  // Touch path coverage for the synthetic thumb's pointer drag. The
+  // viewport hides native scrollbars via the global stylesheet
+  // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the
+  // contract under @mobile is "touch drag of the SYNTHETIC thumb moves
+  // scrollTop, with no native-momentum continuation after pointerup".
+  // Native momentum would keep scrollTop climbing past the moment the
+  // pointer is released; we snapshot scrollTop on release and assert
+  // it doesn't change after a short settle window. On `Mobile Chrome` /
+  // `Mobile Safari` (`hasTouch: true` + `isMobile: true` from the
+  // device descriptor) `page.mouse` emits pointer events with
+  // `pointerType: 'touch'` via the browser's mobile emulation, so the
+  // raw `mouse.*` drag below drives the touch code path natively
+  // without `dragFrom`'s synthetic-touch branch (which bypasses
+  // `setPointerCapture` and is unreliable on Mobile Safari). Desktop
+  // projects re-run the test as a regression guard via the same
+  // `mouse.*` calls under `pointerType: 'mouse'`.
+  test.describe('@mobile touch drag', () => {
+    test('@mobile touch drag of the synthetic thumb scrolls without native momentum', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area');
+      await waitForOverflowMeasured(page);
+
+      const viewport = el(page, 'viewport');
+      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
+
+      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const sx = thumbBox.x + thumbBox.width / 2;
+      const sy = thumbBox.y + thumbBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5); // arm
+      await page.mouse.move(sx, sy + 60);
+      await page.mouse.up();
+
+      const scrollTopAfter = await viewport.evaluate(
+        (node) => (node as HTMLElement).scrollTop,
+      );
+      // Same lower bound as the desktop drag case — the synthetic thumb
+      // drag math doesn't depend on pointer type, just `clientY`.
+      expect(scrollTopAfter).toBeGreaterThan(50);
+
+      // No native momentum: synthetic scrollbars run on programmatic
+      // scrollTop writes, not on the browser's native overscroll-driven
+      // momentum. Wait a short settle window and assert scrollTop did
+      // not continue to climb past the drag endpoint.
+      await page.waitForTimeout(300);
+      const scrollTopSettled = await viewport.evaluate(
+        (node) => (node as HTMLElement).scrollTop,
+      );
+      expect(scrollTopSettled).toBe(scrollTopAfter);
+    });
+  });
 });
