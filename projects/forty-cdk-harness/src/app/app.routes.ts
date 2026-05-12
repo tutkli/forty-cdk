@@ -57,4 +57,8 @@ export const routes: Routes = [
     path: 'slider',
     loadComponent: () => import('./fixtures/slider.fixture').then((m) => m.SliderFixture),
   },
+  {
+    path: 'tabs',
+    loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
+  },
 ];
