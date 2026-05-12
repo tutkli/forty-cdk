@@ -84,6 +84,18 @@ import {
         background: rgba(0, 0, 0, 0.5);
         border-radius: 4px;
       }
+      /* The thumb directive sets only the axis-aligned dimension via
+         inline styles ([style.height.px] for vertical, [style.width.px]
+         for horizontal). Fill the perpendicular axis so the thumb has a
+         real hit area — otherwise vertical thumb is 0px wide and
+         Playwright's pointer lands outside it (and toBeVisible() reports
+         zero bounding box). */
+      [forScrollAreaScrollbar][orientation='vertical'] [forScrollAreaThumb] {
+        width: 100%;
+      }
+      [forScrollAreaScrollbar][orientation='horizontal'] [forScrollAreaThumb] {
+        height: 100%;
+      }
       [forScrollAreaCorner] {
         position: absolute;
         right: 0;
