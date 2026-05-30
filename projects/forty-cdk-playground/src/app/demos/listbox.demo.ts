@@ -1,0 +1,125 @@
+import { ChangeDetectionStrategy, Component, computed, linkedSignal, signal } from '@angular/core';
+import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk';
+
+import { type ControlOption, ControlSelect } from '../ui/control-select';
+import { ControlSwitch } from '../ui/control-switch';
+import { DemoLayout } from '../ui/demo-layout';
+
+@Component({
+  selector: 'app-listbox-demo',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    DemoLayout,
+    ForListbox,
+    ForListboxOption,
+    ForListboxOptionIndicator,
+    ControlSelect,
+    ControlSwitch,
+  ],
+  template: `
+    <playground-demo
+      title="Listbox"
+      summary="An inline, roving-tabindex listbox (no popup) implementing the APG Listbox pattern with single and multiple select. Tab moves focus into the list; arrows roam and wrap, Home/End jump to the ends, typeahead matches visible text. Multiple mode adds the APG range model: Shift+Arrow extends the selection, Shift+Space fills a range, Ctrl+A toggles all. The trailing checkmark indicator self-hides while an option is unselected."
+      apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/listbox/"
+    >
+      <div demo class="listbox-demo">
+        <ul
+          forListbox
+          class="pg-listbox"
+          [(value)]="value"
+          [multiple]="multiple()"
+          [orientation]="orientation()"
+          [selectionFollowsFocus]="selectionFollowsFocus()"
+          [disabled]="disabled()"
+          aria-label="Languages"
+        >
+          @for (opt of options; track opt.value) {
+            <li>
+              <button
+                type="button"
+                forListboxOption
+                class="pg-listbox-option"
+                [value]="opt.value"
+                [disabled]="opt.disabled ?? false"
+              >
+                {{ opt.label }}
+                <span forListboxOptionIndicator class="pg-listbox-indicator">
+                  <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                    <path
+                      d="M13 4.5 6.5 11 3 7.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div controls class="pg-controls">
+        <app-control-switch label="multiple" [(checked)]="multiple" />
+        <app-control-select
+          label="orientation"
+          [options]="orientationOptions"
+          [(value)]="orientationValue"
+        />
+        <app-control-switch
+          label="selectionFollowsFocus"
+          [(checked)]="selectionFollowsFocus"
+          [disabled]="multiple()"
+        />
+        <app-control-switch label="disabled" [(checked)]="disabled" />
+
+        <p class="pg-hint">
+          Multiple mode: Shift+Arrow extends, Shift+Space fills a range, Ctrl+A toggles all.
+        </p>
+        <p class="pg-state">
+          value: <b>{{ value().join(', ') || '—' }}</b>
+        </p>
+      </div>
+    </playground-demo>
+  `,
+  styles: `
+    .listbox-demo {
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem 0;
+      width: 100%;
+    }
+  `,
+})
+export class ListboxDemo {
+  protected readonly options: readonly { value: string; label: string; disabled?: boolean }[] = [
+    { value: 'ts', label: 'TypeScript' },
+    { value: 'js', label: 'JavaScript' },
+    { value: 'py', label: 'Python' },
+    { value: 'rust', label: 'Rust' },
+    { value: 'go', label: 'Go' },
+    { value: 'ruby', label: 'Ruby', disabled: true },
+    { value: 'kotlin', label: 'Kotlin' },
+  ];
+
+  protected readonly orientationOptions: readonly ControlOption[] = [
+    { value: 'vertical', label: 'vertical' },
+    { value: 'horizontal', label: 'horizontal' },
+  ];
+
+  protected readonly selectionFollowsFocus = signal(false);
+  protected readonly disabled = signal(false);
+
+  protected readonly multiple = signal(false);
+  protected readonly value = linkedSignal<boolean, string[]>({
+    source: this.multiple,
+    computation: () => [],
+  });
+
+  protected readonly orientationValue = signal('vertical');
+  protected readonly orientation = computed<'vertical' | 'horizontal'>(() =>
+    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
+  );
+}

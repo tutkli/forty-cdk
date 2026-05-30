@@ -102,5 +102,17 @@ export const routes: Routes = [
     path: 'navigation-menu',
     loadComponent: () => import('./demos/navigation-menu.demo').then((m) => m.NavigationMenuDemo),
   },
+  {
+    path: 'select',
+    loadComponent: () => import('./demos/select.demo').then((m) => m.SelectDemo),
+  },
+  {
+    path: 'combobox',
+    loadComponent: () => import('./demos/combobox.demo').then((m) => m.ComboboxDemo),
+  },
+  {
+    path: 'listbox',
+    loadComponent: () => import('./demos/listbox.demo').then((m) => m.ListboxDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];
