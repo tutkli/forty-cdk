@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build forty-cdk",
     "watch": "ng build forty-cdk --watch --configuration development",
+    "playground": "ng serve forty-cdk-playground",
     "test": "ng test forty-cdk",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
