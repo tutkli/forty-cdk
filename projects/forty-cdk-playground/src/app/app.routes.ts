@@ -114,5 +114,9 @@ export const routes: Routes = [
     path: 'listbox',
     loadComponent: () => import('./demos/listbox.demo').then((m) => m.ListboxDemo),
   },
+  {
+    path: 'toast',
+    loadComponent: () => import('./demos/toast.demo').then((m) => m.ToastDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];

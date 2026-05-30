@@ -25,7 +25,7 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
       { slug: 'tooltip', title: 'Tooltip', ready: true },
       { slug: 'select', title: 'Select', ready: true },
       { slug: 'combobox', title: 'Combobox', ready: true },
-      { slug: 'toast', title: 'Toast', ready: false },
+      { slug: 'toast', title: 'Toast', ready: true },
     ],
   },
   {
