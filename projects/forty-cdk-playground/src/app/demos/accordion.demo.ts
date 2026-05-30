@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ForAccordion,
   ForAccordionContent,
@@ -6,6 +6,8 @@ import {
   ForAccordionTrigger,
 } from 'forty-cdk';
 
+import { type ControlOption, ControlSelect } from '../ui/control-select';
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 interface AccordionEntry {
@@ -23,6 +25,8 @@ interface AccordionEntry {
     ForAccordionItem,
     ForAccordionTrigger,
     ForAccordionContent,
+    ControlSwitch,
+    ControlSelect,
   ],
   template: `
     <playground-demo
@@ -72,42 +76,11 @@ interface AccordionEntry {
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="multiple()" (change)="multiple.set(isChecked($event))" />
-          multiple
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="collapsible()"
-            (change)="collapsible.set(isChecked($event))"
-          />
-          collapsible
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="disableThird()"
-            (change)="disableThird.set(isChecked($event))"
-          />
-          disable 3rd item
-        </label>
-
-        <div class="pg-field">
-          <span class="pg-label">orientation</span>
-          <select class="pg-select" [value]="orientation()" (change)="setOrientation($event)">
-            <option value="vertical">vertical</option>
-            <option value="horizontal">horizontal</option>
-          </select>
-        </div>
-
-        <div class="pg-field">
-          <span class="pg-label">dir</span>
-          <select class="pg-select" [value]="dir()" (change)="setDir($event)">
-            <option value="ltr">ltr</option>
-            <option value="rtl">rtl</option>
-          </select>
-        </div>
+        <app-control-switch label="multiple" [(checked)]="multiple" />
+        <app-control-switch label="collapsible" [(checked)]="collapsible" />
+        <app-control-switch label="disable 3rd item" [(checked)]="disableThird" />
+        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
 
         <p class="pg-state">open: <b>{{ value().length ? value().join(', ') : 'none' }}</b></p>
       </div>
@@ -232,24 +205,24 @@ export class AccordionDemo {
     },
   ];
 
+  protected readonly orientationOptions: readonly ControlOption[] = [
+    { value: 'vertical', label: 'vertical' },
+    { value: 'horizontal', label: 'horizontal' },
+  ];
+
+  protected readonly dirOptions: readonly ControlOption[] = [
+    { value: 'ltr', label: 'ltr' },
+    { value: 'rtl', label: 'rtl' },
+  ];
+
   protected readonly value = signal<readonly string[]>(['a']);
   protected readonly multiple = signal(false);
   protected readonly collapsible = signal(true);
   protected readonly disableThird = signal(false);
-  protected readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
-  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
-
-  protected setOrientation(event: Event): void {
-    this.orientation.set(
-      (event.target as HTMLSelectElement).value === 'horizontal' ? 'horizontal' : 'vertical',
-    );
-  }
-
-  protected setDir(event: Event): void {
-    this.dir.set((event.target as HTMLSelectElement).value === 'rtl' ? 'rtl' : 'ltr');
-  }
+  protected readonly orientationValue = signal('vertical');
+  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
+    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
+  );
+  protected readonly dirValue = signal('ltr');
+  protected readonly dir = computed<'ltr' | 'rtl'>(() => (this.dirValue() === 'rtl' ? 'rtl' : 'ltr'));
 }

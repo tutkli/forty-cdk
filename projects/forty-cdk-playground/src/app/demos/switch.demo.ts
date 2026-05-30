@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSwitch } from 'forty-cdk';
 
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 @Component({
   selector: 'app-switch-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSwitch],
+  imports: [DemoLayout, ForSwitch, ControlSwitch],
   template: `
     <playground-demo
       title="Switch"
@@ -27,14 +28,8 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="disabled()" (change)="disabled.set(isChecked($event))" />
-          disabled
-        </label>
-        <label class="pg-check">
-          <input type="checkbox" [checked]="readonly()" (change)="readonly.set(isChecked($event))" />
-          readonly
-        </label>
+        <app-control-switch label="disabled" [(checked)]="disabled" />
+        <app-control-switch label="readonly" [(checked)]="readonly" />
 
         <p class="pg-state">
           checked: <b>{{ checked() }}</b
@@ -108,8 +103,4 @@ export class SwitchDemo {
   protected readonly checked = signal(false);
   protected readonly disabled = signal(false);
   protected readonly readonly = signal(false);
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
 }

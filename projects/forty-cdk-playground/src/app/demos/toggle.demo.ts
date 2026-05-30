@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForToggle, ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
 
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 @Component({
   selector: 'app-toggle-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForToggle, ForToggleGroup, ForToggleGroupItem],
+  imports: [DemoLayout, ForToggle, ForToggleGroup, ForToggleGroupItem, ControlSwitch],
   template: `
     <playground-demo
       title="Toggle / ToggleGroup"
@@ -30,10 +31,7 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="disabled()" (change)="disabled.set(isChecked($event))" />
-          disabled (standalone)
-        </label>
+        <app-control-switch label="disabled (standalone)" [(checked)]="disabled" />
 
         <p class="pg-state">
           pressed: <b>{{ bold() }}</b
@@ -110,8 +108,4 @@ export class ToggleDemo {
   protected readonly bold = signal(false);
   protected readonly format = signal<readonly string[]>([]);
   protected readonly disabled = signal(false);
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
 }

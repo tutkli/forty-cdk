@@ -1,12 +1,22 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk';
 
+import { type ControlOption, ControlSelect } from '../ui/control-select';
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 @Component({
   selector: 'app-slider-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
+  imports: [
+    DemoLayout,
+    ForSlider,
+    ForSliderTrack,
+    ForSliderRange,
+    ForSliderThumb,
+    ControlSwitch,
+    ControlSelect,
+  ],
   template: `
     <playground-demo
       title="Slider"
@@ -32,18 +42,8 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="disabled()" (change)="disabled.set(isChecked($event))" />
-          disabled
-        </label>
-        <div class="pg-field">
-          <span class="pg-label">step</span>
-          <select class="pg-select" [value]="step()" (change)="setStep($event)">
-            <option value="1">1</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-          </select>
-        </div>
+        <app-control-switch label="disabled" [(checked)]="disabled" />
+        <app-control-select label="step" [options]="stepOptions" [(value)]="stepValue" />
 
         <p class="pg-state">value: <b>{{ value().join(', ') }}</b></p>
       </div>
@@ -118,15 +118,14 @@ import { DemoLayout } from '../ui/demo-layout';
   `,
 })
 export class SliderDemo {
+  protected readonly stepOptions: readonly ControlOption[] = [
+    { value: '1', label: '1' },
+    { value: '5', label: '5' },
+    { value: '10', label: '10' },
+  ];
+
   protected readonly value = signal<readonly number[]>([40]);
-  protected readonly step = signal(1);
+  protected readonly stepValue = signal('1');
+  protected readonly step = computed(() => Number(this.stepValue()));
   protected readonly disabled = signal(false);
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
-
-  protected setStep(event: Event): void {
-    this.step.set(Number((event.target as HTMLSelectElement).value));
-  }
 }

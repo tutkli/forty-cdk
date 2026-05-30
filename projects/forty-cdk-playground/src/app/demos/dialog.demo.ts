@@ -9,6 +9,7 @@ import {
   ForDialogTrigger,
 } from 'forty-cdk';
 
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 @Component({
@@ -22,6 +23,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForDialogDescription,
     ForDialogClose,
     ForDialogBackdrop,
+    ControlSwitch,
   ],
   template: `
     <playground-demo
@@ -37,22 +39,9 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="modal()" (change)="modal.set(isChecked($event))" />
-          modal
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="dismissible()"
-            (change)="dismissible.set(isChecked($event))"
-          />
-          dismissible
-        </label>
-        <label class="pg-check">
-          <input type="checkbox" [checked]="alert()" (change)="alert.set(isChecked($event))" />
-          alert
-        </label>
+        <app-control-switch label="modal" [(checked)]="modal" />
+        <app-control-switch label="dismissible" [(checked)]="dismissible" />
+        <app-control-switch label="alert" [(checked)]="alert" />
 
         <p class="pg-state">last close: <b>{{ lastReason() ?? '—' }}</b></p>
       </div>
@@ -102,10 +91,6 @@ export class DialogDemo {
   protected readonly dismissible = signal(true);
   protected readonly alert = signal(false);
   protected readonly lastReason = signal<ForDialogCloseReason | null>(null);
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
 
   protected onClose(reason: ForDialogCloseReason): void {
     this.lastReason.set(reason);

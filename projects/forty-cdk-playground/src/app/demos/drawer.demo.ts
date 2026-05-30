@@ -16,6 +16,8 @@ import {
   injectDrawerData,
 } from 'forty-cdk';
 
+import { type ControlOption, ControlSelect } from '../ui/control-select';
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 interface ConfirmData {
@@ -68,6 +70,8 @@ export class ConfirmDrawer {
     ForDrawerDescription,
     ForDrawerClose,
     ForDrawerWrapper,
+    ControlSwitch,
+    ControlSelect,
   ],
   template: `
     <playground-demo
@@ -87,47 +91,12 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <div class="pg-field">
-          <span class="pg-label">side</span>
-          <select class="pg-select" [value]="basicSide()" (change)="setBasicSide($event)">
-            <option value="bottom">bottom</option>
-            <option value="top">top</option>
-            <option value="left">left</option>
-            <option value="right">right</option>
-          </select>
-        </div>
-        <label class="pg-check">
-          <input type="checkbox" [checked]="basicModal()" (change)="basicModal.set(isChecked($event))" />
-          modal
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="basicDismissible()"
-            (change)="basicDismissible.set(isChecked($event))"
-          />
-          dismissible
-        </label>
-        <label class="pg-check">
-          <input type="checkbox" [checked]="basicAlert()" (change)="basicAlert.set(isChecked($event))" />
-          alert
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="basicHandleOnly()"
-            (change)="basicHandleOnly.set(isChecked($event))"
-          />
-          handleOnly
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="basicSwipe()"
-            (change)="basicSwipe.set(isChecked($event))"
-          />
-          swipeToDismiss
-        </label>
+        <app-control-select label="side" [options]="sideOptions" [(value)]="basicSideValue" />
+        <app-control-switch label="modal" [(checked)]="basicModal" />
+        <app-control-switch label="dismissible" [(checked)]="basicDismissible" />
+        <app-control-switch label="alert" [(checked)]="basicAlert" />
+        <app-control-switch label="handleOnly" [(checked)]="basicHandleOnly" />
+        <app-control-switch label="swipeToDismiss" [(checked)]="basicSwipe" />
 
         <p class="pg-state">last close: <b>{{ basicReason() ?? '—' }}</b></p>
       </div>
@@ -150,10 +119,7 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input type="checkbox" [checked]="snapFade()" (change)="snapFade.set(isChecked($event))" />
-          fade backdrop from "half"
-        </label>
+        <app-control-switch label='fade backdrop from "half"' [(checked)]="snapFade" />
 
         <p class="pg-state">active snap: <b>{{ snapActiveDisplay() }}</b></p>
         <p class="pg-hint">Jump-to-snap buttons live inside the sheet — clicking outside a modal drawer dismisses it.</p>
@@ -184,14 +150,7 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="scaleBgColor()"
-            (change)="scaleBgColor.set(isChecked($event))"
-          />
-          setBackgroundColorOnScale
-        </label>
+        <app-control-switch label="setBackgroundColorOnScale" [(checked)]="scaleBgColor" />
 
         <p class="pg-state">drawer: <b>{{ scaleOpen() ? 'open' : 'closed' }}</b></p>
       </div>
@@ -422,8 +381,19 @@ export class ConfirmDrawer {
 export class DrawerDemo {
   readonly #drawers = inject(ForDrawerManager);
 
+  protected readonly sideOptions: readonly ControlOption[] = [
+    { value: 'bottom', label: 'bottom' },
+    { value: 'top', label: 'top' },
+    { value: 'left', label: 'left' },
+    { value: 'right', label: 'right' },
+  ];
+
   protected readonly basicOpen = signal(false);
-  protected readonly basicSide = signal<ForDrawerSide>('bottom');
+  protected readonly basicSideValue = signal('bottom');
+  protected readonly basicSide = computed<ForDrawerSide>(() => {
+    const value = this.basicSideValue();
+    return value === 'top' || value === 'left' || value === 'right' ? value : 'bottom';
+  });
   protected readonly basicModal = signal(true);
   protected readonly basicDismissible = signal(true);
   protected readonly basicAlert = signal(false);
@@ -458,14 +428,6 @@ export class DrawerDemo {
   protected readonly nestedChildOpen = signal(false);
 
   protected readonly confirmResult = signal('—');
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
-
-  protected setBasicSide(event: Event): void {
-    this.basicSide.set((event.target as HTMLSelectElement).value as ForDrawerSide);
-  }
 
   protected onBasicClose(reason: ForDrawerCloseReason): void {
     this.basicReason.set(reason);

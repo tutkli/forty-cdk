@@ -103,8 +103,24 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     }
 
     @media (max-width: 820px) {
+      .head {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .head h1 {
+        font-size: 1.35rem;
+      }
+
       .body {
         grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .preview {
+        min-height: 220px;
+        padding: 1.25rem;
       }
     }
   `,

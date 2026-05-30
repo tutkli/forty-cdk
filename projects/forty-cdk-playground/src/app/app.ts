@@ -1,8 +1,9 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ForDrawer, ForDrawerBackdrop, ForToggle } from 'forty-cdk';
 
-import { PLAYGROUND_GROUPS } from './primitives';
+import { AppNav } from './ui/app-nav';
 
 type Theme = 'light' | 'dark';
 
@@ -19,66 +20,87 @@ function readInitialTheme(): Theme {
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, AppNav],
   template: `
+    <header class="topbar">
+      <button type="button" class="icon-btn" (click)="navOpen.set(true)" aria-label="Open navigation">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
+      <div class="brand">
+        <span class="brand-name">forty-cdk</span>
+        <span class="brand-tag">playground</span>
+      </div>
+      <button
+        forToggle
+        type="button"
+        class="icon-btn theme"
+        [pressed]="dark()"
+        (pressedChange)="setDark($event)"
+        [attr.aria-label]="themeLabel()"
+      >
+        {{ glyph() }}
+      </button>
+    </header>
+
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-name">forty-cdk</span>
         <span class="brand-tag">playground</span>
         <button
+          forToggle
           type="button"
-          class="theme"
-          (click)="toggleTheme()"
-          [attr.aria-label]="theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          class="icon-btn theme"
+          [pressed]="dark()"
+          (pressedChange)="setDark($event)"
+          [attr.aria-label]="themeLabel()"
         >
-          {{ theme() === 'dark' ? '☀' : '☾' }}
+          {{ glyph() }}
         </button>
       </div>
-
-      <nav>
-        @for (group of groups; track group.label) {
-          <div class="group">
-            <h2>{{ group.label }}</h2>
-            <ul>
-              @for (item of group.primitives; track item.slug) {
-                <li>
-                  @if (item.ready) {
-                    <a
-                      [routerLink]="['/', item.slug]"
-                      routerLinkActive="active"
-                      class="link"
-                    >
-                      {{ item.title }}
-                    </a>
-                  } @else {
-                    <span class="link disabled" title="Coming soon">
-                      {{ item.title }}
-                      <span class="soon">soon</span>
-                    </span>
-                  }
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </nav>
+      <app-nav />
     </aside>
 
     <main class="content">
       <router-outlet />
     </main>
+
+    @if (navOpen()) {
+      <div
+        forDrawer
+        class="pg-nav-drawer"
+        side="left"
+        ariaLabel="Primitives navigation"
+        (close)="navOpen.set(false)"
+        animate.enter="pg-drawer-in-left"
+        animate.leave="pg-drawer-out-left"
+      >
+        <div
+          forDrawerBackdrop
+          class="pg-drawer-backdrop"
+          animate.enter="pg-backdrop-in"
+          animate.leave="pg-backdrop-out"
+        ></div>
+        <app-nav (navigate)="navOpen.set(false)" />
+      </div>
+    }
   `,
   styles: `
     :host {
-      display: grid;
-      grid-template-columns: var(--pg-sidebar-width) 1fr;
+      display: block;
       min-height: 100vh;
     }
 
+    .topbar {
+      display: none;
+    }
+
     .sidebar {
-      position: sticky;
+      position: fixed;
       top: 0;
-      align-self: start;
+      left: 0;
+      width: var(--pg-sidebar-width);
       height: 100vh;
       overflow-y: auto;
       padding: 1rem 0.75rem 2rem;
@@ -106,13 +128,12 @@ function readInitialTheme(): Theme {
       color: var(--pg-text-muted);
     }
 
-    .theme {
-      margin-left: auto;
-      width: 30px;
-      height: 30px;
+    .icon-btn {
+      flex: none;
+      width: 34px;
+      height: 34px;
       display: grid;
       place-items: center;
-      font-size: 0.95rem;
       border-radius: var(--pg-radius-sm);
       border: 1px solid var(--pg-border-strong);
       background: var(--pg-surface);
@@ -120,81 +141,49 @@ function readInitialTheme(): Theme {
       cursor: pointer;
     }
 
-    .theme:hover {
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon-btn:hover {
       background: var(--pg-surface-2);
     }
 
-    .group {
-      margin-bottom: 1.25rem;
-    }
-
-    .group h2 {
-      margin: 0 0 0.4rem;
-      padding: 0 0.75rem;
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
-    }
-
-    ul {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .link {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.75rem;
-      border-radius: var(--pg-radius-sm);
-      font-size: 0.9rem;
-      color: var(--pg-text);
-      text-decoration: none;
-    }
-
-    a.link:hover {
-      background: var(--pg-surface-2);
-    }
-
-    a.link.active {
-      background: color-mix(in srgb, var(--pg-primary) 14%, transparent);
-      color: var(--pg-primary);
-      font-weight: 600;
-    }
-
-    .link.disabled {
-      color: var(--pg-text-muted);
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-
-    .soon {
+    .theme {
       margin-left: auto;
-      font-size: 0.62rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 0.05rem 0.35rem;
-      border-radius: 999px;
-      background: var(--pg-surface-2);
-      color: var(--pg-text-muted);
+      font-size: 0.95rem;
     }
 
     .content {
+      margin-left: var(--pg-sidebar-width);
       padding: 2.5rem 2rem 4rem;
     }
 
-    @media (max-width: 720px) {
-      :host {
-        grid-template-columns: 1fr;
+    @media (max-width: 820px) {
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.9rem;
+        background: var(--pg-surface);
+        border-bottom: 1px solid var(--pg-border);
+      }
+
+      .topbar .brand {
+        padding: 0;
       }
 
       .sidebar {
-        position: static;
-        height: auto;
+        display: none;
+      }
+
+      .content {
+        margin-left: 0;
+        padding: 1.5rem 1rem 3rem;
       }
     }
   `,
@@ -202,8 +191,14 @@ function readInitialTheme(): Theme {
 export class App {
   readonly #document = inject(DOCUMENT);
 
-  protected readonly groups = PLAYGROUND_GROUPS;
   protected readonly theme = signal<Theme>(readInitialTheme());
+  protected readonly navOpen = signal(false);
+
+  protected readonly dark = computed(() => this.theme() === 'dark');
+  protected readonly glyph = computed(() => (this.dark() ? '☀' : '☾'));
+  protected readonly themeLabel = computed(() =>
+    this.dark() ? 'Switch to light theme' : 'Switch to dark theme',
+  );
 
   constructor() {
     effect(() => {
@@ -213,7 +208,7 @@ export class App {
     });
   }
 
-  protected toggleTheme(): void {
-    this.theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
+  protected setDark(dark: boolean): void {
+    this.theme.set(dark ? 'dark' : 'light');
   }
 }

@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForRadio, ForRadioGroup } from 'forty-cdk';
 
+import { type ControlOption, ControlSelect } from '../ui/control-select';
+import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
 
 interface RadioOption {
@@ -11,7 +13,7 @@ interface RadioOption {
 @Component({
   selector: 'app-radio-group-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForRadioGroup, ForRadio],
+  imports: [DemoLayout, ForRadioGroup, ForRadio, ControlSwitch, ControlSelect],
   template: `
     <playground-demo
       title="Radio Group"
@@ -44,25 +46,9 @@ interface RadioOption {
       </div>
 
       <div controls class="pg-controls">
-        <div class="pg-field">
-          <span class="pg-label">orientation</span>
-          <select class="pg-select" [value]="orientation()" (change)="setOrientation($event)">
-            <option value="vertical">vertical</option>
-            <option value="horizontal">horizontal</option>
-          </select>
-        </div>
-        <label class="pg-check">
-          <input type="checkbox" [checked]="disabled()" (change)="disabled.set(isChecked($event))" />
-          disabled (group)
-        </label>
-        <label class="pg-check">
-          <input
-            type="checkbox"
-            [checked]="disableLast()"
-            (change)="disableLast.set(isChecked($event))"
-          />
-          disable "Overnight"
-        </label>
+        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-switch label="disabled (group)" [(checked)]="disabled" />
+        <app-control-switch label='disable "Overnight"' [(checked)]="disableLast" />
 
         <p class="pg-state">value: <b>{{ value() || 'none' }}</b></p>
       </div>
@@ -134,18 +120,16 @@ export class RadioGroupDemo {
     { value: 'overnight', label: 'Overnight' },
   ];
 
+  protected readonly orientationOptions: readonly ControlOption[] = [
+    { value: 'vertical', label: 'vertical' },
+    { value: 'horizontal', label: 'horizontal' },
+  ];
+
   protected readonly value = signal('standard');
-  protected readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
+  protected readonly orientationValue = signal('vertical');
+  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
+    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
+  );
   protected readonly disabled = signal(false);
   protected readonly disableLast = signal(false);
-
-  protected isChecked(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
-
-  protected setOrientation(event: Event): void {
-    this.orientation.set(
-      (event.target as HTMLSelectElement).value === 'horizontal' ? 'horizontal' : 'vertical',
-    );
-  }
 }
