@@ -70,5 +70,17 @@ export const routes: Routes = [
     path: 'scroll-area',
     loadComponent: () => import('./demos/scroll-area.demo').then((m) => m.ScrollAreaDemo),
   },
+  {
+    path: 'popover',
+    loadComponent: () => import('./demos/popover.demo').then((m) => m.PopoverDemo),
+  },
+  {
+    path: 'tooltip',
+    loadComponent: () => import('./demos/tooltip.demo').then((m) => m.TooltipDemo),
+  },
+  {
+    path: 'hover-card',
+    loadComponent: () => import('./demos/hover-card.demo').then((m) => m.HoverCardDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];

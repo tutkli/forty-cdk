@@ -624,3 +624,167 @@ a.pg-nav-link.active {
     transition-duration: 0.01ms;
   }
 }
+
+.pg-popover {
+  z-index: 60;
+  width: min(280px, calc(100vw - 1.5rem));
+  padding: 1rem 1.1rem;
+  background: var(--pg-surface);
+  color: var(--pg-text);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius);
+  box-shadow: var(--pg-shadow);
+}
+
+.pg-popover-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.pg-popover-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--pg-text-muted);
+}
+
+.pg-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+
+.pg-tooltip {
+  --pg-tooltip-bg: #1b1f24;
+  --pg-tooltip-fg: #ffffff;
+  z-index: 70;
+  max-width: 220px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--pg-tooltip-fg);
+  background: var(--pg-tooltip-bg);
+  border-radius: var(--pg-radius-sm);
+  box-shadow: var(--pg-shadow);
+}
+
+[data-theme='dark'] .pg-tooltip {
+  --pg-tooltip-bg: #e6e9ee;
+  --pg-tooltip-fg: #0e1116;
+}
+
+.pg-tooltip-arrow {
+  width: 9px;
+  height: 9px;
+  background: var(--pg-tooltip-bg);
+  transform: rotate(45deg);
+  --for-arrow-offset: -4px;
+}
+
+.pg-hovercard {
+  z-index: 60;
+  width: min(300px, calc(100vw - 1.5rem));
+  padding: 1.1rem;
+  background: var(--pg-surface);
+  color: var(--pg-text);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius);
+  box-shadow: var(--pg-shadow);
+}
+
+.pg-hovercard-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.pg-hovercard-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--pg-primary-contrast);
+  background: var(--pg-primary);
+}
+
+.pg-hovercard-id {
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-hovercard-handle {
+  font-size: 0.8rem;
+  color: var(--pg-text-muted);
+}
+
+.pg-hovercard-bio {
+  margin: 0.8rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--pg-text-muted);
+}
+
+.pg-hovercard-stats {
+  display: flex;
+  gap: 1.1rem;
+  margin-top: 0.8rem;
+  font-size: 0.8rem;
+  color: var(--pg-text-muted);
+}
+
+.pg-hovercard-stats b {
+  color: var(--pg-text);
+}
+
+.pg-hovercard-follow {
+  width: 100%;
+  margin-top: 0.9rem;
+}
+
+.pg-float-arrow {
+  width: 11px;
+  height: 11px;
+  background: var(--pg-surface);
+  border-top: 1px solid var(--pg-border);
+  border-left: 1px solid var(--pg-border);
+  --for-arrow-offset: -6px;
+}
+
+.pg-float-arrow[data-side='bottom'] {
+  transform: rotate(45deg);
+}
+
+.pg-float-arrow[data-side='top'] {
+  transform: rotate(225deg);
+}
+
+.pg-float-arrow[data-side='left'] {
+  transform: rotate(135deg);
+}
+
+.pg-float-arrow[data-side='right'] {
+  transform: rotate(-45deg);
+}
+
+@keyframes pg-pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.pg-pop-in {
+  transform-origin: var(--for-content-transform-origin, center);
+  animation: pg-pop-in 0.14s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-pop-in {
+    animation-duration: 0.01ms;
+  }
+}
