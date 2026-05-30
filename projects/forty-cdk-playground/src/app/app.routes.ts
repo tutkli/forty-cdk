@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/dialog.demo').then((m) => m.DialogDemo),
   },
   {
+    path: 'drawer',
+    loadComponent: () => import('./demos/drawer.demo').then((m) => m.DrawerDemo),
+  },
+  {
     path: 'switch',
     loadComponent: () => import('./demos/switch.demo').then((m) => m.SwitchDemo),
   },

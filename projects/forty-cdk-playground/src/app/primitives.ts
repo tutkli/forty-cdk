@@ -14,7 +14,7 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     label: 'Overlays',
     primitives: [
       { slug: 'dialog', title: 'Dialog', ready: true },
-      { slug: 'drawer', title: 'Drawer', ready: false },
+      { slug: 'drawer', title: 'Drawer', ready: true },
       { slug: 'popover', title: 'Popover', ready: false },
       { slug: 'dropdown-menu', title: 'Dropdown Menu', ready: false },
       { slug: 'context-menu', title: 'Context Menu', ready: false },
