@@ -43,20 +43,20 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     label: 'Disclosure & layout',
     primitives: [
       { slug: 'accordion', title: 'Accordion', ready: true },
-      { slug: 'disclosure', title: 'Disclosure', ready: false },
-      { slug: 'tabs', title: 'Tabs', ready: false },
+      { slug: 'disclosure', title: 'Disclosure', ready: true },
+      { slug: 'tabs', title: 'Tabs', ready: true },
       { slug: 'toolbar', title: 'Toolbar', ready: false },
-      { slug: 'separator', title: 'Separator', ready: false },
+      { slug: 'separator', title: 'Separator', ready: true },
       { slug: 'scroll-area', title: 'Scroll Area', ready: false },
-      { slug: 'aspect-ratio', title: 'Aspect Ratio', ready: false },
+      { slug: 'aspect-ratio', title: 'Aspect Ratio', ready: true },
     ],
   },
   {
     label: 'Display & feedback',
     primitives: [
-      { slug: 'avatar', title: 'Avatar', ready: false },
-      { slug: 'progress', title: 'Progress', ready: false },
-      { slug: 'meter', title: 'Meter', ready: false },
+      { slug: 'avatar', title: 'Avatar', ready: true },
+      { slug: 'progress', title: 'Progress', ready: true },
+      { slug: 'meter', title: 'Meter', ready: true },
     ],
   },
 ];

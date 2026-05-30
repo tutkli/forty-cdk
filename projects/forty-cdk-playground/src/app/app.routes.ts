@@ -34,5 +34,33 @@ export const routes: Routes = [
     path: 'slider',
     loadComponent: () => import('./demos/slider.demo').then((m) => m.SliderDemo),
   },
+  {
+    path: 'disclosure',
+    loadComponent: () => import('./demos/disclosure.demo').then((m) => m.DisclosureDemo),
+  },
+  {
+    path: 'tabs',
+    loadComponent: () => import('./demos/tabs.demo').then((m) => m.TabsDemo),
+  },
+  {
+    path: 'separator',
+    loadComponent: () => import('./demos/separator.demo').then((m) => m.SeparatorDemo),
+  },
+  {
+    path: 'aspect-ratio',
+    loadComponent: () => import('./demos/aspect-ratio.demo').then((m) => m.AspectRatioDemo),
+  },
+  {
+    path: 'avatar',
+    loadComponent: () => import('./demos/avatar.demo').then((m) => m.AvatarDemo),
+  },
+  {
+    path: 'progress',
+    loadComponent: () => import('./demos/progress.demo').then((m) => m.ProgressDemo),
+  },
+  {
+    path: 'meter',
+    loadComponent: () => import('./demos/meter.demo').then((m) => m.MeterDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];
