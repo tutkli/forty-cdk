@@ -62,5 +62,13 @@ export const routes: Routes = [
     path: 'meter',
     loadComponent: () => import('./demos/meter.demo').then((m) => m.MeterDemo),
   },
+  {
+    path: 'toolbar',
+    loadComponent: () => import('./demos/toolbar.demo').then((m) => m.ToolbarDemo),
+  },
+  {
+    path: 'scroll-area',
+    loadComponent: () => import('./demos/scroll-area.demo').then((m) => m.ScrollAreaDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];
