@@ -1,0 +1,211 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForDropdownMenu,
+  ForDropdownMenuTrigger,
+  ForMenuCheckboxItem,
+  ForMenuContent,
+  ForMenuGroup,
+  ForMenuGroupLabel,
+  ForMenuItem,
+  ForMenuItemIndicator,
+  ForMenuRadioGroup,
+  ForMenuRadioItem,
+  ForMenuSeparator,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk';
+
+import { DemoLayout } from '../ui/demo-layout';
+
+@Component({
+  selector: 'app-menu-demo',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    DemoLayout,
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+    ForMenuItemIndicator,
+    ForMenuSeparator,
+    ForMenuGroup,
+    ForMenuGroupLabel,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <playground-demo
+      title="Menu"
+      summary="The shared menu vocabulary, hosted here by a Dropdown Menu trigger: grouped labels, checkbox items and a radio group (role menuitemcheckbox / menuitemradio), a nested submenu and decorative separators. Checkbox and radio items keep the menu open on activation so several options can be flipped before dismissing."
+      apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/menu/"
+    >
+      <div demo class="menu-demo">
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger class="pg-btn pg-btn--primary">View options</button>
+          @if (open()) {
+            <div forMenuContent class="pg-menu pg-menu--wide" animate.enter="pg-pop-in">
+              <div forMenuGroup>
+                <div forMenuGroupLabel class="pg-menu-label">Appearance</div>
+                <button
+                  forMenuCheckboxItem
+                  class="pg-menu-item pg-menu-item--check"
+                  [(checked)]="showToolbar"
+                  (select)="$event.preventDefault()"
+                >
+                  <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
+                    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                      <path
+                        d="M13 4.5 6.5 11 3 7.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  Show toolbar
+                </button>
+                <button
+                  forMenuCheckboxItem
+                  class="pg-menu-item pg-menu-item--check"
+                  [(checked)]="showSidebar"
+                  (select)="$event.preventDefault()"
+                >
+                  <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
+                    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                      <path
+                        d="M13 4.5 6.5 11 3 7.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  Show sidebar
+                </button>
+              </div>
+
+              <hr forMenuSeparator class="pg-menu-separator" />
+
+              <div forMenuGroup>
+                <div forMenuGroupLabel class="pg-menu-label">Sort by</div>
+                <div forMenuRadioGroup [(value)]="sortBy">
+                  <button
+                    forMenuRadioItem
+                    value="name"
+                    class="pg-menu-item pg-menu-item--check"
+                    (select)="$event.preventDefault()"
+                  >
+                    <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
+                      <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                        <circle cx="8" cy="8" r="8" fill="currentColor" />
+                      </svg>
+                    </span>
+                    Name
+                  </button>
+                  <button
+                    forMenuRadioItem
+                    value="date"
+                    class="pg-menu-item pg-menu-item--check"
+                    (select)="$event.preventDefault()"
+                  >
+                    <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
+                      <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                        <circle cx="8" cy="8" r="8" fill="currentColor" />
+                      </svg>
+                    </span>
+                    Date modified
+                  </button>
+                  <button
+                    forMenuRadioItem
+                    value="size"
+                    class="pg-menu-item pg-menu-item--check"
+                    (select)="$event.preventDefault()"
+                  >
+                    <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
+                      <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                        <circle cx="8" cy="8" r="8" fill="currentColor" />
+                      </svg>
+                    </span>
+                    Size
+                  </button>
+                </div>
+              </div>
+
+              <hr forMenuSeparator class="pg-menu-separator" />
+
+              <div forMenuSub [(open)]="moreOpen">
+                <button forMenuSubTrigger class="pg-menu-item pg-menu-item--check">
+                  <span class="pg-menu-indicator"></span>
+                  More tools
+                  <span class="pg-menu-sub-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" width="13" height="13">
+                      <path
+                        d="m6 4 4 4-4 4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </button>
+                @if (moreOpen()) {
+                  <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
+                    <button forMenuItem class="pg-menu-item" (select)="onAction('Developer tools')">
+                      Developer tools
+                    </button>
+                    <button forMenuItem class="pg-menu-item" (select)="onAction('Extensions')">
+                      Extensions
+                    </button>
+                    <button forMenuItem class="pg-menu-item" (select)="onAction('Task manager')">
+                      Task manager
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div controls class="pg-controls">
+        <p class="pg-state">
+          toolbar: <b>{{ showToolbar() }}</b
+          ><br />
+          sidebar: <b>{{ showSidebar() }}</b
+          ><br />
+          sort by: <b>{{ sortBy() }}</b
+          ><br />
+          last action: <b>{{ lastAction() }}</b>
+        </p>
+      </div>
+    </playground-demo>
+  `,
+  styles: `
+    .menu-demo {
+      display: flex;
+      justify-content: center;
+      padding: 2.5rem 0;
+    }
+  `,
+})
+export class MenuDemo {
+  protected readonly open = signal(false);
+  protected readonly moreOpen = signal(false);
+  protected readonly showToolbar = signal(true);
+  protected readonly showSidebar = signal(false);
+  protected readonly sortBy = signal('name');
+  protected readonly lastAction = signal('—');
+
+  protected onAction(label: string): void {
+    this.lastAction.set(label);
+  }
+}

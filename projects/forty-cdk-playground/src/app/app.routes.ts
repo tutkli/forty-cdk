@@ -82,5 +82,25 @@ export const routes: Routes = [
     path: 'hover-card',
     loadComponent: () => import('./demos/hover-card.demo').then((m) => m.HoverCardDemo),
   },
+  {
+    path: 'dropdown-menu',
+    loadComponent: () => import('./demos/dropdown-menu.demo').then((m) => m.DropdownMenuDemo),
+  },
+  {
+    path: 'menu',
+    loadComponent: () => import('./demos/menu.demo').then((m) => m.MenuDemo),
+  },
+  {
+    path: 'context-menu',
+    loadComponent: () => import('./demos/context-menu.demo').then((m) => m.ContextMenuDemo),
+  },
+  {
+    path: 'menubar',
+    loadComponent: () => import('./demos/menubar.demo').then((m) => m.MenubarDemo),
+  },
+  {
+    path: 'navigation-menu',
+    loadComponent: () => import('./demos/navigation-menu.demo').then((m) => m.NavigationMenuDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];
