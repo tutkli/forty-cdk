@@ -14,5 +14,21 @@ export const routes: Routes = [
     path: 'switch',
     loadComponent: () => import('./demos/switch.demo').then((m) => m.SwitchDemo),
   },
+  {
+    path: 'checkbox',
+    loadComponent: () => import('./demos/checkbox.demo').then((m) => m.CheckboxDemo),
+  },
+  {
+    path: 'toggle',
+    loadComponent: () => import('./demos/toggle.demo').then((m) => m.ToggleDemo),
+  },
+  {
+    path: 'radio-group',
+    loadComponent: () => import('./demos/radio-group.demo').then((m) => m.RadioGroupDemo),
+  },
+  {
+    path: 'slider',
+    loadComponent: () => import('./demos/slider.demo').then((m) => m.SliderDemo),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];

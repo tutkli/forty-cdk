@@ -1,0 +1,124 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForCheckbox } from 'forty-cdk';
+
+import { DemoLayout } from '../ui/demo-layout';
+
+@Component({
+  selector: 'app-checkbox-demo',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DemoLayout, ForCheckbox],
+  template: `
+    <playground-demo
+      title="Checkbox"
+      summary="A deferred selection, optionally tri-state. Activating an indeterminate checkbox clears it and toggles checked, matching native inputs. Use Switch instead for immediate on/off settings."
+      apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/"
+    >
+      <div demo>
+        <button
+          forCheckbox
+          class="cb-row"
+          [(checked)]="checked"
+          [(indeterminate)]="indeterminate"
+          [disabled]="disabled()"
+        >
+          <span class="cb">
+            <svg
+              class="cb-icon cb-check"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <path d="M3.5 8.5l3 3 6-6.5" />
+            </svg>
+            <span class="cb-icon cb-dash" aria-hidden="true"></span>
+          </span>
+          I agree to the terms
+        </button>
+      </div>
+
+      <div controls class="pg-controls">
+        <label class="pg-check">
+          <input type="checkbox" [checked]="disabled()" (change)="disabled.set(isChecked($event))" />
+          disabled
+        </label>
+        <button type="button" class="pg-btn" (click)="indeterminate.set(true)">
+          set indeterminate
+        </button>
+
+        <p class="pg-state">
+          checked: <b>{{ checked() }}</b
+          ><br />
+          indeterminate: <b>{{ indeterminate() }}</b>
+        </p>
+      </div>
+    </playground-demo>
+  `,
+  styles: `
+    .cb-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .cb-row[data-disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .cb {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--pg-border-strong);
+      border-radius: 6px;
+      background: var(--pg-surface);
+      color: var(--pg-primary-contrast);
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+    }
+
+    .cb-row[data-state='checked'] .cb,
+    .cb-row[data-state='indeterminate'] .cb {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+    }
+
+    .cb-icon {
+      display: none;
+    }
+
+    .cb-row[data-state='checked'] .cb-check {
+      display: block;
+      width: 14px;
+      height: 14px;
+    }
+
+    .cb-row[data-state='indeterminate'] .cb-dash {
+      display: block;
+      width: 12px;
+      height: 2px;
+      border-radius: 1px;
+      background: currentColor;
+    }
+  `,
+})
+export class CheckboxDemo {
+  protected readonly checked = signal(false);
+  protected readonly indeterminate = signal(false);
+  protected readonly disabled = signal(false);
+
+  protected isChecked(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
+}
