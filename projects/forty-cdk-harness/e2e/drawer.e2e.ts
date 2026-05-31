@@ -421,7 +421,7 @@ test.describe('Drawer', () => {
         ),
       ).toBe('0');
 
-      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60, release: false });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 }, { release: false });
 
       await expect(backdrop).toHaveAttribute('data-dragging', '');
       const progress = await backdrop.evaluate((node) =>
