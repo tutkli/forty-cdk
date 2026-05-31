@@ -267,7 +267,8 @@ h3 {
   cursor: pointer;
 }
 
-.pg-select-option[data-highlighted] {
+.pg-select-option[data-highlighted],
+.pg-select-option:not([data-disabled]):hover {
   background: var(--pg-surface-2);
 }
 
@@ -994,7 +995,8 @@ a.pg-nav-link.active {
 }
 
 .pg-menu-item[data-highlighted],
-.pg-menu-item[data-state='open'] {
+.pg-menu-item[data-state='open'],
+.pg-menu-item:not([data-disabled]):hover {
   background: var(--pg-surface-2);
 }
 
@@ -1008,7 +1010,8 @@ a.pg-nav-link.active {
   color: var(--pg-danger);
 }
 
-.pg-menu-item--danger[data-highlighted] {
+.pg-menu-item--danger[data-highlighted],
+.pg-menu-item--danger:not([data-disabled]):hover {
   background: color-mix(in srgb, var(--pg-danger) 14%, transparent);
 }
 
@@ -1421,7 +1424,8 @@ a.pg-nav-link.active {
   cursor: pointer;
 }
 
-.pg-combobox-option[data-highlighted] {
+.pg-combobox-option[data-highlighted],
+.pg-combobox-option:not([data-disabled]):hover {
   background: var(--pg-surface-2);
 }
 
