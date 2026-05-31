@@ -1,6 +1,7 @@
 import { DestroyRef, Directive, inject, input, numberAttribute, signal } from '@angular/core';
 
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_SCROLL_AREA_CONTEXT,
   type ForScrollAreaContext,
@@ -66,7 +67,15 @@ export class ForScrollArea implements ForScrollAreaContext {
     transform: numberAttribute,
   });
 
-  readonly dir = input<WritingDirection>('ltr');
+  /**
+   * Writing direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
+   * The resolved value is reflected to the host `dir` attribute and positions
+   * the vertical scrollbar on the left in RTL.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   readonly #viewport = signal<HTMLElement | null>(null);
   readonly viewport = this.#viewport.asReadonly();

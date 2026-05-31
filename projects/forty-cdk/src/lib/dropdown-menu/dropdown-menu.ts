@@ -13,6 +13,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
 import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
@@ -114,9 +115,14 @@ export class ForDropdownMenu implements ForMenuContext {
   /**
    * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu
    * triggers and items underneath this menu (in RTL, ArrowLeft opens a submenu
-   * and ArrowRight closes it back). Default `'ltr'`.
+   * and ArrowRight closes it back). When unset (default `null`), the inherited
+   * ambient direction is resolved from the nearest ancestor carrying a `dir`
+   * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]`
+   * always wins, the resolved value is reflected to the host `dir` attribute,
+   * and it is inherited by descendant submenus.
    */
-  readonly dir = input<WritingDirection>('ltr');
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * When true, trigger interaction is ignored and any open menu stays open

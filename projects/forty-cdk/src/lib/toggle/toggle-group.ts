@@ -18,6 +18,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,
   type ForToggleGroupContext,
@@ -96,8 +97,15 @@ export class ForToggleGroup
   /** Layout direction for keyboard navigation. */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
-  /** Reading direction. RTL swaps ArrowLeft/ArrowRight. */
-  readonly dir = input<WritingDirection>('ltr');
+  /**
+   * Reading direction. RTL swaps ArrowLeft/ArrowRight. When unset (default
+   * `null`), the inherited ambient direction is resolved from the nearest
+   * ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to
+   * `'ltr'`. An explicit `[dir]` always wins and the resolved value is
+   * reflected to the host `dir` attribute.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /** When true (default), arrow nav wraps at the ends. */
   readonly loop = input(true, { transform: booleanAttribute });
