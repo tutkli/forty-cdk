@@ -330,6 +330,21 @@ export class ForCombobox<T = string>
     });
   });
 
+  /**
+   * Read-only single-select convenience view of {@link value}. Returns the
+   * sole selected item when exactly one is selected, otherwise `null` (empty
+   * selection, or multiple selections in `multiple` mode). Lets single-select
+   * consumers read `selectedItem()` instead of unwrapping `value()[0]`. The
+   * array-backed `value` model remains the source of truth and the
+   * `FormValueControl` contract; this is a derived accessor. Distinct from
+   * {@link selected}, which pairs every selected value with its resolved
+   * label for chip rendering.
+   */
+  readonly selectedItem = computed<T | null>(() => {
+    const values = this.value();
+    return values.length === 1 ? values[0]! : null;
+  });
+
   constructor() {
     super();
     injectHiddenInput<T>({

@@ -1,6 +1,6 @@
 # Listbox
 
-Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) with single / multi select, roving tabindex, typeahead, and `FormValueControl<string[]>` integration.
+Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) with single / multi select, roving tabindex, typeahead, and `FormValueControl<readonly string[]>` integration.
 
 ## Pieces
 
@@ -15,7 +15,8 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 | API                                                          | Type                                             | Description                                                                                                                                                               |
 | ------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<string[]>`                                | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<string[]>`.                                                  |
+| `value`                                                      | `model<readonly string[]>`                       | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly string[]>`.                                         |
+| `selected`                                                   | `Signal<string \| null>`                         | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.   |
 | `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected. Default `false`.                                                                                                             |
 | `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Default `'vertical'`. Drives keyboard nav and `aria-orientation`.                                                                                                         |
 | `dir`                                                        | `input<'ltr' \| 'rtl'>`                          | Default `'ltr'`.                                                                                                                                                          |
@@ -50,7 +51,7 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
   `,
 })
 export class DemoFruit {
-  readonly picked = signal<string[]>([]);
+  readonly picked = signal<readonly string[]>([]);
 }
 ```
 

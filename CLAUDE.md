@@ -160,6 +160,14 @@ Consumers styling falsy state must select on **the absence** of the attribute (`
 
 **`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires _only_ when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
 
+**Selection value-type contract.** Every selection primitive models its value the same way, so consumers learn one shape across the library:
+
+- **The value model is always a `readonly` array** — `model<readonly string[]>` (`Accordion`, `ToggleGroup`, `Listbox`, `Select`) or `model<readonly T[]>` when generic (`Combobox`). Never expose a mutable `string[]` model; mutate it immutably internally (`[...]`, `.filter()`, `new Set()` then spread) and `set()` the new array. The array is the `FormValueControl` backing — the form contract needs a uniform multi-capable shape regardless of mode.
+- **Single mode is the same array with 0–1 elements.** `multiple=false` (default) keeps the array at length ≤ 1; option activation replaces rather than appends.
+- **Single-select consumers read a derived accessor, never `value()[0]`.** Each selection primitive exposes a read-only single-mode view derived with `computed()` (never an `effect`-written signal): `selected: Signal<string | null>` on `ForSelect` / `ForListbox`, and `selectedItem: Signal<T | null>` on the generic `ForCombobox` (its `selected` name is already taken by the value+label chip list). It returns the sole element when the array has exactly one entry, else `null` (empty, or multiple in multi mode). This is a convenience accessor, not a second source of truth — writes still go through `[(value)]`.
+
+Selection-_for-display_ primitives that aren't form values (`Tabs`, `RadioGroup` use a single `string`) are out of this contract; it covers the array-backed multi-capable controls only.
+
 **Orientation + writing direction.** Primitives whose keyboard navigation has an axis expose `orientation: 'horizontal' | 'vertical'` and `dir: 'ltr' | 'rtl'` inputs and pass them to the shared `_internal/keyboard-navigation` helpers. Default to the orientation that matches the primitive's most common layout (`vertical` for `Accordion`/`RadioGroup`/`Listbox`, `horizontal` for `Tabs`). Reflect `data-orientation` on the root container so the consumer can flip CSS.
 
 **Output naming.** `*Change` for value/state transitions emitted by `model()`. Verb outputs (`select`, `escapeKeyDown`, `pointerDownOutside`) for one-shot events — never `onX` (React idiom).
