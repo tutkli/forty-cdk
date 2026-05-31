@@ -35,6 +35,7 @@ test.describe('Disclosure', () => {
     await gotoFixture(page, 'disclosure');
     await el(page, 'trigger').focus();
     await page.keyboard.press('Enter');
+    await expect(el(page, 'panel')).toBeVisible();
 
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'panel-focusable'));

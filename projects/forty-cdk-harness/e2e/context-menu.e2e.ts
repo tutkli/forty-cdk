@@ -10,7 +10,7 @@ import { el, gotoFixture, longPress } from './_helpers';
  */
 async function anchorSize(
   page: Page,
-): Promise<{ width: number; height: number; transform: string }> {
+): Promise<{ width: number; height: number; translate: string }> {
   const handle = await el(page, 'menu').elementHandle();
   if (!handle) throw new Error('menu host not mounted');
   return page.evaluate((node) => {
@@ -18,7 +18,8 @@ async function anchorSize(
     return {
       width: Number.parseFloat(elem.style.getPropertyValue('--for-anchor-width') || '0'),
       height: Number.parseFloat(elem.style.getPropertyValue('--for-anchor-height') || '0'),
-      transform: elem.style.transform,
+      // Position lives on the `translate` property (NOT `transform`).
+      translate: elem.style.translate,
     };
   }, handle);
 }
@@ -88,7 +89,7 @@ test.describe('ContextMenu', () => {
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
-      expect(size.transform).toMatch(/translate\(/);
+      expect(size.translate).toMatch(/^-?\d+px -?\d+px$/);
     });
 
     test('ContextMenu key anchors at the focused trigger rect', async ({ page }) => {
