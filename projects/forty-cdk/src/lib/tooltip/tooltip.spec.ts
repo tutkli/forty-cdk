@@ -288,13 +288,15 @@ describe('ForTooltip', () => {
   });
 
   describe('floating-ui positioning', () => {
-    it('writes a transform and data-placement on the content once open', async () => {
+    it('writes a position and data-placement on the content once open', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
       await flushPositioning(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
-      expect(content.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
+      // Position lives on the `translate` property (NOT `transform`, which
+      // stays free for the consumer's enter animation).
+      expect(content.style.translate).toMatch(/^-?\d+px -?\d+px$/);
       // ForTooltip defaults to side='top' + align='center' → resolved
       // placement collapses to the bare side.
       expect(content.dataset['placement']).toBe('top');
