@@ -42,10 +42,17 @@ import { FOR_SELECT_DEFAULTS } from './select-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
- * Implements `FormValueControl<readonly string[]>` from
+ * Implements `FormValueControl<readonly T[]>` from
  * `@angular/forms/signals` for `[formField]` auto-wiring.
  *
- * Selection is always modeled as `readonly string[]`:
+ * Generic over the option value type `T` (default `string`). When the
+ * consumer binds object items the directive infers `T` from `[(value)]` and
+ * `[forSelectOption][value]`; object identity is resolved by the
+ * consumer-supplied `[isItemEqualToValue]` and the hidden inputs serialize
+ * via `[itemToFormValue]`. Option display text is read from the rendered
+ * `textContent`, so no separate label function is needed.
+ *
+ * Selection is always modeled as `readonly T[]`:
  * - In single mode (`multiple=false`, default), the array has 0 or 1 element
  *   and option activation closes the listbox.
  * - In multi mode, option activation toggles and the listbox stays open.
@@ -66,14 +73,14 @@ import { FOR_SELECT_DEFAULTS } from './select-defaults';
   },
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
-export class ForSelect
+export class ForSelect<T = string>
   extends FormUiControlBase
-  implements FormValueControl<readonly string[]>, ForSelectContext
+  implements FormValueControl<readonly T[]>, ForSelectContext<T>
 {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
-  readonly #items = new Collection<ForSelectOptionHandle>();
+  readonly #items = new Collection<ForSelectOptionHandle<T>>();
   readonly #defaults = inject(FOR_SELECT_DEFAULTS);
 
   /**
@@ -81,7 +88,28 @@ export class ForSelect
    * element. The `model()` change emitter (`(valueChange)`) fires only on
    * internal selection changes, never on consumer writes via `[(value)]`.
    */
-  readonly value = model<readonly string[]>([]);
+  readonly value = model<readonly T[]>([]);
+
+  /**
+   * Compare two items for equality. Defaults to `===`, which is the
+   * correct identity for primitive `T` (e.g. strings, numbers). Override
+   * when binding object items so the directive can locate selected entries
+   * by id (or any other stable key) instead of by reference:
+   * `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   */
+  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+
+  /**
+   * Serialize an item for the hidden input that participates in native
+   * form submission. Defaults to identity for strings and to
+   * `JSON.stringify` for non-string items so the primitive works out of
+   * the box round-tripping objects. Override to emit a specific wire
+   * format — typically a per-item id — when the backend expects that:
+   * `[itemToFormValue]="(it) => it.id"`.
+   */
+  readonly itemToFormValue = input<(item: T) => string>((item) =>
+    typeof item === 'string' ? item : JSON.stringify(item),
+  );
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
@@ -91,7 +119,7 @@ export class ForSelect
    * `value()[0]`. The array-backed `value` model remains the source of
    * truth and the `FormValueControl` contract; this is a derived accessor.
    */
-  readonly selected = computed<string | null>(() => {
+  readonly selected = computed<T | null>(() => {
     const values = this.value();
     return values.length === 1 ? values[0]! : null;
   });
@@ -230,7 +258,7 @@ export class ForSelect
    * post-render phase; an effect or linkedSignal would race with text-node
    * commits).
    */
-  readonly #cachedOptions = signal<readonly { value: string; label: string }[]>([]);
+  readonly #cachedOptions = signal<readonly { value: T; label: string }[]>([]);
 
   readonly selectedLabels = computed<readonly string[]>(() => {
     const values = this.value();
@@ -238,10 +266,14 @@ export class ForSelect
       return [];
     }
     const cached = this.#cachedOptions();
+    const equals = this.isItemEqualToValue();
+    const toFormValue = this.itemToFormValue();
     const labels: string[] = [];
     for (const v of values) {
-      const opt = cached.find((o) => o.value === v);
-      labels.push(opt ? opt.label : v);
+      const opt = cached.find((o) => equals(o.value, v));
+      // Fall back to the serialized form value so non-string items still
+      // render a meaningful label before the option cache warms up.
+      labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : toFormValue(v));
     }
     return labels;
   });
@@ -251,9 +283,10 @@ export class ForSelect
     if (values.length === 0) {
       return null;
     }
+    const equals = this.isItemEqualToValue();
     const items = this.#items.items();
     for (const v of values) {
-      const opt = items.find((o) => o.value() === v && !o.disabled());
+      const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
         return opt.host;
       }
@@ -263,9 +296,10 @@ export class ForSelect
 
   constructor() {
     super();
-    injectHiddenInput({
+    injectHiddenInput<T>({
       name: this.name,
       values: this.value,
+      serialize: (item) => this.itemToFormValue()(item),
       disabled: this.disabled,
     });
 
@@ -276,7 +310,7 @@ export class ForSelect
         // state typeahead and `[forSelectValue]` rendering still resolve.
         return;
       }
-      const next: { value: string; label: string }[] = new Array(items.length);
+      const next: { value: T; label: string }[] = new Array(items.length);
       const cached = this.#cachedOptions();
       let changed = cached.length !== items.length;
       for (let i = 0; i < items.length; i++) {
@@ -319,24 +353,28 @@ export class ForSelect
     }
   }
 
-  registerOption(handle: ForSelectOptionHandle): void {
+  registerOption(handle: ForSelectOptionHandle<T>): void {
     this.#items.register(handle);
   }
-  unregisterOption(handle: ForSelectOptionHandle): void {
+  unregisterOption(handle: ForSelectOptionHandle<T>): void {
     this.#items.unregister(handle);
   }
 
-  isSelected(v: string): boolean {
-    return this.value().includes(v);
+  isSelected(v: T): boolean {
+    const equals = this.isItemEqualToValue();
+    return this.value().some((x) => equals(x, v));
   }
 
-  activate(v: string): void {
+  activate(v: T): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
+    const equals = this.isItemEqualToValue();
     if (this.multiple()) {
       const current = this.value();
-      const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+      const next = current.some((x) => equals(x, v))
+        ? current.filter((x) => !equals(x, v))
+        : [...current, v];
       this.value.set(next);
       // Multi-select stays open — consumer closes via outside pointer / Escape / Tab.
       return;
@@ -441,9 +479,10 @@ export class ForSelect
     if (values.length === 0) {
       return false;
     }
+    const equals = this.isItemEqualToValue();
     const items = this.#items.items();
     for (const v of values) {
-      const opt = items.find((o) => o.value() === v && !o.disabled());
+      const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
         opt.host.focus();
         return true;
@@ -477,7 +516,7 @@ export class ForSelect
     this.open.set(false);
   }
 
-  commitOnTab(value: string): void {
+  commitOnTab(value: T): void {
     if (this.disabled()) {
       return;
     }
