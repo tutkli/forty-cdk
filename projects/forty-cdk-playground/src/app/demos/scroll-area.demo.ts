@@ -33,7 +33,10 @@ import { DemoLayout } from '../ui/demo-layout';
         <div forScrollAreaViewport class="sa-viewport">
           <div forScrollAreaContent class="sa-content">
             @for (row of rows; track row) {
-              <p class="sa-row"><b>Row {{ row }}</b> — headless primitives expose state and behavior; you bring the styles.</p>
+              <p class="sa-row">
+                <b>Row {{ row }}</b> — headless primitives expose state and behavior; you bring the
+                styles.
+              </p>
             }
           </div>
         </div>
@@ -86,8 +89,15 @@ import { DemoLayout } from '../ui/demo-layout';
 
     .sa-scrollbar {
       position: absolute;
+      background: transparent;
+      border-radius: 999px;
+      transition:
+        opacity 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .sa-scrollbar:hover {
       background: var(--pg-surface-2);
-      transition: opacity 0.2s ease;
     }
 
     .sa-scrollbar--v {
@@ -113,14 +123,25 @@ import { DemoLayout } from '../ui/demo-layout';
       background: var(--pg-border-strong);
       border-radius: 999px;
       cursor: grab;
+      transition: background 0.15s ease;
     }
 
-    .sa-thumb:active {
-      cursor: grabbing;
+    .sa-thumb[data-orientation='vertical'] {
+      width: 7px;
+      left: 2px;
+    }
+
+    .sa-thumb[data-orientation='horizontal'] {
+      height: 7px;
+      top: 2px;
     }
 
     .sa-thumb:hover {
       background: var(--pg-text-muted);
+    }
+
+    .sa-thumb:active {
+      cursor: grabbing;
     }
 
     .sa-corner {
@@ -129,7 +150,7 @@ import { DemoLayout } from '../ui/demo-layout';
       bottom: 0;
       width: 11px;
       height: 11px;
-      background: var(--pg-surface-2);
+      background: transparent;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -161,5 +182,7 @@ export class ScrollAreaDemo {
   });
 
   protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() => (this.dirValue() === 'rtl' ? 'rtl' : 'ltr'));
+  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
+    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
+  );
 }
