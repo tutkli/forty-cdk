@@ -18,6 +18,7 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 | `value`                                                      | `model<readonly string[]>`                       | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly string[]>`.                                         |
 | `selected`                                                   | `Signal<string \| null>`                         | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.   |
 | `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected. Default `false`.                                                                                                             |
+| `ariaLabel`                                                  | `input<string \| null>`                          | Reactive accessible name for the listbox, reflected as `aria-label`. Default `null` (and an empty string) emits no attribute. Prefer native `aria-labelledby` when a visible label element exists. |
 | `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Default `'vertical'`. Drives keyboard nav and `aria-orientation`.                                                                                                         |
 | `dir`                                                        | `input<'ltr' \| 'rtl'>`                          | Default `'ltr'`.                                                                                                                                                          |
 | `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, arrow nav also selects the focused option. APG flags this as case-by-case — leave off unless your UX specifically benefits. Default `false`. |
@@ -120,7 +121,7 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 
 ## Accessibility notes
 
-- **Label the listbox** via `aria-label` or `aria-labelledby`.
+- **Label the listbox** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible label element.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
