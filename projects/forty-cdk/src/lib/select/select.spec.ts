@@ -960,6 +960,137 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('object values', () => {
+    interface City {
+      id: number;
+      name: string;
+    }
+
+    const PARIS: City = { id: 1, name: 'Paris' };
+    const BERLIN: City = { id: 2, name: 'Berlin' };
+    const TOKYO: City = { id: 3, name: 'Tokyo' };
+
+    @Component({
+      imports: [...BASE_IMPORTS, ForSelectValue],
+      template: `
+        <form #form>
+          <div
+            forSelect
+            name="city"
+            [(open)]="open"
+            [(value)]="value"
+            [multiple]="multiple()"
+            [isItemEqualToValue]="byId"
+            [itemToFormValue]="toId"
+          >
+            <button forSelectTrigger>
+              <span forSelectValue placeholder="Pick a city"></span>
+            </button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="paris" forSelectOption [value]="paris">Paris</button>
+                <button data-test-id="berlin" forSelectOption [value]="berlin">Berlin</button>
+                <button data-test-id="tokyo" forSelectOption [value]="tokyo">Tokyo</button>
+              </div>
+            }
+          </div>
+        </form>
+      `,
+    })
+    class ObjectHost {
+      readonly paris = PARIS;
+      readonly berlin = BERLIN;
+      readonly tokyo = TOKYO;
+      readonly open = signal(false);
+      readonly multiple = signal(false);
+      readonly value = signal<readonly City[]>([]);
+      readonly byId = (a: City, b: City) => a.id === b.id;
+      readonly toId = (c: City) => String(c.id);
+    }
+
+    it('selects an object value on click and exposes it via the selected accessor', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('berlin').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual([BERLIN]);
+    });
+
+    it('matches selection by custom equality even when the bound value is a different reference', async () => {
+      const r = renderHost(ObjectHost);
+      // A distinct object that is equal-by-id to BERLIN — the directive must
+      // resolve `aria-selected` / `data-state` through `isItemEqualToValue`,
+      // not reference identity.
+      r.instance.value.set([{ id: 2, name: 'Berlin' }]);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const berlin = getOption('berlin');
+      const paris = getOption('paris');
+      expect(berlin.getAttribute('aria-selected')).toBe('true');
+      expect(berlin.getAttribute('data-state')).toBe('checked');
+      expect(paris.getAttribute('aria-selected')).toBe('false');
+      expect(paris.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('renders the selected option label through forSelectValue', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('tokyo').click();
+      await flush(r.fixture);
+
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Tokyo');
+    });
+
+    it('toggles object values in/out by id in multi mode', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.multiple.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('paris').click();
+      getOption('tokyo').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual([PARIS, TOKYO]);
+
+      getOption('paris').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual([TOKYO]);
+    });
+
+    it('serializes object values into the hidden input via itemToFormValue', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.value.set([BERLIN]);
+      await flush(r.fixture);
+
+      const inputs = Array.from(r.el.querySelectorAll<HTMLInputElement>('input[type=hidden]'));
+      expect(inputs).toHaveLength(1);
+      expect(inputs[0]!.name).toBe('city');
+      expect(inputs[0]!.value).toBe('2');
+    });
+
+    it('keeps object selection reactive without Zone.js', async () => {
+      const r = renderHost(ObjectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.value.set([PARIS]);
+      await flush(r.fixture);
+      expect(getOption('paris').getAttribute('aria-selected')).toBe('true');
+
+      r.instance.value.set([TOKYO]);
+      await flush(r.fixture);
+      expect(getOption('paris').getAttribute('aria-selected')).toBe('false');
+      expect(getOption('tokyo').getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
   describe('position input', () => {
     @Component({
       imports: HOST_IMPORTS,

@@ -1,6 +1,8 @@
 # Select
 
-Headless select primitive — a button trigger that opens a portaled listbox of options. Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/) (`role="combobox"` on the trigger, `role="listbox"` on the surface, `role="option"` on items) and the `FormValueControl<readonly string[]>` interface from `@angular/forms/signals`.
+Headless select primitive — a button trigger that opens a portaled listbox of options. Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/) (`role="combobox"` on the trigger, `role="listbox"` on the surface, `role="option"` on items) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
+
+`[forSelect]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forSelectOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## Pieces
 
@@ -10,7 +12,7 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 | `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`.                  |
 | `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                             |
 | `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
-| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<string>`.                                                                                           |
+| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<T>` (defaults to `string`).                                                                         |
 | `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
 | `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
 | `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                          |
@@ -18,7 +20,7 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 
 ## Single mode (default)
 
-Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<string | null>` accessor (the form contract keeps `value` as `readonly string[]`; `selected()` is `value()[0]` or `null`).
+Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
 
 ```html
 <div forSelect [(value)]="favorite" placeholder="Pick a fruit">
@@ -157,7 +159,7 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 ## Form integration
 
-`[forSelect]` implements `FormValueControl<readonly string[]>`. Pair with the `[formField]` directive for auto-wiring with `@angular/forms/signals`:
+`[forSelect]` implements `FormValueControl<readonly T[]>`. Pair with the `[formField]` directive for auto-wiring with `@angular/forms/signals`:
 
 ```html
 <div forSelect [formField]="form.color">
@@ -166,7 +168,60 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 </div>
 ```
 
-For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N).
+For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
+
+## Object values
+
+Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forSelect]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
+
+Two inputs configure the object behaviour. Defaults make string mode work unchanged:
+
+| Input                  | Default                                                            | Purpose                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).           |
+| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
+
+The visible option label still comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
+
+```html
+<div
+  forSelect
+  [(value)]="city"
+  [isItemEqualToValue]="byId"
+  name="city"
+  [itemToFormValue]="toId"
+  placeholder="Pick a city"
+>
+  <button forSelectTrigger>
+    <span forSelectValue></span>
+  </button>
+  @if (cityOpen()) {
+  <div forSelectContent>
+    @for (c of cities; track c.id) {
+    <button forSelectOption [value]="c">{{ c.name }}</button>
+    }
+  </div>
+  }
+</div>
+```
+
+```ts
+interface City {
+  id: string;
+  name: string;
+}
+
+readonly city = signal<readonly City[]>([]);
+readonly cities = signal<readonly City[]>([
+  { id: 'paris', name: 'Paris' },
+  { id: 'berlin', name: 'Berlin' },
+]);
+
+readonly byId = (a: City, b: City) => a.id === b.id;
+readonly toId = (c: City) => c.id;
+```
+
+Multi mode uses the same two inputs — `[(value)]` is a `readonly City[]` and option clicks toggle entries in/out by `isItemEqualToValue`.
 
 ## Accessibility notes
 

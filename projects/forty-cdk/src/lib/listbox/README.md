@@ -1,6 +1,8 @@
 # Listbox
 
-Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) with single / multi select, roving tabindex, typeahead, and `FormValueControl<readonly string[]>` integration.
+Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) with single / multi select, roving tabindex, typeahead, and `FormValueControl<readonly T[]>` integration.
+
+`[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## Pieces
 
@@ -15,8 +17,10 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 | API                                                          | Type                                             | Description                                                                                                                                                               |
 | ------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<readonly string[]>`                       | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly string[]>`.                                         |
-| `selected`                                                   | `Signal<string \| null>`                         | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.   |
+| `value`                                                      | `model<readonly T[]>`                            | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly T[]>`.                                              |
+| `selected`                                                   | `Signal<T \| null>`                              | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.   |
+| `isItemEqualToValue`                                         | `input<(a: T, b: T) => boolean>`                 | How two items compare. Defaults to `===`. Override for object values so selection / range actions locate entries by id (or any stable key).                               |
+| `itemToFormValue`                                            | `input<(item: T) => string>`                     | Serialize an item for the hidden form input. Defaults to `String` for strings and `JSON.stringify` for objects. Override to emit a per-item id.                           |
 | `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected. Default `false`.                                                                                                             |
 | `ariaLabel`                                                  | `input<string \| null>`                          | Reactive accessible name for the listbox, reflected as `aria-label`. Default `null` (and an empty string) emits no attribute. Prefer native `aria-labelledby` when a visible label element exists. |
 | `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Default `'vertical'`. Drives keyboard nav and `aria-orientation`.                                                                                                         |
@@ -29,10 +33,10 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 ### `ForListboxOption`
 
-| API        | Type                     | Description                                                 |
-| ---------- | ------------------------ | ----------------------------------------------------------- |
-| `value`    | `input.required<string>` | The option's identifier. Must be unique within the listbox. |
-| `disabled` | `input<boolean>`         | Disables this option independently of the group.            |
+| API        | Type                | Description                                                                            |
+| ---------- | ------------------- | -------------------------------------------------------------------------------------- |
+| `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `isItemEqualToValue`. |
+| `disabled` | `input<boolean>`    | Disables this option independently of the group.                                       |
 
 ## Stand-alone usage (single select)
 
@@ -67,6 +71,49 @@ export class DemoFruit {
 ```
 
 Click toggles individual options in multi mode; click selects in single mode.
+
+## Object values
+
+Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forListbox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
+
+Two inputs configure the object behaviour. Defaults make string mode work unchanged:
+
+| Input                  | Default                                                            | Purpose                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / range actions locate by id (or any stable key). |
+| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden form input. Override to emit a per-item id (or any wire format your backend wants). |
+
+The visible option label is just the rendered `textContent`, so there's no separate label function. All of the multi-select range actions (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End) dedupe by `isItemEqualToValue`, so object values never accumulate duplicates.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { ForListbox, ForListboxOption } from 'forty-cdk';
+
+interface City {
+  id: string;
+  name: string;
+}
+
+@Component({
+  selector: 'demo-cities',
+  imports: [ForListbox, ForListboxOption],
+  template: `
+    <ul forListbox multiple [(value)]="picked" [isItemEqualToValue]="byId" aria-label="Cities">
+      @for (c of cities; track c.id) {
+      <li><button type="button" forListboxOption [value]="c">{{ c.name }}</button></li>
+      }
+    </ul>
+  `,
+})
+export class DemoCities {
+  readonly picked = signal<readonly City[]>([]);
+  readonly cities: readonly City[] = [
+    { id: 'paris', name: 'Paris' },
+    { id: 'berlin', name: 'Berlin' },
+  ];
+  readonly byId = (a: City, b: City) => a.id === b.id;
+}
+```
 
 ## Signal Forms usage
 
