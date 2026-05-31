@@ -398,6 +398,47 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-release-will-close')).toHaveText('false');
     });
 
+    test('backdrop publishes --for-drawer-drag-progress and data-dragging during the gesture', async ({
+      page,
+    }) => {
+      // The backdrop is portaled to <body> away from the surface, yet must
+      // track the drag so consumers can fade it out with pure CSS. Drag the
+      // handle partway (closeThreshold lifted to 1 so it can't dismiss) and
+      // assert the custom property is published > 0 with data-dragging set;
+      // on release both reset.
+      await gotoFixture(page, 'drawer', {
+        backdrop: '1',
+        drawerHeight: '200',
+        closeThreshold: '1',
+      });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      const backdrop = el(page, 'backdrop');
+      expect(
+        await backdrop.evaluate((node) =>
+          node.style.getPropertyValue('--for-drawer-drag-progress'),
+        ),
+      ).toBe('0');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60, release: false });
+
+      await expect(backdrop).toHaveAttribute('data-dragging', '');
+      const progress = await backdrop.evaluate((node) =>
+        Number(node.style.getPropertyValue('--for-drawer-drag-progress')),
+      );
+      expect(progress).toBeGreaterThan(0);
+      expect(progress).toBeLessThanOrEqual(1);
+
+      await page.mouse.up();
+      await expect(backdrop).not.toHaveAttribute('data-dragging', '');
+      expect(
+        await backdrop.evaluate((node) =>
+          node.style.getPropertyValue('--for-drawer-drag-progress'),
+        ),
+      ).toBe('0');
+    });
+
     test('handleOnly: drag starting outside the handle does not arm; on the handle it does', async ({
       page,
     }) => {

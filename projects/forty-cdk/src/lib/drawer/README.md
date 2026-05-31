@@ -4,16 +4,16 @@ Headless side / bottom-sheet drawer with optional swipe-to-dismiss and Vaul-styl
 
 ## Anatomy
 
-| Piece                  | Selector                 | Purpose                                                                                                   |
-| ---------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `ForDrawer`            | `[forDrawer]`            | Root surface. `role="dialog"` (or `"alertdialog"`), `aria-modal`, side effects, swipe & snap engine.      |
-| `ForDrawerTrigger`     | `[forDrawerTrigger]`     | Conveniently wires a `<button>` to the same `[(open)]` signal that gates the surrounding `@if`.           |
-| `ForDrawerBackdrop`    | `[forDrawerBackdrop]`    | Optional overlay portaled to body. Reflects `data-fade-from-active` for snap-driven backdrop transitions. |
-| `ForDrawerHandle`      | `[forDrawerHandle]`      | Visual swipe handle. With `[handleOnly]="true"` the swipe gesture only arms on this element.              |
-| `ForDrawerTitle`       | `[forDrawerTitle]`       | Registers an id for `aria-labelledby`.                                                                    |
-| `ForDrawerDescription` | `[forDrawerDescription]` | Registers an id for `aria-describedby`.                                                                   |
-| `ForDrawerClose`       | `[forDrawerClose]`       | Closes the drawer with reason `'closeButton'`.                                                            |
-| `ForDrawerWrapper`     | `[forDrawerWrapper]`     | Marks the app shell so `[scaleBackground]` drawers can scale + translate it behind them.                  |
+| Piece                  | Selector                 | Purpose                                                                                                                                                                        |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ForDrawer`            | `[forDrawer]`            | Root surface. `role="dialog"` (or `"alertdialog"`), `aria-modal`, side effects, swipe & snap engine.                                                                           |
+| `ForDrawerTrigger`     | `[forDrawerTrigger]`     | Conveniently wires a `<button>` to the same `[(open)]` signal that gates the surrounding `@if`.                                                                                |
+| `ForDrawerBackdrop`    | `[forDrawerBackdrop]`    | Optional overlay portaled to body. Reflects `data-fade-from-active` (snap-driven) + `data-dragging`, and publishes `--for-drawer-drag-progress` for the swipe-to-dismiss fade. |
+| `ForDrawerHandle`      | `[forDrawerHandle]`      | Visual swipe handle. With `[handleOnly]="true"` the swipe gesture only arms on this element.                                                                                   |
+| `ForDrawerTitle`       | `[forDrawerTitle]`       | Registers an id for `aria-labelledby`.                                                                                                                                         |
+| `ForDrawerDescription` | `[forDrawerDescription]` | Registers an id for `aria-describedby`.                                                                                                                                        |
+| `ForDrawerClose`       | `[forDrawerClose]`       | Closes the drawer with reason `'closeButton'`.                                                                                                                                 |
+| `ForDrawerWrapper`     | `[forDrawerWrapper]`     | Marks the app shell so `[scaleBackground]` drawers can scale + translate it behind them.                                                                                       |
 
 ## Two flows, one engine
 
@@ -228,6 +228,23 @@ For a seamless release, transition **both** `translate` and your snap-position p
   bottom: 0;
 }
 ```
+
+### Backdrop drag-fade (CSS contract)
+
+`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the Vaul-style "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(drag)` listener required:
+
+```css
+[forDrawerBackdrop] {
+  /* Fades the backdrop as the surface is dragged off-screen. */
+  opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+  transition: opacity 0.3s ease;
+}
+[forDrawerBackdrop][data-dragging] {
+  transition: none; /* track the pointer 1:1 during the gesture */
+}
+```
+
+`--for-drawer-drag-progress` only reflects the _dismiss_ direction: with snap points, a drag **away** from the edge (growing the surface) keeps it at `0`. On release it resets to `0` in the same change-detection pass that flips `data-dragging` off, so the backdrop animates back to full opacity in lockstep with the surface settling. The snap-driven `data-fade-from-active` cue (see above) is independent and can be combined or used on its own.
 
 ## Swipe-to-dismiss
 

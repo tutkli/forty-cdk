@@ -54,6 +54,21 @@ export interface ForDrawerContext {
    * that index. Computed by the root.
    */
   readonly fadeFromActive: Signal<boolean>;
+  /**
+   * `true` while a pointer drag gesture is in flight. Mirrors the host's
+   * `data-dragging` attribute so pieces portaled away from the surface
+   * (the backdrop) can suppress their own transitions during the gesture.
+   */
+  readonly dragging: Signal<boolean>;
+  /**
+   * Progress of the current drag *toward the anchored edge* (dismiss
+   * direction), as a fraction `∈ [0, 1]` of the drawer's dimension along
+   * the dismissal axis. `0` at rest and while growing away from the edge
+   * (with snap points). The backdrop publishes this as the
+   * `--for-drawer-drag-progress` custom property so consumers can fade it
+   * out as the surface is dragged off-screen — `opacity: calc(1 - var(--for-drawer-drag-progress))`.
+   */
+  readonly dragProgress: Signal<number>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 

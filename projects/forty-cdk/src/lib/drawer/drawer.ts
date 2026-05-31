@@ -281,6 +281,7 @@ export class ForDrawer implements ForDrawerContext {
   readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   readonly #dragging = signal(false);
+  readonly #dragProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
   // Captures the `value` argument from the most recent `requestClose(reason, value)`
   // call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
   // into `ForDrawerRef.close(value)`. Plain in declarative usage (no consumer
@@ -296,6 +297,7 @@ export class ForDrawer implements ForDrawerContext {
     return ids.length === 0 ? null : ids.join(' ');
   });
   readonly dragging = this.#dragging.asReadonly();
+  readonly dragProgress = this.#dragProgress.asReadonly();
   readonly activeSnapPointAttr = computed<string | null>(() => {
     const v = this.activeSnapPoint();
     return v == null ? null : String(v);
@@ -658,6 +660,7 @@ export class ForDrawer implements ForDrawerContext {
     }
 
     this.#dragging.set(true);
+    this.#dragProgress.set(0);
     this.#pointerStartTime = detail.originalEvent.timeStamp || performance.now();
     this.#pointerLastTime = this.#pointerStartTime;
     this.#pointerLastX = detail.originalEvent.clientX;
@@ -754,6 +757,7 @@ export class ForDrawer implements ForDrawerContext {
     // `percentageDragged` tracks progress toward dismiss, so growth (a
     // negative offset) reads as 0 rather than a negative number.
     const percentageDragged = Math.min(1, Math.max(0, nextOffset / dim));
+    this.#dragProgress.set(percentageDragged);
     this.drag.emit({ percentageDragged, originalEvent: event });
   }
 
@@ -812,6 +816,7 @@ export class ForDrawer implements ForDrawerContext {
     // drag delta away in lockstep with the snap-position transition, with no
     // intermediate jump to the previous rest position.
     this.#dragOffset.set(0);
+    this.#dragProgress.set(0);
     this.#dragging.set(false);
 
     if (willClose) {

@@ -252,6 +252,31 @@ describe('ForDrawer (declarative)', () => {
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
     });
 
+    it('mirrors data-dragging onto the backdrop and publishes --for-drawer-drag-progress', async () => {
+      // Wiring only — the exact fade fraction is geometry (jsdom returns a
+      // zero rect), so its numeric value during the gesture is asserted in
+      // drawer.e2e.ts. Here we check the rest value and that the backdrop,
+      // which is portaled away from the surface, tracks the drag state.
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+      expect(backdrop.hasAttribute('data-dragging')).toBe(false);
+      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+
+      dispatchPointer(drawer, 'pointerdown', 0, 0);
+      dispatchPointer(drawer, 'pointermove', 0, 20);
+      await flush(r.fixture);
+      expect(backdrop.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointerup', 0, 20);
+      await flush(r.fixture);
+      expect(backdrop.hasAttribute('data-dragging')).toBe(false);
+      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+    });
+
     it('does not arm the swipe when [handleOnly]="true" and pointerdown lands off the handle', async () => {
       // With `handleOnly` on, a pointerdown that does not originate on the
       // registered `[forDrawerHandle]` element must NOT flip `#dragging`,
