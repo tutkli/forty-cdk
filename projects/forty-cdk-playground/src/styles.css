@@ -536,6 +536,7 @@ a.pg-nav-link.active {
   background: var(--pg-surface);
   color: var(--pg-text);
   box-shadow: var(--pg-shadow);
+  translate: var(--for-drawer-translate, 0px 0px);
 }
 
 .pg-drawer:not([data-active-snap-point])[data-side='bottom'] {
@@ -581,7 +582,9 @@ a.pg-nav-link.active {
   height: var(--pg-sheet-full);
   max-height: var(--pg-sheet-full);
   border-radius: var(--pg-radius) var(--pg-radius) 0 0;
-  transition: bottom 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    bottom 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+    translate 0.42s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .pg-drawer[data-active-snap-point][data-dragging] {

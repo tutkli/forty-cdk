@@ -4,16 +4,16 @@ Headless side / bottom-sheet drawer with optional swipe-to-dismiss and Vaul-styl
 
 ## Anatomy
 
-| Piece                    | Selector                | Purpose                                                                                                       |
-| ------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `ForDrawer`              | `[forDrawer]`           | Root surface. `role="dialog"` (or `"alertdialog"`), `aria-modal`, side effects, swipe & snap engine.          |
-| `ForDrawerTrigger`       | `[forDrawerTrigger]`    | Conveniently wires a `<button>` to the same `[(open)]` signal that gates the surrounding `@if`.               |
-| `ForDrawerBackdrop`      | `[forDrawerBackdrop]`   | Optional overlay portaled to body. Reflects `data-fade-from-active` for snap-driven backdrop transitions.     |
-| `ForDrawerHandle`        | `[forDrawerHandle]`     | Visual swipe handle. With `[handleOnly]="true"` the swipe gesture only arms on this element.                  |
-| `ForDrawerTitle`         | `[forDrawerTitle]`      | Registers an id for `aria-labelledby`.                                                                        |
-| `ForDrawerDescription`   | `[forDrawerDescription]`| Registers an id for `aria-describedby`.                                                                       |
-| `ForDrawerClose`         | `[forDrawerClose]`      | Closes the drawer with reason `'closeButton'`.                                                                |
-| `ForDrawerWrapper`       | `[forDrawerWrapper]`    | Marks the app shell so `[scaleBackground]` drawers can scale + translate it behind them.                      |
+| Piece                  | Selector                 | Purpose                                                                                                   |
+| ---------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `ForDrawer`            | `[forDrawer]`            | Root surface. `role="dialog"` (or `"alertdialog"`), `aria-modal`, side effects, swipe & snap engine.      |
+| `ForDrawerTrigger`     | `[forDrawerTrigger]`     | Conveniently wires a `<button>` to the same `[(open)]` signal that gates the surrounding `@if`.           |
+| `ForDrawerBackdrop`    | `[forDrawerBackdrop]`    | Optional overlay portaled to body. Reflects `data-fade-from-active` for snap-driven backdrop transitions. |
+| `ForDrawerHandle`      | `[forDrawerHandle]`      | Visual swipe handle. With `[handleOnly]="true"` the swipe gesture only arms on this element.              |
+| `ForDrawerTitle`       | `[forDrawerTitle]`       | Registers an id for `aria-labelledby`.                                                                    |
+| `ForDrawerDescription` | `[forDrawerDescription]` | Registers an id for `aria-describedby`.                                                                   |
+| `ForDrawerClose`       | `[forDrawerClose]`       | Closes the drawer with reason `'closeButton'`.                                                            |
+| `ForDrawerWrapper`     | `[forDrawerWrapper]`     | Marks the app shell so `[scaleBackground]` drawers can scale + translate it behind them.                  |
 
 ## Two flows, one engine
 
@@ -143,37 +143,37 @@ Drawers opened by the manager join the same `ForDrawerStack` as declarative ones
 
 ## ForDrawer inputs / models
 
-| Name              | Type                                        | Default     | Notes                                                                       |
-| ----------------- | ------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
-| `side`            | `'top' \| 'right' \| 'bottom' \| 'left'`   | `'bottom'`  | Anchored edge. Drives swipe direction and `data-side`.                      |
-| `modal`           | `boolean`                                   | `true`      | `aria-modal`, scroll lock, focus trap, inert siblings.                      |
-| `dismissible`     | `boolean`                                   | `true`      | Whether Escape / backdrop / outside / swipe close.                          |
-| `alert`           | `boolean`                                   | `false`     | `role="alertdialog"`.                                                       |
-| `returnFocus`     | `boolean`                                   | `true`      | Restore focus on close.                                                     |
-| `initialFocus`    | `'first' \| 'container'`                    | `'first'`   |                                                                             |
-| `ariaLabel`       | `string \| null`                            | `null`      | Use when no visible title is rendered.                                      |
-| `autoFocusOnOpen` | `(e: VetoableEvent) => void` \| `undefined` | —           | `event.preventDefault()` skips the imperative focus move.                   |
-| `autoFocusOnClose`| `(e: VetoableEvent) => void` \| `undefined` | —           | Fires on every close path regardless of mode. In non-modal mode the directive doesn't move focus, so the veto is informational; in modal mode `event.preventDefault()` skips return-focus. |
-| `swipeToDismiss`  | `boolean`                                   | `true`      | Disabled automatically under `prefers-reduced-motion: reduce`.              |
-| `closeThreshold`  | `number`                                    | `0.25`      | Fraction of dimension past which a release dismisses.                       |
-| `handleOnly`      | `boolean`                                   | `false`     | Swipe arms only on the registered `[forDrawerHandle]`.                      |
-| `snapPoints`      | `ReadonlyArray<ForDrawerSnapPoint>`         | —           | `number ∈ [0,1]` \| `'NN%'` \| `'NNpx'`. Strictly increasing.               |
-| `activeSnapPoint` | `ModelSignal<ForDrawerSnapPoint \| null>`   | `null`      | Two-way bindable. Initialised to `snapPoints[0]` on mount when null.        |
-| `fadeFromIndex`   | `number`                                    | —           | Backdrop reflects `data-fade-from-active` once active >= this index.        |
-| `scaleBackground` | `boolean`                                   | `false`     | Asks `[forDrawerWrapper]` to scale + translate behind the drawer.           |
-| `setBackgroundColorOnScale` | `boolean`                         | `true`      | Paints `<body>` to mask the gap between scaled wrapper and viewport edge.   |
+| Name                        | Type                                        | Default    | Notes                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `side`                      | `'top' \| 'right' \| 'bottom' \| 'left'`    | `'bottom'` | Anchored edge. Drives swipe direction and `data-side`.                                                                                                                                     |
+| `modal`                     | `boolean`                                   | `true`     | `aria-modal`, scroll lock, focus trap, inert siblings.                                                                                                                                     |
+| `dismissible`               | `boolean`                                   | `true`     | Whether Escape / backdrop / outside / swipe close.                                                                                                                                         |
+| `alert`                     | `boolean`                                   | `false`    | `role="alertdialog"`.                                                                                                                                                                      |
+| `returnFocus`               | `boolean`                                   | `true`     | Restore focus on close.                                                                                                                                                                    |
+| `initialFocus`              | `'first' \| 'container'`                    | `'first'`  |                                                                                                                                                                                            |
+| `ariaLabel`                 | `string \| null`                            | `null`     | Use when no visible title is rendered.                                                                                                                                                     |
+| `autoFocusOnOpen`           | `(e: VetoableEvent) => void` \| `undefined` | —          | `event.preventDefault()` skips the imperative focus move.                                                                                                                                  |
+| `autoFocusOnClose`          | `(e: VetoableEvent) => void` \| `undefined` | —          | Fires on every close path regardless of mode. In non-modal mode the directive doesn't move focus, so the veto is informational; in modal mode `event.preventDefault()` skips return-focus. |
+| `swipeToDismiss`            | `boolean`                                   | `true`     | Disabled automatically under `prefers-reduced-motion: reduce`.                                                                                                                             |
+| `closeThreshold`            | `number`                                    | `0.25`     | Fraction of dimension past which a release dismisses.                                                                                                                                      |
+| `handleOnly`                | `boolean`                                   | `false`    | Swipe arms only on the registered `[forDrawerHandle]`.                                                                                                                                     |
+| `snapPoints`                | `ReadonlyArray<ForDrawerSnapPoint>`         | —          | `number ∈ [0,1]` \| `'NN%'` \| `'NNpx'`. Strictly increasing.                                                                                                                              |
+| `activeSnapPoint`           | `ModelSignal<ForDrawerSnapPoint \| null>`   | `null`     | Two-way bindable. Initialised to `snapPoints[0]` on mount when null.                                                                                                                       |
+| `fadeFromIndex`             | `number`                                    | —          | Backdrop reflects `data-fade-from-active` once active >= this index.                                                                                                                       |
+| `scaleBackground`           | `boolean`                                   | `false`    | Asks `[forDrawerWrapper]` to scale + translate behind the drawer.                                                                                                                          |
+| `setBackgroundColorOnScale` | `boolean`                                   | `true`     | Paints `<body>` to mask the gap between scaled wrapper and viewport edge.                                                                                                                  |
 
 ## ForDrawer outputs
 
-| Name                  | Payload                                       | Notes                                                              |
-| --------------------- | --------------------------------------------- | ------------------------------------------------------------------ |
-| `close`               | `ForDrawerCloseReason`                        | Wire to `(close)="open.set(false)"`.                               |
-| `escapeKeyDown`       | `VetoableNativeEvent<KeyboardEvent>`          | `preventDefault()` suppresses auto-close.                          |
-| `pointerDownOutside`  | `VetoableNativeEvent<PointerEvent>`           | "                                                                  |
-| `focusOutside`        | `VetoableNativeEvent<FocusEvent>`             | "                                                                  |
-| `interactOutside`     | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite — vetoed by either specific event.                       |
-| `drag`                | `ForDrawerDragEvent`                          | Streams `percentageDragged` and the originating `PointerEvent`.    |
-| `release`             | `ForDrawerReleaseEvent`                       | `willClose`, `nextSnapPoint`. Directive already updated state.     |
+| Name                 | Payload                                           | Notes                                                           |
+| -------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
+| `close`              | `ForDrawerCloseReason`                            | Wire to `(close)="open.set(false)"`.                            |
+| `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | `preventDefault()` suppresses auto-close.                       |
+| `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | "                                                               |
+| `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | "                                                               |
+| `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite — vetoed by either specific event.                    |
+| `drag`               | `ForDrawerDragEvent`                              | Streams `percentageDragged` and the originating `PointerEvent`. |
+| `release`            | `ForDrawerReleaseEvent`                           | `willClose`, `nextSnapPoint`. Directive already updated state.  |
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
@@ -188,16 +188,51 @@ Three accepted shapes:
 Pass them in **strictly increasing** order (closest-to-edge first). The directive throws `[forty-cdk/drawer] snapPoints must be strictly increasing (closest-to-edge first).` otherwise. `fadeFromIndex` must be a valid index into `snapPoints`.
 
 ```ts
-[snapPoints]="['148px', '50%', 1]"   // peek → mid → full
-[(activeSnapPoint)]="snap"           // current snap; written on drag release
-[fadeFromIndex]="1"                  // backdrop fades once we cross the second snap
+[snapPoints] =
+  "['148px', '50%', 1]"[activeSnapPoint] = // peek → mid → full
+  'snap'[fadeFromIndex] = // current snap; written on drag release
+    '1'; // backdrop fades once we cross the second snap
 ```
 
 The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every drag release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
+### Positioning the snaps (CSS contract)
+
+The directive does **not** position the surface at each snap — that is the consumer's job, keyed off `data-active-snap-point`. Position the rest state with a layout property such as `bottom` / `top` (or `left` / `right`), and transition it for the snap-to-snap animation.
+
+The live drag delta is published on the host as the **`--for-drawer-translate`** custom property (a `"<x> <y>"` value, `"0px 0px"` at rest); apply it on the surface with `translate: var(--for-drawer-translate, 0px 0px)`. A custom property is used — rather than the directive writing `translate` / `transform` directly — for two reasons: `transform` is reserved for the scale-background / nested effect, and a directly-written inline `translate` is silently dropped by Angular when you also bind a template `[style.*]` on the same host. Reading it through the var keeps the drag working regardless of any inline style bindings you put on the surface, and composes with `transform` without clobbering it.
+
+For a seamless release, transition **both** `translate` and your snap-position property with the same timing, and suppress that transition while `data-dragging` is present. The directive resets `--for-drawer-translate` to `"0px 0px"`, removes `data-dragging`, and updates `data-active-snap-point` in a single change-detection pass on release, so the drag delta animates back to zero in lockstep with the snap-position change — the surface never jumps to the previous rest position before sliding to the new snap.
+
+```css
+.sheet {
+  /* The directive publishes the live drag delta here; compose it on the surface. */
+  translate: var(--for-drawer-translate, 0px 0px);
+}
+.sheet[data-active-snap-point] {
+  height: 80vh;
+  transition:
+    bottom 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+    translate 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sheet[data-active-snap-point][data-dragging] {
+  transition: none; /* the drag follows the pointer 1:1 */
+}
+.sheet[data-active-snap-point='148px'] {
+  bottom: calc(148px - 80vh);
+}
+.sheet[data-active-snap-point='0.5'] {
+  bottom: -40vh;
+}
+.sheet[data-active-snap-point='1'] {
+  bottom: 0;
+}
+```
+
 ## Swipe-to-dismiss
 
 - Pointer drag toward the anchored edge translates the surface and resolves to the nearest snap (or a dismiss) on release.
+- With `snapPoints`, the drag is bidirectional: a drag **away** from the anchored edge grows the surface toward a larger snap (bounded by the largest snap), and a drag toward the edge shrinks it / dismisses past the lowest one. Without `snapPoints` the gesture is one-way (toward the edge to dismiss).
 - `closeThreshold` (default `0.25`) is the Vaul-aligned fraction of dimension past which a release from the lowest snap dismisses.
 - `handleOnly: true` confines the gesture to a registered `[forDrawerHandle]`, leaving the rest of the surface free for content scroll.
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
@@ -219,14 +254,16 @@ Opt in to the "viewport recedes behind the drawer" effect popularised by Vaul: w
 
 <!-- Anywhere in the tree -->
 @if (open()) {
-  <div
-    forDrawer
-    side="bottom"
-    [scaleBackground]="true"
-    (close)="open.set(false)"
-    animate.enter="slide-up"
-    animate.leave="slide-down"
-  >…</div>
+<div
+  forDrawer
+  side="bottom"
+  [scaleBackground]="true"
+  (close)="open.set(false)"
+  animate.enter="slide-up"
+  animate.leave="slide-down"
+>
+  …
+</div>
 }
 ```
 
@@ -249,18 +286,18 @@ Each drawer also reflects its position in the stack as `data-depth` (`"0"` for t
 
 ```html
 @if (parentOpen()) {
-  <div forDrawer side="bottom" (close)="parentOpen.set(false)" animate.leave="slide-down">
-    <h2 forDrawerTitle>Filters</h2>
+<div forDrawer side="bottom" (close)="parentOpen.set(false)" animate.leave="slide-down">
+  <h2 forDrawerTitle>Filters</h2>
 
-    <button (click)="childOpen.set(true)">Date range</button>
+  <button (click)="childOpen.set(true)">Date range</button>
 
-    @if (childOpen()) {
-      <div forDrawer side="bottom" (close)="childOpen.set(false)" animate.leave="slide-down">
-        <h2 forDrawerTitle>Date range</h2>
-        …
-      </div>
-    }
+  @if (childOpen()) {
+  <div forDrawer side="bottom" (close)="childOpen.set(false)" animate.leave="slide-down">
+    <h2 forDrawerTitle>Date range</h2>
+    …
   </div>
+  }
+</div>
 }
 ```
 
@@ -306,14 +343,14 @@ The directive deliberately does **not** apply `[hidden]` to its surface. Wrap wi
 
 ```html
 @if (open()) {
-  <div
-    forDrawer
-    side="bottom"
-    (close)="open.set(false)"
-    animate.enter="slide-up"
-    animate.leave="slide-down"
-  >
-    …
-  </div>
+<div
+  forDrawer
+  side="bottom"
+  (close)="open.set(false)"
+  animate.enter="slide-up"
+  animate.leave="slide-down"
+>
+  …
+</div>
 }
 ```

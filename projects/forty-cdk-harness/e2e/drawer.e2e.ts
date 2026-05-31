@@ -104,7 +104,9 @@ test.describe('Drawer', () => {
   test('scaleBackground scales the wrapper while open and reverts on close', async ({ page }) => {
     await gotoFixture(page, 'drawer', { scaleBackground: '1' });
     const shell = el(page, 'shell');
-    const baseline = await shell.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width);
+    const baseline = await shell.evaluate(
+      (el) => (el as HTMLElement).getBoundingClientRect().width,
+    );
 
     await el(page, 'trigger').click();
     await expect(el(page, 'drawer')).toBeVisible();
@@ -118,9 +120,9 @@ test.describe('Drawer', () => {
     // not the host-binding mirror) is the only timing-stable signal that
     // the scale has been applied. Once it's set, asserting the painted
     // box shrank from baseline is straightforward.
-    await expect.poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform)).toMatch(
-      /scale\(/,
-    );
+    await expect
+      .poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform))
+      .toMatch(/scale\(/);
     const scaledWidth = await shell.evaluate(
       (el) => (el as HTMLElement).getBoundingClientRect().width,
     );
@@ -256,8 +258,8 @@ test.describe('Drawer', () => {
       .poll(async () =>
         page.evaluate(
           () =>
-            (window as unknown as { __fortyCdkHarnessErrors?: string[] })
-              .__fortyCdkHarnessErrors ?? [],
+            (window as unknown as { __fortyCdkHarnessErrors?: string[] }).__fortyCdkHarnessErrors ??
+            [],
         ),
       )
       .toEqual(expect.arrayContaining([expect.stringContaining('[forty-cdk/drawer]')]));
@@ -345,12 +347,16 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-release-will-close')).toHaveText('false');
       // No-snap-points branch on a no-close release: nextSnapPoint is null.
       await expect(el(page, 'last-release-next-snap')).toHaveText('null');
-      // `#clearDragTransform` runs on release, so the inline transform is
-      // wiped back to its empty baseline.
-      const transform = await el(page, 'drawer').evaluate(
-        (el) => (el as HTMLElement).style.transform,
-      );
-      expect(transform).toBe('');
+      // The drag delta is published on the --for-drawer-translate custom
+      // property; on a no-close release the offset returns to zero, so the
+      // property settles back to its "0px 0px" identity. `transform` is never
+      // touched by the drag (it is reserved for the scale / nested effect).
+      const styles = await el(page, 'drawer').evaluate((node) => ({
+        dragVar: (node as HTMLElement).style.getPropertyValue('--for-drawer-translate'),
+        transform: (node as HTMLElement).style.transform,
+      }));
+      expect(styles.dragVar).toBe('0px 0px');
+      expect(styles.transform).toBe('');
     });
 
     test('respects custom [closeThreshold]: 0.5 means a 30px drag on a 200px drawer does NOT dismiss', async ({
@@ -592,6 +598,70 @@ test.describe('Drawer', () => {
       await expect(el(page, 'active-snap')).toHaveText('148px');
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
+
+    test('snap point: drag away from the edge grows toward a larger snap', async ({ page }) => {
+      // Bidirectional drag (bug fix #1): without snap points the gesture is
+      // one-way toward the edge, but with them a drag *away* from the edge
+      // must arm and grow the surface. Starting at '0.5' (200px on a 400px
+      // drawer), an upward drag of 120px lands the position at
+      // 200 − (−115) = 315 — closest to the full snap (400) — and the
+      // away-from-edge flick velocity biases the same way, so the release
+      // resolves to '1'.
+      await gotoFixture(page, 'drawer', {
+        drawerHeight: '400',
+        snap: '148px,0.5,1',
+        initialSnap: '0.5',
+      });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('0.5');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: -120 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-release-next-snap')).toHaveText('1');
+      await expect(el(page, 'active-snap')).toHaveText('1');
+      await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '1');
+    });
+
+    test('without snapPoints, an upward drag does not arm or dismiss', async ({ page }) => {
+      // A plain (no-snap) drawer dismisses only toward its anchored edge. An
+      // upward drag is dropped by the swipe helper: no (drag) fires, no
+      // (close), and the drawer stays put.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: -80 });
+
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+    });
+
+    test('publishes --for-drawer-translate on the host, surviving a [style.*] host binding', async ({
+      page,
+    }) => {
+      // Hardening: the drag delta is published as the --for-drawer-translate
+      // custom property rather than a directly-written translate/transform,
+      // precisely so it is NOT dropped when the consumer binds a template
+      // [style.*] on the same host. The fixture binds [style.height.px], which
+      // would silently drop a directly-written inline `translate`; the custom
+      // property survives it. The directive seeds the property to its "0px 0px"
+      // identity on mount, so a clobber would surface as an empty read here —
+      // no gesture or layout needed (the delta-reflection and seamless release
+      // are covered by the snap-resolution and drag-direction specs above).
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      const dragVar = await el(page, 'drawer').evaluate((node) =>
+        (node as HTMLElement).style.getPropertyValue('--for-drawer-translate'),
+      );
+      expect(dragVar).toBe('0px 0px');
+    });
   });
 
   // Touch-only branch of the swipe-dismiss helper (see
@@ -620,9 +690,7 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-release-will-close')).toHaveText('true');
     });
 
-    test('@mobile flick velocity dismisses below the position threshold', async ({
-      page,
-    }) => {
+    test('@mobile flick velocity dismisses below the position threshold', async ({ page }) => {
       // The directive computes pointer velocity per `pointermove` as
       // `moveTowardEdge / dt` where `dt = now - lastEventTime`. The
       // release reads `#pointerVelocity` set by the LAST move, so the
