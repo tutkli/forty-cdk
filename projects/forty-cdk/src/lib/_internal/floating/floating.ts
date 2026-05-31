@@ -305,7 +305,11 @@ export function injectFloating(config: FloatingConfig): void {
     }
 
     const cleanup = autoUpdate(reference, el, () => {
-      computePosition(reference, el, { placement: requestedPlacement, middleware })
+      computePosition(reference, el, {
+        strategy: 'fixed',
+        placement: requestedPlacement,
+        middleware,
+      })
         .then(({ x, y, placement: resolvedPlacement, middlewareData }) => {
           // The element may have been hidden again between schedule and
           // resolution — bail so styles aren't clobbered after close.
