@@ -1,9 +1,17 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, ForToggle } from 'forty-cdk';
 
 import { AppNav } from './ui/app-nav';
+import { Icon } from './ui/icon';
 
 type Theme = 'light' | 'dark';
 
@@ -20,13 +28,16 @@ function readInitialTheme(): Theme {
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, AppNav],
+  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, AppNav, Icon],
   template: `
     <header class="topbar">
-      <button type="button" class="icon-btn" (click)="navOpen.set(true)" aria-label="Open navigation">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-          <path d="M2 4h12M2 8h12M2 12h12" />
-        </svg>
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="navOpen.set(true)"
+        aria-label="Open navigation"
+      >
+        <app-icon name="bars-3" />
       </button>
       <div class="brand">
         <span class="brand-name">forty-cdk</span>
@@ -40,7 +51,7 @@ function readInitialTheme(): Theme {
         (pressedChange)="setDark($event)"
         [attr.aria-label]="themeLabel()"
       >
-        {{ glyph() }}
+        <app-icon [name]="dark() ? 'sun' : 'moon'" />
       </button>
     </header>
 
@@ -56,7 +67,7 @@ function readInitialTheme(): Theme {
           (pressedChange)="setDark($event)"
           [attr.aria-label]="themeLabel()"
         >
-          {{ glyph() }}
+          <app-icon [name]="dark() ? 'sun' : 'moon'" />
         </button>
       </div>
       <app-nav />
@@ -145,7 +156,7 @@ function readInitialTheme(): Theme {
       cursor: pointer;
     }
 
-    .icon-btn svg {
+    .icon-btn app-icon {
       width: 18px;
       height: 18px;
     }
@@ -199,7 +210,6 @@ export class App {
   protected readonly navOpen = signal(false);
 
   protected readonly dark = computed(() => this.theme() === 'dark');
-  protected readonly glyph = computed(() => (this.dark() ? '☀' : '☾'));
   protected readonly themeLabel = computed(() =>
     this.dark() ? 'Switch to light theme' : 'Switch to dark theme',
   );

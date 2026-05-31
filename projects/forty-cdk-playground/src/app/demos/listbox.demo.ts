@@ -4,6 +4,7 @@ import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-c
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-listbox-demo',
@@ -15,6 +16,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForListboxOptionIndicator,
     ControlSelect,
     ControlSwitch,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -44,16 +46,7 @@ import { DemoLayout } from '../ui/demo-layout';
               >
                 {{ opt.label }}
                 <span forListboxOptionIndicator class="pg-listbox-indicator">
-                  <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                    <path
-                      d="M13 4.5 6.5 11 3 7.5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  <app-icon name="check" />
                 </span>
               </button>
             </li>

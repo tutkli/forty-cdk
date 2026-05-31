@@ -3,11 +3,19 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
 
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-disclosure-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForDisclosure, ForDisclosureTrigger, ForDisclosureContent, ControlSwitch],
+  imports: [
+    DemoLayout,
+    ForDisclosure,
+    ForDisclosureTrigger,
+    ForDisclosureContent,
+    ControlSwitch,
+    Icon,
+  ],
   template: `
     <playground-demo
       title="Disclosure"
@@ -18,16 +26,7 @@ import { DemoLayout } from '../ui/demo-layout';
         <div forDisclosure class="dis" [(open)]="open" [disabled]="disabled()">
           <button type="button" forDisclosureTrigger class="dis-trigger">
             <span>What is inside the box?</span>
-            <svg
-              class="chevron"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
+            <app-icon class="chevron" name="chevron-down" />
           </button>
           <div forDisclosureContent class="dis-content">
             <div class="dis-inner">

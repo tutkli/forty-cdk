@@ -4,6 +4,7 @@ import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } fro
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-tooltip-demo',
@@ -16,6 +17,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForTooltipArrow,
     ControlSelect,
     ControlSwitch,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -34,20 +36,7 @@ import { DemoLayout } from '../ui/demo-layout';
           [disabled]="disabled()"
         >
           <button forTooltipTrigger type="button" class="pg-btn tt-trigger" aria-label="More info">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5" />
-              <path d="M12 7.5h.01" />
-            </svg>
+            <app-icon name="information-circle" />
           </button>
           @if (open()) {
             <div forTooltipContent class="pg-tooltip" animate.enter="pg-pop-in">
@@ -91,6 +80,11 @@ import { DemoLayout } from '../ui/demo-layout';
       justify-content: center;
       padding: 0.5rem;
       color: var(--pg-text);
+    }
+
+    .tt-trigger app-icon {
+      width: 18px;
+      height: 18px;
     }
   `,
 })

@@ -3,11 +3,12 @@ import { ForCheckbox } from 'forty-cdk';
 
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-checkbox-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForCheckbox, ControlSwitch],
+  imports: [DemoLayout, ForCheckbox, ControlSwitch, Icon],
   template: `
     <playground-demo
       title="Checkbox"
@@ -23,16 +24,7 @@ import { DemoLayout } from '../ui/demo-layout';
           [disabled]="disabled()"
         >
           <span class="cb">
-            <svg
-              class="cb-icon cb-check"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              aria-hidden="true"
-            >
-              <path d="M3.5 8.5l3 3 6-6.5" />
-            </svg>
+            <app-icon class="cb-icon cb-check" name="check" [strokeWidth]="2.5" />
             <span class="cb-icon cb-dash" aria-hidden="true"></span>
           </span>
           I agree to the terms
@@ -92,7 +84,7 @@ import { DemoLayout } from '../ui/demo-layout';
       border-color: var(--pg-primary);
     }
 
-    .cb-icon {
+    .cb .cb-icon {
       display: none;
     }
 

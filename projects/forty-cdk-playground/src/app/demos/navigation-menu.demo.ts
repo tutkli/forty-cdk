@@ -13,6 +13,7 @@ import {
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-navigation-menu-demo',
@@ -29,6 +30,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForNavigationMenuViewport,
     ControlSelect,
     ControlSwitch,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -49,22 +51,7 @@ import { DemoLayout } from '../ui/demo-layout';
             <li forNavigationMenuItem value="products" class="pg-navmenu-item">
               <button forNavigationMenuTrigger class="pg-navmenu-trigger">
                 Products
-                <svg
-                  class="pg-navmenu-chevron"
-                  viewBox="0 0 16 16"
-                  width="13"
-                  height="13"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m4 6 4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <app-icon class="pg-navmenu-chevron" name="chevron-down" />
               </button>
               @if (open() === 'products') {
                 <div forNavigationMenuContent data-id="products" class="pg-navmenu-panel">
@@ -99,22 +86,7 @@ import { DemoLayout } from '../ui/demo-layout';
             <li forNavigationMenuItem value="solutions" class="pg-navmenu-item">
               <button forNavigationMenuTrigger class="pg-navmenu-trigger">
                 Solutions
-                <svg
-                  class="pg-navmenu-chevron"
-                  viewBox="0 0 16 16"
-                  width="13"
-                  height="13"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m4 6 4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <app-icon class="pg-navmenu-chevron" name="chevron-down" />
               </button>
               @if (open() === 'solutions') {
                 <div forNavigationMenuContent data-id="solutions" class="pg-navmenu-panel">
@@ -139,22 +111,7 @@ import { DemoLayout } from '../ui/demo-layout';
             <li forNavigationMenuItem value="company" class="pg-navmenu-item">
               <button forNavigationMenuTrigger class="pg-navmenu-trigger">
                 Company
-                <svg
-                  class="pg-navmenu-chevron"
-                  viewBox="0 0 16 16"
-                  width="13"
-                  height="13"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m4 6 4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <app-icon class="pg-navmenu-chevron" name="chevron-down" />
               </button>
               @if (open() === 'company') {
                 <div forNavigationMenuContent data-id="company" class="pg-navmenu-panel">

@@ -9,6 +9,7 @@ import {
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 interface AccordionEntry {
   readonly value: string;
@@ -27,6 +28,7 @@ interface AccordionEntry {
     ForAccordionContent,
     ControlSwitch,
     ControlSelect,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -55,20 +57,13 @@ interface AccordionEntry {
               <h3 class="acc-heading">
                 <button type="button" forAccordionTrigger class="acc-trigger">
                   <span>{{ item.title }}</span>
-                  <svg
-                    class="chevron"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 6l4 4 4-4" />
-                  </svg>
+                  <app-icon class="chevron" name="chevron-down" />
                 </button>
               </h3>
               <section forAccordionContent class="acc-content">
-                <div class="acc-inner"><p>{{ item.body }}</p></div>
+                <div class="acc-inner">
+                  <p>{{ item.body }}</p>
+                </div>
               </section>
             </div>
           }
@@ -79,10 +74,16 @@ interface AccordionEntry {
         <app-control-switch label="multiple" [(checked)]="multiple" />
         <app-control-switch label="collapsible" [(checked)]="collapsible" />
         <app-control-switch label="disable 3rd item" [(checked)]="disableThird" />
-        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-select
+          label="orientation"
+          [options]="orientationOptions"
+          [(value)]="orientationValue"
+        />
         <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
 
-        <p class="pg-state">open: <b>{{ value().length ? value().join(', ') : 'none' }}</b></p>
+        <p class="pg-state">
+          open: <b>{{ value().length ? value().join(', ') : 'none' }}</b>
+        </p>
       </div>
     </playground-demo>
   `,
@@ -224,5 +225,7 @@ export class AccordionDemo {
     this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
   );
   protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() => (this.dirValue() === 'rtl' ? 'rtl' : 'ltr'));
+  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
+    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
+  );
 }

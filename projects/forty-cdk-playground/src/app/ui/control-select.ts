@@ -7,6 +7,8 @@ import {
   ForSelectValue,
 } from 'forty-cdk';
 
+import { Icon } from './icon';
+
 export interface ControlOption {
   readonly value: string;
   readonly label: string;
@@ -17,23 +19,19 @@ let uid = 0;
 @Component({
   selector: 'app-control-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption],
+  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption, Icon],
   template: `
     <div class="pg-field">
       <span class="pg-label" [id]="labelId">{{ label() }}</span>
       <div forSelect [(open)]="open" [value]="selectValue()" (valueChange)="onChange($event)">
-        <button forSelectTrigger type="button" class="pg-select-trigger" [attr.aria-labelledby]="labelId">
+        <button
+          forSelectTrigger
+          type="button"
+          class="pg-select-trigger"
+          [attr.aria-labelledby]="labelId"
+        >
           <span forSelectValue></span>
-          <svg
-            class="pg-select-chevron"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            aria-hidden="true"
-          >
-            <path d="M4 6l4 4 4-4" />
-          </svg>
+          <app-icon class="pg-select-chevron" name="chevron-down" />
         </button>
         @if (open()) {
           <div forSelectContent class="pg-select-content">

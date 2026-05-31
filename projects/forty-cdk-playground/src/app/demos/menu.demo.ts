@@ -16,6 +16,7 @@ import {
 } from 'forty-cdk';
 
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-menu-demo',
@@ -35,6 +36,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForMenuGroupLabel,
     ForMenuSub,
     ForMenuSubTrigger,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -56,16 +58,7 @@ import { DemoLayout } from '../ui/demo-layout';
                   (select)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
-                    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                      <path
-                        d="M13 4.5 6.5 11 3 7.5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                    <app-icon name="check" />
                   </span>
                   Show toolbar
                 </button>
@@ -76,16 +69,7 @@ import { DemoLayout } from '../ui/demo-layout';
                   (select)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
-                    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                      <path
-                        d="M13 4.5 6.5 11 3 7.5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                    <app-icon name="check" />
                   </span>
                   Show sidebar
                 </button>
@@ -145,16 +129,7 @@ import { DemoLayout } from '../ui/demo-layout';
                   <span class="pg-menu-indicator"></span>
                   More tools
                   <span class="pg-menu-sub-arrow" aria-hidden="true">
-                    <svg viewBox="0 0 16 16" width="13" height="13">
-                      <path
-                        d="m6 4 4 4-4 4"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                    <app-icon name="chevron-right" />
                   </span>
                 </button>
                 @if (moreOpen()) {

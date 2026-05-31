@@ -14,6 +14,7 @@ import {
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { ControlSwitch } from '../ui/control-switch';
 import { DemoLayout } from '../ui/demo-layout';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-select-demo',
@@ -31,6 +32,7 @@ import { DemoLayout } from '../ui/demo-layout';
     ForSelectSeparator,
     ControlSelect,
     ControlSwitch,
+    Icon,
   ],
   template: `
     <playground-demo
@@ -54,16 +56,7 @@ import { DemoLayout } from '../ui/demo-layout';
         >
           <button forSelectTrigger type="button" class="pg-select-trigger">
             <span forSelectValue></span>
-            <svg
-              class="pg-select-chevron"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              aria-hidden="true"
-            >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
+            <app-icon class="pg-select-chevron" name="chevron-down" />
           </button>
           @if (open()) {
             <div forSelectContent class="pg-select-content" animate.enter="pg-pop-in">
@@ -78,16 +71,7 @@ import { DemoLayout } from '../ui/demo-layout';
                     [disabled]="opt.disabled ?? false"
                   >
                     <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
-                      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                        <path
-                          d="M13 4.5 6.5 11 3 7.5"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
+                      <app-icon name="check" />
                     </span>
                     {{ opt.label }}
                   </button>
@@ -107,16 +91,7 @@ import { DemoLayout } from '../ui/demo-layout';
                     [disabled]="opt.disabled ?? false"
                   >
                     <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
-                      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                        <path
-                          d="M13 4.5 6.5 11 3 7.5"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
+                      <app-icon name="check" />
                     </span>
                     {{ opt.label }}
                   </button>
