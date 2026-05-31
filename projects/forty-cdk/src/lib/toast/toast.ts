@@ -53,7 +53,7 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  *   `[swipeThreshold]` (default 50 px) to dismiss. While the gesture is
  *   live the host reflects `data-swipe="start" | "move" | "cancel" | "end"`,
  *   `data-swipe-direction`, and the CSS variables
- *   `--toast-swipe-movement-x` / `--toast-swipe-movement-y`.
+ *   `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y`.
  * - The host carries `data-state="open"` while alive (no `closed` state —
  *   the consumer unmounts on close).
  */
@@ -72,8 +72,8 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
     '[attr.data-paused]': 'paused() ? "" : null',
     '[attr.data-swipe]': 'swipeState()',
     '[attr.data-swipe-direction]': 'swipeActiveDirection()',
-    '[style.--toast-swipe-movement-x.px]': 'swipeMovementX()',
-    '[style.--toast-swipe-movement-y.px]': 'swipeMovementY()',
+    '[style.--for-toast-swipe-movement-x.px]': 'swipeMovementX()',
+    '[style.--for-toast-swipe-movement-y.px]': 'swipeMovementY()',
     '(pointerenter)': 'onPause("hover")',
     '(pointerleave)': 'onResume("hover")',
     '(focusin)': 'onPause("focus")',
@@ -109,7 +109,7 @@ export class ForToast implements ForToastContext {
    * and mouse drags. While the user is swiping, the host reflects
    * `data-swipe="start" | "move" | "cancel" | "end"` and
    * `data-swipe-direction` plus the CSS custom properties
-   * `--toast-swipe-movement-x` / `--toast-swipe-movement-y` so the
+   * `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y` so the
    * consumer can drive a transform-based animation entirely from CSS.
    */
   readonly swipeDirection = input<ForToastSwipeDirection>(null);

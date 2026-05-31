@@ -120,8 +120,8 @@ import {
         touch-action: none;
         pointer-events: auto;
         transform: translate(
-          var(--toast-swipe-movement-x, 0px),
-          var(--toast-swipe-movement-y, 0px)
+          var(--for-toast-swipe-movement-x, 0px),
+          var(--for-toast-swipe-movement-y, 0px)
         );
       }
       app-toast-fixture [forToast][data-swipe='cancel'] {

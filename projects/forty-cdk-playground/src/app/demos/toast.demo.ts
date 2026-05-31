@@ -18,7 +18,7 @@ import { DemoLayout } from '../ui/demo-layout';
   template: `
     <playground-demo
       title="Toast"
-      summary="Headless notifications driven programmatically: inject ForToastManager and call show({ title, … }) from anywhere, while a single <for-toast-viewport> renders the queue and owns the F6 focus hotkey. Toasts announce via role status/alert + aria-live per variant without stealing focus, auto-dismiss after a duration that pauses on hover/focus, and can be swiped away. The viewport renders the default title/description/action/close shape; styling here is pure [forToast] attribute selectors driven by data-variant and the --toast-swipe-movement hooks."
+      summary="Headless notifications driven programmatically: inject ForToastManager and call show({ title, … }) from anywhere, while a single <for-toast-viewport> renders the queue and owns the F6 focus hotkey. Toasts announce via role status/alert + aria-live per variant without stealing focus, auto-dismiss after a duration that pauses on hover/focus, and can be swiped away. The viewport renders the default title/description/action/close shape; styling here is pure [forToast] attribute selectors driven by data-variant and the --for-toast-swipe-movement hooks."
       apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/alert/"
     >
       <div demo class="toast-demo">

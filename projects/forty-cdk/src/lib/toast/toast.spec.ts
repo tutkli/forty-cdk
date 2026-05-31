@@ -488,8 +488,8 @@ describe('ForToast (declarative)', () => {
       r.flush();
       expect(t.getAttribute('data-swipe')).toBe('move');
       expect(t.getAttribute('data-swipe-direction')).toBe('right');
-      expect(t.style.getPropertyValue('--toast-swipe-movement-x')).toBe('20px');
-      expect(t.style.getPropertyValue('--toast-swipe-movement-y')).toBe('0px');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('20px');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-y')).toBe('0px');
       expect(r.instance.swipeStarts).toHaveLength(1);
       expect(r.instance.swipeMoves.length).toBeGreaterThanOrEqual(1);
     });
