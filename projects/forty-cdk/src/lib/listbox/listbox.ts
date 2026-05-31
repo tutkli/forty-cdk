@@ -30,10 +30,17 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
- * Implements `FormValueControl<readonly string[]>` from
+ * Implements `FormValueControl<readonly T[]>` from
  * `@angular/forms/signals` for `[formField]` auto-wiring.
  *
- * Selection is always modeled as `readonly string[]`:
+ * Generic over the option value type `T` (default `string`). When the
+ * consumer binds object items the directive infers `T` from `[(value)]` and
+ * `[forListboxOption][value]`; object identity is resolved by the
+ * consumer-supplied `[isItemEqualToValue]` and the hidden inputs serialize
+ * via `[itemToFormValue]`. Option display text is read from the rendered
+ * `textContent`, so no separate label function is needed.
+ *
+ * Selection is always modeled as `readonly T[]`:
  * - In single mode (`multiple=false`, default), the array has 0 or 1 element.
  * - In multi mode, any number of items can be selected.
  *
@@ -66,9 +73,9 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
   },
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],
 })
-export class ForListbox
+export class ForListbox<T = string>
   extends FormUiControlBase
-  implements FormValueControl<readonly string[]>, ForListboxContext
+  implements FormValueControl<readonly T[]>, ForListboxContext<T>
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
@@ -80,7 +87,28 @@ export class ForListbox
    * nav), never on consumer writes via `[(value)]` — observe transitions
    * without binding back.
    */
-  readonly value = model<readonly string[]>([]);
+  readonly value = model<readonly T[]>([]);
+
+  /**
+   * Compare two items for equality. Defaults to `===`, which is the
+   * correct identity for primitive `T` (e.g. strings, numbers). Override
+   * when binding object items so the directive can locate selected entries
+   * by id (or any other stable key) instead of by reference:
+   * `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   */
+  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+
+  /**
+   * Serialize an item for the hidden input that participates in native
+   * form submission. Defaults to identity for strings and to
+   * `JSON.stringify` for non-string items so the primitive works out of
+   * the box round-tripping objects. Override to emit a specific wire
+   * format — typically a per-item id — when the backend expects that:
+   * `[itemToFormValue]="(it) => it.id"`.
+   */
+  readonly itemToFormValue = input<(item: T) => string>((item) =>
+    typeof item === 'string' ? item : JSON.stringify(item),
+  );
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
@@ -90,7 +118,7 @@ export class ForListbox
    * `value()[0]`. The array-backed `value` model remains the source of
    * truth and the `FormValueControl` contract; this is a derived accessor.
    */
-  readonly selected = computed<string | null>(() => {
+  readonly selected = computed<T | null>(() => {
     const values = this.value();
     return values.length === 1 ? values[0]! : null;
   });
@@ -121,7 +149,7 @@ export class ForListbox
   readonly roving = new RovingTabindex();
   readonly #typeahead = injectTypeahead();
 
-  readonly #options = new Collection<ForListboxOptionHandle>();
+  readonly #options = new Collection<ForListboxOptionHandle<T>>();
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
@@ -134,24 +162,29 @@ export class ForListbox
 
   constructor() {
     super();
-    injectHiddenInput({
+    injectHiddenInput<T>({
       name: this.name,
       values: this.value,
+      serialize: (item) => this.itemToFormValue()(item),
       disabled: this.disabled,
     });
   }
 
-  isSelected(v: string): boolean {
-    return this.value().includes(v);
+  isSelected(v: T): boolean {
+    const equals = this.isItemEqualToValue();
+    return this.value().some((x) => equals(x, v));
   }
 
-  activate(v: string): void {
+  activate(v: T): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
+    const equals = this.isItemEqualToValue();
     if (this.multiple()) {
       const current = this.value();
-      const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+      const next = current.some((x) => equals(x, v))
+        ? current.filter((x) => !equals(x, v))
+        : [...current, v];
       this.value.set(next);
     } else {
       // Single-mode: idempotent select (no deselect on click of selected).
@@ -187,8 +220,13 @@ export class ForListbox
       return;
     }
     const v = target.value();
+    const equals = this.isItemEqualToValue();
     const current = this.value();
-    this.value.set(current.includes(v) ? current.filter((x) => x !== v) : [...current, v]);
+    this.value.set(
+      current.some((x) => equals(x, v))
+        ? current.filter((x) => !equals(x, v))
+        : [...current, v],
+    );
   }
 
   selectRangeToFocused(currentOption: HTMLElement): void {
@@ -204,22 +242,26 @@ export class ForListbox
     const start = anchor === null || anchor >= options.length ? currentIndex : anchor;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
-    const next = new Set(this.value());
+    const equals = this.isItemEqualToValue();
+    const next = [...this.value()];
     for (let i = lo; i <= hi; i++) {
       const opt = options[i];
       if (!opt || opt.disabled()) {
         continue;
       }
-      next.add(opt.value());
+      const v = opt.value();
+      if (!next.some((x) => equals(x, v))) {
+        next.push(v);
+      }
     }
-    this.value.set([...next]);
+    this.value.set(next);
   }
 
   selectAll(): void {
     if (this.disabled() || this.readonly() || !this.multiple()) {
       return;
     }
-    const enabled: string[] = [];
+    const enabled: T[] = [];
     for (const opt of this.#options.items()) {
       if (opt.disabled()) {
         continue;
@@ -229,8 +271,9 @@ export class ForListbox
     if (enabled.length === 0) {
       return;
     }
-    const current = new Set(this.value());
-    const allSelected = enabled.every((v) => current.has(v));
+    const equals = this.isItemEqualToValue();
+    const current = this.value();
+    const allSelected = enabled.every((v) => current.some((x) => equals(x, v)));
     this.value.set(allSelected ? [] : enabled);
   }
 
@@ -245,16 +288,20 @@ export class ForListbox
     }
     const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
 
-    const next = new Set(this.value());
+    const equals = this.isItemEqualToValue();
+    const next = [...this.value()];
     let firstEnabled: HTMLElement | null = null;
     let lastEnabled: HTMLElement | null = null;
-    // Walk forward so the resulting Set preserves DOM order (insertion order).
+    // Walk forward so the resulting array preserves DOM order (insertion order).
     for (let i = lo; i <= hi; i++) {
       const opt = options[i];
       if (!opt || opt.disabled()) {
         continue;
       }
-      next.add(opt.value());
+      const v = opt.value();
+      if (!next.some((x) => equals(x, v))) {
+        next.push(v);
+      }
       if (firstEnabled === null) {
         firstEnabled = opt.host;
       }
@@ -267,7 +314,7 @@ export class ForListbox
     if (this.readonly()) {
       return;
     }
-    this.value.set([...next]);
+    this.value.set(next);
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
@@ -322,11 +369,11 @@ export class ForListbox
     return this.#firstEnabledHost() === el;
   }
 
-  registerOption(handle: ForListboxOptionHandle): void {
+  registerOption(handle: ForListboxOptionHandle<T>): void {
     this.#options.register(handle);
   }
 
-  unregisterOption(handle: ForListboxOptionHandle): void {
+  unregisterOption(handle: ForListboxOptionHandle<T>): void {
     this.#options.unregister(handle);
   }
 
@@ -338,8 +385,9 @@ export class ForListbox
     this.touched.set(true);
   }
 
-  #setAnchorByValue(v: string): void {
-    const idx = this.#options.items().findIndex((o) => o.value() === v);
+  #setAnchorByValue(v: T): void {
+    const equals = this.isItemEqualToValue();
+    const idx = this.#options.items().findIndex((o) => equals(o.value(), v));
     this.#anchorIndex.set(idx >= 0 ? idx : null);
   }
 }

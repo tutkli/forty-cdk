@@ -1114,6 +1114,152 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('object values', () => {
+    interface City {
+      id: number;
+      name: string;
+    }
+
+    const PARIS: City = { id: 1, name: 'Paris' };
+    const BERLIN: City = { id: 2, name: 'Berlin' };
+    const TOKYO: City = { id: 3, name: 'Tokyo' };
+
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul
+          forListbox
+          #lb="forListbox"
+          [(value)]="picked"
+          [multiple]="isMulti()"
+          [isItemEqualToValue]="byId"
+          [itemToFormValue]="toId"
+        >
+          @for (city of cities; track city.id) {
+            <li>
+              <button type="button" forListboxOption [value]="city" [attr.data-test-id]="city.name">
+                {{ city.name }}
+              </button>
+            </li>
+          }
+        </ul>
+        <output data-testid="selected">{{ lb.selected()?.name ?? 'none' }}</output>
+      `,
+    })
+    class ObjectHost {
+      readonly cities: readonly City[] = [PARIS, BERLIN, TOKYO];
+      readonly picked = signal<readonly City[]>([]);
+      readonly isMulti = signal(false);
+      readonly byId = (a: City, b: City) => a.id === b.id;
+      readonly toId = (c: City) => String(c.id);
+    }
+
+    const selectedText = (host: HTMLElement) =>
+      host.querySelector('[data-testid="selected"]')!.textContent;
+
+    it('selects an object value on click and exposes it via the selected accessor', () => {
+      const { el, fixture, flush } = renderHost(ObjectHost);
+
+      optOf(el, 'Berlin').click();
+      flush();
+
+      expect(fixture.componentInstance.picked()).toEqual([BERLIN]);
+      expect(selectedText(el)).toBe('Berlin');
+    });
+
+    it('matches selection by custom equality even when the bound value is a different reference', () => {
+      const { el, fixture, flush } = renderHost(ObjectHost);
+      // A distinct object equal-by-id to BERLIN — `aria-selected` must resolve
+      // through `isItemEqualToValue`, not reference identity.
+      fixture.componentInstance.picked.set([{ id: 2, name: 'Berlin' }]);
+      flush();
+
+      expect(optOf(el, 'Berlin').getAttribute('aria-selected')).toBe('true');
+      expect(optOf(el, 'Berlin').getAttribute('data-state')).toBe('checked');
+      expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('toggles object values in/out by id in multi mode', () => {
+      const { el, fixture, flush } = renderHost(ObjectHost);
+      fixture.componentInstance.isMulti.set(true);
+      flush();
+
+      optOf(el, 'Paris').click();
+      optOf(el, 'Tokyo').click();
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([PARIS, TOKYO]);
+
+      optOf(el, 'Paris').click();
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual([TOKYO]);
+    });
+
+    it('dedupes object values by id under Ctrl+A select-all', () => {
+      const { el, fixture, flush } = renderHost(ObjectHost);
+      fixture.componentInstance.isMulti.set(true);
+      // Seed with an equal-by-id duplicate of PARIS that is a distinct
+      // reference — select-all must not add a second Paris entry.
+      fixture.componentInstance.picked.set([{ id: 1, name: 'Paris' }]);
+      flush();
+
+      optOf(el, 'Berlin').focus();
+      pressKey(optOf(el, 'Berlin'), 'a', { ctrlKey: true });
+      flush();
+
+      const ids = fixture.componentInstance.picked().map((c) => c.id);
+      expect(ids).toEqual([1, 2, 3]);
+    });
+
+    it('serializes object values into native form submission via itemToFormValue', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <form>
+            <ul forListbox multiple name="cities" [(value)]="picked" [itemToFormValue]="toId">
+              <li>
+                <button type="button" forListboxOption [value]="paris" data-test-id="Paris">
+                  Paris
+                </button>
+              </li>
+              <li>
+                <button type="button" forListboxOption [value]="berlin" data-test-id="Berlin">
+                  Berlin
+                </button>
+              </li>
+            </ul>
+          </form>
+        `,
+      })
+      class ObjectFormHost {
+        readonly paris = PARIS;
+        readonly berlin = BERLIN;
+        readonly picked = signal<readonly City[]>([PARIS, BERLIN]);
+        readonly toId = (c: City) => String(c.id);
+      }
+
+      const { el } = renderHost(ObjectFormHost);
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([
+        ['cities', '1'],
+        ['cities', '2'],
+      ]);
+    });
+
+    it('keeps object selection reactive without Zone.js', () => {
+      const { el, fixture, flush } = renderHost(ObjectHost);
+
+      fixture.componentInstance.picked.set([PARIS]);
+      flush();
+      expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('true');
+      expect(selectedText(el)).toBe('Paris');
+
+      fixture.componentInstance.picked.set([TOKYO]);
+      flush();
+      expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('false');
+      expect(optOf(el, 'Tokyo').getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);

@@ -31,9 +31,13 @@ export type ForSelectInitialFocus = 'first' | 'last' | 'selected';
  * Handle every `[forSelectOption]` registers with the root. The collection
  * orders entries by DOM document order so groups, separators, and `@for`
  * loops don't perturb keyboard navigation.
+ *
+ * Generic over the option value type `T` (default `unknown` at the contract
+ * level; `string` at the public root). The handle carries the raw value so
+ * the root can match it against `value()` via `isItemEqualToValue`.
  */
-export interface ForSelectOptionHandle extends CollectionHandle {
-  readonly value: Signal<string>;
+export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
+  readonly value: Signal<T>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -41,9 +45,16 @@ export interface ForSelectOptionHandle extends CollectionHandle {
  * Coordination contract owned by `[forSelect]`. Trigger, content, value,
  * options, groups and separators all inject this token to read state and
  * delegate behavior — they don't import the root class directly.
+ *
+ * Generic over the option value type `T` (default `string` at the public
+ * root). When a consumer binds object items the directive infers `T` from
+ * `[(value)]` and the per-piece signatures specialize accordingly. Items are
+ * compared via the consumer-provided `isItemEqualToValue` and serialized for
+ * the form's hidden inputs via `itemToFormValue`; option text labels are
+ * still read from the rendered `textContent`.
  */
-export interface ForSelectContext {
-  readonly value: ModelSignal<readonly string[]>;
+export interface ForSelectContext<T = unknown> {
+  readonly value: ModelSignal<readonly T[]>;
   readonly open: ModelSignal<boolean>;
   readonly multiple: Signal<boolean>;
 
@@ -87,6 +98,11 @@ export interface ForSelectContext {
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
 
+  /** Compare two items for equality. Defaults to `===`; overridden for object values. */
+  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
+  readonly itemToFormValue: Signal<(item: T) => string>;
+
   /** The button trigger — passed to floating-ui as anchor and exempt from outside-pointer checks. */
   readonly anchor: Signal<ReferenceElement | null>;
   readonly trigger: Signal<HTMLElement | null>;
@@ -98,11 +114,11 @@ export interface ForSelectContext {
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
 
-  registerOption(handle: ForSelectOptionHandle): void;
-  unregisterOption(handle: ForSelectOptionHandle): void;
+  registerOption(handle: ForSelectOptionHandle<T>): void;
+  unregisterOption(handle: ForSelectOptionHandle<T>): void;
 
   /** All registered options in DOM order. */
-  readonly options: Signal<readonly ForSelectOptionHandle[]>;
+  readonly options: Signal<readonly ForSelectOptionHandle<T>[]>;
   /** Trimmed `textContent` of the options whose value is in `value()`, in selection order. */
   readonly selectedLabels: Signal<readonly string[]>;
   /**
@@ -113,9 +129,9 @@ export interface ForSelectContext {
    */
   readonly selectedOptionEl: Signal<HTMLElement | null>;
 
-  isSelected(value: string): boolean;
+  isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */
-  activate(value: string): void;
+  activate(value: T): void;
   /** Move focus inside the open listbox in response to an arrow / Home / End key. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
   /** Open-state typeahead: focus the first enabled option whose text matches the buffered prefix. */
@@ -151,7 +167,7 @@ export interface ForSelectContext {
    * (or previous) focusable in tab order. Multi-mode skips the value-set
    * — selection toggles already happened via Space / Enter / click.
    */
-  commitOnTab(value: string): void;
+  commitOnTab(value: T): void;
 
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(event: PointerEvent): void;
@@ -173,10 +189,10 @@ export interface ForSelectContext {
 
 export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELECT_CONTEXT');
 
-export function injectSelectContext(piece: string): ForSelectContext {
+export function injectSelectContext<T = unknown>(piece: string): ForSelectContext<T> {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/select] ${piece} must be used inside a [forSelect] element.`);
   }
-  return ctx;
+  return ctx as unknown as ForSelectContext<T>;
 }

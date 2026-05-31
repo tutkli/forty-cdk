@@ -3,9 +3,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 
-export interface ForListboxOptionHandle {
+export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  readonly value: Signal<T>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -13,9 +13,16 @@ export interface ForListboxOptionHandle {
  * Coordination contract owned by `ForListbox`. Each `ForListboxOption`
  * registers a handle on init so the group can react to disabled changes,
  * compute the first-enabled tab entry, and run typeahead matching.
+ *
+ * Generic over the option value type `T` (default `string` at the public
+ * root). When a consumer binds object items the directive infers `T` from
+ * `[(value)]` and `[forListboxOption][value]`; object identity is resolved
+ * by the consumer-supplied `isItemEqualToValue` and the form's hidden inputs
+ * serialize via `itemToFormValue`. Option text labels are still read from the
+ * rendered `textContent`.
  */
-export interface ForListboxContext {
-  readonly value: Signal<readonly string[]>;
+export interface ForListboxContext<T = unknown> {
+  readonly value: Signal<readonly T[]>;
   readonly multiple: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
@@ -24,9 +31,14 @@ export interface ForListboxContext {
   readonly selectionFollowsFocus: Signal<boolean>;
   readonly roving: RovingTabindex;
 
-  isSelected(value: string): boolean;
+  /** Compare two items for equality. Defaults to `===`; overridden for object values. */
+  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
+  readonly itemToFormValue: Signal<(item: T) => string>;
+
+  isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace in single-mode. No-op on disabled / readonly. */
-  activate(value: string): void;
+  activate(value: T): void;
   /** Move focus from `currentOption` according to `action`. May also select if `selectionFollowsFocus` is on. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
   /**
@@ -62,20 +74,20 @@ export interface ForListboxContext {
   handleTypeahead(event: KeyboardEvent): boolean;
   isFirstEnabledOption(el: HTMLElement): boolean;
 
-  registerOption(handle: ForListboxOptionHandle): void;
-  unregisterOption(handle: ForListboxOptionHandle): void;
+  registerOption(handle: ForListboxOptionHandle<T>): void;
+  unregisterOption(handle: ForListboxOptionHandle<T>): void;
 }
 
 export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>(
   'FOR_LISTBOX_CONTEXT',
 );
 
-export function injectListboxContext(piece: string): ForListboxContext {
+export function injectListboxContext<T = unknown>(piece: string): ForListboxContext<T> {
   const ctx = inject(FOR_LISTBOX_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/listbox] ${piece} must be used inside a [forListbox] element.`,
     );
   }
-  return ctx;
+  return ctx as unknown as ForListboxContext<T>;
 }
