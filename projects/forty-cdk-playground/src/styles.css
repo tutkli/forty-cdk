@@ -71,6 +71,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * The app shell (see app.ts) carries [forDrawerWrapper] and is the scroll
+ * container instead of <body>, so the scale coordinator's transform-origin:
+ * top aligns with the viewport top (a body-scrolled page would jump by
+ * scrollTop * (1 - scale) when scaled). Moving the scroller off <body> defeats
+ * the library's BodyScrollLock (it locks <body>), so this bridge re-locks the
+ * shell whenever any overlay locks <body>.
+ */
+body[style*='overflow: hidden'] .app-shell {
+  overflow: hidden;
+}
+
 h1,
 h2,
 h3 {
@@ -516,6 +528,22 @@ a.pg-nav-link.active {
   backdrop-filter: blur(2px);
 }
 
+/*
+ * Vaul-style backdrop fade: the directive publishes the live drag progress
+ * toward the edge as --for-drawer-drag-progress (0 at rest → 1 dragged
+ * off-screen) and mirrors data-dragging. Fade the backdrop out as the sheet
+ * is swiped away; kill the transition mid-gesture so it tracks the pointer.
+ * The snap --fade variant is excluded — it owns opacity via data-fade-from-active.
+ */
+.pg-drawer-backdrop:not(.pg-drawer-backdrop--fade) {
+  opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+  transition: opacity 0.3s ease;
+}
+
+.pg-drawer-backdrop[data-dragging] {
+  transition: none;
+}
+
 .pg-drawer-backdrop--fade {
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -537,6 +565,13 @@ a.pg-nav-link.active {
   color: var(--pg-text);
   box-shadow: var(--pg-shadow);
   translate: var(--for-drawer-translate, 0px 0px);
+  /*
+   * A mouse drag on selectable text starts a native text selection that
+   * fights the swipe gesture (and can block it entirely). Match Vaul: the
+   * sheet chrome is not selectable; selectable content opts back in below.
+   */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .pg-drawer:not([data-active-snap-point])[data-side='bottom'] {
@@ -573,6 +608,12 @@ a.pg-nav-link.active {
 
 .pg-drawer[data-scale-background] {
   border-radius: var(--pg-radius);
+}
+
+/* Tall bottom sheet (scale-background demo): a near-full sheet makes the
+   receding background read better. Actions sit at the bottom via margin-top:auto. */
+.pg-drawer--tall:not([data-active-snap-point])[data-side='bottom'] {
+  height: 85vh;
 }
 
 .pg-drawer[data-active-snap-point] {
@@ -643,6 +684,9 @@ a.pg-nav-link.active {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Scrollable content is selectable again — inner scroll already pre-empts the swipe. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .pg-row {

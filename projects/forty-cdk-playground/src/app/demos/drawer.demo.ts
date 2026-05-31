@@ -12,7 +12,6 @@ import {
   type ForDrawerSnapPoint,
   ForDrawerTitle,
   ForDrawerTrigger,
-  ForDrawerWrapper,
   injectDrawerData,
 } from 'forty-cdk';
 
@@ -30,7 +29,13 @@ type ConfirmResult = 'confirm' | 'cancel';
 @Component({
   selector: 'app-confirm-drawer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDrawerBackdrop, ForDrawerHandle, ForDrawerTitle, ForDrawerDescription, ForDrawerClose],
+  imports: [
+    ForDrawerBackdrop,
+    ForDrawerHandle,
+    ForDrawerTitle,
+    ForDrawerDescription,
+    ForDrawerClose,
+  ],
   template: `
     <div
       forDrawerBackdrop
@@ -69,7 +74,6 @@ export class ConfirmDrawer {
     ForDrawerTitle,
     ForDrawerDescription,
     ForDrawerClose,
-    ForDrawerWrapper,
     ControlSwitch,
     ControlSelect,
   ],
@@ -98,7 +102,9 @@ export class ConfirmDrawer {
         <app-control-switch label="handleOnly" [(checked)]="basicHandleOnly" />
         <app-control-switch label="swipeToDismiss" [(checked)]="basicSwipe" />
 
-        <p class="pg-state">last close: <b>{{ basicReason() ?? '—' }}</b></p>
+        <p class="pg-state">
+          last close: <b>{{ basicReason() ?? '—' }}</b>
+        </p>
       </div>
     </playground-demo>
 
@@ -121,38 +127,40 @@ export class ConfirmDrawer {
       <div controls class="pg-controls">
         <app-control-switch label='fade backdrop from "half"' [(checked)]="snapFade" />
 
-        <p class="pg-state">active snap: <b>{{ snapActiveDisplay() }}</b></p>
-        <p class="pg-hint">Jump-to-snap buttons live inside the sheet — clicking outside a modal drawer dismisses it.</p>
+        <p class="pg-state">
+          active snap: <b>{{ snapActiveDisplay() }}</b>
+        </p>
+        <p class="pg-hint">
+          Jump-to-snap buttons live inside the sheet — clicking outside a modal drawer dismisses it.
+        </p>
       </div>
     </playground-demo>
 
     <playground-demo
       title="Scale background"
-      summary="Vaul's shouldScaleBackground: the [forDrawerWrapper] shell scales and rounds its corners behind the drawer. In a real app the wrapper wraps the whole screen; here it wraps the panel below so the effect stays self-contained."
+      summary="Vaul's shouldScaleBackground: [forDrawerWrapper] lives on the playground app shell, so opening this drawer scales and rounds the corners of the whole screen behind it — exactly the real-app effect. Watch the entire playground recede."
       apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/"
     >
       <div demo class="pg-center">
-        <div class="pg-scale-stage" forDrawerWrapper>
-          <div class="pg-scale-screen">
-            <span class="pg-scale-badge">Your app</span>
-            <h3>App screen</h3>
-            <p>This panel is wrapped by <code>[forDrawerWrapper]</code>.</p>
-            <button
-              forDrawerTrigger
-              class="pg-btn pg-btn--primary"
-              [(open)]="scaleOpen"
-              controls="pg-scale-drawer"
-            >
-              Open drawer
-            </button>
-          </div>
-        </div>
+        <button
+          forDrawerTrigger
+          class="pg-btn pg-btn--primary"
+          [(open)]="scaleOpen"
+          controls="pg-scale-drawer"
+        >
+          Open drawer
+        </button>
       </div>
 
       <div controls class="pg-controls">
         <app-control-switch label="setBackgroundColorOnScale" [(checked)]="scaleBgColor" />
 
-        <p class="pg-state">drawer: <b>{{ scaleOpen() ? 'open' : 'closed' }}</b></p>
+        <p class="pg-state">
+          drawer: <b>{{ scaleOpen() ? 'open' : 'closed' }}</b>
+        </p>
+        <p class="pg-hint">
+          The wrapper is on the app shell — the whole page scales behind the sheet.
+        </p>
       </div>
     </playground-demo>
 
@@ -173,7 +181,10 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <p class="pg-state">parent: <b>{{ nestedOpen() ? 'open' : 'closed' }}</b><br />child: <b>{{ nestedChildOpen() ? 'open' : 'closed' }}</b></p>
+        <p class="pg-state">
+          parent: <b>{{ nestedOpen() ? 'open' : 'closed' }}</b
+          ><br />child: <b>{{ nestedChildOpen() ? 'open' : 'closed' }}</b>
+        </p>
       </div>
     </playground-demo>
 
@@ -189,7 +200,9 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <p class="pg-state">last result: <b>{{ confirmResult() }}</b></p>
+        <p class="pg-state">
+          last result: <b>{{ confirmResult() }}</b>
+        </p>
       </div>
     </playground-demo>
 
@@ -263,7 +276,7 @@ export class ConfirmDrawer {
       <div
         forDrawer
         id="pg-scale-drawer"
-        class="pg-drawer"
+        class="pg-drawer pg-drawer--tall"
         [scaleBackground]="true"
         [setBackgroundColorOnScale]="scaleBgColor()"
         (close)="scaleOpen.set(false)"
@@ -335,47 +348,6 @@ export class ConfirmDrawer {
       display: flex;
       justify-content: center;
     }
-
-    .pg-scale-stage {
-      width: 100%;
-      max-width: 420px;
-      border-radius: var(--pg-radius);
-      border: 1px solid var(--pg-border);
-      background: var(--pg-surface-2);
-      overflow: hidden;
-    }
-
-    .pg-scale-screen {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.55rem;
-      min-height: 280px;
-      padding: 1.75rem;
-    }
-
-    .pg-scale-badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
-    }
-
-    .pg-scale-screen h3 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-
-    .pg-scale-screen p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--pg-text-muted);
-    }
-
-    .pg-scale-screen button {
-      margin-top: 0.5rem;
-    }
   `,
 })
 export class DrawerDemo {
@@ -410,7 +382,11 @@ export class DrawerDemo {
   protected readonly peek: ForDrawerSnapPoint = '148px';
   protected readonly half: ForDrawerSnapPoint = 0.5;
   protected readonly full: ForDrawerSnapPoint = 1;
-  protected readonly snapPoints: ReadonlyArray<ForDrawerSnapPoint> = [this.peek, this.half, this.full];
+  protected readonly snapPoints: ReadonlyArray<ForDrawerSnapPoint> = [
+    this.peek,
+    this.half,
+    this.full,
+  ];
   protected readonly snapItems = Array.from({ length: 14 }, (_, i) => `List item ${i + 1}`);
 
   protected readonly snapOpen = signal(false);
@@ -422,7 +398,7 @@ export class DrawerDemo {
   });
 
   protected readonly scaleOpen = signal(false);
-  protected readonly scaleBgColor = signal(false);
+  protected readonly scaleBgColor = signal(true);
 
   protected readonly nestedOpen = signal(false);
   protected readonly nestedChildOpen = signal(false);

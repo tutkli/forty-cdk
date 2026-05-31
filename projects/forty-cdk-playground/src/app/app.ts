@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ForDrawer, ForDrawerBackdrop, ForToggle } from 'forty-cdk';
+import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, ForToggle } from 'forty-cdk';
 
 import { AppNav } from './ui/app-nav';
 import { Icon } from './ui/icon';
@@ -28,37 +28,22 @@ function readInitialTheme(): Theme {
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, AppNav, Icon],
+  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, AppNav, Icon],
   template: `
-    <header class="topbar">
-      <button
-        type="button"
-        class="icon-btn"
-        (click)="navOpen.set(true)"
-        aria-label="Open navigation"
-      >
-        <app-icon name="bars-3" />
-      </button>
-      <div class="brand">
-        <span class="brand-name">forty-cdk</span>
-        <span class="brand-tag">playground</span>
-      </div>
-      <button
-        forToggle
-        type="button"
-        class="icon-btn theme"
-        [pressed]="dark()"
-        (pressedChange)="setDark($event)"
-        [attr.aria-label]="themeLabel()"
-      >
-        <app-icon [name]="dark() ? 'sun' : 'moon'" />
-      </button>
-    </header>
-
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-name">forty-cdk</span>
-        <span class="brand-tag">playground</span>
+    <div class="app-shell" forDrawerWrapper>
+      <header class="topbar">
+        <button
+          type="button"
+          class="icon-btn"
+          (click)="navOpen.set(true)"
+          aria-label="Open navigation"
+        >
+          <app-icon name="bars-3" />
+        </button>
+        <div class="brand">
+          <span class="brand-name">forty-cdk</span>
+          <span class="brand-tag">playground</span>
+        </div>
         <button
           forToggle
           type="button"
@@ -69,13 +54,30 @@ function readInitialTheme(): Theme {
         >
           <app-icon [name]="dark() ? 'sun' : 'moon'" />
         </button>
-      </div>
-      <app-nav />
-    </aside>
+      </header>
 
-    <main class="content">
-      <router-outlet />
-    </main>
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-name">forty-cdk</span>
+          <span class="brand-tag">playground</span>
+          <button
+            forToggle
+            type="button"
+            class="icon-btn theme"
+            [pressed]="dark()"
+            (pressedChange)="setDark($event)"
+            [attr.aria-label]="themeLabel()"
+          >
+            <app-icon [name]="dark() ? 'sun' : 'moon'" />
+          </button>
+        </div>
+        <app-nav />
+      </aside>
+
+      <main class="content">
+        <router-outlet />
+      </main>
+    </div>
 
     @if (navOpen()) {
       <div
@@ -100,7 +102,23 @@ function readInitialTheme(): Theme {
   styles: `
     :host {
       display: block;
-      min-height: 100vh;
+    }
+
+    /*
+     * The shell carries [forDrawerWrapper], so [scaleBackground] drawers
+     * transform it. transform breaks position: fixed (fixed children anchor
+     * to the transformed ancestor and reposition against scroll), so the
+     * layout is normal-flow grid with a position: sticky sidebar — both scale
+     * uniformly with the shell instead of escaping it. The shell is also the
+     * scroll container (see styles.css for why + the BodyScrollLock bridge).
+     */
+    .app-shell {
+      height: 100dvh;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+      display: grid;
+      grid-template-columns: var(--pg-sidebar-width) 1fr;
+      grid-template-areas: 'sidebar content';
     }
 
     .topbar {
@@ -108,11 +126,11 @@ function readInitialTheme(): Theme {
     }
 
     .sidebar {
-      position: fixed;
+      grid-area: sidebar;
+      position: sticky;
       top: 0;
-      left: 0;
-      width: var(--pg-sidebar-width);
-      height: 100vh;
+      align-self: start;
+      height: 100dvh;
       overflow-y: auto;
       padding: 1rem 0.75rem 2rem;
       background: var(--pg-surface);
@@ -171,12 +189,18 @@ function readInitialTheme(): Theme {
     }
 
     .content {
-      margin-left: var(--pg-sidebar-width);
+      grid-area: content;
       padding: 2.5rem 2rem 4rem;
     }
 
     @media (max-width: 820px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+        grid-template-areas: 'topbar' 'content';
+      }
+
       .topbar {
+        grid-area: topbar;
         position: sticky;
         top: 0;
         z-index: 40;
@@ -197,7 +221,6 @@ function readInitialTheme(): Theme {
       }
 
       .content {
-        margin-left: 0;
         padding: 1.5rem 1rem 3rem;
       }
     }
