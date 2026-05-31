@@ -51,6 +51,7 @@ import { Icon } from '../ui/icon';
   styles: `
     .dis {
       width: min(440px, 100%);
+      margin-inline: auto;
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);

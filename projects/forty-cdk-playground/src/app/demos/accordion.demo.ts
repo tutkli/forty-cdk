@@ -90,6 +90,7 @@ interface AccordionEntry {
   styles: `
     .acc-root {
       width: min(460px, 100%);
+      margin-inline: auto;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
