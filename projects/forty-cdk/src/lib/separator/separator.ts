@@ -59,7 +59,7 @@ import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard
     '[attr.aria-controls]': 'focusable() ? controls() : null',
     '[attr.aria-disabled]': 'focusable() && disabled() ? "true" : null',
     '[attr.data-disabled]': 'focusable() && disabled() ? "" : null',
-    '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '[attr.dir]': 'dir()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
     '(pointerdown)': 'onPointerDown($event)',

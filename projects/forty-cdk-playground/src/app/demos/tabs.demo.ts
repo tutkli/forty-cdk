@@ -36,7 +36,6 @@ interface TabEntry {
           [(value)]="value"
           [orientation]="orientation()"
           [dir]="dir()"
-          [attr.dir]="dir()"
           [activationMode]="activationMode()"
           [loop]="loop()"
           [disabled]="disabled()"

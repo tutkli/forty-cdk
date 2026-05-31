@@ -66,6 +66,7 @@ import {
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_TOGGLE_GROUP_CONTEXT, useExisting: ForToggleGroup }],

@@ -656,6 +656,17 @@ describe('ForListbox', () => {
   });
 
   describe('horizontal & RTL', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      const lb = el.querySelector('[forListbox]')!;
+
+      expect(lb.getAttribute('dir')).toBe('ltr');
+
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      expect(lb.getAttribute('dir')).toBe('rtl');
+    });
+
     it('uses ArrowLeft / ArrowRight in horizontal', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.orientation.set('horizontal');

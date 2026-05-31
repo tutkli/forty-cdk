@@ -54,6 +54,7 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
+    '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: ForRadioGroup }],

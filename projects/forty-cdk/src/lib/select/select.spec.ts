@@ -520,7 +520,7 @@ describe('ForSelect', () => {
     @Component({
       imports: BASE_IMPORTS,
       template: `
-        <div forSelect [(open)]="open" [orientation]="orientation()" dir="rtl">
+        <div forSelect [(open)]="open" [orientation]="orientation()" [dir]="dir()">
           <button forSelectTrigger>open</button>
           @if (open()) {
             <div forSelectContent>
@@ -535,7 +535,19 @@ describe('ForSelect', () => {
     class RtlSelectHost {
       readonly open = signal(false);
       readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+      readonly dir = signal<'ltr' | 'rtl'>('rtl');
     }
+
+    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+      const r = renderHost(RtlSelectHost);
+      const root = r.query<HTMLElement>('[forSelect]')!;
+
+      expect(root.getAttribute('dir')).toBe('rtl');
+
+      r.instance.dir.set('ltr');
+      r.flush();
+      expect(root.getAttribute('dir')).toBe('ltr');
+    });
 
     it('horizontal: ArrowLeft becomes the forward direction under dir="rtl"', async () => {
       const r = renderHost(RtlSelectHost);

@@ -41,6 +41,7 @@ import { FOR_ACCORDION_CONTEXT, type ForAccordionContext } from './accordion-con
   exportAs: 'forAccordion',
   host: {
     '[attr.data-orientation]': 'orientation()',
+    '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
 })

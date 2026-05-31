@@ -54,6 +54,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForDropdownMenu }],
 })
