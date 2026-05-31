@@ -182,10 +182,15 @@ function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
  *    offsets/arrow and runs `autoUpdate` while open, cleaning up via the
  *    effect's `onCleanup` when the deps change or the host destroys.
  * 3. Inside `autoUpdate`'s callback, calls `computePosition` and applies the
- *    resolved `transform`, `data-placement`, `data-side`, `data-align`,
- *    `data-occluded` (when the `hide` middleware reports the reference
- *    is off-screen), and CSS variables (`--for-anchor-width/-height`,
+ *    resolved position via the `translate` property (leaving `transform`
+ *    free for the consumer's animations), plus `data-placement`, `data-side`,
+ *    `data-align`, `data-occluded` (when the `hide` middleware reports the
+ *    reference is off-screen), and CSS variables (`--for-anchor-width/-height`,
  *    `--for-available-width/-height`, `--for-content-transform-origin`).
+ *    On the first resolved position it also drops the `clip-path` baseline
+ *    so the surface is only painted once anchored — otherwise a CSS enter
+ *    animation would flash at the viewport's top-left corner before
+ *    `computePosition` (which is async) resolves.
  *
  * Cleanup is symmetric: when `open` flips back to `false` (or the host is
  * destroyed) the helper clears every style, CSS variable, and `data-*`
@@ -206,12 +211,22 @@ export function injectFloating(config: FloatingConfig): void {
   }
 
   afterNextRender(() => {
-    // Baseline styles required for transform-based positioning. Set
-    // imperatively so consumer host bindings don't have to remember.
+    // Baseline styles required for positioning. Set imperatively so consumer
+    // host bindings don't have to remember.
+    //
+    // `clip-path: inset(50%)` keeps the surface unpainted until floating-ui
+    // resolves its first position. `computePosition` is async, so without
+    // this a CSS enter animation (`animate.enter`) plays one or two frames
+    // at the `left:0 / top:0` origin — before the resolved position lands —
+    // and the overlay flashes at the viewport's top-left corner. `clip-path`
+    // (rather than `visibility: hidden`) keeps the element focusable, so the
+    // overlay shell's initial-focus move still lands while the surface is
+    // unpainted. Dropped on the first resolved position below.
     Object.assign(el.style, {
       position: 'fixed',
       left: '0',
       top: '0',
+      clipPath: 'inset(50%)',
     });
   });
 
@@ -302,12 +317,24 @@ export function injectFloating(config: FloatingConfig): void {
             resolvedPlacement as Placement,
           );
 
-          Object.assign(el.style, {
-            transform: `translate(${Math.round(x)}px, ${Math.round(y)}px)`,
-          });
+          // Position via the `translate` property, NOT `transform`. CSS
+          // composes the individual `translate` / `rotate` / `scale`
+          // properties before the `transform` property, with `translate`
+          // outermost — so a consumer's enter animation on `scale` (or
+          // `transform`) pivots in place around `--for-content-transform-origin`
+          // instead of scaling the position offset itself. Using `transform`
+          // here made `scale(0.9)` shrink the translation too, dragging the
+          // surface in from the viewport's top-left corner as it grew. Leaving
+          // `transform` free for the consumer is the whole point.
+          el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
           el.dataset['placement'] = resolvedPlacement;
           el.dataset['side'] = resolvedSide;
           el.dataset['align'] = resolvedAlign;
+          // First valid position resolved — reveal the surface by dropping
+          // the `clip-path: inset(50%)` baseline. From here the consumer's
+          // enter animation runs anchored to the trigger, with the scale
+          // origin set by `--for-content-transform-origin` below.
+          el.style.clipPath = '';
 
           // Anchor box → CSS vars so the consumer can size the floating
           // element relative to the anchor (`width: var(--for-anchor-width)`).
@@ -375,13 +402,18 @@ export function injectFloating(config: FloatingConfig): void {
 
 /**
  * Strip every inline style, CSS custom property, and `data-*` attribute
- * `injectFloating` writes to the floating element. Pairs with the
- * `autoUpdate` teardown so a closed-then-reopened floating element
- * starts from a clean slate (no leftover `transform` jumping the next
- * mount, no stale `--for-anchor-width` poisoning size styles).
+ * `injectFloating` writes to the floating element (including the
+ * `clip-path` hide baseline). Pairs with the `autoUpdate` teardown so a
+ * closed-then-reopened floating element starts from a clean slate (no
+ * leftover `translate` jumping the next mount, no stale
+ * `--for-anchor-width` poisoning size styles).
  */
 function resetFloatingStyles(el: HTMLElement): void {
-  el.style.removeProperty('transform');
+  el.style.removeProperty('translate');
+  // Clearing (not re-arming) the hide baseline keeps a closing surface
+  // visible for its `animate.leave`; the next mount re-applies the
+  // `clip-path` baseline in `afterNextRender`.
+  el.style.removeProperty('clip-path');
   el.style.removeProperty('--for-anchor-width');
   el.style.removeProperty('--for-anchor-height');
   el.style.removeProperty('--for-available-width');

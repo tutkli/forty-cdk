@@ -128,9 +128,11 @@ function itemAligned(
  *    `remove()` on destroy.
  * 2. A reactive effect that runs `autoUpdate(reference, listbox, …)` while
  *    `open` is true. Inside, calls `computePosition` with the custom
- *    `itemAligned` middleware and writes the resolved `transform`,
+ *    `itemAligned` middleware and writes the resolved position via the
+ *    `translate` property (leaving `transform` free for the consumer),
  *    `data-position="item-aligned"`, anchor-width / anchor-height /
- *    available-height CSS vars.
+ *    available-height CSS vars. On the first resolved position it drops the
+ *    `clip-path` hide baseline so the listbox is only painted once anchored.
  * 3. After the first position resolves, scrolls the target option into view
  *    via `scrollIntoView({ block: 'nearest' })` so the visual anchor stays
  *    correct when the listbox is taller than the viewport.
@@ -148,10 +150,17 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
   }
 
   afterNextRender(() => {
+    // `clip-path: inset(50%)` keeps the listbox unpainted until the first
+    // position resolves, so a CSS enter animation never flashes a frame at
+    // the `left:0 / top:0` origin before the async `computePosition().then()`
+    // writes the real `transform`. `clip-path` (not `visibility: hidden`)
+    // keeps the element focusable so the overlay shell's initial-focus move
+    // (selected option) still lands. Dropped on the first resolved position.
     Object.assign(el.style, {
       position: 'fixed',
       left: '0',
       top: '0',
+      clipPath: 'inset(50%)',
     });
   });
 
@@ -184,10 +193,15 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
           return;
         }
 
-        Object.assign(el.style, {
-          transform: `translate(${Math.round(x)}px, ${Math.round(y)}px)`,
-        });
+        // Position via the `translate` property (not `transform`) so a
+        // consumer's enter animation on `scale` / `transform` pivots in place
+        // instead of scaling the position offset — see the note in
+        // `injectFloating`. Leaves `transform` free for the consumer.
+        el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
         el.dataset['position'] = 'item-aligned';
+        // First valid position resolved — reveal the listbox by dropping the
+        // `clip-path: inset(50%)` baseline.
+        el.style.clipPath = '';
 
         const triggerRect = reference.getBoundingClientRect();
         el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);

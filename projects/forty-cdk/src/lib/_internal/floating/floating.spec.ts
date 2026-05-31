@@ -229,18 +229,20 @@ describe('injectFloating', () => {
       const bubble = fixture.componentInstance.bubble();
       const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
 
-      // open=false → no transform yet.
-      expect(bubbleEl.style.transform).toBe('');
+      // open=false → no position yet.
+      expect(bubbleEl.style.translate).toBe('');
 
       // Reference set but still closed.
       bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
       await flushPositioning(fixture);
-      expect(bubbleEl.style.transform).toBe('');
+      expect(bubbleEl.style.translate).toBe('');
 
-      // Open it.
+      // Open it. Position is written to the `translate` property (NOT
+      // `transform`, which stays free for consumer animations).
       bubble.open.set(true);
       await flushPositioning(fixture);
-      expect(bubbleEl.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
+      expect(bubbleEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
+      expect(bubbleEl.style.transform).toBe('');
       expect(bubbleEl.dataset['placement']).toBe('top');
     });
 
@@ -278,7 +280,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('top');
       expect(bubbleEl.dataset['side']).toBe('top');
       expect(bubbleEl.dataset['align']).toBe('center');
-      expect(bubbleEl.style.transform).not.toBe('');
+      expect(bubbleEl.style.translate).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-available-width')).not.toBe('');
@@ -296,7 +298,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['align']).toBeUndefined();
       expect(bubbleEl.dataset['occluded']).toBeUndefined();
       expect(bubbleEl.dataset['detached']).toBeUndefined();
-      expect(bubbleEl.style.transform).toBe('');
+      expect(bubbleEl.style.translate).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-available-width')).toBe('');
@@ -343,7 +345,7 @@ describe('injectFloating', () => {
         bubble.open.set(true);
         await flushPositioning(fixture);
 
-        expect(bubbleEl.style.transform).toBe('');
+        expect(bubbleEl.style.translate).toBe('');
         expect(bubbleEl.dataset['placement']).toBeUndefined();
         expect(unhandled).toHaveLength(0);
       } finally {
@@ -508,7 +510,7 @@ describe('injectFloating', () => {
       // Without flip/shift the requested placement is honoured verbatim.
       expect(bubbleEl.dataset['side']).toBe('top');
       expect(bubbleEl.dataset['align']).toBe('center');
-      expect(bubbleEl.style.transform).toMatch(/translate\(-?\d+px, -?\d+px\)/);
+      expect(bubbleEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
     });
   });
 

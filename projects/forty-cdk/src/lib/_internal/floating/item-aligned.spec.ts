@@ -75,7 +75,7 @@ describe('injectItemAlignedPositioner', () => {
   });
   afterAll(() => restoreObservers());
 
-  it('does not write a transform until both open and reference are set', async () => {
+  it('does not write a position until both open and reference are set', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(Host);
     await flushPositioning(fixture);
@@ -84,20 +84,22 @@ describe('injectItemAlignedPositioner', () => {
     const lbEl = document.querySelector<HTMLElement>('item-aligned-listbox')!;
     const trigger = fixture.componentInstance.anchor().nativeElement;
 
-    expect(lbEl.style.transform).toBe('');
+    expect(lbEl.style.translate).toBe('');
 
     lb.reference.set(trigger);
     await flushPositioning(fixture);
     // Still closed — no positioning runs.
-    expect(lbEl.style.transform).toBe('');
+    expect(lbEl.style.translate).toBe('');
 
     lb.open.set(true);
     await flushPositioning(fixture);
     // After both signals are set, the positioner has run at least once: it
-    // wrote a transform string and tagged the host with the position mode.
-    // The actual numeric coordinates are layout-driven and covered in
-    // `select.e2e.ts` against a real browser.
-    expect(lbEl.style.transform).toMatch(/translate\(/);
+    // wrote the position to the `translate` property (NOT `transform`, which
+    // stays free for consumer animations) and tagged the host with the
+    // position mode. The actual numeric coordinates are layout-driven and
+    // covered in `select.e2e.ts` against a real browser.
+    expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
+    expect(lbEl.style.transform).toBe('');
     expect(lbEl.dataset['position']).toBe('item-aligned');
   });
 
@@ -122,6 +124,6 @@ describe('injectItemAlignedPositioner', () => {
     await flushPositioning(fixture);
 
     expect(lbEl.dataset['position']).toBe('item-aligned');
-    expect(lbEl.style.transform).toMatch(/translate\(/);
+    expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
   });
 });

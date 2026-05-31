@@ -143,15 +143,16 @@ test.describe('Select', () => {
       expect(available).toBeGreaterThan(viewport - 50);
     });
 
-    test('the floating element receives an inline transform once open', async ({ page }) => {
+    test('the floating element receives an inline position once open', async ({ page }) => {
       await gotoFixture(page, 'select', { position: 'item-aligned' });
       await el(page, 'trigger').click();
       const content = el(page, 'content');
       await expect(content).toBeVisible();
 
+      // Position lives on the `translate` property (NOT `transform`).
       await expect
-        .poll(async () => content.evaluate((c) => (c as HTMLElement).style.transform))
-        .toMatch(/translate\(/);
+        .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
+        .toMatch(/^-?\d+px -?\d+px$/);
     });
 
     test('falls back to the first enabled option when nothing is selected', async ({ page }) => {
@@ -167,8 +168,8 @@ test.describe('Select', () => {
       await expect(content).toBeVisible();
       await expect(content).toHaveAttribute('data-position', 'item-aligned');
       await expect
-        .poll(async () => content.evaluate((c) => (c as HTMLElement).style.transform))
-        .toMatch(/translate\(/);
+        .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
+        .toMatch(/^-?\d+px -?\d+px$/);
     });
   });
 });
