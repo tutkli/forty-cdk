@@ -4,11 +4,15 @@ import {
   Component,
   computed,
   effect,
+  type ElementRef,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, ForToggle } from 'forty-cdk';
+import { filter } from 'rxjs';
 
 import { AppNav } from './ui/app-nav';
 import { Icon } from './ui/icon';
@@ -30,7 +34,7 @@ function readInitialTheme(): Theme {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, AppNav, Icon],
   template: `
-    <div class="app-shell" forDrawerWrapper>
+    <div class="app-shell" forDrawerWrapper #shell>
       <header class="topbar">
         <button
           type="button"
@@ -228,6 +232,9 @@ function readInitialTheme(): Theme {
 })
 export class App {
   readonly #document = inject(DOCUMENT);
+  readonly #router = inject(Router);
+
+  protected readonly shell = viewChild<ElementRef<HTMLElement>>('shell');
 
   protected readonly theme = signal<Theme>(readInitialTheme());
   protected readonly navOpen = signal(false);
@@ -243,6 +250,13 @@ export class App {
       this.#document.documentElement.setAttribute('data-theme', theme);
       globalThis.localStorage?.setItem(THEME_KEY, theme);
     });
+
+    this.#router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.shell()?.nativeElement.scrollTo({ top: 0, left: 0 }));
   }
 
   protected setDark(dark: boolean): void {
