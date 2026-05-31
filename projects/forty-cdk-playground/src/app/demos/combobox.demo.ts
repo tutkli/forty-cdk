@@ -84,9 +84,19 @@ const COUNTRIES = [
               <input forComboboxInput class="pg-combobox-input" placeholder="Add countries…" />
             </div>
           } @else {
-            <div class="pg-combobox-field">
-              <input forComboboxInput class="pg-combobox-input" placeholder="Search countries…" />
-              <button forComboboxClear class="pg-combobox-clear" aria-label="Clear">×</button>
+            <div class="pg-combobox-single">
+              <input
+                forComboboxInput
+                class="pg-combobox-input pg-combobox-input--boxed"
+                placeholder="Search countries…"
+              />
+              <button
+                forComboboxClear
+                class="pg-combobox-clear pg-combobox-clear--inset"
+                aria-label="Clear"
+              >
+                ×
+              </button>
             </div>
           }
 
