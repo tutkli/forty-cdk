@@ -336,6 +336,18 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 
 The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
 
+## CSS custom properties
+
+`[forComboboxContent]` is portaled to `document.body` and gets its position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close):
+
+| Custom property                  | Type / range        | Meaning                                                                                              |
+| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | px                  | Anchor (input / wrapper) width — match the listbox to the input with `width: var(--for-anchor-width)`. |
+| `--for-anchor-height`            | px                  | Anchor height.                                                                                       |
+| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
+| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                      |
+| `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input. |
+
 ## Accessibility notes
 
 - Apply the input directive to an actual `<input>` — the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.

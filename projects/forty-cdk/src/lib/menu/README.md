@@ -88,6 +88,18 @@ Closing semantics propagate upward by default: activating an item inside a subme
 
 The submenu's dismissable layer exempts the **parent menu's content** — clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`.
 
+## CSS custom properties
+
+`[forMenuContent]` / `[forMenuSubContent]` are portaled to `document.body` and get their position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close). These also drive the content surface for `[forDropdownMenu]` and `[forContextMenu]`, which reuse `[forMenuContent]`:
+
+| Custom property                  | Type / range        | Meaning                                                                                              |
+| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | px                  | Anchor (trigger) width — match it with `width: var(--for-anchor-width)`.                             |
+| `--for-anchor-height`            | px                  | Anchor (trigger) height.                                                                             |
+| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
+| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                      |
+| `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+
 ## Accessibility notes
 
 - Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.

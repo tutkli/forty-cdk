@@ -38,6 +38,12 @@ The `data-quality` reflection follows the HTML5 spec:
 | above `high`    | `[low, high]`         | `sub-optimum`    |
 | above `high`    | below `low`           | `even-less-good` |
 
+## CSS custom properties
+
+| Element               | Custom property          | Type / range          | Meaning                                                                                                          |
+| --------------------- | ------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `[forMeterIndicator]` | `--for-meter-percentage` | percentage `0%`–`100%` | `value` as a CSS percentage of `[min, max]` (`data-percentage` mirrored as a `%` value). Drive `width` / `transform` from it. |
+
 ## Usage
 
 ```ts

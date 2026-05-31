@@ -177,6 +177,13 @@ Drawers opened by the manager join the same `ForDrawerStack` as declarative ones
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
+## CSS custom properties
+
+| Element              | Custom property             | Type / range                    | Meaning                                                                                                                              |
+| -------------------- | --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `[forDrawer]` (surface) | `--for-drawer-translate`    | `"<x> <y>"` length pair (`"0px 0px"` at rest) | Live drag delta. Apply with `translate: var(--for-drawer-translate, 0px 0px)` so it composes with the consumer's `transform`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
+| `[forDrawerBackdrop]`   | `--for-drawer-drag-progress` | number `0`–`1` (`0` at rest)    | Drag progress toward the anchored edge (`1` = fully dragged off-screen). Fade with `opacity: calc(1 - var(--for-drawer-drag-progress, 0))`. See [Backdrop drag-fade](#backdrop-drag-fade-css-contract). |
+
 ## Snap points
 
 Three accepted shapes:

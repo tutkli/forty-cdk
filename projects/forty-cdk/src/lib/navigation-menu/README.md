@@ -99,6 +99,19 @@ export class DemoNav {
 | Home / End                                     | Jump to first / last enabled trigger.                                      |
 | Escape                                         | Closes and returns focus to the trigger.                                   |
 
+## CSS custom properties
+
+`[forNavigationMenuIndicator]` exposes the active trigger's geometry (relative to `[forNavigationMenuList]`) so the indicator visual can be driven entirely from CSS:
+
+| Element                       | Custom property                          | Type / range | Meaning                          |
+| ----------------------------- | ---------------------------------------- | ------------ | -------------------------------- |
+| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-x`      | px           | Horizontal offset of the active trigger. |
+| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-y`      | px           | Vertical offset of the active trigger.   |
+| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-width`  | px           | Active trigger width.            |
+| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-height` | px           | Active trigger height.           |
+
+The optional shared `[forNavigationMenuViewport]` additionally exposes `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` (the active panel's natural size) — see [Mega-menu (shared `Viewport`)](#mega-menu-shared-viewport).
+
 ## Accessibility notes
 
 - **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.

@@ -92,6 +92,19 @@ export class DemoSave {}
   npm install @floating-ui/dom
   ```
 
+## CSS custom properties
+
+`[forTooltipContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forTooltipArrow]` reads the consumer-settable `--for-arrow-offset`:
+
+| Element              | Custom property                  | Type / range        | Direction | Meaning                                                                                              |
+| -------------------- | -------------------------------- | ------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `[forTooltipContent]` | `--for-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                           |
+| `[forTooltipContent]` | `--for-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                          |
+| `[forTooltipContent]` | `--for-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
+| `[forTooltipContent]` | `--for-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                      |
+| `[forTooltipContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| `[forTooltipArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge — typically a negative `px` (e.g. `-4px`). |
+
 ## Accessibility notes
 
 - The trigger receives `aria-describedby="<content-id>"` only while the tooltip is open, matching APG.
