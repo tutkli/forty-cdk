@@ -22,6 +22,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   createVetoableNativeEvent,
   emitVetoableNativeEvent,
@@ -179,12 +180,16 @@ export class ForCombobox<T = string>
   readonly autoHighlight = input(true, { transform: booleanAttribute });
 
   /**
-   * Writing direction. Default `'ltr'`. Drives chip-cluster keyboard
-   * navigation (ArrowLeft / ArrowRight semantics swap in RTL so they
-   * follow the visual order, not DOM order) and the default `align` of
-   * the listbox (anchors to the right edge of the input in RTL).
+   * Writing direction. Drives chip-cluster keyboard navigation (ArrowLeft /
+   * ArrowRight semantics swap in RTL so they follow the visual order, not DOM
+   * order) and the default `align` of the listbox (anchors to the right edge
+   * of the input in RTL). When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins
+   * and the resolved value is reflected to the host `dir` attribute.
    */
-  readonly dir = input<WritingDirection>('ltr');
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Side the listbox is anchored to. Defaults to `'bottom'`. Pair with

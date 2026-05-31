@@ -8,6 +8,7 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_TOOLBAR_CONTEXT,
   type ForToolbarContext,
@@ -64,7 +65,16 @@ export class ForToolbar implements ForToolbarContext {
   readonly #defaults = inject(FOR_TOOLBAR_DEFAULTS);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
-  readonly dir = input<WritingDirection>('ltr');
+
+  /**
+   * Writing direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
+   * The resolved value is reflected to the host `dir` attribute and swaps
+   * ArrowLeft / ArrowRight semantics in RTL.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
   /**
    * Whether arrow navigation wraps around past the first / last enabled
    * item. Default `true`. The default is read from `provideForToolbarDefaults`

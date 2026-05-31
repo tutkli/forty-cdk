@@ -12,6 +12,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { FOR_ACCORDION_CONTEXT, type ForAccordionContext } from './accordion-context';
 
 /**
@@ -65,8 +66,16 @@ export class ForAccordion implements ForAccordionContext {
    */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
 
-  /** Writing direction. Only relevant when `orientation='horizontal'`. */
-  readonly dir = input<WritingDirection>('ltr');
+  /**
+   * Writing direction. Only relevant when `orientation='horizontal'`. When
+   * unset (default `null`), the inherited ambient direction is resolved from
+   * the nearest ancestor carrying a `dir` attribute (or `<html dir>`),
+   * defaulting to `'ltr'`. An explicit `[dir]` always wins. The resolved
+   * value is reflected to the host `dir` attribute and drives arrow-key
+   * semantics.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Two-way bindable. List of currently expanded item values. In single

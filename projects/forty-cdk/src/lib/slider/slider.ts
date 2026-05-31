@@ -17,6 +17,7 @@ import { Collection } from '../_internal/collection/collection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_SLIDER_CONTEXT,
   type ForSliderContext,
@@ -106,7 +107,16 @@ export class ForSlider
   readonly maxValue = computed(() => this.max() ?? 100);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
-  readonly dir = input<WritingDirection>('ltr');
+
+  /**
+   * Writing direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
+   * The resolved value is reflected to the host `dir` attribute and flips the
+   * horizontal increase direction in RTL.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Visual inversion. Flips the mapping between value and screen position

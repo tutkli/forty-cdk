@@ -18,6 +18,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_RADIO_GROUP_CONTEXT,
   type ForRadioGroupContext,
@@ -72,8 +73,15 @@ export class ForRadioGroup
   /** Layout direction for keyboard navigation. */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
 
-  /** Reading direction for horizontal orientation. */
-  readonly dir = input<WritingDirection>('ltr');
+  /**
+   * Reading direction for horizontal orientation. When unset (default
+   * `null`), the inherited ambient direction is resolved from the nearest
+   * ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to
+   * `'ltr'`. An explicit `[dir]` always wins. The resolved value is reflected
+   * to the host `dir` attribute and swaps ArrowLeft / ArrowRight in RTL.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Whether arrow navigation wraps around past the first / last enabled

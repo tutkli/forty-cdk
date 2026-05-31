@@ -20,6 +20,7 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -133,7 +134,16 @@ export class ForListbox<T = string>
   readonly ariaLabel = input<string | null>(null);
 
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
-  readonly dir = input<WritingDirection>('ltr');
+
+  /**
+   * Writing direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
+   * The resolved value is reflected to the host `dir` attribute and swaps
+   * ArrowLeft / ArrowRight semantics in RTL for horizontal listboxes.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Single-mode only: when true, arrow nav also selects the focused option.

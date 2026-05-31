@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
 
 /**
  * Headless separator implementing both variants of the
@@ -153,9 +154,13 @@ export class ForSeparator {
   /**
    * Reading direction. RTL inverts ArrowLeft / ArrowRight on a vertical
    * separator (horizontal pane stack) and the horizontal axis of pointer
-   * drag. Default `'ltr'`.
+   * drag. When unset (default `null`), the inherited ambient direction is
+   * resolved from the nearest ancestor carrying a `dir` attribute (or
+   * `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins and
+   * the resolved value is reflected to the host `dir` attribute.
    */
-  readonly dir = input<WritingDirection>('ltr');
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Verb-named alias for the model change emitter. Fires on every value
