@@ -92,6 +92,40 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('aria-label', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked" [ariaLabel]="label()">
+          <li><button type="button" forListboxOption value="a" data-test-id="a">A</button></li>
+        </ul>
+      `,
+    })
+    class LabelHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly label = signal<string | null>(null);
+    }
+
+    it('emits aria-label when the input is set', () => {
+      const { el, fixture, flush } = renderHost(LabelHost);
+      fixture.componentInstance.label.set('Fruit');
+      flush();
+      expect(listboxOf(el).getAttribute('aria-label')).toBe('Fruit');
+    });
+
+    it('emits no aria-label attribute when the input is null (default)', () => {
+      const { el } = renderHost(LabelHost);
+      expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('emits no aria-label attribute for an empty string', () => {
+      const { el, fixture, flush } = renderHost(LabelHost);
+      fixture.componentInstance.label.set('');
+      flush();
+      expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
+    });
+  });
+
   describe('initial tabindex', () => {
     it('first enabled option has tabindex=0 when nothing is selected', () => {
       const { el } = renderHost(ListboxHost);
@@ -1079,6 +1113,28 @@ describe('ForListbox', () => {
       fixture.componentInstance.picked.set([]);
       flush();
       expect(optOf(el, 'cherry').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('reflects aria-label changes without Zone.js', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked" [ariaLabel]="label()">
+            <li><button type="button" forListboxOption value="x" data-test-id="x">X</button></li>
+          </ul>
+        `,
+      })
+      class ZonelessLabelHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly label = signal<string | null>(null);
+      }
+
+      const { el, fixture, flush } = renderHost(ZonelessLabelHost);
+      expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
+
+      fixture.componentInstance.label.set('Fruit');
+      flush();
+      expect(listboxOf(el).getAttribute('aria-label')).toBe('Fruit');
     });
 
     it('exposes the single-select accessor without Zone.js', () => {

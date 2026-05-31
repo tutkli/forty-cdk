@@ -26,7 +26,7 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 | `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.                                          |
 | `loop`              | `input<boolean>`                    | Whether arrow nav wraps. Default `true`.                                     |
 | `disabled`          | `input<boolean>`                    | Disables the whole menu.                                                     |
-| `ariaLabel`         | `input<string>`                     | Optional `aria-label` for the `<nav>`.                                       |
+| `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`. Default `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists. |
 | `delayDuration`     | `input<number>`                     | ms before hover/focus opens. Default `200`.                                  |
 | `closeDelay`        | `input<number>`                     | ms before pointer-leave closes. Default `150`.                               |
 | `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant. Default `300`. |

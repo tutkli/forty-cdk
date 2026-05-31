@@ -83,6 +83,27 @@ describe('ForNavigationMenu', () => {
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
+
+    it('emits no aria-label when ariaLabel is unset (default null)', () => {
+      @Component({
+        imports: [ForNavigationMenu, ForNavigationMenuList, ForNavigationMenuItem, ForNavigationMenuTrigger],
+        template: `
+          <nav forNavigationMenu>
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger>Products</button>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class NoLabelHost {}
+
+      const { query, flush } = renderHost(NoLabelHost);
+      flush();
+      const root = query<HTMLElement>('[forNavigationMenu]')!;
+      expect(root.hasAttribute('aria-label')).toBe(false);
+    });
   });
 
   describe('click toggle', () => {

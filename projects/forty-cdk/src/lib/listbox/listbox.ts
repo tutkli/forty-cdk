@@ -51,6 +51,7 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
   exportAs: 'forListbox',
   host: {
     role: 'listbox',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
@@ -94,6 +95,13 @@ export class ForListbox
   });
 
   readonly multiple = input(false, { transform: booleanAttribute });
+
+  /**
+   * Manual `aria-label` for the listbox. Use this when no visible label
+   * element exists; otherwise prefer pointing `aria-labelledby` at one. A
+   * `null` (default) or empty value emits no attribute.
+   */
+  readonly ariaLabel = input<string | null>(null);
 
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
   readonly dir = input<WritingDirection>('ltr');

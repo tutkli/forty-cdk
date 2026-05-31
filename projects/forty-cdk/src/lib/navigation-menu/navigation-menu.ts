@@ -88,8 +88,12 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly loop = input(true, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  /** Optional accessible name for the surrounding `<nav>`. */
-  readonly ariaLabel = input<string>('');
+  /**
+   * Manual `aria-label` for the surrounding `<nav>`. Use this when no visible
+   * label element exists; otherwise prefer pointing `aria-labelledby` at one.
+   * A `null` (default) or empty value emits no attribute.
+   */
+  readonly ariaLabel = input<string | null>(null);
 
   /**
    * ms before a hover/focus opens an item. Default `200`. The default is
