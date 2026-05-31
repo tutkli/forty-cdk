@@ -565,6 +565,7 @@ a.pg-nav-link.active {
   color: var(--pg-text);
   box-shadow: var(--pg-shadow);
   translate: var(--for-drawer-translate, 0px 0px);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
   /*
    * A mouse drag on selectable text starts a native text selection that
    * fights the swipe gesture (and can block it entirely). Match Vaul: the
@@ -572,6 +573,21 @@ a.pg-nav-link.active {
    */
   user-select: none;
   -webkit-user-select: none;
+}
+
+.pg-drawer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(10, 12, 16, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.pg-drawer[data-state-nested]::after {
+  opacity: 1;
 }
 
 .pg-drawer:not([data-active-snap-point])[data-side='bottom'] {

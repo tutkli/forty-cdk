@@ -13,6 +13,7 @@ import {
   ForDrawerTitle,
   ForDrawerTrigger,
   injectDrawerData,
+  provideForDrawerDefaults,
 } from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../ui/control-select';
@@ -65,6 +66,7 @@ export class ConfirmDrawer {
 @Component({
   selector: 'app-drawer-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [provideForDrawerDefaults({ nestedTranslateYpx: 16 })],
   imports: [
     DemoLayout,
     ForDrawer,
