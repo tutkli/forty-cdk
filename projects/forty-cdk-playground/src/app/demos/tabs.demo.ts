@@ -63,9 +63,17 @@ interface TabEntry {
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-select
+          label="orientation"
+          [options]="orientationOptions"
+          [(value)]="orientationValue"
+        />
         <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
-        <app-control-select label="activationMode" [options]="activationOptions" [(value)]="activationModeValue" />
+        <app-control-select
+          label="activationMode"
+          [options]="activationOptions"
+          [(value)]="activationModeValue"
+        />
         <app-control-switch label="loop" [(checked)]="loop" />
         <app-control-switch label="disabled" [(checked)]="disabled" />
         <app-control-switch label="disable billing tab" [(checked)]="disableBilling" />
@@ -150,6 +158,7 @@ interface TabEntry {
     .tb-content {
       flex: 1;
       min-width: 0;
+      min-height: 3rem;
       color: var(--pg-text-muted);
     }
 
@@ -207,7 +216,9 @@ export class TabsDemo {
   );
 
   protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() => (this.dirValue() === 'rtl' ? 'rtl' : 'ltr'));
+  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
+    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
+  );
 
   protected readonly activationModeValue = signal('automatic');
   protected readonly activationMode = computed<'automatic' | 'manual'>(() =>
