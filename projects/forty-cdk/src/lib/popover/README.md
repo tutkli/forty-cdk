@@ -133,6 +133,19 @@ The popover opens / closes alongside the input but never steals focus from it �
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
 
+## CSS custom properties
+
+`[forPopoverContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forPopoverArrow]` reads the consumer-settable `--for-arrow-offset`:
+
+| Element              | Custom property                  | Type / range            | Direction | Meaning                                                                                              |
+| -------------------- | -------------------------------- | ----------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `[forPopoverContent]` | `--for-anchor-width`             | px                      | out       | Trigger (reference) width — match it with `width: var(--for-anchor-width)`.                          |
+| `[forPopoverContent]` | `--for-anchor-height`            | px                      | out       | Trigger (reference) height.                                                                          |
+| `[forPopoverContent]` | `--for-available-width`          | px                      | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
+| `[forPopoverContent]` | `--for-available-height`         | px                      | out       | Space available along the block axis — clamp with `max-height`.                                      |
+| `[forPopoverContent]` | `--for-content-transform-origin` | `<origin>` keywords     | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| `[forPopoverArrow]`   | `--for-arrow-offset`             | px (default `0px`)      | in        | Consumer-set. How far the arrow pokes out past the popover edge — typically a negative `px` (e.g. `-4px`). |
+
 ## Accessibility notes
 
 - Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`.

@@ -1607,7 +1607,11 @@ a.pg-nav-link.active {
   border-left: 4px solid var(--pg-primary);
   border-radius: var(--pg-radius-sm);
   box-shadow: var(--pg-shadow);
-  transform: translate3d(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px), 0);
+  transform: translate3d(
+    var(--for-toast-swipe-movement-x, 0px),
+    var(--for-toast-swipe-movement-y, 0px),
+    0
+  );
   transition: transform 0.18s ease-out;
   animation: pg-toast-in 0.24s var(--pg-ease-spring) both;
   touch-action: none;
@@ -1630,8 +1634,8 @@ a.pg-nav-link.active {
 }
 
 [forToast][data-swipe='cancel'] {
-  --toast-swipe-movement-x: 0px;
-  --toast-swipe-movement-y: 0px;
+  --for-toast-swipe-movement-x: 0px;
+  --for-toast-swipe-movement-y: 0px;
 }
 
 [forToastTitle] {

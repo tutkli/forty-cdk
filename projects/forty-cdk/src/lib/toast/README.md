@@ -135,20 +135,24 @@ While the gesture is live the host carries:
 | ------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
 | `data-swipe`                    | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". |
 | `data-swipe-direction`          | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
-| `--toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
-| `--toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
+| `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
+| `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
 
 The directive does NOT animate anything — the consumer's CSS transitions / `animate.leave` drive the visual feedback:
 
 ```css
 [forToast] {
   transition: transform 200ms ease-out;
-  transform: translate3d(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px), 0);
+  transform: translate3d(
+    var(--for-toast-swipe-movement-x, 0px),
+    var(--for-toast-swipe-movement-y, 0px),
+    0
+  );
 }
 [forToast][data-swipe='cancel'] {
   /* spring back */
-  --toast-swipe-movement-x: 0px;
-  --toast-swipe-movement-y: 0px;
+  --for-toast-swipe-movement-x: 0px;
+  --for-toast-swipe-movement-y: 0px;
 }
 ```
 

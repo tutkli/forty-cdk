@@ -22,6 +22,12 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, and `data-max`. The indicator additionally reflects `data-percentage` and the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
 
+## CSS custom properties
+
+| Element                  | Custom property            | Type / range                 | Meaning                                                                                                                          |
+| ------------------------ | -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `[forProgressIndicator]` | `--for-progress-percentage` | percentage `0%`–`100%` or empty | Completion as a CSS percentage (`data-percentage` mirrored as a `%` value). Absent while indeterminate (`value === null`). Use in `width` or `transform: scaleX(calc(var(--for-progress-percentage) / 100))`. |
+
 ## Usage
 
 ```ts

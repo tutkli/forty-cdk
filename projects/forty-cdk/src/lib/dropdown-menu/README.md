@@ -116,3 +116,7 @@ Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
 - **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item.
 - **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(select)` handler.
+
+## CSS custom properties
+
+The content surface is `[forMenuContent]` (from the [`menu/`](../menu/README.md) folder). It exposes the floating-ui-resolved geometry — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — as custom properties on the content host. See [menu → CSS custom properties](../menu/README.md#css-custom-properties) for the full table.

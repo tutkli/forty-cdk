@@ -119,6 +119,19 @@ When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `al
 
 The default stays `popper` (rather than mirroring Radix's `item-aligned` default) so existing consumers' visuals don't shift on upgrade — opt in per primitive when the macOS feel is what you want.
 
+## CSS custom properties
+
+`[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
+
+| Custom property                        | Type / range  | `position`     | Meaning                                                                                          |
+| -------------------------------------- | ------------- | -------------- | ------------------------------------------------------------------------------------------------ |
+| `--for-anchor-width`                   | px            | both           | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                 |
+| `--for-anchor-height`                  | px            | both           | Trigger height.                                                                                  |
+| `--for-select-content-available-height` | px            | `item-aligned` | Viewport height minus `collisionPadding` — clamp with `max-height: var(--for-select-content-available-height)`. |
+| `--for-available-width`                | px            | `popper`       | Space available to the content along the inline axis (from floating-ui's `size` middleware).     |
+| `--for-available-height`               | px            | `popper`       | Space available to the content along the block axis.                                             |
+| `--for-content-transform-origin`       | `<origin>` keywords | `popper`       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+
 ## Selection follows focus
 
 Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arrow navigation moves focus — useful for "live preview" UX. Default off; APG calls it optional and recommends caution.
