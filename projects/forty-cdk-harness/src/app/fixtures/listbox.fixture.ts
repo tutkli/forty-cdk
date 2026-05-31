@@ -31,5 +31,5 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
   `,
 })
 export class ListboxFixture {
-  protected readonly value = signal<string[]>([]);
+  protected readonly value = signal<readonly string[]>([]);
 }

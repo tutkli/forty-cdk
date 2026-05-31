@@ -23,7 +23,13 @@ let uid = 0;
   template: `
     <div class="pg-field">
       <span class="pg-label" [id]="labelId">{{ label() }}</span>
-      <div forSelect [(open)]="open" [value]="selectValue()" (valueChange)="onChange($event)">
+      <div
+        #sel="forSelect"
+        forSelect
+        [(open)]="open"
+        [value]="selectValue()"
+        (valueChange)="value.set(sel.selected() ?? value())"
+      >
         <button
           forSelectTrigger
           type="button"
@@ -54,11 +60,4 @@ export class ControlSelect {
   protected readonly open = signal(false);
   protected readonly labelId = `pg-select-${++uid}`;
   protected readonly selectValue = computed<readonly string[]>(() => [this.value()]);
-
-  protected onChange(next: readonly string[]): void {
-    const [first] = next;
-    if (first !== undefined) {
-      this.value.set(first);
-    }
-  }
 }
