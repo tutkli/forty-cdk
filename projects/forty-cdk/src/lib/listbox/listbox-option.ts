@@ -17,6 +17,13 @@ import { injectListboxContext } from './listbox-context';
  * One option inside a `ForListbox`. Apply on a `<button type="button">` so
  * Space / Enter activation come from native button behavior — printable keys
  * fall through to the parent listbox for typeahead matching.
+ *
+ * Generic over the option value type `T` (default `string`). Inferred from
+ * the `[value]` binding so consumers can pass either primitive ids or full
+ * objects (`[value]="lang"` infers `T = Language`); the parent `[forListbox]`
+ * must be parameterized over the same `T`. The parent's
+ * `[isItemEqualToValue]` decides how options are matched against the
+ * committed selection.
  */
 @Directive({
   selector: '[forListboxOption]',
@@ -37,12 +44,19 @@ import { injectListboxContext } from './listbox-context';
     '(keydown)': 'onKeyDown($event)',
   },
 })
-export class ForListboxOption {
-  readonly #group = injectListboxContext('ForListboxOption');
+export class ForListboxOption<T = string> {
+  readonly #group = injectListboxContext<T>('ForListboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
 
-  readonly value = input.required<string>();
+  /**
+   * Stable identifier serialized into `[(value)]` and the hidden input.
+   * Defaults to `string` for back-compat; bind an object to specialize the
+   * parent `[forListbox]` over a richer `T`. The parent's
+   * `[isItemEqualToValue]` decides how options are matched against the
+   * committed selection.
+   */
+  readonly value = input.required<T>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly id = signal(this.#idGen.next('for-listbox-option'));
