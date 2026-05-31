@@ -12,8 +12,25 @@ import { injectDrawerContext } from './drawer-context';
  * Reflects `data-fade-from-active` when `fadeFromIndex` on the drawer root
  * is set and the active snap point is at or past that index — consumers
  * tie this to a CSS opacity transition for the Vaul-style "backdrop fades
- * in once you snap up past N" effect. The directive applies no visual
- * styles.
+ * in once you snap up past N" effect.
+ *
+ * Publishes the live drag progress toward the anchored edge as the
+ * `--for-drawer-drag-progress` custom property (`0` at rest → `1` fully
+ * dragged off-screen) and mirrors the surface's `data-dragging` attribute.
+ * Together these drive the Vaul-style "backdrop fades out as you swipe to
+ * dismiss" effect with pure CSS:
+ *
+ * ```css
+ * [forDrawerBackdrop] {
+ *   opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+ *   transition: opacity 0.3s ease;
+ * }
+ * [forDrawerBackdrop][data-dragging] {
+ *   transition: none; \/* track the pointer 1:1 *\/
+ * }
+ * ```
+ *
+ * The directive applies no visual styles itself.
  */
 @Directive({
   selector: '[forDrawerBackdrop]',
@@ -26,6 +43,8 @@ import { injectDrawerContext } from './drawer-context';
     'data-for-modal-peer': '',
     'data-state': 'open',
     '[attr.data-fade-from-active]': 'ctx.fadeFromActive() ? "" : null',
+    '[attr.data-dragging]': 'ctx.dragging() ? "" : null',
+    '[style.--for-drawer-drag-progress]': 'ctx.dragProgress()',
     '(click)': 'onClick($event)',
   },
 })

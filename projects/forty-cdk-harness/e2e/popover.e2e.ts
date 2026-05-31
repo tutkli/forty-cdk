@@ -58,4 +58,25 @@ test.describe('Popover', () => {
     await expect(el(page, 'popover')).toHaveCount(0);
     await expect(el(page, 'trigger')).not.toBeFocused();
   });
+
+  test('content stays anchored to the trigger when the page is scrolled (not offset by scrollY)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover', { tall: '1' });
+    const trigger = el(page, 'trigger');
+    await trigger.evaluate((node) => node.scrollIntoView({ block: 'center' }));
+
+    const scrollY = await page.evaluate(() => window.scrollY);
+    expect(scrollY).toBeGreaterThan(100);
+
+    await trigger.click();
+    await expect(el(page, 'popover')).toBeVisible();
+
+    const t = (await trigger.boundingBox())!;
+    const c = (await el(page, 'popover').boundingBox())!;
+    const gap = c.y - (t.y + t.height);
+
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(16);
+  });
 });

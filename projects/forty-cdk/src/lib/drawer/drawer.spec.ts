@@ -252,6 +252,31 @@ describe('ForDrawer (declarative)', () => {
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
     });
 
+    it('mirrors data-dragging onto the backdrop and publishes --for-drawer-drag-progress', async () => {
+      // Wiring only — the exact fade fraction is geometry (jsdom returns a
+      // zero rect), so its numeric value during the gesture is asserted in
+      // drawer.e2e.ts. Here we check the rest value and that the backdrop,
+      // which is portaled away from the surface, tracks the drag state.
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+      expect(backdrop.hasAttribute('data-dragging')).toBe(false);
+      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+
+      dispatchPointer(drawer, 'pointerdown', 0, 0);
+      dispatchPointer(drawer, 'pointermove', 0, 20);
+      await flush(r.fixture);
+      expect(backdrop.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointerup', 0, 20);
+      await flush(r.fixture);
+      expect(backdrop.hasAttribute('data-dragging')).toBe(false);
+      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+    });
+
     it('does not arm the swipe when [handleOnly]="true" and pointerdown lands off the handle', async () => {
       // With `handleOnly` on, a pointerdown that does not originate on the
       // registered `[forDrawerHandle]` element must NOT flip `#dragging`,
@@ -262,7 +287,13 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerHandle],
         template: `
           @if (open()) {
-            <div forDrawer [handleOnly]="true" (drag)="onDrag()" (close)="open.set(false)" ariaLabel="t">
+            <div
+              forDrawer
+              [handleOnly]="true"
+              (drag)="onDrag()"
+              (close)="open.set(false)"
+              ariaLabel="t"
+            >
               <div forDrawerHandle id="handle"></div>
               <div id="surface-target">surface</div>
             </div>
@@ -313,6 +344,46 @@ describe('ForDrawer (declarative)', () => {
 
       expect(r.instance.dragCount).toBe(0);
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('with snapPoints, an upward swipe (away from the edge) arms the gesture', async () => {
+      // Bug regression: with snap points the drag is bidirectional, so a
+      // pointer travelling away from the anchored edge must arm so the
+      // surface can grow toward a larger snap. (Geometry — how far it grows
+      // — is covered in drawer.e2e.ts; this asserts only the arming wiring.)
+      const r = renderHost(SnapPointsHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+      dispatchPointer(drawer, 'pointerdown', 0, 40);
+      dispatchPointer(drawer, 'pointermove', 0, 10);
+      await flush(r.fixture);
+      expect(drawer.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointerup', 0, 10);
+      await flush(r.fixture);
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('without snapPoints, an upward swipe does not arm (dismiss is one-way toward the edge)', async () => {
+      // A plain drawer only dismisses by swiping toward its anchored edge;
+      // an upward gesture has nowhere to go and must be dropped by the swipe
+      // helper rather than arming a no-op drag.
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      dispatchPointer(drawer, 'pointerdown', 0, 40);
+      dispatchPointer(drawer, 'pointermove', 0, 10);
+      await flush(r.fixture);
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+      dispatchPointer(drawer, 'pointerup', 0, 10);
+      await flush(r.fixture);
     });
   });
 

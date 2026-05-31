@@ -14,6 +14,9 @@ import { queryFlag } from './_query-flag';
   imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, ForPopoverClose],
   template: `
     <input id="before" placeholder="before-trigger" />
+    @if (tall) {
+      <div data-testid="spacer-before" style="height: 1000px"></div>
+    }
     <div
       forPopover
       [(open)]="open"
@@ -31,12 +34,16 @@ import { queryFlag } from './_query-flag';
         </div>
       }
     </div>
+    @if (tall) {
+      <div data-testid="spacer-after" style="height: 1000px"></div>
+    }
     <input id="after" placeholder="after-trigger" />
   `,
 })
 export class PopoverFixture {
   protected readonly open = signal(false);
 
+  protected readonly tall = queryFlag('tall');
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
 

@@ -915,6 +915,15 @@ module.exports = tseslint.config(
     },
   },
 
+  {
+    files: ['projects/forty-cdk-playground/**/*.ts'],
+    rules: {
+      '@angular-eslint/component-selector': 'off',
+      '@angular-eslint/directive-selector': 'off',
+      '@angular-eslint/template/elements-content': 'off',
+    },
+  },
+
   // ---------- Playwright E2E specs + root config ----------
   // These run inside @playwright/test (Node + browser), not Angular. They
   // freely poke at `document`/`window` via page.evaluate, and there is no
