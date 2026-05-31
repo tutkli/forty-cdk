@@ -116,16 +116,20 @@ function readInitialTheme(): Theme {
     }
 
     .brand-name {
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
 
     .brand-tag {
-      font-size: 0.72rem;
-      font-weight: 600;
+      font-size: 0.66rem;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
+      color: var(--pg-secondary);
+      background: color-mix(in srgb, var(--pg-secondary) 16%, transparent);
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
     }
 
     .icon-btn {
