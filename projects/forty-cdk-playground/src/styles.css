@@ -19,7 +19,8 @@
   --pg-radius-sm: 10px;
   --pg-radius: 16px;
   --pg-radius-lg: 24px;
-  --pg-shadow: 0 1px 2px color-mix(in srgb, var(--pg-primary) 14%, transparent),
+  --pg-shadow:
+    0 1px 2px color-mix(in srgb, var(--pg-primary) 14%, transparent),
     0 12px 30px color-mix(in srgb, var(--pg-primary) 16%, transparent);
   --pg-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --pg-sidebar-width: 264px;
@@ -363,6 +364,7 @@ a.pg-nav-link.active {
 .pg-dialog {
   position: fixed;
   z-index: 51;
+  display: block;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -440,6 +442,70 @@ a.pg-nav-link.active {
   .pg-backdrop-out {
     animation-duration: 0.01ms;
   }
+}
+
+.pg-dialog--top {
+  top: 1.5rem;
+  transform: translateX(-50%);
+}
+
+.pg-dialog--pop {
+  animation: pg-dialog-pop 0.22s var(--pg-ease-spring) both;
+}
+
+@keyframes pg-dialog-pop {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+
+@keyframes pg-panel-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.pg-panel-in {
+  animation: pg-panel-in 0.2s var(--pg-ease-spring) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-dialog--pop,
+  .pg-panel-in {
+    animation-duration: 0.01ms;
+  }
+}
+
+.pg-input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--pg-radius-sm);
+  border: 1px solid var(--pg-border-strong);
+  background: var(--pg-surface);
+  color: var(--pg-text);
+}
+
+.pg-dialog-warn {
+  margin: 0 0 1.25rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--pg-radius-sm);
+  border-left: 3px solid var(--pg-warning);
+  background: color-mix(in srgb, var(--pg-warning) 14%, var(--pg-surface));
+  font-size: 0.85rem;
+  color: var(--pg-text);
+}
+
+.pg-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 .pg-drawer-backdrop {
