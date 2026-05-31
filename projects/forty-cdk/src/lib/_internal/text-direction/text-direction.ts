@@ -30,8 +30,9 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  *
  * Returns a `Signal<WritingDirection>` equal to `explicitDir() ?? <ambient>`:
  * an explicit `[dir]` always wins, and when it is `null` the value falls back
- * to the **nearest ancestor carrying a `dir` attribute** (via
- * `element.closest('[dir]')`), then to `<html dir>`, defaulting to `'ltr'`.
+ * to the **nearest ancestor carrying a `dir` attribute** (the host itself is
+ * skipped — it reflects its own resolved `dir`), then to `<html dir>`,
+ * defaulting to `'ltr'`.
  * Direction is read from the semantic `dir` attribute, not from CSS
  * `direction`; consumers who need a specific direction should set the `dir`
  * attribute on an ancestor (the standard `<html dir="rtl">` setup) rather than
