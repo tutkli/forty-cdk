@@ -114,7 +114,7 @@ describe('ForMenubar', () => {
       expect(root.getAttribute('aria-orientation')).toBe('horizontal');
       expect(root.getAttribute('data-orientation')).toBe('horizontal');
       expect(root.getAttribute('data-state')).toBe('closed');
-      expect(root.hasAttribute('dir')).toBe(false);
+      expect(root.getAttribute('dir')).toBe('ltr');
 
       r.instance.dir.set('rtl');
       r.instance.orientation.set('vertical');

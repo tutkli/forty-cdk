@@ -45,7 +45,6 @@ interface AccordionEntry {
           [collapsible]="collapsible()"
           [orientation]="orientation()"
           [dir]="dir()"
-          [attr.dir]="dir()"
         >
           @for (item of items; track item.value) {
             <div

@@ -173,10 +173,10 @@ describe('ForSeparator', () => {
       expect(el.getAttribute('data-disabled')).toBe('');
     });
 
-    it('reflects dir="rtl" only when explicitly RTL', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
       const { fixture, query, flush } = renderHost(FocusableSeparatorHost);
       const el = query<HTMLElement>('[forSeparator]')!;
-      expect(el.hasAttribute('dir')).toBe(false);
+      expect(el.getAttribute('dir')).toBe('ltr');
 
       fixture.componentInstance.dir.set('rtl');
       flush();

@@ -265,6 +265,17 @@ describe('ForAccordion', () => {
       expect(root.getAttribute('data-orientation')).toBe('horizontal');
     });
 
+    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+      const { el, fixture, flush } = renderHost(HorizontalHost);
+      const root = el.querySelector('[forAccordion]')!;
+
+      expect(root.getAttribute('dir')).toBe('ltr');
+
+      fixture.componentInstance.dir.set('rtl');
+      flush();
+      expect(root.getAttribute('dir')).toBe('rtl');
+    });
+
     it('propagates data-orientation to item, trigger, and content', () => {
       const { el } = renderHost(HorizontalHost);
       const item = el.querySelector('[forAccordionItem]')!;

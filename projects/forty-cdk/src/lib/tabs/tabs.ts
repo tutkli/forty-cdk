@@ -35,6 +35,7 @@ import { FOR_TABS_DEFAULTS } from './tabs-defaults';
   host: {
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_TABS_CONTEXT, useExisting: ForTabs }],
 })

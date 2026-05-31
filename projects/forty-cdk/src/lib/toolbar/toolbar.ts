@@ -53,7 +53,7 @@ import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '[attr.dir]': 'dir()',
   },
   providers: [
     { provide: FOR_TOOLBAR_CONTEXT, useExisting: ForToolbar },

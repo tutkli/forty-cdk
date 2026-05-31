@@ -61,6 +61,7 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],

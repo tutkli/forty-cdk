@@ -61,7 +61,7 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_SLIDER_CONTEXT, useExisting: ForSlider }],

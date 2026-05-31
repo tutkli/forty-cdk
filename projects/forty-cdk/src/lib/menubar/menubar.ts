@@ -66,7 +66,7 @@ import {
     '[attr.data-state]': 'value() === "" ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '[attr.dir]': 'dir()',
   },
   providers: [
     { provide: FOR_MENUBAR_CONTEXT, useExisting: ForMenubar },

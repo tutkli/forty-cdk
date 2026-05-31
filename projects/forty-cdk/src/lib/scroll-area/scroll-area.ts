@@ -39,7 +39,7 @@ import { FOR_SCROLL_AREA_DEFAULTS } from './scroll-area-defaults';
   exportAs: 'forScrollArea',
   host: {
     '[attr.data-type]': 'type()',
-    '[attr.dir]': 'dir() === "rtl" ? "rtl" : null',
+    '[attr.dir]': 'dir()',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
   },

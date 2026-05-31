@@ -72,6 +72,7 @@ import { ComboboxSnapshot } from './combobox-snapshot';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],

@@ -62,6 +62,7 @@ import { FOR_SELECT_DEFAULTS } from './select-defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
