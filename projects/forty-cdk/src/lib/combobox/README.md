@@ -56,6 +56,7 @@ The combobox separates **what the user is typing** from **what's been committed*
 
 - `[(query)]: string` — the visible text the user is editing.
 - `[(value)]: readonly string[]` — committed selection. Single mode keeps 0 or 1 element; multi mode keeps any number.
+- `selectedItem: Signal<T | null>` — read-only single-select convenience view of `value`: the sole selected item, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`. (Distinct from `selected`, which pairs every value with its resolved label for chip rendering.)
 
 They diverge while the user types and resync on activation:
 

@@ -30,12 +30,16 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
- * Implements `FormValueControl<string[]>` from `@angular/forms/signals` for
- * `[formField]` auto-wiring.
+ * Implements `FormValueControl<readonly string[]>` from
+ * `@angular/forms/signals` for `[formField]` auto-wiring.
  *
  * Selection is always modeled as `readonly string[]`:
  * - In single mode (`multiple=false`, default), the array has 0 or 1 element.
  * - In multi mode, any number of items can be selected.
+ *
+ * Single-select consumers can read the sole value through the
+ * {@link ForListbox.selected} convenience accessor instead of unwrapping the
+ * array.
  *
  * Keyboard supports the full APG-recommended model: arrows + Home/End for
  * focus movement, Space/Enter (via native `<button>` activation) to select
@@ -62,7 +66,7 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
 })
 export class ForListbox
   extends FormUiControlBase
-  implements FormValueControl<string[]>, ForListboxContext
+  implements FormValueControl<readonly string[]>, ForListboxContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
@@ -74,7 +78,20 @@ export class ForListbox
    * nav), never on consumer writes via `[(value)]` — observe transitions
    * without binding back.
    */
-  readonly value = model<string[]>([]);
+  readonly value = model<readonly string[]>([]);
+
+  /**
+   * Read-only single-select convenience view of {@link value}. Returns the
+   * sole selected value when exactly one option is selected, otherwise
+   * `null` (empty selection, or multiple selections in `multiple` mode).
+   * Lets single-select consumers read `selected()` instead of unwrapping
+   * `value()[0]`. The array-backed `value` model remains the source of
+   * truth and the `FormValueControl` contract; this is a derived accessor.
+   */
+  readonly selected = computed<string | null>(() => {
+    const values = this.value();
+    return values.length === 1 ? values[0]! : null;
+  });
 
   readonly multiple = input(false, { transform: booleanAttribute });
 

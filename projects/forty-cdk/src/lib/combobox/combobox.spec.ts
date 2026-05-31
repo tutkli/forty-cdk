@@ -1427,6 +1427,80 @@ describe('ForCombobox', () => {
     });
   });
 
+  describe('selectedItem (single-select accessor)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div
+          forCombobox
+          #cb="forCombobox"
+          [(query)]="query"
+          [(value)]="value"
+          [(open)]="open"
+          [multiple]="multiple()"
+        >
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of FRUITS; track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <output data-testid="selected">{{ cb.selectedItem() ?? 'none' }}</output>
+      `,
+    })
+    class SelectedHost {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(false);
+      readonly multiple = signal(false);
+      readonly FRUITS = FRUITS;
+    }
+
+    const selectedText = (root: HTMLElement) =>
+      root.querySelector<HTMLElement>('[data-testid="selected"]')!.textContent;
+
+    it('is null when nothing is selected', async () => {
+      const r = renderHost(SelectedHost);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('none');
+    });
+
+    it('exposes the sole selected value in single mode', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.value.set(['banana']);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('banana');
+    });
+
+    it('tracks single-mode option activation (replace + close)', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('apricot').click();
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('apricot');
+    });
+
+    it('is null when more than one value is selected (multi mode)', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(['apple', 'banana']);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('none');
+    });
+  });
+
   describe('orphan errors', () => {
     it('throws when [forComboboxInput] is used outside [forCombobox]', () => {
       @Component({
@@ -1519,6 +1593,51 @@ describe('ForCombobox object values', () => {
     // falls back through itemToStringLabel because [label] is omitted).
     expect(r.instance.query()).toBe('Berlin');
     expect(r.instance.open()).toBe(false);
+  });
+
+  it('selectedItem exposes the sole selected object (single mode)', async () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      template: `
+        <div
+          forCombobox
+          #cb="forCombobox"
+          [(value)]="value"
+          [(open)]="open"
+          [isItemEqualToValue]="equals"
+          [itemToStringLabel]="toLabel"
+        >
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of CITIES; track it.id) {
+                <div [attr.data-test-id]="it.id" forComboboxOption [value]="it">{{ it.name }}</div>
+              }
+            </div>
+          }
+        </div>
+        <output data-testid="selected">{{ cb.selectedItem()?.name ?? 'none' }}</output>
+      `,
+    })
+    class Host {
+      readonly value = signal<readonly City[]>([]);
+      readonly open = signal(false);
+      readonly CITIES = CITIES;
+      readonly equals = (a: City, b: City) => a.id === b.id;
+      readonly toLabel = (it: City) => it.name;
+    }
+
+    const r = renderHost(Host);
+    const selectedText = () =>
+      r.el.querySelector<HTMLElement>('[data-testid="selected"]')!.textContent;
+    await flush(r.fixture);
+    expect(selectedText()).toBe('none');
+
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    document.querySelector<HTMLElement>('[data-test-id="rome"]')!.click();
+    await flush(r.fixture);
+    expect(selectedText()).toBe('Rome');
   });
 
   it('isItemEqualToValue drives selection lookup (different reference, same id)', async () => {

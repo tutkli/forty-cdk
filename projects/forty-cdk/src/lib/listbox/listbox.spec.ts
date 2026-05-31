@@ -46,7 +46,7 @@ const GROUP_IMPORTS = [
   `,
 })
 class ListboxHost {
-  readonly picked = signal<string[]>([]);
+  readonly picked = signal<readonly string[]>([]);
   readonly isMulti = signal(false);
   readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
@@ -364,7 +364,7 @@ describe('ForListbox', () => {
           `,
         })
         class Host {
-          readonly picked = signal<string[]>([]);
+          readonly picked = signal<readonly string[]>([]);
         }
 
         const r = renderHost(Host);
@@ -681,7 +681,7 @@ describe('ForListbox', () => {
         `,
       })
       class Host {
-        readonly picked = signal<string[]>([]);
+        readonly picked = signal<readonly string[]>([]);
       }
 
       const { el, fixture, flush } = renderHost(Host);
@@ -712,7 +712,7 @@ describe('ForListbox', () => {
         `,
       })
       class Host {
-        readonly picked = signal<string[]>([]);
+        readonly picked = signal<readonly string[]>([]);
       }
 
       const { el, fixture, flush } = renderHost(Host);
@@ -806,7 +806,7 @@ describe('ForListbox', () => {
         `,
       })
       class Host {
-        readonly picked = signal<string[]>([]);
+        readonly picked = signal<readonly string[]>([]);
         readonly emitted: (readonly string[])[] = [];
       }
 
@@ -836,7 +836,7 @@ describe('ForListbox', () => {
       `,
     })
     class GroupHost {
-      readonly picked = signal<string[]>([]);
+      readonly picked = signal<readonly string[]>([]);
     }
 
     it('renders role=group and links aria-labelledby to the label id', () => {
@@ -906,7 +906,7 @@ describe('ForListbox', () => {
       `,
     })
     class IndicatorHost {
-      readonly picked = signal<string[]>([]);
+      readonly picked = signal<readonly string[]>([]);
     }
 
     it('hides indicators while no option is selected', () => {
@@ -957,7 +957,7 @@ describe('ForListbox', () => {
       `,
     })
     class FlagsHost {
-      readonly picked = signal<string[]>([]);
+      readonly picked = signal<readonly string[]>([]);
       readonly touched = signal(false);
       readonly dirty = signal(false);
       readonly pending = signal(false);
@@ -995,7 +995,7 @@ describe('ForListbox', () => {
       `,
     })
     class FormHost {
-      readonly picked = signal<string[]>([]);
+      readonly picked = signal<readonly string[]>([]);
       readonly fieldName = signal<string>('');
     }
 
@@ -1022,6 +1022,53 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('selected (single-select accessor)', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox #lb="forListbox" [(value)]="picked" [multiple]="isMulti()">
+          <li><button type="button" forListboxOption value="a" data-test-id="a">A</button></li>
+          <li><button type="button" forListboxOption value="b" data-test-id="b">B</button></li>
+        </ul>
+        <output data-testid="selected">{{ lb.selected() ?? 'none' }}</output>
+      `,
+    })
+    class SelectedHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly isMulti = signal(false);
+    }
+
+    const selectedText = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="selected"]')!.textContent;
+
+    it('is null when nothing is selected', () => {
+      const { el } = renderHost(SelectedHost);
+      expect(selectedText(el)).toBe('none');
+    });
+
+    it('exposes the sole selected value in single mode', () => {
+      const { el, fixture, flush } = renderHost(SelectedHost);
+      fixture.componentInstance.picked.set(['b']);
+      flush();
+      expect(selectedText(el)).toBe('b');
+    });
+
+    it('tracks single-mode click activation', () => {
+      const { el, flush } = renderHost(SelectedHost);
+      el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!.click();
+      flush();
+      expect(selectedText(el)).toBe('a');
+    });
+
+    it('is null when more than one value is selected (multi mode)', () => {
+      const { el, fixture, flush } = renderHost(SelectedHost);
+      fixture.componentInstance.isMulti.set(true);
+      fixture.componentInstance.picked.set(['a', 'b']);
+      flush();
+      expect(selectedText(el)).toBe('none');
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects external value writes without Zone.js', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
@@ -1032,6 +1079,28 @@ describe('ForListbox', () => {
       fixture.componentInstance.picked.set([]);
       flush();
       expect(optOf(el, 'cherry').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('exposes the single-select accessor without Zone.js', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox #lb="forListbox" [(value)]="picked">
+            <li><button type="button" forListboxOption value="x" data-test-id="x">X</button></li>
+          </ul>
+          <output data-testid="selected">{{ lb.selected() ?? 'none' }}</output>
+        `,
+      })
+      class ZonelessSelectedHost {
+        readonly picked = signal<readonly string[]>([]);
+      }
+
+      const { el, fixture, flush } = renderHost(ZonelessSelectedHost);
+      expect(el.querySelector('[data-testid="selected"]')!.textContent).toBe('none');
+
+      fixture.componentInstance.picked.set(['x']);
+      flush();
+      expect(el.querySelector('[data-testid="selected"]')!.textContent).toBe('x');
     });
   });
 

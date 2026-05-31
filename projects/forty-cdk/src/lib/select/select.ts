@@ -83,6 +83,19 @@ export class ForSelect
   readonly value = model<readonly string[]>([]);
 
   /**
+   * Read-only single-select convenience view of {@link value}. Returns the
+   * sole selected value when exactly one option is selected, otherwise
+   * `null` (empty selection, or multiple selections in `multiple` mode).
+   * Lets single-select consumers read `selected()` instead of unwrapping
+   * `value()[0]`. The array-backed `value` model remains the source of
+   * truth and the `FormValueControl` contract; this is a derived accessor.
+   */
+  readonly selected = computed<string | null>(() => {
+    const values = this.value();
+    return values.length === 1 ? values[0]! : null;
+  });
+
+  /**
    * Two-way bindable. Whether the listbox is currently shown. The `model()`
    * change emitter (`(openChange)`) fires only on internal transitions
    * (trigger toggle, Escape, outside dismissal, single-mode option select),

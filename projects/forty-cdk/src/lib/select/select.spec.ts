@@ -998,6 +998,65 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('selected (single-select accessor)', () => {
+    @Component({
+      imports: HOST_IMPORTS,
+      template: `
+        <div forSelect #sel="forSelect" [(open)]="open" [(value)]="value" [multiple]="multiple()">
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+              <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+            </div>
+          }
+        </div>
+        <output data-testid="selected">{{ sel.selected() ?? 'none' }}</output>
+      `,
+    })
+    class SelectedHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly multiple = signal(false);
+    }
+
+    const selectedText = (root: HTMLElement) =>
+      root.querySelector<HTMLElement>('[data-testid="selected"]')!.textContent;
+
+    it('is null when nothing is selected', async () => {
+      const r = renderHost(SelectedHost);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('none');
+    });
+
+    it('exposes the sole selected value in single mode', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.value.set(['banana']);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('banana');
+    });
+
+    it('tracks single-mode option activation (replace + close)', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('apple').click();
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('apple');
+    });
+
+    it('is null when more than one value is selected (multi mode)', async () => {
+      const r = renderHost(SelectedHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(['apple', 'banana']);
+      await flush(r.fixture);
+      expect(selectedText(r.el)).toBe('none');
+    });
+  });
+
   describe('orphan errors', () => {
     it('throws when [forSelectTrigger] is used outside [forSelect]', () => {
       @Component({

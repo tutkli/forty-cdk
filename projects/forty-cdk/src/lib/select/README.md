@@ -18,7 +18,7 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 
 ## Single mode (default)
 
-Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element.
+Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<string | null>` accessor (the form contract keeps `value` as `readonly string[]`; `selected()` is `value()[0]` or `null`).
 
 ```html
 <div forSelect [(value)]="favorite" placeholder="Pick a fruit">
