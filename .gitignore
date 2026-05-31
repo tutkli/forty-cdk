@@ -43,6 +43,7 @@ __screenshots__/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.claude/launch.json
 
 # Audit working files (issue body drafts kept locally, not part of source)
 /.audit-issues/
