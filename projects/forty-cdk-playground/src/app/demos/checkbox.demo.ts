@@ -49,6 +49,7 @@ import { Icon } from '../ui/icon';
     .cb-row {
       display: inline-flex;
       align-items: center;
+      vertical-align: middle;
       gap: 0.6rem;
       padding: 0;
       border: 0;
