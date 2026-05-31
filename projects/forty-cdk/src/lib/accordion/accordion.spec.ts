@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import { flush, pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';
 import { ForAccordionItem } from './accordion-item';
@@ -313,6 +313,80 @@ describe('ForAccordion', () => {
 
       pressKey(triggerOf(el, 'b'), 'ArrowRight');
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
+    });
+  });
+
+  describe('ambient writing direction', () => {
+    @Component({
+      imports: [...ACCORDION_IMPORTS],
+      template: `
+        <div [attr.dir]="ambient()">
+          <div forAccordion orientation="horizontal" [dir]="explicit()">
+            @for (id of ['a', 'b', 'c']; track id) {
+              <div forAccordionItem [value]="id">
+                <h3>
+                  <button type="button" forAccordionTrigger [attr.data-test-id]="id">
+                    {{ id }}
+                  </button>
+                </h3>
+                <section forAccordionContent></section>
+              </div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class AmbientHost {
+      readonly ambient = signal<string | null>(null);
+      readonly explicit = signal<'ltr' | 'rtl' | null>(null);
+    }
+
+    it('reflects dir="rtl" from an ancestor [dir] when no explicit dir is set', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.componentInstance.ambient.set('rtl');
+      await flush(fixture);
+      const root = fixture.nativeElement.querySelector('[forAccordion]') as HTMLElement;
+      expect(root.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('lets an explicit [dir]="ltr" win over an rtl ancestor', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.componentInstance.ambient.set('rtl');
+      fixture.componentInstance.explicit.set('ltr');
+      await flush(fixture);
+      const root = fixture.nativeElement.querySelector('[forAccordion]') as HTMLElement;
+      expect(root.getAttribute('dir')).toBe('ltr');
+    });
+
+    it('resolves arrow-key semantics as RTL from the ambient ancestor', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.componentInstance.ambient.set('rtl');
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const trigger = (id: string) =>
+        el.querySelector<HTMLButtonElement>(`[data-test-id="${id}"]`)!;
+      trigger('a').focus();
+
+      pressKey(trigger('a'), 'ArrowLeft');
+      expect(document.activeElement).toBe(trigger('b'));
+
+      pressKey(trigger('b'), 'ArrowRight');
+      expect(document.activeElement).toBe(trigger('a'));
+    });
+
+    it('updates the reflected dir when the ancestor flips at runtime', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.detectChanges();
+      const root = fixture.nativeElement.querySelector('[forAccordion]') as HTMLElement;
+      expect(root.getAttribute('dir')).toBe('ltr');
+
+      fixture.componentInstance.ambient.set('rtl');
+      await flush(fixture);
+      expect(root.getAttribute('dir')).toBe('rtl');
     });
   });
 

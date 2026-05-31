@@ -74,6 +74,48 @@ describe('ForDropdownMenu', () => {
     });
   });
 
+  describe('ambient writing direction', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div [attr.dir]="ambient()">
+          <div forDropdownMenu [(open)]="open" [dir]="explicit()">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="a" forMenuItem>A</button>
+              </div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class AmbientHost {
+      readonly open = signal(false);
+      readonly ambient = signal<string | null>(null);
+      readonly explicit = signal<'ltr' | 'rtl' | null>(null);
+    }
+
+    it('reflects dir="rtl" on the root from an ancestor [dir] when none is set', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.componentInstance.ambient.set('rtl');
+      await flush(fixture);
+      const root = fixture.nativeElement.querySelector('[forDropdownMenu]') as HTMLElement;
+      expect(root.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('lets an explicit [dir]="ltr" win over an rtl ancestor', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AmbientHost);
+      fixture.componentInstance.ambient.set('rtl');
+      fixture.componentInstance.explicit.set('ltr');
+      await flush(fixture);
+      const root = fixture.nativeElement.querySelector('[forDropdownMenu]') as HTMLElement;
+      expect(root.getAttribute('dir')).toBe('ltr');
+    });
+  });
+
   describe('trigger interaction', () => {
     it('opens on click and focuses the first item', async () => {
       const r = renderHost(DropdownHost);
