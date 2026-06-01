@@ -762,6 +762,43 @@ describe('ForCombobox', () => {
       expect(empty.hasAttribute('hidden')).toBe(false);
       expect(empty.getAttribute('role')).toBe('status');
     });
+
+    it('enforces inline display:none while hidden so a consumer display class cannot leak through', async () => {
+      @Component({
+        imports: [...BASE_IMPORTS, ForComboboxEmpty],
+        template: `
+          @let q = query().toLowerCase();
+          @let filtered = items.filter((it) => it.toLowerCase().includes(q));
+
+          <div forCombobox [(query)]="query" [(open)]="open">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                @for (it of filtered; track it) {
+                  <div [attr.data-test-id]="it" forComboboxOption [value]="it">{{ it }}</div>
+                }
+                <div forComboboxEmpty data-test-id="empty" class="consumer-flex">No matches.</div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly query = signal('');
+        readonly open = signal(true);
+        readonly items = ['Apple', 'Banana'];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const empty = document.querySelector<HTMLElement>('[data-test-id="empty"]')!;
+      expect(empty.style.display).toBe('none');
+
+      r.instance.query.set('zzz');
+      await flush(r.fixture);
+      expect(empty.style.display).toBe('');
+    });
   });
 
   describe('ForComboboxClear', () => {
@@ -796,6 +833,34 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       expect(r.instance.value()).toEqual([]);
       expect(r.instance.query()).toBe('');
+    });
+
+    it('enforces inline display:none while hidden so a consumer display class cannot leak through', async () => {
+      @Component({
+        imports: [ForCombobox, ForComboboxInput, ForComboboxClear],
+        template: `
+          <div forCombobox [(value)]="value" [(query)]="query" [(open)]="open">
+            <input forComboboxInput />
+            <button forComboboxClear data-test-id="clear" class="consumer-flex">×</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly value = signal<readonly string[]>([]);
+        readonly query = signal('');
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const clear = r.query<HTMLButtonElement>('[data-test-id="clear"]')!;
+      expect(clear.style.display).toBe('none');
+
+      r.instance.value.set(['apple']);
+      r.instance.query.set('Apple');
+      await flush(r.fixture);
+      expect(clear.style.display).toBe('');
     });
   });
 

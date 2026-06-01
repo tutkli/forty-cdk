@@ -103,6 +103,10 @@ import {
         width: 10px;
         height: 10px;
         background: rgba(0, 0, 0, 0.1);
+        /* A consumer display rule (author selector). The directive's inline
+           display:none must still win while the corner is hidden — see the
+           "consumer display rule cannot leak through" spec. */
+        display: flex;
       }
     `,
   ],

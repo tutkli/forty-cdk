@@ -4,8 +4,11 @@ import { injectComboboxContext } from './combobox-context';
 
 /**
  * Empty-state slot, shown when the listbox has no registered options.
- * The directive flips a `[hidden]` host binding so the consumer can keep
- * the empty message inline in the template — no `@if` needed:
+ * The directive hides the message when options exist so the consumer can
+ * keep it inline in the template — no `@if` needed. Visibility is enforced
+ * with an inline `display: none` (which beats any author `display` rule a
+ * consumer applies via a class) in addition to the `hidden` attribute that
+ * removes it from the a11y tree:
  *
  * ```html
  * <div forComboboxContent>
@@ -26,6 +29,7 @@ import { injectComboboxContext } from './combobox-context';
     role: 'status',
     'aria-live': 'polite',
     '[hidden]': '!shouldShow()',
+    '[style.display]': 'shouldShow() ? null : "none"',
   },
 })
 export class ForComboboxEmpty {

@@ -1026,6 +1026,32 @@ describe('ForListbox', () => {
       expect(b.hasAttribute('hidden')).toBe(true);
     });
 
+    it('enforces inline display:none while unselected so a consumer display class cannot leak through', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS, ForListboxOptionIndicator],
+        template: `
+          <ul forListbox [(value)]="picked" [multiple]="true">
+            <li>
+              <button type="button" forListboxOption value="a" data-test-id="opt-a">
+                A <span forListboxOptionIndicator data-ind="a" class="consumer-flex"></span>
+              </button>
+            </li>
+          </ul>
+        `,
+      })
+      class StyledIndicatorHost {
+        readonly picked = signal<readonly string[]>([]);
+      }
+
+      const { el, fixture, flush } = renderHost(StyledIndicatorHost);
+      const a = el.querySelector<HTMLElement>('[data-ind="a"]')!;
+      expect(a.style.display).toBe('none');
+
+      fixture.componentInstance.picked.set(['a']);
+      flush();
+      expect(a.style.display).toBe('');
+    });
+
     it('throws when used outside [forListboxOption]', () => {
       @Component({
         imports: [ForListboxOptionIndicator],
