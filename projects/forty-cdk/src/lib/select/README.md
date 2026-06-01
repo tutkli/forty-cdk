@@ -23,11 +23,11 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
 
 ```html
-<div forSelect [(value)]="favorite" placeholder="Pick a fruit">
+<div forSelect #select="forSelect" [(value)]="favorite" placeholder="Pick a fruit">
   <button forSelectTrigger>
     <span forSelectValue></span>
   </button>
-  @if (favoriteOpen()) {
+  @if (select.open()) {
   <div forSelectContent>
     <button forSelectOption value="apple">Apple</button>
     <button forSelectOption value="banana">Banana</button>
@@ -37,16 +37,18 @@ Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 ele
 </div>
 ```
 
+`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
+
 ## Multi mode
 
 Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle in/out — the listbox stays open. Tab, Escape, or outside-pointer close it.
 
 ```html
-<div forSelect multiple [(value)]="tags">
+<div forSelect #select="forSelect" multiple [(value)]="tags">
   <button forSelectTrigger>
     <span forSelectValue placeholder="Pick tags…"></span>
   </button>
-  @if (tagsOpen()) {
+  @if (select.open()) {
   <div forSelectContent>
     <button forSelectOption value="ng">Angular</button>
     <button forSelectOption value="ts">TypeScript</button>
@@ -94,11 +96,11 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 When nothing is selected, the algorithm falls back to the first enabled option. The listbox is clamped inside the viewport with `collisionPadding`; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
 
 ```html
-<div forSelect [(value)]="country" position="item-aligned" [collisionPadding]="10">
+<div forSelect #select="forSelect" [(value)]="country" position="item-aligned" [collisionPadding]="10">
   <button forSelectTrigger>
     <span forSelectValue placeholder="Country"></span>
   </button>
-  @if (countryOpen()) {
+  @if (select.open()) {
   <div forSelectContent class="select-content">
     <button forSelectOption value="es">Spain</button>
     <button forSelectOption value="fr">France</button>
@@ -186,6 +188,7 @@ The visible option label still comes from the rendered `textContent`, so there's
 ```html
 <div
   forSelect
+  #select="forSelect"
   [(value)]="city"
   [isItemEqualToValue]="byId"
   name="city"
@@ -195,7 +198,7 @@ The visible option label still comes from the rendered `textContent`, so there's
   <button forSelectTrigger>
     <span forSelectValue></span>
   </button>
-  @if (cityOpen()) {
+  @if (select.open()) {
   <div forSelectContent>
     @for (c of cities; track c.id) {
     <button forSelectOption [value]="c">{{ c.name }}</button>

@@ -7,7 +7,7 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 ## Usage
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import {
   ForPopover,
   ForPopoverArrow,
@@ -30,10 +30,10 @@ import {
     ForPopoverArrow,
   ],
   template: `
-    <div forPopover [(open)]="open" side="bottom" align="start">
+    <div forPopover #popover="forPopover" side="bottom" align="start">
       <button forPopoverTrigger>Settings</button>
 
-      @if (open()) {
+      @if (popover.open()) {
         <div forPopoverContent class="popover" animate.leave="fade-out">
           <h2 forPopoverTitle>Display</h2>
           <p forPopoverDescription>Adjust theme and density.</p>
@@ -45,12 +45,25 @@ import {
     </div>
   `,
 })
-export class DemoPopover {
-  readonly open = signal(false);
-}
+export class DemoPopover {}
 ```
 
-`[forPopoverContent]` portals to `document.body` and is positioned with floating-ui — it must be wrapped with `@if (open())` so mount and unmount drive `animate.enter` / `animate.leave`.
+`[forPopoverContent]` portals to `document.body` and is positioned with floating-ui — it must be wrapped with `@if` so mount and unmount drive `animate.enter` / `animate.leave`.
+
+### `#popover="forPopover"` vs. `[(open)]`
+
+The minimal "click trigger → show content" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forPopover]` is `exportAs: 'forPopover'`, so expose the directive instance with a template reference variable — `#popover="forPopover"` — and drive the `@if` straight off its own `open()` signal, as above. The trigger toggles it; Escape and outside dismissal flip it back.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forPopover [(open)]="open">
+  <button forPopoverTrigger>Settings</button>
+  @if (open()) {
+  <div forPopoverContent>…</div>
+  }
+</div>
+```
 
 ## Pieces
 

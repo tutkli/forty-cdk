@@ -33,9 +33,9 @@ The primitive is headless — it does **not** filter the registered options. The
 @let q = query().toLowerCase(); @let filtered = items.filter(it =>
 it.label.toLowerCase().includes(q));
 
-<div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
   <input forComboboxInput placeholder="Search a fruit…" />
-  @if (open()) {
+  @if (combobox.open()) {
   <div forComboboxContent>
     @for (it of filtered; track it.id) {
     <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
@@ -45,6 +45,8 @@ it.label.toLowerCase().includes(q));
   }
 </div>
 ```
+
+`[(query)]` (the typed text) and `[(value)]` (the committed selection / form state) are the consumer's. Open state is separate: `[forCombobox]` owns it as a `model<boolean>`, and since the directive is `exportAs: 'forCombobox'` you can read it straight off a template reference variable — `#combobox="forCombobox"` — and gate `[forComboboxContent]` on `combobox.open()`. Focus / query / arrow keys flip it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` (as the multi / object / virtualization examples below do) only when the component class needs to read or drive open state itself.
 
 ## Mount/visibility convention
 
