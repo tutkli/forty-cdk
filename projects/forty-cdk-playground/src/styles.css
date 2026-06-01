@@ -167,7 +167,13 @@ h3 {
   gap: 0.35rem;
 }
 
-.pg-field > .pg-label {
+.pg-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pg-field .pg-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--pg-text);

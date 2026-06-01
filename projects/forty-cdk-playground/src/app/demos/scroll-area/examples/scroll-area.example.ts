@@ -51,8 +51,18 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="type" [options]="typeOptions" [(value)]="type" />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
+        <app-control-select
+          label="type"
+          hint="When the synthetic scrollbars are visible: always shows them whenever content overflows, auto shows them only on overflow, scroll shows them while scrolling then fades, and hover shows them while the cursor is over the area."
+          [options]="typeOptions"
+          [(value)]="type"
+        />
+        <app-control-select
+          label="dir"
+          hint="Writing direction. In rtl the vertical scrollbar is positioned on the left edge. It is reflected to the host dir attribute."
+          [options]="dirOptions"
+          [(value)]="dir"
+        />
 
         <p class="pg-hint">
           always / auto keep the bars shown while content overflows; hover reveals them on pointer

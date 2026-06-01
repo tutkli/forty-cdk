@@ -8,6 +8,7 @@ import {
 } from 'forty-cdk';
 
 import { Icon } from './icon';
+import { InfoTip } from './info-tip';
 
 export interface ControlOption<T extends string = string> {
   readonly value: T;
@@ -19,10 +20,23 @@ let uid = 0;
 @Component({
   selector: 'app-control-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption, Icon],
+  imports: [
+    ForSelect,
+    ForSelectTrigger,
+    ForSelectValue,
+    ForSelectContent,
+    ForSelectOption,
+    Icon,
+    InfoTip,
+  ],
   template: `
     <div class="pg-field">
-      <span class="pg-label" [id]="labelId">{{ label() }}</span>
+      <span class="pg-label-row">
+        <span class="pg-label" [id]="labelId">{{ label() }}</span>
+        @if (hint(); as hint) {
+          <app-info-tip [text]="hint" />
+        }
+      </span>
       <div forSelect [(open)]="open" [value]="selectValue()" (valueChange)="onValueChange($event)">
         <button
           forSelectTrigger
@@ -48,6 +62,7 @@ let uid = 0;
 })
 export class ControlSelect<T extends string = string> {
   readonly label = input.required<string>();
+  readonly hint = input('');
   readonly options = input.required<readonly ControlOption<T>[]>();
   readonly value = model.required<T>();
 

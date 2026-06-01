@@ -1,23 +1,36 @@
 import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
 import { ForSwitch } from 'forty-cdk';
 
+import { InfoTip } from './info-tip';
+
 @Component({
   selector: 'app-control-switch',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSwitch],
+  imports: [ForSwitch, InfoTip],
   template: `
-    <button forSwitch class="switch" [(checked)]="checked" [disabled]="disabled()">
-      <span class="text">{{ label() }}</span>
-      <span class="track"><span class="thumb"></span></span>
-    </button>
+    <div class="switch-row">
+      @if (hint(); as hint) {
+        <app-info-tip [text]="hint" />
+      }
+      <button forSwitch class="switch" [(checked)]="checked" [disabled]="disabled()">
+        <span class="text">{{ label() }}</span>
+        <span class="track"><span class="thumb"></span></span>
+      </button>
+    </div>
   `,
   styles: `
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .switch {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      width: 100%;
+      flex: 1;
       padding: 0;
       border: 0;
       background: transparent;
@@ -78,6 +91,7 @@ import { ForSwitch } from 'forty-cdk';
 })
 export class ControlSwitch {
   readonly label = input.required<string>();
+  readonly hint = input('');
   readonly checked = model.required<boolean>();
   readonly disabled = input(false);
 }

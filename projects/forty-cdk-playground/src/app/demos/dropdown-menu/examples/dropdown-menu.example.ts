@@ -72,11 +72,30 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="side" />
-        <app-control-select label="align" [options]="alignOptions" [(value)]="align" />
-        <app-control-select label="sideOffset" [options]="offsetOptions" [(value)]="offsetValue" />
+        <app-control-select
+          label="side"
+          hint="Which side of the trigger the menu is anchored to. It flips to the opposite side automatically when there isn't room in the viewport."
+          [options]="sideOptions"
+          [(value)]="side"
+        />
+        <app-control-select
+          label="align"
+          hint="Alignment along the chosen side: start, center or end. Defaults to start."
+          [options]="alignOptions"
+          [(value)]="align"
+        />
+        <app-control-select
+          label="sideOffset"
+          hint="Gap in pixels between the trigger and the menu along the side axis."
+          [options]="offsetOptions"
+          [(value)]="offsetValue"
+        />
         <app-control-switch label="loop" [(checked)]="loop" />
-        <app-control-switch label="dismissible" [(checked)]="dismissible" />
+        <app-control-switch
+          label="dismissible"
+          hint="When on, Escape, an outside pointer-down, and Tab all close the menu. Turn off to keep it open until you change the open state yourself."
+          [(checked)]="dismissible"
+        />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
         <p class="pg-state">

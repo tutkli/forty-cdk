@@ -65,14 +65,29 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="side" />
-        <app-control-select label="align" [options]="alignOptions" [(value)]="align" />
+        <app-control-select
+          label="side"
+          hint="Which side of the trigger the popover is anchored to. It flips to the opposite side automatically when there isn't room in the viewport."
+          [options]="sideOptions"
+          [(value)]="side"
+        />
+        <app-control-select
+          label="align"
+          hint="Alignment along the chosen side: start, center or end. Defaults to center."
+          [options]="alignOptions"
+          [(value)]="align"
+        />
         <app-control-select
           label="initialFocus"
+          hint="Where focus lands when the popover opens. 'first' focuses the first focusable element inside; 'container' focuses the panel itself when nothing inside is focusable."
           [options]="focusOptions"
           [(value)]="initialFocus"
         />
-        <app-control-switch label="dismissible" [(checked)]="dismissible" />
+        <app-control-switch
+          label="dismissible"
+          hint="When on, Escape, a pointer-down outside, and focus moving outside all close the popover. Turn off for confirm flows that must be answered via the close button."
+          [(checked)]="dismissible"
+        />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
         <p class="pg-state">

@@ -127,11 +127,20 @@ const COUNTRIES = [
         <app-control-switch label="multiple" [(checked)]="multiple" />
         <app-control-select
           label="autocompleteMode"
+          hint="Mirrors aria-autocomplete. 'list' shows the filtered options and keeps the input verbatim; 'both' adds inline completion, selecting the rest of the first match as you type."
           [options]="autocompleteOptions"
           [(value)]="autocompleteMode"
         />
-        <app-control-switch label="openOnFocus" [(checked)]="openOnFocus" />
-        <app-control-switch label="autoHighlight" [(checked)]="autoHighlight" />
+        <app-control-switch
+          label="openOnFocus"
+          hint="Opens the listbox as soon as the input gains focus. Off by default — opening on typing or arrow keys is the standard behavior."
+          [(checked)]="openOnFocus"
+        />
+        <app-control-switch
+          label="autoHighlight"
+          hint="Highlights the first enabled option whenever the listbox is open with nothing active, so Enter commits a match immediately. Off gives Radix-style 'arrow first' behavior."
+          [(checked)]="autoHighlight"
+        />
 
         <p class="pg-state">
           query: <b>{{ query() || '—' }}</b

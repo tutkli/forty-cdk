@@ -42,7 +42,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label="setBackgroundColorOnScale" [(checked)]="scaleBgColor" />
+        <app-control-switch
+          label="setBackgroundColorOnScale"
+          hint="Paints the body behind the scaled page so the gap between the receded wrapper and the viewport edge doesn't show through. Only applies while scaleBackground is on."
+          [(checked)]="scaleBgColor"
+        />
 
         <p class="pg-state">
           drawer: <b>{{ scaleOpen() ? 'open' : 'closed' }}</b>

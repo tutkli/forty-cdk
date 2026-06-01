@@ -48,6 +48,7 @@ interface RadioOption {
       <div controls class="pg-controls">
         <app-control-select
           label="orientation"
+          hint="Sets which axis the arrow keys follow: vertical uses ArrowUp / ArrowDown, horizontal uses ArrowLeft / ArrowRight (swapped in RTL)."
           [options]="orientationOptions"
           [(value)]="orientation"
         />

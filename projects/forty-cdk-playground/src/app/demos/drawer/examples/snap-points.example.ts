@@ -41,7 +41,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label='fade backdrop from "half"' [(checked)]="snapFade" />
+        <app-control-switch
+          label='fade backdrop from "half"'
+          hint="Sets fadeFromIndex to the half snap: the backdrop only reflects its fade attribute once the sheet reaches that snap or higher, leaving it clear at the peek snap."
+          [(checked)]="snapFade"
+        />
 
         <p class="pg-state">
           active snap: <b>{{ snapActiveDisplay() }}</b>

@@ -109,6 +109,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       <div controls class="pg-controls">
         <app-control-select
           label="orientation"
+          hint="Sets the axis the arrow keys follow: horizontal uses Left/Right, vertical uses Up/Down. Also reflected on data-orientation so you can flip the layout in CSS."
           [options]="orientationOptions"
           [(value)]="orientation"
         />

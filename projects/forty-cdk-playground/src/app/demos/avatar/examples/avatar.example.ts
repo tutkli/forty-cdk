@@ -89,6 +89,7 @@ const SIMULATED_LATENCY_MS = 1400;
       <div controls class="pg-controls">
         <app-control-select
           label="fallbackDelayMs"
+          hint="Milliseconds the fallback is held back during idle and loading, so a fast load never flashes initials. An error always shows its fallback immediately, ignoring this delay."
           [options]="delayOptions"
           [value]="delayValue()"
           (valueChange)="onDelayChange($event)"

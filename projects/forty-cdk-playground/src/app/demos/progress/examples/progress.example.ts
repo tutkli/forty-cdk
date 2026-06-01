@@ -35,12 +35,25 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button type="button" class="pg-btn" [disabled]="indeterminate()" (click)="step(10)">
             +10
           </button>
-          <button type="button" class="pg-btn" [disabled]="indeterminate()" (click)="value.set(100)">
+          <button
+            type="button"
+            class="pg-btn"
+            [disabled]="indeterminate()"
+            (click)="value.set(100)"
+          >
             Complete
           </button>
         </div>
-        <app-control-switch label="indeterminate" [(checked)]="indeterminate" />
-        <app-control-switch label="announceCompletion" [(checked)]="announce" />
+        <app-control-switch
+          label="indeterminate"
+          hint="Sets value to null, putting the bar in indeterminate mode (no aria-valuenow). Use it for loading states whose duration cannot be predicted."
+          [(checked)]="indeterminate"
+        />
+        <app-control-switch
+          label="announceCompletion"
+          hint="When on, reaching the max value is announced once via the live region using aria-valuetext (or 'Complete'). Repeated completions do not re-fire."
+          [(checked)]="announce"
+        />
 
         <p class="pg-state">
           value: <b>{{ indeterminate() ? 'null' : value() }}</b

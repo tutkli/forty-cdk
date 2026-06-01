@@ -54,7 +54,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label="dismissible" [(checked)]="dismissible" />
+        <app-control-switch
+          label="dismissible"
+          hint="When on, Escape, an outside pointer-down, and Tab all close the menu. Turn off to keep it open until you change the open state yourself."
+          [(checked)]="dismissible"
+        />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
         <p class="pg-state">

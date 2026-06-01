@@ -143,7 +143,12 @@ import { Icon } from '../../../ui/icon';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="delayDuration" [options]="delayOptions" [(value)]="delayValue" />
+        <app-control-select
+          label="delayDuration"
+          hint="Milliseconds to wait after hover or focus before a panel opens. 0 opens instantly."
+          [options]="delayOptions"
+          [(value)]="delayValue"
+        />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
         <p class="pg-state">

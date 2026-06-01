@@ -43,9 +43,16 @@ import { DemoLayout } from '../../../ui/demo-layout';
 
       <div controls class="pg-controls">
         <app-control-switch label="disabled" [(checked)]="disabled" />
-        <app-control-select label="step" [options]="stepOptions" [(value)]="stepValue" />
+        <app-control-select
+          label="step"
+          hint="The granularity values snap to, and the amount each arrow-key press moves. PageUp / PageDown move by 10× this step."
+          [options]="stepOptions"
+          [(value)]="stepValue"
+        />
 
-        <p class="pg-state">value: <b>{{ value().join(', ') }}</b></p>
+        <p class="pg-state">
+          value: <b>{{ value().join(', ') }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

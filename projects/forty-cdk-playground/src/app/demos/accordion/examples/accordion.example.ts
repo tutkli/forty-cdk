@@ -71,14 +71,24 @@ interface AccordionEntry {
 
       <div controls class="pg-controls">
         <app-control-switch label="multiple" [(checked)]="multiple" />
-        <app-control-switch label="collapsible" [(checked)]="collapsible" />
+        <app-control-switch
+          label="collapsible"
+          hint="Single mode only: when on, clicking the open item's trigger collapses it, leaving nothing open. When off, exactly one item stays open at all times once any has been opened."
+          [(checked)]="collapsible"
+        />
         <app-control-switch label="disable 3rd item" [(checked)]="disableThird" />
         <app-control-select
           label="orientation"
+          hint="Which axis the arrow keys follow when moving between triggers: vertical uses ArrowUp/Down, horizontal uses ArrowLeft/Right. The directive reflects it as data-orientation for styling."
           [options]="orientationOptions"
           [(value)]="orientation"
         />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
+        <app-control-select
+          label="dir"
+          hint="Writing direction. Only matters with horizontal orientation, where rtl swaps the ArrowLeft/Right meaning. It is reflected to the host dir attribute."
+          [options]="dirOptions"
+          [(value)]="dir"
+        />
 
         <p class="pg-state">
           open: <b>{{ value().length ? value().join(', ') : 'none' }}</b>

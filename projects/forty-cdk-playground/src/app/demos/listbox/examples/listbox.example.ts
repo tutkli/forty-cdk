@@ -58,11 +58,13 @@ import { Icon } from '../../../ui/icon';
         <app-control-switch label="multiple" [(checked)]="multiple" />
         <app-control-select
           label="orientation"
+          hint="Which axis the arrow keys follow: vertical uses Up/Down, horizontal uses Left/Right. It also sets data-orientation on the list for styling."
           [options]="orientationOptions"
           [(value)]="orientation"
         />
         <app-control-switch
           label="selectionFollowsFocus"
+          hint="Single mode only: arrow navigation also selects the focused option, not just highlights it. APG recommends caution — leave off unless the UX truly benefits."
           [(checked)]="selectionFollowsFocus"
           [disabled]="multiple()"
         />

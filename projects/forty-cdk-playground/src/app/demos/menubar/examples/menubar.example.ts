@@ -85,6 +85,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       <div controls class="pg-controls">
         <app-control-select
           label="orientation"
+          hint="The axis the menu bar lays out on and that arrow keys follow: horizontal uses Left/Right between triggers, vertical uses Up/Down."
           [options]="orientationOptions"
           [(value)]="orientation"
         />

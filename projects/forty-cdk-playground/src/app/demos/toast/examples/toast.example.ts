@@ -93,21 +93,25 @@ interface CustomToastData {
       <div controls class="pg-controls">
         <app-control-select
           label="position"
+          hint="Screen corner the toast stack pins to. This is a CSS hook on the viewport — the primitive imposes no positioning, so the demo styles each corner from the data-position attribute."
           [options]="positionOptions"
           [(value)]="positionValue"
         />
         <app-control-select
           label="swipeDirection"
+          hint="Direction the user can drag a toast to dismiss it. 'none' disables swipe; once set, dragging past the swipe threshold removes the toast."
           [options]="swipeOptions"
           [(value)]="swipeValue"
         />
         <app-control-select
           label="duration"
+          hint="Milliseconds before a toast auto-dismisses. Hovering or focusing pauses the timer and resumes with the time left. 0 keeps the toast sticky until dismissed."
           [options]="durationOptions"
           [(value)]="durationValue"
         />
         <app-control-select
           label="maxVisible"
+          hint="Maximum toasts rendered at once. Older ones collapse out of the visible stack but stay queued until dismissed. ∞ renders every live toast."
           [options]="maxVisibleOptions"
           [(value)]="maxVisibleValue"
         />

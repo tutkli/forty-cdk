@@ -35,7 +35,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label="autoFocusOnOpen keeps focus" [(checked)]="keepFocus" />
+        <app-control-switch
+          label="autoFocusOnOpen keeps focus"
+          hint="When on, the autoFocusOnOpen callback vetoes the dialog's initial focus move so the search field keeps focus as the results panel opens, instead of focus jumping into the panel."
+          [(checked)]="keepFocus"
+        />
 
         <p class="pg-state">
           query: <b>{{ query() || '—' }}</b

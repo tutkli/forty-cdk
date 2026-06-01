@@ -42,7 +42,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label="block dismiss" [(checked)]="blockDismiss" />
+        <app-control-switch
+          label="block dismiss"
+          hint="When on, calls preventDefault() on the (escapeKeyDown) and (interactOutside) vetoes so Escape and click-outside keep the dialog open. The close buttons still close it."
+          [(checked)]="blockDismiss"
+        />
 
         <p class="pg-state">
           last blocked: <b>{{ lastBlocked() ?? '—' }}</b

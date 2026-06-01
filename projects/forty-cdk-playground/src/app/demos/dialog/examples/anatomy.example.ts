@@ -45,12 +45,29 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-switch label="modal" [(checked)]="modal" />
-        <app-control-switch label="dismissible" [(checked)]="dismissible" />
-        <app-control-switch label="alert" [(checked)]="alert" />
-        <app-control-switch label="returnFocus" [(checked)]="returnFocus" />
+        <app-control-switch
+          label="modal"
+          hint="When on, sets aria-modal=true, locks body scroll, traps focus inside the dialog, and makes sibling content inert. When off, the page stays interactive."
+          [(checked)]="modal"
+        />
+        <app-control-switch
+          label="dismissible"
+          hint="When on, Escape, backdrop click, and pointer-down outside emit (close). Turn off for critical confirm flows that must be answered via a close button."
+          [(checked)]="dismissible"
+        />
+        <app-control-switch
+          label="alert"
+          hint="Switches the role to alertdialog, which interrupts assistive tech for time-sensitive or destructive confirmations instead of the plain dialog role."
+          [(checked)]="alert"
+        />
+        <app-control-switch
+          label="returnFocus"
+          hint="When on, focus returns to the element that was focused before the dialog opened once it closes."
+          [(checked)]="returnFocus"
+        />
         <app-control-select
           label="initialFocus"
+          hint="Where focus lands on open: 'first' focuses the first focusable descendant; 'container' focuses the dialog box itself, for when nothing inside is focusable."
           [options]="initialFocusOptions"
           [(value)]="initialFocus"
         />

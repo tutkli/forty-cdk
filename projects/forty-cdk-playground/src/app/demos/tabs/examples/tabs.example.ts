@@ -64,12 +64,19 @@ interface TabEntry {
       <div controls class="pg-controls">
         <app-control-select
           label="orientation"
+          hint="Which axis the arrow keys follow along the tablist: horizontal uses ArrowLeft/Right, vertical uses ArrowUp/Down. The directive reflects it as data-orientation for styling."
           [options]="orientationOptions"
           [(value)]="orientation"
         />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
+        <app-control-select
+          label="dir"
+          hint="Writing direction. In rtl it swaps the ArrowLeft/Right meaning along a horizontal tablist. It is reflected to the host dir attribute."
+          [options]="dirOptions"
+          [(value)]="dir"
+        />
         <app-control-select
           label="activationMode"
+          hint="automatic: arrow keys move focus and select the tab in one step. manual: arrows only move focus, and the user presses Space or Enter to activate — better when panel content is expensive."
           [options]="activationOptions"
           [(value)]="activationMode"
         />

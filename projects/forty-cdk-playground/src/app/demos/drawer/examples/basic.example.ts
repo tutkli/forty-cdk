@@ -48,12 +48,37 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="basicSide" />
-        <app-control-switch label="modal" [(checked)]="basicModal" />
-        <app-control-switch label="dismissible" [(checked)]="basicDismissible" />
-        <app-control-switch label="alert" [(checked)]="basicAlert" />
-        <app-control-switch label="handleOnly" [(checked)]="basicHandleOnly" />
-        <app-control-switch label="swipeToDismiss" [(checked)]="basicSwipe" />
+        <app-control-select
+          label="side"
+          hint="Edge the drawer is anchored to. Sets the swipe-to-dismiss direction and the data-side attribute the consumer styles off."
+          [options]="sideOptions"
+          [(value)]="basicSide"
+        />
+        <app-control-switch
+          label="modal"
+          hint="Locks body scroll, traps focus, and inerts the rest of the page. Turn off for a non-modal drawer that coexists with the page behind it."
+          [(checked)]="basicModal"
+        />
+        <app-control-switch
+          label="dismissible"
+          hint="When on, Escape, backdrop click, clicking outside, and a swipe past the close threshold all close the drawer. Turn off for confirm flows that must be answered explicitly."
+          [(checked)]="basicDismissible"
+        />
+        <app-control-switch
+          label="alert"
+          hint="Switches the role to alertdialog so assistive tech interrupts the user — for destructive or must-acknowledge prompts rather than a plain dialog."
+          [(checked)]="basicAlert"
+        />
+        <app-control-switch
+          label="handleOnly"
+          hint="The swipe gesture only arms when the drag starts on the drawer handle, so scrollable content inside keeps its own scroll gesture."
+          [(checked)]="basicHandleOnly"
+        />
+        <app-control-switch
+          label="swipeToDismiss"
+          hint="Enables the pointer-drag gesture: dragging the surface toward its anchored edge past the close threshold dismisses it."
+          [(checked)]="basicSwipe"
+        />
 
         <p class="pg-state">
           last close: <b>{{ basicReason() ?? '—' }}</b>

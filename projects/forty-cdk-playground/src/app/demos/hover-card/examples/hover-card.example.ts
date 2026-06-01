@@ -69,11 +69,27 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="side" />
-        <app-control-select label="align" [options]="alignOptions" [(value)]="align" />
-        <app-control-select label="openDelay" [options]="delayOptions" [(value)]="openDelayValue" />
+        <app-control-select
+          label="side"
+          hint="Which side of the trigger the card is anchored to. It flips to the opposite side automatically when there isn't room in the viewport."
+          [options]="sideOptions"
+          [(value)]="side"
+        />
+        <app-control-select
+          label="align"
+          hint="How the card aligns along the chosen side: start, center, or end of the trigger's edge."
+          [options]="alignOptions"
+          [(value)]="align"
+        />
+        <app-control-select
+          label="openDelay"
+          hint="Milliseconds to wait after hover or focus before the card opens."
+          [options]="delayOptions"
+          [(value)]="openDelayValue"
+        />
         <app-control-select
           label="closeDelay"
+          hint="Milliseconds to wait after the pointer leaves or blurs before the card closes. Pressing Escape closes it immediately, ignoring this delay."
           [options]="delayOptions"
           [(value)]="closeDelayValue"
         />

@@ -104,9 +104,15 @@ import { Icon } from '../../../ui/icon';
 
       <div controls class="pg-controls">
         <app-control-switch label="multiple" [(checked)]="multiple" />
-        <app-control-select label="position" [options]="positionOptions" [(value)]="position" />
+        <app-control-select
+          label="position"
+          hint="Positioning algorithm. 'popper' anchors the listbox below/above the trigger; 'item-aligned' overlays it so the selected option lines up with the trigger, macOS-style."
+          [options]="positionOptions"
+          [(value)]="position"
+        />
         <app-control-switch
           label="selectionFollowsFocus"
+          hint="Single mode only: while open, arrow navigation also commits the focused option as the value. APG recommends caution — leave off unless the UX truly benefits."
           [(checked)]="selectionFollowsFocus"
           [disabled]="multiple()"
         />
