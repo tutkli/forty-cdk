@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForAccordion,
   ForAccordionContent,
@@ -76,9 +76,9 @@ interface AccordionEntry {
         <app-control-select
           label="orientation"
           [options]="orientationOptions"
-          [(value)]="orientationValue"
+          [(value)]="orientation"
         />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
+        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
 
         <p class="pg-state">
           open: <b>{{ value().length ? value().join(', ') : 'none' }}</b>
@@ -206,12 +206,12 @@ export class AccordionDemo {
     },
   ];
 
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'vertical' | 'horizontal'>[] = [
     { value: 'vertical', label: 'vertical' },
     { value: 'horizontal', label: 'horizontal' },
   ];
 
-  protected readonly dirOptions: readonly ControlOption[] = [
+  protected readonly dirOptions: readonly ControlOption<'ltr' | 'rtl'>[] = [
     { value: 'ltr', label: 'ltr' },
     { value: 'rtl', label: 'rtl' },
   ];
@@ -220,12 +220,6 @@ export class AccordionDemo {
   protected readonly multiple = signal(false);
   protected readonly collapsible = signal(true);
   protected readonly disableThird = signal(false);
-  protected readonly orientationValue = signal('vertical');
-  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
-    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
-  );
-  protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
-    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
-  );
+  protected readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
+  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
 }

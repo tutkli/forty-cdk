@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForPopover,
   ForPopoverArrow,
@@ -65,9 +65,13 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="sideValue" />
-        <app-control-select label="align" [options]="alignOptions" [(value)]="alignValue" />
-        <app-control-select label="initialFocus" [options]="focusOptions" [(value)]="focusValue" />
+        <app-control-select label="side" [options]="sideOptions" [(value)]="side" />
+        <app-control-select label="align" [options]="alignOptions" [(value)]="align" />
+        <app-control-select
+          label="initialFocus"
+          [options]="focusOptions"
+          [(value)]="initialFocus"
+        />
         <app-control-switch label="dismissible" [(checked)]="dismissible" />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
@@ -86,20 +90,20 @@ import { DemoLayout } from '../ui/demo-layout';
   `,
 })
 export class PopoverDemo {
-  protected readonly sideOptions: readonly ControlOption[] = [
+  protected readonly sideOptions: readonly ControlOption<'top' | 'right' | 'bottom' | 'left'>[] = [
     { value: 'top', label: 'top' },
     { value: 'right', label: 'right' },
     { value: 'bottom', label: 'bottom' },
     { value: 'left', label: 'left' },
   ];
 
-  protected readonly alignOptions: readonly ControlOption[] = [
+  protected readonly alignOptions: readonly ControlOption<'start' | 'center' | 'end'>[] = [
     { value: 'start', label: 'start' },
     { value: 'center', label: 'center' },
     { value: 'end', label: 'end' },
   ];
 
-  protected readonly focusOptions: readonly ControlOption[] = [
+  protected readonly focusOptions: readonly ControlOption<'first' | 'container'>[] = [
     { value: 'first', label: 'first' },
     { value: 'container', label: 'container' },
   ];
@@ -109,20 +113,7 @@ export class PopoverDemo {
   protected readonly disabled = signal(false);
   protected readonly lastDismiss = signal('—');
 
-  protected readonly sideValue = signal('bottom');
-  protected readonly side = computed<'top' | 'right' | 'bottom' | 'left'>(() => {
-    const value = this.sideValue();
-    return value === 'top' || value === 'right' || value === 'left' ? value : 'bottom';
-  });
-
-  protected readonly alignValue = signal('center');
-  protected readonly align = computed<'start' | 'center' | 'end'>(() => {
-    const value = this.alignValue();
-    return value === 'start' || value === 'end' ? value : 'center';
-  });
-
-  protected readonly focusValue = signal('first');
-  protected readonly initialFocus = computed<'first' | 'container'>(() =>
-    this.focusValue() === 'container' ? 'container' : 'first',
-  );
+  protected readonly side = signal<'top' | 'right' | 'bottom' | 'left'>('bottom');
+  protected readonly align = signal<'start' | 'center' | 'end'>('center');
+  protected readonly initialFocus = signal<'first' | 'container'>('first');
 }

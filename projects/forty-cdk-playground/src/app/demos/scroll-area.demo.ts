@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForScrollArea,
   ForScrollAreaContent,
@@ -50,8 +50,8 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="type" [options]="typeOptions" [(value)]="typeValue" />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
+        <app-control-select label="type" [options]="typeOptions" [(value)]="type" />
+        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
 
         <p class="pg-hint">
           always / auto keep the bars shown while content overflows; hover reveals them on pointer
@@ -163,26 +163,19 @@ import { DemoLayout } from '../ui/demo-layout';
 export class ScrollAreaDemo {
   protected readonly rows = Array.from({ length: 16 }, (_, index) => index + 1);
 
-  protected readonly typeOptions: readonly ControlOption[] = [
-    { value: 'always', label: 'always' },
-    { value: 'auto', label: 'auto' },
-    { value: 'hover', label: 'hover' },
-    { value: 'scroll', label: 'scroll' },
-  ];
+  protected readonly typeOptions: readonly ControlOption<'auto' | 'always' | 'scroll' | 'hover'>[] =
+    [
+      { value: 'always', label: 'always' },
+      { value: 'auto', label: 'auto' },
+      { value: 'hover', label: 'hover' },
+      { value: 'scroll', label: 'scroll' },
+    ];
 
-  protected readonly dirOptions: readonly ControlOption[] = [
+  protected readonly dirOptions: readonly ControlOption<'ltr' | 'rtl'>[] = [
     { value: 'ltr', label: 'ltr' },
     { value: 'rtl', label: 'rtl' },
   ];
 
-  protected readonly typeValue = signal('always');
-  protected readonly type = computed<'auto' | 'always' | 'scroll' | 'hover'>(() => {
-    const value = this.typeValue();
-    return value === 'auto' || value === 'hover' || value === 'scroll' ? value : 'always';
-  });
-
-  protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
-    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
-  );
+  protected readonly type = signal<'auto' | 'always' | 'scroll' | 'hover'>('always');
+  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForToolbar,
   ForToolbarButton,
@@ -47,7 +47,9 @@ import { DemoLayout } from '../ui/demo-layout';
           <span forToolbarSeparator class="tlb-sep"></span>
 
           <div forToggleGroup class="tlb-grp" multiple [(value)]="style" aria-label="Text style">
-            <button forToggleGroupItem class="tlb-btn tlb-icon" value="bold" aria-label="Bold">B</button>
+            <button forToggleGroupItem class="tlb-btn tlb-icon" value="bold" aria-label="Bold">
+              B
+            </button>
             <button forToggleGroupItem class="tlb-btn tlb-icon" value="italic" aria-label="Italic">
               I
             </button>
@@ -64,7 +66,12 @@ import { DemoLayout } from '../ui/demo-layout';
           <span forToolbarSeparator class="tlb-sep"></span>
 
           <div forToggleGroup class="tlb-grp" [(value)]="align" aria-label="Alignment">
-            <button forToggleGroupItem class="tlb-btn tlb-icon" value="left" aria-label="Align left">
+            <button
+              forToggleGroupItem
+              class="tlb-btn tlb-icon"
+              value="left"
+              aria-label="Align left"
+            >
               L
             </button>
             <button
@@ -100,7 +107,11 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-select
+          label="orientation"
+          [options]="orientationOptions"
+          [(value)]="orientation"
+        />
         <app-control-switch label="loop" [(checked)]="loop" />
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
@@ -216,7 +227,7 @@ import { DemoLayout } from '../ui/demo-layout';
   `,
 })
 export class ToolbarDemo {
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'horizontal' | 'vertical'>[] = [
     { value: 'horizontal', label: 'horizontal' },
     { value: 'vertical', label: 'vertical' },
   ];
@@ -227,8 +238,5 @@ export class ToolbarDemo {
   protected readonly loop = signal(true);
   protected readonly disabled = signal(false);
 
-  protected readonly orientationValue = signal('horizontal');
-  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
-    this.orientationValue() === 'vertical' ? 'vertical' : 'horizontal',
-  );
+  protected readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
 }

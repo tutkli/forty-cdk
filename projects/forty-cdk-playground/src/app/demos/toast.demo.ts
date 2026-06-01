@@ -145,13 +145,17 @@ export class ToastDemo {
   protected readonly customTpl =
     viewChild.required<TemplateRef<ForToastTemplateContext<CustomToastData>>>('customTpl');
 
-  protected readonly positionOptions: readonly ControlOption[] = [
+  protected readonly positionOptions: readonly ControlOption<
+    'bottom-right' | 'top-right' | 'bottom-center'
+  >[] = [
     { value: 'bottom-right', label: 'bottom-right' },
     { value: 'top-right', label: 'top-right' },
     { value: 'bottom-center', label: 'bottom-center' },
   ];
 
-  protected readonly swipeOptions: readonly ControlOption[] = [
+  protected readonly swipeOptions: readonly ControlOption<
+    'none' | 'right' | 'left' | 'up' | 'down'
+  >[] = [
     { value: 'none', label: 'none' },
     { value: 'right', label: 'right' },
     { value: 'left', label: 'left' },
@@ -159,28 +163,28 @@ export class ToastDemo {
     { value: 'down', label: 'down' },
   ];
 
-  protected readonly durationOptions: readonly ControlOption[] = [
+  protected readonly durationOptions: readonly ControlOption<'3000' | '5000' | '0'>[] = [
     { value: '3000', label: '3 s' },
     { value: '5000', label: '5 s' },
     { value: '0', label: 'sticky (0)' },
   ];
 
-  protected readonly maxVisibleOptions: readonly ControlOption[] = [
+  protected readonly maxVisibleOptions: readonly ControlOption<'3' | 'inf'>[] = [
     { value: '3', label: '3' },
     { value: 'inf', label: '∞' },
   ];
 
-  protected readonly positionValue = signal('bottom-right');
-  protected readonly swipeValue = signal('right');
-  protected readonly durationValue = signal('5000');
-  protected readonly maxVisibleValue = signal('inf');
+  protected readonly positionValue = signal<'bottom-right' | 'top-right' | 'bottom-center'>(
+    'bottom-right',
+  );
+  protected readonly swipeValue = signal<'none' | 'right' | 'left' | 'up' | 'down'>('right');
+  protected readonly durationValue = signal<'3000' | '5000' | '0'>('5000');
+  protected readonly maxVisibleValue = signal<'3' | 'inf'>('inf');
   protected readonly lastAction = signal('—');
 
   protected readonly swipeDirection = computed<'left' | 'right' | 'up' | 'down' | null>(() => {
     const value = this.swipeValue();
-    return value === 'left' || value === 'right' || value === 'up' || value === 'down'
-      ? value
-      : null;
+    return value === 'none' ? null : value;
   });
 
   protected readonly duration = computed(() => Number(this.durationValue()));

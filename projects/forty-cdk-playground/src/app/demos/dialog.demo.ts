@@ -92,7 +92,7 @@ export class ConfirmDialog {
         <app-control-select
           label="initialFocus"
           [options]="initialFocusOptions"
-          [(value)]="initialFocusValue"
+          [(value)]="initialFocus"
         />
 
         <p class="pg-state">
@@ -279,7 +279,7 @@ export class ConfirmDialog {
 export class DialogDemo {
   protected readonly dialogs = inject(ForDialogManager);
 
-  protected readonly initialFocusOptions: readonly ControlOption[] = [
+  protected readonly initialFocusOptions: readonly ControlOption<'first' | 'container'>[] = [
     { value: 'first', label: 'first' },
     { value: 'container', label: 'container' },
   ];
@@ -289,10 +289,7 @@ export class DialogDemo {
   protected readonly dismissible = signal(true);
   protected readonly alert = signal(false);
   protected readonly returnFocus = signal(true);
-  protected readonly initialFocusValue = signal('first');
-  protected readonly initialFocus = computed<'first' | 'container'>(() =>
-    this.initialFocusValue() === 'container' ? 'container' : 'first',
-  );
+  protected readonly initialFocus = signal<'first' | 'container'>('first');
   protected readonly lastReason = signal<ForDialogCloseReason | 'programmatic' | null>(null);
   protected readonly role = computed(() => (this.alert() ? 'alertdialog' : 'dialog'));
 

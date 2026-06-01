@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../ui/control-select';
@@ -65,13 +65,13 @@ interface TabEntry {
         <app-control-select
           label="orientation"
           [options]="orientationOptions"
-          [(value)]="orientationValue"
+          [(value)]="orientation"
         />
-        <app-control-select label="dir" [options]="dirOptions" [(value)]="dirValue" />
+        <app-control-select label="dir" [options]="dirOptions" [(value)]="dir" />
         <app-control-select
           label="activationMode"
           [options]="activationOptions"
-          [(value)]="activationModeValue"
+          [(value)]="activationMode"
         />
         <app-control-switch label="loop" [(checked)]="loop" />
         <app-control-switch label="disabled" [(checked)]="disabled" />
@@ -189,17 +189,17 @@ export class TabsDemo {
     },
   ];
 
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'horizontal' | 'vertical'>[] = [
     { value: 'horizontal', label: 'horizontal' },
     { value: 'vertical', label: 'vertical' },
   ];
 
-  protected readonly dirOptions: readonly ControlOption[] = [
+  protected readonly dirOptions: readonly ControlOption<'ltr' | 'rtl'>[] = [
     { value: 'ltr', label: 'ltr' },
     { value: 'rtl', label: 'rtl' },
   ];
 
-  protected readonly activationOptions: readonly ControlOption[] = [
+  protected readonly activationOptions: readonly ControlOption<'automatic' | 'manual'>[] = [
     { value: 'automatic', label: 'automatic' },
     { value: 'manual', label: 'manual' },
   ];
@@ -209,18 +209,7 @@ export class TabsDemo {
   protected readonly disabled = signal(false);
   protected readonly disableBilling = signal(false);
 
-  protected readonly orientationValue = signal('horizontal');
-  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
-    this.orientationValue() === 'vertical' ? 'vertical' : 'horizontal',
-  );
-
-  protected readonly dirValue = signal('ltr');
-  protected readonly dir = computed<'ltr' | 'rtl'>(() =>
-    this.dirValue() === 'rtl' ? 'rtl' : 'ltr',
-  );
-
-  protected readonly activationModeValue = signal('automatic');
-  protected readonly activationMode = computed<'automatic' | 'manual'>(() =>
-    this.activationModeValue() === 'manual' ? 'manual' : 'automatic',
-  );
+  protected readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  protected readonly activationMode = signal<'automatic' | 'manual'>('automatic');
 }

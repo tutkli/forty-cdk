@@ -68,8 +68,8 @@ import { DemoLayout } from '../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="sideValue" />
-        <app-control-select label="align" [options]="alignOptions" [(value)]="alignValue" />
+        <app-control-select label="side" [options]="sideOptions" [(value)]="side" />
+        <app-control-select label="align" [options]="alignOptions" [(value)]="align" />
         <app-control-select label="openDelay" [options]="delayOptions" [(value)]="openDelayValue" />
         <app-control-select
           label="closeDelay"
@@ -109,20 +109,20 @@ import { DemoLayout } from '../ui/demo-layout';
   `,
 })
 export class HoverCardDemo {
-  protected readonly sideOptions: readonly ControlOption[] = [
+  protected readonly sideOptions: readonly ControlOption<'top' | 'right' | 'bottom' | 'left'>[] = [
     { value: 'top', label: 'top' },
     { value: 'right', label: 'right' },
     { value: 'bottom', label: 'bottom' },
     { value: 'left', label: 'left' },
   ];
 
-  protected readonly alignOptions: readonly ControlOption[] = [
+  protected readonly alignOptions: readonly ControlOption<'start' | 'center' | 'end'>[] = [
     { value: 'start', label: 'start' },
     { value: 'center', label: 'center' },
     { value: 'end', label: 'end' },
   ];
 
-  protected readonly delayOptions: readonly ControlOption[] = [
+  protected readonly delayOptions: readonly ControlOption<'0' | '300' | '700'>[] = [
     { value: '0', label: '0 ms' },
     { value: '300', label: '300 ms' },
     { value: '700', label: '700 ms' },
@@ -131,21 +131,12 @@ export class HoverCardDemo {
   protected readonly open = signal(false);
   protected readonly disabled = signal(false);
 
-  protected readonly sideValue = signal('top');
-  protected readonly side = computed<'top' | 'right' | 'bottom' | 'left'>(() => {
-    const value = this.sideValue();
-    return value === 'right' || value === 'bottom' || value === 'left' ? value : 'top';
-  });
+  protected readonly side = signal<'top' | 'right' | 'bottom' | 'left'>('top');
+  protected readonly align = signal<'start' | 'center' | 'end'>('center');
 
-  protected readonly alignValue = signal('center');
-  protected readonly align = computed<'start' | 'center' | 'end'>(() => {
-    const value = this.alignValue();
-    return value === 'start' || value === 'end' ? value : 'center';
-  });
-
-  protected readonly openDelayValue = signal('300');
+  protected readonly openDelayValue = signal<'0' | '300' | '700'>('300');
   protected readonly openDelay = computed(() => Number(this.openDelayValue()));
 
-  protected readonly closeDelayValue = signal('300');
+  protected readonly closeDelayValue = signal<'0' | '300' | '700'>('300');
   protected readonly closeDelay = computed(() => Number(this.closeDelayValue()));
 }

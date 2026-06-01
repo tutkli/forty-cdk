@@ -128,7 +128,7 @@ const COUNTRIES = [
         <app-control-select
           label="autocompleteMode"
           [options]="autocompleteOptions"
-          [(value)]="autocompleteValue"
+          [(value)]="autocompleteMode"
         />
         <app-control-switch label="openOnFocus" [(checked)]="openOnFocus" />
         <app-control-switch label="autoHighlight" [(checked)]="autoHighlight" />
@@ -157,7 +157,7 @@ const COUNTRIES = [
   `,
 })
 export class ComboboxDemo {
-  protected readonly autocompleteOptions: readonly ControlOption[] = [
+  protected readonly autocompleteOptions: readonly ControlOption<'list' | 'both'>[] = [
     { value: 'list', label: 'list' },
     { value: 'both', label: 'both (inline)' },
   ];
@@ -173,10 +173,7 @@ export class ComboboxDemo {
     computation: () => [],
   });
 
-  protected readonly autocompleteValue = signal('list');
-  protected readonly autocompleteMode = computed<'list' | 'both'>(() =>
-    this.autocompleteValue() === 'both' ? 'both' : 'list',
-  );
+  protected readonly autocompleteMode = signal<'list' | 'both'>('list');
 
   protected readonly filtered = computed<readonly string[]>(() => {
     const q = this.query().toLowerCase().trim();
