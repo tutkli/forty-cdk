@@ -18,6 +18,8 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 | `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                          |
 | `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                 |
 
+For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across all rows, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
+
 ## Single mode (default)
 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
