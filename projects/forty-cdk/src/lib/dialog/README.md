@@ -57,6 +57,40 @@ export class DemoConfirm {
 
 Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.leave` work — they fire on real mount / unmount, not on attribute toggling.
 
+### The `(close)` contract — consumer owns unmount
+
+`(close)` reports the dialog's **intent** to be unmounted; it does not flip the consumer's signal. The consumer must call `open.set(false)` (or equivalent) inside the handler. If the handler is omitted or does not update the signal, Escape, backdrop-click, and outside-pointer-down all emit `(close)` but the dialog stays mounted.
+
+```html
+<!-- correct: (close) drives the @if gate -->
+<div forDialog id="my-dialog" (close)="open.set(false)">…</div>
+
+<!-- broken: (close) is missing — Escape fires but the dialog never unmounts -->
+<div forDialog id="my-dialog">…</div>
+```
+
+This is different from trigger-anchored overlays (Popover, DropdownMenu, etc.) where the wrapper directive owns `[(open)]` and round-trips it automatically on close. Dialog is **flat**: there is no wrapper, so the consumer's `@if` is the sole lifecycle gate.
+
+The payload is a `ForDialogCloseReason` string (`'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`) — use it if you need to branch on why the dialog closed, for example to show a "save changes?" prompt before dismissing. Emitting `(close)` without acting on it is always safe: you can call `preventDefault()` on the preceding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`) to suppress the `(close)` entirely.
+
+### Trigger / surface id wiring
+
+The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **separate, unrelated elements**. They wire to each other via a shared id that the consumer keeps in sync:
+
+```html
+<!-- trigger: controls="<id>" tells it which dialog it opens -->
+<button forDialogTrigger [(open)]="open" controls="my-dialog">Open</button>
+
+<!-- surface: id="<id>" must match controls above -->
+@if (open()) {
+  <div forDialog id="my-dialog" (close)="open.set(false)">…</div>
+}
+```
+
+`[forDialogTrigger]` reads the `controls` value and reflects it as `aria-controls="my-dialog"`. It also reflects `aria-haspopup="dialog"` and `aria-expanded="true"|"false"` automatically — but only when `controls` is set, so omitting it produces a trigger with no `aria-controls` and silently breaks assistive technology that announces "opens dialog X".
+
+> **Popover is different.** `[forPopover]` wraps both the trigger and content in a single parent directive, so ids are auto-generated and kept in sync internally. Dialog is flat — trigger and surface can live anywhere in the template — so the wiring is manual.
+
 ### Programmatic — `ForDialogManager.open()`
 
 ```ts
