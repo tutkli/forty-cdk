@@ -17,7 +17,7 @@ import { DemoLayout } from '../ui/demo-layout';
       <div demo class="tg-demo">
         <div class="tg-block">
           <span class="tg-caption">Standalone</span>
-          <button forToggle class="tg-btn" [(pressed)]="bold" [disabled]="disabled()">Bold</button>
+          <button forToggle class="tg-btn" [(checked)]="bold" [disabled]="disabled()">Bold</button>
         </div>
 
         <div class="tg-block">

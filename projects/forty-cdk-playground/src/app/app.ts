@@ -52,8 +52,8 @@ function readInitialTheme(): Theme {
           forToggle
           type="button"
           class="icon-btn theme"
-          [pressed]="dark()"
-          (pressedChange)="setDark($event)"
+          [checked]="dark()"
+          (checkedChange)="setDark($event)"
           [attr.aria-label]="themeLabel()"
         >
           <app-icon [name]="dark() ? 'sun' : 'moon'" />
@@ -68,8 +68,8 @@ function readInitialTheme(): Theme {
             forToggle
             type="button"
             class="icon-btn theme"
-            [pressed]="dark()"
-            (pressedChange)="setDark($event)"
+            [checked]="dark()"
+            (checkedChange)="setDark($event)"
             [attr.aria-label]="themeLabel()"
           >
             <app-icon [name]="dark() ? 'sun' : 'moon'" />
