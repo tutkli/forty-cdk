@@ -92,6 +92,8 @@ The submenu's dismissable layer exempts the **parent menu's content** — clicki
 
 ## CSS custom properties
 
+See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.
+
 `[forMenuContent]` / `[forMenuSubContent]` are portaled to `document.body` and get their position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close). These also drive the content surface for `[forDropdownMenu]` and `[forContextMenu]`, which reuse `[forMenuContent]`:
 
 | Custom property                  | Type / range        | Meaning                                                                                              |
