@@ -43,9 +43,9 @@ import { Icon } from '../ui/icon';
       <div demo class="select-demo">
         <div
           forSelect
+          #select="forSelect"
           class="select-field"
           [(value)]="value"
-          [(open)]="open"
           [multiple]="multiple()"
           [position]="position()"
           [selectionFollowsFocus]="selectionFollowsFocus()"
@@ -58,7 +58,7 @@ import { Icon } from '../ui/icon';
             <span forSelectValue></span>
             <app-icon class="pg-select-chevron" name="chevron-down" />
           </button>
-          @if (open()) {
+          @if (select.open()) {
             <div forSelectContent class="pg-select-content" animate.enter="pg-pop-in">
               <div forSelectGroup>
                 <div forSelectGroupLabel class="pg-select-group-label">Frontend</div>
@@ -118,7 +118,7 @@ import { Icon } from '../ui/icon';
         <app-control-switch label="disabled" [(checked)]="disabled" />
 
         <p class="pg-state">
-          open: <b>{{ open() }}</b
+          open: <b>{{ select.open() }}</b
           ><br />
           value: <b>{{ value().join(', ') || '—' }}</b>
         </p>
@@ -158,7 +158,6 @@ export class SelectDemo {
     { value: 'item-aligned', label: 'item-aligned' },
   ];
 
-  protected readonly open = signal(false);
   protected readonly loop = signal(true);
   protected readonly disabled = signal(false);
   protected readonly selectionFollowsFocus = signal(false);

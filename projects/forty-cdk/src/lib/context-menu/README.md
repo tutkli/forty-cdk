@@ -14,9 +14,9 @@ import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } fr
   selector: 'demo-context',
   imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
   template: `
-    <div forContextMenu [(open)]="open">
+    <div forContextMenu #menu="forContextMenu">
       <div forContextMenuTrigger tabindex="-1" class="canvas">Right-click anywhere here.</div>
-      @if (open()) {
+      @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
           <button forMenuItem (select)="rename()">Rename</button>
           <button forMenuItem (select)="duplicate()">Duplicate</button>
@@ -27,7 +27,6 @@ import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } fr
   `,
 })
 export class DemoContext {
-  readonly open = signal(false);
   rename() {
     /* ... */
   }
@@ -41,6 +40,21 @@ export class DemoContext {
 ```
 
 Add `tabindex="-1"` on the trigger element so focus can return there programmatically when the menu closes — without it, focus falls to the document body on close.
+
+### `#menu="forContextMenu"` vs. `[(open)]`
+
+The minimal "right-click → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forContextMenu]` is `exportAs: 'forContextMenu'`, so expose the directive instance with a template reference variable — `#menu="forContextMenu"` — and drive the `@if` straight off its own `open()` signal, as above. The contextmenu gesture, item activation, Escape, and outside dismissal all flip it.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forContextMenu [(open)]="open">
+  <div forContextMenuTrigger tabindex="-1">Right-click anywhere here.</div>
+  @if (open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
 
 ## Pieces
 

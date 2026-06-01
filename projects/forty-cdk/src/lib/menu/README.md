@@ -62,18 +62,20 @@ Every item type emits a vetoable `(select)` event — handlers receive a `Vetoab
 
 A nested menu is opened by a `[forMenuSubTrigger]` — itself a `menuitem` in the parent menu. The `[forMenuSub]` root owns the submenu's open state, item collection, and dismissable layer.
 
+Both `[forMenuSub]` (`exportAs: 'forMenuSub'`) and the parent `[forDropdownMenu]` / `[forContextMenu]` own `open` as a `model<boolean>`, so the minimal case needs no consumer signals at all — expose each with a template reference variable (`#menu="forDropdownMenu"`, `#sub="forMenuSub"`) and drive the `@if` straight off its `open()`:
+
 ```html
-<div forDropdownMenu [(open)]="open">
+<div forDropdownMenu #menu="forDropdownMenu">
   <button forDropdownMenuTrigger>File</button>
-  @if (open()) {
+  @if (menu.open()) {
   <div forMenuContent>
-    <button forMenuItem (select)="open()">Open</button>
-    <div forMenuSub [(open)]="recent">
+    <button forMenuItem (select)="openFile()">Open</button>
+    <div forMenuSub #sub="forMenuSub">
       <button forMenuSubTrigger>Open recent</button>
-      @if (recent()) {
+      @if (sub.open()) {
       <div forMenuSubContent>
-        <button forMenuItem (select)="open('a.txt')">a.txt</button>
-        <button forMenuItem (select)="open('b.txt')">b.txt</button>
+        <button forMenuItem (select)="openFile('a.txt')">a.txt</button>
+        <button forMenuItem (select)="openFile('b.txt')">b.txt</button>
       </div>
       }
     </div>
@@ -82,7 +84,7 @@ A nested menu is opened by a `[forMenuSubTrigger]` — itself a `menuitem` in th
 </div>
 ```
 
-The `[forMenuSubTrigger]` is registered as a `menuitem` in the **parent** menu's collection, so parent navigation (ArrowDown/Up, typeahead) reaches it. Reading open state from the **submenu**, it wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls` to the submenu's content.
+Bind `[(open)]="mySignal"` on either level instead only when the component class needs to read or drive that level's open state itself. The `[forMenuSubTrigger]` is registered as a `menuitem` in the **parent** menu's collection, so parent navigation (ArrowDown/Up, typeahead) reaches it. Reading open state from the **submenu**, it wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls` to the submenu's content.
 
 Closing semantics propagate upward by default: activating an item inside a submenu (or pressing Tab, or clicking outside both menus) tears down the entire chain. Escape closes only the level that has focus — Escape inside a submenu closes the submenu and returns focus to the `[forMenuSubTrigger]`, leaving the parent open.
 

@@ -28,9 +28,9 @@ import {
     ForMenuRadioItem,
   ],
   template: `
-    <div forDropdownMenu [(open)]="open">
+    <div forDropdownMenu #menu="forDropdownMenu">
       <button forDropdownMenuTrigger>Options</button>
-      @if (open()) {
+      @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
           <button forMenuItem (select)="cut()">Cut</button>
           <button forMenuItem (select)="copy()">Copy</button>
@@ -47,7 +47,6 @@ import {
   `,
 })
 export class DemoOptions {
-  readonly open = signal(false);
   readonly alignment = signal<string>('left');
   cut() {
     /* ... */
@@ -58,7 +57,22 @@ export class DemoOptions {
 }
 ```
 
-`@if (open())` is what makes Angular's `animate.enter` / `animate.leave` work — they fire on real mount / unmount. `[(open)]` is two-way bindable; trigger interactions, item activation, Escape, and outside dismissal flip it.
+`@if` is what makes Angular's `animate.enter` / `animate.leave` work — they fire on real mount / unmount.
+
+### `#menu="forDropdownMenu"` vs. `[(open)]`
+
+The minimal "click trigger → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forDropdownMenu]` is `exportAs: 'forDropdownMenu'`, so expose the directive instance with a template reference variable — `#menu="forDropdownMenu"` — and drive the `@if` straight off its own `open()` signal, as above. Trigger interactions, item activation, Escape, and outside dismissal all flip it.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forDropdownMenu [(open)]="open">
+  <button forDropdownMenuTrigger>Options</button>
+  @if (open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
 
 ## Pieces
 
