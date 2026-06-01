@@ -1,5 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../test-utils';
@@ -436,6 +436,40 @@ describe('ForToggleGroup', () => {
       const { el, flush } = renderHost(SignalFormsHost);
       flush();
       expect(groupOf(el).getAttribute('aria-required')).toBe('true');
+    });
+
+    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', () => {
+      const { fixture, flush } = renderHost(SignalFormsHost);
+      flush();
+      expect(fixture.componentInstance.prefs.tags().valid()).toBe(true);
+    });
+
+    @Component({
+      imports: [ForToggleGroup, ForToggleGroupItem, FormField],
+      template: `
+        <div forToggleGroup multiple [formField]="prefs.tags">
+          <button forToggleGroupItem value="bold" data-test-id="bold">B</button>
+          <button forToggleGroupItem value="italic" data-test-id="italic">I</button>
+        </div>
+      `,
+    })
+    class NonEmptyRequiredHost {
+      readonly model = signal({ tags: [] as string[] });
+      readonly prefs = form(this.model, (s) =>
+        validate(s.tags, ({ value }) =>
+          value().length === 0 ? requiredError({ message: 'Pick at least one' }) : undefined,
+        ),
+      );
+    }
+
+    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', () => {
+      const { el, fixture, flush } = renderHost(NonEmptyRequiredHost);
+      flush();
+      expect(fixture.componentInstance.prefs.tags().valid()).toBe(false);
+
+      itemOf(el, 'bold').click();
+      flush();
+      expect(fixture.componentInstance.prefs.tags().valid()).toBe(true);
     });
 
     it('mirrors values into hidden inputs when [name] is set', () => {
