@@ -97,7 +97,7 @@ export class ConfirmDrawer {
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="side" [options]="sideOptions" [(value)]="basicSideValue" />
+        <app-control-select label="side" [options]="sideOptions" [(value)]="basicSide" />
         <app-control-switch label="modal" [(checked)]="basicModal" />
         <app-control-switch label="dismissible" [(checked)]="basicDismissible" />
         <app-control-switch label="alert" [(checked)]="basicAlert" />
@@ -355,7 +355,7 @@ export class ConfirmDrawer {
 export class DrawerDemo {
   readonly #drawers = inject(ForDrawerManager);
 
-  protected readonly sideOptions: readonly ControlOption[] = [
+  protected readonly sideOptions: readonly ControlOption<ForDrawerSide>[] = [
     { value: 'bottom', label: 'bottom' },
     { value: 'top', label: 'top' },
     { value: 'left', label: 'left' },
@@ -363,11 +363,7 @@ export class DrawerDemo {
   ];
 
   protected readonly basicOpen = signal(false);
-  protected readonly basicSideValue = signal('bottom');
-  protected readonly basicSide = computed<ForDrawerSide>(() => {
-    const value = this.basicSideValue();
-    return value === 'top' || value === 'left' || value === 'right' ? value : 'bottom';
-  });
+  protected readonly basicSide = signal<ForDrawerSide>('bottom');
   protected readonly basicModal = signal(true);
   protected readonly basicDismissible = signal(true);
   protected readonly basicAlert = signal(false);

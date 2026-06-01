@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForRadio, ForRadioGroup } from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../ui/control-select';
@@ -46,11 +46,17 @@ interface RadioOption {
       </div>
 
       <div controls class="pg-controls">
-        <app-control-select label="orientation" [options]="orientationOptions" [(value)]="orientationValue" />
+        <app-control-select
+          label="orientation"
+          [options]="orientationOptions"
+          [(value)]="orientation"
+        />
         <app-control-switch label="disabled (group)" [(checked)]="disabled" />
         <app-control-switch label='disable "Overnight"' [(checked)]="disableLast" />
 
-        <p class="pg-state">value: <b>{{ value() || 'none' }}</b></p>
+        <p class="pg-state">
+          value: <b>{{ value() || 'none' }}</b>
+        </p>
       </div>
     </playground-demo>
   `,
@@ -120,16 +126,13 @@ export class RadioGroupDemo {
     { value: 'overnight', label: 'Overnight' },
   ];
 
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'vertical' | 'horizontal'>[] = [
     { value: 'vertical', label: 'vertical' },
     { value: 'horizontal', label: 'horizontal' },
   ];
 
   protected readonly value = signal('standard');
-  protected readonly orientationValue = signal('vertical');
-  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
-    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
-  );
+  protected readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
   protected readonly disabled = signal(false);
   protected readonly disableLast = signal(false);
 }

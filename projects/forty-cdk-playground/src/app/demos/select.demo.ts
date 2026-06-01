@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, linkedSignal, signal } from '@angular/core';
 import {
   ForSelect,
   ForSelectContent,
@@ -104,11 +104,7 @@ import { Icon } from '../ui/icon';
 
       <div controls class="pg-controls">
         <app-control-switch label="multiple" [(checked)]="multiple" />
-        <app-control-select
-          label="position"
-          [options]="positionOptions"
-          [(value)]="positionValue"
-        />
+        <app-control-select label="position" [options]="positionOptions" [(value)]="position" />
         <app-control-switch
           label="selectionFollowsFocus"
           [(checked)]="selectionFollowsFocus"
@@ -153,7 +149,7 @@ export class SelectDemo {
     { value: 'bun', label: 'Bun' },
   ];
 
-  protected readonly positionOptions: readonly ControlOption[] = [
+  protected readonly positionOptions: readonly ControlOption<'popper' | 'item-aligned'>[] = [
     { value: 'popper', label: 'popper' },
     { value: 'item-aligned', label: 'item-aligned' },
   ];
@@ -168,8 +164,5 @@ export class SelectDemo {
     computation: () => [],
   });
 
-  protected readonly positionValue = signal('popper');
-  protected readonly position = computed<'popper' | 'item-aligned'>(() =>
-    this.positionValue() === 'item-aligned' ? 'item-aligned' : 'popper',
-  );
+  protected readonly position = signal<'popper' | 'item-aligned'>('popper');
 }

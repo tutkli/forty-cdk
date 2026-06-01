@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForMenuContent,
   ForMenuItem,
@@ -86,7 +86,7 @@ import { DemoLayout } from '../ui/demo-layout';
         <app-control-select
           label="orientation"
           [options]="orientationOptions"
-          [(value)]="orientationValue"
+          [(value)]="orientation"
         />
         <app-control-switch label="loop" [(checked)]="loop" />
         <app-control-switch label="disabled" [(checked)]="disabled" />
@@ -108,7 +108,7 @@ import { DemoLayout } from '../ui/demo-layout';
   `,
 })
 export class MenubarDemo {
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'horizontal' | 'vertical'>[] = [
     { value: 'horizontal', label: 'horizontal' },
     { value: 'vertical', label: 'vertical' },
   ];
@@ -118,10 +118,7 @@ export class MenubarDemo {
   protected readonly disabled = signal(false);
   protected readonly lastAction = signal('—');
 
-  protected readonly orientationValue = signal('horizontal');
-  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
-    this.orientationValue() === 'vertical' ? 'vertical' : 'horizontal',
-  );
+  protected readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
 
   protected onAction(label: string): void {
     this.lastAction.set(label);

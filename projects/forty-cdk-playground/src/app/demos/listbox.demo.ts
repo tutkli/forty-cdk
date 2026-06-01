@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, linkedSignal, signal } from '@angular/core';
 import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../ui/control-select';
@@ -59,7 +59,7 @@ import { Icon } from '../ui/icon';
         <app-control-select
           label="orientation"
           [options]="orientationOptions"
-          [(value)]="orientationValue"
+          [(value)]="orientation"
         />
         <app-control-switch
           label="selectionFollowsFocus"
@@ -97,7 +97,7 @@ export class ListboxDemo {
     { value: 'kotlin', label: 'Kotlin' },
   ];
 
-  protected readonly orientationOptions: readonly ControlOption[] = [
+  protected readonly orientationOptions: readonly ControlOption<'vertical' | 'horizontal'>[] = [
     { value: 'vertical', label: 'vertical' },
     { value: 'horizontal', label: 'horizontal' },
   ];
@@ -111,8 +111,5 @@ export class ListboxDemo {
     computation: () => [],
   });
 
-  protected readonly orientationValue = signal('vertical');
-  protected readonly orientation = computed<'vertical' | 'horizontal'>(() =>
-    this.orientationValue() === 'horizontal' ? 'horizontal' : 'vertical',
-  );
+  protected readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
 }
