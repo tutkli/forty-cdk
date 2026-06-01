@@ -11,12 +11,17 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
-import type { ForToastInstance, ForToastSwipeDirection } from './toast-context';
+import {
+  type ForToastInstance,
+  type ForToastSwipeDirection,
+  resolveToastConfigClass,
+} from './toast-context';
 import { ForToastManager } from './toast-manager';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
 import { ForToastDescription } from './toast-description';
+import { ForToastOutlet } from './toast-outlet';
 import { ForToastTitle } from './toast-title';
 
 /**
@@ -28,7 +33,13 @@ import { ForToastTitle } from './toast-title';
  * Custom rendering: if a toast's config has `template`, that
  * `TemplateRef<ForToastTemplateContext>` is used instead of the default
  * title / description / action / close shape. The template receives
- * `$implicit: instance` and `data: instance.config.data`.
+ * `$implicit: instance` and `data: instance.config.data`, and is rendered
+ * with the `[forToast]` injection context in scope (via `ForToastOutlet`),
+ * so `[forToastTitle]` / `[forToastDescription]` / `[forToastAction]` /
+ * `[forToastClose]` keep their automatic a11y / close wiring inside it.
+ *
+ * Per-toast classes: a config's `class` / `classList` is applied to the
+ * rendered toast root, merged with the directive's own host attributes.
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
@@ -45,6 +56,7 @@ import { ForToastTitle } from './toast-title';
   imports: [
     NgTemplateOutlet,
     ForToast,
+    ForToastOutlet,
     ForToastTitle,
     ForToastDescription,
     ForToastAction,
@@ -61,6 +73,7 @@ import { ForToastTitle } from './toast-title';
     @for (toast of visible(); track toast.id; let i = $index) {
       <div
         forToast
+        [class]="toastClass(toast)"
         [variant]="toast.config.variant ?? 'info'"
         [duration]="toast.config.duration ?? defaultDuration()"
         [closable]="toast.config.closable !== false"
@@ -69,12 +82,13 @@ import { ForToastTitle } from './toast-title';
         [attr.data-front-stack-index]="i"
         (close)="onClose(toast, $event)"
       >
-        @if (toast.config.template) {
+        @if (toast.config.template; as template) {
           <ng-container
-            *ngTemplateOutlet="
-              toast.config.template;
-              context: { $implicit: toast, data: toast.config.data }
-            "
+            forToastOutlet
+            #outlet="forToastOutlet"
+            [ngTemplateOutlet]="template"
+            [ngTemplateOutletContext]="{ $implicit: toast, data: toast.config.data }"
+            [ngTemplateOutletInjector]="outlet.injector"
           />
         } @else {
           @if (toast.config.title) {
@@ -164,5 +178,15 @@ export class ForToastViewport {
 
   protected onClose(toast: ForToastInstance, _reason: unknown): void {
     toast.dismiss();
+  }
+
+  /**
+   * Consumer class(es) for a toast row, resolved from its config's `class` /
+   * `classList`. Returns `''` when neither is set so the `[class]` host
+   * binding emits no extra tokens and leaves the directive's own host
+   * attributes untouched.
+   */
+  protected toastClass(toast: ForToastInstance): string {
+    return resolveToastConfigClass(toast.config) ?? '';
   }
 }
