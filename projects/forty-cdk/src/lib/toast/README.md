@@ -79,7 +79,35 @@ class SomeComponent {
 - `ref.isClosed()` — reactive boolean.
 - `ref.config()` — reactive config snapshot.
 
-## Custom rendering
+## Composition + styling model
+
+Toast is "bring your own markup + classes", like every other primitive — even on the programmatic path where the viewport renders the markup for you. There are two levers:
+
+### Per-toast classes
+
+Pass `class` (a single token or a space-separated string) or `classList` (a string or an array of tokens) in the `show()` config. They are applied to the rendered toast root (the `[forToast]` element), merged with the directive's own host attributes — they never clobber `data-state` / `data-variant` / the swipe CSS hooks.
+
+```ts
+this.toasts.show({ title: 'Saved', variant: 'success', class: 'toast toast--success' });
+this.toasts.show({ title: 'Failed', classList: ['toast', 'toast--error'] });
+```
+
+```css
+/* Now you can target your own class instead of the [forToast] attribute. */
+.toast {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+.toast--success {
+  border-inline-start: 4px solid green;
+}
+```
+
+Declarative toasts (`<div forToast class="toast">`) take consumer classes the native way — `class` in `show()` is the programmatic equivalent. Styling by the `[forToast]` / `[forToastTitle]` / … attribute selectors still works and remains a valid choice; the class hook just unblocks design-system class names.
+
+### Custom rendering with a `template`
 
 If the default title / description / action / close shape isn't enough, pass a `template`:
 
@@ -96,7 +124,25 @@ this.toasts.show({ template: this.toastTpl, data: { user, post } });
 
 The template context is `{ $implicit: ForToastInstance, data: T }`. Use `toast.dismiss()` to close from inside the template.
 
-> **Note**: custom templates declared in your component can't use the `[forToastTitle]` / `[forToastAction]` / `[forToastClose]` directives — those rely on the `[forToast]` injection context, which Angular's `ngTemplateOutlet` does not propagate from the rendering host. Either accept the default rendering, or write fully custom markup using `toast.dismiss()` for close behavior.
+**The helper directives work inside a custom `template`.** The viewport renders the template with the `[forToast]` injection context in scope, so `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, and `[forToastClose]` keep their automatic `aria-labelledby` / `aria-describedby` / close-reason wiring — exactly as in the default shape. Just import the directives into the component that declares the `<ng-template>`:
+
+```ts
+@Component({
+  imports: [ForToastViewport, ForToastTitle, ForToastDescription, ForToastAction, ForToastClose],
+  // …
+})
+```
+
+```html
+<ng-template #toastTpl let-toast let-data="data">
+  <div forToastTitle class="toast__title">{{ data.title }}</div>
+  <div forToastDescription class="toast__desc">{{ data.body }}</div>
+  <button forToastAction altText="Undo (Cmd+Z)" (click)="restore(data.item)">Undo</button>
+  <button forToastClose class="toast__close" aria-label="Dismiss">×</button>
+</ng-template>
+```
+
+`[forToastAction]` / `[forToastClose]` emit `(close)` (reason `'action'` / `'manual'`) through the same context as the default shape — no need to call `toast.dismiss()` manually for those. (`toast.dismiss()` from `$implicit` is still available for arbitrary buttons that aren't action / close.) This combines with per-toast `class`: add a `class` for the root and your own classes on the helper elements.
 
 ## Declarative usage
 

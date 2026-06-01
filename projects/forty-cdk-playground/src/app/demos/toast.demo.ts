@@ -5,20 +5,43 @@ import {
   DestroyRef,
   inject,
   signal,
+  type TemplateRef,
+  viewChild,
 } from '@angular/core';
-import { ForToastManager, ForToastViewport } from 'forty-cdk';
+import {
+  ForToastAction,
+  ForToastClose,
+  ForToastDescription,
+  ForToastManager,
+  type ForToastTemplateContext,
+  ForToastTitle,
+  ForToastViewport,
+} from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../ui/control-select';
 import { DemoLayout } from '../ui/demo-layout';
 
+interface CustomToastData {
+  user: string;
+  body: string;
+}
+
 @Component({
   selector: 'app-toast-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForToastViewport, ControlSelect],
+  imports: [
+    DemoLayout,
+    ForToastViewport,
+    ForToastTitle,
+    ForToastDescription,
+    ForToastAction,
+    ForToastClose,
+    ControlSelect,
+  ],
   template: `
     <playground-demo
       title="Toast"
-      summary="Headless notifications driven programmatically: inject ForToastManager and call show({ title, … }) from anywhere, while a single <for-toast-viewport> renders the queue and owns the F6 focus hotkey. Toasts announce via role status/alert + aria-live per variant without stealing focus, auto-dismiss after a duration that pauses on hover/focus, and can be swiped away. The viewport renders the default title/description/action/close shape; styling here is pure [forToast] attribute selectors driven by data-variant and the --for-toast-swipe-movement hooks."
+      summary="Headless notifications driven programmatically: inject ForToastManager and call show({ title, … }) from anywhere, while a single <for-toast-viewport> renders the queue and owns the F6 focus hotkey. Toasts announce via role status/alert + aria-live per variant without stealing focus, auto-dismiss after a duration that pauses on hover/focus, and can be swiped away. The default toasts here style by [forToast] attribute selectors; 'Custom + class' shows the other path — show({ class }) carries a consumer class onto the toast root and a custom template keeps the [forToastTitle]/[forToastAction]/[forToastClose] helper directives (and their aria-labelledby / close wiring) intact."
       apgUrl="https://www.w3.org/WAI/ARIA/apg/patterns/alert/"
     >
       <div demo class="toast-demo">
@@ -36,6 +59,7 @@ import { DemoLayout } from '../ui/demo-layout';
               With action
             </button>
             <button type="button" class="pg-btn" (click)="notifyPromise()">Saving → Saved</button>
+            <button type="button" class="pg-btn" (click)="notifyCustom()">Custom + class</button>
             <button type="button" class="pg-btn" (click)="manager.dismissAll()">Dismiss all</button>
           </div>
           <p class="pg-hint">
@@ -50,6 +74,20 @@ import { DemoLayout } from '../ui/demo-layout';
           [swipeDirection]="swipeDirection()"
           [maxVisible]="maxVisible()"
         />
+
+        <ng-template #customTpl let-toast let-data="data">
+          <div forToastTitle class="pg-toast-custom__title">{{ data.user }}</div>
+          <div forToastDescription class="pg-toast-custom__body">{{ data.body }}</div>
+          <button
+            forToastAction
+            class="pg-toast-custom__action"
+            altText="View the new comment"
+            (click)="lastAction.set('Viewed comment')"
+          >
+            View
+          </button>
+          <button forToastClose class="pg-toast-custom__close" aria-label="Dismiss">×</button>
+        </ng-template>
       </div>
 
       <div controls class="pg-controls">
@@ -103,6 +141,9 @@ import { DemoLayout } from '../ui/demo-layout';
 })
 export class ToastDemo {
   protected readonly manager = inject(ForToastManager);
+
+  protected readonly customTpl =
+    viewChild.required<TemplateRef<ForToastTemplateContext<CustomToastData>>>('customTpl');
 
   protected readonly positionOptions: readonly ControlOption[] = [
     { value: 'bottom-right', label: 'bottom-right' },
@@ -183,5 +224,14 @@ export class ToastDemo {
         }),
       1200,
     );
+  }
+
+  protected notifyCustom(): void {
+    this.manager.show<unknown, CustomToastData>({
+      template: this.customTpl(),
+      data: { user: 'Ada Lovelace', body: 'commented on your pull request.' },
+      class: 'pg-toast-custom',
+      duration: 6000,
+    });
   }
 }
