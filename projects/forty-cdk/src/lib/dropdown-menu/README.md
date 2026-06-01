@@ -1,5 +1,7 @@
 # DropdownMenu
 
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+
 Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/): a button that opens a menu of actions on click, ArrowDown, or ArrowUp.
 
 ## Usage
