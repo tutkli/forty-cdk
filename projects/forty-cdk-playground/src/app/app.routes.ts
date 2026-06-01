@@ -4,119 +4,122 @@ export const routes: Routes = [
   { path: '', redirectTo: 'accordion', pathMatch: 'full' },
   {
     path: 'accordion',
-    loadComponent: () => import('./demos/accordion.demo').then((m) => m.AccordionDemo),
+    loadComponent: () => import('./demos/accordion/accordion.page').then((m) => m.AccordionPage),
   },
   {
     path: 'dialog',
-    loadComponent: () => import('./demos/dialog.demo').then((m) => m.DialogDemo),
+    loadComponent: () => import('./demos/dialog/dialog.page').then((m) => m.DialogPage),
   },
   {
     path: 'drawer',
-    loadComponent: () => import('./demos/drawer.demo').then((m) => m.DrawerDemo),
+    loadComponent: () => import('./demos/drawer/drawer.page').then((m) => m.DrawerPage),
   },
   {
     path: 'switch',
-    loadComponent: () => import('./demos/switch.demo').then((m) => m.SwitchDemo),
+    loadComponent: () => import('./demos/switch/switch.page').then((m) => m.SwitchPage),
   },
   {
     path: 'checkbox',
-    loadComponent: () => import('./demos/checkbox.demo').then((m) => m.CheckboxDemo),
+    loadComponent: () => import('./demos/checkbox/checkbox.page').then((m) => m.CheckboxPage),
   },
   {
     path: 'toggle',
-    loadComponent: () => import('./demos/toggle.demo').then((m) => m.ToggleDemo),
+    loadComponent: () => import('./demos/toggle/toggle.page').then((m) => m.TogglePage),
   },
   {
     path: 'radio-group',
-    loadComponent: () => import('./demos/radio-group.demo').then((m) => m.RadioGroupDemo),
+    loadComponent: () => import('./demos/radio-group/radio-group.page').then((m) => m.RadioGroupPage),
   },
   {
     path: 'slider',
-    loadComponent: () => import('./demos/slider.demo').then((m) => m.SliderDemo),
+    loadComponent: () => import('./demos/slider/slider.page').then((m) => m.SliderPage),
   },
   {
     path: 'disclosure',
-    loadComponent: () => import('./demos/disclosure.demo').then((m) => m.DisclosureDemo),
+    loadComponent: () => import('./demos/disclosure/disclosure.page').then((m) => m.DisclosurePage),
   },
   {
     path: 'tabs',
-    loadComponent: () => import('./demos/tabs.demo').then((m) => m.TabsDemo),
+    loadComponent: () => import('./demos/tabs/tabs.page').then((m) => m.TabsPage),
   },
   {
     path: 'separator',
-    loadComponent: () => import('./demos/separator.demo').then((m) => m.SeparatorDemo),
+    loadComponent: () => import('./demos/separator/separator.page').then((m) => m.SeparatorPage),
   },
   {
     path: 'aspect-ratio',
-    loadComponent: () => import('./demos/aspect-ratio.demo').then((m) => m.AspectRatioDemo),
+    loadComponent: () =>
+      import('./demos/aspect-ratio/aspect-ratio.page').then((m) => m.AspectRatioPage),
   },
   {
     path: 'avatar',
-    loadComponent: () => import('./demos/avatar.demo').then((m) => m.AvatarDemo),
+    loadComponent: () => import('./demos/avatar/avatar.page').then((m) => m.AvatarPage),
   },
   {
     path: 'progress',
-    loadComponent: () => import('./demos/progress.demo').then((m) => m.ProgressDemo),
+    loadComponent: () => import('./demos/progress/progress.page').then((m) => m.ProgressPage),
   },
   {
     path: 'meter',
-    loadComponent: () => import('./demos/meter.demo').then((m) => m.MeterDemo),
+    loadComponent: () => import('./demos/meter/meter.page').then((m) => m.MeterPage),
   },
   {
     path: 'toolbar',
-    loadComponent: () => import('./demos/toolbar.demo').then((m) => m.ToolbarDemo),
+    loadComponent: () => import('./demos/toolbar/toolbar.page').then((m) => m.ToolbarPage),
   },
   {
     path: 'scroll-area',
-    loadComponent: () => import('./demos/scroll-area.demo').then((m) => m.ScrollAreaDemo),
+    loadComponent: () => import('./demos/scroll-area/scroll-area.page').then((m) => m.ScrollAreaPage),
   },
   {
     path: 'popover',
-    loadComponent: () => import('./demos/popover.demo').then((m) => m.PopoverDemo),
+    loadComponent: () => import('./demos/popover/popover.page').then((m) => m.PopoverPage),
   },
   {
     path: 'tooltip',
-    loadComponent: () => import('./demos/tooltip.demo').then((m) => m.TooltipDemo),
+    loadComponent: () => import('./demos/tooltip/tooltip.page').then((m) => m.TooltipPage),
   },
   {
     path: 'hover-card',
-    loadComponent: () => import('./demos/hover-card.demo').then((m) => m.HoverCardDemo),
+    loadComponent: () => import('./demos/hover-card/hover-card.page').then((m) => m.HoverCardPage),
   },
   {
     path: 'dropdown-menu',
-    loadComponent: () => import('./demos/dropdown-menu.demo').then((m) => m.DropdownMenuDemo),
+    loadComponent: () =>
+      import('./demos/dropdown-menu/dropdown-menu.page').then((m) => m.DropdownMenuPage),
   },
   {
     path: 'menu',
-    loadComponent: () => import('./demos/menu.demo').then((m) => m.MenuDemo),
+    loadComponent: () => import('./demos/menu/menu.page').then((m) => m.MenuPage),
   },
   {
     path: 'context-menu',
-    loadComponent: () => import('./demos/context-menu.demo').then((m) => m.ContextMenuDemo),
+    loadComponent: () => import('./demos/context-menu/context-menu.page').then((m) => m.ContextMenuPage),
   },
   {
     path: 'menubar',
-    loadComponent: () => import('./demos/menubar.demo').then((m) => m.MenubarDemo),
+    loadComponent: () => import('./demos/menubar/menubar.page').then((m) => m.MenubarPage),
   },
   {
     path: 'navigation-menu',
-    loadComponent: () => import('./demos/navigation-menu.demo').then((m) => m.NavigationMenuDemo),
+    loadComponent: () =>
+      import('./demos/navigation-menu/navigation-menu.page').then((m) => m.NavigationMenuPage),
   },
   {
     path: 'select',
-    loadComponent: () => import('./demos/select.demo').then((m) => m.SelectDemo),
+    loadComponent: () => import('./demos/select/select.page').then((m) => m.SelectPage),
   },
   {
     path: 'combobox',
-    loadComponent: () => import('./demos/combobox.demo').then((m) => m.ComboboxDemo),
+    loadComponent: () => import('./demos/combobox/combobox.page').then((m) => m.ComboboxPage),
   },
   {
     path: 'listbox',
-    loadComponent: () => import('./demos/listbox.demo').then((m) => m.ListboxDemo),
+    loadComponent: () => import('./demos/listbox/listbox.page').then((m) => m.ListboxPage),
   },
   {
     path: 'toast',
-    loadComponent: () => import('./demos/toast.demo').then((m) => m.ToastDemo),
+    loadComponent: () => import('./demos/toast/toast.page').then((m) => m.ToastPage),
   },
   { path: '**', redirectTo: 'accordion' },
 ];

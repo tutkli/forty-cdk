@@ -167,7 +167,13 @@ h3 {
   gap: 0.35rem;
 }
 
-.pg-field > .pg-label {
+.pg-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pg-field .pg-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--pg-text);
@@ -1465,6 +1471,19 @@ a.pg-nav-link.active {
   font-size: 0.85rem;
   color: var(--pg-text-muted);
   text-align: center;
+}
+
+.pg-combobox-vtrack {
+  position: relative;
+  flex: none;
+  width: 100%;
+}
+
+.pg-combobox-option--virtual {
+  position: absolute;
+  inset-inline: 0;
+  height: 36px;
+  box-sizing: border-box;
 }
 
 .pg-listbox {
