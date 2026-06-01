@@ -7,9 +7,11 @@ import { injectComboboxContext } from './combobox-context';
  * Enter dispatch a native click. Clicking calls `clear()` on the root,
  * which resets `[(value)]` and `[(query)]` and the activedescendant.
  *
- * The host binding `[hidden]` hides the button when there's nothing to
- * clear (no value, empty query) so the consumer can leave it inline in
- * the template without an extra `@if`.
+ * The directive hides the button when there's nothing to clear (no value,
+ * empty query) so the consumer can leave it inline in the template without
+ * an extra `@if`. Visibility is enforced with an inline `display: none`
+ * (which beats any author `display` rule a consumer applies via a class) in
+ * addition to the `hidden` attribute that removes it from the a11y tree.
  */
 @Directive({
   selector: '[forComboboxClear]',
@@ -18,6 +20,7 @@ import { injectComboboxContext } from './combobox-context';
     type: 'button',
     'aria-label': 'Clear',
     '[hidden]': '!hasContent()',
+    '[style.display]': 'hasContent() ? null : "none"',
     '[attr.disabled]': 'ctx.disabled() || ctx.readonly() ? "" : null',
     '[attr.tabindex]': '-1',
     '(click)': 'onClick()',

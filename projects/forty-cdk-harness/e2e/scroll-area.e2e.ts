@@ -167,6 +167,26 @@ test.describe('ScrollArea (geometry + drag)', () => {
     await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
   });
 
+  test("corner stays hidden when only one axis overflows even though a consumer display rule sets display: flex", async ({
+    page,
+  }) => {
+    // Only the vertical axis overflows → fewer than two scrollbars, so the
+    // corner has no logical presence. The fixture gives `[forScrollAreaCorner]`
+    // a `display: flex` author rule; the directive's inline `display: none`
+    // (paired with the `hidden` attribute) must still win, so the corner is
+    // not laid out. `toBeHidden()` reads the computed box, so it fails if the
+    // consumer's `display: flex` leaks through the user-agent `[hidden]` rule.
+    await gotoFixture(page, 'scroll-area', {
+      viewportWidth: '300',
+      viewportHeight: '200',
+      contentWidth: '150',
+      contentHeight: '800',
+    });
+
+    await expect(el(page, 'corner')).toBeHidden();
+    await expect(el(page, 'corner')).toHaveAttribute('hidden', '');
+  });
+
   // Touch path coverage for the synthetic thumb's pointer drag. The
   // viewport hides native scrollbars via the global stylesheet
   // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the

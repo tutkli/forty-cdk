@@ -1391,10 +1391,6 @@ a.pg-nav-link.active {
   color: var(--pg-text);
 }
 
-.pg-combobox-clear[hidden] {
-  display: none;
-}
-
 .pg-combobox-chip {
   display: inline-flex;
   align-items: center;
@@ -1489,10 +1485,6 @@ a.pg-nav-link.active {
   text-align: center;
 }
 
-.pg-combobox-empty[hidden] {
-  display: none;
-}
-
 .pg-listbox {
   display: flex;
   flex-direction: column;
@@ -1557,10 +1549,6 @@ a.pg-nav-link.active {
   justify-content: center;
   margin-left: auto;
   color: var(--pg-primary);
-}
-
-.pg-listbox-indicator[hidden] {
-  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
