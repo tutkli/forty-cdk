@@ -15,21 +15,14 @@ import { PLAYGROUND_GROUPS } from '../primitives';
           <ul class="pg-nav-list">
             @for (item of group.primitives; track item.slug) {
               <li>
-                @if (item.ready) {
-                  <a
-                    [routerLink]="['/', item.slug]"
-                    routerLinkActive="active"
-                    class="pg-nav-link"
-                    (click)="navigate.emit()"
-                  >
-                    {{ item.title }}
-                  </a>
-                } @else {
-                  <span class="pg-nav-link disabled" title="Coming soon">
-                    {{ item.title }}
-                    <span class="pg-nav-soon">soon</span>
-                  </span>
-                }
+                <a
+                  [routerLink]="['/', item.slug]"
+                  routerLinkActive="active"
+                  class="pg-nav-link"
+                  (click)="navigate.emit()"
+                >
+                  {{ item.title }}
+                </a>
               </li>
             }
           </ul>

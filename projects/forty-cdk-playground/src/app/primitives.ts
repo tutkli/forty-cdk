@@ -1,7 +1,6 @@
 export interface PlaygroundPrimitive {
   readonly slug: string;
   readonly title: string;
-  readonly ready: boolean;
 }
 
 export interface PlaygroundGroup {
@@ -13,50 +12,50 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
   {
     label: 'Overlays',
     primitives: [
-      { slug: 'dialog', title: 'Dialog', ready: true },
-      { slug: 'drawer', title: 'Drawer', ready: true },
-      { slug: 'popover', title: 'Popover', ready: true },
-      { slug: 'dropdown-menu', title: 'Dropdown Menu', ready: true },
-      { slug: 'context-menu', title: 'Context Menu', ready: true },
-      { slug: 'menu', title: 'Menu', ready: true },
-      { slug: 'menubar', title: 'Menubar', ready: true },
-      { slug: 'navigation-menu', title: 'Navigation Menu', ready: true },
-      { slug: 'hover-card', title: 'Hover Card', ready: true },
-      { slug: 'tooltip', title: 'Tooltip', ready: true },
-      { slug: 'select', title: 'Select', ready: true },
-      { slug: 'combobox', title: 'Combobox', ready: true },
-      { slug: 'toast', title: 'Toast', ready: true },
+      { slug: 'dialog', title: 'Dialog' },
+      { slug: 'drawer', title: 'Drawer' },
+      { slug: 'popover', title: 'Popover' },
+      { slug: 'dropdown-menu', title: 'Dropdown Menu' },
+      { slug: 'context-menu', title: 'Context Menu' },
+      { slug: 'menu', title: 'Menu' },
+      { slug: 'menubar', title: 'Menubar' },
+      { slug: 'navigation-menu', title: 'Navigation Menu' },
+      { slug: 'hover-card', title: 'Hover Card' },
+      { slug: 'tooltip', title: 'Tooltip' },
+      { slug: 'select', title: 'Select' },
+      { slug: 'combobox', title: 'Combobox' },
+      { slug: 'toast', title: 'Toast' },
     ],
   },
   {
     label: 'Forms & selection',
     primitives: [
-      { slug: 'switch', title: 'Switch', ready: true },
-      { slug: 'checkbox', title: 'Checkbox', ready: true },
-      { slug: 'toggle', title: 'Toggle', ready: true },
-      { slug: 'radio-group', title: 'Radio Group', ready: true },
-      { slug: 'slider', title: 'Slider', ready: true },
-      { slug: 'listbox', title: 'Listbox', ready: true },
+      { slug: 'switch', title: 'Switch' },
+      { slug: 'checkbox', title: 'Checkbox' },
+      { slug: 'toggle', title: 'Toggle' },
+      { slug: 'radio-group', title: 'Radio Group' },
+      { slug: 'slider', title: 'Slider' },
+      { slug: 'listbox', title: 'Listbox' },
     ],
   },
   {
     label: 'Disclosure & layout',
     primitives: [
-      { slug: 'accordion', title: 'Accordion', ready: true },
-      { slug: 'disclosure', title: 'Disclosure', ready: true },
-      { slug: 'tabs', title: 'Tabs', ready: true },
-      { slug: 'toolbar', title: 'Toolbar', ready: true },
-      { slug: 'separator', title: 'Separator', ready: true },
-      { slug: 'scroll-area', title: 'Scroll Area', ready: true },
-      { slug: 'aspect-ratio', title: 'Aspect Ratio', ready: true },
+      { slug: 'accordion', title: 'Accordion' },
+      { slug: 'disclosure', title: 'Disclosure' },
+      { slug: 'tabs', title: 'Tabs' },
+      { slug: 'toolbar', title: 'Toolbar' },
+      { slug: 'separator', title: 'Separator' },
+      { slug: 'scroll-area', title: 'Scroll Area' },
+      { slug: 'aspect-ratio', title: 'Aspect Ratio' },
     ],
   },
   {
     label: 'Display & feedback',
     primitives: [
-      { slug: 'avatar', title: 'Avatar', ready: true },
-      { slug: 'progress', title: 'Progress', ready: true },
-      { slug: 'meter', title: 'Meter', ready: true },
+      { slug: 'avatar', title: 'Avatar' },
+      { slug: 'progress', title: 'Progress' },
+      { slug: 'meter', title: 'Meter' },
     ],
   },
 ];
