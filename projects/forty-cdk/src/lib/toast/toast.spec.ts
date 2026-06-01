@@ -39,13 +39,25 @@ function pointer(
 }
 
 @Component({
-  imports: [ForToastViewport],
+  imports: [
+    ForToastViewport,
+    ForToastTitle,
+    ForToastDescription,
+    ForToastAction,
+    ForToastClose,
+  ],
   template: `
     <button #opener type="button" data-test-id="opener">Opener</button>
     <for-toast-viewport [maxVisible]="maxVisible()" [hotkey]="hotkey()" />
     <ng-template #titleOnly let-toast let-data="data">
       <span data-test-id="custom-title">{{ data.label }}</span>
       <button type="button" data-test-id="custom-dismiss" (click)="toast.dismiss()">x</button>
+    </ng-template>
+    <ng-template #wired let-toast let-data="data">
+      <div forToastTitle data-test-id="wired-title">{{ data.label }}</div>
+      <div forToastDescription data-test-id="wired-desc">{{ data.desc }}</div>
+      <button forToastAction [altText]="data.altText" data-test-id="wired-action">Undo</button>
+      <button forToastClose data-test-id="wired-close">×</button>
     </ng-template>
   `,
 })
@@ -55,6 +67,10 @@ class ProgrammaticHost {
   readonly hotkey = signal<string>('');
   readonly tpl =
     viewChild.required<TemplateRef<ForToastTemplateContext<{ label: string }>>>('titleOnly');
+  readonly wiredTpl =
+    viewChild.required<
+      TemplateRef<ForToastTemplateContext<{ label: string; desc: string; altText: string }>>
+    >('wired');
 }
 
 @Component({
@@ -829,6 +845,107 @@ describe('ForToastManager (programmatic)', () => {
     r.el.querySelector<HTMLElement>('[data-test-id="custom-dismiss"]')!.click();
     r.flush();
     expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  describe('consumer class (show({ class }) / classList)', () => {
+    it('applies a single class to the rendered toast root', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'Saved', class: 'ds-toast' });
+      r.flush();
+      const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+      expect(t.classList.contains('ds-toast')).toBe(true);
+    });
+
+    it('applies a space-separated class string', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'Saved', class: 'ds-toast ds-toast--compact' });
+      r.flush();
+      const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+      expect(t.classList.contains('ds-toast')).toBe(true);
+      expect(t.classList.contains('ds-toast--compact')).toBe(true);
+    });
+
+    it('applies an array via classList', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'Saved', classList: ['ds-toast', 'ds-toast--error'] });
+      r.flush();
+      const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+      expect(t.classList.contains('ds-toast')).toBe(true);
+      expect(t.classList.contains('ds-toast--error')).toBe(true);
+    });
+
+    it('does not clobber the directive-owned host attributes', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'Saved', variant: 'success', class: 'ds-toast' });
+      r.flush();
+      const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+      // Consumer class lands alongside the directive's own reflected state.
+      expect(t.classList.contains('ds-toast')).toBe(true);
+      expect(t.getAttribute('data-state')).toBe('open');
+      expect(t.getAttribute('data-variant')).toBe('success');
+      expect(t.getAttribute('role')).toBe('status');
+    });
+  });
+
+  describe('helper directives inside a custom template', () => {
+    it('wires aria-labelledby / aria-describedby from [forToastTitle] / [forToastDescription]', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({
+        template: r.instance.wiredTpl(),
+        data: { label: 'Archived', desc: 'Moved to trash', altText: 'Undo (Cmd+Z)' },
+      });
+      r.flush();
+      const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+      const titleId = $(t, 'wired-title')!.id;
+      const descId = $(t, 'wired-desc')!.id;
+      expect(titleId).not.toBe('');
+      expect(descId).not.toBe('');
+      expect(t.getAttribute('aria-labelledby')).toBe(titleId);
+      expect(t.getAttribute('aria-describedby')).toBe(descId);
+    });
+
+    it('[forToastClose] inside a custom template dismisses the toast', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({
+        template: r.instance.wiredTpl(),
+        data: { label: 'Archived', desc: 'Moved to trash', altText: '' },
+      });
+      r.flush();
+      expect(r.instance.toasts.count()).toBe(1);
+      $(r.el, 'wired-close')!.click();
+      r.flush();
+      expect(r.instance.toasts.count()).toBe(0);
+    });
+
+    it('[forToastAction] inside a custom template dismisses the toast', () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({
+        template: r.instance.wiredTpl(),
+        data: { label: 'Archived', desc: 'Moved to trash', altText: 'Undo (Cmd+Z)' },
+      });
+      r.flush();
+      expect(r.instance.toasts.count()).toBe(1);
+      $(r.el, 'wired-action')!.click();
+      r.flush();
+      expect(r.instance.toasts.count()).toBe(0);
+    });
+
+    it('zoneless: helper directives in a custom template still wire aria-labelledby', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ProgrammaticHost);
+      fixture.detectChanges();
+      fixture.componentInstance.toasts.show({
+        template: fixture.componentInstance.wiredTpl(),
+        data: { label: 'Archived', desc: 'Moved to trash', altText: '' },
+      });
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const t = el.querySelector<HTMLElement>('[forToast]')!;
+      const titleId = $(t, 'wired-title')!.id;
+      expect(titleId).not.toBe('');
+      expect(t.getAttribute('aria-labelledby')).toBe(titleId);
+    });
   });
 
   it('default variant info → role=status', () => {

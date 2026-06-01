@@ -25,7 +25,10 @@ export type ForToastCloseReason =
  * The default rendered shape is `title` + optional `description` + optional
  * `action` button + optional `close` button, wired via `[forToastTitle]`,
  * `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`. For custom
- * rendering, pass `template` with a `TemplateRef<ForToastTemplateContext>`.
+ * rendering, pass `template` with a `TemplateRef<ForToastTemplateContext>` —
+ * the same helper directives keep working inside it (the viewport renders the
+ * template with the `[forToast]` injection context in scope). Pass `class` /
+ * `classList` to apply consumer CSS classes onto the rendered toast root.
  */
 export interface ForToastConfig<D = unknown> {
   /** Stable id for dedupe / `update()` / external dismissal. Auto-generated when omitted. */
@@ -60,6 +63,24 @@ export interface ForToastConfig<D = unknown> {
    * `[swipeThreshold]` (or `50` if neither is set).
    */
   swipeThreshold?: number;
+  /**
+   * Consumer CSS class(es) applied to the rendered toast root (the
+   * `[forToast]` element). Pass a single class (`'toast--compact'`) or a
+   * space-separated string (`'toast toast--compact'`). Merged with the
+   * directive's own host attributes — it never clobbers `data-state` /
+   * `data-variant` / the swipe hooks.
+   *
+   * Use this to carry design-system classes onto programmatic toasts so you
+   * are not forced to style globally by the `[forToast]` attribute selector.
+   * For multiple classes as an array, prefer {@link classList}.
+   */
+  class?: string;
+  /**
+   * Consumer CSS class(es) applied to the rendered toast root, as an array
+   * (`['toast', 'toast--compact']`) or a space-separated string. Merged with
+   * {@link class} and with the directive's own host attributes.
+   */
+  classList?: string | readonly string[];
   /** Arbitrary payload passed to `template` context as `data`. */
   data?: D;
   /** Override the default rendering with a `TemplateRef`. */
@@ -70,6 +91,36 @@ export interface ForToastTemplateContext<D = unknown> {
   /** The toast handle for `dismiss()` / state. */
   $implicit: ForToastInstance<D>;
   data: D | undefined;
+}
+
+/**
+ * Collapses a toast config's `class` / `classList` into a single
+ * space-separated string suitable for an Angular `[class]` host binding.
+ * De-duplicates tokens and drops empty entries so the rendered `class`
+ * attribute stays clean. Returns `null` when neither field carries a class.
+ *
+ * @internal Consumed by `ForToastViewport` to apply consumer classes onto the
+ * rendered `[forToast]` root without clobbering the directive's own host
+ * attributes.
+ */
+export function resolveToastConfigClass(config: {
+  class?: string;
+  classList?: string | readonly string[];
+}): string | null {
+  const tokens: string[] = [];
+  const push = (value: string | readonly string[] | undefined): void => {
+    if (typeof value === 'string') {
+      tokens.push(...value.split(/\s+/));
+    } else if (Array.isArray(value)) {
+      for (const entry of value) {
+        tokens.push(...entry.split(/\s+/));
+      }
+    }
+  };
+  push(config.class);
+  push(config.classList);
+  const unique = [...new Set(tokens.filter(Boolean))];
+  return unique.length > 0 ? unique.join(' ') : null;
 }
 
 /**
