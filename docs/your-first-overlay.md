@@ -229,7 +229,7 @@ forty-cdk overlays come in two shapes. Knowing which shape a primitive uses tell
 
 ### Wrapper-based (Popover, DropdownMenu, ContextMenu, Tooltip, HoverCard, Select, Combobox)
 
-The root directive wraps both the trigger and the content. It owns `[(open)]` internally, so the `exportAs` shortcut above works out of the box. The content pieces know they live inside the root and receive context via Angular's DI tree — no manual id wiring needed.
+The root directive wraps both the trigger and the content and owns its open state internally, so the `exportAs` shortcut above works out of the box. Most also accept an explicit `[(open)]` two-way binding (HoverCard opens on hover and exposes its open state a little differently — see its README). The content pieces know they live inside the root and receive context via Angular's DI tree — no manual id wiring needed.
 
 ```html
 <!-- The root "forPopover" is the lifecycle owner -->
