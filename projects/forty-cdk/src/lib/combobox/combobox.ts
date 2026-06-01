@@ -385,8 +385,10 @@ export class ForCombobox<T = string>
       // Auto-highlight the first / last enabled option whenever the listbox
       // is open with no activedescendant (e.g. after the consumer's filter
       // removed the previously-active option, or right after openMenu()).
-      // When virtualizing, prefer first/last by absolute position so the
-      // seed is consistent with the consumer's source order.
+      // When virtualizing, seed among the currently-rendered options only —
+      // never scroll the consumer's window. Scrolling the active option out
+      // of view clears the activedescendant and re-enters this branch, so an
+      // off-window seed would snap the listbox back to the top on every tick.
       if (this.autoHighlight() && this.open() && this.#activeId() === null && items.length > 0) {
         const total = this.totalCount();
         if (total !== undefined) {

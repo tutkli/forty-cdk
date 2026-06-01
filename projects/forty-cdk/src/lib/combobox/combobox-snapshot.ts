@@ -239,39 +239,40 @@ export class ComboboxSnapshot<T> {
   }
 
   /**
-   * Auto-highlight the first or last enabled option using the indexed
-   * snapshot. Used in the virtualized branch of the host's auto-highlight
-   * effect — for non-virtualized lists the host still walks the live
-   * `items()` array directly. No-op if `totalCount` is unset or zero.
+   * Auto-highlight the first or last enabled option that is **currently
+   * rendered**, ordered by absolute `posInSet`. Used in the virtualized
+   * branch of the host's auto-highlight effect — for non-virtualized lists
+   * the host walks the live `items()` array directly. No-op if `totalCount`
+   * is unset / zero or nothing is rendered.
+   *
+   * Deliberately *passive*: it only ever moves `aria-activedescendant`, never
+   * the consumer's scroll position. Auto-highlight re-runs every time the
+   * activedescendant is cleared, and scrolling the active option out of the
+   * rendered window clears it (see `ForCombobox.unregisterOption`). If this
+   * seed emitted `(scrollToIndex)` toward the absolute first option, every
+   * wheel tick that unmounted the active row would snap the listbox straight
+   * back to the top. Off-window targets are reached only through explicit
+   * keyboard navigation (`navigateVirtualized`), which owns scroll-into-view.
    */
   seedFromIndexedSnapshot(direction: 'first' | 'last'): void {
     const total = this.#deps.totalCount();
     if (total === undefined || total <= 0) {
       return;
     }
-    const indexed = this.#snapshotByPos();
     const items = this.#deps.items();
-
-    const start = direction === 'last' ? total - 1 : 0;
-    const step = direction === 'last' ? -1 : 1;
-    for (let i = start; i >= 0 && i < total; i += step) {
-      const entry = indexed.get(i);
-      if (entry && entry.disabled) continue;
-      // Prefer a live option for in-window seeds; fall back to pending +
-      // scrollToIndex when we know about an off-screen entry.
-      const live = items.find((it) => it.posInSet?.() === i);
-      if (live) {
-        if (live.disabled()) continue;
-        this.#deps.setActiveId(live.id());
-        return;
-      }
-      if (entry) {
-        this.#pendingActivePos.set(i);
-        this.#deps.emitScrollToIndex(i);
-        return;
-      }
-      // No info on this index — let the consumer's render seed us next pass.
+    if (items.length === 0) {
       return;
+    }
+    const ordered = [...items].sort((a, b) => {
+      const pa = a.posInSet?.() ?? 0;
+      const pb = b.posInSet?.() ?? 0;
+      return direction === 'last' ? pb - pa : pa - pb;
+    });
+    for (const item of ordered) {
+      if (!item.disabled()) {
+        this.#deps.setActiveId(item.id());
+        return;
+      }
     }
   }
 

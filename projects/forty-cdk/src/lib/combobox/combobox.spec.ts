@@ -105,7 +105,6 @@ class ComboboxHost {
   });
 }
 
-
 function getOption(testId: string): HTMLElement {
   const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
   if (!el) {
@@ -398,12 +397,7 @@ describe('ForCombobox', () => {
       @Component({
         imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
         template: `
-          <div
-            forCombobox
-            [(open)]="open"
-            (escapeKeyDown)="captured.push($event)"
-            ariaLabel="t"
-          >
+          <div forCombobox [(open)]="open" (escapeKeyDown)="captured.push($event)" ariaLabel="t">
             <input forComboboxInput />
             @if (open()) {
               <div forComboboxContent></div>
@@ -434,12 +428,7 @@ describe('ForCombobox', () => {
       @Component({
         imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
         template: `
-          <div
-            forCombobox
-            [(open)]="open"
-            (escapeKeyDown)="$event.preventDefault()"
-            ariaLabel="t"
-          >
+          <div forCombobox [(open)]="open" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t">
             <input forComboboxInput />
             @if (open()) {
               <div forComboboxContent></div>
@@ -2200,6 +2189,31 @@ describe('ForCombobox virtualization', () => {
     // pending pos resolves to its id.
     const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
     expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
+  });
+
+  it('scrolling the active option out of view does not snap the window back to the top', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    // Auto-highlight seeded item-0 in the initial [0, 10) window.
+    const input = getInput();
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      document.querySelector<HTMLElement>('[data-test-id="item-0"]')!.id,
+    );
+
+    // Consumer scrolls: advance the rendered window so item-0 unmounts. This
+    // clears the activedescendant and re-enters the auto-highlight branch.
+    r.instance.scrollToIndexCalls.length = 0;
+    r.instance.range.set([30, 40]);
+    await flush(r.fixture);
+
+    // The directive must not ask the consumer to scroll back to the top...
+    expect(r.instance.scrollToIndexCalls).toEqual([]);
+    // ...the window stays where the user left it...
+    expect(document.querySelector('[data-test-id="item-0"]')).toBeNull();
+    // ...and the highlight rides the topmost rendered row.
+    const item30 = document.querySelector<HTMLElement>('[data-test-id="item-30"]')!;
+    expect(input.getAttribute('aria-activedescendant')).toBe(item30.id);
   });
 
   it('in-window navigation skips disabled options and stays inside the visible range', async () => {
