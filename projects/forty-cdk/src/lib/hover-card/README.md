@@ -75,6 +75,8 @@ export class DemoProfileLink {}
 
 ## CSS custom properties
 
+See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+
 `[forHoverCardContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forHoverCardArrow]` reads the consumer-settable `--for-arrow-offset`:
 
 | Element                | Custom property                  | Type / range        | Direction | Meaning                                                                                              |

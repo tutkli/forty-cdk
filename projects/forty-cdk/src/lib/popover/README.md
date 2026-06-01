@@ -148,6 +148,8 @@ The popover opens / closes alongside the input but never steals focus from it â€
 
 ## CSS custom properties
 
+See also: [Styling floating content](../../../../../docs/styling-floating-content.md) â€” animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+
 `[forPopoverContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forPopoverArrow]` reads the consumer-settable `--for-arrow-offset`:
 
 | Element              | Custom property                  | Type / range            | Direction | Meaning                                                                                              |
