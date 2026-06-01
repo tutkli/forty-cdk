@@ -87,7 +87,7 @@ The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **
 }
 ```
 
-`[forDialogTrigger]` reads the `controls` value and reflects it as `aria-controls="my-dialog"`. It also reflects `aria-haspopup="dialog"` and `aria-expanded="true"|"false"` automatically — but only when `controls` is set, so omitting it produces a trigger with no `aria-controls` and silently breaks assistive technology that announces "opens dialog X".
+`[forDialogTrigger]` always reflects `aria-haspopup="dialog"` and `aria-expanded` (`"true"` / `"false"`, from the trigger's own `open` state) — these do not depend on `controls`. The `controls` value is what gets reflected as `aria-controls="my-dialog"`, and only while the dialog is open; omit `controls` and the trigger never gets an `aria-controls`, silently breaking assistive technology that announces "opens dialog X".
 
 > **Popover is different.** `[forPopover]` wraps both the trigger and content in a single parent directive, so ids are auto-generated and kept in sync internally. Dialog is flat — trigger and surface can live anywhere in the template — so the wiring is manual.
 
