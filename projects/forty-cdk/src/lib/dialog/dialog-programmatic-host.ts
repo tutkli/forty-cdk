@@ -24,6 +24,7 @@ import { ForDialog } from './dialog';
   // No selector — only constructed via `createComponent` inside the manager.
   template: '<ng-container #vc></ng-container>',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-for-dialog-host': '' },
   hostDirectives: [
     {
       directive: ForDialog,
