@@ -328,24 +328,6 @@ a.pg-nav-link.active {
   font-weight: 600;
 }
 
-.pg-nav-link.disabled {
-  color: var(--pg-text-muted);
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.pg-nav-soon {
-  margin-left: auto;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.05rem 0.35rem;
-  border-radius: 999px;
-  background: var(--pg-surface-2);
-  color: var(--pg-text-muted);
-}
-
 .pg-nav-drawer {
   position: fixed;
   top: 0;
