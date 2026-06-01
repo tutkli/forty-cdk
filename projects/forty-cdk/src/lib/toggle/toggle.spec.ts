@@ -11,7 +11,7 @@ import { ForToggle } from './toggle';
   template: `
     <button
       forToggle
-      [(pressed)]="pressed"
+      [(checked)]="checked"
       [disabled]="disabled()"
       [readonly]="isReadonly()"
       [required]="isRequired()"
@@ -26,7 +26,7 @@ import { ForToggle } from './toggle';
   `,
 })
 class ToggleHost {
-  readonly pressed = signal(false);
+  readonly checked = signal(false);
   readonly disabled = signal(false);
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
@@ -53,11 +53,11 @@ describe('ForToggle', () => {
       expect(r.query<HTMLButtonElement>('[forToggle]')!.hasAttribute('aria-pressed')).toBe(true);
     });
 
-    it('reflects pressed state changes', () => {
+    it('reflects checked state changes', () => {
       const r = renderHost(ToggleHost);
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
 
-      r.instance.pressed.set(true);
+      r.instance.checked.set(true);
       r.flush();
 
       expect(btn.getAttribute('aria-pressed')).toBe('true');
@@ -113,7 +113,7 @@ describe('ForToggle', () => {
   });
 
   describe('click', () => {
-    it('toggles pressed on click', () => {
+    it('toggles checked on click', () => {
       const r = renderHost(ToggleHost);
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
 
@@ -121,12 +121,12 @@ describe('ForToggle', () => {
       r.flush();
       expect(btn.getAttribute('aria-pressed')).toBe('true');
       expect(btn.getAttribute('data-state')).toBe('checked');
-      expect(r.instance.pressed()).toBe(true);
+      expect(r.instance.checked()).toBe(true);
 
       btn.click();
       r.flush();
       expect(btn.getAttribute('aria-pressed')).toBe('false');
-      expect(r.instance.pressed()).toBe(false);
+      expect(r.instance.checked()).toBe(false);
     });
 
     it('does not toggle when disabled', () => {
@@ -137,7 +137,7 @@ describe('ForToggle', () => {
 
       btn.click();
       r.flush();
-      expect(r.instance.pressed()).toBe(false);
+      expect(r.instance.checked()).toBe(false);
     });
 
     it('does not toggle when readonly without disabling the host', () => {
@@ -149,22 +149,22 @@ describe('ForToggle', () => {
       expect(btn.hasAttribute('disabled')).toBe(false);
       btn.click();
       r.flush();
-      expect(r.instance.pressed()).toBe(false);
+      expect(r.instance.checked()).toBe(false);
     });
   });
 
   describe('two-way binding', () => {
-    it('honors consumer writes without re-emitting (pressedChange)', () => {
+    it('honors consumer writes without re-emitting (checkedChange)', () => {
       let internalEmits = 0;
 
       @Component({
         imports: [ForToggle],
         template: `
-          <button forToggle [(pressed)]="pressed" (pressedChange)="onChange($event)">B</button>
+          <button forToggle [(checked)]="checked" (checkedChange)="onChange($event)">B</button>
         `,
       })
       class Host {
-        readonly pressed = signal(false);
+        readonly checked = signal(false);
         onChange(_: boolean): void {
           internalEmits++;
         }
@@ -172,40 +172,13 @@ describe('ForToggle', () => {
 
       const r = renderHost(Host);
 
-      // Consumer write — must NOT fire.
-      r.instance.pressed.set(true);
+      r.instance.checked.set(true);
       r.flush();
       expect(internalEmits).toBe(0);
 
-      // User click — internal transition, must fire once.
       r.query<HTMLButtonElement>('[forToggle]')!.click();
       r.flush();
       expect(internalEmits).toBe(1);
-    });
-
-    it('drives the same DOM state via [(checked)] as via [(pressed)]', () => {
-      @Component({
-        imports: [ForToggle],
-        template: `<button forToggle [(checked)]="checked">B</button>`,
-      })
-      class Host {
-        readonly checked = signal(false);
-      }
-
-      const r = renderHost(Host);
-      const btn = r.query<HTMLButtonElement>('[forToggle]')!;
-
-      // External write through the form-facing model reflects on the host.
-      r.instance.checked.set(true);
-      r.flush();
-      expect(btn.getAttribute('aria-pressed')).toBe('true');
-      expect(btn.getAttribute('data-state')).toBe('checked');
-
-      // A click writes back through the same model.
-      btn.click();
-      r.flush();
-      expect(r.instance.checked()).toBe(false);
-      expect(btn.getAttribute('aria-pressed')).toBe('false');
     });
   });
 
@@ -229,12 +202,12 @@ describe('ForToggle', () => {
       imports: [ForToggle],
       template: `
         <form>
-          <button forToggle [(pressed)]="pressed" [name]="fieldName()">B</button>
+          <button forToggle [(checked)]="checked" [name]="fieldName()">B</button>
         </form>
       `,
     })
     class FormHost {
-      readonly pressed = signal(false);
+      readonly checked = signal(false);
       readonly fieldName = signal<string>('');
     }
 
@@ -244,17 +217,17 @@ describe('ForToggle', () => {
       expect(Array.from(new FormData(formEl).entries())).toEqual([]);
     });
 
-    it('submits name=on while pressed', () => {
+    it('submits name=on while checked', () => {
       const r = renderHost(FormHost);
       r.instance.fieldName.set('bold');
-      r.instance.pressed.set(true);
+      r.instance.checked.set(true);
       r.flush();
 
       const formEl = r.el.querySelector('form')!;
       expect(Array.from(new FormData(formEl).entries())).toEqual([['bold', 'on']]);
     });
 
-    it('omits the value when unpressed', () => {
+    it('omits the value when unchecked', () => {
       const r = renderHost(FormHost);
       r.instance.fieldName.set('bold');
       r.flush();
@@ -269,7 +242,7 @@ describe('ForToggle', () => {
       const r = renderHost(ToggleHost);
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
 
-      r.instance.pressed.set(true);
+      r.instance.checked.set(true);
       r.flush();
       expect(btn.getAttribute('aria-pressed')).toBe('true');
       expect(btn.getAttribute('data-state')).toBe('checked');
@@ -277,7 +250,7 @@ describe('ForToggle', () => {
       btn.click();
       r.flush();
       expect(btn.getAttribute('aria-pressed')).toBe('false');
-      expect(r.instance.pressed()).toBe(false);
+      expect(r.instance.checked()).toBe(false);
     });
   });
 
@@ -309,14 +282,12 @@ describe('ForToggle', () => {
       const r = renderHost(SignalFormsHost);
       const bold = toggleById(r.el, 'bold');
 
-      // Toggle bold via the button UI → field value updates.
       bold.click();
       r.flush();
       expect(r.instance.model().bold).toBe(true);
       expect(bold.getAttribute('aria-pressed')).toBe('true');
       expect(bold.getAttribute('data-state')).toBe('checked');
 
-      // External change to the model flows back into the DOM.
       r.instance.model.update((m) => ({ ...m, bold: false }));
       r.flush();
       expect(bold.getAttribute('aria-pressed')).toBe('false');
@@ -334,10 +305,8 @@ describe('ForToggle', () => {
       r.flush();
       const italic = toggleById(r.el, 'italic');
 
-      // bold unpressed → italic is schema-readonly.
       expect(italic.getAttribute('aria-readonly')).toBe('true');
 
-      // Once bold is pressed, italic is no longer readonly.
       toggleById(r.el, 'bold').click();
       r.flush();
       expect(italic.getAttribute('aria-readonly')).toBe(null);

@@ -16,7 +16,7 @@ import { ForToggle } from 'forty-cdk';
 @Component({
   selector: 'demo-toggle',
   imports: [ForToggle],
-  template: ` <button forToggle [(pressed)]="bold">B</button> `,
+  template: ` <button forToggle [(checked)]="bold">B</button> `,
 })
 export class DemoToggle {
   readonly bold = signal(false);
@@ -25,21 +25,18 @@ export class DemoToggle {
 
 ### Inputs
 
-| API        | Default | Description                                                                                                |
-| ---------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `pressed`  | `false` | Two-way bindable pressed state. Recommended template binding for a standalone toggle.                     |
-| `checked`  | `false` | Two-way bindable alias of `pressed`, required by `FormCheckboxControl`. What `[formField]` binds.         |
-| `disabled` | `false` | When `true`, click is ignored and `[disabled]` is set.                                                    |
-| `readonly` | `false` | When `true`, click is ignored but the host stays focusable. Reflected as `aria-readonly`.                 |
-| `required` | `false` | Reflected as `aria-required`.                                                                             |
-| `invalid`  | `false` | Reflected as `aria-invalid` and `data-invalid`.                                                           |
-| `pending`  | `false` | Reflected as `aria-busy` and `data-pending`.                                                              |
-| `dirty`    | `false` | Reflected as `data-dirty`.                                                                                |
-| `name`     | `''`    | When non-empty, a hidden input is mounted for native form submission (`name=on` while pressed).           |
-| `errors`   | `[]`    | Validation errors surfaced by Signal Forms.                                                              |
-| `touched`  | `false` | Two-way bindable. Set to `true` on blur.                                                                  |
-
-`pressed` and `checked` are two names for one value — writing either updates the other, and the host (`aria-pressed`, `data-state`) reflects whichever the consumer drives. Use `[(pressed)]` in templates; `[formField]` binds `checked` under the hood.
+| API        | Default | Description                                                                                                                                           |
+| ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`  | `false` | Two-way bindable on/off state. Required by `FormCheckboxControl`; what `[formField]` binds. The host reflects it via `aria-pressed` and `data-state`. |
+| `disabled` | `false` | When `true`, click is ignored and `[disabled]` is set.                                                                                                |
+| `readonly` | `false` | When `true`, click is ignored but the host stays focusable. Reflected as `aria-readonly`.                                                             |
+| `required` | `false` | Reflected as `aria-required`.                                                                                                                         |
+| `invalid`  | `false` | Reflected as `aria-invalid` and `data-invalid`.                                                                                                       |
+| `pending`  | `false` | Reflected as `aria-busy` and `data-pending`.                                                                                                          |
+| `dirty`    | `false` | Reflected as `data-dirty`.                                                                                                                            |
+| `name`     | `''`    | When non-empty, a hidden input is mounted for native form submission (`name=on` while checked).                                                       |
+| `errors`   | `[]`    | Validation errors surfaced by Signal Forms.                                                                                                           |
+| `touched`  | `false` | Two-way bindable. Set to `true` on blur.                                                                                                              |
 
 ## Signal Forms usage (single Toggle)
 
@@ -61,7 +58,7 @@ export class DemoBold {
 }
 ```
 
-When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while pressed so the surrounding `<form>` picks it up during native submission.
+When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission.
 
 For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead — its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
 
