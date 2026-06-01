@@ -150,7 +150,7 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
+import { form, required, requiredError, validate } from '@angular/forms/signals';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
 
 @Component({
@@ -166,9 +166,22 @@ import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
 })
 export class DemoFormats {
   readonly model = signal({ formats: [] as string[] });
-  readonly prefs = form(this.model, (s) => required(s.formats));
+  readonly prefs = form(this.model, (s) => {
+    required(s.formats);
+    validate(s.formats, ({ value }) =>
+      value().length === 0 ? requiredError({ message: 'Pick at least one format' }) : undefined,
+    );
+  });
 }
 ```
+
+> **Requiring a non-empty selection.** `ForToggleGroup`'s value is a `readonly string[]`, and Angular's
+> `required()` treats only `''`, `false`, `null`, and `NaN` as empty — an empty array `[]` counts as
+> _present_, so `required(s.formats)` reflects `aria-required="true"` but never makes the form invalid
+> on its own. Enforce "at least one" with the explicit `validate(...)` length rule above, or with
+> Angular's `minLength(s.formats, 1)` (which emits a `minLengthError` instead of a `requiredError`).
+> The single-`boolean` `ForToggle` above is unaffected: `required(s.bold)` works because `false` is
+> treated as empty.
 
 When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission.
 

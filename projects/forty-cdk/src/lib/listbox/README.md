@@ -120,7 +120,7 @@ export class DemoCities {
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
+import { form, required, requiredError, validate } from '@angular/forms/signals';
 import { ForListbox, ForListboxOption } from 'forty-cdk';
 
 @Component({
@@ -136,9 +136,20 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
 })
 export class DemoPriorities {
   readonly model = signal({ priorities: [] as string[] });
-  readonly prefs = form(this.model, (s) => required(s.priorities));
+  readonly prefs = form(this.model, (s) => {
+    required(s.priorities);
+    validate(s.priorities, ({ value }) =>
+      value().length === 0 ? requiredError({ message: 'Pick at least one priority' }) : undefined,
+    );
+  });
 }
 ```
+
+> **Requiring a non-empty selection.** The value is a `readonly string[]`, and Angular's `required()`
+> treats only `''`, `false`, `null`, and `NaN` as empty — an empty array `[]` counts as _present_, so
+> `required(s.priorities)` reflects `aria-required="true"` but never makes the form invalid on its own.
+> Enforce "at least one" with the explicit `validate(...)` length rule above, or with Angular's
+> `minLength(s.priorities, 1)` (which emits a `minLengthError` instead of a `requiredError`).
 
 ## Keyboard
 

@@ -1,5 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
@@ -1445,6 +1445,46 @@ describe('ForListbox', () => {
       const { el, flush } = renderHost(SignalFormsHost);
       flush();
       expect(listboxOf(el).getAttribute('aria-required')).toBe('true');
+    });
+
+    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', () => {
+      const { fixture, flush } = renderHost(SignalFormsHost);
+      flush();
+      expect(fixture.componentInstance.prefs.priorities().valid()).toBe(true);
+    });
+
+    @Component({
+      imports: [ForListbox, ForListboxOption, FormField],
+      template: `
+        <ul forListbox multiple [formField]="prefs.priorities">
+          <li>
+            <button type="button" forListboxOption value="speed" data-test-id="speed">Speed</button>
+          </li>
+          <li>
+            <button type="button" forListboxOption value="quality" data-test-id="quality">
+              Quality
+            </button>
+          </li>
+        </ul>
+      `,
+    })
+    class NonEmptyRequiredHost {
+      readonly model = signal({ priorities: [] as string[] });
+      readonly prefs = form(this.model, (s) =>
+        validate(s.priorities, ({ value }) =>
+          value().length === 0 ? requiredError({ message: 'Pick at least one' }) : undefined,
+        ),
+      );
+    }
+
+    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', () => {
+      const { el, fixture, flush } = renderHost(NonEmptyRequiredHost);
+      flush();
+      expect(fixture.componentInstance.prefs.priorities().valid()).toBe(false);
+
+      optOf(el, 'speed').click();
+      flush();
+      expect(fixture.componentInstance.prefs.priorities().valid()).toBe(true);
     });
   });
 });
