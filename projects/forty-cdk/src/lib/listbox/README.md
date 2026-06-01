@@ -6,10 +6,11 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 ## Pieces
 
-| Class              | Selector             | Role                                                                             |
-| ------------------ | -------------------- | -------------------------------------------------------------------------------- |
-| `ForListbox`       | `[forListbox]`       | Container. Owns selected values, mode, orientation. Provides the shared context. |
-| `ForListboxOption` | `[forListboxOption]` | One option. Apply on a `<button type="button">`.                                 |
+| Class                       | Selector                      | Role                                                                                                                          |
+| --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                              |
+| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                              |
+| `ForListboxOptionIndicator` | `[forListboxOptionIndicator]` | Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)). |
 
 ## Inputs / models
 
@@ -165,6 +166,10 @@ The full WAI-ARIA APG "Recommended Selection" model is implemented and active au
 The **anchor** for `Shift+Space` is set on every unmodified activation (click, plain Space, plain Enter) and is unaffected by `Shift+ArrowDown`/`ArrowUp` — that lets users click an option, navigate away with Shift+Arrow, and then Shift+Space to select the contiguous block back to where they started.
 
 When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection — same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
+
+## Self-hiding pieces
+
+`[forListboxOptionIndicator]` hides itself while its option is unselected with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree. Because the inline style beats any author selector rule, you can give the indicator a custom `display` (e.g. `display: inline-flex` for a check icon) without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the option is unselected, and your `display` applies once it's selected.
 
 ## Accessibility notes
 

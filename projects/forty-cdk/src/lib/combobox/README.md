@@ -15,9 +15,9 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
 | `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                       |
 | `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
-| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options.                                                         |
+| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).          |
 | `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.       |
-| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear.                                                             |
+| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).             |
 | `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                             |
 | `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                       |
 | `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                                 |
@@ -51,6 +51,10 @@ it.label.toLowerCase().includes(q));
 ## Mount/visibility convention
 
 `[forComboboxContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events when it wants to be unmounted. No `[hidden]`. The visible input lives outside the overlay; only the listbox surface portals.
+
+## Self-hiding pieces
+
+`[forComboboxClear]` (nothing to clear) and `[forComboboxEmpty]` (options exist) hide themselves with an inline `display: none` in addition to the `hidden` attribute that removes them from the accessibility tree. Because the inline style beats any author selector rule, you can give these pieces a custom `display` (e.g. `display: inline-flex` for an icon) without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the piece is hidden, and your `display` applies once it shows.
 
 ## Two models, separately tracked
 
