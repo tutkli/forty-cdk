@@ -24,6 +24,7 @@ import { ForDrawer } from './drawer';
   // No selector — only constructed via `createComponent` inside the manager.
   template: '<ng-container #vc></ng-container>',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-for-drawer-host': '' },
   hostDirectives: [
     {
       directive: ForDrawer,
