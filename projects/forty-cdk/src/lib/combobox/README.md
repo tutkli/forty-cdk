@@ -25,6 +25,8 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                          |
 | `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                        |
 
+For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across all rows, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
+
 ## Filtering is the consumer's job
 
 The primitive is headless — it does **not** filter the registered options. The consumer reads `[forCombobox][(query)]`, applies whatever match logic they want, and renders the filtered subset with `@for`. Each rendered `[forComboboxOption]` registers itself; the listbox tracks the live set automatically.

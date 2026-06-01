@@ -20,6 +20,8 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 | `ForMenuSub`           | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
 | `ForMenuSubTrigger`    | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
 
+For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
+
 ## Mount/visibility convention
 
 `[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits `(close)` (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.
