@@ -1,4 +1,4 @@
-import { computed, Directive, linkedSignal, model } from '@angular/core';
+import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
@@ -20,7 +20,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
  *
  * @example
  * ```html
- * <button forToggle [(pressed)]="bold">B</button>
+ * <button forToggle [(checked)]="bold">B</button>
  *
  * <!-- With Signal Forms: -->
  * <button forToggle [formField]="prefs.bold">B</button>
@@ -31,7 +31,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
   exportAs: 'forToggle',
   host: {
     type: 'button',
-    '[attr.aria-pressed]': 'state() ? "true" : "false"',
+    '[attr.aria-pressed]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.disabled]': 'disabled() ? "" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
@@ -39,7 +39,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.name]': 'name() || null',
-    '[attr.data-state]': 'state() ? "checked" : "unchecked"',
+    '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
@@ -48,63 +48,20 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 })
 export class ForToggle extends FormUiControlBase implements FormCheckboxControl {
   /**
-   * Two-way bindable. Whether the toggle is pressed. The `model()` change
-   * emitter (`(pressedChange)`) fires only on internal transitions (user
-   * click), never on consumer writes via `[(pressed)]`.
-   *
-   * `pressed` and {@link checked} are two names for the same logical state.
-   * `pressed` is the directive's own API (it reads more naturally for a
-   * standalone toggle); `checked` is what `[formField]` binds. They always
-   * resolve to the same value — see {@link state}.
-   */
-  readonly pressed = model<boolean>(false);
-
-  /**
-   * Form-facing pressed/checked state, required by `FormCheckboxControl` so
-   * the toggle auto-wires with `[formField]`. Mirrors {@link pressed}: both
-   * are two-way bindable and always resolve to the same value.
-   *
-   * `[formField]` writes this model directly (bypassing the change emitter),
-   * so the host reflects the effective value through {@link state} rather than
-   * reading a single canonical model — that keeps both `[(pressed)]` and
-   * `[formField]` working without an `effect()` bridging the two.
+   * Two-way bindable on/off state. Required by `FormCheckboxControl`, so the
+   * toggle auto-wires with `[formField]`; the host reflects it through
+   * `aria-pressed` and `data-state` (still a toggle button — only the value's
+   * name is `checked`). The `model()` change emitter (`(checkedChange)`) fires
+   * only on internal transitions (user click), never on consumer writes via
+   * `[(checked)]`.
    */
   readonly checked = model<boolean>(false);
-
-  /**
-   * Effective pressed state that every host binding (ARIA, `data-state`, the
-   * hidden form input) reads. `pressed` and `checked` are two two-way models
-   * for the same concept; `state` reconciles them with a last-write-wins rule
-   * so whichever the consumer drives — `[(pressed)]` or `[formField]` (which
-   * writes `checked`) — wins, and a click that sets both stays consistent.
-   *
-   * A `linkedSignal` (not an `effect`) is the right tool: it is writable state
-   * derived from a source with a reconciliation rule, exactly the sanctioned
-   * replacement for writing one signal from inside an `effect`. Reading both
-   * models in `source` means even the direct, non-emitting writes `[formField]`
-   * performs are picked up reactively.
-   */
-  protected readonly state = linkedSignal<{ pressed: boolean; checked: boolean }, boolean>({
-    source: () => ({ pressed: this.pressed(), checked: this.checked() }),
-    computation: (source, previous) => {
-      if (!previous) {
-        return source.pressed || source.checked;
-      }
-      if (source.pressed !== previous.source.pressed) {
-        return source.pressed;
-      }
-      if (source.checked !== previous.source.checked) {
-        return source.checked;
-      }
-      return previous.value;
-    },
-  });
 
   constructor() {
     super();
     injectHiddenInput({
       name: this.name,
-      values: computed(() => (this.state() ? ['on'] : [])),
+      values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.disabled,
     });
   }
@@ -113,8 +70,6 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
     if (this.disabled() || this.readonly()) {
       return;
     }
-    const next = !this.state();
-    this.pressed.set(next);
-    this.checked.set(next);
+    this.checked.update((v) => !v);
   }
 }
