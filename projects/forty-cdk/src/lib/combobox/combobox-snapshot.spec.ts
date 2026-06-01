@@ -280,6 +280,42 @@ describe('ComboboxSnapshot', () => {
       h.snapshot.seedFromIndexedSnapshot('first');
       expect(h.getActive()).toBe('r-1');
     });
+
+    it('never scrolls the window when re-seeding after the active option scrolls out of view', () => {
+      const h = createHarness({ total: 1000, range: [0, 14] });
+      // Initial window includes index 0, so it lands in the indexed snapshot.
+      const initial = Array.from({ length: 14 }, (_, i) =>
+        makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
+      );
+      h.setItems(initial.map((it) => it.handle));
+      h.snapshot.prime();
+      h.snapshot.seedFromIndexedSnapshot('first');
+      expect(h.getActive()).toBe('r-0');
+
+      // User scrolls down: the window advances and index 0 unmounts. The host
+      // clears the activedescendant (mirrored here) and auto-highlight re-seeds.
+      const scrolled = Array.from({ length: 14 }, (_, i) =>
+        makeHandle({
+          id: `r-${30 + i}`,
+          value: `v${30 + i}`,
+          label: `Row ${30 + i}`,
+          posInSet: 30 + i,
+        }),
+      );
+      h.setItems(scrolled.map((it) => it.handle));
+      h.setRange([30, 44]);
+      h.snapshot.prime();
+      h.setActive(null);
+      h.resetEmitted();
+
+      h.snapshot.seedFromIndexedSnapshot('first');
+
+      // Seeds the topmost *rendered* row, not absolute index 0, and requests
+      // no scroll — emitting scrollToIndex(0) here is what snapped a
+      // virtualized listbox back to the top on every wheel tick.
+      expect(h.getActive()).toBe('r-30');
+      expect(h.emitted).toEqual([]);
+    });
   });
 
   describe('resetPending', () => {
