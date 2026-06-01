@@ -3,6 +3,8 @@
 Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.
 Inspired by Radix UI and Base UI but reinterpreted idiomatically for modern Angular.
 
+**New here?** [Your first overlay](../../docs/your-first-overlay.md) walks one Popover from empty markup to styled-and-animated and explains the two concepts every overlay shares: the `@if` / open-state model and the portal → global CSS requirement.
+
 ## Installation
 
 ```bash

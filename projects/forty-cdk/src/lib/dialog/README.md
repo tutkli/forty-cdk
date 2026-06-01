@@ -1,5 +1,7 @@
 # Dialog
 
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+
 Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) with focus trap, body scroll lock, Escape-to-close, portal rendering, and a programmatic `ForDialogManager.open()` API mirroring CDK's `Dialog`.
 
 ## Two flows, one engine

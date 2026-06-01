@@ -1,5 +1,7 @@
 # Tooltip
 
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+
 Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/) with hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom`-driven positioning.
 
 > APG: tooltips are for **non-interactive** descriptive text. If you need a click-to-open menu / popup with focusable contents, use a Popover primitive (not yet shipped).
