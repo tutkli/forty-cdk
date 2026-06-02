@@ -111,6 +111,12 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     label: 'Forms & selection',
     primitives: [
       {
+        slug: 'field',
+        title: 'Field',
+        description:
+          'Headless wiring that ties a label, description and error region to a control, and reflects validation state as data-* for styling. Any forty-cdk form control auto-associates; native inputs opt in with forFieldControl.',
+      },
+      {
         slug: 'switch',
         title: 'Switch',
         description: 'A binary on / off control toggled by click, Enter or Space.',
