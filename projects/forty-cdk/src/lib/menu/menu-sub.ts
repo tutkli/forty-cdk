@@ -1,12 +1,15 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
   inject,
   input,
   model,
   numberAttribute,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
@@ -19,6 +22,11 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  attachPointerGrace,
+  buildSubmenuGracePolygon,
+  type Point,
+} from '../_internal/pointer-grace/pointer-grace';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   createVetoableNativeEvent,
@@ -33,6 +41,7 @@ import {
   type ForMenuContext,
   type ForMenuItemHandle,
 } from './menu-context';
+import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**
  * Root for a nested submenu inside a parent `[forDropdownMenu]` /
@@ -82,6 +91,8 @@ export class ForMenuSub implements ForMenuContext {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForMenuItemHandle>();
+  readonly #defaults = inject(FOR_MENU_DEFAULTS);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /** The enclosing menu — required (orphan throws). */
   readonly parentMenu: ForMenuContext;
@@ -174,6 +185,20 @@ export class ForMenuSub implements ForMenuContext {
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
 
+  // --- Pointer-driven (hover) open/close state. Additive to click/keyboard. ---
+  #openTimer: ReturnType<typeof setTimeout> | null = null;
+  #closeTimer: ReturnType<typeof setTimeout> | null = null;
+  #graceTimer: ReturnType<typeof setTimeout> | null = null;
+  #detachGrace: (() => void) | null = null;
+  #detachContentPointer: (() => void) | null = null;
+  /**
+   * True while the current open/close transition is pointer-driven, so the
+   * shared content's auto-focus-on-open and return-focus-on-close are vetoed:
+   * hovering must never steal focus into the submenu nor yank it back to the
+   * trigger. Reset to `false` by every keyboard / click / programmatic path.
+   */
+  #suppressFocusMoves = false;
+
   /**
    * Submenus exempt the parent menu's content. Clicks on parent menu items
    * activate via the item's own click handler (which propagates `closeMenu`
@@ -193,6 +218,8 @@ export class ForMenuSub implements ForMenuContext {
       );
     }
     this.parentMenu = parent;
+
+    inject(DestroyRef).onDestroy(() => this.#teardownPointer());
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
@@ -210,10 +237,13 @@ export class ForMenuSub implements ForMenuContext {
 
   registerContent(el: HTMLElement): void {
     this.#contentEl.set(el);
+    this.#attachContentPointer(el);
   }
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+      this.#detachContentPointer?.();
+      this.#detachContentPointer = null;
     }
   }
 
@@ -296,11 +326,17 @@ export class ForMenuSub implements ForMenuContext {
     if (this.disabled()) {
       return;
     }
+    // A keyboard / click open supersedes any in-flight hover scheduling and
+    // moves focus into the submenu (unlike the pointer path).
+    this.#cancelPointerScheduling();
+    this.#suppressFocusMoves = false;
     this.#initialFocus.set(initialFocus);
     this.open.set(true);
   }
 
   closeMenu(reason: ForMenuCloseReason): void {
+    this.#cancelPointerScheduling();
+    this.#suppressFocusMoves = false;
     this.open.set(false);
     // Propagate up so item activation, Tab, and outside-pointer collapse
     // the entire menu chain. `'escape'` collapses only this level (per APG);
@@ -308,6 +344,190 @@ export class ForMenuSub implements ForMenuContext {
     if (reason !== 'escape' && reason !== 'programmatic') {
       this.parentMenu.closeMenu(reason);
     }
+  }
+
+  // --- Pointer-driven (hover) open/close. Additive to click / keyboard. ---
+
+  /**
+   * Schedule a hover-open of the submenu after `subMenuOpenDelay`. Re-entering
+   * the trigger also keeps every ancestor menu alive and aborts a pending
+   * close. No-op when disabled or already open / scheduled.
+   */
+  scheduleOpenByPointer(): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.#keepChainOpen();
+    this.cancelPendingClose();
+    if (this.open() || this.#openTimer !== null) {
+      return;
+    }
+    const delay = Math.max(0, this.#defaults.subMenuOpenDelay);
+    if (delay === 0) {
+      this.#openByPointer();
+      return;
+    }
+    this.#openTimer = setTimeout(() => {
+      this.#openTimer = null;
+      this.#openByPointer();
+    }, delay);
+  }
+
+  /**
+   * The pointer left the sub-trigger. Cancels a not-yet-fired hover-open; if
+   * the submenu is already open, arms the pointer-grace "safe triangle" toward
+   * the content so travelling into the submenu doesn't close it.
+   */
+  onTriggerPointerLeave(cursor: Point): void {
+    this.#clearOpenTimer();
+    if (!this.open()) {
+      return;
+    }
+    this.#armPointerGrace(cursor);
+  }
+
+  /** Schedule a hover-close of the submenu after `subMenuCloseDelay`. */
+  scheduleCloseByPointer(): void {
+    this.#clearOpenTimer();
+    if (!this.open() || this.#closeTimer !== null) {
+      return;
+    }
+    const delay = Math.max(0, this.#defaults.subMenuCloseDelay);
+    if (delay === 0) {
+      this.#closeByPointer();
+      return;
+    }
+    this.#closeTimer = setTimeout(() => {
+      this.#closeTimer = null;
+      this.#closeByPointer();
+    }, delay);
+  }
+
+  /** Cancel a pending hover-close and disarm the pointer-grace tracker. */
+  cancelPendingClose(): void {
+    this.#clearCloseTimer();
+    this.#disarmPointerGrace();
+  }
+
+  #openByPointer(): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.cancelPendingClose();
+    // Hover-open never steals focus — it stays on whatever the user was on.
+    this.#suppressFocusMoves = true;
+    this.open.set(true);
+  }
+
+  #closeByPointer(): void {
+    this.#disarmPointerGrace();
+    this.#clearCloseTimer();
+    // Hover-close affects only this level (like Escape / programmatic — no
+    // upward propagation) and suppresses the trigger return-focus.
+    this.#suppressFocusMoves = true;
+    this.open.set(false);
+  }
+
+  #armPointerGrace(cursor: Point): void {
+    const content = this.#contentEl();
+    if (!this.#isBrowser || !content) {
+      this.scheduleCloseByPointer();
+      return;
+    }
+    const rect = content.getBoundingClientRect();
+    const side = (content.dataset['side'] as FloatingSide | undefined) ?? this.side();
+    const polygon = buildSubmenuGracePolygon(cursor, rect, side);
+    this.#disarmPointerGrace();
+    this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
+      this.#disarmPointerGrace();
+      this.scheduleCloseByPointer();
+    });
+    this.#graceTimer = setTimeout(() => {
+      this.#graceTimer = null;
+      this.#detachGrace?.();
+      this.#detachGrace = null;
+      this.scheduleCloseByPointer();
+    }, Math.max(0, this.#defaults.subMenuPointerGraceDuration));
+  }
+
+  #disarmPointerGrace(): void {
+    if (this.#detachGrace) {
+      this.#detachGrace();
+      this.#detachGrace = null;
+    }
+    if (this.#graceTimer !== null) {
+      clearTimeout(this.#graceTimer);
+      this.#graceTimer = null;
+    }
+  }
+
+  #onContentPointerEnter(): void {
+    // Arrived at (or moving within) the content — keep it and every ancestor
+    // submenu open.
+    this.cancelPendingClose();
+    this.#keepChainOpen();
+  }
+
+  #onContentPointerLeave(): void {
+    this.scheduleCloseByPointer();
+  }
+
+  /** Abort pending hover-closes on this submenu and every ancestor menu. */
+  #keepChainOpen(): void {
+    let parent: ForMenuContext | null = this.parentMenu;
+    while (parent) {
+      parent.cancelPendingClose?.();
+      parent = parent.parentMenu;
+    }
+  }
+
+  #cancelPointerScheduling(): void {
+    this.#clearOpenTimer();
+    this.cancelPendingClose();
+  }
+
+  #clearOpenTimer(): void {
+    if (this.#openTimer !== null) {
+      clearTimeout(this.#openTimer);
+      this.#openTimer = null;
+    }
+  }
+
+  #clearCloseTimer(): void {
+    if (this.#closeTimer !== null) {
+      clearTimeout(this.#closeTimer);
+      this.#closeTimer = null;
+    }
+  }
+
+  #attachContentPointer(el: HTMLElement): void {
+    this.#detachContentPointer?.();
+    const onEnter = (event: PointerEvent): void => {
+      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+        return;
+      }
+      this.#onContentPointerEnter();
+    };
+    const onLeave = (event: PointerEvent): void => {
+      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+        return;
+      }
+      this.#onContentPointerLeave();
+    };
+    el.addEventListener('pointerenter', onEnter);
+    el.addEventListener('pointerleave', onLeave);
+    this.#detachContentPointer = () => {
+      el.removeEventListener('pointerenter', onEnter);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }
+
+  #teardownPointer(): void {
+    this.#clearOpenTimer();
+    this.#clearCloseTimer();
+    this.#disarmPointerGrace();
+    this.#detachContentPointer?.();
+    this.#detachContentPointer = null;
   }
 
   // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
@@ -345,10 +565,18 @@ export class ForMenuSub implements ForMenuContext {
   }
 
   emitAutoFocusOnOpen(): boolean {
+    // Hover-open leaves focus where it is — only keyboard / click moves it in.
+    if (this.#suppressFocusMoves) {
+      return true;
+    }
     return emitVetoableEvent(this.autoFocusOnOpen);
   }
 
   emitAutoFocusOnClose(): boolean {
+    // Hover-close must not yank focus back to the trigger.
+    if (this.#suppressFocusMoves) {
+      return true;
+    }
     return emitVetoableEvent(this.autoFocusOnClose);
   }
 }

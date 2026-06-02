@@ -92,6 +92,28 @@ Closing semantics propagate upward by default: activating an item inside a subme
 
 The submenu's dismissable layer exempts the **parent menu's content** — clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`.
 
+### Pointer (mouse hover)
+
+Additive to the click / keyboard behaviour, a `[forMenuSubTrigger]` also opens its submenu on **mouse hover** — matching Radix, Base UI, and native desktop menus:
+
+- **pointerenter** over the sub-trigger opens the submenu after `subMenuOpenDelay` (default `100`ms), **without** moving focus into it (only keyboard / click move focus in).
+- **pointerleave** closes it after `subMenuCloseDelay` (default `100`ms) — _unless_ the pointer is travelling toward the open submenu. A Radix-style pointer-grace "safe triangle" is drawn from the cursor to the submenu's near edge; while the pointer stays inside it (heading to the submenu) the close is held off. The triangle's lifetime is capped by `subMenuPointerGraceDuration` (default `300`ms).
+- Touch / pen never hover, so they open the submenu by tap (the native click) — the hover listeners are gated to `pointerType === 'mouse'`.
+
+Tune the timings per injector scope with `provideForMenuDefaults` (applies to every submenu in the surrounding scope, across DropdownMenu / ContextMenu / Menubar):
+
+```ts
+import { provideForMenuDefaults } from 'forty-cdk';
+
+bootstrapApplication(App, {
+  providers: [
+    provideForMenuDefaults({ subMenuOpenDelay: 150, subMenuCloseDelay: 200 }),
+  ],
+});
+```
+
+Partial overrides inherit unspecified keys from the parent scope (or the library defaults at the root), so a component-level `providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })]` layers on top of an app-level configuration per key.
+
 ## CSS custom properties
 
 See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.

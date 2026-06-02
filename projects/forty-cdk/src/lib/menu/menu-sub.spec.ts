@@ -12,6 +12,7 @@ import { ForContextMenu } from '../context-menu/context-menu';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
 import { ForMenuContent } from './menu-content';
+import { provideForMenuDefaults } from './menu-defaults';
 import { ForMenuItem } from './menu-item';
 import { ForMenuSub } from './menu-sub';
 import { ForMenuSubTrigger } from './menu-sub-trigger';
@@ -56,6 +57,24 @@ class SubMenuHost {
   readonly lastSelected = signal<string | null>(null);
 }
 
+/**
+ * Builds a pointer event with an explicit `pointerType`. jsdom's
+ * `PointerEvent` constructor doesn't populate `pointerType` / `clientX` /
+ * `clientY` from its init dict, and the hover listeners gate on
+ * `pointerType === 'mouse'`, so the spec defines them directly.
+ */
+function pointerEvent(
+  type: 'pointerenter' | 'pointerleave',
+  { pointerType = 'mouse', clientX = 0, clientY = 0 } = {},
+): PointerEvent {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperties(event, {
+    pointerType: { value: pointerType, configurable: true },
+    clientX: { value: clientX, configurable: true },
+    clientY: { value: clientY, configurable: true },
+  });
+  return event;
+}
 
 describe('ForMenuSub', () => {
   afterEachOverlayCleanup();
@@ -298,6 +317,222 @@ describe('ForMenuSub', () => {
 
       expect(r.instance.lastSelected()).toBe('paste');
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('pointer hover (mouse)', () => {
+    // Fake timers drive the open / close / grace delays deterministically.
+    // Paired restore in afterEach per the test-isolation non-negotiables.
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('hovering the SubTrigger opens the submenu after subMenuOpenDelay (default 100ms)', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+
+      vi.advanceTimersByTime(99);
+      flush();
+      expect(instance.subOpen()).toBe(false);
+
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(instance.subOpen()).toBe(true);
+      expect(document.querySelector('[forMenuSubContent]')).not.toBeNull();
+    });
+
+    it('leaving the SubTrigger before the open delay cancels the hover-open', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(50);
+
+      more.dispatchEvent(pointerEvent('pointerleave', { clientX: 10, clientY: 10 }));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('ignores non-mouse pointer enter (touch opens via tap, not hover)', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter', { pointerType: 'touch' }));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('hovering a disabled SubTrigger never opens', () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>x</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button forMenuSubTrigger disabled>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent><button forMenuItem>A</button></div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly subOpen = signal(false);
+      }
+
+      const { instance, flush } = renderHost(Host);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('leaving the submenu content closes it after subMenuCloseDelay (default 100ms)', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+      instance.subOpen.set(true);
+      flush();
+
+      const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
+      subContent.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
+      flush();
+
+      vi.advanceTimersByTime(99);
+      flush();
+      expect(instance.subOpen()).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('re-entering the submenu content cancels a pending close', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+      instance.subOpen.set(true);
+      flush();
+
+      const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
+      subContent.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
+      flush();
+      subContent.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+
+      vi.advanceTimersByTime(500);
+      flush();
+      expect(instance.subOpen()).toBe(true);
+    });
+
+    it('leaving the SubTrigger arms a grace hold before closing (does not close immediately)', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+      instance.subOpen.set(true);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerleave', { clientX: 10, clientY: 10 }));
+      flush();
+      // Still open right after leaving — the pointer-grace window holds it.
+      expect(instance.subOpen()).toBe(true);
+
+      // Grace window (300ms) lapses, then the close delay (100ms) elapses.
+      vi.advanceTimersByTime(300);
+      flush();
+      vi.advanceTimersByTime(100);
+      flush();
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('a keyboard open (ArrowRight) supersedes a pending hover-open timer', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      // Open immediately by keyboard before the hover delay fires.
+      more.focus();
+      pressKey(more, 'ArrowRight');
+      flush();
+      expect(instance.subOpen()).toBe(true);
+
+      // The stale hover-open timer firing must not disturb the open submenu.
+      vi.advanceTimersByTime(500);
+      flush();
+      expect(instance.subOpen()).toBe(true);
+    });
+
+    describe('configurable via provideForMenuDefaults', () => {
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForMenuDefaults({ subMenuOpenDelay: 250 })],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>x</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent><button forMenuItem>A</button></div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ConfiguredHost {
+        readonly open = signal(true);
+        readonly subOpen = signal(false);
+      }
+
+      it('honours an overridden subMenuOpenDelay', () => {
+        const { instance, flush } = renderHost(ConfiguredHost);
+        flush();
+
+        const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+        more.dispatchEvent(pointerEvent('pointerenter'));
+        flush();
+
+        vi.advanceTimersByTime(249);
+        flush();
+        expect(instance.subOpen()).toBe(false);
+
+        vi.advanceTimersByTime(1);
+        flush();
+        expect(instance.subOpen()).toBe(true);
+      });
     });
   });
 
@@ -597,6 +832,45 @@ describe('ForMenuSub', () => {
       r.instance.subOpen.set(false);
       await flush(r.fixture);
       expect(document.querySelector('[forMenuSubContent]')).toBeNull();
+    });
+
+    it('pointer hover-open stays reactive without zone.js', async () => {
+      // subMenuOpenDelay: 0 makes the hover-open synchronous, so this asserts
+      // the pointer path drives change detection without relying on fake
+      // timers — purely on signals under provideZonelessChangeDetection.
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>x</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent><button forMenuItem>A</button></div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly subOpen = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(document.querySelector('[forMenuSubContent]')).not.toBeNull();
     });
   });
 });

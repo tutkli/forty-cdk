@@ -23,6 +23,15 @@ import { injectMenuContext } from './menu-context';
  *   the top level.
  * - **Tab** — close the entire menu chain.
  * - **Typeahead** — printable keys delegate to parent's typeahead.
+ *
+ * Pointer (mouse):
+ * - **pointerenter** — open the submenu after the configured `subMenuOpenDelay`
+ *   ({@link provideForMenuDefaults}), without moving focus into it.
+ * - **pointerleave** — close after `subMenuCloseDelay`, unless the pointer
+ *   travels toward the open submenu through the pointer-grace "safe triangle".
+ *
+ * Touch / pen never hover, so submenus open by tap (the native click) on those
+ * pointer types — the hover listeners are gated to `pointerType === 'mouse'`.
  */
 @Directive({
   selector: '[forMenuSubTrigger]',
@@ -40,6 +49,8 @@ import { injectMenuContext } from './menu-context';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(pointerenter)': 'onPointerEnter($event)',
+    '(pointerleave)': 'onPointerLeave($event)',
   },
 })
 export class ForMenuSubTrigger {
@@ -77,6 +88,24 @@ export class ForMenuSubTrigger {
       return;
     }
     this.submenu.toggle('first');
+  }
+
+  protected onPointerEnter(event: PointerEvent): void {
+    // Hover is a mouse affordance; touch / pen open the submenu by tap (click).
+    if (event.pointerType !== 'mouse') {
+      return;
+    }
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.submenu.scheduleOpenByPointer?.();
+  }
+
+  protected onPointerLeave(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse') {
+      return;
+    }
+    this.submenu.onTriggerPointerLeave?.({ x: event.clientX, y: event.clientY });
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
