@@ -17,7 +17,6 @@ export type ConfirmResult = 'confirm' | 'cancel';
 @Component({
   selector: 'app-confirm-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'pg-dialog pg-dialog--pop' },
   imports: [ForDialogBackdrop, ForDialogTitle, ForDialogDescription, ForDialogClose],
   template: `
     <div forDialogBackdrop class="pg-backdrop"></div>

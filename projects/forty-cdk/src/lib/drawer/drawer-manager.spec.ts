@@ -512,4 +512,54 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.activeElement).not.toBe(trigger);
     });
   });
+
+  describe('consumer class (open({ class }) / classList)', () => {
+    it('applies a single class to the overlay root', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, class: 'my-drawer' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-drawer')).toBe(true);
+    });
+
+    it('applies a space-separated class string', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, class: 'my-drawer my-drawer--lg' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-drawer')).toBe(true);
+      expect(host.classList.contains('my-drawer--lg')).toBe(true);
+    });
+
+    it('applies an array via classList', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, classList: ['my-drawer', 'lg'] });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-drawer')).toBe(true);
+      expect(host.classList.contains('lg')).toBe(true);
+    });
+
+    it('merges and de-dups class + classList', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, class: 'a b', classList: ['b', 'c'] });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.className.split(/\s+/).filter(Boolean).sort()).toEqual(['a', 'b', 'c']);
+    });
+
+    it('lands alongside data-side without clobbering host attributes', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, side: 'right', class: 'my-drawer' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-drawer')).toBe(true);
+      expect(host.getAttribute('data-side')).toBe('right');
+      expect(host.getAttribute('data-state')).toBe('open');
+      expect(host.getAttribute('aria-modal')).toBe('true');
+      expect(host.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('leaves the host class-less when neither class nor classList is set', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.className).toBe('');
+    });
+  });
 });

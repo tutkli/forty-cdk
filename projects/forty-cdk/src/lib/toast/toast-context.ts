@@ -109,36 +109,6 @@ export interface ForToastTemplateContext<D = unknown> {
 }
 
 /**
- * Collapses a toast config's `class` / `classList` into a single
- * space-separated string suitable for an Angular `[class]` host binding.
- * De-duplicates tokens and drops empty entries so the rendered `class`
- * attribute stays clean. Returns `null` when neither field carries a class.
- *
- * @internal Consumed by `ForToastViewport` to apply consumer classes onto the
- * rendered `[forToast]` root without clobbering the directive's own host
- * attributes.
- */
-export function resolveToastConfigClass(config: {
-  class?: string;
-  classList?: string | readonly string[];
-}): string | null {
-  const tokens: string[] = [];
-  const push = (value: string | readonly string[] | undefined): void => {
-    if (typeof value === 'string') {
-      tokens.push(...value.split(/\s+/));
-    } else if (Array.isArray(value)) {
-      for (const entry of value) {
-        tokens.push(...entry.split(/\s+/));
-      }
-    }
-  };
-  push(config.class);
-  push(config.classList);
-  const unique = [...new Set(tokens.filter(Boolean))];
-  return unique.length > 0 ? unique.join(' ') : null;
-}
-
-/**
  * Read-only view of a programmatic toast as managed by `ForToastManager`.
  * The viewport iterates over a `Signal<readonly ForToastInstance[]>`.
  */

@@ -12,6 +12,7 @@ import {
   type Type,
 } from '@angular/core';
 
+import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
 import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { ForDialog } from './dialog';
 import { ForDialogProgrammaticHost } from './dialog-programmatic-host';
@@ -58,6 +59,25 @@ export interface ForDialogOpenConfig<D = unknown> {
 
   /** Tag name for the host element. Default `'div'`. Pass `'section'`, `'article'`, etc. for semantics. */
   hostTag?: keyof HTMLElementTagNameMap;
+
+  /**
+   * Consumer CSS class(es) applied to the overlay root (the `[forDialog]`
+   * host). Pass a single class (`'my-dialog'`) or a space-separated string
+   * (`'my-dialog my-dialog--pop'`). Merged with the directive's own host
+   * attributes — it never clobbers `data-state` / `role` / `aria-modal`.
+   *
+   * Use this to carry design-system classes onto a programmatic dialog: the
+   * host is created class-less and the literal `[forDialog]` attribute is
+   * absent, so without this the consumer has no node to style. For multiple
+   * classes as an array, prefer {@link classList}.
+   */
+  class?: string;
+  /**
+   * Consumer CSS class(es) applied to the overlay root, as an array
+   * (`['my-dialog', 'my-dialog--pop']`) or a space-separated string. Merged
+   * with {@link class} and with the directive's own host attributes.
+   */
+  classList?: string | readonly string[];
 
   /** Extra providers for the opened component's injector (alongside `FOR_DIALOG_DATA` + `ForDialogRef`). */
   providers?: Provider[];
@@ -111,6 +131,14 @@ export class ForDialogManager {
     config: ForDialogOpenConfig<D> = {},
   ): ForDialogRef<R> {
     const hostEl = this.#document.createElement(config.hostTag ?? 'div');
+    // Apply consumer classes to the real `[forDialog]` host BEFORE the
+    // directive is attached, so they compose with — never clobber — the
+    // directive's own host attributes (`data-state`, `role`, `aria-modal`),
+    // which are reflected as separate attribute bindings.
+    const hostClass = resolveConfigClass(config);
+    if (hostClass) {
+      hostEl.className = hostClass;
+    }
     // The host is parked in body BEFORE the component is created so that the
     // directive's `afterNextRender` side effects (focus moves, inert siblings,
     // dismissable-layer push) see a connected element. The directive's own

@@ -522,4 +522,58 @@ describe('ForDialogManager (programmatic)', () => {
       expect(document.body.style.overflow).toBe('auto');
     });
   });
+
+  describe('consumer class (open({ class }) / classList)', () => {
+    it('applies a single class to the overlay root', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, class: 'my-dialog' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-dialog')).toBe(true);
+    });
+
+    it('applies a space-separated class string', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, class: 'my-dialog my-dialog--pop' });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-dialog')).toBe(true);
+      expect(host.classList.contains('my-dialog--pop')).toBe(true);
+    });
+
+    it('applies an array via classList', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, classList: ['my-dialog', 'pop'] });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.classList.contains('my-dialog')).toBe(true);
+      expect(host.classList.contains('pop')).toBe(true);
+    });
+
+    it('merges and de-dups class + classList', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        class: 'a b',
+        classList: ['b', 'c'],
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.className.split(/\s+/).filter(Boolean).sort()).toEqual(['a', 'b', 'c']);
+    });
+
+    it('does not clobber the directive-owned host attributes', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, alert: true, class: 'my-dialog' });
+      const host = document.querySelector<HTMLElement>('[role="alertdialog"]')!;
+      expect(host.classList.contains('my-dialog')).toBe(true);
+      expect(host.getAttribute('data-state')).toBe('open');
+      expect(host.getAttribute('role')).toBe('alertdialog');
+      expect(host.getAttribute('aria-modal')).toBe('true');
+      expect(host.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('leaves the host class-less when neither class nor classList is set', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.className).toBe('');
+    });
+  });
 });

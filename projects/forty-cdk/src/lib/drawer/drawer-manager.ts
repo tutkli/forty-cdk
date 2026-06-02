@@ -12,6 +12,7 @@ import {
   type Type,
 } from '@angular/core';
 
+import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
 import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { ForDrawer } from './drawer';
 import { type ForDrawerSide, type ForDrawerSnapPoint } from './drawer-context';
@@ -96,6 +97,26 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /** Tag name for the host element. Default `'div'`. */
   hostTag?: keyof HTMLElementTagNameMap;
 
+  /**
+   * Consumer CSS class(es) applied to the overlay root (the `[forDrawer]`
+   * host). Pass a single class (`'my-drawer'`) or a space-separated string.
+   * Merged with the directive's own host attributes — it never clobbers
+   * `data-side` / `data-state` / the `--for-drawer-translate` custom property.
+   *
+   * Use this to carry design-system classes onto a programmatic drawer,
+   * including positioning CSS keyed on `data-side` (e.g.
+   * `.my-drawer[data-side='bottom']`). It replaces the
+   * `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add(...)` workaround.
+   * For multiple classes as an array, prefer {@link classList}.
+   */
+  class?: string;
+  /**
+   * Consumer CSS class(es) applied to the overlay root, as an array
+   * (`['my-drawer', 'my-drawer--lg']`) or a space-separated string. Merged
+   * with {@link class} and with the directive's own host attributes.
+   */
+  classList?: string | readonly string[];
+
   /** Extra providers for the opened component's injector. */
   providers?: Provider[];
 
@@ -153,6 +174,15 @@ export class ForDrawerManager {
     }
 
     const hostEl = this.#document.createElement(config.hostTag ?? 'div');
+    // Apply consumer classes to the real `[forDrawer]` host BEFORE the
+    // directive is attached, so they compose with — never clobber — the
+    // directive's own host attributes (`data-side`, `data-state`, the
+    // `--for-drawer-translate` custom property), which are reflected as
+    // separate attribute / style bindings.
+    const hostClass = resolveConfigClass(config);
+    if (hostClass) {
+      hostEl.className = hostClass;
+    }
     // The host is parked in body BEFORE the component is created so that the
     // directive's `afterNextRender` side effects (focus moves, inert siblings,
     // dismissable-layer push) see a connected element. The directive's own
