@@ -1,6 +1,7 @@
 import { booleanAttribute, Directive, input, model } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
+import { injectFieldWiring } from '../field/field-wiring';
 import { injectFormControlReflection } from '../form-control-reflection/form-control-reflection';
 
 /**
@@ -64,6 +65,13 @@ export abstract class FormUiControlBase {
       dirty: this.dirty,
       pending: this.pending,
       invalid: this.invalid,
+    });
+    injectFieldWiring({
+      invalid: this.invalid,
+      required: this.required,
+      disabled: this.disabled,
+      touched: this.touched,
+      errors: this.errors,
     });
   }
 }

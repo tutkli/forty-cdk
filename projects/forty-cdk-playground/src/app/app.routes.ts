@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/drawer/drawer.page').then((m) => m.DrawerPage),
   },
   {
+    path: 'field',
+    loadComponent: () => import('./demos/field/field.page').then((m) => m.FieldPage),
+  },
+  {
     path: 'switch',
     loadComponent: () => import('./demos/switch/switch.page').then((m) => m.SwitchPage),
   },
