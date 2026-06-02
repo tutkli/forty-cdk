@@ -126,6 +126,10 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/tree/tree.page').then((m) => m.TreePage),
   },
   {
+    path: 'calendar',
+    loadComponent: () => import('./demos/calendar/calendar.page').then((m) => m.CalendarPage),
+  },
+  {
     path: 'toast',
     loadComponent: () => import('./demos/toast/toast.page').then((m) => m.ToastPage),
   },

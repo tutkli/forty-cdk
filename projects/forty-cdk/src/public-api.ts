@@ -47,3 +47,4 @@ export * from './lib/scroll-area';
 export * from './lib/tree';
 export * from './lib/number-input';
 export * from './lib/otp-input';
+export * from './lib/calendar';

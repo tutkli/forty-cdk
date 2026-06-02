@@ -110,4 +110,8 @@ export const routes: Routes = [
     path: 'tree',
     loadComponent: () => import('./fixtures/tree.fixture').then((m) => m.TreeFixture),
   },
+  {
+    path: 'calendar',
+    loadComponent: () => import('./fixtures/calendar.fixture').then((m) => m.CalendarFixture),
+  },
 ];
