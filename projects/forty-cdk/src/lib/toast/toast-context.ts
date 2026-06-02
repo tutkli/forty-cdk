@@ -20,6 +20,13 @@ export type ForToastCloseReason =
   | 'swipe';
 
 /**
+ * Region a toast belongs to. Toasts route to the `<for-toast-viewport>` whose
+ * `[region]` matches; an unspecified region falls through to this default, so
+ * the common single-viewport setup needs no `region` anywhere.
+ */
+export const DEFAULT_TOAST_REGION = 'default';
+
+/**
  * Configuration for a programmatic toast. Pass to `ForToastManager.show()`.
  *
  * The default rendered shape is `title` + optional `description` + optional
@@ -33,6 +40,14 @@ export type ForToastCloseReason =
 export interface ForToastConfig<D = unknown> {
   /** Stable id for dedupe / `update()` / external dismissal. Auto-generated when omitted. */
   id?: string;
+  /**
+   * Routes the toast to the `<for-toast-viewport>` whose `[region]` matches.
+   * Omit it (or pass {@link DEFAULT_TOAST_REGION}) for the common
+   * single-viewport setup. Use distinct regions to drive independent viewports
+   * — e.g. a top-right region for system notifications and a bottom-center one
+   * for action confirmations.
+   */
+  region?: string;
   title?: string;
   description?: string;
   /**

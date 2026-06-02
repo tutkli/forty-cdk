@@ -165,8 +165,31 @@ class AltTextHost {
   readonly altText = signal('');
 }
 
+@Component({
+  imports: [ForToastViewport],
+  template: `
+    <button #opener type="button" data-test-id="opener">Opener</button>
+    @if (showA()) {
+      <for-toast-viewport [region]="regionA()" data-test-id="vp-a" />
+    }
+    @if (showB()) {
+      <for-toast-viewport [region]="regionB()" data-test-id="vp-b" />
+    }
+  `,
+})
+class MultiViewportHost {
+  readonly toasts = inject(ForToastManager);
+  readonly showA = signal(true);
+  readonly showB = signal(true);
+  readonly regionA = signal('default');
+  readonly regionB = signal('default');
+}
+
 const $ = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-id="${id}"]`);
+
+const toastsIn = (host: HTMLElement, id: string): HTMLElement[] =>
+  Array.from($(host, id)!.querySelectorAll<HTMLElement>('[forToast]'));
 
 // LiveAnnouncer schedules every text write through `queueMicrotask`, so the
 // altText announcement specs below need a single microtask hop after the
@@ -1026,6 +1049,119 @@ describe('ForToastViewport', () => {
     );
     r.flush();
     expect(document.activeElement).toBe(r.el.querySelector('[forToast]'));
+  });
+});
+
+describe('ForToastViewport regions (multi-viewport)', () => {
+  it('reflects the resolved region on data-region (default when unset)', () => {
+    const r = renderHost(MultiViewportHost);
+    r.instance.regionA.set('alerts');
+    r.flush();
+    expect($(r.el, 'vp-a')!.getAttribute('data-region')).toBe('alerts');
+    // vp-b keeps the default region.
+    expect($(r.el, 'vp-b')!.getAttribute('data-region')).toBe('default');
+  });
+
+  it('routes each toast to the viewport whose region matches', () => {
+    const r = renderHost(MultiViewportHost);
+    r.instance.regionA.set('alerts');
+    r.instance.regionB.set('confirms');
+    r.flush();
+
+    r.instance.toasts.show({ region: 'alerts', title: 'Alert' });
+    r.instance.toasts.show({ region: 'confirms', title: 'Confirm' });
+    r.flush();
+
+    const a = toastsIn(r.el, 'vp-a');
+    const b = toastsIn(r.el, 'vp-b');
+    expect(a.length).toBe(1);
+    expect(b.length).toBe(1);
+    expect(a[0]!.querySelector('[forToastTitle]')?.textContent).toContain('Alert');
+    expect(b[0]!.querySelector('[forToastTitle]')?.textContent).toContain('Confirm');
+    // A single show() per region yields exactly one node across all viewports.
+    expect(r.el.querySelectorAll('[forToast]').length).toBe(2);
+  });
+
+  it('a region-less show() lands in the default-region viewport only', () => {
+    const r = renderHost(MultiViewportHost);
+    r.instance.regionB.set('confirms');
+    r.flush();
+
+    r.instance.toasts.show({ title: 'Default' });
+    r.flush();
+
+    expect(toastsIn(r.el, 'vp-a').length).toBe(1);
+    expect(toastsIn(r.el, 'vp-b').length).toBe(0);
+  });
+
+  it('two viewports sharing a region render the toast once (first one wins)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(MultiViewportHost);
+    // Both keep the default region.
+    r.instance.toasts.show({ title: 'Once' });
+    r.flush();
+
+    // Exactly one node total — the second viewport stays dormant.
+    expect(r.el.querySelectorAll('[forToast]').length).toBe(1);
+    expect(toastsIn(r.el, 'vp-a').length).toBe(1);
+    expect(toastsIn(r.el, 'vp-b').length).toBe(0);
+    // The dormant viewport warns in dev so the footgun is loud, not silent.
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('promotes the dormant viewport when the active one unmounts', () => {
+    const r = renderHost(MultiViewportHost);
+    r.instance.toasts.show({ title: 'Survivor' });
+    r.flush();
+    expect(toastsIn(r.el, 'vp-a').length).toBe(1);
+    expect(toastsIn(r.el, 'vp-b').length).toBe(0);
+
+    // The active viewport leaves; the surviving one takes over its region.
+    r.instance.showA.set(false);
+    r.flush();
+
+    expect($(r.el, 'vp-a')).toBeNull();
+    expect(toastsIn(r.el, 'vp-b').length).toBe(1);
+    expect(r.el.querySelectorAll('[forToast]').length).toBe(1);
+  });
+
+  it('F6 does not double-fire across viewports — the first viewport wins', () => {
+    const r = renderHost(MultiViewportHost);
+    r.instance.regionA.set('alerts');
+    r.instance.regionB.set('confirms');
+    r.flush();
+
+    r.instance.toasts.show({ region: 'alerts', title: 'A' });
+    r.instance.toasts.show({ region: 'confirms', title: 'B' });
+    r.flush();
+
+    const opener = $(r.el, 'opener')!;
+    opener.focus();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true }),
+    );
+    r.flush();
+
+    // A single centralized handler focuses the first viewport's toast and
+    // stops. With per-viewport listeners the later one would steal focus.
+    expect(document.activeElement).toBe(toastsIn(r.el, 'vp-a')[0]);
+  });
+
+  it('zoneless: region routing works without Zone.js', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(MultiViewportHost);
+    fixture.componentInstance.regionA.set('alerts');
+    fixture.componentInstance.regionB.set('confirms');
+    fixture.detectChanges();
+
+    fixture.componentInstance.toasts.show({ region: 'confirms', title: 'Z' });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(toastsIn(el, 'vp-a').length).toBe(0);
+    expect(toastsIn(el, 'vp-b').length).toBe(1);
+    expect(toastsIn(el, 'vp-b')[0]!.querySelector('[forToastTitle]')?.textContent).toContain('Z');
   });
 });
 

@@ -6,12 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {
-  ForToastManager,
-  type ForToastRef,
-  type ForToastSwipeDirection,
-  ForToastViewport,
-} from 'forty-cdk';
+import { ForToastManager, type ForToastRef, type ForToastSwipeDirection } from 'forty-cdk';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';
@@ -21,7 +16,7 @@ type SwipeChoice = 'right' | 'left' | 'up' | 'down' | 'right-down';
 @Component({
   selector: 'app-toast-swipe-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForToastViewport, ControlSelect],
+  imports: [DemoLayout, ControlSelect],
   template: `
     <playground-demo
       title="Swipe to dismiss"
@@ -38,11 +33,10 @@ type SwipeChoice = 'right' | 'left' | 'up' | 'down' | 'right-down';
           </div>
           <p class="pg-hint">
             Press and drag a toast toward the configured direction. The card follows your pointer;
-            let go past {{ threshold() }} px to dismiss, or short of it to spring back.
+            let go past {{ threshold() }} px to dismiss, or short of it to spring back. Toasts render
+            in the single shared viewport above.
           </p>
         </div>
-
-        <for-toast-viewport class="pg-toast-viewport" />
       </div>
 
       <div controls class="pg-controls">

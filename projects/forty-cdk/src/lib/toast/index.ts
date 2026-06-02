@@ -12,6 +12,7 @@ export {
 } from './toast-manager';
 export { ForToastRef } from './toast-ref';
 export {
+  DEFAULT_TOAST_REGION,
   FOR_TOAST_CONTEXT,
   injectToastContext,
   type ForToastCloseReason,

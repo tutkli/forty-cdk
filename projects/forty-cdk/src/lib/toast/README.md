@@ -12,7 +12,7 @@ Two ways to use the same primitive:
 | Class                 | Selector                                      | Role                                                                                                                                            |
 | --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ForToastManager`     | injectable                                    | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`.                                                   |
-| `ForToastViewport`    | `[forToastViewport]` / `<for-toast-viewport>` | Mount once near the app root. `role="region"`, hosts the F6 hotkey, renders programmatic toasts.                                                |
+| `ForToastViewport`    | `[forToastViewport]` / `<for-toast-viewport>` | Mount once per region near the app root. `role="region"`, renders the toasts of its `[region]`. The F6 hotkey is coordinated once by the manager, so it never double-fires across viewports. |
 | `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                             |
 | `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                        |
 | `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                       |
@@ -43,6 +43,36 @@ Position it from CSS — the directive doesn't impose layout:
   pointer-events: auto;
 }
 ```
+
+## Multiple regions
+
+A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:
+
+```html
+<for-toast-viewport region="system" /> <!-- styled top-right -->
+<for-toast-viewport region="confirmations" /> <!-- styled bottom-center -->
+```
+
+```ts
+this.toasts.show({ region: 'system', title: 'New version available' });
+this.toasts.show({ region: 'confirmations', title: 'Saved' });
+```
+
+Each region resolves to the host `data-region` attribute, so you can position / theme regions purely from CSS:
+
+```css
+[forToastViewport][data-region='system'] {
+  top: 1rem;
+  right: 1rem;
+}
+[forToastViewport][data-region='confirmations'] {
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+```
+
+If two viewports share the same region, only the first one mounted renders it; the rest stay inactive (and warn in dev) so a stray second viewport — a lazy route, a shared layout — never silently duplicates toasts. A single `show()` always produces exactly one toast node.
 
 ## Programmatic API
 
