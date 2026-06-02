@@ -2,11 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Before you start, read the path-scoped rules.** Before designing/implementing a primitive, consult `.claude/rules/conventions.md`; before touching tests, `.claude/rules/testing.md`. Both auto-load when you edit the files they're scoped to (library `*.ts`, and spec/harness/test-config files respectively), so their full detail is in context exactly when it's relevant — this file keeps only what applies to every session.
+
 ## Project purpose
 
-`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Inspired by Radix UI and Base UI but reinterpreted **idiomatically for modern Angular** — not a port. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles.
-
-Currently, the only code is a placeholder (`projects/forty-cdk/src/lib/forty-cdk.ts`). New primitives are added under `projects/forty-cdk/src/lib/<primitive>/` following the rules below.
+`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Inspired by Radix UI and Base UI but reinterpreted **idiomatically for modern Angular** — not a port. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles. New primitives are added under `projects/forty-cdk/src/lib/<primitive>/` following the rules below.
 
 ## Commands
 
@@ -25,30 +25,21 @@ pnpm test:e2e:ui           # playwright test --ui
 pnpm test:e2e:install      # playwright install --with-deps chromium webkit
 ```
 
-The `@angular/build:unit-test` builder is configured in `angular.json` to load `vitest.config.ts` from the repo root (`runnerConfig: true`) and to run `projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts` before every spec (`setupFiles`). Together they enforce Vitest's mock-reset / unstub invariants (`clearMocks`, `restoreMocks`, `unstubGlobals`, `unstubEnvs`) so `vi.fn()` call history, `vi.spyOn` patches, and `vi.stubGlobal` / `vi.stubEnv` are reset at the test boundary without relying on per-spec discipline. The setup-file layer is the load-bearing one — at the time of writing the builder does not propagate user `test.*` invariants to the runtime config — and `vitest.config.ts` documents the intended invariants in one canonical place.
-
-A second, scheduler-hostile profile runs nightly via `.github/workflows/test-shuffle.yml` to surface leaks the default isolated schedule masks (polyfills, live regions, fake timers, ad-hoc body children). It declares `pool: 'forks'` + `singleFork: true`, `isolate: false`, `fileParallelism: false`, and `sequence.shuffle.{files, tests}` — gated behind `FORTY_CDK_TEST_WORST_CASE=true` so the default `pnpm test` path stays byte-identical. On `@angular/build@21.2.9` the builder propagates `pool` and `isolate` through to the Vitest runner but strips `fileParallelism` and `sequence.*`; the latter activate automatically the day the builder propagates user config to the runner level (see the comment block in `vitest.config.ts`). Reproduce the nightly locally with `FORTY_CDK_TEST_WORST_CASE=true pnpm test` (Bash) or `$env:FORTY_CDK_TEST_WORST_CASE='true'; pnpm test` (PowerShell). The nightly workflow is non-blocking for PRs — a red run is a signal to investigate against the `### Test isolation — non-negotiables` checklist, not a merge blocker.
-
-Single-file / single-test runs go through Vitest's CLI filtering (the `@angular/build:unit-test` builder forwards args):
+Single-file / single-test runs use the `@angular/build:unit-test` builder's own flags — `--include` (spec path, repeatable for several files) and `--filter` (test/suite-name regex). The `-- <path>` / `-- -t "<name>"` passthrough does **not** work on this setup (pnpm mangles the quoted `--`, so `ng` rejects it):
 
 ```bash
-pnpm exec ng test -- projects/forty-cdk/src/lib/accordion/accordion.spec.ts
-pnpm exec ng test -- -t "opens on Enter"
+pnpm exec ng test forty-cdk --include "projects/forty-cdk/src/lib/accordion/accordion.spec.ts"
+pnpm exec ng test forty-cdk --filter "opens on Enter"
 ```
-
-ESLint (`eslint.config.js`, flat config) mechanically enforces the non-negotiables in this file: banned imports (`@angular/{cdk,material,aria}`, `zone.js`), banned syntax (`NgModule`, `@Input` / `@Output` / `@HostBinding` / `@HostListener` decorators, `Service` / `Component` / `Directive` class suffixes), the `for-` selector prefix on directives and components, SSR-unsafe `document` / `window` globals in library code, plus typescript-eslint hardening (`consistent-type-imports` with inline `import type` style, `no-explicit-any`, `no-unused-vars`). Run `pnpm lint` before committing — CI runs it on every PR — and `pnpm exec eslint . --fix` for auto-fixable rules. Prettier is configured (`.prettierrc`, `printWidth: 100`, single quotes); run it with `pnpm exec prettier --write <path>` when needed.
 
 To consume the built library locally, use the path alias `forty-cdk` → `./dist/forty-cdk` defined in the root `tsconfig.json`.
 
+The Vitest builder / setup-file invariants and the nightly scheduler-hostile shuffle profile are documented in `.claude/rules/testing.md`; the full ESLint enforcement detail (banned imports/syntax/selectors, typescript-eslint hardening, Prettier) is in `.claude/rules/conventions.md`.
+
 ## Architecture
 
-**Workspace layout.** Single Angular CLI workspace, `projectType: library`. The library lives at `projects/forty-cdk/`:
-
-- `src/public-api.ts` — single public entry point consumed by ng-packagr (`ng-package.json`).
-- `src/lib/` — primitives, one folder per primitive.
-- `package.json` (inside the library) declares `"sideEffects": false` for tree-shaking and pins `@angular/{common,core}` as peers — keep both invariants.
-
-**Primitives are composable.** A primitive is not a single component; it's a set of standalone directives/components that the consumer composes in their template. Pieces coordinate via `InjectionToken` + `inject()` (NOT via `@ContentChild`). Typical layout:
+- **Workspace layout.** Single Angular CLI workspace, `projectType: library`. The library lives at `projects/forty-cdk/`: `src/public-api.ts` is the single public entry point consumed by ng-packagr (`ng-package.json`); `src/lib/` holds primitives, one folder per primitive; the library's own `package.json` declares `"sideEffects": false` for tree-shaking and pins `@angular/{common,core}` as peers — keep both invariants.
+- **Primitives are composable.** A primitive is not a single component; it's a set of standalone directives/components the consumer composes in their template, coordinating via `InjectionToken` + `inject()` (NOT `@ContentChild`). Typical layout:
 
 ```
 accordion/
@@ -62,11 +53,9 @@ accordion/
   index.ts                  # public exports for `forty-cdk/accordion`
 ```
 
-**Cross-primitive utilities** (focus trap, live announcer, id generator, roving tabindex, keyboard helpers) live in `projects/forty-cdk/src/lib/_internal/`. Each is named for what it does, not its category — `FocusTrap`, `LiveAnnouncer`, `IdGenerator` — never `*Service`.
-
-**Test utilities** (render helpers, keyboard/focus helpers) live in `projects/forty-cdk/src/test-utils/` and must NOT be re-exported from `public-api.ts`.
-
-**Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. The library ships a single entry point (`forty-cdk`) and relies on `"sideEffects": false` + standalone directives so tree-shakers drop unused primitives. Importing only `ForDisclosure` must not pull in `ForAccordion`. Per-primitive secondary entry points (`forty-cdk/disclosure`, etc.) are deliberately deferred until there's real evidence consumers' bundles need them — the cost in ng-packagr complexity (esp. cross-entry imports for `_internal/`) is not worth it on day one.
+- **Cross-primitive utilities** (focus trap, live announcer, id generator, roving tabindex, keyboard helpers) live in `projects/forty-cdk/src/lib/_internal/`. Each is named for what it does, not its category — `FocusTrap`, `LiveAnnouncer`, `IdGenerator` — never `*Service`.
+- **Test utilities** (render helpers, keyboard/focus helpers) live in `projects/forty-cdk/src/test-utils/` and must NOT be re-exported from `public-api.ts`.
+- **Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. The single entry point (`forty-cdk`) + `"sideEffects": false` + standalone directives let tree-shakers drop unused primitives — importing only `ForDisclosure` must not pull in `ForAccordion`. Per-primitive secondary entry points (`forty-cdk/disclosure`, etc.) are deliberately deferred until there's real evidence consumers' bundles need them — the cost in ng-packagr complexity (esp. cross-entry imports for `_internal/`) is not worth it on day one.
 
 ## Non-negotiable rules
 
@@ -74,177 +63,25 @@ These rules govern every change. They override habits from older Angular code or
 
 **Banned dependencies / APIs.** No `@angular/material`, `@angular/cdk`, `@angular/aria`. No `NgModule`. No Zone.js — the library must work under `provideZonelessChangeDetection()`; never use `NgZone` or `zone.js/testing`. No third-party runtime deps unless explicitly justified (e.g. `@floating-ui/dom` for positioning, only if agreed).
 
-**Modern Angular style guide (Angular 20+).** No type suffixes anywhere:
-
-- Files: `accordion.ts`, `focus-trap.ts` — never `accordion.component.ts`, `focus-trap.service.ts`.
-- Classes: `ForAccordion`, `FocusTrap` — never `ForAccordionComponent`, `FocusTrapService`. The `Service` suffix is explicitly banned; name services for what they represent.
-
-**Naming.**
-
-- Public classes use the `For` prefix: `ForAccordion`, `ForAccordionTrigger`.
-- Selectors use the `for-` prefix and default to **attribute** selectors so consumers keep their own HTML semantics: `<button forAccordionTrigger>`. Use element selectors only when the primitive must inject its own structure with content projection.
-- `InjectionToken`s: `FOR_<PRIMITIVE>_CONTEXT` (e.g. `FOR_ACCORDION_CONTEXT`).
-- Boolean inputs without `is`/`has` when natural (`disabled`, `open`, `multiple`).
-- Outputs as present-tense verbs (`openChange`, `select`, `escapeKeyDown`).
-- **Accessible labelling.** Every primitive that exposes a reactive accessible name does so through one uniform input: `ariaLabel: input<string | null>` defaulting to `null`. Host-bind it truthy-only so a `null` or empty value emits **no** attribute — `'[attr.aria-label]': 'ariaLabel() || null'` — on whichever piece carries the labelled role (the root for `Listbox` / `Menubar` / `NavigationMenu`, the content surface for `Dialog` / `Drawer` / `Select` / `Combobox` / menu roots). This is just a reactive convenience over the native attribute: consumers who have a visible label element should still prefer pointing native `aria-labelledby` at it (the directive defers to `aria-labelledby` and emits no `aria-label` when its value is falsy). Combobox is the documented exception that needs no separate hook discussion — it still follows this `ariaLabel` shape. Do not invent per-primitive variants (`label`, `aria-label` attribute only, `input<string>` default `''`).
-- **Programmatic services**: when a primitive ships an injectable for opening / coordinating overlay instances imperatively (Dialog today; future Toast / Snackbar / HoverCard programmatic), name it `For<Primitive>Manager` and put it in `<primitive>-manager.ts`. The per-instance handle stays `For<Primitive>Ref`. Avoid plural class names (`ForDialogs`) — they collide visually with the directive (`ForDialog`). The `Service` suffix is still banned; `Manager` describes the role (lifecycle + stack of instances), it isn't an empty category tag.
+**Modern Angular style guide (Angular 20+) — no type suffixes anywhere.** Files: `accordion.ts`, `focus-trap.ts` — never `accordion.component.ts`, `focus-trap.service.ts`. Classes: `ForAccordion`, `FocusTrap` — never `ForAccordionComponent`, `FocusTrapService`. The `Service` suffix is explicitly banned; name services for what they represent.
 
 **Required Angular patterns.** Standalone only. `ChangeDetectionStrategy.OnPush` on every component. State with `signal` / `computed` / `linkedSignal` (no `BehaviorSubject` for component state without strong reason). Inputs/outputs as functions: `input()`, `input.required()`, `output()`, `model()` — NEVER `@Input()` / `@Output()` decorators. `inject()` for DI, never constructor injection. Host bindings via the decorator's `host: { ... }` block, never `@HostBinding` / `@HostListener`. Control flow via `@if` / `@for` / `@switch` / `@let`, never `*ngIf` / `*ngFor` / `*ngSwitch`. Prefer `afterNextRender`, `afterEveryRender`, `effect()`, and `DestroyRef` + `takeUntilDestroyed()` over classic lifecycle hooks. `@ContentChild` / `@ViewChild` are only for genuine consumer queries, never for coordinating state between pieces of the same primitive.
 
-**Never propagate state inside `effect()`.** Writing to a signal from inside an `effect` to derive another piece of state is an anti-pattern in modern Angular: it creates implicit cycles, double change-detection passes, and ordering bugs that are hard to debug. `effect()` is for **side effects** that escape the reactive graph (DOM imperative calls, subscriptions to non-signal sources, logging, focus moves that can't be expressed as host bindings). Reach for the right primitive instead:
+**Never propagate state inside `effect()`.** Writing to a signal from an `effect` to derive other state is an anti-pattern (implicit cycles, double change-detection, ordering bugs). `effect()` is for **side effects** only (DOM imperative calls, non-signal subscriptions, logging, focus moves that can't be host bindings). Use `computed()` (pure derivation), `linkedSignal()` (writable state derived from a source), `resource()` / `httpResource()` (async), or `toSignal()` / `toObservable()` (RxJS bridge) instead. Full rationale and the primitive-picker list → `.claude/rules/conventions.md`.
 
-- **`computed()`** — pure derivation from other signals.
-- **`linkedSignal()`** — writable state derived from a source, with a reset rule when the source changes (the canonical replacement for `effect(() => mySignal.set(...))`).
-- **`resource()` / `httpResource()`** — async state driven by a signal source (loading, error, value already modeled).
-- **`toSignal()` / `toObservable()`** — bridge to/from RxJS without manual `effect`-based wiring.
+**Form primitives use Signal Forms, never `ControlValueAccessor`.** Any form-value primitive (Switch, Checkbox, RadioGroup, Slider, Combobox, …) implements the matching `@angular/forms/signals` interface — `FormValueControl<T>` (`value: ModelSignal<T>`) or `FormCheckboxControl` (`checked: ModelSignal<boolean>`), both extending `FormUiControl` — so it auto-wires with the `[formField]` directive. `ControlValueAccessor` / `NG_VALUE_ACCESSOR` is banned. `@angular/forms` is an _optional_ peer. Full member list and the `@experimental` pinning note → `.claude/rules/conventions.md`.
 
-If you genuinely need to write a signal from an `effect` (rare — usually integrating an external imperative API), document why in a comment and isolate it.
+**Naming.**
 
-**Form primitives use Signal Forms, never `ControlValueAccessor`.** Any primitive that represents a form value (Switch, Checkbox, RadioGroup, Slider, Combobox, DatePicker, etc.) must implement the appropriate `@angular/forms/signals` interface so it auto-wires with the `[formField]` directive (selector `[formField]`, alias `formField`) — Angular detects the interface and binds everything, no provider/token registration:
-
-- **`FormValueControl<T>`** for value-based controls. Required: `value: ModelSignal<T>`.
-- **`FormCheckboxControl`** for binary on/off. Required: `checked: ModelSignal<boolean>`.
-
-Both extend **`FormUiControl`** — expose its relevant optional members (`disabled`, `readonly`, `required`, `invalid`, `errors`, `touched`, `name`, `pending`, `min`/`max`/`pattern` where meaningful) as the prescribed `input` / `model` signals so field state flows in and out without consumer glue. Skip the members that don't apply to the control's shape (e.g. `min`/`max`/`pattern` on a Switch).
-
-The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an _optional_ peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
-
-`@angular/forms/signals` is `@experimental` in Angular 21. Pin to the matching minor (`^21.x`) and revisit on each Angular bump.
+- Public classes use the `For` prefix (`ForAccordion`, `ForAccordionTrigger`). Selectors use the `for-` prefix and default to **attribute** selectors so consumers keep their own HTML semantics (`<button forAccordionTrigger>`); element selectors only when the primitive must inject its own structure via content projection.
+- `InjectionToken`s: `FOR_<PRIMITIVE>_CONTEXT`. Boolean inputs without `is`/`has` when natural (`disabled`, `open`, `multiple`). Outputs as present-tense verbs (`openChange`, `select`, `escapeKeyDown`) — never `onX`.
+- Reactive accessible name: one uniform `ariaLabel: input<string | null>` defaulting to `null`, host-bound truthy-only (`'[attr.aria-label]': 'ariaLabel() || null'`) on the piece carrying the labelled role.
+- Imperative overlay injectables: `For<Primitive>Manager` in `<primitive>-manager.ts`; per-instance handle stays `For<Primitive>Ref`. No plural class names (`ForDialogs`); `Service` suffix still banned.
+- Full accessible-labelling placement (per primitive) and the programmatic-services rationale → `.claude/rules/conventions.md`.
 
 **Accessibility is the API.** Every primitive must declare which [WAI-ARIA APG pattern](https://www.w3.org/WAI/ARIA/apg/patterns/) it implements **before any code is written**. Roles, `aria-*` bound to signals, full keyboard interaction, focus management (focus trap, return focus, roving tabindex where applicable), screen-reader announcements via `aria-live`, RTL support, and `prefers-reduced-motion` hooks are all mandatory. Implement focus management in-house — do NOT pull in `@angular/cdk/a11y`.
 
-## Cross-primitive conventions
-
-These keep the surface predictable across primitives. Apply them everywhere; deviate only with a written reason.
-
-**`data-state` vocabulary.** Three canonical families, picked semantically — never invent a fourth without listing it in the _Documented alternative vocabularies_ table below:
-
-- `"open" | "closed"` — for things that expand/collapse (`Disclosure`, `Accordion`, `Tooltip`, `Dialog`, `Tree` parent items, future `Popover`/`Menu`/`Drawer`).
-- `"active" | "inactive"` — for one-of-N selectables embedded in a tablist-like container (`Tabs` trigger and content). Matches Radix.
-- `"checked" | "unchecked" | "indeterminate"` — for form-control state (`Switch`, `Checkbox`, `RadioGroup` items, `Listbox` options, future `Select`/`ToggleGroup`). `"indeterminate"` only on tri-state controls (Checkbox today).
-
-`data-state` is reflected on every piece of the primitive that the consumer might want to style — the root _and_ trigger/content/option/etc. — using the same vocabulary across pieces.
-
-**Documented alternative vocabularies.** A handful of primitives intentionally use a different attribute name or value set because the underlying spec / pattern doesn't fit any of the three families above. New primitives must reuse one of the canonical families unless they have an equally strong reason and update this table:
-
-| Attribute      | Values                                           | Primitives                       | Why                                                                                                                                                                                                         |
-| -------------- | ------------------------------------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-state`   | `"visible" \| "hidden"`                          | `ScrollArea` (scrollbar, thumb)  | These pieces have no logical open/closed _state_ — they reflect whether the floating helper is currently rendered/painted, which is a layout outcome, not a toggle.                                         |
-| `data-status`  | `"idle" \| "loading" \| "loaded" \| "error"`     | `Avatar` (root, image, fallback) | Mirrors the four-step image lifecycle of Radix's Avatar. None of the three families captures a finite-state-machine with an error terminal.                                                                 |
-| `data-state`   | `"indeterminate" \| "loading" \| "complete"`     | `Progress` (root, indicator)     | Mirrors the HTML5 `<progress>` semantics + an explicit `complete` terminal so styling / `aria-live` can fire on the loading→complete edge. `"loading"` is _not_ the same as the form-control `"unchecked"`. |
-| `data-quality` | `"optimum" \| "sub-optimum" \| "even-less-good"` | `Meter` (root, indicator)        | Reflects the HTML5 `<meter>` "preferred-value" buckets. This is a styling hook layered _on top of_ `aria-valuenow`; it is not a state toggle and the spec mandates the three names.                         |
-| `data-selected` | present / absent (boolean)                      | `Tree` (treeitem)                | A `treeitem` is simultaneously expandable _and_ selectable, so a single `data-state` slot can't carry both. `data-state="open" \| "closed"` reflects expansion on parent items only (absent on leaves, like the `aria-expanded`-omitted-on-leaves APG rule); the boolean `data-selected` reflects selection on every item. Mirrors Ark UI's split. Follows the boolean present/absent rule below. |
-
-**Boolean `data-*` attributes.** Present (with empty string value) when `true`, absent (`null`) when `false`. Never emit `data-disabled="false"`. The Angular host binding `[attr.data-disabled]="disabled() ? '' : null"` is the canonical form. Applies to `data-disabled`, `data-readonly`, `data-highlighted`, `data-selected` (`Tree` treeitem — see the alternative-vocabularies table above), and any future boolean reflection (`data-touched`, `data-dirty`, `data-pending`, `data-invalid`).
-
-**`data-highlighted` (sibling vocabulary to `data-state`).** Items that participate in roving-tabindex or `aria-activedescendant` navigation expose a boolean `data-highlighted` when they are the current keyboard-focused candidate. This is distinct from `data-state` (which reflects logical state — `checked`, `open`, etc.) and is the _only_ CSS hook combobox consumers have, since `aria-activedescendant` keeps focus on the input rather than on the option (no `:focus`). Roving-tabindex primitives expose it for parity with the activedescendant flow and for hover-uncoupled-from-focus styling (Radix-aligned). Items reflecting `data-highlighted` today: `Listbox` option, `Menu` item / checkbox-item / radio-item, `Select` option, `Combobox` option.
-
-**ARIA state attribute emission.** WAI-ARIA distinguishes attributes whose absence is semantically meaningful (the consumer's assistive tech knows the default) from attributes whose state machine demands an explicit `"true"` / `"false"` on every render. The library normalizes both groups:
-
-| Attribute                                                                                                                    | Truthy value | Falsy value     |
-| ---------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- |
-| `aria-checked`, `aria-pressed`, `aria-expanded`, `aria-selected`                                                             | `"true"`     | `"false"`       |
-| `aria-disabled`, `aria-readonly`, `aria-required`, `aria-invalid`, `aria-busy`, `aria-modal`, `aria-haspopup` (boolean form) | `"true"`     | `null` (absent) |
-
-The first row is **always emit** — togglable widgets (toggle buttons, tabs, treeitems, comboboxes, disclosures) have a defined "off" state that screen readers must announce, so the attribute must be present with `"false"` rather than absent. The second row is **truthy-only** — a missing `aria-required` means "not required", emitting `aria-required="false"` is redundant and forces consumers to write `[aria-required="false"]` selectors that fight the spec.
-
-Canonical Angular host bindings:
-
-- Always-emit: `'[attr.aria-checked]': 'checked() ? "true" : "false"'`
-- Truthy-only: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`
-
-Two notes for edge cases:
-
-- `aria-haspopup` may take token values (`menu`, `listbox`, `dialog`, `tree`, `grid`); when emitted as a token it is always present (e.g. `'"listbox"'`) and the boolean rule does not apply. Only normalize the boolean form against the truthy-only column.
-- `aria-multiselectable` belongs to the truthy-only group. WAI-ARIA defines its default as `false` when the role demands it (`listbox`, `tree`, `grid`), so a missing attribute is unambiguous; emitting `aria-multiselectable="false"` adds noise without changing semantics. Listbox / Combobox / Select content all follow the truthy-only rule.
-
-Consumers styling falsy state must select on **the absence** of the attribute (`:not([aria-disabled])`, `:not([aria-required])`), not on `[aria-disabled="false"]`. The breaking change in [#108](https://github.com/tutkli/forty-cdk/issues/108) enforces this across the library.
-
-**`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires _only_ when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
-
-**Selection value-type contract.** Every selection primitive models its value the same way, so consumers learn one shape across the library:
-
-- **The value model is always a `readonly` array** — `model<readonly string[]>` (`Accordion`, `ToggleGroup`, `Listbox`, `Select`) or `model<readonly T[]>` when generic (`Combobox`). Never expose a mutable `string[]` model; mutate it immutably internally (`[...]`, `.filter()`, `new Set()` then spread) and `set()` the new array. The array is the `FormValueControl` backing — the form contract needs a uniform multi-capable shape regardless of mode.
-- **Single mode is the same array with 0–1 elements.** `multiple=false` (default) keeps the array at length ≤ 1; option activation replaces rather than appends.
-- **Single-select consumers read a derived accessor, never `value()[0]`.** Each selection primitive exposes a read-only single-mode view derived with `computed()` (never an `effect`-written signal): `selected: Signal<string | null>` on `ForSelect` / `ForListbox`, and `selectedItem: Signal<T | null>` on the generic `ForCombobox` (its `selected` name is already taken by the value+label chip list). It returns the sole element when the array has exactly one entry, else `null` (empty, or multiple in multi mode). This is a convenience accessor, not a second source of truth — writes still go through `[(value)]`.
-
-Selection-_for-display_ primitives that aren't form values (`Tabs`, `RadioGroup` use a single `string`) are out of this contract; it covers the array-backed multi-capable controls only.
-
-**Orientation + writing direction.** Primitives whose keyboard navigation has an axis expose `orientation: 'horizontal' | 'vertical'` and `dir: 'ltr' | 'rtl' | null` inputs and pass them to the shared `_internal/keyboard-navigation` helpers. Default to the orientation that matches the primitive's most common layout (`vertical` for `Accordion`/`RadioGroup`/`Listbox`, `horizontal` for `Tabs`). Reflect `data-orientation` on the root container so the consumer can flip CSS.
-
-**`dir` defaults to `null` and resolves the inherited ambient direction.** The input is `input<WritingDirection | null>(null, { alias: 'dir' })` (named `_dirInput` internally), and the directive derives the effective value through the shared `injectTextDirection(this._dirInput)` helper in `_internal/text-direction/`: `readonly dir = injectTextDirection(this._dirInput)`. The helper returns `explicitDir() ?? <ambient>`, where the ambient value is read from the **nearest ancestor carrying a `dir` attribute** (`element.parentElement.closest('[dir]')`, normalised to `ltr`/`rtl`; `auto` and unknown tokens fall back to `ltr`), then `<html dir>`, defaulting to `'ltr'`. So a primitive dropped inside `<html dir="rtl">` (or any RTL-resolved ancestor) with no explicit `[dir]` resolves arrow-key semantics as RTL automatically; an explicit `[dir]` always wins. The helper is SSR-safe (gated on `isPlatformBrowser`, never touches `document`/`window` without a DOM, defaults to `'ltr'`) and reactive (a `MutationObserver` on `<html>`'s subtree watches `dir` so a runtime flip — e.g. a locale toggle — updates the signal). Direction is read from the semantic `dir` attribute only, **not** from CSS `direction`; consumers wanting RTL set the `dir` attribute on an ancestor (the standard `<html dir="rtl">` setup). All 16 primitives with a `dir` input share this single resolver — never reimplement it per-primitive.
-
-The **resolved** `dir` is **reflected to the host via the native `dir` attribute** — the directive host-binds `'[attr.dir]': 'dir()'` (where `dir()` is the resolved signal) on that same element. A single consumer `[dir]="…"` binding therefore drives **both** keyboard meaning and visual layout, and an inherited ambient direction reflects the same way: the native attribute is what CSS `:dir()` / `[dir="rtl"]` selectors and assistive tech both read, so consumers never add a second `[attr.dir]`. Emit it always (no truthy-only `rtl` suppression) — the resolved value always carries a concrete `ltr` / `rtl`, so both values must reflect. Every primitive with a `dir` input follows this: `Accordion`, `Tabs`, `Listbox`, `RadioGroup`, `Slider`, `ScrollArea`, `Toolbar`, `Separator`, `Menubar`, `NavigationMenu`, `ContextMenu`, `DropdownMenu`, `Select`, `Combobox`, `ToggleGroup`, `Tree`. (`MenuSub` inherits its parent menu's already-resolved `dir`, so it composes on top without its own resolver.)
-
-**Output naming.** `*Change` for value/state transitions emitted by `model()`. Verb outputs (`select`, `escapeKeyDown`, `pointerDownOutside`) for one-shot events — never `onX` (React idiom).
-
-**Mount/unmount and animations.** Primitives **never** apply `[hidden]` to their visible pieces. Presence in the DOM is the consumer's responsibility — they wrap the visible piece with `@if` and use Angular's native `animate.enter` / `animate.leave` for transitions. The directive's job is reactive state + ARIA + behavior; visibility is template control flow. This rule is what unblocks idiomatic Angular animations and forces a clean separation between "is open" (state) and "is mounted" (DOM).
-
-There are two API shapes for primitives that have a visibility/open concept:
-
-- **Free-floating overlays** (Dialog, Drawer, Toast): the instance lifecycle is decoupled from the trigger and the directive owns no `[(open)]` model. The consumer's external signal drives `@if`, and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). Mount == open. Setup (focus trap, scroll lock, dismissable layer, portal, inert siblings, return-focus capture) is owned by `_internal/modal-shell` (`injectModalShell({...})`); the directive contributes ARIA + label / description registration on top. Cleanup runs through the shell's own `DestroyRef` hook.
-
-  ```html
-  @if (open()) {
-  <div forDialog (close)="open.set(false)" animate.leave="fade-out">…</div>
-  }
-  ```
-
-- **Trigger-anchored overlays** (Popover, DropdownMenu, ContextMenu, HoverCard, NavigationMenu, Tooltip, Combobox content, Select content): the trigger lives inside the wrapper directive and drives state, so the wrapper exposes `[(open)]` (or `[(value)]` for selection-driven content like Combobox / Select) via a `model<bool>()` / `model<T>()`. The consumer wraps the visible content piece with `@if` driven by the same signal. `data-state` reflects logical open/closed for CSS styling, but is never tied to visibility — that's `@if`'s job.
-
-  ```html
-  <div forPopover [(open)]="isOpen">
-    <button forPopoverTrigger>Toggle</button>
-    @if (isOpen()) {
-    <div forPopoverContent animate.leave="fade-out">…</div>
-    }
-  </div>
-  ```
-
-- **Embedded toggle/selection** (Disclosure, Accordion, Tabs, Listbox, future ToggleGroup): same `[(open)]` / `[(value)]` shape as trigger-anchored overlays, but the content piece is part of the document flow rather than a floating layer. The visible content piece still drops `[hidden]`; the consumer wraps it with `@if` driven by the same signal.
-
-  ```html
-  <div forDisclosure [(open)]="isOpen">
-    <button forDisclosureTrigger>Toggle</button>
-    @if (isOpen()) {
-    <section forDisclosureContent animate.leave="slide-up">…</section>
-    }
-  </div>
-  ```
-
-The single exception is **Tabs panels**: it's idiomatic to keep all panels mounted to preserve scroll/input state. The consumer can either `@if` per panel or simply leave them mounted and toggle visibility in CSS via `[data-state="active"]`.
-
-Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, `Tabs` selection) keep `[(checked)]` / `[(value)]` — that's form state, not visibility, and the rule above doesn't apply.
-
-**Auto-focus hook shape.** Overlay primitives expose two vetoable hooks for the imperative focus moves they perform on mount and unmount: `autoFocusOnOpen` (just before focus enters the surface) and `autoFocusOnClose` (just before focus returns to the trigger). Both deliver a `VetoableEvent`; calling `event.preventDefault()` skips the directive's focus move while leaving the rest of the lifecycle alone. The library deliberately uses two binding shapes for this single contract:
-
-- **Free-floating overlays use `input<((event: VetoableEvent) => void) | undefined>`** — bound as a function reference: `[autoFocusOnOpen]="onOpen"`. Today: **Dialog** (and `ForDialogManager`'s `config.autoFocusOn*`, which is the same callback). The reason is reliability on the close path: a Dialog can be closed via a direct `open.set(false)` from the consumer, which bypasses the `(close)` output entirely. The directive must still fire `autoFocusOnClose` deterministically on every close path — including the destroy hook — so it stores a function reference rather than relying on Angular's `OutputEmitterRef` lifecycle (which doesn't guarantee subscriber delivery during teardown).
-- **Trigger-anchored overlays use `output<VetoableEvent>()`** — bound as an event listener: `(autoFocusOnOpen)="…"`. Today: **Popover, DropdownMenu, ContextMenu, Menu sub, Select**, plus any future trigger-anchored overlay. These primitives always route close transitions through their own `model<bool>() open` (and therefore through the implicit `openChange` emitter), so there is no escape hatch that bypasses the output. The output shape stays idiomatic Angular and matches the surrounding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, etc.).
-
-| Primitive(s)                                         | Shape                               | Binding                      |
-| ---------------------------------------------------- | ----------------------------------- | ---------------------------- |
-| Dialog                                               | `input<(e: VetoableEvent) => void>` | `[autoFocusOnOpen]="onOpen"` |
-| Popover, DropdownMenu, ContextMenu, Menu sub, Select | `output<VetoableEvent>()`           | `(autoFocusOnOpen)="…"`      |
-
-Combobox is the documented exception that exposes neither hook: `aria-activedescendant` keeps focus on the input the entire time, so there is no imperative focus move to veto. Document any new overlay against this section.
-
-**No `forceMount` / `keepMounted` equivalent for overlays.** The library deliberately does **not** ship a Radix-style `forceMount` or Base-UI-style `keepMounted` opt-in on overlay content directives (`[forDialog]`, popover / tooltip / hover-card / dropdown-menu / context-menu content). Mount == open is structural for these primitives — focus trap, scroll lock, body inert, dismissable layer push, and ARIA modality all hang off the directive's lifetime via `afterNextRender` + `DestroyRef`. Splitting "alive" from "open" would require re-gating every side effect on a separate `open()` signal and inherits a long tail of bugs documented upstream. The single bona-fide use case (handing exit animation control to JS animation libraries) is already covered by `animate.leave` + `@if`, so the consumer never needs the directive to outlive the open state. Revisit only if a real consumer brings a use case `animate.leave` cannot cover; design constraints if accepted are recorded in [#72](https://github.com/tutkli/forty-cdk/issues/72).
-
-**Defaults providers.** Primitives that expose injector-scoped defaults (cadences, offsets, hotkeys, etc.) follow a fixed convention so consumers can predict the API without reading each primitive:
-
-- The provider helper is named `provideFor<Primitive>Defaults(overrides?)`. Always present-tense, always plural `Defaults`, always the `For` prefix (e.g. `provideForTooltipDefaults`, `provideForHoverCardDefaults`, `provideForToastDefaults`). Returns `Provider[]` so callers can spread per-scope companions (a `<Primitive>Coordinator`, etc.) into the same array.
-- The injection token is `FOR_<PRIMITIVE>_DEFAULTS` (e.g. `FOR_TOOLTIP_DEFAULTS`, `FOR_HOVER_CARD_DEFAULTS`).
-- The defaults shape lives in `<primitive>/<primitive>-defaults.ts`, and is exported as a named interface following `For<Primitive>Defaults` (e.g. `ForToastDefaults`, `ForDialogDefaults`). The presence of `<primitive>-defaults.ts` is enforced by the `forty-cdk/require-defaults-sibling` ESLint rule in `eslint.config.js` — adding a primitive without it fails `pnpm lint` (and therefore CI).
-- The merge / inheritance behaviour is owned by the single helper at `_internal/defaults/defaults.ts` (`createDefaults<D>(name, fallback)` returning the `{ token, provideDefaults }` pair). Per key it picks `overrides[k] ?? parent[k] ?? fallback[k]`, where the parent is read via `[[new SkipSelf(), new Optional(), TOKEN]]` so component-level overrides layer on top of app-level overrides on top of the library fallback. Don't hand-write the `useFactory` / `SkipSelf` plumbing in primitive code; route it through `createDefaults` so the inheritance semantics stay identical everywhere.
-- Primitives that have no per-scope tunables today still expose a stub (`provideFor<Primitive>Defaults` + `FOR_<PRIMITIVE>_DEFAULTS` + empty `interface`) so future per-scope additions don't churn the public API surface.
-
-**Imperative overlay manager `class` / `classList` config.** Every imperative overlay manager (`ForToastManager`, `ForDialogManager`, `ForDrawerManager`, and any future `For<Primitive>Manager` that creates its overlay host with `document.createElement`) exposes optional `class` / `classList` on its open / show config and applies the resolved tokens to the **overlay root** — the real `[for<Primitive>]` host that carries `data-state` / `data-side` / the directive's own bindings. This exists because the programmatic host is created class-less and the literal `[for<Primitive>]` attribute selector is absent (the directive is attached via `hostDirectives`), so a consumer otherwise has no node to style and the workarounds leak internals (reaching `inject(FOR_…_CONTEXT).hostElement.classList.add(...)` or classing a child wrapper). Both fields are resolved through the single shared helper `resolveConfigClass` in `_internal/class-list/` — never re-implement the token de-dup / merge per manager. The resolved class is set on the host (`hostEl.className = …`) **before** the directive is attached, so it composes with, and never clobbers, the directive's own host attributes. `class` is a single string (or space-separated); `classList` is an array or space-separated string; both merge and de-dup. Omitting both leaves the host with no consumer class.
-
-**Intentional exceptions to the headless rules.** A few primitives knowingly break a project-wide rule because the underlying behaviour can't be modelled any other way without making the consumer's life worse. Any new exception MUST be added here with rationale before merge:
-
-- **`ScrollAreaViewport` injects global CSS.** The viewport is the only piece in the library that ships a `<style id="for-scroll-area-hide-native">` tag (appended once on first construction) to hide the native scrollbars on `[forScrollAreaViewport]`. The synthetic scrollbars are the entire point of the primitive, so without this the consumer would always see double bars; pure inline styles can't target the platform-specific pseudo-elements (`::-webkit-scrollbar`, `scrollbar-width`). The injected sheet is keyed by id so multiple bundles can't double-insert it.
-- **`ScrollAreaCorner` self-hides when fewer than two scrollbars are visible.** The corner has no logical presence when fewer than two scrollbars are visible — keeping it mounted-but-empty would still occupy grid space and bleed into the consumer's layout. Because there is no consumer-meaningful "closed" state to wrap with `@if`, the directive hides it itself: it reflects the `hidden` attribute (a11y-tree removal) **and** an inline `'[style.display]': 'visible() ? null : "none"'` so a consumer's class-level `display: flex` can't leak through (an author selector ties with the user-agent `[hidden] { display:none }` rule and the author wins; an inline style beats any author selector short of `!important`). This is the only primitive piece in the library that hides itself this way; the rule still stands for everything else. The same inline-`display` guarantee backs the other self-hiding pieces — `[forComboboxClear]`, `[forComboboxEmpty]`, and `[forListboxOptionIndicator]` (see [#296](https://github.com/tutkli/forty-cdk/issues/296)).
-- **`ForDisclosureContent` reflects `aria-hidden="true"` + `inert` while closed.** The "Mount/unmount and animations" rule above says primitives never apply `[hidden]` to their visible pieces — presence is the consumer's job via `@if`. Disclosure honours that (it never sets `[hidden]`), but additionally reflects `aria-hidden` and `inert` on the panel host while `open()` is `false`. This lets consumers _opt out_ of `@if` and keep the panel mounted-but-closed (for CSS-only transitions or to preserve internal state) while staying a11y-correct: the closed panel is removed from the accessibility tree and from the focus order automatically. Consumers using `@if` still get the same behaviour for free during the brief mounted window before unmount. No other primitive emits these attributes — it is structurally specific to Disclosure's "embedded toggle, optionally always-mounted" shape.
+The cross-primitive conventions (`data-state` vocabulary, ARIA emission tables, `dir` resolver, mount/unmount + overlay API shapes, auto-focus hooks, defaults providers, manager `class`/`classList`, intentional headless exceptions) all live in `.claude/rules/conventions.md`.
 
 ## Workflow for new primitives
 
@@ -257,78 +94,6 @@ When asked to add a primitive, follow this order:
 5. Tests in parallel — behavior, a11y (roles + aria + keyboard + focus), and explicit zoneless coverage (TestBed configured with `provideZonelessChangeDetection`).
 6. A `README.md` inside the primitive folder with a minimal styleless usage example.
 7. Verify tree-shaking: the primitive imports cleanly in isolation.
-
-## Testing notes
-
-Vitest runs through the Angular CLI builder `@angular/build:unit-test` (configured in `angular.json`). The spec tsconfig (`projects/forty-cdk/tsconfig.spec.json`) sets `types: ["vitest/globals"]`, so `describe` / `it` / `expect` are global — no imports needed. `jsdom` is the DOM environment. Tests use modern standalone `TestBed` setup; a single placeholder spec exists at `projects/forty-cdk/src/lib/forty-cdk.spec.ts` as reference.
-
-Every primitive's test suite must include a case running under `provideZonelessChangeDetection()` to guarantee reactivity works without Zone.js.
-
-### Test isolation — non-negotiables
-
-These invariants are the rationale behind the mechanical enforcement (ESLint rules, Vitest setup file). They exist because each one was, at some point, a bug that bled state across specs or a contract leak that made a refactor harder than it needed to be. A new spec must clear them all.
-
-1. Every `vi.useFakeTimers()` has a matching `vi.useRealTimers()` in `afterEach` of the same `describe` — never inline at the end of an `it`. Inline restores leak timers when the `it` fails before reaching the call.
-2. Every `globalThis` polyfill (observers, `fetch`, `matchMedia`) has a matching `afterAll` restore. Prefer the `installObserverPolyfills()` helper in `projects/forty-cdk/src/test-utils/observers.ts` — it already pairs install with restore.
-3. Every `addEventListener` installed by test code (not by the directive under test) has a matching `removeEventListener` in `try/finally`. A throwing assertion mid-test must not leave a global listener attached for the next spec.
-4. Every `appendChild` to `document.body` from test code is removed in `afterEach` (or `try/finally` in the same `it`). The `TestBed` fixture host is cleaned up for you; ad-hoc body children are not.
-5. Overlay specs (any primitive that portals content to `document.body`) call `afterEachOverlayCleanup()` from `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`. It is a leak detector for failing-mid-render scenarios — without it a thrown assertion can orphan the portal and the next spec sees stale ARIA.
-6. **No reading directive internal signals from a spec.** The contract is the DOM: ARIA attributes, `data-state`, `data-side`, focus, host-bound classes. Accessing `directive.signalX()` is implementation leakage that locks the directive's private shape into the spec; assert against the rendered DOM instead.
-7. `fixture.whenStable()` is used only inside `projects/forty-cdk/src/test-utils/flush.ts`. In specs, always `await flush(fixture)` — it is the canonical waiter and is the only place where the underlying API may change without churning every spec.
-8. Geometry assertions (measured dimensions and math derived from them) run in Playwright, not Vitest. Vitest covers wiring (listener attached, callback fired, signal updated) without faking measurements. See the `### E2E (Playwright)` subsection below and [#195](https://github.com/tutkli/forty-cdk/issues/195) for the full rationale and the `*.prototype.getBoundingClientRect` cross-platform trap.
-9. E2E selectors use `data-testid="…"`. `#id` selectors are reserved for elements outside any directive — several directives host-bind `[id]` for `aria-controls` wiring and would silently shadow a static `id`.
-10. `expect(x).not.toBeNull()` followed by `x!.foo` is noise — drop the assertion. The non-null assertion is already telling the reader (and the compiler) what you know; doubling it adds nothing.
-11. Placement / direction assertions use concrete values (`.toBe('top')`, `.toBe('rtl')`), not `.toBeTruthy()`. A truthy check passes for the wrong value just as eagerly as the right one.
-
-### E2E (Playwright)
-
-The Vitest + jsdom suite is the contract layer for ARIA, signals, and the data-state vocabulary, but jsdom mis-models `document.activeElement`, `inert`, and the focus-event order. Real focus management — focus trap, return focus, vetoable `autoFocusOnOpen` / `autoFocusOnClose`, layered Escape, click-outside, disabled-skip in keyboard navigation — runs against real browsers via Playwright.
-
-jsdom returns zeros for layout APIs (`getBoundingClientRect`, `offset*`, `client*`, `scroll*`) and does not run CSS. Geometry-driven assertions — anything that exercises measured dimensions, math derived from dimensions (snap percentages, `closeThreshold * dim`, `'NNpx'` conversion), CSS custom properties populated from `getBoundingClientRect`, or `IntersectionObserver` outcomes — runs against real browsers via Playwright. The Vitest layer asserts wiring (listener attached, callback fired, signal updated) without faking measurements; do not stub `*.prototype.getBoundingClientRect` or any other layout API. The `*.prototype.getBoundingClientRect` pattern in particular is cross-platform fragile: Linux jsdom defines the descriptor on `HTMLElement.prototype` while macOS/Windows jsdom only defines it on `Element.prototype`, and a single-prototype patch is silently shadowed on the rung the runtime actually consults — see [#193](https://github.com/tutkli/forty-cdk/issues/193) for the trail. The library's harness app exposes a per-fixture query-driven viewport (e.g. `drawerHeight`) plus a capturing `ErrorHandler` (records throws onto `window.__fortyCdkHarnessErrors`) so geometry-throwing paths can be asserted from Playwright.
-
-- `playwright.config.ts` (root) targets Chromium + WebKit, parallel, with `webServer: 'ng serve forty-cdk-harness --port 4400'`.
-- The harness app under `projects/forty-cdk-harness/` is dev/CI-only. It reads the library by sources via a `paths` override in its `tsconfig.app.json` (`forty-cdk` → `../forty-cdk/src/public-api.ts`), so changes to library code show up without rebuild.
-- Per-primitive fixtures live in `projects/forty-cdk-harness/src/app/fixtures/<primitive>.fixture.ts`, mounted on routes `/<primitive>`. Each one exercises focus / keyboard / dismissable behavior for its overlay primitive (Dialog, Popover, DropdownMenu, ContextMenu, Combobox, Tooltip, HoverCard, Select, Listbox) and the `/nested` fixture covers the popover-inside-dialog Escape-stack contract.
-- E2E specs live in `projects/forty-cdk-harness/e2e/<primitive>.e2e.ts`. They use `data-testid="…"` rather than `id="…"` for any element bound to a directive — several directives (`forPopoverTrigger`, `forSelectOption`, `forComboboxInput`, etc.) host-bind `[id]` for `aria-controls` wiring and would override a static `id` attribute.
-- WebKit-specific `test.fixme()` is reserved for cross-browser bugs the library still owes a fix for (e.g. modal Dialog return-focus race vs `inert`). Don't add a fixme without a clear comment naming the underlying library issue — the suite's value is exposing those, not papering over them.
-
-Adding a primitive's E2E coverage is part of the workflow: open a route, build a small fixture, and write the focus / keyboard / dismissable specs alongside the existing Vitest contract suite.
-
-#### Coverage tiers — when a new primitive needs E2E
-
-The audit in [#255](https://github.com/tutkli/forty-cdk/issues/255) canonicalised a two-axis decision for whether a primitive owes a Playwright suite. Ask both questions: does the primitive exercise (a) layout / pointer-capture / pointer-position math (jsdom returns zeros for `getBoundingClientRect` / `offset*` / `client*` / `scroll*`, does not run CSS, and mis-models `setPointerCapture`), or (b) focus / keyboard / roving-tabindex / Escape-stack semantics (jsdom mis-models `document.activeElement`, `inert`, and the focus-event order)? If the answer to either is yes, add an E2E spec. If both are no, Vitest is the contract layer and an E2E spec would only add noise.
-
-- **Tier A — geometry / pointer-capture.** Anything that derives values from `getBoundingClientRect`, `clientWidth` / `scrollWidth`, `setPointerCapture`, `IntersectionObserver` outcomes, or CSS custom properties populated at runtime from measured dimensions. Today: `slider`, `scroll-area`, `separator` (focusable resizer variant), `toast` (swipe-dismiss reuses Drawer's geometry-driven helper), `drawer`. Templates: [slider.e2e.ts](projects/forty-cdk-harness/e2e/slider.e2e.ts) for pointer-driven thumb / track math; [scroll-area.e2e.ts](projects/forty-cdk-harness/e2e/scroll-area.e2e.ts) for `ResizeObserver`-driven thumb sync; [separator.e2e.ts](projects/forty-cdk-harness/e2e/separator.e2e.ts) for the focusable-resizer variant.
-- **Tier B — focus / keyboard / roving.** Anything that owns tab order, roving-tabindex, modal focus trap, return-focus, or layered Escape-stack semantics. Today: `accordion`, `tabs`, `disclosure`, `menubar`, `menu-base`, `radio-group`, `toolbar`, `navigation-menu`, plus every overlay (Dialog, Popover, DropdownMenu, ContextMenu, Combobox, Tooltip, HoverCard, Select, Listbox). Templates: [listbox.e2e.ts](projects/forty-cdk-harness/e2e/listbox.e2e.ts) for roving-tabindex; [dialog.e2e.ts](projects/forty-cdk-harness/e2e/dialog.e2e.ts) for modal focus trap + return-focus; [nested.e2e.ts](projects/forty-cdk-harness/e2e/nested.e2e.ts) for the popover-inside-dialog Escape-stack contract.
-- **Tier C — pure state / form-value / display-only.** No layout-driven logic, no pointer-capture, no roving. Vitest is the contract layer. Examples today: `checkbox`, `switch`, `toggle`, `meter`, `progress`, `avatar`, `aspect-ratio`. No E2E spec, no harness fixture, no `/checkbox`-style route.
-
-When in doubt: if your draft Vitest spec would have to stub `*.prototype.getBoundingClientRect`, fake `setPointerCapture`, or hand-roll a `document.activeElement` shim, that's the signal — write a Playwright spec instead. See [#193](https://github.com/tutkli/forty-cdk/issues/193) for the cross-platform fragility of layout stubs in jsdom and rule 8 in `### Test isolation — non-negotiables` above for the explicit ban on geometry assertions in Vitest.
-
-#### Mobile coverage — `@mobile` tag
-
-Touch-specific behaviour that desktop projects cannot exercise — swipe-dismiss in Drawer / Toast, long-press → context menu, hover-on-touch fallback on Tooltip / HoverCard, synthetic-touch thumb drag in Slider / Separator / ScrollArea — lives behind the `@mobile` tag added in [#257](https://github.com/tutkli/forty-cdk/issues/257). The convention:
-
-- `playwright.config.ts` declares four projects: `chromium`, `webkit` (desktop) plus `Mobile Chrome` (Pixel 5) and `Mobile Safari` (iPhone 12). Both mobile projects set `hasTouch: true` and `grep: /@mobile/` — they only run tests whose title contains the literal string `@mobile`. Adding the tag to a `test.describe(...)` title applies to every `test(...)` inside.
-- Desktop projects (`chromium`, `webkit`) have no `grep` filter, so they run **every** spec including the `@mobile`-tagged ones. The desktop run is the regression guard: if a `@mobile` block starts depending on a touch-only assumption that leaks into the spec body, the desktop projects catch it. Always keep the desktop run green; do not skip `@mobile` tests on desktop projects unless the behaviour is genuinely mobile-only (e.g. `locator.tap()` throws without `hasTouch: true`, in which case gate the assertion behind `isMobileProject(testInfo)` and use `test.skip(!isMobileProject(testInfo), ...)`).
-- Use `isMobileProject(testInfo)` (from `_helpers.ts`) to branch the test's expectations when behaviour genuinely differs between mouse and touch. The default shape is to keep the assertion identical across all four projects.
-- Pointer-capture-using primitives (Slider thumb, Separator resizer, ScrollArea thumb, Drawer / Toast surface) can drive the gesture two ways: `dragFrom` / `dragFromSteps` with `testInfo` routes to a synthetic-touch `dispatchEvent` path on mobile projects (used by [slider.e2e.ts](projects/forty-cdk-harness/e2e/slider.e2e.ts) and [drawer.e2e.ts](projects/forty-cdk-harness/e2e/drawer.e2e.ts)'s swipe-dismiss block), or raw `page.mouse.move` / `down` / `up` which Playwright's mobile-project emulation on `hasTouch: true` translates to `pointerType: 'touch'` events while preserving the browser's pointer-capture forwarding (used by [drawer.e2e.ts](projects/forty-cdk-harness/e2e/drawer.e2e.ts)'s flick-velocity block, which needs deterministic `dt` between consecutive moves). Pick the synthetic path for clarity when the helper's velocity / arming defaults already model the gesture you want, and the raw `page.mouse.*` path when you need fine-grained control over event timing.
-
-#### Shared E2E helpers ([_helpers.ts](projects/forty-cdk-harness/e2e/_helpers.ts))
-
-Specs import from `./_helpers.ts` rather than redeclaring inline helpers — [#256](https://github.com/tutkli/forty-cdk/issues/256) extracted the patterns that recurred across drawer / slider / scroll-area / context-menu / tooltip specs into a single module so the touch-branching and roving-tabindex logic stays in one place.
-
-| Helper                                          | What it does                                                                                                                                                                                                                                                                |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `el(page, testid)`                              | Locator for `[data-testid="<testid>"]`. Always prefer this over `#id`: several directives (`forPopoverTrigger`, `forSelectOption`, `forComboboxInput`, …) host-bind `[id]` for `aria-controls` wiring and would silently shadow a static `id`.                              |
-| `gotoFixture(page, route, query?)`              | Navigate to `/<route>` with optional `?key=value` query flags consumed by the fixture for per-test configuration (`vetoOpen`, `drawerHeight`, …). Waits for `networkidle` so lazy-loaded fixture chunks finish under the dev server.                                        |
-| `tabN(page, n, key?)`                           | Press `Tab` (or `Shift+Tab`) `n` times. The default `key` is `'Tab'`; pass `'Shift+Tab'` for backwards traversal.                                                                                                                                                            |
-| `clickOutside(page)`                            | Click at viewport `(2, 2)` to dismiss overlays. Reliable because every fixture is anchored under `<app-root>` and that coordinate lands in the surrounding body region.                                                                                                      |
-| `isMobileProject(testInfo)`                     | `true` on `Mobile Chrome` / `Mobile Safari` projects; `false` on the desktop projects. Used by the drag helpers to branch onto a synthetic-touch path and by any `@mobile`-tagged spec that needs to special-case touch behaviour.                                          |
-| `dragFrom(page, start, delta, opts?)`           | Pointer drag from the centre of `start` by `(dx, dy)` with a 5-px arming step past the swipe-dismiss helper's 4-px arm distance. Default `stepDelayMs: 250` keeps release-time velocity below the 0.4 px/ms flick threshold. Pass `opts.testInfo` to enable the touch branch on mobile projects. |
-| `dragFromSteps(page, start, step, steps, opts?)`| Multi-step variant that exercises the directive's cumulative-offset integrator: arming step plus `steps` equal `step` moves with `stepDelayMs` between them. Default `stepDelayMs: 50` with a 30-px step crosses the flick velocity threshold; raise the delay for the no-flick branch.          |
-| `longPress(locator, ms?)`                       | Touch `pointerdown` → wait → `pointerup` at the locator's centre. Default 600 ms — comfortable margin over Chromium / WebKit's ~500 ms synthetic-`contextmenu` threshold for ContextMenu mobile coverage.                                                                  |
-| `rovingFirst(page, testid, maxAttempts?)`       | Press `Tab` until `document.activeElement` exposes the matching `data-testid`. Default `maxAttempts: 20`; throws on miss with a diagnostic naming the last-focused testid so a regression surfaces as a clear failure rather than a Playwright timeout.                     |
-| `expectFocused(locator)`                        | Thin wrapper around `expect(locator).toBeFocused()` so specs read as `await expectFocused(el(page, 'first'))`. Does not await internally so the assertion participates in Playwright's auto-retry.                                                                          |
 
 ## TypeScript expectations
 

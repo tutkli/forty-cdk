@@ -1,0 +1,174 @@
+---
+paths:
+  - "projects/forty-cdk/src/lib/**/*.ts"
+---
+
+# forty-cdk — primitive authoring conventions
+
+Detailed companion to the root `CLAUDE.md`. These auto-load when you edit library source (`projects/forty-cdk/src/lib/**/*.ts`). Apply them everywhere; deviate only with a written reason.
+
+## Linting (ESLint + Prettier)
+
+ESLint (`eslint.config.js`, flat config) mechanically enforces the non-negotiables in the root `CLAUDE.md`: banned imports (`@angular/{cdk,material,aria}`, `zone.js`), banned syntax (`NgModule`, `@Input` / `@Output` / `@HostBinding` / `@HostListener` decorators, `Service` / `Component` / `Directive` class suffixes), the `for-` selector prefix on directives and components, SSR-unsafe `document` / `window` globals in library code, plus typescript-eslint hardening (`consistent-type-imports` with inline `import type` style, `no-explicit-any`, `no-unused-vars`). Run `pnpm lint` before committing — CI runs it on every PR — and `pnpm exec eslint . --fix` for auto-fixable rules. Prettier is configured (`.prettierrc`, `printWidth: 100`, single quotes); run it with `pnpm exec prettier --write <path>` when needed.
+
+## Never propagate state inside `effect()`
+
+**Never propagate state inside `effect()`.** Writing to a signal from inside an `effect` to derive another piece of state is an anti-pattern in modern Angular: it creates implicit cycles, double change-detection passes, and ordering bugs that are hard to debug. `effect()` is for **side effects** that escape the reactive graph (DOM imperative calls, subscriptions to non-signal sources, logging, focus moves that can't be expressed as host bindings). Reach for the right primitive instead:
+
+- **`computed()`** — pure derivation from other signals.
+- **`linkedSignal()`** — writable state derived from a source, with a reset rule when the source changes (the canonical replacement for `effect(() => mySignal.set(...))`).
+- **`resource()` / `httpResource()`** — async state driven by a signal source (loading, error, value already modeled).
+- **`toSignal()` / `toObservable()`** — bridge to/from RxJS without manual `effect`-based wiring.
+
+If you genuinely need to write a signal from an `effect` (rare — usually integrating an external imperative API), document why in a comment and isolate it.
+
+## Form primitives use Signal Forms, never `ControlValueAccessor`
+
+**Form primitives use Signal Forms, never `ControlValueAccessor`.** Any primitive that represents a form value (Switch, Checkbox, RadioGroup, Slider, Combobox, DatePicker, etc.) must implement the appropriate `@angular/forms/signals` interface so it auto-wires with the `[formField]` directive (selector `[formField]`, alias `formField`) — Angular detects the interface and binds everything, no provider/token registration:
+
+- **`FormValueControl<T>`** for value-based controls. Required: `value: ModelSignal<T>`.
+- **`FormCheckboxControl`** for binary on/off. Required: `checked: ModelSignal<boolean>`.
+
+Both extend **`FormUiControl`** — expose its relevant optional members (`disabled`, `readonly`, `required`, `invalid`, `errors`, `touched`, `name`, `pending`, `min`/`max`/`pattern` where meaningful) as the prescribed `input` / `model` signals so field state flows in and out without consumer glue. Skip the members that don't apply to the control's shape (e.g. `min`/`max`/`pattern` on a Switch).
+
+The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an _optional_ peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
+
+`@angular/forms/signals` is `@experimental` in Angular 21. Pin to the matching minor (`^21.x`) and revisit on each Angular bump.
+
+## Naming — accessible labelling & programmatic services
+
+- **Accessible labelling.** Every primitive that exposes a reactive accessible name does so through one uniform input: `ariaLabel: input<string | null>` defaulting to `null`. Host-bind it truthy-only so a `null` or empty value emits **no** attribute — `'[attr.aria-label]': 'ariaLabel() || null'` — on whichever piece carries the labelled role (the root for `Listbox` / `Menubar` / `NavigationMenu`, the content surface for `Dialog` / `Drawer` / `Select` / `Combobox` / menu roots). This is just a reactive convenience over the native attribute: consumers who have a visible label element should still prefer pointing native `aria-labelledby` at it (the directive defers to `aria-labelledby` and emits no `aria-label` when its value is falsy). Combobox is the documented exception that needs no separate hook discussion — it still follows this `ariaLabel` shape. Do not invent per-primitive variants (`label`, `aria-label` attribute only, `input<string>` default `''`).
+- **Programmatic services**: when a primitive ships an injectable for opening / coordinating overlay instances imperatively (Dialog today; future Toast / Snackbar / HoverCard programmatic), name it `For<Primitive>Manager` and put it in `<primitive>-manager.ts`. The per-instance handle stays `For<Primitive>Ref`. Avoid plural class names (`ForDialogs`) — they collide visually with the directive (`ForDialog`). The `Service` suffix is still banned; `Manager` describes the role (lifecycle + stack of instances), it isn't an empty category tag.
+
+## Cross-primitive conventions
+
+These keep the surface predictable across primitives. Apply them everywhere; deviate only with a written reason.
+
+**`data-state` vocabulary.** Three canonical families, picked semantically — never invent a fourth without listing it in the _Documented alternative vocabularies_ table below:
+
+- `"open" | "closed"` — for things that expand/collapse (`Disclosure`, `Accordion`, `Tooltip`, `Dialog`, `Tree` parent items, future `Popover`/`Menu`/`Drawer`).
+- `"active" | "inactive"` — for one-of-N selectables embedded in a tablist-like container (`Tabs` trigger and content). Matches Radix.
+- `"checked" | "unchecked" | "indeterminate"` — for form-control state (`Switch`, `Checkbox`, `RadioGroup` items, `Listbox` options, future `Select`/`ToggleGroup`). `"indeterminate"` only on tri-state controls (Checkbox today).
+
+`data-state` is reflected on every piece of the primitive that the consumer might want to style — the root _and_ trigger/content/option/etc. — using the same vocabulary across pieces.
+
+**Documented alternative vocabularies.** A handful of primitives intentionally use a different attribute name or value set because the underlying spec / pattern doesn't fit any of the three families above. New primitives must reuse one of the canonical families unless they have an equally strong reason and update this table:
+
+| Attribute      | Values                                           | Primitives                       | Why                                                                                                                                                                                                         |
+| -------------- | ------------------------------------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-state`   | `"visible" \| "hidden"`                          | `ScrollArea` (scrollbar, thumb)  | These pieces have no logical open/closed _state_ — they reflect whether the floating helper is currently rendered/painted, which is a layout outcome, not a toggle.                                         |
+| `data-status`  | `"idle" \| "loading" \| "loaded" \| "error"`     | `Avatar` (root, image, fallback) | Mirrors the four-step image lifecycle of Radix's Avatar. None of the three families captures a finite-state-machine with an error terminal.                                                                 |
+| `data-state`   | `"indeterminate" \| "loading" \| "complete"`     | `Progress` (root, indicator)     | Mirrors the HTML5 `<progress>` semantics + an explicit `complete` terminal so styling / `aria-live` can fire on the loading→complete edge. `"loading"` is _not_ the same as the form-control `"unchecked"`. |
+| `data-quality` | `"optimum" \| "sub-optimum" \| "even-less-good"` | `Meter` (root, indicator)        | Reflects the HTML5 `<meter>` "preferred-value" buckets. This is a styling hook layered _on top of_ `aria-valuenow`; it is not a state toggle and the spec mandates the three names.                         |
+| `data-selected` | present / absent (boolean)                      | `Tree` (treeitem)                | A `treeitem` is simultaneously expandable _and_ selectable, so a single `data-state` slot can't carry both. `data-state="open" \| "closed"` reflects expansion on parent items only (absent on leaves, like the `aria-expanded`-omitted-on-leaves APG rule); the boolean `data-selected` reflects selection on every item. Mirrors Ark UI's split. Follows the boolean present/absent rule below. |
+
+**Boolean `data-*` attributes.** Present (with empty string value) when `true`, absent (`null`) when `false`. Never emit `data-disabled="false"`. The Angular host binding `[attr.data-disabled]="disabled() ? '' : null"` is the canonical form. Applies to `data-disabled`, `data-readonly`, `data-highlighted`, `data-selected` (`Tree` treeitem — see the alternative-vocabularies table above), and any future boolean reflection (`data-touched`, `data-dirty`, `data-pending`, `data-invalid`).
+
+**`data-highlighted` (sibling vocabulary to `data-state`).** Items that participate in roving-tabindex or `aria-activedescendant` navigation expose a boolean `data-highlighted` when they are the current keyboard-focused candidate. This is distinct from `data-state` (which reflects logical state — `checked`, `open`, etc.) and is the _only_ CSS hook combobox consumers have, since `aria-activedescendant` keeps focus on the input rather than on the option (no `:focus`). Roving-tabindex primitives expose it for parity with the activedescendant flow and for hover-uncoupled-from-focus styling (Radix-aligned). Items reflecting `data-highlighted` today: `Listbox` option, `Menu` item / checkbox-item / radio-item, `Select` option, `Combobox` option.
+
+**ARIA state attribute emission.** WAI-ARIA distinguishes attributes whose absence is semantically meaningful (the consumer's assistive tech knows the default) from attributes whose state machine demands an explicit `"true"` / `"false"` on every render. The library normalizes both groups:
+
+| Attribute                                                                                                                    | Truthy value | Falsy value     |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- |
+| `aria-checked`, `aria-pressed`, `aria-expanded`, `aria-selected`                                                             | `"true"`     | `"false"`       |
+| `aria-disabled`, `aria-readonly`, `aria-required`, `aria-invalid`, `aria-busy`, `aria-modal`, `aria-haspopup` (boolean form) | `"true"`     | `null` (absent) |
+
+The first row is **always emit** — togglable widgets (toggle buttons, tabs, treeitems, comboboxes, disclosures) have a defined "off" state that screen readers must announce, so the attribute must be present with `"false"` rather than absent. The second row is **truthy-only** — a missing `aria-required` means "not required", emitting `aria-required="false"` is redundant and forces consumers to write `[aria-required="false"]` selectors that fight the spec.
+
+Canonical Angular host bindings:
+
+- Always-emit: `'[attr.aria-checked]': 'checked() ? "true" : "false"'`
+- Truthy-only: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`
+
+Two notes for edge cases:
+
+- `aria-haspopup` may take token values (`menu`, `listbox`, `dialog`, `tree`, `grid`); when emitted as a token it is always present (e.g. `'"listbox"'`) and the boolean rule does not apply. Only normalize the boolean form against the truthy-only column.
+- `aria-multiselectable` belongs to the truthy-only group. WAI-ARIA defines its default as `false` when the role demands it (`listbox`, `tree`, `grid`), so a missing attribute is unambiguous; emitting `aria-multiselectable="false"` adds noise without changing semantics. Listbox / Combobox / Select content all follow the truthy-only rule.
+
+Consumers styling falsy state must select on **the absence** of the attribute (`:not([aria-disabled])`, `:not([aria-required])`), not on `[aria-disabled="false"]`. The breaking change in [#108](https://github.com/tutkli/forty-cdk/issues/108) enforces this across the library.
+
+**`model()` change emitter contract.** A `model<T>()` already exposes a `<name>Change` output that fires _only_ when the primitive itself updates the signal via `set/update`, and stays silent on consumer writes through `[(name)]`. This already matches Radix's `onValueChange`/`onOpenChange` semantics — **do not add a parallel `output<T>() <name>Change`**, it would shadow or duplicate the implicit one. Document the contract on the `model()` JSDoc instead.
+
+**Selection value-type contract.** Every selection primitive models its value the same way, so consumers learn one shape across the library:
+
+- **The value model is always a `readonly` array** — `model<readonly string[]>` (`Accordion`, `ToggleGroup`, `Listbox`, `Select`) or `model<readonly T[]>` when generic (`Combobox`). Never expose a mutable `string[]` model; mutate it immutably internally (`[...]`, `.filter()`, `new Set()` then spread) and `set()` the new array. The array is the `FormValueControl` backing — the form contract needs a uniform multi-capable shape regardless of mode.
+- **Single mode is the same array with 0–1 elements.** `multiple=false` (default) keeps the array at length ≤ 1; option activation replaces rather than appends.
+- **Single-select consumers read a derived accessor, never `value()[0]`.** Each selection primitive exposes a read-only single-mode view derived with `computed()` (never an `effect`-written signal): `selected: Signal<string | null>` on `ForSelect` / `ForListbox`, and `selectedItem: Signal<T | null>` on the generic `ForCombobox` (its `selected` name is already taken by the value+label chip list). It returns the sole element when the array has exactly one entry, else `null` (empty, or multiple in multi mode). This is a convenience accessor, not a second source of truth — writes still go through `[(value)]`.
+
+Selection-_for-display_ primitives that aren't form values (`Tabs`, `RadioGroup` use a single `string`) are out of this contract; it covers the array-backed multi-capable controls only.
+
+**Orientation + writing direction.** Primitives whose keyboard navigation has an axis expose `orientation: 'horizontal' | 'vertical'` and `dir: 'ltr' | 'rtl' | null` inputs and pass them to the shared `_internal/keyboard-navigation` helpers. Default to the orientation that matches the primitive's most common layout (`vertical` for `Accordion`/`RadioGroup`/`Listbox`, `horizontal` for `Tabs`). Reflect `data-orientation` on the root container so the consumer can flip CSS.
+
+**`dir` defaults to `null` and resolves the inherited ambient direction.** The input is `input<WritingDirection | null>(null, { alias: 'dir' })` (named `_dirInput` internally), and the directive derives the effective value through the shared `injectTextDirection(this._dirInput)` helper in `_internal/text-direction/`: `readonly dir = injectTextDirection(this._dirInput)`. The helper returns `explicitDir() ?? <ambient>`, where the ambient value is read from the **nearest ancestor carrying a `dir` attribute** (`element.parentElement.closest('[dir]')`, normalised to `ltr`/`rtl`; `auto` and unknown tokens fall back to `ltr`), then `<html dir>`, defaulting to `'ltr'`. So a primitive dropped inside `<html dir="rtl">` (or any RTL-resolved ancestor) with no explicit `[dir]` resolves arrow-key semantics as RTL automatically; an explicit `[dir]` always wins. The helper is SSR-safe (gated on `isPlatformBrowser`, never touches `document`/`window` without a DOM, defaults to `'ltr'`) and reactive (a `MutationObserver` on `<html>`'s subtree watches `dir` so a runtime flip — e.g. a locale toggle — updates the signal). Direction is read from the semantic `dir` attribute only, **not** from CSS `direction`; consumers wanting RTL set the `dir` attribute on an ancestor (the standard `<html dir="rtl">` setup). All 16 primitives with a `dir` input share this single resolver — never reimplement it per-primitive.
+
+The **resolved** `dir` is **reflected to the host via the native `dir` attribute** — the directive host-binds `'[attr.dir]': 'dir()'` (where `dir()` is the resolved signal) on that same element. A single consumer `[dir]="…"` binding therefore drives **both** keyboard meaning and visual layout, and an inherited ambient direction reflects the same way: the native attribute is what CSS `:dir()` / `[dir="rtl"]` selectors and assistive tech both read, so consumers never add a second `[attr.dir]`. Emit it always (no truthy-only `rtl` suppression) — the resolved value always carries a concrete `ltr` / `rtl`, so both values must reflect. Every primitive with a `dir` input follows this: `Accordion`, `Tabs`, `Listbox`, `RadioGroup`, `Slider`, `ScrollArea`, `Toolbar`, `Separator`, `Menubar`, `NavigationMenu`, `ContextMenu`, `DropdownMenu`, `Select`, `Combobox`, `ToggleGroup`, `Tree`. (`MenuSub` inherits its parent menu's already-resolved `dir`, so it composes on top without its own resolver.)
+
+**Output naming.** `*Change` for value/state transitions emitted by `model()`. Verb outputs (`select`, `escapeKeyDown`, `pointerDownOutside`) for one-shot events — never `onX` (React idiom).
+
+**Mount/unmount and animations.** Primitives **never** apply `[hidden]` to their visible pieces. Presence in the DOM is the consumer's responsibility — they wrap the visible piece with `@if` and use Angular's native `animate.enter` / `animate.leave` for transitions. The directive's job is reactive state + ARIA + behavior; visibility is template control flow. This rule is what unblocks idiomatic Angular animations and forces a clean separation between "is open" (state) and "is mounted" (DOM).
+
+There are two API shapes for primitives that have a visibility/open concept:
+
+- **Free-floating overlays** (Dialog, Drawer, Toast): the instance lifecycle is decoupled from the trigger and the directive owns no `[(open)]` model. The consumer's external signal drives `@if`, and the directive emits a `(close)` output with a `*CloseReason` payload when it wants to be unmounted (Escape, \*Outside, close button, programmatic). Mount == open. Setup (focus trap, scroll lock, dismissable layer, portal, inert siblings, return-focus capture) is owned by `_internal/modal-shell` (`injectModalShell({...})`); the directive contributes ARIA + label / description registration on top. Cleanup runs through the shell's own `DestroyRef` hook.
+
+  ```html
+  @if (open()) {
+  <div forDialog (close)="open.set(false)" animate.leave="fade-out">…</div>
+  }
+  ```
+
+- **Trigger-anchored overlays** (Popover, DropdownMenu, ContextMenu, HoverCard, NavigationMenu, Tooltip, Combobox content, Select content): the trigger lives inside the wrapper directive and drives state, so the wrapper exposes `[(open)]` (or `[(value)]` for selection-driven content like Combobox / Select) via a `model<bool>()` / `model<T>()`. The consumer wraps the visible content piece with `@if` driven by the same signal. `data-state` reflects logical open/closed for CSS styling, but is never tied to visibility — that's `@if`'s job.
+
+  ```html
+  <div forPopover [(open)]="isOpen">
+    <button forPopoverTrigger>Toggle</button>
+    @if (isOpen()) {
+    <div forPopoverContent animate.leave="fade-out">…</div>
+    }
+  </div>
+  ```
+
+- **Embedded toggle/selection** (Disclosure, Accordion, Tabs, Listbox, future ToggleGroup): same `[(open)]` / `[(value)]` shape as trigger-anchored overlays, but the content piece is part of the document flow rather than a floating layer. The visible content piece still drops `[hidden]`; the consumer wraps it with `@if` driven by the same signal.
+
+  ```html
+  <div forDisclosure [(open)]="isOpen">
+    <button forDisclosureTrigger>Toggle</button>
+    @if (isOpen()) {
+    <section forDisclosureContent animate.leave="slide-up">…</section>
+    }
+  </div>
+  ```
+
+The single exception is **Tabs panels**: it's idiomatic to keep all panels mounted to preserve scroll/input state. The consumer can either `@if` per panel or simply leave them mounted and toggle visibility in CSS via `[data-state="active"]`.
+
+Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, `Tabs` selection) keep `[(checked)]` / `[(value)]` — that's form state, not visibility, and the rule above doesn't apply.
+
+**Auto-focus hook shape.** Overlay primitives expose two vetoable hooks for the imperative focus moves they perform on mount and unmount: `autoFocusOnOpen` (just before focus enters the surface) and `autoFocusOnClose` (just before focus returns to the trigger). Both deliver a `VetoableEvent`; calling `event.preventDefault()` skips the directive's focus move while leaving the rest of the lifecycle alone. The library deliberately uses two binding shapes for this single contract:
+
+- **Free-floating overlays use `input<((event: VetoableEvent) => void) | undefined>`** — bound as a function reference: `[autoFocusOnOpen]="onOpen"`. Today: **Dialog** (and `ForDialogManager`'s `config.autoFocusOn*`, which is the same callback). The reason is reliability on the close path: a Dialog can be closed via a direct `open.set(false)` from the consumer, which bypasses the `(close)` output entirely. The directive must still fire `autoFocusOnClose` deterministically on every close path — including the destroy hook — so it stores a function reference rather than relying on Angular's `OutputEmitterRef` lifecycle (which doesn't guarantee subscriber delivery during teardown).
+- **Trigger-anchored overlays use `output<VetoableEvent>()`** — bound as an event listener: `(autoFocusOnOpen)="…"`. Today: **Popover, DropdownMenu, ContextMenu, Menu sub, Select**, plus any future trigger-anchored overlay. These primitives always route close transitions through their own `model<bool>() open` (and therefore through the implicit `openChange` emitter), so there is no escape hatch that bypasses the output. The output shape stays idiomatic Angular and matches the surrounding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, etc.).
+
+| Primitive(s)                                         | Shape                               | Binding                      |
+| ---------------------------------------------------- | ----------------------------------- | ---------------------------- |
+| Dialog                                               | `input<(e: VetoableEvent) => void>` | `[autoFocusOnOpen]="onOpen"` |
+| Popover, DropdownMenu, ContextMenu, Menu sub, Select | `output<VetoableEvent>()`           | `(autoFocusOnOpen)="…"`      |
+
+Combobox is the documented exception that exposes neither hook: `aria-activedescendant` keeps focus on the input the entire time, so there is no imperative focus move to veto. Document any new overlay against this section.
+
+**No `forceMount` / `keepMounted` equivalent for overlays.** The library deliberately does **not** ship a Radix-style `forceMount` or Base-UI-style `keepMounted` opt-in on overlay content directives (`[forDialog]`, popover / tooltip / hover-card / dropdown-menu / context-menu content). Mount == open is structural for these primitives — focus trap, scroll lock, body inert, dismissable layer push, and ARIA modality all hang off the directive's lifetime via `afterNextRender` + `DestroyRef`. Splitting "alive" from "open" would require re-gating every side effect on a separate `open()` signal and inherits a long tail of bugs documented upstream. The single bona-fide use case (handing exit animation control to JS animation libraries) is already covered by `animate.leave` + `@if`, so the consumer never needs the directive to outlive the open state. Revisit only if a real consumer brings a use case `animate.leave` cannot cover; design constraints if accepted are recorded in [#72](https://github.com/tutkli/forty-cdk/issues/72).
+
+**Defaults providers.** Primitives that expose injector-scoped defaults (cadences, offsets, hotkeys, etc.) follow a fixed convention so consumers can predict the API without reading each primitive:
+
+- The provider helper is named `provideFor<Primitive>Defaults(overrides?)`. Always present-tense, always plural `Defaults`, always the `For` prefix (e.g. `provideForTooltipDefaults`, `provideForHoverCardDefaults`, `provideForToastDefaults`). Returns `Provider[]` so callers can spread per-scope companions (a `<Primitive>Coordinator`, etc.) into the same array.
+- The injection token is `FOR_<PRIMITIVE>_DEFAULTS` (e.g. `FOR_TOOLTIP_DEFAULTS`, `FOR_HOVER_CARD_DEFAULTS`).
+- The defaults shape lives in `<primitive>/<primitive>-defaults.ts`, and is exported as a named interface following `For<Primitive>Defaults` (e.g. `ForToastDefaults`, `ForDialogDefaults`). The presence of `<primitive>-defaults.ts` is enforced by the `forty-cdk/require-defaults-sibling` ESLint rule in `eslint.config.js` — adding a primitive without it fails `pnpm lint` (and therefore CI).
+- The merge / inheritance behaviour is owned by the single helper at `_internal/defaults/defaults.ts` (`createDefaults<D>(name, fallback)` returning the `{ token, provideDefaults }` pair). Per key it picks `overrides[k] ?? parent[k] ?? fallback[k]`, where the parent is read via `[[new SkipSelf(), new Optional(), TOKEN]]` so component-level overrides layer on top of app-level overrides on top of the library fallback. Don't hand-write the `useFactory` / `SkipSelf` plumbing in primitive code; route it through `createDefaults` so the inheritance semantics stay identical everywhere.
+- Primitives that have no per-scope tunables today still expose a stub (`provideFor<Primitive>Defaults` + `FOR_<PRIMITIVE>_DEFAULTS` + empty `interface`) so future per-scope additions don't churn the public API surface.
+
+**Imperative overlay manager `class` / `classList` config.** Every imperative overlay manager (`ForToastManager`, `ForDialogManager`, `ForDrawerManager`, and any future `For<Primitive>Manager` that creates its overlay host with `document.createElement`) exposes optional `class` / `classList` on its open / show config and applies the resolved tokens to the **overlay root** — the real `[for<Primitive>]` host that carries `data-state` / `data-side` / the directive's own bindings. This exists because the programmatic host is created class-less and the literal `[for<Primitive>]` attribute selector is absent (the directive is attached via `hostDirectives`), so a consumer otherwise has no node to style and the workarounds leak internals (reaching `inject(FOR_…_CONTEXT).hostElement.classList.add(...)` or classing a child wrapper). Both fields are resolved through the single shared helper `resolveConfigClass` in `_internal/class-list/` — never re-implement the token de-dup / merge per manager. The resolved class is set on the host (`hostEl.className = …`) **before** the directive is attached, so it composes with, and never clobbers, the directive's own host attributes. `class` is a single string (or space-separated); `classList` is an array or space-separated string; both merge and de-dup. Omitting both leaves the host with no consumer class.
+
+**Intentional exceptions to the headless rules.** A few primitives knowingly break a project-wide rule because the underlying behaviour can't be modelled any other way without making the consumer's life worse. Any new exception MUST be added here with rationale before merge:
+
+- **`ScrollAreaViewport` injects global CSS.** The viewport is the only piece in the library that ships a `<style id="for-scroll-area-hide-native">` tag (appended once on first construction) to hide the native scrollbars on `[forScrollAreaViewport]`. The synthetic scrollbars are the entire point of the primitive, so without this the consumer would always see double bars; pure inline styles can't target the platform-specific pseudo-elements (`::-webkit-scrollbar`, `scrollbar-width`). The injected sheet is keyed by id so multiple bundles can't double-insert it.
+- **`ScrollAreaCorner` self-hides when fewer than two scrollbars are visible.** The corner has no logical presence when fewer than two scrollbars are visible — keeping it mounted-but-empty would still occupy grid space and bleed into the consumer's layout. Because there is no consumer-meaningful "closed" state to wrap with `@if`, the directive hides it itself: it reflects the `hidden` attribute (a11y-tree removal) **and** an inline `'[style.display]': 'visible() ? null : "none"'` so a consumer's class-level `display: flex` can't leak through (an author selector ties with the user-agent `[hidden] { display:none }` rule and the author wins; an inline style beats any author selector short of `!important`). This is the only primitive piece in the library that hides itself this way; the rule still stands for everything else. The same inline-`display` guarantee backs the other self-hiding pieces — `[forComboboxClear]`, `[forComboboxEmpty]`, and `[forListboxOptionIndicator]` (see [#296](https://github.com/tutkli/forty-cdk/issues/296)).
+- **`ForDisclosureContent` reflects `aria-hidden="true"` + `inert` while closed.** The "Mount/unmount and animations" rule above says primitives never apply `[hidden]` to their visible pieces — presence is the consumer's job via `@if`. Disclosure honours that (it never sets `[hidden]`), but additionally reflects `aria-hidden` and `inert` on the panel host while `open()` is `false`. This lets consumers _opt out_ of `@if` and keep the panel mounted-but-closed (for CSS-only transitions or to preserve internal state) while staying a11y-correct: the closed panel is removed from the accessibility tree and from the focus order automatically. Consumers using `@if` still get the same behaviour for free during the brief mounted window before unmount. No other primitive emits these attributes — it is structurally specific to Disclosure's "embedded toggle, optionally always-mounted" shape.
