@@ -148,6 +148,13 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
           'A scrollable list of selectable options with roving-tabindex navigation, single or multi selection.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/listbox/',
       },
+      {
+        slug: 'tree',
+        title: 'Tree',
+        description:
+          'A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, single or multi selection, and typeahead.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/treeview/',
+      },
     ],
   },
   {

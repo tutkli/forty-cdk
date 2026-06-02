@@ -41,3 +41,4 @@ export * from './lib/toolbar';
 export * from './lib/hover-card';
 export * from './lib/navigation-menu';
 export * from './lib/scroll-area';
+export * from './lib/tree';

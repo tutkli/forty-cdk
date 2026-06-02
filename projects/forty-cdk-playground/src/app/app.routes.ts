@@ -118,6 +118,10 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/listbox/listbox.page').then((m) => m.ListboxPage),
   },
   {
+    path: 'tree',
+    loadComponent: () => import('./demos/tree/tree.page').then((m) => m.TreePage),
+  },
+  {
     path: 'toast',
     loadComponent: () => import('./demos/toast/toast.page').then((m) => m.ToastPage),
   },
