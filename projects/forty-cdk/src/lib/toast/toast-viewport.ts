@@ -13,11 +13,11 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
+import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastInstance,
   type ForToastSwipeDirection,
-  resolveToastConfigClass,
 } from './toast-context';
 import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
 import { ForToast } from './toast';
@@ -235,6 +235,6 @@ export class ForToastViewport {
    * attributes untouched.
    */
   protected toastClass(toast: ForToastInstance): string {
-    return resolveToastConfigClass(toast.config) ?? '';
+    return resolveConfigClass(toast.config) ?? '';
   }
 }
