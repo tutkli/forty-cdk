@@ -161,6 +161,13 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
           'A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, single or multi selection, and typeahead.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/treeview/',
       },
+      {
+        slug: 'calendar',
+        title: 'Calendar',
+        description:
+          'A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/grid/',
+      },
     ],
   },
   {
