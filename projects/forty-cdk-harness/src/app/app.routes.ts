@@ -106,4 +106,8 @@ export const routes: Routes = [
     path: 'toast',
     loadComponent: () => import('./fixtures/toast.fixture').then((m) => m.ToastFixture),
   },
+  {
+    path: 'tree',
+    loadComponent: () => import('./fixtures/tree.fixture').then((m) => m.TreeFixture),
+  },
 ];
