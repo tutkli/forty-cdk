@@ -141,6 +141,20 @@ class DemoHost {
 
 Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissable layer.
 
+**Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it — the tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-translate` custom property, so positioning CSS keyed on `data-side` works:
+
+```ts
+this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
+```
+
+```css
+.my-drawer[data-side='bottom'] {
+  inset: auto 0 0 0;
+}
+```
+
+`class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
+
 ## ForDrawer inputs / models
 
 | Name                        | Type                                        | Default    | Notes                                                                                                                                                                                      |

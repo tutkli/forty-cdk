@@ -47,6 +47,7 @@ export class DialogProgrammaticExample {
       },
       alert: true,
       dismissible: false,
+      class: 'pg-dialog pg-dialog--pop',
     });
     const result = await ref.closed;
     this.confirmResult.set(result ?? 'dismissed');

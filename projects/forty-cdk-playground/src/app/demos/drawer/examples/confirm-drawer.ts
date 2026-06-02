@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
-  FOR_DRAWER_CONTEXT,
   ForDrawerBackdrop,
   ForDrawerClose,
   ForDrawerDescription,
@@ -46,8 +45,4 @@ export class ConfirmDrawer {
   protected readonly data = injectDrawerData<ConfirmData>();
   protected readonly cancel: ConfirmResult = 'cancel';
   protected readonly confirm: ConfirmResult = 'confirm';
-
-  constructor() {
-    inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('pg-drawer');
-  }
 }

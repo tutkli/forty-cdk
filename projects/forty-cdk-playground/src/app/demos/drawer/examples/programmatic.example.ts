@@ -46,6 +46,7 @@ export class DrawerProgrammaticExample {
       },
       side: 'bottom',
       ariaLabel: 'Delete account',
+      class: 'pg-drawer',
     });
     const result = await ref.closed;
     this.confirmResult.set(result ?? 'dismissed');

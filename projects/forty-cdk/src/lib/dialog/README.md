@@ -131,6 +131,14 @@ export class DemoHost {
 }
 ```
 
+**Styling the programmatic overlay root.** Declaratively you write the surface yourself (`<div forDialog class="my-dialog">`), so the class lands on the same element that carries `data-state` / `role`. The manager creates that host for you and it is class-less, so pass `class` / `classList` to style it:
+
+```ts
+this.dialogs.open(ConfirmDialog, { data, alert: true, class: 'my-dialog my-dialog--pop' });
+```
+
+The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `aria-modal`, merged and de-duped, never clobbering those attributes.
+
 ## Pieces (declarative)
 
 | Class                  | Selector                 | Role                                                                                                                |
@@ -217,6 +225,8 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 | `initialFocus`     | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                        |
 | `ariaLabel`        | —         | Manual accessible name when no title element is rendered.                                               |
 | `hostTag`          | `'div'`   | Tag name for the host element (e.g. `'section'`).                                                       |
+| `class`            | —         | CSS class(es) applied to the overlay root (the `[forDialog]` host). Single or space-separated string.   |
+| `classList`        | —         | CSS class(es) applied to the overlay root, as an array or space-separated string. Merged with `class`.  |
 | `providers`        | `[]`      | Extra providers for the opened component's injector.                                                    |
 | `autoFocusOnOpen`  | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move. |
 | `autoFocusOnClose` | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.         |
