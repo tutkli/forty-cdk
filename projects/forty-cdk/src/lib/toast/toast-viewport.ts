@@ -3,20 +3,23 @@ import {
   Component,
   computed,
   DestroyRef,
-  DOCUMENT,
+  effect,
   ElementRef,
   inject,
   input,
+  isDevMode,
   numberAttribute,
+  type Signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
 import {
+  DEFAULT_TOAST_REGION,
   type ForToastInstance,
   type ForToastSwipeDirection,
   resolveToastConfigClass,
 } from './toast-context';
-import { ForToastManager } from './toast-manager';
+import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
@@ -43,7 +46,16 @@ import { ForToastTitle } from './toast-title';
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
- * or globally with `provideForToastDefaults({ hotkey: '…' })`.
+ * or globally with `provideForToastDefaults({ hotkey: '…' })`. The listener
+ * is owned once by `ForToastManager`, so the hotkey never double-fires when
+ * several viewports are mounted.
+ *
+ * Regions: a viewport renders only toasts whose `region` matches its
+ * `[region]` input (default {@link DEFAULT_TOAST_REGION}), so independent
+ * viewports — e.g. top-right system notifications and bottom-center action
+ * confirmations — are a first-class feature. If two viewports share a region,
+ * only the first one mounted renders it (the rest stay dormant and warn in dev
+ * mode), so a single `show()` always produces exactly one toast node.
  *
  * Accessibility: the host carries `role="region"` and an `aria-label`
  * (default `Notifications`). Toast nodes themselves carry their own
@@ -66,6 +78,7 @@ import { ForToastTitle } from './toast-title';
   host: {
     role: 'region',
     '[attr.aria-label]': 'label()',
+    '[attr.data-region]': 'region()',
     tabindex: '-1',
     '[attr.data-toast-count]': 'visible().length',
   },
@@ -117,6 +130,15 @@ export class ForToastViewport {
   /** Accessible name for the viewport region. Default `'Notifications'`. */
   readonly label = input<string>('Notifications');
 
+  /**
+   * The toast region this viewport renders. Only toasts whose `region` matches
+   * appear here; toasts opened without a `region` use
+   * {@link DEFAULT_TOAST_REGION}, so the common single-viewport setup needs no
+   * `[region]` at all. Mount viewports with distinct `[region]` values to drive
+   * independent toast regions from one global `ForToastManager`.
+   */
+  readonly region = input<string>(DEFAULT_TOAST_REGION);
+
   /** Hotkey to focus the viewport. Default reads from `provideForToastDefaults`, falling back to `F6`. */
   readonly hotkey = input<string>('');
 
@@ -142,8 +164,19 @@ export class ForToastViewport {
 
   protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
 
-  protected readonly visible = computed(() => {
-    const all = this.#manager.toasts();
+  /**
+   * Whether this viewport is the active renderer for its region. The manager
+   * grants this to the first viewport mounted per region; dormant viewports
+   * render nothing so a single `show()` yields exactly one toast node.
+   */
+  readonly #active: Signal<boolean>;
+
+  protected readonly visible = computed<readonly ForToastInstance[]>(() => {
+    if (!this.#active()) {
+      return [];
+    }
+    const region = this.region();
+    const all = this.#manager.toasts().filter((toast) => toast.config.region === region);
     const limit = Number.isFinite(this.maxVisible()) ? this.maxVisible() : all.length;
     if (all.length <= limit) {
       return all;
@@ -153,27 +186,42 @@ export class ForToastViewport {
   });
 
   constructor() {
-    const doc = inject(DOCUMENT);
-    const onKeyDown = (event: KeyboardEvent): void => {
-      const key = this.hotkey() || this.#manager.hotkey();
-      if (event.key !== key) {
-        return;
-      }
-      const items = this.visible();
-      if (items.length === 0) {
-        return;
-      }
-      // Focus the first rendered toast — the host element of the directive.
-      const first = this.#host.nativeElement.querySelector<HTMLElement>('[forToast]');
-      if (first) {
-        event.preventDefault();
-        first.focus();
-      }
+    const registration: ForToastViewportRegistration = {
+      region: this.region,
+      hotkey: () => this.hotkey() || this.#manager.hotkey(),
+      focusFirst: () => this.#focusFirst(),
     };
-    doc.addEventListener('keydown', onKeyDown);
-    inject(DestroyRef).onDestroy(() => {
-      doc.removeEventListener('keydown', onKeyDown);
-    });
+    this.#active = computed(() => this.#manager.isActiveViewport(registration));
+    const unregister = this.#manager.registerViewport(registration);
+    inject(DestroyRef).onDestroy(unregister);
+
+    if (isDevMode()) {
+      // Warn once each time this viewport becomes dormant because another
+      // viewport already owns its region — the silent-duplication footgun the
+      // region API exists to remove.
+      let warned = false;
+      effect(() => {
+        if (this.#active()) {
+          warned = false;
+        } else if (!warned) {
+          warned = true;
+          console.warn(
+            `[forty-cdk/toast] A <for-toast-viewport> for region "${this.region()}" is already mounted; ` +
+              `this one stays inactive to avoid duplicate toasts. Give it a distinct [region] for an independent toast region.`,
+          );
+        }
+      });
+    }
+  }
+
+  /** Focus the first rendered toast host. Returns `true` when focus moved. */
+  #focusFirst(): boolean {
+    const first = this.#host.nativeElement.querySelector<HTMLElement>('[forToast]');
+    if (first) {
+      first.focus();
+      return true;
+    }
+    return false;
   }
 
   protected onClose(toast: ForToastInstance, _reason: unknown): void {

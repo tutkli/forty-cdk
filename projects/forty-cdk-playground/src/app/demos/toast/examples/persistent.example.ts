@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { ForToastManager, type ForToastRef, ForToastViewport } from 'forty-cdk';
+import { ForToastManager, type ForToastRef } from 'forty-cdk';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';
@@ -7,7 +7,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
 @Component({
   selector: 'app-toast-persistent-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForToastViewport, ControlSwitch],
+  imports: [DemoLayout, ControlSwitch],
   template: `
     <playground-demo
       title="Persistent toasts"
@@ -27,11 +27,10 @@ import { DemoLayout } from '../../../ui/demo-layout';
           </div>
           <p class="pg-hint">
             The sticky toast waits for the close button or Escape. The forced-action toast has no
-            close button and ignores Escape — only its Acknowledge button removes it.
+            close button and ignores Escape — only its Acknowledge button removes it. Toasts render
+            in the single shared viewport above.
           </p>
         </div>
-
-        <for-toast-viewport class="pg-toast-viewport" />
       </div>
 
       <div controls class="pg-controls">
