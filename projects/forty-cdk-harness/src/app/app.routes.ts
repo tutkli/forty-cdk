@@ -39,6 +39,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/menu-base.fixture').then((m) => m.MenuBaseFixture),
   },
   {
+    path: 'menu-sub',
+    loadComponent: () => import('./fixtures/menu-sub.fixture').then((m) => m.MenuSubFixture),
+  },
+  {
     path: 'context-menu',
     loadComponent: () =>
       import('./fixtures/context-menu.fixture').then((m) => m.ContextMenuFixture),

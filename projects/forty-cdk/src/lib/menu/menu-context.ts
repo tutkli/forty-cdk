@@ -7,6 +7,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { Point } from '../_internal/pointer-grace/pointer-grace';
 import type { ForMenubarContext } from '../menubar/menubar-context';
 
 /**
@@ -133,6 +134,29 @@ export interface ForMenuContext {
   toggle(initialFocus?: 'first' | 'last'): void;
   openMenu(initialFocus?: 'first' | 'last'): void;
   closeMenu(reason: ForMenuCloseReason): void;
+
+  /**
+   * Abort a pending pointer-driven (hover) close on this menu, if one is
+   * scheduled. A descendant submenu walks up the `parentMenu` chain calling
+   * this so the whole open chain stays alive while the pointer travels
+   * between levels. Optional — only `[forMenuSub]` schedules hover-closes, so
+   * top-level roots (Dropdown / Context / Menubar) need not implement it.
+   */
+  cancelPendingClose?(): void;
+
+  /**
+   * Schedule a pointer-driven (hover) open of this menu. Optional — only
+   * `[forMenuSub]` opens on hover; top-level roots open on click / right-click.
+   * The sub-trigger calls it on `pointerenter` via optional chaining.
+   */
+  scheduleOpenByPointer?(): void;
+
+  /**
+   * The pointer left this menu's trigger (client coordinates of the leave).
+   * Optional — only `[forMenuSub]` reacts, arming the pointer-grace "safe
+   * triangle" toward its content. The sub-trigger calls it on `pointerleave`.
+   */
+  onTriggerPointerLeave?(cursor: Point): void;
 
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(event: PointerEvent): void;
