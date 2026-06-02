@@ -1,0 +1,79 @@
+# Fieldset
+
+Headless grouping wiring — the styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It gives a set of related fields (an address block, a preferences group) a **shared accessible name** and an optional shared `disabled` state. It renders nothing and imposes no layout. Mirrors Base UI `Fieldset`.
+
+Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
+
+## Pieces
+
+| Class               | Selector              | Role                                                                                                  |
+| ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `ForFieldset`       | `[forFieldset]`       | Group container. Emits `role="group"` + `aria-labelledby` on a non-`<fieldset>`; reflects `data-disabled`. |
+| `ForFieldsetLegend` | `[forFieldsetLegend]` | Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves. Usable standalone (inert). |
+
+## How grouping connects
+
+`ForFieldset` detects its host tag, exactly like `ForLabel`'s `<label>` check:
+
+- On a native **`<fieldset>`**, the browser groups its controls and labels them with the `<legend>` implicitly — so the directive emits **no** `role` and **no** `aria-labelledby`.
+- On **any other element**, it emits `role="group"` and `aria-labelledby` pointing at the `[forFieldsetLegend]`'s generated id.
+
+## Shared `disabled`
+
+The `disabled` input:
+
+- reflects `data-disabled` on the group host,
+- emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` on any other element),
+- and propagates to descendant `[forField]` controls via context — so a disabled group reaches custom-role controls like `forSwitch` that a native `<fieldset disabled>` cannot. A field outside any fieldset is unaffected.
+
+## Example
+
+```ts
+import { Component, signal } from '@angular/core';
+import {
+  ForFieldset,
+  ForFieldsetLegend,
+  ForField,
+  ForLabel,
+  ForFieldControl,
+} from 'forty-cdk';
+
+@Component({
+  selector: 'demo-fieldset',
+  imports: [ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl],
+  template: `
+    <fieldset forFieldset [disabled]="locked()">
+      <legend forFieldsetLegend>Shipping address</legend>
+
+      <div forField>
+        <label forLabel>Street</label>
+        <input forFieldControl />
+      </div>
+      <div forField>
+        <label forLabel>City</label>
+        <input forFieldControl />
+      </div>
+    </fieldset>
+  `,
+})
+export class DemoFieldset {
+  readonly locked = signal(false);
+}
+```
+
+On custom markup (no native `<fieldset>`), the same wiring yields `role="group"` + `aria-labelledby`:
+
+```html
+<div forFieldset>
+  <span forFieldsetLegend>Shipping address</span>
+  <!-- … fields … -->
+</div>
+```
+
+Style off the reflected state:
+
+```css
+[forFieldset][data-disabled] {
+  opacity: 0.5;
+}
+```

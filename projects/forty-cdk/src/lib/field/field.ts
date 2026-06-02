@@ -1,6 +1,7 @@
 import { computed, Directive, inject, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
 import {
   FOR_FIELD_CONTEXT,
   type FieldControlHandle,
@@ -48,6 +49,7 @@ import {
 })
 export class ForField implements ForFieldContext {
   readonly #idGen = inject(IdGenerator);
+  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   readonly #controlId = signal(this.#idGen.next('for-field-control'));
   readonly #control = signal<FieldControlHandle | null>(null);
@@ -70,8 +72,14 @@ export class ForField implements ForFieldContext {
   readonly invalid = computed(() => this.#control()?.invalid?.() ?? false);
   /** Whether the registered control is required. */
   readonly required = computed(() => this.#control()?.required?.() ?? false);
-  /** Whether the registered control is disabled. */
-  readonly disabled = computed(() => this.#control()?.disabled?.() ?? false);
+  /**
+   * Whether the field is disabled: the registered control's own disabled state
+   * OR'd with a surrounding `[forFieldset]`'s `disabled` (so a disabled group
+   * reaches custom-role controls a native `<fieldset disabled>` can't).
+   */
+  readonly disabled = computed(
+    () => (this.#control()?.disabled?.() ?? false) || (this.#fieldset?.disabled() ?? false),
+  );
   /** Whether the registered control has been touched. */
   readonly touched = computed(() => this.#control()?.touched?.() ?? false);
 

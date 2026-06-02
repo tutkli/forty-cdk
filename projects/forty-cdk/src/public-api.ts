@@ -15,6 +15,7 @@ export type {
 export * from './lib/disclosure';
 export * from './lib/accordion';
 export * from './lib/field';
+export * from './lib/fieldset';
 export * from './lib/input';
 export * from './lib/switch';
 export * from './lib/checkbox';
