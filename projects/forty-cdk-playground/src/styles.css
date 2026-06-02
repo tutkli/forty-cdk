@@ -1552,6 +1552,120 @@ a.pg-nav-link.active {
   color: var(--pg-primary);
 }
 
+.pg-tree {
+  width: min(360px, 100%);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+  box-shadow: var(--pg-shadow);
+  color: var(--pg-text);
+}
+
+.pg-tree[data-disabled] {
+  opacity: 0.6;
+}
+
+.pg-tree-item {
+  list-style: none;
+}
+
+.pg-tree-group {
+  margin: 0;
+  padding: 0;
+  padding-inline-start: 1.15rem;
+  list-style: none;
+}
+
+.pg-tree-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--pg-radius-sm);
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pg-tree-item:focus {
+  outline: none;
+}
+
+.pg-tree-item:focus-visible > .pg-tree-label {
+  outline: 2px solid var(--pg-primary);
+  outline-offset: -2px;
+}
+
+.pg-tree-label:hover,
+.pg-tree-item[data-highlighted] > .pg-tree-label {
+  background: var(--pg-surface-2);
+}
+
+.pg-tree-item[data-selected] > .pg-tree-label {
+  color: var(--pg-primary);
+  font-weight: 600;
+}
+
+.pg-tree-item[aria-disabled='true'] > .pg-tree-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pg-tree-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pg-text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.pg-tree-toggle app-icon {
+  transition: transform 0.15s ease;
+}
+
+.pg-tree-toggle[data-state='open'] app-icon {
+  transform: rotate(90deg);
+}
+
+[dir='rtl'] .pg-tree-toggle[data-state='closed'] app-icon {
+  transform: rotate(180deg);
+}
+
+.pg-tree-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-tree-check {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--pg-primary);
+  opacity: 0;
+}
+
+.pg-tree-item[data-selected] > .pg-tree-label > .pg-tree-check {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-tree-toggle app-icon {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pg-combobox-field {
     transition: none;
