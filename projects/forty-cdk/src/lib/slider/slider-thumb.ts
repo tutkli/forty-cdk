@@ -32,7 +32,7 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
     '[attr.aria-valuemin]': 'ariaValueMin()',
     '[attr.aria-valuemax]': 'ariaValueMax()',
     '[attr.aria-valuenow]': 'ariaValueNow()',
-    '[attr.aria-valuetext]': 'valueText()',
+    '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.aria-label]': 'label() || null',
     '[attr.aria-labelledby]': 'labelledby() || null',
@@ -65,7 +65,8 @@ export class ForSliderThumb {
 
   /**
    * Optional human-readable value override (e.g. "$1,200" instead of "1200").
-   * Mirrored as `aria-valuetext`. Falls back to the numeric value.
+   * Mirrored as `aria-valuetext` only when non-empty; when omitted, no
+   * `aria-valuetext` is emitted so assistive tech reads `aria-valuenow`.
    */
   readonly valueText = input<string>('');
 
@@ -90,6 +91,8 @@ export class ForSliderThumb {
   });
 
   protected readonly ariaValueNow = computed(() => this.currentValue());
+
+  protected readonly ariaValueText = computed(() => this.valueText() || null);
 
   protected readonly ariaValueMin = computed(() => {
     const i = this.index();

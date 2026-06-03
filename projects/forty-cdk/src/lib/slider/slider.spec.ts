@@ -39,6 +39,7 @@ const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThum
             forSliderThumb
             [index]="i"
             [label]="thumbLabel(i)"
+            [valueText]="valueText()"
             [attr.data-test-id]="'thumb-' + i"
           ></span>
         }
@@ -60,6 +61,7 @@ class SliderHost {
   readonly gap = signal(0);
   readonly name = signal('');
   readonly touched = signal(false);
+  readonly valueText = signal('');
   readonly valueChanges: (readonly number[])[] = [];
   readonly valueCommits: (readonly number[])[] = [];
   readonly touchedChanges: boolean[] = [];
@@ -117,6 +119,18 @@ describe('ForSlider', () => {
       expect(t.getAttribute('aria-valuemax')).toBe('100');
       expect(t.getAttribute('aria-valuenow')).toBe('50');
       expect(t.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
+    it('omits aria-valuetext by default so aria-valuenow is announced', () => {
+      const { el } = renderHost(SliderHost);
+      expect(thumb(el, 0).hasAttribute('aria-valuetext')).toBe(false);
+    });
+
+    it('reflects [valueText] as aria-valuetext when set', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.valueText.set('$50');
+      flush();
+      expect(thumb(el, 0).getAttribute('aria-valuetext')).toBe('$50');
     });
 
     it('reflects [label] as aria-label', () => {
