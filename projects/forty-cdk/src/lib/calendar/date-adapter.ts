@@ -98,7 +98,45 @@ export interface DateAdapter<D> {
    *   `{ weekday: 'short' }` for a column header).
    */
   format(date: D, options: Intl.DateTimeFormatOptions): string;
+
+  /**
+   * Whether this adapter's `D` can carry a wall-clock time component (hour /
+   * minute / second). Day-only adapters omit the optional time accessors below
+   * and return `false` (or omit this method); time-capable adapters implement
+   * them and return `true`. `ForTimeField` — and the time granularity of the
+   * date primitives — require a time-capable adapter.
+   */
+  supportsTime?(): boolean;
+
+  /** The hour of `date`, **0-23** (24-hour clock). Time-capable adapters only. */
+  getHours?(date: D): number;
+
+  /** The minute of `date`, **0-59**. Time-capable adapters only. */
+  getMinutes?(date: D): number;
+
+  /** The second of `date`, **0-59**. Time-capable adapters only. */
+  getSeconds?(date: D): number;
+
+  /**
+   * Returns a new date with its time set to the given parts, preserving the
+   * calendar day. Time-capable adapters only.
+   *
+   * @param hours Hour of day, **0-23**.
+   * @param minutes Minute of hour, **0-59**.
+   * @param seconds Second of minute, **0-59**.
+   */
+  setTime?(date: D, hours: number, minutes: number, seconds: number): D;
 }
+
+/**
+ * A {@link DateAdapter} narrowed to one that implements the optional time
+ * accessors. Produced by {@link assertTimeCapable} so time primitives can call
+ * `getHours` / `setTime` / etc. without optional-chaining.
+ *
+ * @typeParam D The adapter's immutable date-time representation.
+ */
+export type TimeCapableDateAdapter<D> = DateAdapter<D> &
+  Required<Pick<DateAdapter<D>, 'getHours' | 'getMinutes' | 'getSeconds' | 'setTime'>>;
 
 /**
  * Injection token holding the active {@link DateAdapter}. Provide it with
@@ -124,4 +162,34 @@ export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
     );
   }
   return adapter as DateAdapter<D>;
+}
+
+/**
+ * Asserts that `adapter` implements the optional time accessors, returning it
+ * narrowed to {@link TimeCapableDateAdapter}. Throws a descriptive,
+ * primitive-prefixed error when the active adapter is day-only — the
+ * zero-dependency `provideNativeDateAdapter()` is time-capable, as is
+ * `provideInternationalizedDateTimeAdapter()`, but the day-pure
+ * `provideInternationalizedDateAdapter()` (`CalendarDate`) is not.
+ *
+ * @param adapter The active adapter, typically from {@link injectDateAdapter}.
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function assertTimeCapable<D>(
+  adapter: DateAdapter<D>,
+  piece: string,
+): TimeCapableDateAdapter<D> {
+  if (
+    typeof adapter.getHours !== 'function' ||
+    typeof adapter.getMinutes !== 'function' ||
+    typeof adapter.getSeconds !== 'function' ||
+    typeof adapter.setTime !== 'function'
+  ) {
+    throw new Error(
+      `[forty-cdk/date-adapter] ${piece} requires a time-capable DateAdapter. Provide one with ` +
+        `provideNativeDateAdapter() or provideInternationalizedDateTimeAdapter() — the day-only ` +
+        `provideInternationalizedDateAdapter() (CalendarDate) cannot carry a time.`,
+    );
+  }
+  return adapter as TimeCapableDateAdapter<D>;
 }
