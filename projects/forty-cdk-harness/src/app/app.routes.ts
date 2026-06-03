@@ -114,4 +114,9 @@ export const routes: Routes = [
     path: 'calendar',
     loadComponent: () => import('./fixtures/calendar.fixture').then((m) => m.CalendarFixture),
   },
+  {
+    path: 'date-field',
+    loadComponent: () =>
+      import('./fixtures/date-field.fixture').then((m) => m.DateFieldFixture),
+  },
 ];
