@@ -49,3 +49,4 @@ export * from './lib/number-input';
 export * from './lib/otp-input';
 export * from './lib/calendar';
 export * from './lib/date-field';
+export * from './lib/date-picker';
