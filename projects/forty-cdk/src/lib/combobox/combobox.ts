@@ -351,6 +351,14 @@ export class ForCombobox<T = string>
     return values.length === 1 ? values[0]! : null;
   });
 
+  protected override fieldLabelledElement(): HTMLElement | null {
+    return this.input();
+  }
+
+  protected override fieldLabelledElementId(): string {
+    return this.inputId();
+  }
+
   constructor() {
     super();
     injectHiddenInput<T>({

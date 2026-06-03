@@ -321,6 +321,14 @@ export class ForSelect<T = string>
     return null;
   });
 
+  protected override fieldLabelledElement(): HTMLElement | null {
+    return this.trigger();
+  }
+
+  protected override fieldLabelledElementId(): string {
+    return this.triggerId();
+  }
+
   constructor() {
     super();
     injectHiddenInput<T>({

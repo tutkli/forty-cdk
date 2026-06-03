@@ -20,8 +20,31 @@ import type { ValidationError } from '@angular/forms/signals';
  * whole `field` primitive) and invert the `lib → _internal` layering.
  */
 export interface FieldControlHandle {
-  /** The control's host element — target of `id` / `aria-*` wiring. */
+  /**
+   * The control's host element. Default target of `id` / `aria-*` wiring and
+   * focus-on-label-click, unless {@link labelledElement} nominates a distinct
+   * element.
+   */
   readonly host: HTMLElement;
+  /**
+   * The element that should actually carry the field's `aria-*` association
+   * and receive focus on label click, when it differs from {@link host}. For
+   * primitives whose host is a non-interactive wrapper (`<div forSelect>`,
+   * `<div forCombobox>`) this nominates the focusable control inside it (the
+   * trigger button / `role="combobox"` input), which registers after the field
+   * wiring runs — hence a signal. When omitted or resolving to `null` the field
+   * falls back to {@link host} (the host-is-the-control case, e.g. `ForListbox`
+   * or a native `<input forFieldControl>`).
+   */
+  readonly labelledElement?: Signal<HTMLElement | null>;
+  /**
+   * The id already host-bound on {@link labelledElement} (the Select trigger's
+   * `triggerId`, the Combobox input's `inputId`). The field adopts it as its
+   * `controlId` so the label's `for` points at the focusable control and the
+   * primitive's own `aria-labelledby` (e.g. on the listbox content) stays in
+   * sync. Only meaningful alongside `labelledElement`.
+   */
+  readonly labelledElementId?: Signal<string | undefined>;
   /** Reflected by the field as `data-invalid` and gates the error region. */
   readonly invalid?: Signal<boolean>;
   /** Reflected by the field as `data-required`. */
@@ -99,15 +122,23 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  * When a field is present it:
  * - registers the control handle so the field can reflect `data-*` state,
  *   gate its error region, and focus the control on label click;
- * - reflects `id` (only if the host has none — the field owns the id a label's
- *   `for` points at), `aria-labelledby`, `aria-describedby`, and
- *   `aria-errormessage` on the host, kept in sync via a single `effect`.
+ * - reflects `id` (only if the target has none — the field owns the id a
+ *   label's `for` points at), `aria-labelledby`, `aria-describedby`, and
+ *   `aria-errormessage` on the target, kept in sync via a single `effect`.
+ *
+ * The wiring target is the host by default, or the handle's
+ * {@link FieldControlHandle.labelledElement} when it nominates a distinct
+ * focusable control (Select trigger / Combobox input) inside a non-interactive
+ * wrapper host. That element registers after this runs, so the effect tracks it
+ * reactively and migrates the attributes (clearing the previously-targeted
+ * element) once it appears.
  *
  * Imperative DOM writes (mirroring `injectFormControlReflection`) so the
  * caller's declarative `host: { ... }` block stays free of these attributes.
  *
  * @param handle The control's state signals (all optional). `host` is filled
- *   in from the calling directive's `ElementRef`.
+ *   in from the calling directive's `ElementRef`. Pass `labelledElement` to
+ *   target a child control instead of the host.
  */
 export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {}): void {
   const field = inject(FOR_FIELD_CONTEXT, { optional: true });
@@ -120,12 +151,32 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   field.registerControl(fullHandle);
   inject(DestroyRef).onDestroy(() => field.unregisterControl(fullHandle));
 
+  const labelledElement = handle.labelledElement;
+  let previousTarget: HTMLElement | null = null;
+
   effect(() => {
-    if (!el.getAttribute('id')) {
-      el.setAttribute('id', field.controlId());
+    // Resolve the wiring target: the nominated focusable element when a
+    // `labelledElement` is declared, else the host. A declared-but-unresolved
+    // labelled element (its directive registers after this runs) yields `null`
+    // here, and we wire nothing — never the wrapper host — until it appears.
+    const target = labelledElement ? labelledElement() : el;
+
+    if (previousTarget && previousTarget !== target) {
+      applyAttr(previousTarget, 'aria-labelledby', null);
+      applyAttr(previousTarget, 'aria-describedby', null);
+      applyAttr(previousTarget, 'aria-errormessage', null);
     }
-    applyAttr(el, 'aria-labelledby', field.labelledBy());
-    applyAttr(el, 'aria-describedby', field.describedBy());
-    applyAttr(el, 'aria-errormessage', field.errorMessageId());
+    previousTarget = target;
+
+    if (!target) {
+      return;
+    }
+
+    if (!target.getAttribute('id')) {
+      target.setAttribute('id', field.controlId());
+    }
+    applyAttr(target, 'aria-labelledby', field.labelledBy());
+    applyAttr(target, 'aria-describedby', field.describedBy());
+    applyAttr(target, 'aria-errormessage', field.errorMessageId());
   });
 }

@@ -8,6 +8,10 @@ import {
   pressKey,
   renderHost,
 } from '../../test-utils';
+import { ForField } from '../field/field';
+import { ForFieldDescription } from '../field/field-description';
+import { ForFieldError } from '../field/field-error';
+import { ForLabel } from '../field/label';
 import { ForSelect } from './select';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
@@ -1498,6 +1502,102 @@ describe('ForSelectIndicator', () => {
       r.instance.value.set(['apple']);
       await flush(r.fixture);
       expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
+    });
+  });
+
+  describe('[forField] integration', () => {
+    @Component({
+      imports: [
+        ...BASE_IMPORTS,
+        ForSelectValue,
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForFieldError,
+      ],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Fruit</label>
+          <div forSelect [(open)]="open" [(value)]="value" [invalid]="invalid()">
+            <button forSelectTrigger data-test-id="trigger">
+              <span forSelectValue placeholder="Pick"></span>
+            </button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+              </div>
+            }
+          </div>
+          <p forFieldDescription data-test-id="desc">Choose one.</p>
+          <p forFieldError data-test-id="error">Required.</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly invalid = signal(false);
+    }
+
+    // Non-`<label>` label element: `[forLabel]` skips the native `for`
+    // association and routes click-to-focus through `focusControl()`.
+    @Component({
+      imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForField, ForLabel],
+      template: `
+        <div forField>
+          <span forLabel data-test-id="label">Fruit</span>
+          <div forSelect>
+            <button forSelectTrigger data-test-id="trigger">
+              <span forSelectValue placeholder="Pick"></span>
+            </button>
+          </div>
+        </div>
+      `,
+    })
+    class SpanLabelHost {}
+
+    const wrapper = (el: HTMLElement) => el.querySelector<HTMLElement>('[forSelect]')!;
+    const trigger = (el: HTMLElement) =>
+      el.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
+    const label = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+
+    it('lands aria-labelledby/aria-describedby on the trigger, not the wrapper', () => {
+      const { el } = renderHost(FieldHost);
+      const t = trigger(el);
+      const w = wrapper(el);
+
+      expect(t.getAttribute('aria-labelledby')).toBe(label(el).id);
+      expect(t.getAttribute('aria-describedby')).toBe(
+        el.querySelector('[data-test-id="desc"]')!.id,
+      );
+      expect(w.hasAttribute('aria-labelledby')).toBe(false);
+      expect(w.hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('points the label `for` at the trigger id', () => {
+      const { el } = renderHost(FieldHost);
+      expect(label(el).getAttribute('for')).toBe(trigger(el).id);
+    });
+
+    it('focuses the trigger when the label is clicked', () => {
+      const { el } = renderHost(SpanLabelHost);
+      const t = trigger(el);
+
+      label(el).click();
+      expect(document.activeElement).toBe(t);
+    });
+
+    it('targets aria-errormessage at the error on the trigger while invalid', async () => {
+      const r = renderHost(FieldHost);
+      const t = trigger(r.el);
+      const error = r.el.querySelector<HTMLElement>('[data-test-id="error"]')!;
+
+      expect(t.hasAttribute('aria-errormessage')).toBe(false);
+      r.instance.invalid.set(true);
+      await flush(r.fixture);
+
+      expect(t.getAttribute('aria-errormessage')).toBe(error.id);
+      expect(t.getAttribute('aria-describedby')).toContain(error.id);
     });
   });
 });

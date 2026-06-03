@@ -1,4 +1,12 @@
-import { booleanAttribute, Directive, input, model } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+} from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
 import { injectFieldWiring } from '../field/field-wiring';
@@ -59,6 +67,35 @@ export abstract class FormUiControlBase {
   /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
   readonly touched = model<boolean>(false);
 
+  readonly #hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+  /**
+   * The focusable element a surrounding `[forField]` should target for
+   * `aria-*` association and focus. Defaults to the directive host — correct
+   * when the host IS the control (Listbox, native `<input>`). Override when the
+   * host is a non-interactive wrapper and the real control is a child (the
+   * Select trigger button / the Combobox `role="combobox"` input), returning
+   * that element — or `null` while it hasn't registered yet, in which case the
+   * field defers wiring rather than targeting the wrapper.
+   *
+   * Read lazily inside the field-wiring effect, so a subclass override may
+   * reference its own signals (initialized after this base `super()` runs).
+   */
+  protected fieldLabelledElement(): HTMLElement | null {
+    return this.#hostEl;
+  }
+
+  /**
+   * The id already host-bound on {@link fieldLabelledElement} when a subclass
+   * nominates a child control (e.g. the Select trigger's `triggerId`). The
+   * field adopts it as its `controlId` so the label's `for` and the primitive's
+   * internal `aria-labelledby` point at the same element. `null` (the default,
+   * and the host-is-the-control case) falls back to the field's owned id.
+   */
+  protected fieldLabelledElementId(): string | null {
+    return null;
+  }
+
   constructor() {
     injectFormControlReflection({
       touched: this.touched,
@@ -72,6 +109,8 @@ export abstract class FormUiControlBase {
       disabled: this.disabled,
       touched: this.touched,
       errors: this.errors,
+      labelledElement: computed(() => this.fieldLabelledElement()),
+      labelledElementId: computed(() => this.fieldLabelledElementId() ?? undefined),
     });
   }
 }
