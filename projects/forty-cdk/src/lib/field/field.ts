@@ -57,8 +57,26 @@ export class ForField implements ForFieldContext {
   readonly #descriptions = signal(0);
   readonly #errors = signal(0);
 
-  /** Id assigned to the control; a label's `for` points here. */
-  readonly controlId = this.#controlId.asReadonly();
+  /**
+   * The element the field actually targets for `id` / `aria-*` association and
+   * focus: the control's nominated `labelledElement` (Select trigger / Combobox
+   * input) when present, else its host (Listbox, native `<input>`).
+   */
+  readonly #targetEl = computed<HTMLElement | null>(() => {
+    const control = this.#control();
+    if (!control) {
+      return null;
+    }
+    return control.labelledElement?.() ?? control.host;
+  });
+
+  /**
+   * Id assigned to the control; a label's `for` points here. Adopts a
+   * nominated control's own id (`labelledElementId`) when present so the label
+   * and the primitive's internal `aria-labelledby` resolve to the same
+   * focusable element; otherwise the field's owned/host-adopted id.
+   */
+  readonly controlId = computed(() => this.#control()?.labelledElementId?.() ?? this.#controlId());
   /** Id of the label element. */
   readonly labelId = signal(this.#idGen.next('for-field-label'));
   /** Id of the description element. */
@@ -111,6 +129,10 @@ export class ForField implements ForFieldContext {
   /** Register the control whose state the field reflects. */
   registerControl(handle: FieldControlHandle): void {
     this.#control.set(handle);
+    // Adopt a consumer-set id on the host (the host-is-the-control case). When
+    // the control nominates a distinct labelled element it carries its own
+    // `labelledElementId`, which `controlId` prefers — so a wrapper-host id, if
+    // any, is harmlessly ignored there.
     const existing = handle.host.getAttribute('id');
     if (existing) {
       this.#controlId.set(existing);
@@ -142,8 +164,8 @@ export class ForField implements ForFieldContext {
     return () => this.#errors.update((n) => n - 1);
   }
 
-  /** Move focus to the registered control's host. */
+  /** Move focus to the control's focusable element (the nominated control or the host). */
   focusControl(): void {
-    this.#control()?.host.focus();
+    this.#targetEl()?.focus();
   }
 }

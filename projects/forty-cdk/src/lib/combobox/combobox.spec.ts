@@ -9,6 +9,10 @@ import {
   pressKey,
   renderHost,
 } from '../../test-utils';
+import { ForField } from '../field/field';
+import { ForFieldDescription } from '../field/field-description';
+import { ForFieldError } from '../field/field-error';
+import { ForLabel } from '../field/label';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
@@ -2263,5 +2267,90 @@ describe('ForCombobox virtualization', () => {
     expect(r.instance.scrollToIndexCalls.at(-1)).toBe(99);
     const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
     expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
+  });
+
+  describe('[forField] integration', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForFieldError,
+      ],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Fruit</label>
+          <div forCombobox [invalid]="invalid()">
+            <input forComboboxInput data-test-id="input" />
+          </div>
+          <p forFieldDescription data-test-id="desc">Choose one.</p>
+          <p forFieldError data-test-id="error">Required.</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly invalid = signal(false);
+    }
+
+    // Non-`<label>` label element routes click-to-focus through
+    // `focusControl()` instead of the native `for` association.
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForField, ForLabel],
+      template: `
+        <div forField>
+          <span forLabel data-test-id="label">Fruit</span>
+          <div forCombobox>
+            <input forComboboxInput data-test-id="input" />
+          </div>
+        </div>
+      `,
+    })
+    class SpanLabelHost {}
+
+    const wrapper = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
+    const input = (el: HTMLElement) =>
+      el.querySelector<HTMLInputElement>('[data-test-id="input"]')!;
+    const label = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+
+    it('lands aria-labelledby/aria-describedby on the input, not the wrapper', () => {
+      const { el } = renderHost(FieldHost);
+      const i = input(el);
+      const w = wrapper(el);
+
+      expect(i.getAttribute('aria-labelledby')).toBe(label(el).id);
+      expect(i.getAttribute('aria-describedby')).toBe(
+        el.querySelector('[data-test-id="desc"]')!.id,
+      );
+      expect(w.hasAttribute('aria-labelledby')).toBe(false);
+      expect(w.hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('points the label `for` at the input id', () => {
+      const { el } = renderHost(FieldHost);
+      expect(label(el).getAttribute('for')).toBe(input(el).id);
+    });
+
+    it('focuses the input when the label is clicked', () => {
+      const { el } = renderHost(SpanLabelHost);
+      const i = input(el);
+
+      label(el).click();
+      expect(document.activeElement).toBe(i);
+    });
+
+    it('targets aria-errormessage at the error on the input while invalid', async () => {
+      const r = renderHost(FieldHost);
+      const i = input(r.el);
+      const error = r.el.querySelector<HTMLElement>('[data-test-id="error"]')!;
+
+      expect(i.hasAttribute('aria-errormessage')).toBe(false);
+      r.instance.invalid.set(true);
+      await flush(r.fixture);
+
+      expect(i.getAttribute('aria-errormessage')).toBe(error.id);
+      expect(i.getAttribute('aria-describedby')).toContain(error.id);
+    });
   });
 });
