@@ -1,0 +1,135 @@
+import { Injectable, type Provider } from '@angular/core';
+import {
+  CalendarDateTime,
+  getDayOfWeek,
+  getLocalTimeZone,
+  isSameDay,
+  toCalendarDateTime,
+  today,
+} from '@internationalized/date';
+
+import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
+
+/**
+ * Time-capable {@link DateAdapter} over `@internationalized/date`'s immutable,
+ * calendar-aware `CalendarDateTime`. It mirrors {@link
+ * InternationalizedDateAdapter} for all day operations but adds a wall-clock
+ * time component (hour / minute / second), so it backs `ForTimeField` and the
+ * time granularity of the date primitives. Use it when you want the
+ * `@internationalized/date` types *and* a time.
+ *
+ * `@internationalized/date` is an **optional peer dependency** — install it
+ * only when you use an internationalized adapter. A consumer relying solely on
+ * `provideNativeDateAdapter()` never imports this file, so the package is
+ * tree-shaken out of their bundle.
+ *
+ * `compare` orders by the full date-time (day *and* time). For a day-only
+ * calendar grid prefer `provideInternationalizedDateAdapter()` (`CalendarDate`),
+ * which compares by calendar day.
+ */
+@Injectable()
+export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDateTime> {
+  today(): CalendarDateTime {
+    return toCalendarDateTime(today(getLocalTimeZone()));
+  }
+
+  createDate(year: number, month: number, day: number): CalendarDateTime {
+    return new CalendarDateTime(year, month, day);
+  }
+
+  getYear(date: CalendarDateTime): number {
+    return date.year;
+  }
+
+  getMonth(date: CalendarDateTime): number {
+    return date.month;
+  }
+
+  getDate(date: CalendarDateTime): number {
+    return date.day;
+  }
+
+  getDayOfWeek(date: CalendarDateTime): number {
+    return getDayOfWeek(date, 'en-US');
+  }
+
+  getDaysInMonth(date: CalendarDateTime): number {
+    return date.calendar.getDaysInMonth(date);
+  }
+
+  getFirstDayOfWeek(): number {
+    return 0;
+  }
+
+  addDays(date: CalendarDateTime, n: number): CalendarDateTime {
+    return date.add({ days: n });
+  }
+
+  addMonths(date: CalendarDateTime, n: number): CalendarDateTime {
+    return date.add({ months: n });
+  }
+
+  addYears(date: CalendarDateTime, n: number): CalendarDateTime {
+    return date.add({ years: n });
+  }
+
+  compare(a: CalendarDateTime, b: CalendarDateTime): number {
+    return a.compare(b);
+  }
+
+  isSameDay(a: CalendarDateTime, b: CalendarDateTime): boolean {
+    return isSameDay(a, b);
+  }
+
+  isValid(date: CalendarDateTime): boolean {
+    return date instanceof CalendarDateTime;
+  }
+
+  format(date: CalendarDateTime, options: Intl.DateTimeFormatOptions): string {
+    return new Intl.DateTimeFormat(undefined, options).format(date.toDate(getLocalTimeZone()));
+  }
+
+  supportsTime(): boolean {
+    return true;
+  }
+
+  getHours(date: CalendarDateTime): number {
+    return date.hour;
+  }
+
+  getMinutes(date: CalendarDateTime): number {
+    return date.minute;
+  }
+
+  getSeconds(date: CalendarDateTime): number {
+    return date.second;
+  }
+
+  setTime(
+    date: CalendarDateTime,
+    hours: number,
+    minutes: number,
+    seconds: number,
+  ): CalendarDateTime {
+    return date.set({ hour: hours, minute: minutes, second: seconds, millisecond: 0 });
+  }
+}
+
+/**
+ * Provides the {@link InternationalizedDateTimeAdapter} as the active
+ * {@link DateAdapter}, making the time / date-time primitives operate on
+ * `CalendarDateTime` values from `@internationalized/date`.
+ *
+ * Requires `@internationalized/date` to be installed (optional peer
+ * dependency).
+ *
+ * @example
+ * ```ts
+ * bootstrapApplication(App, {
+ *   providers: [provideInternationalizedDateTimeAdapter()],
+ * });
+ * ```
+ */
+export function provideInternationalizedDateTimeAdapter(): Provider[] {
+  return [{ provide: FOR_DATE_ADAPTER, useClass: InternationalizedDateTimeAdapter }];
+}

@@ -19,10 +19,20 @@ export {
   provideForCalendarDefaults,
   type ForCalendarDefaults,
 } from './calendar-defaults';
-export { type DateAdapter, FOR_DATE_ADAPTER, injectDateAdapter } from './date-adapter';
+export {
+  assertTimeCapable,
+  type DateAdapter,
+  FOR_DATE_ADAPTER,
+  injectDateAdapter,
+  type TimeCapableDateAdapter,
+} from './date-adapter';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
 export {
   InternationalizedDateAdapter,
   provideInternationalizedDateAdapter,
 } from './internationalized-date-adapter';
+export {
+  InternationalizedDateTimeAdapter,
+  provideInternationalizedDateTimeAdapter,
+} from './internationalized-date-time-adapter';
 export { buildMonthMatrix } from './build-month-matrix';

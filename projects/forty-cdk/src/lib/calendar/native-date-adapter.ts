@@ -11,13 +11,16 @@ function clampDay(year: number, month: number, day: number): Date {
 }
 
 /**
- * Zero-dependency {@link DateAdapter} over the built-in `Date`. Dates are
- * treated as calendar days at local midnight; time and time-zone components
- * are ignored.
+ * Zero-dependency {@link DateAdapter} over the built-in `Date`. The calendar
+ * operations treat dates as days at local midnight; the time-zone component is
+ * ignored. It is also **time-capable** — `Date` natively carries a wall-clock
+ * time, so the optional `getHours` / `getMinutes` / `getSeconds` / `setTime`
+ * accessors are implemented, letting `ForTimeField` use this adapter directly.
  *
  * This is the fallback adapter. Prefer `provideInternationalizedDateAdapter()`
- * for correct internationalised calendars; reach for this one when adding a
- * date library to the bundle is not worthwhile.
+ * for correct internationalised calendars (or
+ * `provideInternationalizedDateTimeAdapter()` for a time-capable one); reach
+ * for this one when adding a date library to the bundle is not worthwhile.
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {
@@ -97,6 +100,26 @@ export class NativeDateAdapter implements DateAdapter<Date> {
 
   format(date: Date, options: Intl.DateTimeFormatOptions): string {
     return new Intl.DateTimeFormat(undefined, options).format(date);
+  }
+
+  supportsTime(): boolean {
+    return true;
+  }
+
+  getHours(date: Date): number {
+    return date.getHours();
+  }
+
+  getMinutes(date: Date): number {
+    return date.getMinutes();
+  }
+
+  getSeconds(date: Date): number {
+    return date.getSeconds();
+  }
+
+  setTime(date: Date, hours: number, minutes: number, seconds: number): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, seconds);
   }
 }
 
