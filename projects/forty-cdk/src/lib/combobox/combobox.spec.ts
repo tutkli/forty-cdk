@@ -637,6 +637,66 @@ describe('ForCombobox', () => {
     });
   });
 
+  describe('IME composition', () => {
+    it('does not update the query or rewrite the value while composing', async () => {
+      const r = renderHost(ComboboxHost);
+      const input = getInput();
+      input.focus();
+
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.value = 'り';
+      input.setSelectionRange(1, 1);
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      await flush(r.fixture);
+
+      expect(input.value).toBe('り');
+      expect(r.instance.query()).toBe('');
+    });
+
+    it('syncs the query once on compositionend', async () => {
+      const r = renderHost(ComboboxHost);
+      const input = getInput();
+      input.focus();
+
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.value = 'りんご';
+      input.setSelectionRange(3, 3);
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('');
+
+      input.dispatchEvent(
+        new CompositionEvent('compositionend', { bubbles: true, data: 'りんご' }),
+      );
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('りんご');
+    });
+
+    it('skips inline completion when the input event is still composing', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.autocompleteMode.set('both');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      input.value = 'ap';
+      input.setSelectionRange(2, 2);
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      await flush(r.fixture);
+
+      expect(input.value).toBe('ap');
+    });
+  });
+
   describe('autoHighlight', () => {
     it('does not seed activedescendant when autoHighlight is off', async () => {
       const r = renderHost(ComboboxHost);

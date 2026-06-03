@@ -48,6 +48,8 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
     '(input)': 'onInput($event)',
+    '(compositionstart)': 'onCompositionStart()',
+    '(compositionend)': 'onCompositionEnd()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(click)': 'onClick()',
@@ -58,6 +60,8 @@ export class ForComboboxInput {
   // query string and reads cached labels for inline autocomplete.
   protected readonly ctx = injectComboboxContext<unknown>('ForComboboxInput');
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
+
+  #composing = false;
 
   protected readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
 
@@ -84,13 +88,33 @@ export class ForComboboxInput {
     });
   }
 
+  protected onCompositionStart(): void {
+    this.#composing = true;
+  }
+
+  protected onCompositionEnd(): void {
+    this.#composing = false;
+    if (this.ctx.disabled() || this.ctx.readonly()) {
+      return;
+    }
+    this.#syncQuery(true, false);
+  }
+
   protected onInput(event: Event): void {
     if (this.ctx.disabled() || this.ctx.readonly()) {
       return;
     }
+    if (this.#composing) {
+      return;
+    }
+    const inputEvent = event as InputEvent;
+    const allowInline = !inputEvent.isComposing;
+    const isDelete = (inputEvent.inputType ?? '').startsWith('delete');
+    this.#syncQuery(allowInline, isDelete);
+  }
+
+  #syncQuery(allowInline: boolean, isDelete: boolean): void {
     const el = this.#host.nativeElement;
-    const inputType = (event as InputEvent).inputType ?? '';
-    const isDelete = inputType.startsWith('delete');
 
     // The "user prefix" is everything before the caret. After inline
     // autocomplete sets a selection on chars [prefixLen..end], typing replaces
@@ -104,7 +128,8 @@ export class ForComboboxInput {
     this.ctx.setQueryFromInput(prefix);
 
     const mode = this.ctx.autocompleteMode();
-    const inlineActive = !isDelete && (mode === 'inline' || mode === 'both') && prefix.length > 0;
+    const inlineActive =
+      allowInline && !isDelete && (mode === 'inline' || mode === 'both') && prefix.length > 0;
 
     if (inlineActive) {
       this.#applyInlineCompletion(prefix);
