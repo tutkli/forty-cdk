@@ -2,10 +2,7 @@ import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
-import {
-  assertFormControlContract,
-  type FormControlMountResult,
-} from '../../test-utils/contract';
+import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { flush } from '../../test-utils/flush';
 import { renderHost } from '../../test-utils/render';
 import { ForField } from '../field/field';
@@ -204,7 +201,9 @@ describe('ForOtpInput', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty', 'name'] },
+    {
+      flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty', 'name'],
+    },
   );
 
   describe('typing & character restriction', () => {
@@ -416,6 +415,45 @@ describe('ForOtpInput', () => {
       typeInto(input, '123');
       await flush();
       expect(instance.code()).toBe('');
+    });
+  });
+
+  describe('IME composition', () => {
+    it('does not rewrite value or move the caret while composing', async () => {
+      const { input, instance, flush } = await mountOtp();
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+
+      input.value = 'あ';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, isComposing: true }));
+      await flush();
+
+      expect(input.value).toBe('あ');
+      expect(instance.code()).toBe('');
+    });
+
+    it('normalizes once on compositionend (filter + value sync)', async () => {
+      const { input, instance, flush } = await mountOtp();
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.value = '1a2';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, isComposing: true }));
+      await flush();
+      expect(instance.code()).toBe('');
+
+      input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '1a2' }));
+      await flush();
+      expect(input.value).toBe('12');
+      expect(instance.code()).toBe('12');
+    });
+
+    it('resumes filtering plain input after composition ends', async () => {
+      const { input, instance, flush } = await mountOtp();
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '' }));
+      await flush();
+
+      typeInto(input, '12a3');
+      await flush();
+      expect(instance.code()).toBe('123');
     });
   });
 

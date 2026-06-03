@@ -19,11 +19,7 @@ import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { FOR_FIELD_CONTEXT, type FieldControlHandle } from '../_internal/field/field-wiring';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
-import {
-  allowedCharForType,
-  inputModeForType,
-  type OtpInputType,
-} from './otp-patterns';
+import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 
 const MASK_CHAR = '•';
 
@@ -101,6 +97,8 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   readonly #focused = signal(false);
   readonly #selectionStart = signal(0);
   readonly #selectionEnd = signal(0);
+
+  #composing = false;
 
   /**
    * The current code. Required by `FormValueControl<string>`. Two-way bindable;
@@ -266,6 +264,8 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       this.#host.nativeElement.appendChild(el);
 
       el.addEventListener('input', () => this.#onInput());
+      el.addEventListener('compositionstart', () => this.#onCompositionStart());
+      el.addEventListener('compositionend', () => this.#onCompositionEnd());
       el.addEventListener('paste', (event) => this.#onPaste(event));
       el.addEventListener('focus', () => {
         this.#focused.set(true);
@@ -339,7 +339,23 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
     );
   }
 
+  #onCompositionStart(): void {
+    this.#composing = true;
+  }
+
+  #onCompositionEnd(): void {
+    this.#composing = false;
+    this.#normalize();
+  }
+
   #onInput(): void {
+    if (this.#composing) {
+      return;
+    }
+    this.#normalize();
+  }
+
+  #normalize(): void {
     const el = this.#inputEl();
     if (!el) {
       return;
