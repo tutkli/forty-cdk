@@ -310,6 +310,46 @@ describe('ForOtpInput', () => {
       await flush();
       expect(instance.completed()).toBe('654321');
     });
+
+    it('does not re-fire valueComplete on a further keystroke while already full', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '123456');
+      await flush();
+      expect(instance.completed()).toBe('123456');
+
+      instance.completed.set(null);
+      typeInto(input, '1234567');
+      await flush();
+      expect(instance.code()).toBe('123456');
+      expect(instance.completed()).toBeNull();
+    });
+
+    it('does not fire valueComplete on an external write that keeps the value full', async () => {
+      const { instance, flush } = await mountOtp();
+      instance.code.set('123456');
+      await flush();
+
+      instance.completed.set(null);
+      instance.code.set('999999');
+      await flush();
+      expect(instance.completed()).toBeNull();
+    });
+
+    it('re-fires valueComplete after dropping below full and completing again', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '123456');
+      await flush();
+      expect(instance.completed()).toBe('123456');
+
+      instance.completed.set(null);
+      typeInto(input, '12345');
+      await flush();
+      expect(instance.completed()).toBeNull();
+
+      typeInto(input, '123450');
+      await flush();
+      expect(instance.completed()).toBe('123450');
+    });
   });
 
   describe('masking', () => {
