@@ -136,6 +136,24 @@ export class ForSelect<T = string>
   readonly multiple = input(false, { transform: booleanAttribute });
 
   /**
+   * Presentation mode. When `true`, `[forSelectContent]` mounts as a trapped /
+   * inert / scroll-locked modal surface (routed through `_internal/modal-shell`)
+   * instead of the default anchored popover — the batteries-included touch
+   * presentation a consumer opts into with `[modal]="isCoarsePointer()"`. The
+   * form-value wiring (`[(value)]`, `name`) is unchanged.
+   *
+   * Read once when the content mounts (the two shells are structurally
+   * different; switching at runtime would need a remount, and the surface
+   * mounts lazily via `@if (open())` well after `modal` settles). Every
+   * anchored-positioning input — `position`, `side`, `align`, `sideOffset`,
+   * `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`,
+   * `collisionPadding`, `arrowPadding` — is a no-op in this mode. Default
+   * `false` (non-breaking). The swipe / snap-point sheet is deliberately not
+   * this mode — compose a `ForListbox` inside a `ForDrawer` for that.
+   */
+  readonly modal = input(false, { transform: booleanAttribute });
+
+  /**
    * Positioning algorithm.
    *
    * - `'popper'` (default): standard floating-ui anchored placement using

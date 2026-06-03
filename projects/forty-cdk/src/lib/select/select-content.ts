@@ -1,6 +1,7 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { injectModalShell } from '../_internal/modal-shell/modal-shell';
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import type { OverlayShellPositionerConfig } from '../_internal/overlay-shell/overlay-shell';
 import { injectSelectContext } from './select-context';
@@ -22,16 +23,30 @@ import { injectSelectContext } from './select-context';
  * according to the trigger's hint. On destroy, focus returns to the
  * trigger when `returnFocus` is true.
  *
- * Positioning branches on `[forSelect].position`:
- * - `'popper'` (default) — standard `injectFloating` path with full Radix-style
- *   anchored placement (`side`, `align`, `sideOffset`, `alignOffset`, `flip`,
- *   `shift`, `arrow`, `hideWhenDetached`).
- * - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
- *   the selected option's center aligns with the trigger's center. The
- *   anchored-placement inputs are documented as no-ops in this mode.
+ * The lifecycle is owned by one of the two shared shells, picked once on
+ * construction from `[forSelect].modal`:
  *
- * The lifecycle (positioner + dismissable layer + initial focus + return
- * focus) is owned by the shared `injectOverlayShell` helper.
+ * - **non-modal (default)** — `injectOverlayShell` anchors the listbox to the
+ *   trigger and branches on `[forSelect].position`:
+ *   - `'popper'` (default) — standard `injectFloating` path with full
+ *     Radix-style anchored placement (`side`, `align`, `sideOffset`,
+ *     `alignOffset`, `flip`, `shift`, `arrow`, `hideWhenDetached`).
+ *   - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
+ *     the selected option's center aligns with the trigger's center. The
+ *     anchored-placement inputs are documented as no-ops in this mode.
+ * - **modal** — `injectModalShell` traps focus, inerts the background, and
+ *   locks body scroll (a centered surface the consumer positions with CSS, not
+ *   trigger-anchored). The batteries-included touch presentation. Same Escape /
+ *   outside-pointer dismiss, `dismissible` / `returnFocus` / `ariaLabel`, and
+ *   `autoFocusOnOpen` / `autoFocusOnClose` veto hooks; every anchored-
+ *   positioning input is a no-op. `aria-modal="true"` is reflected as a hint —
+ *   the real modality comes from the `inert` siblings the shell applies (the
+ *   surface keeps `role="listbox"`, for which several screen readers ignore
+ *   `aria-modal`).
+ *
+ * Mount/unmount of the visible content is the consumer's responsibility —
+ * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
+ * natural mount cycle.
  */
 @Directive({
   selector: '[forSelectContent]',
@@ -42,6 +57,7 @@ import { injectSelectContext } from './select-context';
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -53,78 +69,115 @@ export class ForSelectContent {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
+    const ctx = this.ctx;
     registerHandle(
       this.#host.nativeElement,
-      (el) => this.ctx.registerContent(el),
-      (el) => this.ctx.unregisterContent(el),
+      (el) => ctx.registerContent(el),
+      (el) => ctx.unregisterContent(el),
     );
 
-    // Static branch — `position` is read once on construction. Switching
-    // modes at runtime would require re-creating the directive (mount /
-    // unmount cycle), which is the expected pattern for primitives whose
-    // positioning algorithm is structurally different.
+    // Primitive-owned initial-focus algorithm shared by both shells.
+    // `'selected'` falls back to the first enabled option when nothing is
+    // selected; returns `false` so the shell focuses the container on a miss.
+    const focusInitial = (): boolean => {
+      const target = ctx.initialFocus();
+      if (target === 'selected') {
+        return ctx.focusSelectedOption() || ctx.focusFirstEnabledOption();
+      }
+      if (target === 'last') {
+        return ctx.focusLastEnabledOption();
+      }
+      return ctx.focusFirstEnabledOption();
+    };
+
+    // Static branch — `modal` (and `position`) is read once on construction.
+    // Switching modes at runtime would require re-creating the directive
+    // (mount / unmount cycle), which is the expected pattern for primitives
+    // whose surface is structurally different. The surface mounts lazily via
+    // `@if (open())`, well after `modal` settles.
+    if (ctx.modal()) {
+      injectModalShell({
+        modal: ctx.modal,
+        returnFocus: ctx.returnFocus,
+        // The trap owns Tab; the shell runs `focusInitial()` (selected →
+        // first → last) instead of its own first-focusable move.
+        initialFocus: {
+          move: focusInitial,
+          veto: () => ctx.emitAutoFocusOnOpen(),
+        },
+        autoFocusOnClose: () => (event) => {
+          if (ctx.emitAutoFocusOnClose()) {
+            event.preventDefault();
+          }
+        },
+        dismiss: {
+          dismissible: ctx.dismissible,
+          // The shell builds the veto and calls this when not vetoed; mirror
+          // the anchored path's touched-on-dismiss behaviour.
+          requestClose: (reason) => {
+            ctx.markTouched();
+            ctx.closeMenu(reason);
+          },
+          emitEscapeKeyDown: (veto) => ctx.escapeKeyDown.emit(veto),
+          emitPointerDownOutside: (veto) => ctx.pointerDownOutside.emit(veto),
+          emitFocusOutside: (veto) => ctx.focusOutside.emit(veto),
+          emitInteractOutside: (veto) => ctx.interactOutside.emit(veto),
+        },
+      });
+      return;
+    }
+
     const positioner: OverlayShellPositionerConfig =
-      this.ctx.position() === 'item-aligned'
+      ctx.position() === 'item-aligned'
         ? {
             kind: 'item-aligned',
-            reference: this.ctx.anchor,
-            open: this.ctx.open,
-            selectedOption: this.ctx.selectedOptionEl,
-            collisionPadding: this.ctx.collisionPadding,
+            reference: ctx.anchor,
+            open: ctx.open,
+            selectedOption: ctx.selectedOptionEl,
+            collisionPadding: ctx.collisionPadding,
           }
         : {
             kind: 'floating',
-            reference: this.ctx.anchor,
-            open: this.ctx.open,
-            side: this.ctx.side,
-            align: this.ctx.align,
-            sideOffset: this.ctx.sideOffset,
-            alignOffset: this.ctx.alignOffset,
-            avoidCollisions: this.ctx.avoidCollisions,
-            collisionPadding: this.ctx.collisionPadding,
-            arrowPadding: this.ctx.arrowPadding,
-            sticky: this.ctx.sticky,
-            hideWhenDetached: this.ctx.hideWhenDetached,
+            reference: ctx.anchor,
+            open: ctx.open,
+            side: ctx.side,
+            align: ctx.align,
+            sideOffset: ctx.sideOffset,
+            alignOffset: ctx.alignOffset,
+            avoidCollisions: ctx.avoidCollisions,
+            collisionPadding: ctx.collisionPadding,
+            arrowPadding: ctx.arrowPadding,
+            sticky: ctx.sticky,
+            hideWhenDetached: ctx.hideWhenDetached,
           };
 
     injectOverlayShell({
       positioner,
       dismiss: {
-        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+        emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (event) => ctx.emitPointerDownOutside(event),
+        emitFocusOutside: (event) => ctx.emitFocusOutside(event),
+        emitInteractOutside: (event) => ctx.emitInteractOutside(event),
         // Trigger button is exempt — its own click handler toggles open/close;
         // without exemption pointer-down-outside would race and double-close.
         exemptElements: () => {
-          const t = this.ctx.trigger();
+          const t = ctx.trigger();
           return t ? [t] : [];
         },
       },
-      // Primitive-owned focus algorithm. `'selected'` falls back to first
-      // when no option is selected, mirroring the previous code.
       initialFocus: {
-        move: () => {
-          const target = this.ctx.initialFocus();
-          if (target === 'selected') {
-            return this.ctx.focusSelectedOption() || this.ctx.focusFirstEnabledOption();
-          }
-          if (target === 'last') {
-            return this.ctx.focusLastEnabledOption();
-          }
-          return this.ctx.focusFirstEnabledOption();
-        },
-        veto: () => this.ctx.emitAutoFocusOnOpen(),
+        move: focusInitial,
+        veto: () => ctx.emitAutoFocusOnOpen(),
       },
       returnFocus: {
-        enabled: this.ctx.returnFocus,
-        target: () => this.ctx.trigger(),
+        enabled: ctx.returnFocus,
+        target: () => ctx.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
-        veto: () => this.ctx.emitAutoFocusOnClose(),
+        veto: () => ctx.emitAutoFocusOnClose(),
         // Skip on `'tab'` closes — Tab already moved focus to the trigger
         // and let the browser advance from there; re-focusing would steal
         // it back.
-        skip: () => this.ctx.lastCloseReason() === 'tab',
+        skip: () => ctx.lastCloseReason() === 'tab',
       },
     });
   }

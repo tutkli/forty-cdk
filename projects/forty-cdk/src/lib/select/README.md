@@ -127,6 +127,35 @@ When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `al
 
 The default stays `popper` (rather than mirroring Radix's `item-aligned` default) so existing consumers' visuals don't shift on upgrade — opt in per primitive when the macOS feel is what you want.
 
+## Modal (touch) presentation (`modal`)
+
+`[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (Angular Material's `touchUi`, native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through `_internal/modal-shell` — a **trapped / inert / scroll-locked** surface — instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
+
+```html
+<div forSelect [(value)]="value" [(open)]="open" name="country" [modal]="isCoarsePointer()" ariaLabel="Country">
+  <button forSelectTrigger><span forSelectValue placeholder="Country"></span></button>
+  @if (open()) {
+  <div forSelectContent>
+    <button forSelectOption value="es">Spain</button>
+    <button forSelectOption value="fr">France</button>
+  </div>
+  }
+</div>
+```
+
+The consumer drives the mode — bind `[modal]="isCoarsePointer()"` (e.g. from a `(pointer: coarse)` media query) to switch presentation by device. The library does **not** auto-switch on viewport or pointer.
+
+What modal mode changes:
+
+- **Focus** is trapped inside the surface (Tab / Shift+Tab cycle through the options; they no longer commit-and-advance the way the anchored listbox does). The rest of the page is `inert` while open, and body scroll is locked.
+- **Initial focus** still lands on the selected option (then first / last enabled), via the shared focus algorithm.
+- **`aria-modal="true"`** is reflected on the surface as a hint. The surface keeps `role="listbox"` (several screen readers ignore `aria-modal` outside window roles), so the real modality comes from the `inert` background the shell applies — not from the attribute alone.
+- **Dismiss** (`dismissible`), **return-focus** (`returnFocus`), `ariaLabel`, and the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto hooks all behave the same as popover mode.
+
+The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`, `arrowPadding`.
+
+> **Not** a swipe / snap-point sheet. This is the batteries-included _modal_ presentation of a value field. The draggable bottom-sheet (snap points, swipe-to-dismiss) is a different use case — compose a `ForListbox` inside a `ForDrawer` by hand for that. It loses the form-value wiring, which is why it isn't an internal mode here.
+
 ## CSS custom properties
 
 `[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
