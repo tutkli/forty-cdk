@@ -25,7 +25,7 @@ import { FOR_PROGRESS_CONTEXT } from './progress-context';
   exportAs: 'forProgressIndicator',
   host: {
     '[attr.data-state]': 'context.state()',
-    '[attr.data-value]': 'context.value() ?? null',
+    '[attr.data-value]': 'context.clampedValue() ?? null',
     '[attr.data-max]': 'context.max()',
     '[attr.data-percentage]': 'percentageAttr()',
     '[style.--for-progress-percentage]': 'percentageStyle()',

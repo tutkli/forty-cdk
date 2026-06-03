@@ -5,8 +5,10 @@ export type ForProgressState = 'indeterminate' | 'loading' | 'complete';
 
 /** Shape exposed to descendant pieces (the indicator). */
 export interface ForProgressContext {
-  /** Current value (clamped to `[0, max]`), or `null` when indeterminate. */
+  /** Raw value as written by the consumer, or `null` when indeterminate. */
   readonly value: Signal<number | null>;
+  /** Value clamped to `[0, max]`, or `null` when indeterminate. Use this for any visual / ARIA reflection. */
+  readonly clampedValue: Signal<number | null>;
   /** Current max. */
   readonly max: Signal<number>;
   /** `null` when indeterminate; otherwise `0..100`. */
