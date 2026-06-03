@@ -78,11 +78,23 @@ export interface DateAdapter<D> {
   addYears(date: D, n: number): D;
 
   /**
-   * Compares two dates by calendar day. Returns a negative number when `a` is
-   * before `b`, `0` when they are the same day, and a positive number when `a`
-   * is after `b`.
+   * Compares two dates by their natural ordering. Returns a negative number
+   * when `a` is before `b`, `0` when they are equal, and a positive number when
+   * `a` is after `b`. Adapters whose `D` carries a time component
+   * (`@internationalized/date`'s `CalendarDateTime`) order by the full
+   * date-time. For day-granular availability and bounds use {@link compareDate},
+   * which ignores the time on every adapter.
    */
   compare(a: D, b: D): number;
+
+  /**
+   * Compares two dates by calendar day only, ignoring any time component.
+   * Returns a negative number when `a`'s day is before `b`'s, `0` when they
+   * fall on the same calendar day, and a positive number when `a`'s day is
+   * after `b`'s. Used for calendar-grid availability and bounds so the boundary
+   * day of a date-time `min`/`max` stays selectable regardless of adapter.
+   */
+  compareDate(a: D, b: D): number;
 
   /** Whether `a` and `b` fall on the same calendar day. */
   isSameDay(a: D, b: D): boolean;

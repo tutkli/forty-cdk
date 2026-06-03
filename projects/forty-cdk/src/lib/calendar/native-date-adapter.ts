@@ -86,6 +86,10 @@ export class NativeDateAdapter implements DateAdapter<Date> {
     return a.getDate() - b.getDate();
   }
 
+  compareDate(a: Date, b: Date): number {
+    return this.compare(a, b);
+  }
+
   isSameDay(a: Date, b: Date): boolean {
     return (
       a.getFullYear() === b.getFullYear() &&
