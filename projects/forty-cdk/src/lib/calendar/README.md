@@ -125,7 +125,7 @@ LTR (horizontal arrows mirror under `dir="rtl"`):
 | **Shift+PageUp / Shift+PageDown** | Same month, previous / next year.                              |
 | **Enter / Space**                 | Select the focused date.                                       |
 
-Focus that crosses a month boundary re-pages the visible grid and keeps the focused cell in view. Day-of-month is constrained when paging (e.g. Jan 31 → Feb 28).
+Focus that crosses a month boundary re-pages the visible grid and keeps the focused cell in view. Day-of-month is constrained when paging (e.g. Jan 31 → Feb 28). Paging (the prev / next buttons and `PageUp` / `PageDown`) also clamps the focused date into the `[min, max]` range, so it never lands on a cell outside the selectable bounds; day / week arrows still move freely across unavailable dates so keyboard navigation is never trapped.
 
 ## Scope defaults
 
