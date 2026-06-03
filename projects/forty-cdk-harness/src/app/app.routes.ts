@@ -129,4 +129,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./fixtures/time-field.fixture').then((m) => m.TimeFieldFixture),
   },
+  {
+    path: 'date-time-picker',
+    loadComponent: () =>
+      import('./fixtures/date-time-picker.fixture').then((m) => m.DateTimePickerFixture),
+  },
 ];

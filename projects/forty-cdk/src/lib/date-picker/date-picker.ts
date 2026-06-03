@@ -28,9 +28,13 @@ import {
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { ForCalendar } from '../calendar/calendar';
-import { type DateAdapter, injectDateAdapter } from '../calendar/date-adapter';
+import { assertTimeCapable, type DateAdapter, injectDateAdapter } from '../calendar/date-adapter';
+import { ForTimeField } from '../time-field/time-field';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
+
+/** Date-time precision; `'day'` keeps a pure calendar picker, anything more composes a time field. */
+type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
 
 /**
  * Headless date picker — the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)
@@ -57,7 +61,15 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  * untouched; on selection the picker mirrors the value, flips `touched`, and —
  * when `closeOnSelect` is on (default) — closes the surface.
  *
- * @typeParam D The adapter's immutable date type.
+ * Set `granularity` coarser-than-a-day off (`'hour'` / `'minute'` / `'second'`)
+ * to make it a **date-time picker**: the consumer projects a `[forTimeField]`
+ * beside the calendar (binding both children **one-way** to `picker.value()` so
+ * their internal writes don't clobber each other), and the picker grafts the
+ * entered time onto each calendar selection. This needs a time-capable adapter
+ * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`).
+ *
+ * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
+ *   date-time) type.
  *
  * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
  * the latter are reserved `FormUiControl` members typed `number | undefined`
@@ -77,6 +89,20 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  *       <div forCalendar [(value)]="date" [min]="picker.minDate()" [max]="picker.maxDate()">
  *         <!-- …calendar header + grid… -->
  *       </div>
+ *     </div>
+ *   }
+ * </div>
+ * ```
+ *
+ * @example Date-time picker (`granularity="minute"`), children bound one-way:
+ * ```html
+ * <div forDatePicker [(value)]="when" [(open)]="open" granularity="minute"
+ *      [hourCycle]="24" #picker="forDatePicker">
+ *   <button forDatePickerTrigger><span forDatePickerValue>Pick date & time</span></button>
+ *   @if (open()) {
+ *     <div forDatePickerContent>
+ *       <div forCalendar [value]="picker.value()" [min]="picker.minDate()">…</div>
+ *       <div forTimeField [value]="picker.value()" [hourCycle]="picker.hourCycle()">…</div>
  *     </div>
  *   }
  * </div>
@@ -134,8 +160,32 @@ export class ForDatePicker<D>
   /** Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. */
   readonly isDateUnavailable = input<(date: D) => boolean>(() => false);
 
-  /** Close the surface after a date is selected in the projected calendar. Default `true`. */
+  /**
+   * Close the surface after a date is selected in the projected calendar.
+   * Default `true`. Honoured only at `granularity="day"` — a date-time picker
+   * (`granularity > 'day'`) never closes on a calendar selection, so the user
+   * can go on to edit the time.
+   */
   readonly closeOnSelect = input(true, { transform: booleanAttribute });
+
+  /**
+   * Date-time precision. `'day'` (default, **non-breaking**) keeps a pure
+   * calendar picker. Anything coarser-than-a-day off — `'hour'` / `'minute'` /
+   * `'second'` — turns it into a date-time picker: the consumer projects a
+   * `[forTimeField]` beside the calendar, a calendar selection preserves the
+   * entered time, and the value carries a time component. Requires a
+   * time-capable adapter (`provideNativeDateAdapter()` or
+   * `provideInternationalizedDateTimeAdapter()`).
+   */
+  readonly granularity = input<DatePickerGranularity>('day');
+
+  /**
+   * 12- or 24-hour cycle forwarded to `[forDatePickerValue]`'s formatting (and
+   * typically to the projected `[forTimeField][hourCycle]`). When `null`
+   * (default) it is derived from the runtime locale. Only meaningful when
+   * `granularity > 'day'`.
+   */
+  readonly hourCycle = input<12 | 24 | null>(null);
 
   /**
    * When `true`, the surface is a trapped / inert / scroll-locked modal dialog
@@ -233,10 +283,37 @@ export class ForDatePicker<D>
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
 
+  /**
+   * `formatOptions` augmented with time fields when `granularity > 'day'` and
+   * the consumer hasn't already specified any — so a date-time picker's value
+   * display shows the time without extra wiring, while an explicit
+   * `formatOptions` is always honoured verbatim.
+   */
+  readonly #effectiveFormatOptions = computed<Intl.DateTimeFormatOptions>(() => {
+    const options = this.formatOptions();
+    const granularity = this.granularity();
+    if (
+      granularity === 'day' ||
+      options.hour !== undefined ||
+      options.minute !== undefined ||
+      options.second !== undefined
+    ) {
+      return options;
+    }
+    const cycle = this.hourCycle();
+    return {
+      ...options,
+      hour: 'numeric',
+      minute: '2-digit',
+      ...(granularity === 'second' ? { second: '2-digit' } : {}),
+      ...(cycle !== null ? { hour12: cycle === 12 } : {}),
+    };
+  });
+
   /** Formatted current value via the adapter, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
     const value = this.value();
-    return value === null ? null : this.adapter.format(value, this.formatOptions());
+    return value === null ? null : this.adapter.format(value, this.#effectiveFormatOptions());
   });
 
   /**
@@ -246,6 +323,14 @@ export class ForDatePicker<D>
    * grid — wired in the constructor.
    */
   private readonly calendar = contentChild(ForCalendar, { descendants: true });
+
+  /**
+   * The projected `ForTimeField`, present only in a date-time picker
+   * (`granularity > 'day'`). Like the calendar, it mounts with the surface; its
+   * `valueChange` (a composed date-time, anchored on the picker's current
+   * value) is mirrored straight into the picker's value.
+   */
+  private readonly timeField = contentChild(ForTimeField, { descendants: true });
 
   constructor() {
     super();
@@ -259,14 +344,35 @@ export class ForDatePicker<D>
         const year = String(this.adapter.getYear(value)).padStart(4, '0');
         const month = String(this.adapter.getMonth(value)).padStart(2, '0');
         const day = String(this.adapter.getDate(value)).padStart(2, '0');
-        return [`${year}-${month}-${day}`];
+        const date = `${year}-${month}-${day}`;
+        const granularity = this.granularity();
+        if (granularity === 'day') {
+          return [date];
+        }
+        const time = this.#time();
+        const hour = String(time.getHours(value)).padStart(2, '0');
+        const minute = String(time.getMinutes(value)).padStart(2, '0');
+        if (granularity === 'second') {
+          const second = String(time.getSeconds(value)).padStart(2, '0');
+          return [`${date}T${hour}:${minute}:${second}`];
+        }
+        return [`${date}T${hour}:${minute}`];
       }),
       disabled: this.disabled,
     });
 
-    // Close-on-select bridge. This `effect` does no state derivation — it only
-    // (re)subscribes to the projected calendar's `valueChange` as the surface
-    // mounts / unmounts. The actual writes happen asynchronously in the
+    // Eager validation: a date-time picker needs a time-capable adapter. Fail
+    // loudly as soon as the granularity input settles, rather than on first
+    // selection deep in a subscription.
+    effect(() => {
+      if (this.granularity() !== 'day') {
+        this.#time();
+      }
+    });
+
+    // Calendar selection bridge. This `effect` does no state derivation — it
+    // only (re)subscribes to the projected calendar's `valueChange` as the
+    // surface mounts / unmounts. The writes happen asynchronously in the
     // subscription callback (a discrete selection event), exactly like a click
     // handler, never during the effect's reactive computation.
     effect((onCleanup) => {
@@ -275,14 +381,55 @@ export class ForDatePicker<D>
         return;
       }
       const sub = calendar.value.subscribe((date) => {
-        this.value.set(date as D | null);
+        const selected = date as D | null;
+        // The calendar emits the picked day at midnight (its cells are built
+        // with `createDate`). For a date-time picker, graft the previously
+        // entered time-of-day back onto it; reading `value()` here is safe
+        // because the projected calendar is one-way bound (`[value]`), so its
+        // own write didn't clobber the picker's value.
+        if (selected !== null && this.granularity() !== 'day') {
+          const time = this.#time();
+          const base = this.value() ?? selected;
+          this.value.set(
+            time.setTime(
+              selected,
+              time.getHours(base),
+              time.getMinutes(base),
+              time.getSeconds(base),
+            ),
+          );
+        } else {
+          this.value.set(selected);
+        }
         this.touched.set(true);
-        if (this.closeOnSelect()) {
+        // A date-time picker stays open after a day is picked so the time can
+        // still be edited; only a pure day picker honours `closeOnSelect`.
+        if (this.closeOnSelect() && this.granularity() === 'day') {
           this.close();
         }
       });
       onCleanup(() => sub.unsubscribe());
     });
+
+    // Time-field bridge (date-time pickers only). The projected `ForTimeField`
+    // is bound one-way to the picker's value, so its composed `valueChange`
+    // already carries the correct day plus the new time — mirror it straight in.
+    effect((onCleanup) => {
+      const timeField = this.timeField();
+      if (!timeField) {
+        return;
+      }
+      const sub = timeField.value.subscribe((value) => {
+        this.value.set(value as D | null);
+        this.touched.set(true);
+      });
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
+  #time() {
+    return assertTimeCapable(this.adapter, 'ForDatePicker');
   }
 
   registerTrigger(el: HTMLElement): void {
