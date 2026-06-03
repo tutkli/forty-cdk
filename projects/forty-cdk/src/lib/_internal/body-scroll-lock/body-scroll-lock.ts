@@ -8,10 +8,18 @@ import { isPlatformBrowser } from '@angular/common';
  *
  * **Semantic: clear, do not restore.** On the first lock the service writes
  * `overflow: hidden` and an optional scrollbar-compensating `padding-right`
- * inline on `<body>`. On the final unlock it _clears_ those two inline
- * styles (`body.style.overflow = ''`, `body.style.paddingRight = ''`) and
- * lets the CSS cascade take over again. It does NOT snapshot the values at
- * lock time and rewrite them at unlock time.
+ * inline on `<body>`. On the final unlock it _clears_ the inline styles it
+ * set (`body.style.overflow = ''`, and `body.style.paddingRight = ''` only
+ * when this lock actually wrote it) and lets the CSS cascade take over
+ * again. It does NOT snapshot the values at lock time and rewrite them at
+ * unlock time.
+ *
+ * On overlay-scrollbar / mobile platforms there is no classic scrollbar
+ * (`innerWidth - clientWidth === 0`), so the lock never writes
+ * `padding-right`. In that case the final unlock leaves
+ * `body.style.paddingRight` untouched, so a consumer's unrelated inline
+ * `padding-right` survives. The clear-don't-restore contract only applies to
+ * values the lock owns. See #391.
  *
  * Why: any code (route transition, theme toggle, the consumer themselves)
  * that mutates `body.style.overflow` between `lock()` and the final
@@ -35,6 +43,7 @@ export class BodyScrollLock {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   #count = 0;
+  #wrotePaddingRight = false;
 
   lock(): void {
     if (!this.#isBrowser) {
@@ -51,6 +60,7 @@ export class BodyScrollLock {
         const computed = win.getComputedStyle(body).paddingRight;
         const currentPx = parseFloat(computed) || 0;
         body.style.paddingRight = `${currentPx + scrollbarWidth}px`;
+        this.#wrotePaddingRight = true;
       }
     }
     this.#count++;
@@ -65,8 +75,14 @@ export class BodyScrollLock {
       const body = this.#document.body;
       // Clear, do not restore: drop the inline styles we set so the CSS
       // cascade takes over and any intervening external mutations win.
+      // Only clear padding-right when this lock actually wrote it, so a
+      // consumer's unrelated inline padding-right survives on no-scrollbar
+      // platforms where the lock never set it.
       body.style.overflow = '';
-      body.style.paddingRight = '';
+      if (this.#wrotePaddingRight) {
+        body.style.paddingRight = '';
+        this.#wrotePaddingRight = false;
+      }
     }
   }
 }

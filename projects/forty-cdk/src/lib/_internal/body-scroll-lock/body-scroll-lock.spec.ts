@@ -104,6 +104,45 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.paddingRight).toBe('');
   });
 
+  describe('no classic scrollbar (scrollbarWidth === 0)', () => {
+    let innerWidthDescriptor: PropertyDescriptor | undefined;
+
+    beforeEach(() => {
+      // jsdom reports documentElement.clientWidth === 0 and innerWidth === 1024,
+      // which is the classic-scrollbar path. Force innerWidth to match
+      // clientWidth so `innerWidth - clientWidth === 0`, modelling an
+      // overlay-scrollbar / mobile platform with no classic scrollbar.
+      innerWidthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        get: () => document.documentElement.clientWidth,
+      });
+    });
+
+    afterEach(() => {
+      if (innerWidthDescriptor) {
+        Object.defineProperty(window, 'innerWidth', innerWidthDescriptor);
+      } else {
+        delete (window as unknown as Record<string, unknown>)['innerWidth'];
+      }
+    });
+
+    it('does not write padding-right on lock', () => {
+      lock.lock();
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('leaves a pre-existing inline padding-right untouched on unlock', () => {
+      document.body.style.paddingRight = '24px';
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('24px');
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('24px');
+      expect(document.body.style.overflow).toBe('');
+    });
+  });
+
   it('isolates state across application bootstraps', () => {
     lock.lock();
     expect(document.body.style.overflow).toBe('hidden');
