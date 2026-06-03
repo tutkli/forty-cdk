@@ -1,12 +1,22 @@
 import { Component, signal } from '@angular/core';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
-import { afterEachOverlayCleanup, flush, renderHost, type RenderResult } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pressKey,
+  renderHost,
+  type RenderResult,
+} from '../../test-utils';
 import { ForCalendar } from '../calendar/calendar';
 import { ForCalendarCell } from '../calendar/calendar-cell';
 import { ForCalendarGrid } from '../calendar/calendar-grid';
 import { ForCalendarGridHeader } from '../calendar/calendar-grid-header';
+import { assertTimeCapable, type DateAdapter } from '../calendar/date-adapter';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
+import { ForTimeField } from '../time-field/time-field';
+import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
+import { ForTimeFieldSegment } from '../time-field/time-field-segment';
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
@@ -255,6 +265,125 @@ describe('ForDatePicker', () => {
       const r = renderHost(Host);
       await openPicker(r);
       expect(content()!.hasAttribute('aria-modal')).toBe(false);
+    });
+  });
+
+  describe('date-time (granularity > day)', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+        ForCalendar,
+        ForCalendarGrid,
+        ForCalendarCell,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="24"
+          #picker="forDatePicker"
+        >
+          <button data-testid="trigger" forDatePickerTrigger>
+            <span forDatePickerValue [placeholder]="'Pick date & time'"></span>
+          </button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar [value]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div forTimeField [value]="picker.value()" [hourCycle]="24" [locale]="'en-US'" #tf="forTimeField">
+                @for (seg of tf.segments(); track seg.id) {
+                  @if (seg.isLiteral) {
+                    <span forTimeFieldLiteral>{{ seg.text }}</span>
+                  } @else {
+                    <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="'time-' + seg.type">{{
+                      seg.text
+                    }}</span>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class DateTimeHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+    }
+
+    type DR = RenderResult<DateTimeHost>;
+    const timeSeg = (type: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="time-${type}"]`)!;
+
+    async function open(r: DR): Promise<void> {
+      r.query<HTMLButtonElement>('[forDatePickerTrigger]')!.click();
+      await flush(r.fixture);
+    }
+
+    it('grafts the entered time onto a calendar selection and stays open', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(adapter.getDate(value)).toBe(20);
+      expect(adapter.getHours(value)).toBe(14);
+      expect(adapter.getMinutes(value)).toBe(30);
+      // A date-time picker never closes on a day selection.
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('edits the time through the projected field without losing the date', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(adapter.getHours(value)).toBe(15);
+      expect(adapter.getDate(value)).toBe(15);
+      expect(adapter.getMinutes(value)).toBe(30);
+    });
+
+    it('renders the value with its time component', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 20, 14, 30));
+      await flush(r.fixture);
+      expect(r.query('[forDatePickerValue]')!.textContent).toContain('14:30');
+    });
+
+    it('requires a time-capable adapter (assertTimeCapable contract)', () => {
+      const dayOnly = {
+        today: () => new Date(),
+      } as unknown as DateAdapter<Date>;
+      expect(() => assertTimeCapable(dayOnly, 'ForDatePicker')).toThrow(/time-capable/);
     });
   });
 

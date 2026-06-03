@@ -31,7 +31,9 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 | `minDate`           | `input<D \| null>`                | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`. Default `null`.            |
 | `maxDate`           | `input<D \| null>`                | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`. Default `null`.            |
 | `isDateUnavailable` | `input<(date: D) => boolean>`     | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. Default `() => false`.        |
-| `closeOnSelect`     | `input<boolean>`                  | Close the surface after a date is picked. Default `true`.                                                    |
+| `closeOnSelect`     | `input<boolean>`                  | Close the surface after a date is picked. Honoured only at `granularity="day"`. Default `true`.              |
+| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field. |
+| `hourCycle`         | `input<12 \| 24 \| null>`         | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`). Default `null` → locale. |
 | `modal`             | `input<boolean>`                  | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover. Default `false`. |
 | `dismissible`       | `input<boolean>`                  | Escape / outside-pointer dismiss the surface. Default `true`.                                                |
 | `returnFocus`       | `input<boolean>`                  | Return focus to the trigger on close. Default `true`.                                                        |
@@ -150,6 +152,40 @@ The library is styleless: presence in the DOM is the consumer's job (`@if (open(
 By default the surface is a **non-modal popover**: anchored to the trigger, no background inert, no scroll lock — matching React Aria / Ark UI. Set `[modal]="true"` to route through the modal shell instead: focus is trapped inside the dialog, the background is inert, and body scroll is locked (a centered dialog you position with CSS, not trigger-anchored). Either way the surface is `role="dialog"` and `aria-haspopup="dialog"`-anchored; modal mode adds `aria-modal="true"`.
 
 The mode is read once when the surface mounts (it is structurally different per mode), so toggle `modal` while the surface is closed.
+
+## Date-time picker (`granularity > 'day'`)
+
+Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into a **date-time picker**: project a [`ForTimeField`](../time-field/README.md) beside the calendar and the value gains a time component. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
+
+Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: a calendar selection emits the picked day at midnight, and the picker grafts the previously entered time back on (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
+
+```html
+<div forDatePicker [(value)]="when" [(open)]="open" granularity="minute" [hourCycle]="24" #picker="forDatePicker">
+  <button forDatePickerTrigger>
+    <span forDatePickerValue [placeholder]="'Pick date & time'"></span>
+  </button>
+
+  @if (open()) {
+    <div forDatePickerContent>
+      <div forCalendar [value]="picker.value()" [min]="picker.minDate()" [max]="picker.maxDate()">
+        <!-- …calendar header + grid… -->
+      </div>
+
+      <div forTimeField [value]="picker.value()" [hourCycle]="picker.hourCycle()" #field="forTimeField">
+        @for (seg of field.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>
+```
+
+The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
 
 ## Keyboard
 
