@@ -161,6 +161,54 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(7);
     });
 
+    it('rejects exponent notation rather than silently parsing it', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '5');
+      flush();
+      typeInto(input, '2e3');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(5);
+
+      typeInto(input, '1e5');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(5);
+    });
+
+    it('rejects multi-sign and multi-decimal malformed input', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '8');
+      flush();
+      typeInto(input, '+-5');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(8);
+
+      typeInto(input, '1.2.3');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(8);
+    });
+
+    it('parses a plain decimal in a comma-decimal locale', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('de-DE');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1.234,5');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1234.5);
+    });
+
     it('does not clamp while typing (clamps on commit)', () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(10);

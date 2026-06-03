@@ -364,6 +364,19 @@ export class ForNumberInput
     return bound === undefined || Number.isInteger(bound);
   }
 
+  /**
+   * Parse the input's locale-formatted text into a number, or `null` when it
+   * is not a valid plain decimal. Grouping separators are stripped and the
+   * locale decimal separator is normalized to `.`, then the canonical form is
+   * validated against a strict numeric regex (optional sign + digits + a
+   * single optional decimal) before `Number()`.
+   *
+   * Exponent notation is intentionally rejected — `2e3` is not valid
+   * spinbutton input and silently parsing it to `2000` is surprising. So are
+   * malformed forms such as multiple signs (`+-5`) or multiple decimals
+   * (`1.2.3`); all map to `null`, the same outcome callers already treat as
+   * "keep the last valid value".
+   */
   #parse(text: string): number | null {
     const { group, decimal } = this.#separators();
     let normalized = text.trim().split(group).join('');
@@ -371,9 +384,12 @@ export class ForNumberInput
       normalized = normalized.split(decimal).join('.');
     }
     // Strip currency symbols, percent signs, and any other non-numeric noise
-    // the locale may include, leaving digits, sign, decimal point, exponent.
+    // the locale may include, leaving digits, sign, decimal point, and the
+    // exponent letters — the strict gate below is what ultimately rejects
+    // exponent notation, so stripping `eE` here would let `2e3` slip through
+    // as `23` instead of being seen (and refused) as malformed.
     normalized = normalized.replace(/[^\d.eE+-]/g, '');
-    if (normalized === '' || normalized === '-' || normalized === '+') {
+    if (!/^[+-]?\d+(?:\.\d+)?$/.test(normalized)) {
       return null;
     }
     const parsed = Number(normalized);
