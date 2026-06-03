@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { PLATFORM_ID, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { LiveAnnouncer } from './live-announcer';
@@ -18,9 +18,9 @@ describe('LiveAnnouncer', () => {
   });
 
   afterEach(() => {
-    // LiveAnnouncer keeps its regions for the application's lifetime by
-    // design; in tests we must detach them so the next spec file does not
-    // inherit them. Pairs with the defensive cleanup in beforeEach.
+    // The service detaches its own regions on injector destroy, but specs
+    // that never tear the injector down (or that override PLATFORM_ID) still
+    // need a defensive sweep so the next spec file does not inherit them.
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
@@ -92,5 +92,53 @@ describe('LiveAnnouncer', () => {
     expect(region.style.width).toBe('1px');
     expect(region.style.height).toBe('1px');
     expect(region.style.overflow).toBe('hidden');
+  });
+
+  it('removes its regions when the injector is destroyed (no leak across specs)', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    announcer.announce('polite message');
+    announcer.announce('assertive message', 'assertive');
+    await Promise.resolve();
+    expect(document.querySelectorAll('[aria-live]').length).toBe(2);
+
+    // Tearing down the injector runs the service's DestroyRef hook, which
+    // detaches both regions from document.body.
+    TestBed.resetTestingModule();
+
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+  });
+
+  it('isolates regions across application bootstraps', async () => {
+    const first = TestBed.inject(LiveAnnouncer);
+    first.announce('first');
+    await Promise.resolve();
+    expect(document.querySelectorAll('[aria-live]').length).toBe(1);
+
+    TestBed.resetTestingModule();
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const second = TestBed.inject(LiveAnnouncer);
+    second.announce('second');
+    await Promise.resolve();
+
+    const regions = document.querySelectorAll<HTMLElement>('[aria-live]');
+    expect(regions.length).toBe(1);
+    expect(regions[0]!.textContent).toBe('second');
+  });
+
+  it('announce() is a no-op on a non-browser platform', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
+    });
+    const announcer = TestBed.inject(LiveAnnouncer);
+
+    announcer.announce('should not touch the DOM');
+    announcer.announce('nor this one', 'assertive');
+    await Promise.resolve();
+
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+    expect(() => announcer.clear()).not.toThrow();
   });
 });

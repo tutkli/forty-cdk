@@ -1,4 +1,5 @@
-import { DOCUMENT, Injectable, inject } from '@angular/core';
+import { DOCUMENT, DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 type Politeness = 'polite' | 'assertive';
 
@@ -10,6 +11,12 @@ type Politeness = 'polite' | 'assertive';
  * Sequential identical announcements are flushed through a microtask so the
  * region is briefly emptied — without that, screen readers ignore repeated
  * text that hasn't actually changed.
+ *
+ * The regions are detached again when the service's injector is destroyed
+ * (one bootstrap per SSR request, or `TestBed.resetTestingModule()`), so a
+ * torn-down application leaves no orphaned `[aria-live]` nodes behind. DOM
+ * access is gated on `isPlatformBrowser`, so `announce()` / `clear()` are
+ * no-ops on the server.
  *
  * @example
  * ```ts
@@ -23,7 +30,17 @@ type Politeness = 'polite' | 'assertive';
 @Injectable({ providedIn: 'root' })
 export class LiveAnnouncer {
   readonly #document = inject(DOCUMENT);
-  #regions = new Map<Politeness, HTMLElement>();
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #regions = new Map<Politeness, HTMLElement>();
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      for (const region of this.#regions.values()) {
+        region.remove();
+      }
+      this.#regions.clear();
+    });
+  }
 
   /**
    * Announce a message in the requested politeness region. Defaults to
@@ -31,8 +48,12 @@ export class LiveAnnouncer {
    * reading; `assertive` interrupts immediately.
    *
    * Pass an empty string (or call `clear()`) to silence pending announcements.
+   * No-op on a non-browser platform.
    */
   announce(message: string, politeness: Politeness = 'polite'): void {
+    if (!this.#isBrowser) {
+      return;
+    }
     const region = this.#getRegion(politeness);
     // Reset first so identical consecutive messages still trigger the reader.
     region.textContent = '';
