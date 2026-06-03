@@ -367,6 +367,32 @@ describe('ForCalendar', () => {
       expect(next.hasAttribute('disabled')).toBe(true);
       expect(next.getAttribute('aria-disabled')).toBe('true');
     });
+
+    it('clamps the focused date into [min, max] when paging lands before min', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.min.set(new Date(2026, 5, 3));
+      r.instance.value.set(new Date(2026, 6, 1));
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 6, 1)));
+
+      r.query('[data-testid="prev"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 5, 3)));
+      expect(cell(r, new Date(2026, 5, 1)).hasAttribute('data-highlighted')).toBe(false);
+      expect(cell(r, new Date(2026, 5, 3)).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('clamps the focused date into [min, max] when paging by keyboard (PageUp)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.min.set(new Date(2026, 5, 3));
+      r.instance.value.set(new Date(2026, 6, 1));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageUp');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 5, 3)));
+    });
   });
 
   describe('zoneless reactivity', () => {

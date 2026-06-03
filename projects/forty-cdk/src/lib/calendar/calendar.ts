@@ -256,7 +256,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled()) {
       return;
     }
-    this.focusedDate.set(this.adapter.addMonths(this.focusedDate(), delta));
+    this.focusedDate.set(this.#clampToBounds(this.adapter.addMonths(this.focusedDate(), delta)));
   }
 
   handleCellKeydown(event: KeyboardEvent, fromDate: D): void {
@@ -273,8 +273,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return;
     }
     event.preventDefault();
-    this.focusedDate.set(target);
-    this.#focusDate(target);
+    const isPaging = event.key === 'PageUp' || event.key === 'PageDown';
+    const next = isPaging ? this.#clampToBounds(target) : target;
+    this.focusedDate.set(next);
+    this.#focusDate(next);
   }
 
   registerCell(handle: ForCalendarCellHandle<D>): void {
@@ -308,6 +310,19 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       default:
         return null;
     }
+  }
+
+  #clampToBounds(date: D): D {
+    const adapter = this.adapter;
+    const min = this.min();
+    if (min !== null && adapter.compare(date, min) < 0) {
+      return min;
+    }
+    const max = this.max();
+    if (max !== null && adapter.compare(date, max) > 0) {
+      return max;
+    }
+    return date;
   }
 
   #startOfWeek(date: D): D {
