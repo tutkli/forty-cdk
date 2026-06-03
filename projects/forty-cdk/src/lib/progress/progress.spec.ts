@@ -106,6 +106,22 @@ describe('ForProgress', () => {
       expect(indicator.getAttribute('data-state')).toBe('loading');
     });
 
+    it('emits the clamped data-value, matching the root, for out-of-range input', () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(150);
+      flush();
+
+      const root = query<HTMLElement>('[forProgress]')!;
+      const indicator = query<HTMLElement>('[forProgressIndicator]')!;
+      expect(root.getAttribute('data-value')).toBe('100');
+      expect(indicator.getAttribute('data-value')).toBe('100');
+
+      fixture.componentInstance.value.set(-5);
+      flush();
+      expect(root.getAttribute('data-value')).toBe('0');
+      expect(indicator.getAttribute('data-value')).toBe('0');
+    });
+
     it('reports null percentage when indeterminate', () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(null);
