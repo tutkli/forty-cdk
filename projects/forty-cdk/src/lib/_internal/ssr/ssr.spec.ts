@@ -12,6 +12,9 @@ import { ForAccordion } from '../../accordion/accordion';
 import { ForAccordionContent } from '../../accordion/accordion-content';
 import { ForAccordionItem } from '../../accordion/accordion-item';
 import { ForAccordionTrigger } from '../../accordion/accordion-trigger';
+import { ForAvatar } from '../../avatar/avatar';
+import { ForAvatarFallback } from '../../avatar/avatar-fallback';
+import { ForAvatarImage } from '../../avatar/avatar-image';
 import { ForCheckbox } from '../../checkbox/checkbox';
 import { ForDialog } from '../../dialog/dialog';
 import { ForDialogTitle } from '../../dialog/dialog-title';
@@ -136,6 +139,19 @@ class DialogFixture {
   readonly open = signal(false);
 }
 
+@Component({
+  imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
+  template: `
+    <span forAvatar #a="forAvatar">
+      <img forAvatarImage src="https://example.test/avatar.png" alt="user" />
+      @if (a.shouldShowFallback()) {
+        <span forAvatarFallback>AB</span>
+      }
+    </span>
+  `,
+})
+class AvatarFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -145,6 +161,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   RadioFixture,
   TooltipFixture,
   DialogFixture,
+  AvatarFixture,
 ];
 
 function configureServer(): void {
@@ -185,6 +202,14 @@ describe('SSR smoke tests', () => {
     const content = f.nativeElement.querySelector('[forDisclosureContent]') as HTMLElement;
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(content.getAttribute('id')).toBe(trigger.getAttribute('aria-controls'));
+  });
+
+  it('AvatarImage mounts with data-status server-side without constructing a MutationObserver', () => {
+    const f = TestBed.createComponent(AvatarFixture);
+    f.detectChanges();
+    const img = f.nativeElement.querySelector('[forAvatarImage]') as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.hasAttribute('data-status')).toBe(true);
   });
 
   it('IdGenerator is salted with APP_ID — identical render orders produce identical ids across requests', () => {

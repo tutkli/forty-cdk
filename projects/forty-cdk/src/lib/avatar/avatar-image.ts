@@ -1,4 +1,13 @@
-import { afterNextRender, DestroyRef, Directive, ElementRef, inject, output } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  afterNextRender,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  output,
+  PLATFORM_ID,
+} from '@angular/core';
 
 import { FOR_AVATAR_CONTEXT, type ForAvatarStatus } from './avatar-context';
 
@@ -44,13 +53,13 @@ export class ForAvatarImage {
       this.#syncFromAttr();
     });
 
-    const observer = new MutationObserver(() => {
-      // Any src change (consumer reassignment, framework binding, manual
-      // setAttribute) resets the lifecycle.
-      this.#syncFromAttr();
-    });
-    observer.observe(host, { attributes: true, attributeFilter: ['src'] });
-    inject(DestroyRef).onDestroy(() => observer.disconnect());
+    if (isPlatformBrowser(inject(PLATFORM_ID)) && typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver(() => {
+        this.#syncFromAttr();
+      });
+      observer.observe(host, { attributes: true, attributeFilter: ['src'] });
+      inject(DestroyRef).onDestroy(() => observer.disconnect());
+    }
 
     // Re-emit upstream whenever the parent's status changes due to our writes.
     let last: ForAvatarStatus | null = null;
