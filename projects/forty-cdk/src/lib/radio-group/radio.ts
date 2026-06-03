@@ -66,12 +66,14 @@ export class ForRadio {
       handle,
       (h) => this.group.registerRadio(h),
       (h) => this.group.unregisterRadio(h),
+      'afterNextRender',
     );
   }
 
   /**
-   * Tabindex per APG: 0 if this radio is selected; if no selection, 0 if
-   * this is the first enabled radio in DOM order; -1 otherwise.
+   * Tabindex per APG: 0 if this radio is selected; if no registered radio
+   * matches the group's value (none selected, or a stale value matching no
+   * radio), 0 if this is the first enabled radio in DOM order; -1 otherwise.
    *
    * Disabled radios are always -1.
    */
@@ -82,7 +84,7 @@ export class ForRadio {
     if (this.checked()) {
       return 0;
     }
-    if (this.group.value() !== '') {
+    if (this.group.hasSelectedRadio()) {
       return -1;
     }
     return this.group.isFirstEnabledRadio(this.#host.nativeElement) ? 0 : -1;

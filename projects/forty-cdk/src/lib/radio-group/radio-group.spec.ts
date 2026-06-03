@@ -124,6 +124,49 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
     });
 
+    it('falls back to the first enabled radio when value matches no registered radio', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.color.set('magenta');
+      flush();
+
+      const tabindexes = ['red', 'green', 'blue'].map((v) =>
+        radioOf(el, v).getAttribute('tabindex'),
+      );
+      expect(tabindexes).toEqual(['0', '-1', '-1']);
+      expect(tabindexes.filter((t) => t === '0')).toHaveLength(1);
+    });
+
+    it('skips disabled radios in the fallback when value matches no registered radio', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.options.set([
+        { value: 'red', label: 'Red', disabled: true },
+        { value: 'green', label: 'Green', disabled: false },
+        { value: 'blue', label: 'Blue', disabled: false },
+      ]);
+      fixture.componentInstance.color.set('magenta');
+      flush();
+
+      expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
+      expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
+      expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('recovers the fallback when a previously selected value goes stale', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.color.set('green');
+      flush();
+      expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.options.set([
+        { value: 'red', label: 'Red', disabled: false },
+        { value: 'blue', label: 'Blue', disabled: false },
+      ]);
+      flush();
+
+      expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('0');
+      expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
+    });
+
     it('skips disabled when picking the first-enabled tab entry', () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
