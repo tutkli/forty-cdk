@@ -101,6 +101,17 @@ export function buildTimeSegments(
   return segments;
 }
 
+/** Maps a 0-23 hour to its 12-hour display value and AM/PM period. */
+export function to12(hour: number): { h12: number; pm: boolean } {
+  return { h12: ((hour + 11) % 12) + 1, pm: hour >= 12 };
+}
+
+/** Combines a 1-12 display hour and an AM/PM period back into a 0-23 hour. */
+export function from12(h12: number, pm: boolean): number {
+  const base = h12 % 12;
+  return pm ? base + 12 : base;
+}
+
 /**
  * Reads the localized AM / PM strings for a locale (e.g. `AM` / `PM`,
  * `a.m.` / `p.m.`, `午前` / `午後`). Pure.

@@ -74,4 +74,28 @@ test.describe('DateField', () => {
     await page.keyboard.press('Backspace');
     await expect(el(page, 'value')).toHaveText('empty');
   });
+
+  test('date-time: typing date then time fills both and auto-advances', async ({ page }) => {
+    await gotoFixture(page, 'date-field', { datetime: '1' });
+    await el(page, 'month').focus();
+
+    // en-US order: month / day / year / hour / minute.
+    await page.keyboard.type('12'); // month → day
+    await page.keyboard.type('05'); // day → year
+    await page.keyboard.type('2026'); // year → hour
+    await expectFocused(el(page, 'hour'));
+
+    await page.keyboard.type('14'); // hour → minute
+    await page.keyboard.type('30');
+    await expect(el(page, 'value')).toHaveText('2026-12-05 14:30');
+  });
+
+  test('date-time: ArrowUp steps the hour without disturbing the date', async ({ page }) => {
+    await gotoFixture(page, 'date-field', { datetime: '1', preset: '1' });
+    await expect(el(page, 'value')).toHaveText('2026-06-15 14:30');
+
+    await el(page, 'hour').focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(el(page, 'value')).toHaveText('2026-06-15 15:30');
+  });
 });

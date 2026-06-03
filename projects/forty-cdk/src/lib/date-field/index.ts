@@ -13,4 +13,8 @@ export {
   provideForDateFieldDefaults,
   type ForDateFieldDefaults,
 } from './date-field-defaults';
-export { type DateSegmentType } from './build-segments';
+export {
+  type DateSegmentType,
+  type DateTimeSegmentType,
+  type FieldGranularity,
+} from './build-segments';

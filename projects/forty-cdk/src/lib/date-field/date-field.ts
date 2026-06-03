@@ -1,6 +1,7 @@
 import {
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
@@ -15,11 +16,18 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { type DateAdapter, injectDateAdapter } from '../calendar/date-adapter';
 import {
-  buildSegments,
-  type DateSegmentType,
+  assertTimeCapable,
+  type DateAdapter,
+  injectDateAdapter,
+  type TimeCapableDateAdapter,
+} from '../calendar/date-adapter';
+import { dayPeriodNames, from12, resolveHourCycle, to12 } from '../time-field/build-time-segments';
+import {
+  buildDateTimeSegments,
+  type DateTimeSegmentType,
   type EditableSegmentSpec,
+  type FieldGranularity,
 } from './build-segments';
 import {
   type DateFieldSegment,
@@ -28,11 +36,14 @@ import {
   type ForDateFieldSegmentHandle,
 } from './date-field-context';
 
-/** Internal per-part state: the entered digits for each editable segment. */
-interface DateParts {
+/** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
+interface DateTimeParts {
   day: number | null;
   month: number | null;
   year: number | null;
+  hour: number | null;
+  minute: number | null;
+  second: number | null;
 }
 
 /** Year used to resolve day ranges (Feb length) while the year segment is empty. */
@@ -56,11 +67,20 @@ const RESOLVER_YEAR = 2000;
  * (`provideInternationalizedDateAdapter()` / `provideNativeDateAdapter()`), so
  * the field hard-depends on no date library.
  *
+ * Set `granularity` coarser-than-a-day off (`'hour'` / `'minute'` / `'second'`)
+ * to make it a **date-time field**: time segments (hour / minute / second and,
+ * in 12-hour mode, an AM·PM `dayPeriod`) are appended after the date segments in
+ * the same `role="group"`, sharing the one roving tab stop. This needs a
+ * time-capable adapter (`provideNativeDateAdapter()` /
+ * `provideInternationalizedDateTimeAdapter()`); `granularity = 'day'` (default)
+ * is unchanged and works with any adapter.
+ *
  * It implements `FormValueControl<D | null>` from `@angular/forms/signals`, so
  * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
- * The value stays `null` until every segment is filled.
+ * The value stays `null` until every visible segment is filled.
  *
- * @typeParam D The adapter's immutable date type.
+ * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
+ *   date-time) type.
  *
  * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
  * the latter are reserved `FormUiControl` members typed `number | undefined`
@@ -129,14 +149,30 @@ export class ForDateField<D>
    */
   readonly maxDate = input<D | null>(null);
 
+  /**
+   * Date-time precision. `'day'` (default, **non-breaking**) is a pure date
+   * field. `'hour'` / `'minute'` / `'second'` append the matching time segments
+   * and the value carries a time component — which requires a time-capable
+   * adapter (`provideNativeDateAdapter()` /
+   * `provideInternationalizedDateTimeAdapter()`).
+   */
+  readonly granularity = input<FieldGranularity>('day');
+
+  /**
+   * 12- or 24-hour cycle for the time segments. When `null` (default) it is
+   * derived from the locale. A 12-hour cycle adds the AM/PM `dayPeriod` segment.
+   * Only meaningful when `granularity > 'day'`.
+   */
+  readonly hourCycle = input<12 | 24 | null>(null);
+
   /** BCP 47 locale driving segment order and separators. Defaults to the runtime locale. */
   readonly locale = input<string | null>(null);
 
   /**
    * Per-segment placeholder shown while empty. Unspecified parts fall back to a
-   * letter-repeat default derived from the segment width (`dd` / `mm` / `yyyy`).
+   * letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
    */
-  readonly placeholder = input<Partial<Record<DateSegmentType, string>>>({});
+  readonly placeholder = input<Partial<Record<DateTimeSegmentType, string>>>({});
 
   /** Accessible name for the field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
@@ -154,46 +190,62 @@ export class ForDateField<D>
   /** Shared roving-tabindex tracker: exactly one segment owns `tabindex=0`. */
   readonly roving = new RovingTabindex();
 
-  readonly #specs = computed(() => buildSegments(this.locale() ?? undefined));
+  /** Resolved hour cycle (`12` shows AM/PM, `24` does not). */
+  readonly #cycle = computed(() => resolveHourCycle(this.locale() ?? undefined, this.hourCycle()));
 
-  readonly #editableOrder = computed<readonly DateSegmentType[]>(() =>
+  readonly #specs = computed(() =>
+    buildDateTimeSegments(this.locale() ?? undefined, this.granularity(), this.#cycle()),
+  );
+
+  readonly #editableOrder = computed<readonly DateTimeSegmentType[]>(() =>
     this.#specs()
       .filter((spec): spec is EditableSegmentSpec => spec.kind === 'editable')
       .map((spec) => spec.type),
   );
 
+  readonly #periodNames = computed(() => dayPeriodNames(this.locale() ?? undefined));
+
   /** Ephemeral type-to-fill buffer for the segment currently being typed into. */
-  readonly #typing = signal<{ type: DateSegmentType; buffer: string } | null>(null);
+  readonly #typing = signal<{ type: DateTimeSegmentType; buffer: string } | null>(null);
 
   /**
-   * The entered digits per segment. A `linkedSignal` keyed on `value`: a
-   * non-null write (consumer, `[formField]`, or our own compose) rehydrates the
-   * segments from the date. A `null` transition is disambiguated by the prior
-   * parts: an *internal* edit clearing one segment always leaves the others, so
+   * The entered parts. A `linkedSignal` keyed on `value`: a non-null write
+   * (consumer, `[formField]`, or our own compose) rehydrates the segments from
+   * the date. A `null` transition is disambiguated by the prior parts: an
+   * *internal* edit clearing one segment always leaves the others, so
    * `previous` still carries a filled part and is preserved (clearing the day
    * never wipes the month / year); an *external* reset of a complete value
-   * leaves `previous` fully filled, so the field clears. Internal edits write
-   * this directly in the event handler and then publish through `value`.
+   * leaves `previous` fully filled, so the field clears.
    */
-  readonly #parts = linkedSignal<D | null, DateParts>({
+  readonly #parts = linkedSignal<D | null, DateTimeParts>({
     source: this.value,
     computation: (current, previous) => {
       if (current !== null) {
-        return {
+        const parts: DateTimeParts = {
           day: this.adapter.getDate(current),
           month: this.adapter.getMonth(current),
           year: this.adapter.getYear(current),
+          hour: null,
+          minute: null,
+          second: null,
         };
+        if (this.granularity() !== 'day') {
+          const time = this.#time();
+          parts.hour = time.getHours(current);
+          parts.minute = time.getMinutes(current);
+          parts.second = time.getSeconds(current);
+        }
+        return parts;
       }
       const prior = previous?.value;
-      if (prior && (prior.day === null || prior.month === null || prior.year === null)) {
+      if (prior && this.#someEditableEmpty(prior)) {
         return prior;
       }
-      return { day: null, month: null, year: null };
+      return { day: null, month: null, year: null, hour: null, minute: null, second: null };
     },
   });
 
-  readonly #segments = new Map<DateSegmentType, ForDateFieldSegmentHandle>();
+  readonly #segments = new Map<DateTimeSegmentType, ForDateFieldSegmentHandle>();
 
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
@@ -232,33 +284,86 @@ export class ForDateField<D>
         const year = String(this.adapter.getYear(current)).padStart(4, '0');
         const month = String(this.adapter.getMonth(current)).padStart(2, '0');
         const day = String(this.adapter.getDate(current)).padStart(2, '0');
-        return [`${year}-${month}-${day}`];
+        const date = `${year}-${month}-${day}`;
+        const granularity = this.granularity();
+        if (granularity === 'day') {
+          return [date];
+        }
+        const time = this.#time();
+        const hour = String(time.getHours(current)).padStart(2, '0');
+        const minute = String(time.getMinutes(current)).padStart(2, '0');
+        if (granularity === 'second') {
+          const second = String(time.getSeconds(current)).padStart(2, '0');
+          return [`${date}T${hour}:${minute}:${second}`];
+        }
+        return [`${date}T${hour}:${minute}`];
       }),
       disabled: this.disabled,
     });
+
+    // Eager validation: a date-time field needs a time-capable adapter. Fail
+    // loudly as soon as the granularity input settles.
+    effect(() => {
+      if (this.granularity() !== 'day') {
+        this.#time();
+      }
+    });
   }
 
-  segmentValue(type: DateSegmentType): number | null {
-    return this.#parts()[type];
+  segmentValue(type: DateTimeSegmentType): number | null {
+    const parts = this.#parts();
+    if (type === 'dayPeriod') {
+      return parts.hour === null ? null : parts.hour >= 12 ? 1 : 0;
+    }
+    if (type === 'hour') {
+      if (parts.hour === null) {
+        return null;
+      }
+      return this.#cycle() === 12 ? to12(parts.hour).h12 : parts.hour;
+    }
+    return parts[type];
   }
 
-  segmentMin(): number {
+  segmentMin(type: DateTimeSegmentType): number {
+    if (type === 'hour') {
+      return this.#cycle() === 12 ? 1 : 0;
+    }
+    if (type === 'minute' || type === 'second' || type === 'dayPeriod') {
+      return 0;
+    }
     return 1;
   }
 
-  segmentMax(type: DateSegmentType): number {
-    if (type === 'month') {
-      return 12;
+  segmentMax(type: DateTimeSegmentType): number {
+    switch (type) {
+      case 'month':
+        return 12;
+      case 'year':
+        return 9999;
+      case 'hour':
+        return this.#cycle() === 12 ? 12 : 23;
+      case 'minute':
+      case 'second':
+        return 59;
+      case 'dayPeriod':
+        return 1;
+      default: {
+        const parts = this.#parts();
+        const probe = this.adapter.createDate(parts.year ?? RESOLVER_YEAR, parts.month ?? 1, 1);
+        return this.adapter.getDaysInMonth(probe);
+      }
     }
-    if (type === 'year') {
-      return 9999;
-    }
-    const parts = this.#parts();
-    const probe = this.adapter.createDate(parts.year ?? RESOLVER_YEAR, parts.month ?? 1, 1);
-    return this.adapter.getDaysInMonth(probe);
   }
 
-  segmentValueText(type: DateSegmentType): string | null {
+  segmentValueText(type: DateTimeSegmentType): string | null {
+    if (type === 'dayPeriod') {
+      const hour = this.#parts().hour;
+      if (hour === null) {
+        return null;
+      }
+      const names = this.#periodNames();
+      return hour >= 12 ? names.pm : names.am;
+    }
     if (type !== 'month') {
       return null;
     }
@@ -274,23 +379,34 @@ export class ForDateField<D>
     );
   }
 
-  segmentDisplayText(type: DateSegmentType): string {
+  segmentDisplayText(type: DateTimeSegmentType): string {
     const typing = this.#typing();
     if (typing && typing.type === type) {
       return typing.buffer;
     }
-    const current = this.#parts()[type];
-    if (current === null) {
+    if (type === 'dayPeriod') {
+      const hour = this.#parts().hour;
+      if (hour === null) {
+        return this.#placeholderFor(type);
+      }
+      const names = this.#periodNames();
+      return hour >= 12 ? names.pm : names.am;
+    }
+    const value = this.segmentValue(type);
+    if (value === null) {
       return this.#placeholderFor(type);
     }
-    return String(current).padStart(type === 'year' ? 4 : 2, '0');
+    return String(value).padStart(type === 'year' ? 4 : 2, '0');
   }
 
-  isSegmentEmpty(type: DateSegmentType): boolean {
+  isSegmentEmpty(type: DateTimeSegmentType): boolean {
+    if (type === 'dayPeriod') {
+      return this.#parts().hour === null;
+    }
     return this.#parts()[type] === null;
   }
 
-  isFirstSegmentType(type: DateSegmentType): boolean {
+  isFirstSegmentType(type: DateTimeSegmentType): boolean {
     return this.#editableOrder()[0] === type;
   }
 
@@ -304,7 +420,7 @@ export class ForDateField<D>
     }
   }
 
-  focusSegment(type: DateSegmentType): void {
+  focusSegment(type: DateTimeSegmentType): void {
     const handle = this.#segments.get(type);
     if (handle) {
       this.roving.setActive(handle.host);
@@ -312,11 +428,12 @@ export class ForDateField<D>
     this.#typing.set(null);
   }
 
-  typeDigit(type: DateSegmentType, digit: number): void {
-    if (this.disabled() || this.readonly()) {
+  typeDigit(type: DateTimeSegmentType, digit: number): void {
+    if (this.disabled() || this.readonly() || type === 'dayPeriod') {
       return;
     }
     const spec = this.#editableSpec(type);
+    const min = this.segmentMin(type);
     const max = this.segmentMax(type);
     const previous = this.#typing();
     let buffer = (previous?.type === type ? previous.buffer : '') + String(digit);
@@ -324,9 +441,9 @@ export class ForDateField<D>
       buffer = String(digit);
     }
     const num = Number(buffer);
-    const valid = num >= this.segmentMin() && num <= max;
+    const valid = num >= min && num <= max;
     this.#typing.set({ type, buffer });
-    this.#commitParts({ ...this.#parts(), [type]: valid ? num : null });
+    this.#commitParts({ ...this.#parts(), [type]: valid ? this.#toInternal(type, num) : null });
     const full = valid && (buffer.length >= spec.digits || num * 10 > max);
     if (full) {
       this.#typing.set(null);
@@ -334,51 +451,69 @@ export class ForDateField<D>
     }
   }
 
-  step(type: DateSegmentType, delta: number): void {
+  step(type: DateTimeSegmentType, delta: number): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
     this.#typing.set(null);
-    const min = this.segmentMin();
-    const max = this.segmentMax(type);
-    const current = this.#parts()[type];
-    let next: number;
+    if (type === 'dayPeriod') {
+      this.setDayPeriod(delta > 0 ? 'pm' : 'am');
+      return;
+    }
+    const parts = this.#parts();
+    const current = parts[type];
     if (current === null) {
-      const today = this.adapter.today();
-      const base =
-        type === 'day'
-          ? this.adapter.getDate(today)
-          : type === 'month'
-            ? this.adapter.getMonth(today)
-            : this.adapter.getYear(today);
-      next = Math.min(max, Math.max(min, base));
+      this.#commitParts({ ...parts, [type]: this.#seed(type) });
+      return;
+    }
+    let next: number;
+    if (type === 'hour') {
+      next = this.#stepHour(current, delta);
+    } else if (type === 'minute' || type === 'second') {
+      next = (((current + delta) % 60) + 60) % 60;
     } else if (type === 'year') {
-      next = Math.min(max, Math.max(min, current + delta));
+      next = Math.min(this.segmentMax(type), Math.max(this.segmentMin(type), current + delta));
     } else {
-      const range = max - min + 1;
+      const min = this.segmentMin(type);
+      const range = this.segmentMax(type) - min + 1;
       next = min + ((((current - min + delta) % range) + range) % range);
     }
-    this.#commitParts({ ...this.#parts(), [type]: next });
+    this.#commitParts({ ...parts, [type]: next });
   }
 
-  goToBound(type: DateSegmentType, bound: 'min' | 'max'): void {
+  goToBound(type: DateTimeSegmentType, bound: 'min' | 'max'): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
     this.#typing.set(null);
-    const value = bound === 'min' ? this.segmentMin() : this.segmentMax(type);
-    this.#commitParts({ ...this.#parts(), [type]: value });
+    if (type === 'dayPeriod') {
+      this.setDayPeriod(bound === 'min' ? 'am' : 'pm');
+      return;
+    }
+    const display = bound === 'min' ? this.segmentMin(type) : this.segmentMax(type);
+    this.#commitParts({ ...this.#parts(), [type]: this.#toInternal(type, display) });
   }
 
-  clear(type: DateSegmentType): void {
+  setDayPeriod(period: 'am' | 'pm'): void {
     if (this.disabled() || this.readonly()) {
+      return;
+    }
+    this.#typing.set(null);
+    const hour = this.#parts().hour;
+    const pm = period === 'pm';
+    const next = hour === null ? (pm ? 12 : 0) : pm ? (hour % 12) + 12 : hour % 12;
+    this.#commitParts({ ...this.#parts(), hour: next });
+  }
+
+  clear(type: DateTimeSegmentType): void {
+    if (this.disabled() || this.readonly() || type === 'dayPeriod') {
       return;
     }
     this.#typing.set(null);
     this.#commitParts({ ...this.#parts(), [type]: null });
   }
 
-  focusSibling(type: DateSegmentType, step: -1 | 1): void {
+  focusSibling(type: DateTimeSegmentType, step: -1 | 1): void {
     const order = this.#editableOrder();
     const targetType = order[order.indexOf(type) + step];
     if (targetType === undefined) {
@@ -399,14 +534,84 @@ export class ForDateField<D>
     }
   }
 
-  #commitParts(next: DateParts): void {
-    this.#parts.set(next);
-    if (next.day !== null && next.month !== null && next.year !== null) {
-      const created = this.adapter.createDate(next.year, next.month, next.day);
-      this.value.set(this.#clampToBounds(created));
-    } else {
-      this.value.set(null);
+  /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
+  #time(): TimeCapableDateAdapter<D> {
+    return assertTimeCapable(this.adapter, 'ForDateField');
+  }
+
+  /** Converts a displayed segment value to its internal representation (hour: 12h→24h). */
+  #toInternal(type: DateTimeSegmentType, display: number): number {
+    if (type !== 'hour' || this.#cycle() === 24) {
+      return display;
     }
+    const hour = this.#parts().hour;
+    const pm = hour !== null && hour >= 12;
+    return from12(display, pm);
+  }
+
+  #stepHour(current: number, delta: number): number {
+    if (this.#cycle() === 24) {
+      return (((current + delta) % 24) + 24) % 24;
+    }
+    const { h12, pm } = to12(current);
+    const nextH12 = ((((h12 - 1 + delta) % 12) + 12) % 12) + 1;
+    return from12(nextH12, pm);
+  }
+
+  /** Base value for stepping an empty segment: date parts from today, time parts from their minimum. */
+  #seed(type: 'day' | 'month' | 'year' | 'hour' | 'minute' | 'second'): number {
+    if (type === 'hour') {
+      return this.#toInternal('hour', this.segmentMin('hour'));
+    }
+    if (type === 'minute' || type === 'second') {
+      return 0;
+    }
+    const today = this.adapter.today();
+    const base =
+      type === 'day'
+        ? this.adapter.getDate(today)
+        : type === 'month'
+          ? this.adapter.getMonth(today)
+          : this.adapter.getYear(today);
+    return Math.min(this.segmentMax(type), Math.max(this.segmentMin(type), base));
+  }
+
+  #someEditableEmpty(parts: DateTimeParts): boolean {
+    return this.#editableOrder().some((type) => {
+      if (type === 'dayPeriod') {
+        return parts.hour === null;
+      }
+      return parts[type] === null;
+    });
+  }
+
+  #commitParts(next: DateTimeParts): void {
+    this.#parts.set(next);
+    const granularity = this.granularity();
+    const needHour = granularity !== 'day';
+    const needMinute = granularity === 'minute' || granularity === 'second';
+    const needSecond = granularity === 'second';
+    const complete =
+      next.day !== null &&
+      next.month !== null &&
+      next.year !== null &&
+      (!needHour || next.hour !== null) &&
+      (!needMinute || next.minute !== null) &&
+      (!needSecond || next.second !== null);
+    if (!complete) {
+      this.value.set(null);
+      return;
+    }
+    let created = this.adapter.createDate(next.year!, next.month!, next.day!);
+    if (needHour) {
+      created = this.#time().setTime(
+        created,
+        next.hour!,
+        needMinute ? next.minute! : 0,
+        needSecond ? next.second! : 0,
+      );
+    }
+    this.value.set(this.#clampToBounds(created));
   }
 
   #clampToBounds(date: D): D {
@@ -421,16 +626,30 @@ export class ForDateField<D>
     return date;
   }
 
-  #placeholderFor(type: DateSegmentType): string {
+  #placeholderFor(type: DateTimeSegmentType): string {
     const override = this.placeholder()[type];
     if (override) {
       return override;
     }
-    const letter = type === 'day' ? 'd' : type === 'month' ? 'm' : 'y';
-    return letter.repeat(this.#editableSpec(type).digits);
+    switch (type) {
+      case 'day':
+        return 'dd';
+      case 'month':
+        return 'mm';
+      case 'year':
+        return 'yyyy';
+      case 'hour':
+        return 'hh';
+      case 'minute':
+        return 'mm';
+      case 'second':
+        return 'ss';
+      default:
+        return '--';
+    }
   }
 
-  #editableSpec(type: DateSegmentType): EditableSegmentSpec {
+  #editableSpec(type: DateTimeSegmentType): EditableSegmentSpec {
     return this.#specs().find(
       (spec): spec is EditableSegmentSpec => spec.kind === 'editable' && spec.type === type,
     )!;

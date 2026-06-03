@@ -1,12 +1,24 @@
-/** Which calendar part an editable segment edits. */
+import type { TimeSegmentType } from '../time-field/build-time-segments';
+
+/** Which calendar part an editable date segment edits. */
 export type DateSegmentType = 'day' | 'month' | 'year';
+
+/**
+ * Every editable part a date(-time) field can render — the date parts plus, at
+ * `granularity > 'day'`, the time parts (`hour` / `minute` / `second` / the
+ * AM·PM `dayPeriod`).
+ */
+export type DateTimeSegmentType = DateSegmentType | TimeSegmentType;
+
+/** Date-time precision of a date field; `'day'` keeps it date-only. */
+export type FieldGranularity = 'day' | 'hour' | 'minute' | 'second';
 
 /** Spec for a single editable spinbutton segment. */
 export interface EditableSegmentSpec {
   readonly kind: 'editable';
-  /** The calendar part this segment edits. */
-  readonly type: DateSegmentType;
-  /** Maximum number of digits the segment accepts before it is full. */
+  /** The date or time part this segment edits. */
+  readonly type: DateTimeSegmentType;
+  /** Maximum number of digits the segment accepts before it is full (`0` for the AM/PM toggle). */
   readonly digits: number;
 }
 
@@ -20,10 +32,14 @@ export interface LiteralSegmentSpec {
 /** A single entry in the locale-ordered segment list. */
 export type SegmentSpec = EditableSegmentSpec | LiteralSegmentSpec;
 
-const DIGITS: Record<DateSegmentType, number> = {
+const DIGITS: Record<DateTimeSegmentType, number> = {
   day: 2,
   month: 2,
   year: 4,
+  hour: 2,
+  minute: 2,
+  second: 2,
+  dayPeriod: 0,
 };
 
 /**
@@ -70,3 +86,67 @@ export function buildSegments(locale: string | undefined): readonly SegmentSpec[
 // digit can't mask the part ordering. The year (2000) is irrelevant — only the
 // `type` of each formatted part is read.
 const REFERENCE_DATE = new Date(2000, 1, 1);
+
+// 1 Feb 2000, 1:23:45 PM — distinct day / month and hour / minute / second, in
+// the afternoon so the `dayPeriod` part is present to read back.
+const REFERENCE_DATE_TIME = new Date(2000, 1, 1, 13, 23, 45);
+
+/**
+ * Derives the ordered segment list for a date(-time) field. At
+ * `granularity === 'day'` this is exactly {@link buildSegments} (date-only,
+ * byte-for-byte). At a finer granularity it appends the locale-ordered time
+ * segments (and the date↔time separator) by formatting a reference date-time
+ * with both date and time options in a single `Intl.DateTimeFormat` pass, so
+ * the order of every part — and whether an AM/PM `dayPeriod` is present —
+ * follows the locale and the resolved hour cycle.
+ *
+ * Pure: the same arguments always yield the same list.
+ *
+ * @param locale BCP 47 locale, or `undefined` for the runtime default.
+ * @param granularity Smallest editable unit; `'day'` stays date-only.
+ * @param hourCycle Resolved hour cycle (`12` shows AM/PM, `24` does not).
+ */
+export function buildDateTimeSegments(
+  locale: string | undefined,
+  granularity: FieldGranularity,
+  hourCycle: 12 | 24,
+): readonly SegmentSpec[] {
+  if (granularity === 'day') {
+    return buildSegments(locale);
+  }
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: hourCycle === 12,
+  };
+  if (granularity !== 'hour') {
+    options.minute = '2-digit';
+  }
+  if (granularity === 'second') {
+    options.second = '2-digit';
+  }
+
+  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(REFERENCE_DATE_TIME);
+  const segments: SegmentSpec[] = [];
+  for (const part of parts) {
+    switch (part.type) {
+      case 'day':
+      case 'month':
+      case 'year':
+      case 'hour':
+      case 'minute':
+      case 'second':
+      case 'dayPeriod':
+        segments.push({ kind: 'editable', type: part.type, digits: DIGITS[part.type] });
+        break;
+      case 'literal':
+        segments.push({ kind: 'literal', literal: part.value });
+        break;
+      default:
+        break;
+    }
+  }
+  return segments;
+}
