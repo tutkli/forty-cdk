@@ -9,7 +9,10 @@ import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-
  * input so the thumb can compute geometry.
  *
  * The element is fully removed (`hidden`) when the corresponding axis has
- * no overflow — there is no scrollbar to render.
+ * no overflow — there is no scrollbar to render. Visibility is enforced with
+ * an inline `display: none` (which beats any author `display` rule a consumer
+ * applies via a class) in addition to the `hidden` attribute that removes it
+ * from the a11y tree.
  */
 @Directive({
   selector: '[forScrollAreaScrollbar]',
@@ -18,6 +21,7 @@ import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-state]': 'state()',
     '[hidden]': '!hasOverflow()',
+    '[style.display]': 'hasOverflow() ? null : "none"',
   },
 })
 export class ForScrollAreaScrollbar {
