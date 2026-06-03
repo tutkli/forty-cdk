@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
@@ -10,6 +11,10 @@ import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
 import { InternationalizedDateAdapter } from './internationalized-date-adapter';
+import {
+  InternationalizedDateTimeAdapter,
+  provideInternationalizedDateTimeAdapter,
+} from './internationalized-date-time-adapter';
 import { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
 
 const adapter = new NativeDateAdapter();
@@ -103,6 +108,35 @@ class CalendarHost {
 })
 class TodayHost {
   readonly today = adapter.today();
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideInternationalizedDateTimeAdapter()],
+  template: `
+    <div forCalendar [(value)]="value" [min]="min()" [max]="max()">
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td
+                  forCalendarCell
+                  [date]="cell.date"
+                  [attr.data-testid]="'cell-' + cell.key"
+                ></td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class DateTimeCalendarHost {
+  readonly value = signal<CalendarDateTime | null>(new CalendarDateTime(2026, 6, 15, 9, 0));
+  readonly min = signal<CalendarDateTime | null>(null);
+  readonly max = signal<CalendarDateTime | null>(null);
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
@@ -448,6 +482,76 @@ describe('ForCalendar', () => {
       const nativeLeap = native.addYears(native.createDate(2024, 2, 29), 1);
       expect(native.getMonth(nativeLeap)).toBe(2);
       expect(native.getDate(nativeLeap)).toBe(28);
+    });
+
+    it('compareDate ignores the time component on every adapter (#370)', () => {
+      const native = new NativeDateAdapter();
+      const dateTime = new InternationalizedDateTimeAdapter();
+
+      const nativeMidnight = new Date(2026, 5, 20, 0, 0);
+      const nativeMin = new Date(2026, 5, 20, 9, 0);
+      expect(native.compare(nativeMidnight, nativeMin)).toBeLessThan(0);
+      expect(native.compareDate(nativeMidnight, nativeMin)).toBe(0);
+
+      const dtMidnight = new CalendarDateTime(2026, 6, 20, 0, 0);
+      const dtMin = new CalendarDateTime(2026, 6, 20, 9, 0);
+      expect(dateTime.compare(dtMidnight, dtMin)).toBeLessThan(0);
+      expect(dateTime.compareDate(dtMidnight, dtMin)).toBe(0);
+    });
+  });
+
+  describe('date-time min/max boundary day (#370)', () => {
+    it('keeps the day of a non-midnight min selectable in the grid', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.min.set(new CalendarDateTime(2026, 6, 20, 9, 0));
+      await flush(r.fixture);
+
+      const boundary = r.query('[data-testid="cell-2026-6-20"]')!;
+      expect(boundary.hasAttribute('aria-disabled')).toBe(false);
+
+      boundary.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+      expect(boundary.getAttribute('aria-selected')).toBe('true');
+      expect(r.instance.value()!.day).toBe(20);
+    });
+
+    it('keeps the day of a non-midnight max selectable in the grid', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.max.set(new CalendarDateTime(2026, 6, 20, 9, 0));
+      await flush(r.fixture);
+
+      const boundary = r.query('[data-testid="cell-2026-6-20"]')!;
+      expect(boundary.hasAttribute('aria-disabled')).toBe(false);
+
+      boundary.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+      expect(boundary.getAttribute('aria-selected')).toBe('true');
+      expect(r.instance.value()!.day).toBe(20);
+    });
+
+    it('marks the day before a non-midnight min as unavailable', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.min.set(new CalendarDateTime(2026, 6, 20, 9, 0));
+      await flush(r.fixture);
+
+      const before = r.query('[data-testid="cell-2026-6-19"]')!;
+      expect(before.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('matches NativeDateAdapter behavior for a non-midnight min boundary day', () => {
+      const native = new NativeDateAdapter();
+      const dateTime = new InternationalizedDateTimeAdapter();
+
+      const nativeCell = new Date(2026, 5, 20, 0, 0);
+      const nativeMin = new Date(2026, 5, 20, 9, 0);
+      const dtCell = new CalendarDateTime(2026, 6, 20, 0, 0);
+      const dtMin = new CalendarDateTime(2026, 6, 20, 9, 0);
+
+      const nativeAvailable = native.compareDate(nativeCell, nativeMin) >= 0;
+      const dtAvailable = dateTime.compareDate(dtCell, dtMin) >= 0;
+      expect(nativeAvailable).toBe(true);
+      expect(dtAvailable).toBe(true);
+      expect(nativeAvailable).toBe(dtAvailable);
     });
   });
 });

@@ -23,9 +23,9 @@ import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
  * `provideNativeDateAdapter()` never imports this file, so the package is
  * tree-shaken out of their bundle.
  *
- * `compare` orders by the full date-time (day *and* time). For a day-only
- * calendar grid prefer `provideInternationalizedDateAdapter()` (`CalendarDate`),
- * which compares by calendar day.
+ * `compare` orders by the full date-time (day *and* time); `compareDate`
+ * ignores the time and orders by calendar day, so the calendar grid stays
+ * day-granular even when `min`/`max` carry a time.
  */
 @Injectable()
 export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDateTime> {
@@ -75,6 +75,16 @@ export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDat
 
   compare(a: CalendarDateTime, b: CalendarDateTime): number {
     return a.compare(b);
+  }
+
+  compareDate(a: CalendarDateTime, b: CalendarDateTime): number {
+    if (a.year !== b.year) {
+      return a.year - b.year;
+    }
+    if (a.month !== b.month) {
+      return a.month - b.month;
+    }
+    return a.day - b.day;
   }
 
   isSameDay(a: CalendarDateTime, b: CalendarDateTime): boolean {

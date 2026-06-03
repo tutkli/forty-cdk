@@ -71,6 +71,10 @@ export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
     return a.compare(b);
   }
 
+  compareDate(a: CalendarDate, b: CalendarDate): number {
+    return a.compare(b);
+  }
+
   isSameDay(a: CalendarDate, b: CalendarDate): boolean {
     return isSameDay(a, b);
   }
