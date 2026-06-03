@@ -355,13 +355,10 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       el.value = clamped;
       el.setSelectionRange(clamped.length, clamped.length);
     }
-    this.value.set(clamped);
+    this.#commit(clamped);
     this.#syncSelection();
     if (rejected) {
       this.valueInvalid.emit({ value: raw });
-    }
-    if (clamped.length === this.length()) {
-      this.valueComplete.emit(clamped);
     }
   }
 
@@ -378,13 +375,18 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
     const clamped = filtered.slice(0, this.length());
     el.value = clamped;
     el.setSelectionRange(clamped.length, clamped.length);
-    this.value.set(clamped);
+    this.#commit(clamped);
     this.#syncSelection();
     if (rejected) {
       this.valueInvalid.emit({ value: text });
     }
-    if (clamped.length === this.length()) {
-      this.valueComplete.emit(clamped);
+  }
+
+  #commit(next: string): void {
+    const wasComplete = this.complete();
+    this.value.set(next);
+    if (!wasComplete && next.length === this.length()) {
+      this.valueComplete.emit(next);
     }
   }
 
