@@ -88,8 +88,7 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         title: 'Select',
         description:
           'A custom select: a trigger that opens a portaled listbox popup to pick one or many options, with groups and separators.',
-        apgUrl:
-          'https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/',
       },
       {
         slug: 'combobox',
@@ -115,6 +114,31 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         title: 'Field',
         description:
           'Headless wiring that ties a label, description and error region to a control, and reflects validation state as data-* for styling. Any forty-cdk form control auto-associates; native inputs opt in with forFieldControl.',
+      },
+      {
+        slug: 'fieldset',
+        title: 'Fieldset',
+        description:
+          'Headless grouping that gives a set of related fields a shared accessible name — a native <fieldset> / legend, or role=group + aria-labelledby on any element — plus an optional shared disabled state that reaches custom-role controls.',
+      },
+      {
+        slug: 'input',
+        title: 'Input',
+        description:
+          'Attribute directives for single- and multi-line text: a string value() that auto-wires with Signal Forms and reflects every form state (empty, disabled, readonly, invalid …) as data-* / aria-* hooks.',
+      },
+      {
+        slug: 'number-input',
+        title: 'Number Input',
+        description:
+          'A numeric spinbutton with keyboard stepping, optional +/− buttons, min / max / step clamping and Intl number formatting for the displayed text and aria-valuetext.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
+      },
+      {
+        slug: 'otp-input',
+        title: 'OTP Input',
+        description:
+          'A one-time-code / PIN field on the single-input model: typed and pasted characters fill styled slots, with masking, character filtering and a complete event.',
       },
       {
         slug: 'switch',
@@ -162,11 +186,32 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/treeview/',
       },
       {
+        slug: 'date-field',
+        title: 'Date Field',
+        description:
+          'A segmented date (and optional time) input over a pluggable date adapter — each part a spinbutton with keyboard stepping, locale-driven segment order and min / max clamping.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
+      },
+      {
+        slug: 'time-field',
+        title: 'Time Field',
+        description:
+          'A segmented time-of-day input over a pluggable date adapter, with 12 / 24-hour cycles, optional seconds, and min / max time clamping.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
+      },
+      {
         slug: 'calendar',
         title: 'Calendar',
         description:
           'A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/grid/',
+      },
+      {
+        slug: 'date-picker',
+        title: 'Date Picker',
+        description:
+          'A trigger that opens a floating calendar to pick a date, composing ForCalendar inside a dismissable popover with min / max bounds and per-date availability.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/',
       },
     ],
   },

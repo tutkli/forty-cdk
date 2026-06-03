@@ -32,7 +32,8 @@ export const routes: Routes = [
   },
   {
     path: 'radio-group',
-    loadComponent: () => import('./demos/radio-group/radio-group.page').then((m) => m.RadioGroupPage),
+    loadComponent: () =>
+      import('./demos/radio-group/radio-group.page').then((m) => m.RadioGroupPage),
   },
   {
     path: 'slider',
@@ -73,7 +74,8 @@ export const routes: Routes = [
   },
   {
     path: 'scroll-area',
-    loadComponent: () => import('./demos/scroll-area/scroll-area.page').then((m) => m.ScrollAreaPage),
+    loadComponent: () =>
+      import('./demos/scroll-area/scroll-area.page').then((m) => m.ScrollAreaPage),
   },
   {
     path: 'popover',
@@ -98,7 +100,8 @@ export const routes: Routes = [
   },
   {
     path: 'context-menu',
-    loadComponent: () => import('./demos/context-menu/context-menu.page').then((m) => m.ContextMenuPage),
+    loadComponent: () =>
+      import('./demos/context-menu/context-menu.page').then((m) => m.ContextMenuPage),
   },
   {
     path: 'menubar',
@@ -132,6 +135,36 @@ export const routes: Routes = [
   {
     path: 'toast',
     loadComponent: () => import('./demos/toast/toast.page').then((m) => m.ToastPage),
+  },
+  {
+    path: 'fieldset',
+    loadComponent: () => import('./demos/fieldset/fieldset.page').then((m) => m.FieldsetPage),
+  },
+  {
+    path: 'input',
+    loadComponent: () => import('./demos/input/input.page').then((m) => m.InputPage),
+  },
+  {
+    path: 'number-input',
+    loadComponent: () =>
+      import('./demos/number-input/number-input.page').then((m) => m.NumberInputPage),
+  },
+  {
+    path: 'otp-input',
+    loadComponent: () => import('./demos/otp-input/otp-input.page').then((m) => m.OtpInputPage),
+  },
+  {
+    path: 'date-field',
+    loadComponent: () => import('./demos/date-field/date-field.page').then((m) => m.DateFieldPage),
+  },
+  {
+    path: 'time-field',
+    loadComponent: () => import('./demos/time-field/time-field.page').then((m) => m.TimeFieldPage),
+  },
+  {
+    path: 'date-picker',
+    loadComponent: () =>
+      import('./demos/date-picker/date-picker.page').then((m) => m.DatePickerPage),
   },
   { path: '**', redirectTo: 'accordion' },
 ];
