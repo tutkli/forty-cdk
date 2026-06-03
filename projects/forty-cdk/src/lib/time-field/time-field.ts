@@ -24,9 +24,11 @@ import {
   buildTimeSegments,
   dayPeriodNames,
   type EditableTimeSegmentSpec,
+  from12,
   resolveHourCycle,
   type TimeGranularity,
   type TimeSegmentType,
+  to12,
 } from './build-time-segments';
 import {
   FOR_TIME_FIELD_CONTEXT,
@@ -40,17 +42,6 @@ interface TimeParts {
   hour: number | null;
   minute: number | null;
   second: number | null;
-}
-
-/** Maps a 0-23 hour to its 12-hour display value and AM/PM period. */
-function to12(hour: number): { h12: number; pm: boolean } {
-  return { h12: ((hour + 11) % 12) + 1, pm: hour >= 12 };
-}
-
-/** Combines a 1-12 display hour and an AM/PM period back into a 0-23 hour. */
-function from12(h12: number, pm: boolean): number {
-  const base = h12 % 12;
-  return pm ? base + 12 : base;
 }
 
 /**

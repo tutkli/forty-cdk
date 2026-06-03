@@ -1,8 +1,8 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import type { DateTimeSegmentType } from './build-segments';
 import { injectDateFieldContext } from './date-field-context';
-import type { DateSegmentType } from './build-segments';
 
 /**
  * One editable spinbutton segment of a `[forDateField]` — the day, month, or
@@ -11,11 +11,13 @@ import type { DateSegmentType } from './build-segments';
  * `aria-valuenow` / `aria-valuetext` reflection, the roving tabindex, and the
  * full keyboard map:
  *
- * - **digits** fill the segment and auto-advance to the next when full;
- * - **ArrowUp / ArrowDown** step the value (day / month wrap, year clamps);
+ * - **digits** fill a numeric segment and auto-advance to the next when full;
+ * - **a / p** set the period on the AM/PM (`dayPeriod`) segment;
+ * - **ArrowUp / ArrowDown** step the value (day / month / hour / minute / second
+ *   wrap, year clamps, dayPeriod toggles);
  * - **ArrowLeft / ArrowRight** move between segments (mirrored under RTL, no wrap);
- * - **Home / End** jump to the segment minimum / maximum;
- * - **Backspace / Delete** clear the segment.
+ * - **Home / End** jump to the segment minimum / maximum (dayPeriod → AM / PM);
+ * - **Backspace / Delete** clear a numeric segment.
  *
  * All state lives on the root `ForDateField`; the segment only reads it and
  * forwards intents. The rendered text comes from the root's `segments()` list
@@ -27,10 +29,10 @@ import type { DateSegmentType } from './build-segments';
   host: {
     role: 'spinbutton',
     '[attr.tabindex]': 'tabindex()',
-    '[attr.inputmode]': '"numeric"',
+    '[attr.inputmode]': 'inputmode()',
     '[attr.autocorrect]': '"off"',
     '[attr.spellcheck]': '"false"',
-    '[attr.aria-valuemin]': 'ctx.segmentMin()',
+    '[attr.aria-valuemin]': 'ctx.segmentMin(segment())',
     '[attr.aria-valuemax]': 'ctx.segmentMax(segment())',
     '[attr.aria-valuenow]': 'valueNow()',
     '[attr.aria-valuetext]': 'ctx.segmentValueText(segment())',
@@ -49,13 +51,17 @@ export class ForDateFieldSegment {
   protected readonly ctx = injectDateFieldContext('ForDateFieldSegment');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Which calendar part this segment edits. */
-  readonly segment = input.required<DateSegmentType>();
+  /** Which date or time part this segment edits. */
+  readonly segment = input.required<DateTimeSegmentType>();
 
   /** Accessible name for this segment. Falls back to the segment type when unset. */
   readonly ariaLabel = input<string | null>(null);
 
   protected readonly valueNow = computed(() => this.ctx.segmentValue(this.segment()));
+
+  protected readonly inputmode = computed<'numeric' | null>(() =>
+    this.segment() === 'dayPeriod' ? null : 'numeric',
+  );
 
   protected readonly highlighted = computed(
     () => this.ctx.roving.active() === this.#host.nativeElement,
@@ -94,42 +100,48 @@ export class ForDateFieldSegment {
     if (this.ctx.disabled()) {
       return;
     }
+    const type = this.segment();
     const key = event.key;
     if (key.length === 1 && key >= '0' && key <= '9') {
       event.preventDefault();
-      this.ctx.typeDigit(this.segment(), Number(key));
+      this.ctx.typeDigit(type, Number(key));
+      return;
+    }
+    if (type === 'dayPeriod' && (key === 'a' || key === 'A' || key === 'p' || key === 'P')) {
+      event.preventDefault();
+      this.ctx.setDayPeriod(key === 'a' || key === 'A' ? 'am' : 'pm');
       return;
     }
     const rtl = this.ctx.dir() === 'rtl';
     switch (key) {
       case 'ArrowUp':
         event.preventDefault();
-        this.ctx.step(this.segment(), 1);
+        this.ctx.step(type, 1);
         return;
       case 'ArrowDown':
         event.preventDefault();
-        this.ctx.step(this.segment(), -1);
+        this.ctx.step(type, -1);
         return;
       case 'ArrowRight':
         event.preventDefault();
-        this.ctx.focusSibling(this.segment(), rtl ? -1 : 1);
+        this.ctx.focusSibling(type, rtl ? -1 : 1);
         return;
       case 'ArrowLeft':
         event.preventDefault();
-        this.ctx.focusSibling(this.segment(), rtl ? 1 : -1);
+        this.ctx.focusSibling(type, rtl ? 1 : -1);
         return;
       case 'Home':
         event.preventDefault();
-        this.ctx.goToBound(this.segment(), 'min');
+        this.ctx.goToBound(type, 'min');
         return;
       case 'End':
         event.preventDefault();
-        this.ctx.goToBound(this.segment(), 'max');
+        this.ctx.goToBound(type, 'max');
         return;
       case 'Backspace':
       case 'Delete':
         event.preventDefault();
-        this.ctx.clear(this.segment());
+        this.ctx.clear(type);
         return;
       default:
         return;

@@ -37,8 +37,10 @@ bootstrapApplication(App, {
 | `value`       | `model<D \| null>`                                    | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing. Default `null`.    |
 | `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below. Default `null`.    |
 | `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive). A composed value above it is clamped down. Default `null`.                                    |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`     | Date-time precision. `'day'` (default) is date-only; coarser-than-day off appends time segments. See below.            |
+| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. Default `null` → locale. 12-hour adds the AM/PM segment.                       |
 | `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. Default `null` → runtime locale.                      |
-| `placeholder` | `input<Partial<Record<'day' \| 'month' \| 'year', string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy`. Default `{}`.        |
+| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`. Default `{}`. |
 | `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`. Default `null`.                                     |
 | `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. Default `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.   |
 
@@ -89,6 +91,24 @@ Horizontal arrows mirror under `dir="rtl"`.
 | **Backspace / Delete**     | Clear the segment (the value becomes `null` until refilled).              |
 
 The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`.
+
+## Date-time field (`granularity > 'day'`)
+
+Set `granularity` to `'hour'`, `'minute'`, or `'second'` to append time segments — hour / minute / second and, in 12-hour mode, an AM·PM `dayPeriod` — after the date segments in the same `role="group"`. The whole field stays a single tab stop with one roving cursor across **all** segments; `field.segments()` already returns the combined, locale-ordered list, so the same `@for` template renders it. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
+
+```html
+<div forDateField [(value)]="when" granularity="minute" [hourCycle]="24" #field="forDateField">
+  @for (seg of field.segments(); track seg.id) {
+    @if (seg.isLiteral) {
+      <span forDateFieldLiteral>{{ seg.text }}</span>
+    } @else {
+      <span forDateFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    }
+  }
+</div>
+```
+
+On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it; the period is derived from the entered hour, so clearing it is a no-op (clear or step the hour instead). The value stays `null` until every visible segment — date **and** time — is filled.
 
 ## Scope defaults
 

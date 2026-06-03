@@ -2,7 +2,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { DateSegmentType } from './build-segments';
+import type { DateTimeSegmentType } from './build-segments';
 
 /**
  * A rendered segment descriptor exposed by `ForDateField.segments()` for the
@@ -15,7 +15,7 @@ export interface DateFieldSegment {
   /** `true` for a separator (`/`, `.`, `-`); `false` for an editable segment. */
   readonly isLiteral: boolean;
   /** The calendar part an editable segment edits; `null` for a literal. */
-  readonly type: DateSegmentType | null;
+  readonly type: DateTimeSegmentType | null;
   /**
    * Text to render: the formatted value when the segment is filled, the
    * placeholder while empty, or the literal separator.
@@ -28,7 +28,7 @@ export interface ForDateFieldSegmentHandle {
   /** The segment's host element. */
   readonly host: HTMLElement;
   /** The calendar part the segment edits. */
-  readonly type: Signal<DateSegmentType>;
+  readonly type: Signal<DateTimeSegmentType>;
 }
 
 /**
@@ -50,19 +50,19 @@ export interface ForDateFieldContext {
   readonly roving: RovingTabindex;
 
   /** Current numeric value of `type`, or `null` while empty. */
-  segmentValue(type: DateSegmentType): number | null;
-  /** Lowest accepted value for any segment (always `1`). */
-  segmentMin(): number;
+  segmentValue(type: DateTimeSegmentType): number | null;
+  /** Lowest accepted value for `type` (date parts `1`; hour `0`/`1` by cycle; minute/second/dayPeriod `0`). */
+  segmentMin(type: DateTimeSegmentType): number;
   /** Highest accepted value for `type` (day clamps to the current month length). */
-  segmentMax(type: DateSegmentType): number;
+  segmentMax(type: DateTimeSegmentType): number;
   /** Human-readable value for `aria-valuetext` (month name), or `null`. */
-  segmentValueText(type: DateSegmentType): string | null;
+  segmentValueText(type: DateTimeSegmentType): string | null;
   /** Text shown in the segment: formatted value, or placeholder while empty. */
-  segmentDisplayText(type: DateSegmentType): string;
+  segmentDisplayText(type: DateTimeSegmentType): string;
   /** `true` while `type` has no entered value. */
-  isSegmentEmpty(type: DateSegmentType): boolean;
+  isSegmentEmpty(type: DateTimeSegmentType): boolean;
   /** `true` when `type` is the first segment in the locale order (the tab entry). */
-  isFirstSegmentType(type: DateSegmentType): boolean;
+  isFirstSegmentType(type: DateTimeSegmentType): boolean;
 
   /** Register a segment so the root can move focus to it. */
   registerSegment(handle: ForDateFieldSegmentHandle): void;
@@ -70,17 +70,19 @@ export interface ForDateFieldContext {
   unregisterSegment(handle: ForDateFieldSegmentHandle): void;
 
   /** Marks `type` as the active typing target, resetting any stale digit buffer. */
-  focusSegment(type: DateSegmentType): void;
+  focusSegment(type: DateTimeSegmentType): void;
   /** Append a typed digit to `type`, auto-advancing to the next segment when full. */
-  typeDigit(type: DateSegmentType, digit: number): void;
+  typeDigit(type: DateTimeSegmentType, digit: number): void;
   /** Step `type` by `delta` (`+1` / `-1`), wrapping day / month, clamping year. */
-  step(type: DateSegmentType, delta: number): void;
-  /** Set `type` to its minimum (`Home`) or maximum (`End`). */
-  goToBound(type: DateSegmentType, bound: 'min' | 'max'): void;
-  /** Clear `type`'s entered value. */
-  clear(type: DateSegmentType): void;
+  step(type: DateTimeSegmentType, delta: number): void;
+  /** Set `type` to its minimum (`Home`) or maximum (`End`); dayPeriod → AM / PM. */
+  goToBound(type: DateTimeSegmentType, bound: 'min' | 'max'): void;
+  /** Set the AM / PM period of the entered hour (date-time fields only). */
+  setDayPeriod(period: 'am' | 'pm'): void;
+  /** Clear `type`'s entered value (no-op for the derived dayPeriod segment). */
+  clear(type: DateTimeSegmentType): void;
   /** Move focus to the sibling segment `step` positions away (no wrap). */
-  focusSibling(type: DateSegmentType, step: -1 | 1): void;
+  focusSibling(type: DateTimeSegmentType, step: -1 | 1): void;
 }
 
 /**

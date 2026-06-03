@@ -342,6 +342,101 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('date-time (granularity > day)', () => {
+    @Component({
+      imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDateField
+          [(value)]="value"
+          [granularity]="granularity()"
+          [hourCycle]="hourCycle()"
+          [locale]="'en-US'"
+          #field="forDateField"
+        >
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+      `,
+    })
+    class DateTimeHost {
+      readonly value = signal<Date | null>(null);
+      readonly granularity = signal<'minute' | 'second'>('minute');
+      readonly hourCycle = signal<12 | 24>(24);
+    }
+
+    type DR = RenderResult<DateTimeHost>;
+    const dseg = (r: DR, type: string) => r.query(`[data-testid="${type}"]`)!;
+    const order = (r: DR) =>
+      r.queryAll('[forDateFieldSegment]').map((s) => s.getAttribute('data-testid'));
+    const typeInto = async (r: DR, type: string, digits: string) => {
+      for (const d of digits) pressKey(dseg(r, type), d);
+      await flush(r.fixture);
+    };
+
+    it('appends the time segments after the date segments (en-US, 24-hour)', () => {
+      const r = renderHost(DateTimeHost);
+      expect(order(r)).toEqual(['month', 'day', 'year', 'hour', 'minute']);
+    });
+
+    it('composes a date-time only once every segment is filled', async () => {
+      const r = renderHost(DateTimeHost);
+      await typeInto(r, 'month', '12');
+      await typeInto(r, 'day', '05');
+      await typeInto(r, 'year', '2026');
+      expect(r.instance.value()).toBeNull();
+
+      await typeInto(r, 'hour', '14');
+      await typeInto(r, 'minute', '30');
+      const value = r.instance.value()!;
+      expect(adapter.getYear(value)).toBe(2026);
+      expect(adapter.getMonth(value)).toBe(12);
+      expect(adapter.getDate(value)).toBe(5);
+      expect(adapter.getHours(value)).toBe(14);
+      expect(adapter.getMinutes(value)).toBe(30);
+    });
+
+    it('steps the hour without disturbing the date', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+      pressKey(dseg(r, 'hour'), 'ArrowUp');
+      await flush(r.fixture);
+      const value = r.instance.value()!;
+      expect(adapter.getHours(value)).toBe(10);
+      expect(adapter.getDate(value)).toBe(15);
+    });
+
+    it('exposes a second segment at second granularity', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.granularity.set('second');
+      await flush(r.fixture);
+      expect(order(r)).toEqual(['month', 'day', 'year', 'hour', 'minute', 'second']);
+    });
+
+    it('adds an AM/PM segment in 12-hour mode and a/p sets the period', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.hourCycle.set(12);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+      expect(order(r)).toEqual(['month', 'day', 'year', 'hour', 'minute', 'dayPeriod']);
+      expect(dseg(r, 'hour').textContent?.trim()).toBe('09');
+      expect(dseg(r, 'dayPeriod').textContent?.trim()).toBe('AM');
+
+      pressKey(dseg(r, 'dayPeriod'), 'p');
+      await flush(r.fixture);
+      expect(adapter.getHours(r.instance.value()!)).toBe(21);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects an external value write without Zone.js', async () => {
       const r = renderHost(Host);
