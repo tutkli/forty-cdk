@@ -1,4 +1,10 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import {
+  inject,
+  InjectionToken,
+  type ModelSignal,
+  type OutputEmitterRef,
+  type Signal,
+} from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
@@ -7,6 +13,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
  * Why a select requested close. Mirrors the menu primitive vocabulary so
@@ -64,6 +71,13 @@ export interface ForSelectContext<T = unknown> {
   readonly invalid: Signal<boolean>;
   readonly pending: Signal<boolean>;
 
+  /**
+   * When `true`, the listbox is a trapped / inert / scroll-locked modal
+   * surface (routed through `_internal/modal-shell`) instead of the anchored
+   * popover. Read once when `[forSelectContent]` mounts; all anchored-
+   * positioning state below is a no-op while modal.
+   */
+  readonly modal: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
   /**
@@ -169,10 +183,21 @@ export interface ForSelectContext<T = unknown> {
    */
   commitOnTab(value: T): void;
 
+  // --- Anchored (overlay-shell) dismiss pipeline: each method builds the
+  //     veto, emits it, and closes when not vetoed. Used by the non-modal
+  //     `[forSelectContent]` path. ---
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(event: PointerEvent): void;
   emitFocusOutside(event: FocusEvent): void;
   emitInteractOutside(event: PointerEvent | FocusEvent): void;
+
+  // --- Modal (modal-shell) dismiss pipeline: the shell builds the veto and
+  //     requests the close itself, so the context only forwards `.emit`. Used
+  //     by the modal `[forSelectContent]` path. ---
+  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
+  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
+  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
+  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before

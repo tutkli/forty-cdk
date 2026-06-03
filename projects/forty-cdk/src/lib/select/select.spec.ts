@@ -33,6 +33,8 @@ const HOST_IMPORTS = [...BASE_IMPORTS, ForSelectValue];
       [disabled]="disabled()"
       [readonly]="readonly()"
       [dismissible]="dismissible()"
+      [modal]="modal()"
+      [position]="position()"
       [selectionFollowsFocus]="selectionFollowsFocus()"
       [placeholder]="placeholder()"
     >
@@ -64,6 +66,8 @@ class SelectHost {
   readonly disabled = signal(false);
   readonly readonly = signal(false);
   readonly dismissible = signal(true);
+  readonly modal = signal(false);
+  readonly position = signal<'popper' | 'item-aligned'>('popper');
   readonly selectionFollowsFocus = signal(false);
   readonly placeholder = signal('');
   readonly cherryDisabled = signal(false);
@@ -698,6 +702,167 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('modal mode', () => {
+    // The focus-trap / inert / scroll-lock / return-focus post-state lives in
+    // select.e2e.ts (jsdom mis-models `inert`, `document.activeElement`, and
+    // the focus-event order). The Vitest layer asserts the wiring branches:
+    // which ARIA / dismiss / veto outputs fire on the modal-shell path.
+    it('reflects aria-modal="true" on the listbox surface in modal mode', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.getAttribute('role')).toBe('listbox');
+      expect(content.getAttribute('aria-modal')).toBe('true');
+    });
+
+    it('omits aria-modal in the default (non-modal) mode', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.hasAttribute('aria-modal')).toBe(false);
+    });
+
+    it('still portals the listbox to document.body in modal mode', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.parentElement).toBe(document.body);
+    });
+
+    it('Escape closes the listbox in modal mode (dismiss via modal-shell)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('outside pointer-down closes the listbox in modal mode', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      outside.remove();
+    });
+
+    it('dismissible=false keeps the listbox open on Escape in modal mode', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.dismissible.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('flips touched on a modal-mode dismiss', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect modal [(open)]="open" [(touched)]="touched">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="a" forSelectOption value="a">A</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly touched = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      expect(r.instance.touched()).toBe(false);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.touched()).toBe(true);
+    });
+
+    it('routes through modal-shell, not the anchored positioner (no data-position)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.position.set('item-aligned');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      // `position="item-aligned"` would tag the host `data-position` via the
+      // item-aligned positioner; modal mode skips it entirely, proving the
+      // anchored-positioning inputs are no-ops.
+      expect(content.hasAttribute('data-position')).toBe(false);
+    });
+
+    it('fires (autoFocusOnOpen) on the modal mount and (autoFocusOnClose) on close', async () => {
+      let opens = 0;
+      let closes = 0;
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forSelect
+            modal
+            [(open)]="open"
+            (autoFocusOnOpen)="onOpen()"
+            (autoFocusOnClose)="onClose()"
+          >
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="a" forSelectOption value="a">A</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        onOpen(): void {
+          opens++;
+        }
+        onClose(): void {
+          closes++;
+        }
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      expect(opens).toBe(1);
+      expect(closes).toBe(0);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(closes).toBe(1);
+    });
+  });
+
   describe('mount / portal', () => {
     it('does not render content while closed', () => {
       renderHost(SelectHost);
@@ -957,6 +1122,20 @@ describe('ForSelect', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('modal mode opens, reflects aria-modal, and dismisses on Escape without zone.js', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.getAttribute('aria-modal')).toBe('true');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
     });
   });
 

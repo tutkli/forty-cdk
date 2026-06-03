@@ -32,12 +32,13 @@ import { queryFlag } from './_query-flag';
     `,
   ],
   template: `
-    <input id="before" placeholder="before-trigger" />
+    <input id="before" data-testid="before" placeholder="before-trigger" />
     <div
       forSelect
       [(value)]="value"
       [(open)]="open"
       [position]="position"
+      [modal]="modal"
       placeholder="Pick a fruit"
       ariaLabel="Fruit picker"
       (autoFocusOnOpen)="onAutoOpen($event)"
@@ -55,7 +56,7 @@ import { queryFlag } from './_query-flag';
         </div>
       }
     </div>
-    <input id="after" placeholder="after-trigger" />
+    <input id="after" data-testid="after" placeholder="after-trigger" />
   `,
 })
 export class SelectFixture {
@@ -69,6 +70,10 @@ export class SelectFixture {
     inject(ActivatedRoute).snapshot.queryParamMap.get('position') === 'item-aligned'
       ? 'item-aligned'
       : 'popper';
+
+  // `?modal=1` routes [forSelectContent] through `_internal/modal-shell` (focus
+  // trap + inert siblings + body-scroll-lock) instead of the anchored popover.
+  protected readonly modal = queryFlag('modal');
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');

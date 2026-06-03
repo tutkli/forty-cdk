@@ -428,6 +428,84 @@ describe('injectModalShell', () => {
     });
   });
 
+  describe('initialFocus move config', () => {
+    // The richer `{ move, veto }` shape (D2 of #365). These assert which
+    // branch fires; the resulting focus target is exercised in select.e2e.ts.
+    it('runs the move() algorithm on the modal mount path', async () => {
+      const moveCalls: number[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: {
+          move: () => {
+            moveCalls.push(1);
+            return true;
+          },
+        },
+      }));
+      await flush(ctx.fixture);
+      expect(moveCalls).toEqual([1]);
+      ctx.destroy();
+    });
+
+    it('runs the move() algorithm on the non-modal mount path', async () => {
+      const moveCalls: number[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(false),
+        returnFocus: signal(true),
+        initialFocus: {
+          move: () => {
+            moveCalls.push(1);
+            return true;
+          },
+        },
+      }));
+      await flush(ctx.fixture);
+      expect(moveCalls).toEqual([1]);
+      ctx.destroy();
+    });
+
+    it('skips move() when the move-config veto returns true', async () => {
+      const moveCalls: number[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: {
+          move: () => {
+            moveCalls.push(1);
+            return true;
+          },
+          veto: () => true,
+        },
+      }));
+      await flush(ctx.fixture);
+      expect(moveCalls).toEqual([]);
+      ctx.destroy();
+    });
+
+    it('does not consult the top-level autoFocusOnOpen when a move-config is used', async () => {
+      // The move-config carries its own veto; the top-level callback is the
+      // simple-form channel and must stay untouched on this path.
+      const autoFocusOpenCalls: number[] = [];
+      const moveCalls: number[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: {
+          move: () => {
+            moveCalls.push(1);
+            return true;
+          },
+        },
+        autoFocusOnOpen: () => () => autoFocusOpenCalls.push(1),
+      }));
+      await flush(ctx.fixture);
+      expect(moveCalls).toEqual([1]);
+      expect(autoFocusOpenCalls).toEqual([]);
+      ctx.destroy();
+    });
+  });
+
   describe('autoFocusOnClose veto wiring', () => {
     it('invokes the callback once at destroy on the modal close path', async () => {
       const calls: number[] = [];

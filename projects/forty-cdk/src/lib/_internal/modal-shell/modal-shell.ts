@@ -62,6 +62,25 @@ export interface ModalShellDismissConfig {
 }
 
 /**
+ * Primitive-owned initial-focus algorithm for the surface. The richer
+ * alternative to the `'first' | 'container'` literal: the shell sets up the
+ * focus trap (Tab cycling + return capture) WITHOUT its own imperative focus
+ * move, runs the optional `veto`, and — unless vetoed — calls `move()`. When
+ * `move()` returns `false` (no candidate found) focus falls back to the trap
+ * container (modal) or the first focusable descendant (non-modal).
+ *
+ * Mirrors `OverlayShellInitialFocusConfig` so a content directive can hand the
+ * same focus algorithm to either shell. Used by Select (selected → first →
+ * last option) and available for a future date-picker calendar-cell move.
+ */
+export interface ModalShellInitialFocusConfig {
+  /** Primitive focus algorithm. Returns `true` on success, `false` to fall back. */
+  readonly move: () => boolean;
+  /** `(autoFocusOnOpen)` veto. Returning `true` skips the imperative focus move. */
+  readonly veto?: () => boolean;
+}
+
+/**
  * Single config for the free-floating modal-overlay lifecycle. Mirrors the
  * `injectOverlayShell` shape on the trigger-anchored side. Each sub-bundle
  * is individually optional so a primitive can opt out of the channels it
@@ -77,11 +96,16 @@ export interface ModalShellConfig {
    */
   readonly returnFocus: Signal<boolean>;
   /**
-   * Where to send focus on mount. `'first'` = first focusable descendant
-   * (falls back to host); `'container'` = host element. Same vocabulary as
-   * `FocusTrap.activate({ initialFocus })`.
+   * Where to send focus on mount. Two shapes:
+   * - `Signal<'first' | 'container'>` — `'first'` = first focusable descendant
+   *   (falls back to host); `'container'` = host element. Same vocabulary as
+   *   `FocusTrap.activate({ initialFocus })`. Used by Dialog / Drawer /
+   *   date-picker.
+   * - {@link ModalShellInitialFocusConfig} — a primitive-owned `move()`
+   *   algorithm (e.g. Select's selected → first → last option) with its own
+   *   open-veto, falling back to the container / first focusable on a miss.
    */
-  readonly initialFocus: Signal<'first' | 'container'>;
+  readonly initialFocus: Signal<'first' | 'container'> | ModalShellInitialFocusConfig;
   /**
    * `(autoFocusOnOpen)` veto. Bound as a function reference (not as an
    * Angular `output()`) so the shell can invoke it during the destroy hook
@@ -140,7 +164,10 @@ export interface ModalShellHandle {
  *      (so the trap's imperative focus move lands on an already-isolated
  *      tree), activates the trap with `initialFocus` + `preventInitialFocus`
  *      (the `(autoFocusOnOpen)` veto) + the synchronously-captured
- *      `returnFocus` target, then locks body scroll.
+ *      `returnFocus` target, then locks body scroll. When `initialFocus` is a
+ *      {@link ModalShellInitialFocusConfig}, the trap is activated with
+ *      `preventInitialFocus: true` and the shell runs the primitive's
+ *      `move()` instead (falling back to the container on a miss).
  *    - Non-modal: skips trap / inert / scroll lock; if `(autoFocusOnOpen)`
  *      didn't veto, focuses the first focusable descendant (or host when
  *      `initialFocus = 'container'`).
@@ -265,29 +292,66 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       });
     }
 
-    // 3b. `(autoFocusOnOpen)` veto — read once for this mount.
-    const autoFocusOpenEvent = createVetoableEvent();
-    config.autoFocusOnOpen?.()?.(autoFocusOpenEvent);
-    const skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
+    // 3b. Resolve the initial-focus config. The simple form is a
+    //     `Signal<'first' | 'container'>` (Dialog / Drawer / date-picker); the
+    //     richer form carries a primitive-owned `move()` algorithm (Select's
+    //     selected → first → last option) plus its own veto. A `Signal` is
+    //     callable, so `typeof === 'function'` distinguishes the two shapes;
+    //     the literal mode is read eagerly only in the simple form.
+    const initialFocusCfg = config.initialFocus;
+    const moveCfg: ModalShellInitialFocusConfig | null =
+      typeof initialFocusCfg === 'function' ? null : initialFocusCfg;
+    const literalFocus: 'first' | 'container' | null =
+      typeof initialFocusCfg === 'function' ? initialFocusCfg() : null;
+
+    // 3c. `(autoFocusOnOpen)` veto — read once for this mount. The move-config
+    //     carries its own boolean veto (mirroring `injectOverlayShell`); the
+    //     simple form routes through the top-level `autoFocusOnOpen` callback.
+    let skipInitialFocus: boolean;
+    if (moveCfg) {
+      skipInitialFocus = moveCfg.veto?.() ?? false;
+    } else {
+      const autoFocusOpenEvent = createVetoableEvent();
+      config.autoFocusOnOpen?.()?.(autoFocusOpenEvent);
+      skipInitialFocus = autoFocusOpenEvent.defaultPrevented;
+    }
 
     if (isModal) {
-      // 3c. Modal mode. Inert + aria-hide siblings BEFORE the focus trap
+      // 3d. Modal mode. Inert + aria-hide siblings BEFORE the focus trap
       //     activates so the trap's `focus()` call lands on an
       //     already-isolated tree. The return-focus target was captured
       //     synchronously above (#136).
       inertHandle = inertStack.activate(host.nativeElement);
-      focusTrap.activate({
-        initialFocus: config.initialFocus(),
-        preventInitialFocus: skipInitialFocus,
-        returnFocus: returnFocusTarget,
-      });
+      if (moveCfg) {
+        // The primitive owns the focus move. Set up Tab cycling + return
+        // capture WITHOUT the trap's own imperative focus, then run the
+        // algorithm; fall back to the container when it finds no candidate.
+        focusTrap.activate({
+          preventInitialFocus: true,
+          returnFocus: returnFocusTarget,
+        });
+        if (!skipInitialFocus && !moveCfg.move()) {
+          focusTrap.container.focus();
+        }
+      } else {
+        focusTrap.activate({
+          initialFocus: literalFocus ?? 'first',
+          preventInitialFocus: skipInitialFocus,
+          returnFocus: returnFocusTarget,
+        });
+      }
       scrollLock.lock();
     } else if (!skipInitialFocus) {
-      // 3d. Non-modal mode. No trap, no scroll lock, no inert. Still
-      //     respect `initialFocus`: send focus to the first focusable
-      //     descendant ('first') or the host ('container').
+      // 3e. Non-modal mode. No trap, no scroll lock, no inert. Still respect
+      //     the configured initial focus: the primitive's `move()` algorithm
+      //     (falling back to the first focusable on a miss), the first
+      //     focusable descendant ('first'), or the host ('container').
       const el = focusTrap.container;
-      if (config.initialFocus() === 'container') {
+      if (moveCfg) {
+        if (!moveCfg.move()) {
+          (findFirstFocusable(el) ?? el).focus();
+        }
+      } else if (literalFocus === 'container') {
         el.focus();
       } else {
         (findFirstFocusable(el) ?? el).focus();

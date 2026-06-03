@@ -116,6 +116,12 @@ export class ForSelectOption<T = string> {
     }
 
     if (event.key === 'Tab') {
+      // In modal mode the focus trap owns Tab (it cycles focus inside the
+      // surface in the capture phase); committing + closing here would defeat
+      // the trap. Bail and let the trap's `preventDefault` keep focus inside.
+      if (this.#ctx.modal()) {
+        return;
+      }
       // APG (combobox-select-only): Tab commits the focused option and lets
       // the browser advance focus to the next / previous focusable. Do NOT
       // preventDefault — the browser's Tab default uses the focus we just

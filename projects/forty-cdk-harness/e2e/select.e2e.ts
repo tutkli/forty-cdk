@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { clickOutside, el, expectFocused, gotoFixture } from './_helpers';
 
 test.describe('Select', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {
@@ -56,6 +56,67 @@ test.describe('Select', () => {
     await el(page, 'trigger').click();
     await expect(el(page, 'content')).toBeVisible();
     await expect(el(page, 'content').locator('*:focus')).toHaveCount(0);
+  });
+
+  // Modal (TouchUI) presentation mode (#365): `?modal=1` routes
+  // [forSelectContent] through `_internal/modal-shell` (focus trap + inert
+  // siblings + body-scroll-lock) instead of the anchored popover. Opens are
+  // driven by keyboard because WebKit does not focus a <button> on mouse click
+  // (and blurs it), which would hand the modal shell the wrong return target.
+  test.describe('modal mode', () => {
+    test('open moves focus to the first enabled option and reflects aria-modal', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { modal: '1' });
+      await el(page, 'trigger').focus();
+      await page.keyboard.press('Enter');
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, 'content')).toHaveAttribute('aria-modal', 'true');
+      // No value → the shared move algorithm (selected → first → last) lands on
+      // the first enabled option (banana is disabled, apple is first).
+      await expectFocused(el(page, 'opt-apple'));
+    });
+
+    test('Tab is trapped inside the surface (does not commit + close)', async ({ page }) => {
+      await gotoFixture(page, 'select', { modal: '1' });
+      await el(page, 'trigger').focus();
+      await page.keyboard.press('Enter');
+      await expect(el(page, 'content')).toBeVisible();
+
+      for (let i = 0; i < 8; i++) {
+        await page.keyboard.press('Tab');
+      }
+      await expect(el(page, 'before')).not.toBeFocused();
+      await expect(el(page, 'after')).not.toBeFocused();
+      await expect(el(page, 'content').locator('*:focus')).toHaveCount(1);
+      // The trap owns Tab — the listbox stays open rather than committing and
+      // closing the way the anchored mode does.
+      await expect(el(page, 'content')).toBeVisible();
+    });
+
+    test('Escape closes and returns focus to the trigger', async ({ page }) => {
+      await gotoFixture(page, 'select', { modal: '1' });
+      await el(page, 'trigger').focus();
+      await page.keyboard.press('Enter');
+      await expect(el(page, 'content')).toBeVisible();
+
+      await page.keyboard.press('Escape');
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger'));
+    });
+
+    test('locks body scroll while open and restores it on close', async ({ page }) => {
+      await gotoFixture(page, 'select', { modal: '1' });
+      await el(page, 'trigger').focus();
+      await page.keyboard.press('Enter');
+      await expect(el(page, 'content')).toBeVisible();
+
+      await expect.poll(async () => page.evaluate(() => document.body.style.overflow)).toBe('hidden');
+
+      await page.keyboard.press('Escape');
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expect.poll(async () => page.evaluate(() => document.body.style.overflow)).toBe('');
+    });
   });
 
   // Item-aligned positioner coverage (was `_internal/floating/item-aligned.spec.ts`
