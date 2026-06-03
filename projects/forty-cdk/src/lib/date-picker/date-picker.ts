@@ -1,0 +1,376 @@
+import {
+  booleanAttribute,
+  computed,
+  contentChild,
+  Directive,
+  effect,
+  inject,
+  input,
+  model,
+  numberAttribute,
+  output,
+  signal,
+} from '@angular/core';
+import type { ReferenceElement } from '@floating-ui/dom';
+import type { FormValueControl } from '@angular/forms/signals';
+
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
+import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
+import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import {
+  createVetoableNativeEvent,
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
+import { ForCalendar } from '../calendar/calendar';
+import { type DateAdapter, injectDateAdapter } from '../calendar/date-adapter';
+import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
+import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
+
+/**
+ * Headless date picker — the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)
+ * reinterpreted idiomatically for modern Angular, the way React Aria's
+ * `DatePicker` and Ark UI's `DatePicker` do it: a focusable trigger that opens
+ * a floating surface wrapping a projected `ForCalendar`.
+ *
+ * `ForDatePicker` is the root and the form value: it implements
+ * `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires
+ * with `[formField]` and auto-associates inside a `[forField]`. The trigger is
+ * the focusable control that carries `name` / `disabled` / `invalid`; selection
+ * state flows root → projected calendar via `[(value)]`.
+ *
+ * The surface defaults to a **non-modal popover** (anchored to the trigger,
+ * dismiss on Escape / outside-pointer, return focus on close), matching React
+ * Aria / Ark UI; set `modal` for the trapped / inert / scroll-locked dialog
+ * variant. Mount/unmount of the surface is the consumer's job — wrap
+ * `[forDatePickerContent]` with `@if (open())`.
+ *
+ * The projected `ForCalendar` is two-way bound by the consumer (`[(value)]`)
+ * and forwarded `[min]` / `[max]` / `[isDateUnavailable]` from the picker's
+ * accessors. A selection inside the grid is observed through a `contentChild`
+ * query on the calendar's `valueChange`, so the calendar primitive stays
+ * untouched; on selection the picker mirrors the value, flips `touched`, and —
+ * when `closeOnSelect` is on (default) — closes the surface.
+ *
+ * @typeParam D The adapter's immutable date type.
+ *
+ * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
+ * the latter are reserved `FormUiControl` members typed `number | undefined`
+ * for numeric validators, so a date-typed `min` / `max` would break the
+ * `FormValueControl` contract.
+ *
+ * @example
+ * ```html
+ * <div forDatePicker [(value)]="date" [(open)]="open" [minDate]="min" [maxDate]="max"
+ *      name="dob" [ariaLabel]="'Choose date'" #picker="forDatePicker">
+ *   <button forDatePickerTrigger>
+ *     <span forDatePickerValue>Pick a date</span>
+ *   </button>
+ *
+ *   @if (open()) {
+ *     <div forDatePickerContent>
+ *       <div forCalendar [(value)]="date" [min]="picker.minDate()" [max]="picker.maxDate()">
+ *         <!-- …calendar header + grid… -->
+ *       </div>
+ *     </div>
+ *   }
+ * </div>
+ * ```
+ */
+@Directive({
+  selector: '[forDatePicker]',
+  exportAs: 'forDatePicker',
+  host: {
+    '[attr.dir]': 'dir()',
+    '[attr.data-state]': 'open() ? "open" : "closed"',
+    '[attr.data-disabled]': 'disabled() ? "" : null',
+  },
+  providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker }],
+})
+export class ForDatePicker<D>
+  extends FormUiControlBase
+  implements FormValueControl<D | null>, ForDatePickerContext
+{
+  readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_DATE_PICKER_DEFAULTS);
+
+  /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker');
+
+  /**
+   * Two-way bindable selected date, or `null`. Required by
+   * `FormValueControl<D | null>`. The `model()` change emitter (`(valueChange)`)
+   * fires only when the picker itself commits a selection, never on consumer
+   * writes via `[(value)]`.
+   */
+  readonly value = model<D | null>(null);
+
+  /**
+   * Two-way bindable. Whether the surface is open. The `model()` change emitter
+   * (`(openChange)`) fires only on internal transitions (trigger toggle,
+   * Escape, outside dismissal, selection), never on consumer writes via
+   * `[(open)]`.
+   */
+  readonly open = model<boolean>(false);
+
+  /**
+   * Minimum selectable date (inclusive). Forward to the projected calendar's
+   * `[min]`. Named `minDate` (not `min`) because `FormUiControl.min` is reserved
+   * for a numeric validator bound by `[formField]`.
+   */
+  readonly minDate = input<D | null>(null);
+
+  /**
+   * Maximum selectable date (inclusive). Forward to the projected calendar's
+   * `[max]`. Named `maxDate` (not `max`) for the same reason as {@link minDate}.
+   */
+  readonly maxDate = input<D | null>(null);
+
+  /** Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. */
+  readonly isDateUnavailable = input<(date: D) => boolean>(() => false);
+
+  /** Close the surface after a date is selected in the projected calendar. Default `true`. */
+  readonly closeOnSelect = input(true, { transform: booleanAttribute });
+
+  /**
+   * When `true`, the surface is a trapped / inert / scroll-locked modal dialog
+   * (routed through `_internal/modal-shell`) instead of the default non-modal
+   * anchored popover. Read once when the content mounts.
+   */
+  readonly modal = input(false, { transform: booleanAttribute });
+
+  /** When true (default), Escape, pointer-down outside, and focus outside close the surface. */
+  readonly dismissible = input(true, { transform: booleanAttribute });
+
+  /** When true (default), focus returns to the trigger on close. */
+  readonly returnFocus = input(true, { transform: booleanAttribute });
+
+  /**
+   * `Intl.DateTimeFormat` options driving the text rendered by
+   * `[forDatePickerValue]`. Default `{ year: 'numeric', month: 'long', day: 'numeric' }`.
+   */
+  readonly formatOptions = input<Intl.DateTimeFormatOptions>({
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  /** Text rendered by `[forDatePickerValue]` when no date is selected. */
+  readonly placeholder = input<string>('');
+
+  /** Side the surface is anchored to. Defaults to `'bottom'`. Ignored in `modal` mode. */
+  readonly side = input<FloatingSide | undefined>('bottom');
+
+  /** Alignment along the chosen `side`. Defaults to `'start'`. Ignored in `modal` mode. */
+  readonly align = input<FloatingAlign | undefined>('start');
+
+  /** Gap (px) between trigger and surface along the main axis. Default from `provideForDatePickerDefaults`. */
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
+
+  /** Gap (px) along the cross axis. Default `0`. */
+  readonly alignOffset = input(0, { transform: numberAttribute });
+
+  /** When `true` (default), `flip` and `shift` keep the surface inside the viewport. */
+  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+
+  /** Padding (px) applied uniformly to flip / shift / size. Default from `provideForDatePickerDefaults`. */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
+
+  /** Stickiness behaviour for `shift`. Default `'partial'`. */
+  readonly sticky = input<'partial' | 'always' | false>('partial');
+
+  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
+  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+
+  /** Accessible name for the dialog surface. Emits no `aria-label` while `null`. */
+  readonly ariaLabel = input<string | null>(null);
+
+  /**
+   * Writing direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
+   * The resolved value is reflected to the host `dir` attribute.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
+
+  /**
+   * Fires when the user presses Escape while this surface is the topmost
+   * dismissable layer. Call `preventDefault()` on the veto to suppress the
+   * automatic close.
+   */
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /** Fires when a pointer goes down outside the surface (and trigger). Vetoable. */
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /** Fires when focus moves outside the surface (and trigger). Vetoable. */
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /** Composite event: shares veto state with `pointerDownOutside` / `focusOutside`. */
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
+
+  /** Fires just before the surface sends focus into itself on open. Vetoable. */
+  readonly autoFocusOnOpen = output<VetoableEvent>();
+
+  /** Fires just before focus returns to the trigger on close. Vetoable. */
+  readonly autoFocusOnClose = output<VetoableEvent>();
+
+  readonly triggerId = signal(this.#idGen.next('for-date-picker-trigger'));
+  readonly contentId = signal(this.#idGen.next('for-date-picker-content'));
+
+  readonly #triggerEl = signal<HTMLElement | null>(null);
+  readonly trigger = this.#triggerEl.asReadonly();
+  readonly reference = computed<ReferenceElement | null>(() => this.#triggerEl());
+
+  readonly #contentEl = signal<HTMLElement | null>(null);
+  readonly content = this.#contentEl.asReadonly();
+
+  /** Formatted current value via the adapter, or `null` when empty. */
+  readonly formattedValue = computed<string | null>(() => {
+    const value = this.value();
+    return value === null ? null : this.adapter.format(value, this.formatOptions());
+  });
+
+  /**
+   * The projected `ForCalendar`. Mounts only while the surface is open, so the
+   * query resolves to the live instance on open and to `undefined` on close.
+   * Its `valueChange` is the single signal that a date was selected inside the
+   * grid — wired in the constructor.
+   */
+  private readonly calendar = contentChild(ForCalendar, { descendants: true });
+
+  constructor() {
+    super();
+    injectHiddenInput({
+      name: this.name,
+      values: computed(() => {
+        const value = this.value();
+        if (value === null) {
+          return [];
+        }
+        const year = String(this.adapter.getYear(value)).padStart(4, '0');
+        const month = String(this.adapter.getMonth(value)).padStart(2, '0');
+        const day = String(this.adapter.getDate(value)).padStart(2, '0');
+        return [`${year}-${month}-${day}`];
+      }),
+      disabled: this.disabled,
+    });
+
+    // Close-on-select bridge. This `effect` does no state derivation — it only
+    // (re)subscribes to the projected calendar's `valueChange` as the surface
+    // mounts / unmounts. The actual writes happen asynchronously in the
+    // subscription callback (a discrete selection event), exactly like a click
+    // handler, never during the effect's reactive computation.
+    effect((onCleanup) => {
+      const calendar = this.calendar();
+      if (!calendar) {
+        return;
+      }
+      const sub = calendar.value.subscribe((date) => {
+        this.value.set(date as D | null);
+        this.touched.set(true);
+        if (this.closeOnSelect()) {
+          this.close();
+        }
+      });
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  registerTrigger(el: HTMLElement): void {
+    this.#triggerEl.set(el);
+  }
+  unregisterTrigger(el: HTMLElement): void {
+    if (this.#triggerEl() === el) {
+      this.#triggerEl.set(null);
+    }
+  }
+
+  registerContent(el: HTMLElement): void {
+    this.#contentEl.set(el);
+  }
+  unregisterContent(el: HTMLElement): void {
+    if (this.#contentEl() === el) {
+      this.#contentEl.set(null);
+    }
+  }
+
+  toggle(): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.open.update((v) => !v);
+  }
+
+  close(): void {
+    this.touched.set(true);
+    this.open.set(false);
+  }
+
+  markTouched(): void {
+    this.touched.set(true);
+  }
+
+  focusCalendarCell(): boolean {
+    const cell = this.#contentEl()?.querySelector<HTMLElement>(
+      '[role="gridcell"][tabindex="0"]',
+    );
+    if (!cell) {
+      return false;
+    }
+    cell.focus();
+    return true;
+  }
+
+  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and the
+  // composite `interactOutside`. The dismissable layer always invokes the
+  // specific listener before the composite one for the same physical event, so
+  // a `preventDefault()` in either handler vetoes the close. Used by the
+  // non-modal (overlay-shell) path; the modal-shell path runs its own
+  // equivalent orchestration and only forwards `.emit` through the raw outputs.
+  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
+
+  emitEscapeKeyDown(event: KeyboardEvent): void {
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed && this.dismissible()) {
+      event.stopPropagation();
+      this.close();
+    }
+  }
+
+  emitPointerDownOutside(event: PointerEvent): void {
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
+  }
+
+  emitFocusOutside(event: FocusEvent): void {
+    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
+  }
+
+  emitInteractOutside(event: PointerEvent | FocusEvent): void {
+    const veto =
+      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+    this.#pendingOutsideVeto = null;
+    this.interactOutside.emit(veto);
+    if (!veto.defaultPrevented && this.dismissible()) {
+      this.close();
+    }
+  }
+
+  emitAutoFocusOnOpen(): boolean {
+    return emitVetoableEvent(this.autoFocusOnOpen);
+  }
+
+  emitAutoFocusOnClose(): boolean {
+    return emitVetoableEvent(this.autoFocusOnClose);
+  }
+}
