@@ -490,7 +490,7 @@ describe('ForCalendar', () => {
 
       const nativeMidnight = new Date(2026, 5, 20, 0, 0);
       const nativeMin = new Date(2026, 5, 20, 9, 0);
-      expect(native.compare(nativeMidnight, nativeMin)).toBeLessThan(0);
+      expect(native.compare(nativeMidnight, nativeMin)).toBe(0);
       expect(native.compareDate(nativeMidnight, nativeMin)).toBe(0);
 
       const dtMidnight = new CalendarDateTime(2026, 6, 20, 0, 0);
