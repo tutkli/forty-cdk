@@ -151,32 +151,22 @@ test.describe('ScrollArea (geometry + drag)', () => {
     expect(scrollLeft).toBeGreaterThan(50);
   });
 
-  test('content fitting inside the viewport hides the synthetic scrollbar', async ({ page }) => {
-    // Content smaller than the viewport → no overflow on either axis. The
-    // scrollbar directive applies `[hidden]` and `data-state="hidden"`.
-    await gotoFixture(page, 'scroll-area', {
-      viewportWidth: '300',
-      viewportHeight: '200',
-      contentWidth: '150',
-      contentHeight: '100',
-    });
-
-    await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
-    await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'hidden');
-    await expect(el(page, 'scrollbar-vertical')).toBeHidden();
-    await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
-  });
+  // Content-fits self-hide (and its `auto` vs `always` divergence) is covered
+  // by the "type=\"auto\" vs type=\"always\" divergence" describe block below.
 
   test("corner stays hidden when only one axis overflows even though a consumer display rule sets display: flex", async ({
     page,
   }) => {
     // Only the vertical axis overflows → fewer than two scrollbars, so the
-    // corner has no logical presence. The fixture gives `[forScrollAreaCorner]`
-    // a `display: flex` author rule; the directive's inline `display: none`
-    // (paired with the `hidden` attribute) must still win, so the corner is
-    // not laid out. `toBeHidden()` reads the computed box, so it fails if the
-    // consumer's `display: flex` leaks through the user-agent `[hidden]` rule.
+    // corner has no logical presence. `type="auto"` so the corner self-hides
+    // (the fixture default `always` keeps it painted — see the divergence
+    // block). The fixture gives `[forScrollAreaCorner]` a `display: flex`
+    // author rule; the directive's inline `display: none` (paired with the
+    // `hidden` attribute) must still win, so the corner is not laid out.
+    // `toBeHidden()` reads the computed box, so it fails if the consumer's
+    // `display: flex` leaks through the user-agent `[hidden]` rule.
     await gotoFixture(page, 'scroll-area', {
+      type: 'auto',
       viewportWidth: '300',
       viewportHeight: '200',
       contentWidth: '150',
@@ -226,12 +216,78 @@ test.describe('ScrollArea (geometry + drag)', () => {
     });
   });
 
-  // `type="auto"` and `type="always"` are synonyms today: both render a
-  // scrollbar only for an axis that actually overflows, and neither reserves an
-  // empty track when the content fits. The contract is observable only against
-  // a real browser layout, since `data-state` combines overflow presence
-  // (geometry, zero in jsdom) with the `type` rule.
-  test.describe('type="auto" vs type="always" (synonyms today)', () => {
+  // #480 — `type="auto"` and `type="always"` diverge when content fits: `auto`
+  // self-hides the non-overflowing scrollbar, `always` keeps a stable,
+  // always-painted track (Radix parity) with the thumb filling the full track.
+  // The contract is observable only against a real browser layout, since
+  // `data-state` combines overflow presence (geometry, zero in jsdom) with the
+  // `type` rule, and the full-track thumb is pure geometry.
+  test.describe('type="auto" vs type="always" divergence', () => {
+    test('type="auto": both scrollbars self-hide when content fits', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', {
+        type: 'auto',
+        viewportWidth: '300',
+        viewportHeight: '200',
+        contentWidth: '150',
+        contentHeight: '100',
+      });
+
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
+      await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'hidden');
+      await expect(el(page, 'scrollbar-vertical')).toBeHidden();
+      await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
+      await expect(el(page, 'corner')).toBeHidden();
+    });
+
+    test('type="always": tracks stay painted and the thumb fills the full track when content fits', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', {
+        type: 'always',
+        viewportWidth: '300',
+        viewportHeight: '200',
+        contentWidth: '150',
+        contentHeight: '100',
+      });
+      // Track is painted even with no overflow, so the synthetic thumb renders
+      // at full track length — wait for it before measuring.
+      await waitForOverflowMeasured(page);
+
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
+      await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'visible');
+      await expect(el(page, 'scrollbar-vertical')).toBeVisible();
+      await expect(el(page, 'scrollbar-horizontal')).toBeVisible();
+      // Both tracks are permanently present in `always`, so is the corner.
+      await expect(el(page, 'corner')).toBeVisible();
+
+      // No overflow → ratio 1 → thumb fills (≈, ±2px) the full track height.
+      const trackBox = await el(page, 'scrollbar-vertical').boundingBox();
+      const thumbBox = await el(page, 'thumb-vertical').boundingBox();
+      expect(thumbBox!.height).toBeGreaterThanOrEqual(trackBox!.height - 2);
+      expect(thumbBox!.height).toBeLessThanOrEqual(trackBox!.height + 2);
+    });
+
+    test('type="always": dragging the full-length thumb is a no-op when content fits', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', {
+        type: 'always',
+        viewportWidth: '300',
+        viewportHeight: '200',
+        contentWidth: '150',
+        contentHeight: '100',
+      });
+      await waitForOverflowMeasured(page);
+
+      const viewport = el(page, 'viewport');
+      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
+
+      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 });
+
+      // `tl - tsz <= 0` → the drag handler early-returns, so scrollTop never moves.
+      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
+    });
+
     for (const type of ['auto', 'always'] as const) {
       test(`type="${type}": scrollbar is visible when the axis overflows`, async ({ page }) => {
         await gotoFixture(page, 'scroll-area', { type });
@@ -240,25 +296,6 @@ test.describe('ScrollArea (geometry + drag)', () => {
         await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
         await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'visible');
         await expect(el(page, 'thumb-vertical')).toBeVisible();
-      });
-
-      test(`type="${type}": scrollbar stays hidden (no reserved track) when content fits`, async ({
-        page,
-      }) => {
-        // Content smaller than the viewport → no overflow. Unlike Radix's
-        // reserved-track `always`, both modes leave the scrollbar hidden.
-        await gotoFixture(page, 'scroll-area', {
-          type,
-          viewportWidth: '300',
-          viewportHeight: '200',
-          contentWidth: '150',
-          contentHeight: '100',
-        });
-
-        await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
-        await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'hidden');
-        await expect(el(page, 'scrollbar-vertical')).toBeHidden();
-        await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
       });
     }
   });

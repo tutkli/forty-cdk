@@ -9,10 +9,12 @@ import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-
  * input so the thumb can compute geometry.
  *
  * The element is fully removed (`hidden`) when the corresponding axis has
- * no overflow — there is no scrollbar to render. Visibility is enforced with
- * an inline `display: none` (which beats any author `display` rule a consumer
- * applies via a class) in addition to the `hidden` attribute that removes it
- * from the a11y tree.
+ * no overflow *and* `type` is not `'always'` — there is no scrollbar to
+ * render. Under `type="always"` the track stays painted regardless of
+ * overflow (Radix parity), so the consumer's reserved gutter is never empty.
+ * Visibility is enforced with an inline `display: none` (which beats any
+ * author `display` rule a consumer applies via a class) in addition to the
+ * `hidden` attribute that removes it from the a11y tree.
  */
 @Directive({
   selector: '[forScrollAreaScrollbar]',
@@ -20,8 +22,8 @@ import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-
   host: {
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-state]': 'state()',
-    '[hidden]': '!hasOverflow()',
-    '[style.display]': 'hasOverflow() ? null : "none"',
+    '[hidden]': '!painted()',
+    '[style.display]': 'painted() ? null : "none"',
   },
 })
 export class ForScrollAreaScrollbar {
@@ -41,21 +43,32 @@ export class ForScrollAreaScrollbar {
   });
 
   /**
-   * `'visible' | 'hidden'` — combines `type` rules with overflow presence. A
-   * non-overflowing axis is always `'hidden'` regardless of `type`, so `'auto'`
-   * and `'always'` resolve identically (the library never reserves an empty
-   * track); they are synonyms today and share this arm.
+   * Whether the track is rendered at all. `'always'` keeps it painted
+   * unconditionally (a stable, always-present track — Radix parity); every
+   * other `type` paints only the axis that actually overflows. Gates both the
+   * `hidden` attribute and the inline `display: none` self-removal.
+   */
+  readonly painted = computed<boolean>(() => this.ctx.type() === 'always' || this.hasOverflow());
+
+  /**
+   * `'visible' | 'hidden'`. `'always'` resolves to `'visible'` regardless of
+   * overflow — the track is permanently present. `'auto'` shows whenever the
+   * axis overflows; `'hover'` / `'scroll'` additionally gate on the interaction
+   * signals. A non-overflowing axis is `'hidden'` for every mode except
+   * `'always'`.
    */
   readonly state = computed<'visible' | 'hidden'>(() => {
-    if (!this.hasOverflow()) return 'hidden';
     switch (this.ctx.type()) {
-      case 'auto':
       case 'always':
         return 'visible';
+      case 'auto':
+        return this.hasOverflow() ? 'visible' : 'hidden';
       case 'hover':
-        return this.ctx.hovering() || this.ctx.scrolling() ? 'visible' : 'hidden';
+        return this.hasOverflow() && (this.ctx.hovering() || this.ctx.scrolling())
+          ? 'visible'
+          : 'hidden';
       case 'scroll':
-        return this.ctx.scrolling() ? 'visible' : 'hidden';
+        return this.hasOverflow() && this.ctx.scrolling() ? 'visible' : 'hidden';
     }
   });
 }
