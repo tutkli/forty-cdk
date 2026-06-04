@@ -36,8 +36,30 @@ describe('Typeahead', () => {
     expect(t.buffer()).toBe('');
   });
 
-  it('ignores Space so widgets can use it for activation', () => {
+  it('ignores the first Space (empty buffer) so widgets can use it for activation', () => {
     const t = new Typeahead();
+    expect(t.handle(key(' '))).toBe(false);
+    expect(t.buffer()).toBe('');
+  });
+
+  it('accumulates Space once the buffer is non-empty (multi-word prefixes)', () => {
+    const t = new Typeahead();
+    expect(t.handle(key('n'))).toBe(true);
+    expect(t.handle(key('e'))).toBe(true);
+    expect(t.handle(key('w'))).toBe(true);
+    expect(t.handle(key(' '))).toBe(true);
+    expect(t.handle(key('y'))).toBe(true);
+    expect(t.buffer()).toBe('new y');
+  });
+
+  it('rejects Space again after the buffer resets to empty', () => {
+    const t = new Typeahead({ debounceMs: 300 });
+    t.handle(key('a'));
+    expect(t.handle(key(' '))).toBe(true);
+    expect(t.buffer()).toBe('a ');
+
+    vi.advanceTimersByTime(300);
+    expect(t.buffer()).toBe('');
     expect(t.handle(key(' '))).toBe(false);
     expect(t.buffer()).toBe('');
   });

@@ -1,4 +1,4 @@
-import { afterNextRender, DestroyRef, effect, inject, type Signal, signal } from '@angular/core';
+import { DestroyRef, effect, inject, type Signal, signal } from '@angular/core';
 
 export interface ElementBox {
   /** Border-box width in CSS pixels. */
@@ -17,14 +17,16 @@ export interface ElementBox {
  * scrollHeight actually change.
  *
  * Returns `null` until the first measurement is taken (or while `target()`
- * is `null`). Subscribes after the first render to avoid measuring before
- * layout has settled.
+ * is `null`). The first measurement runs when the observing `effect` first
+ * sees a non-null target, then on every `ResizeObserver` callback.
  *
  * Implementation notes:
  * - One `ResizeObserver` per call. The browser batches all observers, so
  *   creating several is cheap.
  * - The signal write happens inside the observer callback, which fires
  *   outside any reactive scope — no `effect()` self-cycle.
+ * - A single synchronous `sync(el)` runs when the effect attaches the
+ *   observer, so the target is measured exactly once on first activation.
  * - Cleaned up via `DestroyRef`.
  */
 export function injectElementSize(target: Signal<HTMLElement | null>): Signal<ElementBox | null> {
@@ -52,14 +54,6 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
       out.set(next);
     }
   };
-
-  // Subscribe after the first render so layout has happened.
-  afterNextRender(() => {
-    const el = target();
-    if (el) {
-      sync(el);
-    }
-  });
 
   // React to target changes (and to scrollWidth/Height changes via the observer).
   effect(() => {

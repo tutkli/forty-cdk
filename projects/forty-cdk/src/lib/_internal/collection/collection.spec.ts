@@ -75,6 +75,31 @@ describe('Collection', () => {
     expect(col.items()).toEqual([]);
   });
 
+  it('unregistering an unknown handle is a no-op', () => {
+    const col = new Collection<Handle>();
+    const ha = handle('a', a);
+    col.register(ha);
+
+    const before = col.items();
+    col.unregister(handle('b', b));
+    expect(col.items()).toBe(before);
+    expect(col.items()).toEqual([ha]);
+  });
+
+  it('allows re-registering a handle after it is unregistered', () => {
+    const col = new Collection<Handle>();
+    const ha = handle('a', a);
+    col.register(ha);
+    col.unregister(ha);
+    expect(col.items()).toEqual([]);
+
+    col.register(ha);
+    expect(col.items()).toEqual([ha]);
+
+    col.register(ha);
+    expect(col.items()).toEqual([ha]);
+  });
+
   it('returns the same array reference across consecutive reads (no per-read allocation)', () => {
     const col = new Collection<Handle>();
     col.register(handle('a', a));

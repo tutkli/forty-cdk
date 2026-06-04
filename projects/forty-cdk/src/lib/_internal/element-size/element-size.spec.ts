@@ -109,6 +109,35 @@ describe('injectElementSize', () => {
     });
   });
 
+  it('measures the target exactly once on first activation', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+
+    const div = fixture.componentInstance.box().nativeElement;
+    let widthReads = 0;
+    Object.defineProperty(div, 'clientWidth', {
+      configurable: true,
+      get() {
+        widthReads++;
+        return 200;
+      },
+    });
+    Object.defineProperty(div, 'clientHeight', { configurable: true, value: 50 });
+    Object.defineProperty(div, 'scrollWidth', { configurable: true, value: 400 });
+    Object.defineProperty(div, 'scrollHeight', { configurable: true, value: 50 });
+
+    fixture.componentInstance.attach();
+    await flush(fixture);
+
+    expect(widthReads).toBe(1);
+    expect(fixture.componentInstance.size()).toEqual({
+      width: 200,
+      height: 50,
+      scrollWidth: 400,
+      scrollHeight: 50,
+    });
+  });
+
   it('disconnects the observer when the target turns null', () => {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.attach();

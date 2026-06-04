@@ -19,9 +19,18 @@ export interface CollectionHandle {
  * The collection itself is not Angular-aware; instantiate it directly on
  * the host directive and call `register` / `unregister` from each child's
  * constructor / `DestroyRef.onDestroy`.
+ *
+ * Membership is tracked in a parallel `Set`, so `register` / `unregister`
+ * do an O(1) duplicate check instead of scanning the array. Registering N
+ * children is therefore O(N) overall rather than O(N²) — this keeps bulk
+ * mounts of large lists (a 1000-node tree / listbox) linear. The exposed
+ * `items` array is still rebuilt immutably on each mutation, so reading it
+ * is O(1) but a single mutation is O(N) in the current size; that's the
+ * cost of the stable signal reference consumers rely on.
  */
 export class Collection<H extends CollectionHandle> {
   readonly #items = signal<readonly H[]>([]);
+  readonly #membership = new Set<H>();
 
   /**
    * All registered handles, in registration order.
@@ -36,10 +45,17 @@ export class Collection<H extends CollectionHandle> {
   readonly items: Signal<readonly H[]> = this.#items.asReadonly();
 
   register(handle: H): void {
-    this.#items.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
+    if (this.#membership.has(handle)) {
+      return;
+    }
+    this.#membership.add(handle);
+    this.#items.update((arr) => [...arr, handle]);
   }
 
   unregister(handle: H): void {
+    if (!this.#membership.delete(handle)) {
+      return;
+    }
     this.#items.update((arr) => arr.filter((h) => h !== handle));
   }
 
