@@ -8,7 +8,16 @@ import type {
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { Point } from '../_internal/pointer-grace/pointer-grace';
-import type { ForMenubarContext } from '../menubar/menubar-context';
+
+/**
+ * Minimal upward contract a menu uses to move between sibling menus of an
+ * enclosing menubar. Implemented by the menubar root; keeps the generic menu
+ * layer free of any concrete-root import.
+ */
+export interface MenuSiblingNavigator {
+  /** Move focus/open to the previous or next sibling menu. */
+  switchToSibling(direction: 'next' | 'prev'): void;
+}
 
 /**
  * Why a menu requested close. Mirrors Radix's `onCloseAutoFocus` reasons
@@ -106,9 +115,10 @@ export interface ForMenuContext {
    * The enclosing menubar, when this context is the top-level menu of a
    * `[forMenubar]`. `null` otherwise. `[forMenuItem]` and `[forMenuContent]`
    * route ArrowLeft / ArrowRight up to it for cross-menu navigation when
-   * there's no parent submenu.
+   * there's no parent submenu. Typed as the minimal `MenuSiblingNavigator`
+   * so the generic menu layer stays free of any concrete-root import.
    */
-  readonly menubar?: ForMenubarContext | null;
+  readonly menubar?: MenuSiblingNavigator | null;
 
   /**
    * Elements treated as "inside" by the dismissable layer. DropdownMenu
