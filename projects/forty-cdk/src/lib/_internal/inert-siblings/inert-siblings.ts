@@ -34,6 +34,15 @@ import { isPlatformBrowser } from '@angular/common';
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
  * alongside the dialog).
  *
+ * Late siblings: an element portaled to `body` *after* the topmost owner
+ * activated (e.g. a toast shown while a Dialog is open) would otherwise
+ * escape the isolation, since the initial sweep only sees the children
+ * present at activation. While any owner is active a `MutationObserver`
+ * watches `body`'s child list and inerts each newly added sibling under
+ * the same skip/snapshot rules, so it is restored on teardown too. The
+ * observer starts on the 0→1 owner transition and disconnects when the
+ * stack empties.
+ *
  * SSR: the registry is `providedIn: 'root'` so its state is scoped to a
  * single Angular bootstrap (one per SSR request). On the server, every
  * operation is a no-op — overlays only call `activate()` from
@@ -62,6 +71,7 @@ export class InertSiblingsStack {
 
   readonly #stack: HTMLElement[] = [];
   #appliedSnapshot: SnapshotEntry[] = [];
+  #observer: MutationObserver | null = null;
 
   /**
    * Push `owner` onto the inert-siblings stack and (re)apply the isolation
@@ -78,6 +88,9 @@ export class InertSiblingsStack {
     // previous topmost would accumulate a second snapshot entry on the
     // next push.
     this.#revertAppliedSnapshot();
+    if (this.#stack.length === 0) {
+      this.#startObserving();
+    }
     this.#stack.push(owner);
     this.#applyForCurrentTopmost();
 
@@ -99,38 +112,86 @@ export class InertSiblingsStack {
         this.#stack.splice(idx, 1);
         if (this.#stack.length > 0) {
           this.#applyForCurrentTopmost();
+        } else {
+          this.#stopObserving();
         }
       },
     };
   }
 
   #applyForCurrentTopmost(): void {
-    const top = this.#stack[this.#stack.length - 1];
-    if (!top) {
+    const protectedRoot = this.#currentProtectedRoot();
+    if (!protectedRoot) {
       return;
     }
-    const protectedRoot = this.#bodyLevelAncestor(top) ?? top;
 
     for (const child of Array.from(this.#document.body.children)) {
-      if (!(child instanceof HTMLElement)) {
-        continue;
-      }
-      if (child === protectedRoot) {
-        continue;
-      }
-      if (child.hasAttribute(PEER_ATTRIBUTE)) {
-        continue;
-      }
-
-      this.#appliedSnapshot.push({
-        el: child,
-        hadInert: child.hasAttribute('inert'),
-        prevAriaHidden: child.getAttribute('aria-hidden'),
-      });
-
-      child.setAttribute('inert', '');
-      child.setAttribute('aria-hidden', 'true');
+      this.#inertChild(child, protectedRoot);
     }
+  }
+
+  /**
+   * Inert + `aria-hidden` a single direct `body` child and snapshot its prior
+   * state, unless it is the protected root, a peer, a non-element, or already
+   * snapshotted. Shared by the initial sweep and the observer callback so the
+   * skip/snapshot rules stay identical.
+   */
+  #inertChild(child: Element, protectedRoot: HTMLElement): void {
+    if (!(child instanceof HTMLElement)) {
+      return;
+    }
+    if (child === protectedRoot) {
+      return;
+    }
+    if (child.hasAttribute(PEER_ATTRIBUTE)) {
+      return;
+    }
+    if (this.#appliedSnapshot.some(entry => entry.el === child)) {
+      return;
+    }
+
+    this.#appliedSnapshot.push({
+      el: child,
+      hadInert: child.hasAttribute('inert'),
+      prevAriaHidden: child.getAttribute('aria-hidden'),
+    });
+
+    child.setAttribute('inert', '');
+    child.setAttribute('aria-hidden', 'true');
+  }
+
+  #currentProtectedRoot(): HTMLElement | null {
+    const top = this.#stack[this.#stack.length - 1];
+    if (!top) {
+      return null;
+    }
+    return this.#bodyLevelAncestor(top) ?? top;
+  }
+
+  #startObserving(): void {
+    const win = this.#document.defaultView;
+    if (this.#observer || !win || typeof win.MutationObserver !== 'function') {
+      return;
+    }
+    this.#observer = new win.MutationObserver(records => {
+      const protectedRoot = this.#currentProtectedRoot();
+      if (!protectedRoot) {
+        return;
+      }
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          if (node instanceof HTMLElement && node.parentElement === this.#document.body) {
+            this.#inertChild(node, protectedRoot);
+          }
+        }
+      }
+    });
+    this.#observer.observe(this.#document.body, { childList: true });
+  }
+
+  #stopObserving(): void {
+    this.#observer?.disconnect();
+    this.#observer = null;
   }
 
   #revertAppliedSnapshot(): void {
