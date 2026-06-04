@@ -35,6 +35,16 @@ export class VisibilityPause {
     });
   }
 
+  /**
+   * Whether the page is currently hidden / backgrounded
+   * (`document.visibilityState !== 'visible'`). Returns `false` on the
+   * server. Use this to seed initial pause state, since `subscribe` only
+   * fires on transitions and never synchronously on subscribe.
+   */
+  currentlyHidden(): boolean {
+    return this.#isBrowser ? this.#document.visibilityState !== 'visible' : false;
+  }
+
   subscribe(listener: VisibilityListener): () => void {
     if (!this.#isBrowser) {
       return () => {};
@@ -79,4 +89,13 @@ export class VisibilityPause {
  */
 export function subscribeVisibilityPause(listener: VisibilityListener): () => void {
   return inject(VisibilityPause).subscribe(listener);
+}
+
+/**
+ * Convenience wrapper that resolves the application-scoped
+ * `VisibilityPause` and reports whether the page is currently hidden.
+ * Must be called from an injection context. Returns `false` on the server.
+ */
+export function isPageHidden(): boolean {
+  return inject(VisibilityPause).currentlyHidden();
 }

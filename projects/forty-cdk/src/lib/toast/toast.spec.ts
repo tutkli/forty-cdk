@@ -454,6 +454,85 @@ describe('ForToast (declarative)', () => {
     });
   });
 
+  describe('mounted while the tab is hidden', () => {
+    let visibility: 'visible' | 'hidden';
+
+    beforeEach(() => {
+      visibility = 'hidden';
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => visibility,
+      });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
+
+    it('does not count down until the tab becomes visible', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      vi.advanceTimersByTime(60_000);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+
+      visibility = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      r.flush();
+      expect(t.hasAttribute('data-paused')).toBe(false);
+
+      vi.advanceTimersByTime(4_999);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
+    });
+  });
+
+  describe('non-closable does not schedule an auto-dismiss timer', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('closable=false never wires a timer for the duration', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DeclarativeHost);
+      fixture.componentInstance.closable.set(false);
+      const spy = vi.spyOn(globalThis, 'setTimeout');
+      fixture.detectChanges();
+      expect(spy).not.toHaveBeenCalledWith(expect.any(Function), 5000);
+    });
+
+    it('closable=true with the same duration DOES schedule a timer', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DeclarativeHost);
+      const spy = vi.spyOn(globalThis, 'setTimeout');
+      fixture.detectChanges();
+      expect(spy).toHaveBeenCalledWith(expect.any(Function), 5000);
+    });
+
+    it('closable=false does not emit (close) after the duration elapses', () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      r.instance.closable.set(false);
+      r.flush();
+      vi.advanceTimersByTime(60_000);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+    });
+  });
+
   describe('manual close paths', () => {
     it('Escape closes when closable', () => {
       const r = renderHost(DeclarativeHost);

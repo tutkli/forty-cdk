@@ -20,7 +20,10 @@ import {
   type SwipeDirection,
   type SwipeEventDetail,
 } from '../_internal/swipe-dismiss/swipe-dismiss';
-import { subscribeVisibilityPause } from '../_internal/visibility-pause/visibility-pause';
+import {
+  isPageHidden,
+  subscribeVisibilityPause,
+} from '../_internal/visibility-pause/visibility-pause';
 import {
   FOR_TOAST_CONTEXT,
   type ForToastActionHandle,
@@ -202,7 +205,7 @@ export class ForToast implements ForToastContext {
       const ms = this.duration();
       this.#cancelTimer();
       this.#remainingMs = ms;
-      if (ms > 0 && !untracked(() => this.#paused())) {
+      if (ms > 0 && this.closable() && !untracked(() => this.#paused())) {
         this.#scheduleTimer();
       }
     });
@@ -236,6 +239,10 @@ export class ForToast implements ForToastContext {
       }
     });
     this.#destroyRef.onDestroy(unsubscribe);
+
+    if (isPageHidden()) {
+      this.#applyPause('visibility');
+    }
 
     const detachSwipe = attachSwipeDismiss({
       element: this.#host.nativeElement,
@@ -350,7 +357,7 @@ export class ForToast implements ForToastContext {
         this.#remainingMs = Math.max(0, this.#timerEndsAt - Date.now());
         this.#cancelTimer();
       }
-    } else if (this.duration() > 0 && this.#remainingMs > 0) {
+    } else if (this.duration() > 0 && this.closable() && this.#remainingMs > 0) {
       this.#scheduleTimer();
     }
   }
