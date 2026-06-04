@@ -459,6 +459,20 @@ describe('ForCalendar', () => {
       expect(nativeMatrix[0]!.length).toBe(7);
     });
 
+    it('getDayOfWeek returns the absolute Sunday=0 index, agreeing across adapters (#397)', () => {
+      const native = new NativeDateAdapter();
+      const intl = new InternationalizedDateAdapter();
+      const dateTime = new InternationalizedDateTimeAdapter();
+
+      expect(native.getDayOfWeek(new Date(2026, 5, 14))).toBe(0);
+      expect(intl.getDayOfWeek(intl.createDate(2026, 6, 14))).toBe(0);
+      expect(dateTime.getDayOfWeek(new CalendarDateTime(2026, 6, 14, 9, 0))).toBe(0);
+
+      expect(native.getDayOfWeek(new Date(2026, 5, 17))).toBe(3);
+      expect(intl.getDayOfWeek(intl.createDate(2026, 6, 17))).toBe(3);
+      expect(dateTime.getDayOfWeek(new CalendarDateTime(2026, 6, 17, 9, 0))).toBe(3);
+    });
+
     it('firstDayOfWeek shifts the first column', () => {
       const sundayFirst = buildMonthMatrix(adapter, adapter.createDate(2026, 2, 1), 0);
       const mondayFirst = buildMonthMatrix(adapter, adapter.createDate(2026, 2, 1), 1);

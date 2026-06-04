@@ -1,7 +1,6 @@
 import { Injectable, type Provider } from '@angular/core';
 import {
   CalendarDateTime,
-  getDayOfWeek,
   getLocalTimeZone,
   isSameDay,
   toCalendarDateTime,
@@ -50,7 +49,7 @@ export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDat
   }
 
   getDayOfWeek(date: CalendarDateTime): number {
-    return getDayOfWeek(date, 'en-US');
+    return date.toDate(getLocalTimeZone()).getDay();
   }
 
   getDaysInMonth(date: CalendarDateTime): number {
