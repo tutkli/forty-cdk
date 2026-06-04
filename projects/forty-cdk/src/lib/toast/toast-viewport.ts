@@ -16,6 +16,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
 import {
   DEFAULT_TOAST_REGION,
+  type ForToastCloseReason,
   type ForToastInstance,
   type ForToastSwipeDirection,
 } from './toast-context';
@@ -224,8 +225,8 @@ export class ForToastViewport {
     return false;
   }
 
-  protected onClose(toast: ForToastInstance, _reason: unknown): void {
-    toast.dismiss();
+  protected onClose(toast: ForToastInstance, reason: ForToastCloseReason): void {
+    toast.dismiss(reason);
   }
 
   /**
