@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   numberAttribute,
   signal,
 } from '@angular/core';
@@ -59,14 +60,24 @@ export class ForAvatar implements ForAvatarContext {
   readonly #status = signal<ForAvatarStatus>('idle');
   readonly status = this.#status.asReadonly();
 
-  readonly #delayElapsed = signal(false);
+  // Whether the deferred-fallback timer has fired for the current status/delay.
+  // `linkedSignal` resets it to `false` whenever the source changes (the
+  // canonical replacement for resetting state inside an effect); the timer
+  // callback in the constructor flips it to `true`.
+  readonly #timerElapsed = linkedSignal<{ status: ForAvatarStatus; delay: number }, boolean>({
+    source: () => ({ status: this.#status(), delay: this.fallbackDelayMs() }),
+    computation: () => false,
+  });
   #timer: ReturnType<typeof setTimeout> | null = null;
 
   readonly shouldShowFallback = computed(() => {
     const status = this.#status();
     if (status === 'loaded') return false;
     if (status === 'error') return true;
-    return this.#delayElapsed();
+    // idle | loading: an immediate (delay <= 0) gate shows the fallback right
+    // away; a deferred gate waits for the timer armed in the effect below.
+    if (this.fallbackDelayMs() <= 0) return true;
+    return this.#timerElapsed();
   });
 
   /** @internal */
@@ -75,32 +86,22 @@ export class ForAvatar implements ForAvatarContext {
   }
 
   constructor() {
-    // Imperative timer integration: effect tracks status + delay and (re)arms
-    // a setTimeout. The signal write happens inside the timer callback, which
-    // runs outside the effect's reactive scope, so this does NOT create a
-    // self-cycle in the reactive graph.
+    // Imperative timer integration: the effect's only job is to (re)arm a
+    // setTimeout for the deferred-fallback case (idle | loading with a positive
+    // delay). The synchronous branches (loaded / error / delay <= 0) are pure
+    // derivations and live in `shouldShowFallback`. The signal write happens
+    // inside the timer callback, which runs outside the effect's reactive
+    // scope, so this does NOT create a self-cycle in the reactive graph.
     effect(() => {
       const status = this.#status();
       const delay = this.fallbackDelayMs();
       this.#cancelTimer();
-      if (status === 'loaded') {
-        this.#delayElapsed.set(false);
-        return;
+      if ((status === 'idle' || status === 'loading') && delay > 0) {
+        this.#timer = setTimeout(() => {
+          this.#timer = null;
+          this.#timerElapsed.set(true);
+        }, delay);
       }
-      if (status === 'error') {
-        this.#delayElapsed.set(true);
-        return;
-      }
-      // idle | loading
-      if (delay <= 0) {
-        this.#delayElapsed.set(true);
-        return;
-      }
-      this.#delayElapsed.set(false);
-      this.#timer = setTimeout(() => {
-        this.#timer = null;
-        this.#delayElapsed.set(true);
-      }, delay);
     });
 
     inject(DestroyRef).onDestroy(() => this.#cancelTimer());
