@@ -31,7 +31,9 @@ import {
  *  - `?viewportHeight=N` — viewport height in CSS pixels (default 200).
  *  - `?contentWidth=N` — content width in CSS pixels (default 1000).
  *  - `?contentHeight=N` — content height in CSS pixels (default 800).
- *  - `?type=always|hover|scroll` — scrollbar visibility mode (default always).
+ *  - `?type=auto|always|hover|scroll` — scrollbar visibility mode (default
+ *    always). `auto` and `always` are synonyms today; both are accepted so a
+ *    spec can assert they behave identically against real layout.
  */
 @Component({
   selector: 'app-scroll-area-fixture',
@@ -171,6 +173,6 @@ export class ScrollAreaFixture {
 
   #typeParam(): ForScrollAreaType {
     const raw = this.#route.snapshot.queryParamMap.get('type');
-    return raw === 'hover' || raw === 'scroll' ? raw : 'always';
+    return raw === 'hover' || raw === 'scroll' || raw === 'auto' ? raw : 'always';
   }
 }

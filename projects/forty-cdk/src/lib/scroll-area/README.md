@@ -17,11 +17,11 @@ This is the **only** primitive in forty-cdk that ships CSS — a single `<style>
 
 ## Inputs (root)
 
-| API               | Type                                               | Description                                                                                       |
-| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. Default `'hover'`.                                                           |
-| `scrollHideDelay` | `input<number>`                                    | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`). Default `600`. |
-| `dir`             | `input<WritingDirection>`                          | Reflected as `dir`.                                                                               |
+| API               | Type                                               | Description                                                                                                                                                |
+| ----------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. Default `'hover'`. `'auto'` and `'always'` are synonyms today — see [Notes](#notes) on why there is no reserved-track difference yet. |
+| `scrollHideDelay` | `input<number>`                                    | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`). Default `600`.                                                          |
+| `dir`             | `input<WritingDirection>`                          | Reflected as `dir`.                                                                                                                                       |
 
 The scrollbar reflects `data-orientation`, `data-state` (`'visible'` / `'hidden'`); the thumb reflects `data-orientation` and `data-state`. Position is driven by inline `transform: translate{X,Y}(…)` on the thumb.
 
@@ -115,6 +115,7 @@ export class DemoScroll {}
 
 ## Notes
 
+- **`type="auto"` and `type="always"` are synonyms today.** Both render a scrollbar only for an axis that actually overflows; a non-overflowing axis is always hidden. The synthetic scrollbar self-hides when its axis has no overflow (it reflects `[hidden]` plus an inline `display: none`), so — unlike Radix — `always` does **not** reserve an empty track when the content fits. `always` is kept for API parity and forward compatibility; if the library ever ships reserved-track behavior it will land behind this value without a breaking rename.
 - **Native scrollbars are hidden globally on `[forScrollAreaViewport]`** via an injected `<style>` tag. If you need to opt out (e.g. for a debug build), remove `#for-scroll-area-hide-native` from the head — but that defeats the primitive's purpose.
 - **Keyboard scrolling stays native.** PageUp / PageDown / arrows / Tab still scroll the viewport because the underlying element keeps `overflow: scroll`. The thumb is just a visual + drag affordance.
 - **Drag uses pointer-capture** so the cursor doesn't lose the thumb if it briefly leaves the track.
