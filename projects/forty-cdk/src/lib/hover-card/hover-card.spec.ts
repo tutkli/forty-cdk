@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { afterEachOverlayCleanup, pressKey, renderHost, withReducedMotion } from '../../test-utils';
 import { ForHoverCard } from './hover-card';
+import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
 import { provideForHoverCardDefaults } from './hover-card-defaults';
@@ -31,6 +32,24 @@ class HoverCardHost {
   readonly isDisabled = signal(false);
   readonly openDelay = signal<number | undefined>(0);
   readonly closeDelay = signal<number | undefined>(0);
+}
+
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ForHoverCardArrow],
+  template: `
+    <span forHoverCard #card="forHoverCard" [(open)]="isOpen" [openDelay]="0" [closeDelay]="0">
+      <a forHoverCardTrigger href="/x">Trigger</a>
+      @if (card.open()) {
+        <div forHoverCardContent>
+          Content
+          <span forHoverCardArrow></span>
+        </div>
+      }
+    </span>
+  `,
+})
+class HoverCardWithArrowHost {
+  readonly isOpen = signal(false);
 }
 
 function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
@@ -360,6 +379,22 @@ describe('ForHoverCard', () => {
       flush();
       expect(captured.length).toBe(2);
       expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('arrow', () => {
+    it('is hidden from the a11y tree and exposes the data-hover-card-arrow hook', () => {
+      const { fixture, query, flush } = renderHost(HoverCardWithArrowHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      const arrow = document.body.querySelector<HTMLElement>('[data-hover-card-arrow]')!;
+      expect(arrow).toBeTruthy();
+      expect(arrow.getAttribute('aria-hidden')).toBe('true');
     });
   });
 

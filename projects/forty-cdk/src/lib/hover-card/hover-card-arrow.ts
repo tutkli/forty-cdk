@@ -11,6 +11,10 @@ import { injectHoverCardContext } from './hover-card-context';
 @Directive({
   selector: '[forHoverCardArrow]',
   exportAs: 'forHoverCardArrow',
+  host: {
+    'aria-hidden': 'true',
+    'data-hover-card-arrow': '',
+  },
 })
 export class ForHoverCardArrow {
   readonly #ctx = injectHoverCardContext('ForHoverCardArrow');
