@@ -1,4 +1,4 @@
-import { Directive, ElementRef, effect, inject, input, numberAttribute } from '@angular/core';
+import { Directive, computed, input, numberAttribute } from '@angular/core';
 
 /**
  * Headless aspect-ratio container. Locks the host element's box to a fixed
@@ -23,31 +23,25 @@ import { Directive, ElementRef, effect, inject, input, numberAttribute } from '@
 @Directive({
   selector: '[forAspectRatio]',
   exportAs: 'forAspectRatio',
+  host: {
+    '[style.aspect-ratio]': 'resolvedRatio()',
+  },
 })
 export class ForAspectRatio {
   /**
    * Width / height ratio, e.g. `16 / 9`, `4 / 3`, `1`. Accepts numeric inputs
    * (`[ratio]="16 / 9"`) and string attributes (`ratio="1.5"`). Defaults to
-   * `1` (square).
+   * `1` (square). Non-positive or non-finite values fall back to `1` so the
+   * host never emits an invalid `aspect-ratio`.
    */
   readonly ratio = input(1, { transform: numberAttribute });
 
-  constructor() {
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-    effect(() => {
-      const value = String(this.ratio());
-      host.style.setProperty('aspect-ratio', value);
-      // Fallback for environments (some jsdom versions) where
-      // CSSStyleDeclaration silently rejects `aspect-ratio`. The browser
-      // path above already wrote the property; this only fires in test envs.
-      if (host.style.getPropertyValue('aspect-ratio') !== value) {
-        const existing = host.getAttribute('style') ?? '';
-        const stripped = existing.replace(/(?:^|;)\s*aspect-ratio:[^;]*;?/i, '').trim();
-        const next = stripped
-          ? `${stripped.replace(/;$/, '')}; aspect-ratio: ${value};`
-          : `aspect-ratio: ${value};`;
-        host.setAttribute('style', next);
-      }
-    });
-  }
+  /**
+   * The host `aspect-ratio` style value, guarded so a `0`, negative, or
+   * non-finite `ratio` never produces invalid CSS — it falls back to `1`.
+   */
+  protected readonly resolvedRatio = computed(() => {
+    const value = this.ratio();
+    return String(Number.isFinite(value) && value > 0 ? value : 1);
+  });
 }

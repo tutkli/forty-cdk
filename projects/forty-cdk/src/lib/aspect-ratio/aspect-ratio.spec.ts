@@ -12,15 +12,40 @@ class AspectRatioHost {
 }
 
 /**
- * jsdom does not parse the `aspect-ratio` CSS property, so reading
- * `el.style.aspectRatio` returns `''`. The inline-style attribute, however,
- * is whatever Angular wrote — read it instead and assert against the
- * substring we expect.
+ * jsdom does not support the `aspect-ratio` CSS property, so it silently drops
+ * the value written by Angular's `[style.aspect-ratio]` host binding — both
+ * `el.style.aspectRatio` and the inline-`style` attribute stay empty. To read
+ * the value Angular actually bound, capture the `setProperty` call at the
+ * `CSSStyleDeclaration` boundary (the DOM API the host binding drives) and
+ * track the latest `aspect-ratio` write per element.
  */
-function aspectRatioFromStyleAttr(el: HTMLElement): string {
-  const style = el.getAttribute('style') ?? '';
-  const match = style.match(/aspect-ratio:\s*([^;]+)/i);
-  return match ? match[1]!.trim() : '';
+const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
+const aspectRatioWrites = new WeakMap<CSSStyleDeclaration, string>();
+
+beforeAll(() => {
+  CSSStyleDeclaration.prototype.setProperty = function (
+    this: CSSStyleDeclaration,
+    property: string,
+    value: string | null,
+    priority?: string,
+  ): void {
+    if (property === 'aspect-ratio') {
+      if (value == null || value === '') {
+        aspectRatioWrites.delete(this);
+      } else {
+        aspectRatioWrites.set(this, value);
+      }
+    }
+    originalSetProperty.call(this, property, value, priority);
+  };
+});
+
+afterAll(() => {
+  CSSStyleDeclaration.prototype.setProperty = originalSetProperty;
+});
+
+function boundAspectRatio(el: HTMLElement): string {
+  return aspectRatioWrites.get(el.style) ?? '';
 }
 
 describe('ForAspectRatio', () => {
@@ -28,20 +53,20 @@ describe('ForAspectRatio', () => {
     const { query } = renderHost(AspectRatioHost);
     const el = query<HTMLElement>('[forAspectRatio]')!;
 
-    expect(aspectRatioFromStyleAttr(el)).toBe(String(16 / 9));
+    expect(boundAspectRatio(el)).toBe(String(16 / 9));
   });
 
   it('updates the aspect-ratio reactively when the input changes', () => {
     const { fixture, query, flush } = renderHost(AspectRatioHost);
     const el = query<HTMLElement>('[forAspectRatio]')!;
 
-    fixture.componentInstance.ratio.set(1);
+    fixture.componentInstance.ratio.set(2);
     flush();
-    expect(aspectRatioFromStyleAttr(el)).toBe('1');
+    expect(boundAspectRatio(el)).toBe('2');
 
     fixture.componentInstance.ratio.set(4 / 3);
     flush();
-    expect(aspectRatioFromStyleAttr(el)).toBe(String(4 / 3));
+    expect(boundAspectRatio(el)).toBe(String(4 / 3));
   });
 
   it('defaults to 1 (square) when ratio is unset', () => {
@@ -54,7 +79,7 @@ describe('ForAspectRatio', () => {
     const { query } = renderHost(DefaultHost);
     const el = query<HTMLElement>('[forAspectRatio]')!;
 
-    expect(aspectRatioFromStyleAttr(el)).toBe('1');
+    expect(boundAspectRatio(el)).toBe('1');
   });
 
   it('coerces a string attribute via numberAttribute', () => {
@@ -67,7 +92,39 @@ describe('ForAspectRatio', () => {
     const { query } = renderHost(StringHost);
     const el = query<HTMLElement>('[forAspectRatio]')!;
 
-    expect(aspectRatioFromStyleAttr(el)).toBe('1.5');
+    expect(boundAspectRatio(el)).toBe('1.5');
+  });
+
+  describe('guards non-positive and non-finite ratios', () => {
+    it('falls back to 1 when ratio is 0', () => {
+      const { fixture, query, flush } = renderHost(AspectRatioHost);
+      const el = query<HTMLElement>('[forAspectRatio]')!;
+
+      fixture.componentInstance.ratio.set(0);
+      flush();
+
+      expect(boundAspectRatio(el)).toBe('1');
+    });
+
+    it('falls back to 1 when ratio is negative', () => {
+      const { fixture, query, flush } = renderHost(AspectRatioHost);
+      const el = query<HTMLElement>('[forAspectRatio]')!;
+
+      fixture.componentInstance.ratio.set(-2);
+      flush();
+
+      expect(boundAspectRatio(el)).toBe('1');
+    });
+
+    it('falls back to 1 when ratio is NaN', () => {
+      const { fixture, query, flush } = renderHost(AspectRatioHost);
+      const el = query<HTMLElement>('[forAspectRatio]')!;
+
+      fixture.componentInstance.ratio.set(NaN);
+      flush();
+
+      expect(boundAspectRatio(el)).toBe('1');
+    });
   });
 
   describe('zoneless reactivity', () => {
@@ -75,12 +132,12 @@ describe('ForAspectRatio', () => {
       const { fixture, query, flush } = renderHost(AspectRatioHost);
       const el = query<HTMLElement>('[forAspectRatio]')!;
 
-      expect(aspectRatioFromStyleAttr(el)).toBe(String(16 / 9));
+      expect(boundAspectRatio(el)).toBe(String(16 / 9));
 
       fixture.componentInstance.ratio.set(2);
       flush();
 
-      expect(aspectRatioFromStyleAttr(el)).toBe('2');
+      expect(boundAspectRatio(el)).toBe('2');
     });
   });
 });
