@@ -26,10 +26,22 @@ export interface ForNavigationMenuContentHandle extends CollectionHandle {
 /**
  * Per-viewport handle. Only one viewport is expected per menu (Radix
  * mirror). The host element is the destination for re-parented active
- * content panels.
+ * content panels, and the viewport owns their ordering.
  */
 export interface ForNavigationMenuViewportHandle {
   readonly host: HTMLElement;
+  /**
+   * Re-parent `panel` into the viewport host at the position dictated by
+   * its `triggerHost`'s document order, so the panels' DOM order always
+   * matches trigger order regardless of mount timing. This makes the
+   * entering/leaving overlap during an animated A→B transition
+   * deterministic: a panel whose trigger precedes another's is always
+   * inserted before it, never appended last just because it mounted later.
+   *
+   * No-op when the panel is already correctly placed. `triggerHost` may be
+   * `null` (trigger not yet registered); the panel is then appended last.
+   */
+  insertPanel(panel: HTMLElement, triggerHost: HTMLElement | null): void;
 }
 
 /**
