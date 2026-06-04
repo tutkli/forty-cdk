@@ -92,6 +92,57 @@ class NoViewportHost {
   readonly open = signal('');
 }
 
+/**
+ * Mounts each panel from an independent boolean so a leaving panel can be
+ * kept around while the next one enters — the same shape `animate.leave`
+ * produces (the leaving DOM survives past the `value` transition). This
+ * lets the spec assert the overlapping A→B child order, which the
+ * `@if (open() === …)` shape can never produce (it destroys the leaving
+ * panel synchronously).
+ */
+@Component({
+  selector: 'overlapping-mega-menu-host',
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuViewport,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger>Products</button>
+          @if (mountProducts()) {
+            <div forNavigationMenuContent data-id="products">products panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="solutions">
+          <button forNavigationMenuTrigger>Solutions</button>
+          @if (mountSolutions()) {
+            <div forNavigationMenuContent data-id="solutions">solutions panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="company">
+          <button forNavigationMenuTrigger>Company</button>
+          @if (mountCompany()) {
+            <div forNavigationMenuContent data-id="company">company panel</div>
+          }
+        </li>
+      </ul>
+      <div forNavigationMenuViewport data-id="viewport"></div>
+    </nav>
+  `,
+})
+class OverlappingMegaMenuHost {
+  readonly open = signal('');
+  readonly mountProducts = signal(false);
+  readonly mountSolutions = signal(false);
+  readonly mountCompany = signal(false);
+}
+
 describe('ForNavigationMenuViewport', () => {
   let originalRO: typeof ResizeObserver;
 
@@ -146,6 +197,92 @@ describe('ForNavigationMenuViewport', () => {
       const products = query<HTMLElement>('[data-id="products"]')!;
       // Without a viewport, the content stays under its [forNavigationMenuItem] parent.
       expect(products.parentElement?.getAttribute('forNavigationMenuItem')).toBe('');
+    });
+  });
+
+  describe('deterministic panel order during an overlapping transition', () => {
+    const panelIds = (viewport: HTMLElement): string[] =>
+      (Array.from(viewport.children) as HTMLElement[]).map((c) => c.getAttribute('data-id') ?? '');
+
+    it('orders co-existing panels by trigger document order, not by mount order', () => {
+      const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+
+      // 'company' (last trigger) enters first.
+      host.open.set('company');
+      host.mountCompany.set(true);
+      flush();
+      expect(panelIds(viewport)).toEqual(['company']);
+
+      // 'products' (first trigger) enters while 'company' is still mounted
+      // (animate.leave shape). Despite mounting later, it must land first
+      // because its trigger comes first in the DOM.
+      host.open.set('products');
+      host.mountProducts.set(true);
+      flush();
+      expect(panelIds(viewport)).toEqual(['products', 'company']);
+    });
+
+    it('inserts a middle panel between earlier and later siblings deterministically', () => {
+      const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+
+      // Mount the outer two first, in reverse trigger order.
+      host.open.set('company');
+      host.mountCompany.set(true);
+      flush();
+      host.mountProducts.set(true);
+      flush();
+      expect(panelIds(viewport)).toEqual(['products', 'company']);
+
+      // 'solutions' (middle trigger) enters last but must slot between them.
+      host.open.set('solutions');
+      host.mountSolutions.set(true);
+      flush();
+      expect(panelIds(viewport)).toEqual(['products', 'solutions', 'company']);
+    });
+
+    // Each step is its own flush so the panels genuinely re-parent at
+    // different times (one `afterNextRender` pass each), exercising the
+    // insertion logic against a different existing-children set every time
+    // rather than collapsing into one template-order construction batch.
+    // Both sequences must converge on the same trigger-order result.
+    it('converges on trigger order when panels mount in forward sequence', () => {
+      const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      host.mountProducts.set(true);
+      flush();
+      host.mountSolutions.set(true);
+      flush();
+      host.mountCompany.set(true);
+      flush();
+      expect(panelIds(query<HTMLElement>('[data-id="viewport"]')!)).toEqual([
+        'products',
+        'solutions',
+        'company',
+      ]);
+    });
+
+    it('converges on trigger order when panels mount in reverse sequence', () => {
+      const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      host.mountCompany.set(true);
+      flush();
+      host.mountSolutions.set(true);
+      flush();
+      host.mountProducts.set(true);
+      flush();
+      expect(panelIds(query<HTMLElement>('[data-id="viewport"]')!)).toEqual([
+        'products',
+        'solutions',
+        'company',
+      ]);
     });
   });
 
@@ -298,6 +435,44 @@ describe('ForNavigationMenuViewport', () => {
         ro.observed.includes(solutions),
       );
       expect(observingSolutions).toBe(true);
+    });
+
+    it('keeps observing the active panel across an A→B→C sequence, never a leaving one', () => {
+      const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+
+      // A enters and becomes active.
+      host.open.set('products');
+      host.mountProducts.set(true);
+      flush();
+      const products = query<HTMLElement>('[data-id="products"]')!;
+      const observed = (): Element[] =>
+        FakeResizeObserver.instances.flatMap((ro) => ro.observed);
+      expect(observed()).toContain(products);
+
+      // B enters; A is kept mounted (animate.leave shape). Only the active
+      // panel (B) must be measured — the leaving A must be unobserved.
+      host.open.set('solutions');
+      host.mountSolutions.set(true);
+      flush();
+      const solutions = query<HTMLElement>('[data-id="solutions"]')!;
+      expect(observed()).toContain(solutions);
+      expect(observed()).not.toContain(products);
+
+      // A finishes leaving (unmounts). B stays the only measured panel.
+      host.mountProducts.set(false);
+      flush();
+      expect(observed()).toContain(solutions);
+      expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
+
+      // C enters; B kept mounted. Active C measured, leaving B not.
+      host.open.set('company');
+      host.mountCompany.set(true);
+      flush();
+      const company = query<HTMLElement>('[data-id="company"]')!;
+      expect(observed()).toContain(company);
+      expect(observed()).not.toContain(solutions);
     });
 
     it('renders without crashing when ResizeObserver is unavailable', () => {

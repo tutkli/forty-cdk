@@ -26,8 +26,16 @@ import {
  * next focusable element after the wrapper.
  *
  * When a `[forNavigationMenuViewport]` is present in the menu, the host
- * element re-parents itself into the viewport on construction so all
- * active panels share a single animated surface (mega-menu pattern). The
+ * element re-parents itself into the viewport on mount so all active
+ * panels share a single animated surface (mega-menu pattern). The viewport
+ * owns the ordering: each panel is inserted in its trigger's document
+ * order, never simply appended in mount order. So during an overlapping
+ * A→B transition — where the leaving A is still mounted (its
+ * `animate.leave` keeps it around) while B enters — the viewport's child
+ * order is deterministic and always matches trigger order: the panel whose
+ * trigger comes first in the DOM is the first child, irrespective of which
+ * panel mounted last. Cross-fade / slide carousels can therefore author
+ * their stacking against trigger order (pair it with `data-motion`). The
  * directive does not undo the re-parent on destroy: the consumer's `@if`
  * is destroying the element anyway, and Angular's renderer removes nodes
  * by their actual current parent.
@@ -81,11 +89,13 @@ export class ForNavigationMenuContent {
     // template anchor — Angular inserts root nodes AFTER directive
     // constructors run, so an `appendChild` here would be undone. Running
     // it in `afterNextRender` happens before browser paint, so the move is
-    // not visible.
+    // not visible. The viewport owns ordering: it inserts this panel in its
+    // trigger's document order, so an overlapping A→B transition keeps a
+    // deterministic child order regardless of which panel mounted last.
     afterNextRender(() => {
       const viewport = this.menu.viewport();
-      if (viewport && viewport.host !== this.#host.parentElement) {
-        viewport.host.appendChild(this.#host);
+      if (viewport) {
+        viewport.insertPanel(this.#host, this.menu.triggerHostFor(this.value()));
       }
     });
   }

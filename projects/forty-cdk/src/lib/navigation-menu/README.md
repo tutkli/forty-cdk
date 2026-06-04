@@ -190,6 +190,12 @@ When present, each `[forNavigationMenuContent]` re-parents its host into the Vie
 
 The leaving content stays mounted as long as the consumer's `@if` keeps it (typically via `animate.leave`), so two panels can briefly overlap inside the Viewport and cross-fade or slide past each other.
 
+### Panel order is deterministic
+
+The Viewport owns panel ordering: each Content is inserted in its **trigger's document order**, never simply appended in mount order. During an overlapping A→B transition — where the leaving A is still mounted while B enters — the Viewport's child order always matches trigger order, so the panel whose trigger comes first in the DOM is always the first child, regardless of which panel mounted last. Author cross-fade / slide stacking against that order (paired with the `data-motion` hook) rather than against mount timing.
+
+Measurement always tracks the **active** panel. The Viewport's `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` reflect the entering panel as soon as it becomes active; a non-active panel kept mounted by `animate.leave` is intentionally no longer measured, so a leaving panel's size never drives the Viewport box mid-transition.
+
 ## Limitations (v1)
 
 - Submenús anidados (Radix `Sub`) — not implemented; tracked separately.

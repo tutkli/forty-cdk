@@ -11,7 +11,10 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { injectNavigationMenuContext } from './navigation-menu-context';
+import {
+  type ForNavigationMenuViewportHandle,
+  injectNavigationMenuContext,
+} from './navigation-menu-context';
 
 /**
  * Optional shared surface for mega-menu style navigation. When present,
@@ -35,6 +38,20 @@ import { injectNavigationMenuContext } from './navigation-menu-context';
  * as the consumer's `@if` keeps it around (e.g. `animate.leave`), so the
  * consumer can cross-fade or slide. Mount lifecycle stays with the
  * consumer's template; this directive only re-parents and measures.
+ *
+ * The viewport owns panel ordering: panels are inserted in their triggers'
+ * document order, never simply appended in mount order. So during an
+ * overlapping A→B transition the panel whose trigger comes first in the DOM
+ * is always the first child of the viewport, regardless of which panel
+ * mounted last — giving cross-fade / slide carousels a deterministic axis
+ * to author against (pair this with the `data-motion` hook on Content).
+ *
+ * Measurement always tracks the active panel: the ResizeObserver follows
+ * `activeContentHost()`, so a non-active panel kept mounted by
+ * `animate.leave` is intentionally no longer measured (its size must not
+ * drive the viewport box mid-transition). The exposed
+ * `--for-navigation-menu-viewport-*` variables therefore reflect the
+ * entering panel as soon as it becomes active.
  *
  * @example
  * ```html
@@ -68,7 +85,10 @@ export class ForNavigationMenuViewport {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
-    const handle = { host: this.host };
+    const handle: ForNavigationMenuViewportHandle = {
+      host: this.host,
+      insertPanel: (panel, triggerHost) => this.#insertPanel(panel, triggerHost),
+    };
     registerHandle(
       handle,
       (h) => this.menu.registerViewport(h),
@@ -108,6 +128,33 @@ export class ForNavigationMenuViewport {
 
       inject(DestroyRef).onDestroy(() => ro.disconnect());
     }
+  }
+
+  #insertPanel(panel: HTMLElement, triggerHost: HTMLElement | null): void {
+    // `insertBefore(node, null)` appends, and re-inserting a node where it
+    // already sits is a no-op, so this is always correct and idempotent.
+    this.host.insertBefore(panel, this.#referenceFor(panel, triggerHost));
+  }
+
+  #referenceFor(panel: HTMLElement, triggerHost: HTMLElement | null): HTMLElement | null {
+    if (!triggerHost) return null;
+    for (const child of Array.from(this.host.children) as HTMLElement[]) {
+      if (child === panel) continue;
+      const childTrigger = this.#triggerFor(child);
+      if (!childTrigger || childTrigger === triggerHost) continue;
+      const followsMine =
+        (triggerHost.compareDocumentPosition(childTrigger) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0;
+      if (followsMine) return child;
+    }
+    return null;
+  }
+
+  #triggerFor(panel: HTMLElement): HTMLElement | null {
+    const triggerId = panel.getAttribute('aria-labelledby');
+    if (!triggerId) return null;
+    return this.host.ownerDocument.getElementById(triggerId);
   }
 
   #measureSize(): { width: number; height: number } {
