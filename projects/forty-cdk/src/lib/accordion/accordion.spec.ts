@@ -237,6 +237,81 @@ describe('ForAccordion', () => {
     });
   });
 
+  describe('nested accordions', () => {
+    @Component({
+      imports: [...ACCORDION_IMPORTS],
+      template: `
+        <div forAccordion multiple>
+          <div forAccordionItem value="outer-a">
+            <h3>
+              <button type="button" forAccordionTrigger data-test-id="outer-a">Outer A</button>
+            </h3>
+            <section forAccordionContent>
+              <div forAccordion multiple>
+                <div forAccordionItem value="inner-a">
+                  <h4>
+                    <button type="button" forAccordionTrigger data-test-id="inner-a">
+                      Inner A
+                    </button>
+                  </h4>
+                  <section forAccordionContent>Inner panel A</section>
+                </div>
+                <div forAccordionItem value="inner-b">
+                  <h4>
+                    <button type="button" forAccordionTrigger data-test-id="inner-b">
+                      Inner B
+                    </button>
+                  </h4>
+                  <section forAccordionContent>Inner panel B</section>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div forAccordionItem value="outer-b">
+            <h3>
+              <button type="button" forAccordionTrigger data-test-id="outer-b">Outer B</button>
+            </h3>
+            <section forAccordionContent>Outer panel B</section>
+          </div>
+        </div>
+      `,
+    })
+    class NestedHost {}
+
+    it('keeps outer arrow navigation within outer triggers, skipping inner ones', () => {
+      const { el } = renderHost(NestedHost);
+
+      triggerOf(el, 'outer-a').focus();
+      pressKey(triggerOf(el, 'outer-a'), 'ArrowDown');
+      expect(document.activeElement).toBe(triggerOf(el, 'outer-b'));
+
+      pressKey(triggerOf(el, 'outer-b'), 'ArrowDown');
+      expect(document.activeElement).toBe(triggerOf(el, 'outer-a'));
+    });
+
+    it('keeps inner arrow navigation within inner triggers only', () => {
+      const { el } = renderHost(NestedHost);
+
+      triggerOf(el, 'inner-a').focus();
+      pressKey(triggerOf(el, 'inner-a'), 'ArrowDown');
+      expect(document.activeElement).toBe(triggerOf(el, 'inner-b'));
+
+      pressKey(triggerOf(el, 'inner-b'), 'ArrowDown');
+      expect(document.activeElement).toBe(triggerOf(el, 'inner-a'));
+    });
+
+    it('Home/End in the inner accordion stay within its own triggers', () => {
+      const { el } = renderHost(NestedHost);
+
+      triggerOf(el, 'inner-b').focus();
+      pressKey(triggerOf(el, 'inner-b'), 'Home');
+      expect(document.activeElement).toBe(triggerOf(el, 'inner-a'));
+
+      pressKey(triggerOf(el, 'inner-a'), 'End');
+      expect(document.activeElement).toBe(triggerOf(el, 'inner-b'));
+    });
+  });
+
   describe('orientation: horizontal', () => {
     @Component({
       imports: [...ACCORDION_IMPORTS],

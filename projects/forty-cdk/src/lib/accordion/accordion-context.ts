@@ -6,6 +6,16 @@ import type {
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 
 /**
+ * Registry entry for one `ForAccordionTrigger`. Triggers register their host
+ * element so the root can drive keyboard navigation over its own triggers
+ * without an unscoped DOM query that would leak into nested accordions.
+ */
+export interface ForAccordionTriggerHandle {
+  readonly host: HTMLElement;
+  readonly disabled: Signal<boolean>;
+}
+
+/**
  * Coordination contract owned by the `ForAccordion` root.
  * Items derive their state from this context; triggers route clicks and
  * keyboard navigation through it.
@@ -22,9 +32,12 @@ export interface ForAccordionContext {
   /**
    * Focus a sibling trigger relative to the one currently focused. Disabled
    * triggers are skipped. `currentTrigger` is the element from which the
-   * keyboard event originated.
+   * keyboard event originated. Navigation stays within this accordion's own
+   * registered triggers, so a nested accordion does not cross-contaminate.
    */
   focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void;
+  registerTrigger(handle: ForAccordionTriggerHandle): void;
+  unregisterTrigger(handle: ForAccordionTriggerHandle): void;
 }
 
 /**
