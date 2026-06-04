@@ -27,6 +27,10 @@ import { ForMenuRadioItem } from './menu-radio-item';
  * indicator in the DOM regardless of state — useful when wrapping
  * `animate.leave` for an exit animation, or when the consumer styles the
  * indicator via `data-state` instead of presence.
+ *
+ * Visibility while unchecked is enforced with an inline `display: none`
+ * (which beats any author `display` rule a consumer applies via a class) in
+ * addition to the `hidden` attribute that removes it from the a11y tree.
  */
 @Directive({
   selector: '[forMenuItemIndicator]',
@@ -35,6 +39,7 @@ import { ForMenuRadioItem } from './menu-radio-item';
     'aria-hidden': 'true',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[hidden]': '!checked() && !forceMount()',
+    '[style.display]': '!checked() && !forceMount() ? "none" : null',
   },
 })
 export class ForMenuItemIndicator {
