@@ -711,6 +711,33 @@ describe('ForCombobox', () => {
       const input = getInput();
       expect(input.getAttribute('aria-activedescendant')).toBeNull();
     });
+
+    it('clears a stale activedescendant on a programmatic query change (#394)', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.autoHighlight.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      // Arrow down to highlight banana so activedescendant points at it.
+      pressKey(input, 'ArrowDown');
+      pressKey(input, 'ArrowDown');
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      const banana = getOption('banana');
+      expect(input.getAttribute('aria-activedescendant')).toBe(banana.id);
+
+      // Consumer's async search writes query directly through the model
+      // (not the typing path), filtering banana out. With autoHighlight off
+      // nothing reseeds, so the query transition itself must clear the now
+      // stale activedescendant.
+      r.instance.query.set('apr');
+      await flush(r.fixture);
+
+      expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+      expect(input.getAttribute('aria-activedescendant')).toBeNull();
+    });
   });
 
   describe('hidden input (form submit)', () => {
