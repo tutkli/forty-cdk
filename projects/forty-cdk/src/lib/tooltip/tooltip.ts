@@ -13,6 +13,10 @@ import {
 } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import {
+  createHoverIntent,
+  type HoverIntentScheduler,
+} from '../_internal/hover-intent/hover-intent';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -119,13 +123,18 @@ export class ForTooltip implements ForTooltipContext {
 
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`
-   * (default), falls back to `ForTooltipDefaults.delayDuration` from the
+   * (default), falls back to `ForTooltipDefaults.openDelay` from the
    * surrounding `provideForTooltipDefaults` scope (700ms unless configured).
    */
   readonly openDelay = input<number | undefined>(undefined);
 
-  /** ms before the tooltip closes after hover or focus leaves. `Escape` ignores this. Default `300`. */
-  readonly closeDelay = input<number>(300);
+  /**
+   * Per-tooltip override for the close delay (ms) after hover or focus
+   * leaves. `Escape` ignores this. When `undefined` (default), falls back to
+   * `ForTooltipDefaults.closeDelay` from the surrounding
+   * `provideForTooltipDefaults` scope (300ms unless configured).
+   */
+  readonly closeDelay = input<number | undefined>(undefined);
 
   /** When true, all hover / focus interaction is ignored and any open tooltip is forced closed. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -139,8 +148,8 @@ export class ForTooltip implements ForTooltipContext {
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
-  #pendingTimer: ReturnType<typeof setTimeout> | null = null;
   readonly #coordinator = inject(TooltipCoordinator);
+  readonly #hoverIntent: HoverIntentScheduler;
 
   constructor() {
     this.open = linkedSignal<{ input: boolean; disabled: boolean }, boolean>({
@@ -172,6 +181,14 @@ export class ForTooltip implements ForTooltipContext {
       }
     });
 
+    this.#hoverIntent = createHoverIntent({
+      open: this.open,
+      isDisabled: () => this.disabled(),
+      openDelay: () => this.openDelay() ?? this.#coordinator.openDelay,
+      closeDelay: () => this.closeDelay() ?? this.#coordinator.closeDelay,
+      coordinator: this.#coordinator,
+    });
+
     inject(DestroyRef).onDestroy(() => this.cancelPending());
   }
 
@@ -196,58 +213,14 @@ export class ForTooltip implements ForTooltipContext {
   }
 
   scheduleOpen(_reason: TooltipScheduleReason): void {
-    if (this.disabled()) {
-      return;
-    }
-    this.cancelPending();
-    if (this.open()) {
-      return;
-    }
-    // Skip the open delay if a peer tooltip in the same provideForTooltipDefaults
-    // scope just closed within the skipDelayDuration window — keeps
-    // toolbar-style tooltips from feeling sluggish on cursor movement.
-    const local = this.openDelay();
-    const base = this.#coordinator.skipDelay() ? 0 : (local ?? this.#coordinator.delayDuration);
-    const delay = Math.max(0, base);
-    if (delay === 0) {
-      this.open.set(true);
-      return;
-    }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
-      this.open.set(true);
-    }, delay);
+    this.#hoverIntent.scheduleOpen();
   }
 
   scheduleClose(reason: TooltipScheduleReason): void {
-    this.cancelPending();
-    if (!this.open()) {
-      return;
-    }
-    if (reason === 'escape') {
-      this.#close();
-      return;
-    }
-    const delay = Math.max(0, this.closeDelay());
-    if (delay === 0) {
-      this.#close();
-      return;
-    }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
-      this.#close();
-    }, delay);
-  }
-
-  #close(): void {
-    this.open.set(false);
-    this.#coordinator.startSkipDelay();
+    this.#hoverIntent.scheduleClose(reason === 'escape');
   }
 
   cancelPending(): void {
-    if (this.#pendingTimer !== null) {
-      clearTimeout(this.#pendingTimer);
-      this.#pendingTimer = null;
-    }
+    this.#hoverIntent.cancelPending();
   }
 }
