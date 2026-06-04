@@ -155,6 +155,21 @@ describe('ForDateField', () => {
       expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe('March');
     });
 
+    it('announces an empty state on every empty numeric segment', async () => {
+      const r = renderHost(Host);
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBeNull();
+      expect(seg(r, 'day').getAttribute('aria-valuetext')).toBe('Empty');
+      expect(seg(r, 'year').getAttribute('aria-valuetext')).toBe('Empty');
+      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe('Empty');
+
+      await type(r, 'day', '05');
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('5');
+      expect(seg(r, 'day').getAttribute('aria-valuetext')).toBeNull();
+
+      await type(r, 'month', '03');
+      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe('March');
+    });
+
     it('rehydrates segments from an external value write', async () => {
       const r = renderHost(Host);
       r.instance.value.set(new Date(2026, 11, 5));

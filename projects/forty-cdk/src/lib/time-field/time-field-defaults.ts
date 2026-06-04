@@ -7,15 +7,19 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * surrounding injector scope. Configure with `provideForTimeFieldDefaults` at
  * the application root or in any component's `providers`; partial overrides
  * merge with the parent scope.
- *
- * The time field has no per-scope tunables today — this stub exists so future
- * additions don't churn the public API surface (see the require-defaults
- * convention in `CLAUDE.md`).
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForTimeFieldDefaults {}
+export interface ForTimeFieldDefaults {
+  /**
+   * Accessible value announced (via `aria-valuetext`) for an empty editable
+   * segment, so screen readers report the segment's empty state instead of
+   * silence. Override for localization.
+   */
+  emptySegmentText: string;
+}
 
-const FALLBACK: ForTimeFieldDefaults = {};
+const FALLBACK: ForTimeFieldDefaults = {
+  emptySegmentText: 'Empty',
+};
 
 const { token, provideDefaults } = createDefaults<ForTimeFieldDefaults>(
   'FOR_TIME_FIELD_DEFAULTS',

@@ -35,6 +35,7 @@ import {
   type ForDateFieldContext,
   type ForDateFieldSegmentHandle,
 } from './date-field-context';
+import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
 
 /** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
 interface DateTimeParts {
@@ -124,6 +125,7 @@ export class ForDateField<D>
   implements FormValueControl<D | null>, ForDateFieldContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateField');
@@ -356,6 +358,9 @@ export class ForDateField<D>
   }
 
   segmentValueText(type: DateTimeSegmentType): string | null {
+    if (this.isSegmentEmpty(type)) {
+      return this.#defaults.emptySegmentText;
+    }
     if (type === 'dayPeriod') {
       const hour = this.#parts().hour;
       if (hour === null) {

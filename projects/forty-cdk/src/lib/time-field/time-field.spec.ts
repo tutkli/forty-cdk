@@ -164,6 +164,18 @@ describe('ForTimeField', () => {
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('9');
     });
 
+    it('announces an empty state on every empty segment', async () => {
+      const r = renderHost(Host);
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBeNull();
+      expect(seg(r, 'hour').getAttribute('aria-valuetext')).toBe('Empty');
+      expect(seg(r, 'minute').getAttribute('aria-valuetext')).toBe('Empty');
+
+      await type(r, 'hour', '09');
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('9');
+      expect(seg(r, 'hour').getAttribute('aria-valuetext')).toBeNull();
+      expect(seg(r, 'minute').getAttribute('aria-valuetext')).toBe('Empty');
+    });
+
     it('rehydrates segments from an external value write', async () => {
       const r = renderHost(Host);
       r.instance.value.set(new Date(2026, 5, 15, 9, 30));
