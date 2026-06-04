@@ -209,6 +209,83 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('hover-across-triggers (separate open/close timers)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('enter-B-then-leave-A: the pending open for B is not clobbered by leaving A', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      // A (products) is open.
+      triggers[0]!.click();
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      // Browser fires pointerenter on B before pointerleave on A.
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      flush();
+      triggers[0]!.dispatchEvent(pointer('pointerleave'));
+      flush();
+
+      // The pending open for B must survive and switch the menu, not close it.
+      vi.advanceTimersByTime(200);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+
+      // No stray close fires afterwards.
+      vi.advanceTimersByTime(1000);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+
+    it('leave-A-then-enter-B: entering B cancels A’s pending close and opens B', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      // A (products) is open.
+      triggers[0]!.click();
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      // Browser fires pointerleave on A before pointerenter on B.
+      triggers[0]!.dispatchEvent(pointer('pointerleave'));
+      flush();
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      flush();
+
+      vi.advanceTimersByTime(200);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+
+      vi.advanceTimersByTime(1000);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+
+    it('leaving the whole nav (no sibling enter) still closes the open item', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      triggers[0]!.dispatchEvent(pointer('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(150);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
+  });
+
   describe('keyboard', () => {
     afterEach(() => {
       vi.useRealTimers();

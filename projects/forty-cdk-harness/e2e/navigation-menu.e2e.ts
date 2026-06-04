@@ -1,6 +1,13 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
-import { gotoFixture } from './_helpers';
+import { el, gotoFixture } from './_helpers';
+
+/** Move the mouse to the centre of `target` in `steps` intermediate hops. */
+async function hoverTo(page: Page, target: Locator, steps = 8): Promise<void> {
+  const box = await target.boundingBox();
+  if (!box) throw new Error('hoverTo: target locator has no bounding box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps });
+}
 
 /**
  * Reads a CSS custom property as set on the inline `style` of the element —
@@ -93,5 +100,36 @@ test.describe('NavigationMenu viewport', () => {
     } finally {
       await context.close();
     }
+  });
+});
+
+test.describe('NavigationMenu hover-across-triggers', () => {
+  test('dragging from one trigger to a sibling reliably opens the sibling', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    // Open the first item by hovering it.
+    await hoverTo(page, el(page, 'trigger-products'));
+    await expect(el(page, 'active')).toHaveText('products');
+
+    // Fluidly drag across the trigger row to the sibling. The pointerenter on
+    // the sibling and the pointerleave on the source race; with separate
+    // open/close timers the sibling open must win regardless of order.
+    await hoverTo(page, el(page, 'trigger-solutions'));
+    await expect(el(page, 'active')).toHaveText('solutions');
+
+    // And again to a third sibling — never lands on "none".
+    await hoverTo(page, el(page, 'trigger-company'));
+    await expect(el(page, 'active')).toHaveText('company');
+  });
+
+  test('hovering away from the row entirely closes the open item', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await hoverTo(page, el(page, 'trigger-products'));
+    await expect(el(page, 'active')).toHaveText('products');
+
+    // Leave the whole nav (top-left body region) — the item must close.
+    await page.mouse.move(2, 2, { steps: 8 });
+    await expect(el(page, 'active')).toHaveText('none');
   });
 });
