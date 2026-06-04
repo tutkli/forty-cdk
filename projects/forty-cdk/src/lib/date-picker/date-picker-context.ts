@@ -1,11 +1,8 @@
-import { inject, InjectionToken, type OutputEmitterRef, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
  * Coordination contract owned by `[forDatePicker]` (the root). The trigger,
@@ -86,18 +83,27 @@ export interface ForDatePickerContext {
    */
   focusCalendarCell(): boolean;
 
-  // --- Non-modal (overlay-shell) dismiss pipeline: build veto, emit, close ---
+  /**
+   * Dismiss coordination — the overlay-shell hands a raw DOM event; the
+   * directive builds the veto, emits the matching `output()`, and — for the
+   * outside family — shares the veto so the immediately-following composite
+   * `interactOutside` cannot trigger a second close.
+   */
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(event: PointerEvent): void;
   emitFocusOutside(event: FocusEvent): void;
   emitInteractOutside(event: PointerEvent | FocusEvent): void;
 
-  // --- Modal (modal-shell) dismiss pipeline: shell builds the veto, the
-  //     context only forwards `.emit`; close is requested separately ---
-  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
-  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
-  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
-  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
+  /**
+   * Dismiss coordination — the modal-shell builds the veto itself, then hands
+   * it back so it flows through the same `output()` + shared-veto logic the
+   * overlay path uses. A single internal coordination surface backs both paths,
+   * so double-close prevention is identical regardless of mode.
+   */
+  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
+  forwardPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  forwardFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  forwardInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
 
   /**
    * Auto-focus hooks. Content fires these just before its imperative `.focus()`
@@ -106,10 +112,6 @@ export interface ForDatePickerContext {
    */
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
-  /** Raw open veto, used by `modal-shell`'s function-reference hook shape. */
-  readonly autoFocusOnOpen: OutputEmitterRef<VetoableEvent>;
-  /** Raw close veto, used by `modal-shell`'s function-reference hook shape. */
-  readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
 }
 
 /** Injection token for {@link ForDatePickerContext}, provided by `ForDatePicker`. */

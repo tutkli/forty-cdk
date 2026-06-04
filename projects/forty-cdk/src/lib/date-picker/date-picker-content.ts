@@ -71,10 +71,10 @@ export class ForDatePickerContent {
         dismiss: {
           dismissible: ctx.dismissible,
           requestClose: () => ctx.close(),
-          emitEscapeKeyDown: (veto) => ctx.escapeKeyDown.emit(veto),
-          emitPointerDownOutside: (veto) => ctx.pointerDownOutside.emit(veto),
-          emitFocusOutside: (veto) => ctx.focusOutside.emit(veto),
-          emitInteractOutside: (veto) => ctx.interactOutside.emit(veto),
+          emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
+          emitPointerDownOutside: (veto) => ctx.forwardPointerDownOutside(veto),
+          emitFocusOutside: (veto) => ctx.forwardFocusOutside(veto),
+          emitInteractOutside: (veto) => ctx.forwardInteractOutside(veto),
         },
       });
       return;
