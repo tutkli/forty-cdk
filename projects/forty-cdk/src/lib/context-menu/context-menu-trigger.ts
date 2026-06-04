@@ -12,15 +12,19 @@ import { ForContextMenu } from './context-menu';
  * the menu next to whatever they're working on. The native context menu is
  * suppressed via `event.preventDefault()`.
  *
- * Apply on any element. If you want focus to return there on close, give
- * the element a `tabindex` (e.g. `tabindex="-1"`) so it can receive
- * programmatic focus — the keyboard activators also need the trigger (or
- * something inside it) to be focusable in the first place.
+ * Apply on any element. A default `tabindex="-1"` is host-bound so the
+ * trigger can receive programmatic focus and return-focus works out of the
+ * box on close — no consumer setup required. The default is overridable:
+ * set your own `tabindex` (e.g. `tabindex="0"` to put the trigger in the
+ * Tab order) and it wins. The keyboard activators (`Shift+F10`, the
+ * `ContextMenu` key) need the trigger — or something inside it — focusable,
+ * which the default guarantees.
  */
 @Directive({
   selector: '[forContextMenuTrigger]',
   exportAs: 'forContextMenuTrigger',
   host: {
+    tabindex: '-1',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
