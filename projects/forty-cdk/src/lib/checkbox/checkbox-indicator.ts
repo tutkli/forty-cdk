@@ -6,8 +6,9 @@ import { ForCheckbox } from './checkbox';
  * Optional indicator slot inside a `ForCheckbox`. Apply on the element
  * the consumer wants to show only while the checkbox is `checked` or
  * `indeterminate` (typically a check icon, dash, or filled square). The
- * directive flips `[hidden]` and mirrors `data-state` from the parent so
- * the consumer can style transitions without per-state bindings.
+ * directive mirrors `data-state` from the parent so the consumer can
+ * style transitions without per-state bindings; hide the unchecked state
+ * via `[data-state="unchecked"] { display: none }` or `@if`.
  *
  * Purely a styling convenience — consumers happy with CSS `:has`
  * selectors or `[data-state]` checks on the parent can skip it entirely.
@@ -17,7 +18,6 @@ import { ForCheckbox } from './checkbox';
   exportAs: 'forCheckboxIndicator',
   host: {
     '[attr.data-state]': 'state()',
-    '[attr.hidden]': 'visible() ? null : ""',
   },
 })
 export class ForCheckboxIndicator {
@@ -37,8 +37,4 @@ export class ForCheckboxIndicator {
     if (this.#parent.indeterminate()) return 'indeterminate';
     return this.#parent.checked() ? 'checked' : 'unchecked';
   });
-
-  protected readonly visible = computed<boolean>(
-    () => this.#parent.checked() || this.#parent.indeterminate(),
-  );
 }
