@@ -15,8 +15,10 @@ import { injectComboboxContext } from './combobox-context';
  * in RTL so they always follow visual order):
  * - **ArrowLeft** — focus the previous chip; bounces if first.
  * - **ArrowRight** — focus the next chip; if at the last, focus the input.
- * - **Backspace / Delete** — remove this chip + focus the previous chip
- *   (or the input when the chip was the last).
+ * - **Backspace / Delete** — remove this chip + focus the previous chip,
+ *   or the next chip when there is no previous one (so removing the first
+ *   chip lands on the new first chip), falling back to the input only when
+ *   the removed chip was the last one standing.
  * - **Escape** — return focus to the input.
  *
  * Click on the chip body (excluding the remove button) just focuses the
@@ -121,15 +123,18 @@ export class ForComboboxChip<T = string> {
         event.preventDefault();
         const v = this.value();
         const prev = chips[index - 1];
-        const isLast = index === chips.length - 1;
+        const next = chips[index + 1];
         this.ctx.removeValue(v);
-        // Move focus to the previous chip; if there isn't one (we removed
-        // the only chip, or the chip was the last one), drop focus into the
-        // input so the user can keep typing without chasing the caret.
+        // Keep focus inside the chip cluster whenever a neighbour survives the
+        // removal: prefer the previous chip, otherwise the next one (which
+        // slides into the freed slot — so removing the first chip lands on the
+        // new first chip rather than ejecting the user to the input). Only drop
+        // focus into the input when the removed chip was the last one standing,
+        // so the user can keep typing without chasing the caret.
         if (prev) {
           prev.host.focus();
-        } else if (isLast) {
-          this.ctx.input()?.focus();
+        } else if (next) {
+          next.host.focus();
         } else {
           this.ctx.input()?.focus();
         }
