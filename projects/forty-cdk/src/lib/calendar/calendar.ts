@@ -279,6 +279,18 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     this.#focusDate(next);
   }
 
+  /**
+   * Move DOM focus to the roving cell — the gridcell carrying the tab stop,
+   * i.e. the one matching {@link focusedDate}. Returns `false` when no matching
+   * cell is currently rendered (empty grid, or the focused date paged out), so
+   * an overlay host wrapping the calendar can fall back to its own focus logic.
+   * The cell already exists when this runs, so it focuses synchronously without
+   * waiting for a render.
+   */
+  focusActiveCell(): boolean {
+    return this.#focusCell(this.focusedDate());
+  }
+
   registerCell(handle: ForCalendarCellHandle<D>): void {
     this.#cells.register(handle);
   }
@@ -331,13 +343,16 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   #focusDate(target: D): void {
-    afterNextRender(
-      () => {
-        const handle = this.#cells.items().find((cell) => this.adapter.isSameDay(cell.date(), target));
-        handle?.host.focus();
-      },
-      { injector: this.#injector },
-    );
+    afterNextRender(() => this.#focusCell(target), { injector: this.#injector });
+  }
+
+  #focusCell(target: D): boolean {
+    const handle = this.#cells.items().find((cell) => this.adapter.isSameDay(cell.date(), target));
+    if (!handle) {
+      return false;
+    }
+    handle.host.focus();
+    return true;
   }
 
   #dateKey(date: D): string {
