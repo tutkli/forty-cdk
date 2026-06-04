@@ -10,37 +10,23 @@ import {
   numberAttribute,
   output,
   PLATFORM_ID,
-  signal,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import {
-  type ListNavigationAction,
-  moveIndex,
-  type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
 import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
 } from '../_internal/pointer-grace/pointer-grace';
-import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
-  createVetoableNativeEvent,
   emitVetoableEvent,
-  emitVetoableNativeEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import {
-  FOR_MENU_CONTEXT,
-  type ForMenuCloseReason,
-  type ForMenuContext,
-  type ForMenuItemHandle,
-} from './menu-context';
+import { FOR_MENU_CONTEXT, type ForMenuCloseReason, type ForMenuContext } from './menu-context';
 import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**
@@ -48,6 +34,15 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * `[forContextMenu]` (or another `[forMenuSub]`). Owns its own open
  * state, ids, and item collection — items inside the submenu register
  * here, not in the parent.
+ *
+ * The shared item-collection / typeahead / navigate / focus / id /
+ * outside-veto logic is owned by the `_internal/menu-overlay` helper (the
+ * same one `[forDropdownMenu]` / `[forContextMenu]` compose). The submenu
+ * contributes only its genuine differences on top: pointer-driven (hover)
+ * open/close scheduling, the `#suppressFocusMoves` autofocus vetoes that
+ * keep hover from stealing / returning focus, and the reason-dependent
+ * upward `closeMenu` propagation — the latter two wired through the
+ * overlay's `onOpen` / `onClose` lifecycle hooks.
  *
  * The parent menu's content is added to this submenu's dismissable
  * exemptions so a click on a parent menu item doesn't fire the
@@ -88,9 +83,6 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForMenuSub }],
 })
 export class ForMenuSub implements ForMenuContext {
-  readonly #idGen = inject(IdGenerator);
-  readonly #typeahead = injectTypeahead();
-  readonly #items = new Collection<ForMenuItemHandle>();
   readonly #defaults = inject(FOR_MENU_DEFAULTS);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -172,18 +164,42 @@ export class ForMenuSub implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly triggerId = signal(this.#idGen.next('for-menu-sub-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-menu-sub-content'));
+  readonly #overlay = createMenuOverlay('for-menu-sub', {
+    open: this.open,
+    disabled: this.disabled,
+    dismissible: this.dismissible,
+    loop: this.loop,
+    escapeKeyDown: this.escapeKeyDown,
+    pointerDownOutside: this.pointerDownOutside,
+    focusOutside: this.focusOutside,
+    interactOutside: this.interactOutside,
+    autoFocusOnOpen: this.autoFocusOnOpen,
+    autoFocusOnClose: this.autoFocusOnClose,
+    // A keyboard / click open supersedes any in-flight hover scheduling and
+    // moves focus into the submenu (unlike the pointer path).
+    onOpen: () => {
+      this.#cancelPointerScheduling();
+      this.#suppressFocusMoves = false;
+    },
+    // Propagate up so item activation, Tab, and outside-pointer collapse
+    // the entire menu chain. `'escape'` collapses only this level (per APG);
+    // `'programmatic'` is the consumer's own write — no propagation either.
+    onClose: (reason) => {
+      this.#cancelPointerScheduling();
+      this.#suppressFocusMoves = false;
+      if (reason !== 'escape' && reason !== 'programmatic') {
+        this.parentMenu.closeMenu(reason);
+      }
+    },
+  });
 
-  readonly #initialFocus = signal<'first' | 'last'>('first');
-  readonly initialFocus = this.#initialFocus.asReadonly();
+  readonly triggerId = this.#overlay.triggerId;
+  readonly contentId = this.#overlay.contentId;
+  readonly initialFocus = this.#overlay.initialFocus;
+  readonly trigger = this.#overlay.trigger;
+  readonly anchor = computed<ReferenceElement | null>(() => this.#overlay.trigger());
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-  readonly anchor = computed<ReferenceElement | null>(() => this.#triggerEl());
-
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly content = this.#overlay.content;
 
   // --- Pointer-driven (hover) open/close state. Additive to click/keyboard. ---
   #openTimer: ReturnType<typeof setTimeout> | null = null;
@@ -210,6 +226,22 @@ export class ForMenuSub implements ForMenuContext {
     return parentContent ? [parentContent] : [];
   });
 
+  setInitialFocus = this.#overlay.setInitialFocus.bind(this.#overlay);
+  registerTrigger = this.#overlay.registerTrigger.bind(this.#overlay);
+  unregisterTrigger = this.#overlay.unregisterTrigger.bind(this.#overlay);
+  registerItem = this.#overlay.registerItem.bind(this.#overlay);
+  unregisterItem = this.#overlay.unregisterItem.bind(this.#overlay);
+  navigate = this.#overlay.navigate.bind(this.#overlay);
+  handleTypeahead = this.#overlay.handleTypeahead.bind(this.#overlay);
+  focusFirstEnabledItem = this.#overlay.focusFirstEnabledItem.bind(this.#overlay);
+  focusLastEnabledItem = this.#overlay.focusLastEnabledItem.bind(this.#overlay);
+  toggle = this.#overlay.toggle.bind(this.#overlay);
+  openMenu = this.#overlay.openMenu.bind(this.#overlay);
+  emitEscapeKeyDown = this.#overlay.emitEscapeKeyDown.bind(this.#overlay);
+  emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
+  emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
+  emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
+
   constructor() {
     const parent = inject(FOR_MENU_CONTEXT, { skipSelf: true, optional: true });
     if (!parent) {
@@ -222,128 +254,20 @@ export class ForMenuSub implements ForMenuContext {
     inject(DestroyRef).onDestroy(() => this.#teardownPointer());
   }
 
-  setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocus.set(target);
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#triggerEl.set(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
-  }
-
   registerContent(el: HTMLElement): void {
-    this.#contentEl.set(el);
+    this.#overlay.registerContent(el);
     this.#attachContentPointer(el);
   }
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
+    if (this.#overlay.content() === el) {
+      this.#overlay.unregisterContent(el);
       this.#detachContentPointer?.();
       this.#detachContentPointer = null;
     }
   }
 
-  registerItem(handle: ForMenuItemHandle): void {
-    this.#items.register(handle);
-  }
-  unregisterItem(handle: ForMenuItemHandle): void {
-    this.#items.unregister(handle);
-  }
-
-  navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((i) => i.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
-  }
-
-  handleTypeahead(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) {
-      return;
-    }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#items.items();
-    const match = items.find((i) => {
-      if (i.disabled()) {
-        return false;
-      }
-      const override = i.textValue?.() ?? '';
-      const source = override !== '' ? override : (i.host.textContent ?? '');
-      return source.trim().toLowerCase().startsWith(buffer);
-    });
-    match?.host.focus();
-  }
-
-  focusFirstEnabledItem(): boolean {
-    const target = this.#items.items().find((i) => !i.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
-  }
-
-  focusLastEnabledItem(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  toggle(initialFocus: 'first' | 'last' = 'first'): void {
-    if (this.disabled()) {
-      return;
-    }
-    if (this.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(initialFocus);
-    }
-  }
-
-  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
-    if (this.disabled()) {
-      return;
-    }
-    // A keyboard / click open supersedes any in-flight hover scheduling and
-    // moves focus into the submenu (unlike the pointer path).
-    this.#cancelPointerScheduling();
-    this.#suppressFocusMoves = false;
-    this.#initialFocus.set(initialFocus);
-    this.open.set(true);
-  }
-
   closeMenu(reason: ForMenuCloseReason): void {
-    this.#cancelPointerScheduling();
-    this.#suppressFocusMoves = false;
-    this.open.set(false);
-    // Propagate up so item activation, Tab, and outside-pointer collapse
-    // the entire menu chain. `'escape'` collapses only this level (per APG);
-    // `'programmatic'` is the consumer's own write — no propagation either.
-    if (reason !== 'escape' && reason !== 'programmatic') {
-      this.parentMenu.closeMenu(reason);
-    }
+    this.#overlay.closeMenu(reason);
   }
 
   // --- Pointer-driven (hover) open/close. Additive to click / keyboard. ---
@@ -429,7 +353,7 @@ export class ForMenuSub implements ForMenuContext {
   }
 
   #armPointerGrace(cursor: Point): void {
-    const content = this.#contentEl();
+    const content = this.#overlay.content();
     if (!this.#isBrowser || !content) {
       this.scheduleCloseByPointer();
       return;
@@ -528,40 +452,6 @@ export class ForMenuSub implements ForMenuContext {
     this.#disarmPointerGrace();
     this.#detachContentPointer?.();
     this.#detachContentPointer = null;
-  }
-
-  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
-  // the composite `interactOutside`. The dismissable layer always invokes
-  // the specific listener before the composite one for the same physical
-  // event, so a `preventDefault()` in either handler vetoes the close.
-  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-
-  emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-    if (!vetoed && this.dismissible()) {
-      event.stopPropagation();
-      this.closeMenu('escape');
-    }
-  }
-
-  emitPointerDownOutside(event: PointerEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-  }
-
-  emitFocusOutside(event: FocusEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-  }
-
-  emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    const veto =
-      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#pendingOutsideVeto = null;
-    this.interactOutside.emit(veto);
-    if (!veto.defaultPrevented && this.dismissible()) {
-      this.closeMenu('pointerDownOutside');
-    }
   }
 
   emitAutoFocusOnOpen(): boolean {
