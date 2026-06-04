@@ -35,12 +35,12 @@ import {
  * `[formField]` auto-wiring.
  *
  * Two selection modes:
- * - `multiple` (default `false`): clicking an item flips its presence in
+ * - multiple (`multiple=true`): clicking an item flips its presence in
  *   `value`. Matches a "formatting toolbar" (Bold, Italic, Underline).
- * - single (`multiple=false`): clicking selects exclusively; clicking an
- *   already-selected item de-selects it (you can land on `[]`). Matches
- *   an "alignment toolbar" (Left, Center, Right) where users may want to
- *   clear the choice.
+ * - single (`multiple=false`, default): clicking selects exclusively;
+ *   clicking an already-selected item de-selects it (you can land on `[]`).
+ *   Matches an "alignment toolbar" (Left, Center, Right) where users may
+ *   want to clear the choice.
  *
  * `value` is always `readonly string[]` so consumers can flip `multiple`
  * without re-typing their state. In single mode the array carries 0 or
