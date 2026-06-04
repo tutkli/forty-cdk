@@ -32,7 +32,7 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 | Output          | Payload         | Description                                                                                                                                                              |
 | --------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `escapeKeyDown` | `KeyboardEvent` | Fires when Escape is pressed while the card is open, regardless of whether focus is on the trigger or inside the portaled content. Call `preventDefault()` to keep open. |
+| `escapeKeyDown` | `KeyboardEvent` | Fires when Escape is pressed while the card is open, regardless of where focus currently lives (trigger, portaled content, or an unrelated element). Call `preventDefault()` to keep open. |
 
 ## Defaults
 
@@ -94,6 +94,6 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 
 - **Not for tooltips.** If your overlay is a non-interactive label / hint, use `[forTooltip]`. HoverCard does not set `aria-describedby`; the trigger keeps its own label.
 - **Trigger must stand alone.** Keyboard users don't see hover-only previews. Make sure the trigger's text / `aria-label` already describes its destination or action.
-- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, whether focus is on the trigger or on a link inside the content.
+- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, no matter where focus currently lives — on the trigger, on a link inside the content, or on an unrelated element (the common case for a card opened by hover). Escape is routed through a document-level dismissable layer that is active only while the card is open.
 - **Pointer interaction inside the card.** Moving the cursor from the trigger to the content cancels the close timer, so users can copy text or follow nested links.
 - **Use `provideForHoverCardDefaults` per scope** when you need a different cadence for, e.g., a list of profile cards (faster) vs. a sidebar of glossary entries (slower).

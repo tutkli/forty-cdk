@@ -13,11 +13,11 @@ import { injectHoverCardContext } from './hover-card-context';
  * Mount / unmount via `@if (card.open())` on the consumer side so
  * `animate.enter` / `animate.leave` work natively.
  *
- * Hover-cards have no dismissable layer — outside dismissal is handled
- * implicitly by pointer-leave timing, and Escape is a host-level keydown
- * (see `(keydown.escape)` below). Initial-focus and return-focus bundles
- * are also omitted because the surface is informational and never steals
- * focus.
+ * Escape is routed through the shared document-level `DismissableLayer`
+ * (Escape-only — outside dismissal stays implicit via pointer-leave
+ * timing), so it dismisses the card no matter where focus lives when the
+ * card was hover-opened. Initial-focus and return-focus bundles are
+ * omitted because the surface is informational and never steals focus.
  */
 @Directive({
   selector: '[forHoverCardContent]',
@@ -26,7 +26,6 @@ import { injectHoverCardContext } from './hover-card-context';
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
-    '(keydown.escape)': 'onEscape($event)',
   },
 })
 export class ForHoverCardContent {
@@ -49,6 +48,9 @@ export class ForHoverCardContent {
         hideWhenDetached: this.ctx.hideWhenDetached,
         arrow: this.ctx.arrow,
       },
+      dismiss: {
+        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+      },
     });
   }
 
@@ -60,9 +62,5 @@ export class ForHoverCardContent {
 
   protected onPointerLeave(): void {
     this.ctx.scheduleClose('hover-content');
-  }
-
-  protected onEscape(event: Event): void {
-    this.ctx.emitEscapeKeyDown(event as KeyboardEvent);
   }
 }

@@ -33,8 +33,9 @@ export interface ForHoverCardContext {
   cancelPending(): void;
   /**
    * Emit the public `(escapeKeyDown)` output and, unless prevented, close.
-   * The trigger AND the portaled content both delegate Escape handling here
-   * so the card responds regardless of where focus lives.
+   * Driven by the content's document-level dismissable layer, so the card
+   * responds to Escape regardless of where focus lives — including a card
+   * opened by hover while focus sits on an unrelated element.
    */
   emitEscapeKeyDown(event: KeyboardEvent): void;
 }
