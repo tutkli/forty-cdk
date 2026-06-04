@@ -202,14 +202,21 @@ describe('ForMenubar', () => {
     });
   });
 
+  // Cross-layer focus moves — the focused item after a menu opens, the focused
+  // trigger after cross-trigger / cross-menu navigation, and return-focus on
+  // close — are focus outcomes jsdom mis-models; they are asserted against a
+  // real browser in menubar.e2e.ts. The Vitest layer asserts the wiring: the
+  // `value` (open) signal, the roving `tabindex` host binding that follows
+  // focus among triggers, and the items' `data-highlighted` reaction. See
+  // testing.md rule #6 and §E2E.
   describe('trigger interaction', () => {
-    it('opens on click and focuses the first item', async () => {
+    it('opens on click and highlights the first item', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.click();
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
-      expect(document.activeElement?.id).toBe('file-new');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('toggles closed on a second click of the same trigger', async () => {
@@ -222,22 +229,22 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBe('');
     });
 
-    it('opens with last item focused on ArrowUp', async () => {
+    it('opens with the last item highlighted on ArrowUp', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       pressKey(file, 'ArrowUp');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
-      expect(document.activeElement?.id).toBe('file-quit');
+      expect(document.querySelector('#file-quit')!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('opens with first item focused on ArrowDown / Enter / Space', async () => {
+    it('opens with the first item highlighted on ArrowDown / Enter / Space', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       pressKey(file, 'ArrowDown');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
-      expect(document.activeElement?.id).toBe('file-new');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('does nothing when menubar is disabled', async () => {
@@ -263,22 +270,22 @@ describe('ForMenubar', () => {
   });
 
   describe('cross-trigger navigation (no menu open)', () => {
-    it('ArrowRight moves focus to the next enabled trigger (LTR)', async () => {
+    it('ArrowRight promotes the next enabled trigger to the tab stop (LTR)', async () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(triggers[1]);
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('0');
     });
 
-    it('ArrowLeft moves focus to the previous trigger (LTR), wrapping when loop', async () => {
+    it('ArrowLeft promotes the previous trigger to the tab stop (LTR), wrapping when loop', async () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowLeft');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(triggers[2]);
+      expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
     });
 
     it('inverts ArrowLeft / ArrowRight in RTL', async () => {
@@ -289,7 +296,7 @@ describe('ForMenubar', () => {
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowLeft');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(triggers[1]);
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('0');
     });
 
     it('skips disabled triggers', async () => {
@@ -300,7 +307,7 @@ describe('ForMenubar', () => {
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(triggers[2]);
+      expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
     });
 
     it('does not auto-open when focus moves between triggers', async () => {
@@ -323,7 +330,7 @@ describe('ForMenubar', () => {
       pressKey(item, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('edit');
-      expect(document.activeElement?.id).toBe('edit-undo');
+      expect(document.querySelector('#edit-undo')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('ArrowLeft on a top-level item opens previous sibling (LTR)', async () => {
@@ -335,7 +342,7 @@ describe('ForMenubar', () => {
       pressKey(item, 'ArrowLeft');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
-      expect(document.activeElement?.id).toBe('file-new');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('inverts cross-menu navigation in RTL', async () => {
@@ -406,26 +413,29 @@ describe('ForMenubar', () => {
   });
 
   describe('typeahead at trigger row', () => {
-    it('focuses the first sibling trigger whose label starts with the buffer', async () => {
+    it('promotes the first sibling trigger whose label starts with the buffer', async () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'v');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(triggers[2]);
+      expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
     });
   });
 
   describe('Escape', () => {
-    it('closes the open menu and returns focus to its trigger', async () => {
+    it('closes the open menu and promotes its trigger back to the tab stop', async () => {
       const r = renderHost(MenubarHost);
       r.instance.open.set('file');
       await flush(r.fixture);
       pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(r.instance.open()).toBe('');
+      // Return-focus to the trigger is asserted in a real browser
+      // (menubar.e2e.ts); here we assert the roving wiring reaction — the
+      // closing trigger regains the single tab stop.
       const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
-      expect(document.activeElement).toBe(fileTrigger);
+      expect(fileTrigger.getAttribute('tabindex')).toBe('0');
     });
   });
 
@@ -462,7 +472,7 @@ describe('ForMenubar', () => {
   });
 
   describe('item selection', () => {
-    it('closes the menu and returns focus to the trigger after selecting', async () => {
+    it('closes the menu and promotes the trigger back to the tab stop after selecting', async () => {
       const r = renderHost(MenubarHost);
       r.instance.open.set('file');
       await flush(r.fixture);
@@ -471,8 +481,10 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe('');
       expect(r.instance.selects).toEqual(['file-new']);
+      // Return-focus to the trigger is asserted in a real browser
+      // (menubar.e2e.ts); the roving wiring reaction is observable here.
       const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
-      expect(document.activeElement).toBe(fileTrigger);
+      expect(fileTrigger.getAttribute('tabindex')).toBe('0');
     });
   });
 

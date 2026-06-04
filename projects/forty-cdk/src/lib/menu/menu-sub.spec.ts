@@ -113,8 +113,13 @@ describe('ForMenuSub', () => {
     });
   });
 
+  // Where these tests open the submenu, the focus *move* into the submenu's
+  // first item is a focus outcome (jsdom mis-models it) asserted against a real
+  // browser in menu-sub.e2e.ts. The Vitest layer asserts the open-state wiring
+  // (`subOpen` flips) and, where an item carries it, the host-bound
+  // `data-highlighted` reaction that marks the selected item. See testing.md §E2E.
   describe('opening', () => {
-    it('clicking the SubTrigger opens the submenu and focuses its first item', async () => {
+    it('clicking the SubTrigger opens the submenu and highlights its first item', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -123,7 +128,7 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
-      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('ArrowRight on the SubTrigger opens the submenu', async () => {
@@ -137,7 +142,7 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
-      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('disabled SubTrigger is a no-op on click and ArrowRight', async () => {
@@ -183,21 +188,12 @@ describe('ForMenuSub', () => {
   });
 
   describe('parent navigation reaches the SubTrigger', () => {
-    it('ArrowDown from the previous parent item moves to the SubTrigger', async () => {
-      const r = renderHost(SubMenuHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
+    // The SubTrigger does not host-bind `data-highlighted`, so "ArrowDown from
+    // the previous parent item lands on the SubTrigger" is a pure focus outcome
+    // — asserted against a real browser in menu-sub.e2e.ts (the keyboard
+    // ArrowRight flow first ArrowDowns onto `dd-sub-trigger`).
 
-      const cut = document.querySelector<HTMLElement>('#cut')!;
-      cut.focus();
-      pressKey(cut, 'ArrowDown');
-      await flush(r.fixture);
-
-      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
-      expect(document.activeElement).toBe(more);
-    });
-
-    it('ArrowDown from the SubTrigger moves to the next parent item', async () => {
+    it('ArrowDown from the SubTrigger highlights the next parent item', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -207,7 +203,7 @@ describe('ForMenuSub', () => {
       pressKey(more, 'ArrowDown');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('paste');
+      expect(document.querySelector('#paste')!.getAttribute('data-highlighted')).toBe('');
     });
   });
 
@@ -618,7 +614,7 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(true);
-      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('ArrowRight on the SubTrigger does NOT open the submenu in RTL', async () => {

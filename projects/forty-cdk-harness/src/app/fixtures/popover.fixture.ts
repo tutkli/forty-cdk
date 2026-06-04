@@ -21,6 +21,8 @@ import { queryFlag } from './_query-flag';
       forPopover
       [(open)]="open"
       ariaLabel="Test popover"
+      [initialFocus]="initialFocus"
+      [returnFocus]="returnFocus"
       (autoFocusOnOpen)="onAutoOpen($event)"
       (autoFocusOnClose)="onAutoClose($event)"
     >
@@ -44,6 +46,10 @@ export class PopoverFixture {
   protected readonly open = signal(false);
 
   protected readonly tall = queryFlag('tall');
+  protected readonly initialFocus: 'first' | 'container' = queryFlag('initialFocusContainer')
+    ? 'container'
+    : 'first';
+  protected readonly returnFocus = !queryFlag('noReturnFocus');
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
 
