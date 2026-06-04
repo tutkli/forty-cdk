@@ -1,6 +1,6 @@
 import { Injectable, type Signal, signal } from '@angular/core';
 
-import { type ForDrawerSide } from '../../drawer/drawer-context';
+import { type ForDrawerSide } from './drawer-side';
 
 /**
  * Snapshot of a single drawer registered with {@link ForDrawerStack}. The

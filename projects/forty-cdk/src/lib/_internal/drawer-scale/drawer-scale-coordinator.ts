@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { type ForDrawerSide } from '../../drawer/drawer-context';
+import { type ForDrawerSide } from '../drawer-stack/drawer-side';
 import { ForDrawerStack } from '../drawer-stack/drawer-stack';
 import { injectPrefersReducedMotion } from '../media-query/media-query';
 
