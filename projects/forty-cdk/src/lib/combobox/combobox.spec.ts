@@ -1269,6 +1269,38 @@ describe('ForCombobox', () => {
         expect(document.activeElement).toBe(getChip('apple'));
       });
 
+      it('Backspace on the first chip removes it and focuses the new first chip', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana', 'date']);
+        await flush(r.fixture);
+
+        const apple = getChip('apple');
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['banana', 'date']);
+        expect(document.activeElement).toBe(getChip('banana'));
+      });
+
+      it('Backspace on the only chip removes it and falls back to the input', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple']);
+        await flush(r.fixture);
+
+        const apple = getChip('apple');
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual([]);
+        expect(document.activeElement).toBe(getInput());
+      });
+
       it('Backspace falls through to native delete-char while input has text', async () => {
         const r = renderHost(MultiHost);
         r.instance.value.set(['apple']);
