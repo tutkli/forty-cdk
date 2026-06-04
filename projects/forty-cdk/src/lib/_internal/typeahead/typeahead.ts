@@ -31,16 +31,29 @@ export class Typeahead {
    *
    * Modifier-only events (Ctrl, Alt, Meta) are ignored even if `event.key`
    * looks printable — the user is not typing.
+   *
+   * Space is accepted **only while the buffer already holds at least one
+   * character**, so multi-word labels ("New York") can accumulate past the
+   * first word. The first Space with an empty buffer is rejected (returns
+   * `false`) so widgets that use Space for activation keep that behavior
+   * when the user is not mid-typing. Consumers that own a Space activation
+   * path must therefore handle Space (or check `buffer()` non-empty) before
+   * delegating to `handle` if they need activation to win mid-typeahead;
+   * directives applied on native `<button>` activate on `keyup`, so a
+   * mid-buffer `keydown` Space accumulates here without blocking activation.
    */
   handle(event: KeyboardEvent): boolean {
     if (event.ctrlKey || event.altKey || event.metaKey) {
       return false;
     }
     const ch = event.key;
-    if (typeof ch !== 'string' || ch.length !== 1 || ch === ' ') {
-      // Length-1 only (skips ArrowUp, Enter, Tab, etc.). Space is excluded
-      // because it's a common activation key in many widgets — typeahead
-      // would steal it.
+    if (typeof ch !== 'string' || ch.length !== 1) {
+      // Length-1 only (skips ArrowUp, Enter, Tab, etc.).
+      return false;
+    }
+    if (ch === ' ' && this.#buffer() === '') {
+      // First Space with an empty buffer is left for widget activation
+      // (Space is a common activation key); only mid-buffer Space accumulates.
       return false;
     }
 
