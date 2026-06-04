@@ -1,4 +1,4 @@
-import { FocusTrap } from './focus-trap';
+import { FocusTrap, FocusTrapStack } from './focus-trap';
 
 function tab(shift = false): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true });
@@ -9,8 +9,10 @@ describe('FocusTrap', () => {
   let outsideBefore: HTMLButtonElement;
   let outsideAfter: HTMLButtonElement;
   let trap: FocusTrap | null = null;
+  let stack: FocusTrapStack;
 
   beforeEach(() => {
+    stack = new FocusTrapStack();
     document.body.innerHTML = '';
     outsideBefore = document.createElement('button');
     outsideBefore.id = 'before';
@@ -41,14 +43,14 @@ describe('FocusTrap', () => {
 
   it('focuses the first focusable on activate by default', () => {
     outsideBefore.focus();
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
 
     expect(document.activeElement?.id).toBe('b1');
   });
 
   it('focuses the container itself when initialFocus is "container"', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate({ initialFocus: 'container' });
 
     expect(document.activeElement).toBe(container);
@@ -56,7 +58,7 @@ describe('FocusTrap', () => {
   });
 
   it('focuses an explicit element when passed', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     const second = container.querySelector<HTMLElement>('#b2')!;
     trap.activate({ initialFocus: second });
 
@@ -64,7 +66,7 @@ describe('FocusTrap', () => {
   });
 
   it('cycles forward from the last focusable to the first on Tab', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     const last = container.querySelector<HTMLElement>('#b3')!;
     last.focus();
@@ -74,7 +76,7 @@ describe('FocusTrap', () => {
   });
 
   it('cycles backward from the first to the last on Shift+Tab', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     const first = container.querySelector<HTMLElement>('#b1')!;
     first.focus();
@@ -84,7 +86,7 @@ describe('FocusTrap', () => {
   });
 
   it('does nothing on Tab in the middle (lets browser handle it)', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     const middle = container.querySelector<HTMLElement>('#b2')!;
     middle.focus();
@@ -96,7 +98,7 @@ describe('FocusTrap', () => {
   });
 
   it('pulls focus back inside if Tab fires while focus is outside the trap', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     outsideBefore.focus();
 
@@ -106,7 +108,7 @@ describe('FocusTrap', () => {
 
   it('returns focus to the previously focused element on deactivate', () => {
     outsideBefore.focus();
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     expect(document.activeElement?.id).toBe('b1');
 
@@ -116,7 +118,7 @@ describe('FocusTrap', () => {
 
   it('skips return focus when returnFocus: false', () => {
     outsideBefore.focus();
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     trap.deactivate({ returnFocus: false });
 
@@ -124,7 +126,7 @@ describe('FocusTrap', () => {
   });
 
   it('removes the temporary container tabindex when deactivating', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate({ initialFocus: 'container' });
     expect(container.getAttribute('tabindex')).toBe('-1');
 
@@ -134,7 +136,7 @@ describe('FocusTrap', () => {
 
   it('preserves a pre-existing container tabindex on deactivate', () => {
     container.setAttribute('tabindex', '-1');
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate({ initialFocus: 'container' });
     trap.deactivate();
 
@@ -147,7 +149,7 @@ describe('FocusTrap', () => {
       <button id="b2" hidden>hidden</button>
       <button id="b3">three</button>
     `;
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
 
     expect(document.activeElement?.id).toBe('b3');
@@ -155,7 +157,7 @@ describe('FocusTrap', () => {
 
   it('falls back to focusing the container when no focusables exist', () => {
     container.innerHTML = '';
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
 
     expect(document.activeElement).toBe(container);
@@ -163,7 +165,7 @@ describe('FocusTrap', () => {
 
   it('is idempotent: activate twice has no extra effect', () => {
     outsideBefore.focus();
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     trap.activate();
     const firstActive = document.activeElement;
     trap.activate();
@@ -172,7 +174,7 @@ describe('FocusTrap', () => {
   });
 
   it('exposes the underlying container', () => {
-    trap = new FocusTrap(container);
+    trap = new FocusTrap(container, stack);
     expect(trap.container).toBe(container);
   });
 
@@ -187,7 +189,7 @@ describe('FocusTrap', () => {
       (document.body as HTMLElement).focus();
       expect(document.activeElement).toBe(document.body);
 
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate({ returnFocus: explicitTarget });
       trap.deactivate();
 
@@ -196,7 +198,7 @@ describe('FocusTrap', () => {
 
     it('treats null override as "no return target" (no focus restore on deactivate)', () => {
       outsideBefore.focus();
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate({ returnFocus: null });
       trap.deactivate();
 
@@ -207,7 +209,7 @@ describe('FocusTrap', () => {
 
     it('falls back to document.activeElement when returnFocus is omitted', () => {
       outsideBefore.focus();
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate();
       trap.deactivate();
 
@@ -239,10 +241,10 @@ describe('FocusTrap', () => {
     });
 
     it('only the topmost trap handles Tab while a deeper trap is active', () => {
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate();
 
-      innerTrap = new FocusTrap(inner);
+      innerTrap = new FocusTrap(inner, stack);
       innerTrap.activate();
 
       const i2 = inner.querySelector<HTMLElement>('#i2')!;
@@ -254,10 +256,10 @@ describe('FocusTrap', () => {
     });
 
     it('outer trap does not pull focus back when the inner trap owns it', () => {
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate();
 
-      innerTrap = new FocusTrap(inner);
+      innerTrap = new FocusTrap(inner, stack);
       innerTrap.activate();
 
       const i1 = inner.querySelector<HTMLElement>('#i1')!;
@@ -270,10 +272,10 @@ describe('FocusTrap', () => {
     });
 
     it('outer trap resumes once the inner trap deactivates', () => {
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate();
 
-      innerTrap = new FocusTrap(inner);
+      innerTrap = new FocusTrap(inner, stack);
       innerTrap.activate();
       innerTrap.deactivate({ returnFocus: false });
       innerTrap = null;
@@ -288,7 +290,7 @@ describe('FocusTrap', () => {
   describe('preventInitialFocus', () => {
     it('does not move focus on activate when set', () => {
       outsideBefore.focus();
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate({ preventInitialFocus: true });
 
       expect(document.activeElement).toBe(outsideBefore);
@@ -297,7 +299,7 @@ describe('FocusTrap', () => {
 
     it('still cycles Tab from the last focusable to the first once focus enters', () => {
       outsideBefore.focus();
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate({ preventInitialFocus: true });
 
       const last = container.querySelector<HTMLElement>('#b3')!;
@@ -308,7 +310,7 @@ describe('FocusTrap', () => {
 
     it('still returns focus to the previously focused element on deactivate', () => {
       outsideBefore.focus();
-      trap = new FocusTrap(container);
+      trap = new FocusTrap(container, stack);
       trap.activate({ preventInitialFocus: true });
       // Move focus inside afterwards.
       const middle = container.querySelector<HTMLElement>('#b2')!;
@@ -316,6 +318,60 @@ describe('FocusTrap', () => {
       trap.deactivate();
 
       expect(document.activeElement).toBe(outsideBefore);
+    });
+  });
+
+  describe('per-injector stack isolation', () => {
+    let outerTrap: FocusTrap | null;
+    let innerTrap: FocusTrap | null;
+    let outer: HTMLElement;
+
+    beforeEach(() => {
+      // `outer` wraps the shared `container`, with extra focusables before and
+      // after it, so that `container`'s #b1/#b3 sit in the *middle* of
+      // `outer`'s focusable list (never `outer`'s first/last). A Tab fired
+      // while focus is inside `container` is therefore a no-op for a trap on
+      // `outer` — it only acts when focus is at its own edges or outside it.
+      outer = document.createElement('div');
+      outer.id = 'outer-trap';
+      const before = document.createElement('button');
+      before.id = 'o-before';
+      const after = document.createElement('button');
+      after.id = 'o-after';
+      container.replaceWith(outer);
+      outer.appendChild(before);
+      outer.appendChild(container);
+      outer.appendChild(after);
+      outerTrap = null;
+      innerTrap = null;
+    });
+
+    afterEach(() => {
+      outerTrap?.deactivate({ returnFocus: false });
+      innerTrap?.deactivate({ returnFocus: false });
+    });
+
+    it('two independent stacks do not cross-shadow: the inner trap stays topmost on its own stack even though the outer trap activated last on a different stack', () => {
+      const inner = new FocusTrapStack();
+      const outerStack = new FocusTrapStack();
+
+      // Inner trap activates first on its own stack; outer trap activates
+      // LAST on a different stack. With a single shared module-level stack,
+      // the outer (activated last) would be the only topmost trap and shadow
+      // the inner — so the inner's Tab handler would bail, leaving focus at
+      // #b3 (the outer, seeing #b3 in its middle, does nothing). With
+      // per-injector stacks the inner is topmost on its own stack and cycles.
+      innerTrap = new FocusTrap(container, inner);
+      innerTrap.activate();
+
+      outerTrap = new FocusTrap(outer, outerStack);
+      outerTrap.activate();
+
+      const last = container.querySelector<HTMLElement>('#b3')!;
+      last.focus();
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('b1');
     });
   });
 });

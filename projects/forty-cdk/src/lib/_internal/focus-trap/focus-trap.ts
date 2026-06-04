@@ -1,4 +1,4 @@
-import { DOCUMENT, ElementRef, inject } from '@angular/core';
+import { DOCUMENT, ElementRef, Injectable, inject } from '@angular/core';
 
 /**
  * Shared CSS selector for tabbable elements. Single source of truth for the
@@ -83,19 +83,57 @@ export interface FocusTrapDeactivateOptions {
 }
 
 /**
- * Module-level LIFO stack of currently-active `FocusTrap` instances.
- * Each trap registers itself on `activate` and pops on `deactivate`.
- * The topmost trap is the only one that handles Tab — all earlier
- * (shallower) traps' keydown listeners are no-ops while shadowed,
- * which is what makes nested overlays (e.g. a drawer inside a drawer)
- * trap focus inside the topmost surface instead of the parent's
- * "focus jumped outside" guard yanking focus back to the parent.
+ * Application-scoped LIFO registry of currently-active `FocusTrap`
+ * instances. Each trap registers itself on `activate` and removes itself
+ * on `deactivate`. The topmost trap is the only one that handles Tab — all
+ * earlier (shallower) traps' keydown listeners are no-ops while shadowed,
+ * which is what makes nested overlays (e.g. a drawer inside a drawer) trap
+ * focus inside the topmost surface instead of the parent's "focus jumped
+ * outside" guard yanking focus back to the parent.
  *
- * Module-level (not DI) is fine here: focus traps register their
- * listeners only on `activate`, which only runs in the browser via
- * `afterNextRender`, so the stack is never touched on the server.
+ * Why a service rather than module-level state:
+ *
+ * - Bootstrap-safety: a module-level array survives
+ *   `TestBed.resetTestingModule()`, micro-frontend reloads and any other
+ *   code that destroys `ApplicationRef`, so a stale LIFO can leak across
+ *   bootstraps. A `providedIn: 'root'` service is instantiated per
+ *   application injector and garbage-collected with it, so every bootstrap
+ *   starts with an empty stack.
+ * - SSR isolation: module-level globals leak between simultaneous server
+ *   requests in the same Node process; a root-scoped service is per-request.
+ *
+ * This mirrors the storage strategy of `DismissableLayerStack`: all
+ * overlay-nesting LIFO stacks are root-scoped DI services, never
+ * module-level. The two remain separate services on purpose because they
+ * own different responsibilities — `DismissableLayerStack` centrally owns
+ * the shared `document` listeners for Escape / outside-interaction, whereas
+ * each `FocusTrap` owns its own keydown listener and only consults this
+ * registry to decide whether it is topmost. This holder therefore needs no
+ * `DOCUMENT` / `PLATFORM_ID` / `DestroyRef` injection: it is a
+ * dependency-free LIFO of trap instances.
  */
-const activeTraps: FocusTrap[] = [];
+@Injectable({ providedIn: 'root' })
+export class FocusTrapStack {
+  readonly #stack: FocusTrap[] = [];
+
+  /** Pushes a newly-activated trap onto the top of the stack. */
+  push(trap: FocusTrap): void {
+    this.#stack.push(trap);
+  }
+
+  /** Removes a deactivated trap from the stack (last occurrence). */
+  remove(trap: FocusTrap): void {
+    const idx = this.#stack.lastIndexOf(trap);
+    if (idx >= 0) {
+      this.#stack.splice(idx, 1);
+    }
+  }
+
+  /** Returns `true` when `trap` is the topmost (most recently pushed) trap. */
+  isTopmost(trap: FocusTrap): boolean {
+    return this.#stack[this.#stack.length - 1] === trap;
+  }
+}
 
 /**
  * Cycles Tab / Shift+Tab focus inside a container element. Used by Dialog,
@@ -113,6 +151,7 @@ const activeTraps: FocusTrap[] = [];
  */
 export class FocusTrap {
   readonly #container: HTMLElement;
+  readonly #stack: FocusTrapStack;
   readonly #document: Document;
   #returnTo: HTMLElement | null = null;
   #active = false;
@@ -120,8 +159,9 @@ export class FocusTrap {
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
-  constructor(container: HTMLElement, doc?: Document) {
+  constructor(container: HTMLElement, stack: FocusTrapStack, doc?: Document) {
     this.#container = container;
+    this.#stack = stack;
     this.#document = doc ?? container.ownerDocument;
   }
 
@@ -143,7 +183,7 @@ export class FocusTrap {
         ? options.returnFocus
         : ((this.#document.activeElement as HTMLElement | null) ?? null);
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
-    activeTraps.push(this);
+    this.#stack.push(this);
 
     if (options.preventInitialFocus) {
       // Tab cycling and return-focus are still set up; the imperative
@@ -173,10 +213,7 @@ export class FocusTrap {
     }
     this.#active = false;
     this.#document.removeEventListener('keydown', this.#onKeyDown, true);
-    const idx = activeTraps.lastIndexOf(this);
-    if (idx >= 0) {
-      activeTraps.splice(idx, 1);
-    }
+    this.#stack.remove(this);
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -208,7 +245,7 @@ export class FocusTrap {
     // Only the topmost active trap handles Tab. Earlier (shadowed) traps
     // bail so a parent drawer's "focus jumped outside" guard does not
     // pull focus out of a nested child drawer's surface.
-    if (activeTraps[activeTraps.length - 1] !== this) {
+    if (!this.#stack.isTopmost(this)) {
       return;
     }
     const focusables = this.#focusables();
@@ -268,5 +305,5 @@ export class FocusTrap {
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  return new FocusTrap(host.nativeElement, inject(DOCUMENT));
+  return new FocusTrap(host.nativeElement, inject(FocusTrapStack), inject(DOCUMENT));
 }
