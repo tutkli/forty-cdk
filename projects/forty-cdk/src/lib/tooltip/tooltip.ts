@@ -2,11 +2,14 @@ import {
   booleanAttribute,
   DestroyRef,
   Directive,
+  effect,
   inject,
   input,
-  model,
+  linkedSignal,
   numberAttribute,
+  output,
   signal,
+  type WritableSignal,
 } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -42,12 +45,31 @@ export class ForTooltip implements ForTooltipContext {
   readonly #idGen = inject(IdGenerator);
 
   /**
-   * Two-way bindable. Whether the tooltip is currently shown. The `model()`
-   * change emitter (`(openChange)`) fires only on internal transitions
-   * (hover/focus delays, Escape), never on consumer writes via `[(open)]` —
-   * observe state changes without binding back.
+   * Two-way bindable. Whether the tooltip is currently shown. `(openChange)`
+   * fires only on internal transitions (hover/focus delays, Escape, and the
+   * force-close that runs when `disabled` flips to true), never on consumer
+   * writes through `[(open)]` — observe state changes without binding back.
+   *
+   * Backed by a `linkedSignal` whose source is `disabled` so the documented
+   * "force-close while disabled" contract is enforced declaratively, without
+   * an `effect()`-to-set anti-pattern.
    */
-  readonly open = model<boolean>(false);
+  readonly open: WritableSignal<boolean>;
+
+  /** Emits when the directive itself transitions `open`. See `open` JSDoc. */
+  readonly openChange = output<boolean>();
+
+  /**
+   * Backing input for `[(open)]` two-way binding. Internal — read the
+   * user-facing `open` writable signal instead, which derives its value
+   * from this input plus `disabled` via `linkedSignal`.
+   *
+   * @internal
+   */
+  readonly _openInput = input(false, {
+    alias: 'open',
+    transform: booleanAttribute,
+  });
 
   /**
    * Side the tooltip is anchored to. Defaults to `'top'`. Pair with
@@ -121,6 +143,35 @@ export class ForTooltip implements ForTooltipContext {
   readonly #coordinator = inject(TooltipCoordinator);
 
   constructor() {
+    this.open = linkedSignal<{ input: boolean; disabled: boolean }, boolean>({
+      source: () => ({ input: this._openInput(), disabled: this.disabled() }),
+      computation: ({ input, disabled }, prev) => {
+        if (disabled) return false;
+        if (!prev || prev.source.input !== input) return input;
+        return prev.value;
+      },
+    });
+
+    // Bridge: emit `openChange` whenever `open` diverges from the consumer's
+    // `[open]` input. That covers internal transitions (delay timers, escape)
+    // AND the linkedSignal-driven force-close when `disabled` flips (or when
+    // the consumer tries to open while disabled). Consumer-driven `[(open)]`
+    // writes propagate through the linkedSignal so `open === input` again on
+    // the next effect run, and stay silent — preserving the documented
+    // `model()`-style contract.
+    //
+    // This effect emits an output (an imperative escape from the reactive
+    // graph), it never writes a signal, so it does not violate CLAUDE.md's
+    // "no propagate state in effect" rule. The "force-close on disabled"
+    // state derivation lives in the `linkedSignal` above.
+    effect(() => {
+      const open = this.open();
+      const input = this._openInput();
+      if (open !== input) {
+        this.openChange.emit(open);
+      }
+    });
+
     inject(DestroyRef).onDestroy(() => this.cancelPending());
   }
 
