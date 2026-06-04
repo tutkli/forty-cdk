@@ -10,7 +10,9 @@ import { createDefaults } from '../_internal/defaults/defaults';
  */
 export interface ForTooltipDefaults {
   /** Open delay (ms) for tooltips that don't override `openDelay` locally. */
-  delayDuration: number;
+  openDelay: number;
+  /** Close delay (ms) for tooltips that don't override `closeDelay` locally. */
+  closeDelay: number;
   /**
    * Window (ms) after a peer tooltip in this scope closes during which
    * the next open is instant — keeps toolbar-style tooltips from feeling
@@ -20,7 +22,8 @@ export interface ForTooltipDefaults {
 }
 
 const FALLBACK: ForTooltipDefaults = {
-  delayDuration: 700,
+  openDelay: 700,
+  closeDelay: 300,
   skipDelayDuration: 300,
 };
 
@@ -46,7 +49,10 @@ export class TooltipCoordinator {
   #timer: ReturnType<typeof setTimeout> | null = null;
 
   /** Resolved default open delay (ms) for tooltips in this scope. */
-  readonly delayDuration = this.#defaults.delayDuration;
+  readonly openDelay = this.#defaults.openDelay;
+
+  /** Resolved default close delay (ms) for tooltips in this scope. */
+  readonly closeDelay = this.#defaults.closeDelay;
 
   /** Resolved skip-delay window (ms) for tooltips in this scope. */
   readonly skipDelayDuration = this.#defaults.skipDelayDuration;
@@ -92,7 +98,7 @@ export class TooltipCoordinator {
  * ```ts
  * // application-level
  * bootstrapApplication(App, {
- *   providers: [provideForTooltipDefaults({ delayDuration: 500 })],
+ *   providers: [provideForTooltipDefaults({ openDelay: 500 })],
  * });
  *
  * // component-level override (e.g. a toolbar with its own cadence)

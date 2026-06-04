@@ -14,6 +14,10 @@ import {
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
+  createHoverIntent,
+  type HoverIntentScheduler,
+} from '../_internal/hover-intent/hover-intent';
+import {
   emitVetoableNativeEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
@@ -146,8 +150,8 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
-  #pendingTimer: ReturnType<typeof setTimeout> | null = null;
   readonly #coordinator = inject(HoverCardCoordinator);
+  readonly #hoverIntent: HoverIntentScheduler;
 
   constructor() {
     this.open = linkedSignal<{ input: boolean; disabled: boolean }, boolean>({
@@ -179,6 +183,14 @@ export class ForHoverCard implements ForHoverCardContext {
       }
     });
 
+    this.#hoverIntent = createHoverIntent({
+      open: this.open,
+      isDisabled: () => this.disabled(),
+      openDelay: () => this.openDelay() ?? this.#coordinator.openDelay,
+      closeDelay: () => this.closeDelay() ?? this.#coordinator.closeDelay,
+      coordinator: this.#coordinator,
+    });
+
     inject(DestroyRef).onDestroy(() => this.cancelPending());
   }
 
@@ -203,57 +215,15 @@ export class ForHoverCard implements ForHoverCardContext {
   }
 
   scheduleOpen(_reason: HoverCardScheduleReason): void {
-    if (this.disabled()) {
-      return;
-    }
-    this.cancelPending();
-    if (this.open()) {
-      return;
-    }
-    const local = this.openDelay();
-    const base = this.#coordinator.skipDelay() ? 0 : (local ?? this.#coordinator.openDelay);
-    const delay = Math.max(0, base);
-    if (delay === 0) {
-      this.open.set(true);
-      return;
-    }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
-      this.open.set(true);
-    }, delay);
+    this.#hoverIntent.scheduleOpen();
   }
 
   scheduleClose(reason: HoverCardScheduleReason): void {
-    this.cancelPending();
-    if (!this.open()) {
-      return;
-    }
-    if (reason === 'escape') {
-      this.#close();
-      return;
-    }
-    const local = this.closeDelay();
-    const delay = Math.max(0, local ?? this.#coordinator.closeDelay);
-    if (delay === 0) {
-      this.#close();
-      return;
-    }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
-      this.#close();
-    }, delay);
-  }
-
-  #close(): void {
-    this.open.set(false);
-    this.#coordinator.startSkipDelay();
+    this.#hoverIntent.scheduleClose(reason === 'escape');
   }
 
   cancelPending(): void {
-    if (this.#pendingTimer !== null) {
-      clearTimeout(this.#pendingTimer);
-      this.#pendingTimer = null;
-    }
+    this.#hoverIntent.cancelPending();
   }
 
   /**

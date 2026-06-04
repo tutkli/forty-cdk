@@ -503,10 +503,10 @@ describe('ForTooltip', () => {
       expect(r.instance.aOpen()).toBe(false);
     });
 
-    it('uses delayDuration as the openDelay fallback when the input is unset', async () => {
+    it('uses openDelay as the open fallback when the input is unset', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-        providers: [provideForTooltipDefaults({ delayDuration: 0 })],
+        providers: [provideForTooltipDefaults({ openDelay: 0 })],
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
@@ -525,8 +525,36 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       await flush(r.fixture);
 
-      // delayDuration=0 → opens synchronously without any per-tooltip override.
+      // openDelay=0 → opens synchronously without any per-tooltip override.
       expect(r.instance.open()).toBe(true);
+    });
+
+    it('uses closeDelay as the close fallback when the input is unset', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ closeDelay: 0 })],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class FallbackHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(FallbackHost);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      await flush(r.fixture);
+
+      // closeDelay=0 from the scope (no per-tooltip [closeDelay]) → an open
+      // tooltip closes synchronously on hover-leave. Pre-change, closeDelay was
+      // a hardcoded 300ms input that ignored the scope, so this stayed open.
+      expect(r.instance.open()).toBe(false);
     });
   });
 
