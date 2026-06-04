@@ -3,15 +3,22 @@ import { type Provider } from '@angular/core';
 import { createDefaults } from '../_internal/defaults/defaults';
 
 /**
- * Defaults inherited by descendant toggles in the surrounding injector
- * scope. Configure with `provideForToggleDefaults`. The shape is a stub
- * today — present so future per-scope tuning can land without churning the
- * public surface.
+ * Defaults inherited by descendant toggle groups in the surrounding injector
+ * scope. Configure with `provideForToggleDefaults` either at the application
+ * root or in any component's `providers` array; partial overrides merge with
+ * the parent scope.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForToggleDefaults {}
+export interface ForToggleDefaults {
+  /**
+   * Whether arrow navigation wraps around past the first / last enabled
+   * toggle-group item. Mirrors `ForRadioGroup`'s `loop` default.
+   */
+  loop: boolean;
+}
 
-const FALLBACK: ForToggleDefaults = {};
+const FALLBACK: ForToggleDefaults = {
+  loop: true,
+};
 
 const { token, provideDefaults } = createDefaults<ForToggleDefaults>(
   'FOR_TOGGLE_DEFAULTS',
