@@ -54,6 +54,54 @@ class NavMenuHost {
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
 }
 
+/**
+ * Mounts each panel from an independent boolean so a leaving panel can be
+ * kept around while later transitions happen — the same shape `animate.leave`
+ * produces (the leaving DOM survives past the `value` transition). The
+ * `@if (open() === …)` host destroys a leaving panel synchronously and can
+ * never reproduce overlapping exits, so the per-panel `data-motion` freeze
+ * is asserted against this host instead.
+ */
+@Component({
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger>Products</button>
+          @if (mountProducts()) {
+            <div forNavigationMenuContent data-id="products">products panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="solutions">
+          <button forNavigationMenuTrigger>Solutions</button>
+          @if (mountSolutions()) {
+            <div forNavigationMenuContent data-id="solutions">solutions panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="about">
+          <button forNavigationMenuTrigger>About</button>
+          @if (mountAbout()) {
+            <div forNavigationMenuContent data-id="about">about panel</div>
+          }
+        </li>
+      </ul>
+    </nav>
+  `,
+})
+class OverlappingNavMenuHost {
+  readonly open = signal('');
+  readonly mountProducts = signal(false);
+  readonly mountSolutions = signal(false);
+  readonly mountAbout = signal(false);
+}
+
 function pointer(type: 'pointerenter' | 'pointerleave' | 'pointerdown'): PointerEvent {
   return new PointerEvent(type, { bubbles: true });
 }
@@ -552,6 +600,101 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('data-motion (overlapping transitions)', () => {
+    // Drive transitions through trigger clicks so the directive's imperative
+    // open()/close() path records the per-panel motion. Panels are mounted
+    // from independent booleans so a leaving panel survives later
+    // transitions (the animate.leave shape) and its frozen data-motion can be
+    // asserted — something the @if (open() === …) hosts can never reproduce.
+    const panel = (queryFn: (s: string) => HTMLElement | null, id: string): HTMLElement => {
+      const el = queryFn(`[data-id="${id}"]`);
+      if (!el) throw new Error(`panel "${id}" not mounted`);
+      return el;
+    };
+
+    it('keeps each leaving panel’s frozen direction through A→C→B rapid switching', () => {
+      const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const q = query as (s: string) => HTMLElement | null;
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+      // 0 = products (A), 1 = solutions (B), 2 = about (C).
+
+      // A opens. First open: no previous, no motion.
+      triggers[0]!.click();
+      host.mountProducts.set(true);
+      flush();
+      expect(panel(q, 'products').hasAttribute('data-motion')).toBe(false);
+
+      // A→C: C (index 2) enters from-end; A (index 0) leaves to-start. A stays
+      // mounted (animate.leave shape).
+      triggers[2]!.click();
+      host.mountAbout.set(true);
+      flush();
+      expect(panel(q, 'about').getAttribute('data-motion')).toBe('from-end');
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+
+      // C→B starts before A finishes leaving: B (index 1) enters from-start;
+      // C (index 2) leaves to-end. A is mid-exit from the earlier transition
+      // and matches neither current (B) nor previous (C) — its frozen
+      // to-start must survive instead of dropping to null.
+      triggers[1]!.click();
+      host.mountSolutions.set(true);
+      flush();
+      expect(panel(q, 'solutions').getAttribute('data-motion')).toBe('from-start');
+      expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+    });
+
+    it('clears a panel’s frozen motion when it unmounts', () => {
+      const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const q = query as (s: string) => HTMLElement | null;
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      host.mountProducts.set(true);
+      flush();
+      triggers[2]!.click();
+      host.mountAbout.set(true);
+      flush();
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+
+      // The leaving A finishes its exit and unmounts. Re-mounting it later
+      // (without a transition) must not resurrect the stale to-start.
+      host.mountProducts.set(false);
+      flush();
+      host.mountProducts.set(true);
+      flush();
+      expect(panel(q, 'products').hasAttribute('data-motion')).toBe(false);
+    });
+
+    it('clears a panel’s frozen motion when it re-enters as the current value', () => {
+      const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const q = query as (s: string) => HTMLElement | null;
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      host.mountProducts.set(true);
+      flush();
+      triggers[2]!.click();
+      host.mountAbout.set(true);
+      flush();
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+
+      // A re-enters from C while still mounted. As the current entering panel
+      // it must reflect a from-* direction, never its stale leaving to-start.
+      triggers[0]!.click();
+      flush();
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('from-start');
+      // C is now the leaving panel and freezes its own to-* direction.
+      expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects state changes after detectChanges without Zone.js', () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
@@ -562,6 +705,27 @@ describe('ForNavigationMenu', () => {
       fixture.componentInstance.open.set('products');
       flush();
       expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('records per-panel data-motion under overlapping transitions without Zone.js', () => {
+      const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
+      const host = fixture.componentInstance;
+      flush();
+      const q = query as (s: string) => HTMLElement | null;
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      host.mountProducts.set(true);
+      flush();
+      triggers[2]!.click();
+      host.mountAbout.set(true);
+      flush();
+      triggers[1]!.click();
+      host.mountSolutions.set(true);
+      flush();
+
+      const products = q('[data-id="products"]')!;
+      expect(products.getAttribute('data-motion')).toBe('to-start');
     });
   });
 });

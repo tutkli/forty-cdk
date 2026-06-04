@@ -131,19 +131,36 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #viewport = signal<ForNavigationMenuViewportHandle | null>(null);
 
   /**
-   * Previously open `value`, tracked so [forNavigationMenuContent] can
-   * reflect `data-motion` while the leaving panel is still mounted (its
-   * `animate.leave` keeps the DOM around past the value transition).
+   * Previously open `value`, tracked so consumers can read the most recent
+   * open value before the current one.
    *
    * `linkedSignal` is the canonical replacement for `effect()` writing to a
    * signal: each time `value()` changes, computation runs with the new
    * source plus the prior `{ source, value }` and returns the *previous*
    * source as the new value.
+   *
+   * Note: `data-motion` no longer derives from a single `previousValue`
+   * (it could only remember one leaving panel). Per-panel frozen motion is
+   * tracked in `#motion` instead, so several panels can leave at once during
+   * overlapping `animate.leave` transitions without losing their direction.
    */
   readonly previousValue = linkedSignal<string, string>({
     source: () => this.value(),
     computation: (_current, prev) => prev?.source ?? '',
   });
+
+  /**
+   * Frozen `data-motion` per mounted panel `value`. Recorded imperatively at
+   * each `open()` / `close()` transition — the entering panel and the panel
+   * that just started leaving — and left untouched for panels that began
+   * leaving in an earlier transition, so their direction stays stable for as
+   * long as `animate.leave` keeps them mounted. Cleared when a panel
+   * unmounts (`unregisterContent`) or re-enters as the current value.
+   *
+   * Backed by a `signal` holding an immutable `Map` so `motionFor` stays a
+   * pure, pull-based read — no state is propagated from an `effect()`.
+   */
+  readonly #motion = signal<ReadonlyMap<string, ForNavigationMenuMotion>>(new Map());
 
   #openTimer: ReturnType<typeof setTimeout> | null = null;
   #closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -177,6 +194,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     if (this.disabled() || value === '') return;
     this.#cancelPending();
     if (this.value() === value) return;
+    this.#recordMotion(this.value(), value);
     this.value.set(value);
     this.#dismiss.activate({
       onEscapeKeyDown: () => {
@@ -192,6 +210,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   close(): void {
     this.#cancelPending();
     if (this.value() === '') return;
+    this.#recordMotion(this.value(), '');
     this.value.set('');
     this.#dismiss.deactivate();
     this.#startSkipDelay();
@@ -290,6 +309,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
   unregisterContent(handle: ForNavigationMenuContentHandle): void {
     this.#contents.unregister(handle);
+    this.#clearMotion(handle.value());
   }
   registerViewport(handle: ForNavigationMenuViewportHandle): void {
     this.#viewport.set(handle);
@@ -360,9 +380,10 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * - The currently-entering content (`value === this.value()`) reflects
    *   `from-start` / `from-end` based on which side the previous trigger
    *   sat on relative to it.
-   * - The currently-leaving content (`value === this.previousValue()`)
-   *   reflects `to-start` / `to-end` based on which side the new trigger
-   *   sits on relative to it.
+   * - A leaving content reflects the `to-start` / `to-end` direction frozen
+   *   at the transition that started its exit, based on which side the
+   *   then-new trigger sat on relative to it. The direction stays stable for
+   *   as long as the panel is mounted, even across later transitions.
    * - Anything else (and first open / last close, where there is no peer
    *   to compare against) returns `null` so the host binding emits no
    *   attribute.
@@ -371,29 +392,68 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * maps to the visual right in `dir="rtl"`. Consumers can author the
    * keyframes once with logical CSS (e.g. `inset-inline-start`) and it
    * flips automatically.
+   *
+   * The currently-entering panel is computed live against `previousValue()`;
+   * every other (leaving) panel reads its frozen direction from `#motion`,
+   * recorded at the transition that started its exit. This keeps a leaving
+   * panel's direction stable across later, overlapping transitions instead
+   * of dropping to `null` once `previousValue` advances past it.
    */
   motionFor(value: string): ForNavigationMenuMotion | null {
     if (value === '') return null;
-    const current = this.value();
-    const prev = this.previousValue();
-    if (value === current) {
-      if (prev === '' || prev === current) return null;
-      const prevIndex = this.#triggerIndexFor(prev);
-      const currentIndex = this.#triggerIndexFor(current);
-      if (prevIndex < 0 || currentIndex < 0) return null;
-      if (prevIndex < currentIndex) return 'from-end';
-      if (prevIndex > currentIndex) return 'from-start';
-      return null;
+    if (value === this.value()) {
+      return this.#enterMotion(this.previousValue(), value);
     }
-    if (value === prev) {
-      if (current === '' || current === prev) return null;
-      const prevIndex = this.#triggerIndexFor(prev);
-      const currentIndex = this.#triggerIndexFor(current);
-      if (prevIndex < 0 || currentIndex < 0) return null;
-      if (currentIndex > prevIndex) return 'to-start';
-      if (currentIndex < prevIndex) return 'to-end';
-      return null;
+    return this.#motion().get(value) ?? null;
+  }
+
+  /**
+   * Record the frozen motion for a `from` → `to` transition: the entering
+   * `to` panel and the leaving `from` panel. Existing entries for other
+   * still-leaving panels are preserved so overlapping exits keep their
+   * direction. `to`'s own stale leaving entry is dropped (it is re-entering).
+   */
+  #recordMotion(from: string, to: string): void {
+    const next = new Map(this.#motion());
+    if (to !== '') {
+      const enter = this.#enterMotion(from, to);
+      if (enter === null) next.delete(to);
+      else next.set(to, enter);
     }
+    if (from !== '') {
+      const leave = this.#leaveMotion(from, to);
+      if (leave === null) next.delete(from);
+      else next.set(from, leave);
+    }
+    this.#motion.set(next);
+  }
+
+  #clearMotion(value: string): void {
+    if (!this.#motion().has(value)) return;
+    const next = new Map(this.#motion());
+    next.delete(value);
+    this.#motion.set(next);
+  }
+
+  /** Entering direction for `to` given the panel `from` it replaced. */
+  #enterMotion(from: string, to: string): ForNavigationMenuMotion | null {
+    if (from === '' || from === to) return null;
+    const fromIndex = this.#triggerIndexFor(from);
+    const toIndex = this.#triggerIndexFor(to);
+    if (fromIndex < 0 || toIndex < 0) return null;
+    if (fromIndex < toIndex) return 'from-end';
+    if (fromIndex > toIndex) return 'from-start';
+    return null;
+  }
+
+  /** Leaving direction for `from` given the panel `to` that replaced it. */
+  #leaveMotion(from: string, to: string): ForNavigationMenuMotion | null {
+    if (to === '' || to === from) return null;
+    const fromIndex = this.#triggerIndexFor(from);
+    const toIndex = this.#triggerIndexFor(to);
+    if (fromIndex < 0 || toIndex < 0) return null;
+    if (toIndex > fromIndex) return 'to-start';
+    if (toIndex < fromIndex) return 'to-end';
     return null;
   }
 
