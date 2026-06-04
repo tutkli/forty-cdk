@@ -864,6 +864,25 @@ describe('ForMenuItemIndicator', () => {
     expect(indicator('italic-ind').getAttribute('data-state')).toBe('unchecked');
   });
 
+  it('enforces inline display:none while unchecked so a consumer display class cannot leak through', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('bold-ind').style.display).toBe('none');
+
+    r.instance.bold.set(true);
+    await flush(r.fixture);
+    expect(indicator('bold-ind').style.display).toBe('');
+  });
+
+  it('clears inline display:none while unchecked when forceMount=true', async () => {
+    const r = renderHost(IndicatorHost);
+    r.instance.forceMount.set(true);
+    await flush(r.fixture);
+
+    expect(indicator('italic-ind').style.display).toBe('');
+  });
+
   it('throws when used outside a checkable menu item', () => {
     @Component({
       imports: [ForMenuItemIndicator],
