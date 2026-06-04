@@ -45,4 +45,22 @@ test.describe('DropdownMenu', () => {
     await expect(el(page, 'menu')).toBeVisible();
     await expect(el(page, 'menu').locator('*:focus')).toHaveCount(0);
   });
+
+  test('Tab closes the menu and advances focus to the next tabbable element', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+
+    // Menu closes, focus advances PAST the trigger to the next tabbable
+    // element (the input after the trigger) — APG: Tab moves focus out of
+    // the menu, not back to the trigger.
+    await expect(el(page, 'menu')).toHaveCount(0);
+    await expect(el(page, 'after')).toBeFocused();
+    await expect(el(page, 'trigger')).not.toBeFocused();
+  });
 });

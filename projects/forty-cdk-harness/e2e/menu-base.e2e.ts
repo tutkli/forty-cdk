@@ -125,16 +125,21 @@ test.describe('Menu (base)', () => {
     await expect(el(page, 'item-banana')).not.toHaveAttribute('data-highlighted', '');
   });
 
-  test('Tab from inside the menu closes it and exits past the trigger', async ({ page }) => {
+  test('Tab from inside the menu closes it and advances focus past the trigger', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'menu-base', { disabled: '2,5' });
     await el(page, 'trigger').click();
     await expect(el(page, 'item-apple')).toBeFocused();
 
-    // Per APG: Tab inside a menu closes it. The directive `preventDefault`s
-    // the Tab so the browser's own focus advancement doesn't fight the
-    // return-focus move; focus lands back on the trigger.
+    // Per APG: Tab inside a menu closes it and moves focus OUT of the menu.
+    // The directive moves focus to the trigger synchronously and does NOT
+    // preventDefault, so the browser's Tab default advances focus from the
+    // trigger to the next tabbable element (the `after` input). Focus does
+    // not snap back to the trigger.
     await page.keyboard.press('Tab');
     await expect(el(page, 'menu')).toHaveCount(0);
-    await expect(el(page, 'trigger')).toBeFocused();
+    await expect(el(page, 'after')).toBeFocused();
+    await expect(el(page, 'trigger')).not.toBeFocused();
   });
 });

@@ -128,6 +128,16 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   /** Where focus should land when the menu mounts. Set by triggers before flipping `open`. */
   readonly initialFocus = this.#initialFocus.asReadonly();
 
+  readonly #lastCloseReason = signal<MenuOverlayCloseReason | null>(null);
+
+  /**
+   * Reason of the most recent close, or `null` while the menu is open / has
+   * never closed. Reset to `null` on every open. The shared `[forMenuContent]`
+   * reads this to skip its return-focus on `'tab'` so Tab can advance focus
+   * out of the menu instead of snapping back to the trigger.
+   */
+  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+
   readonly #triggerEl = signal<HTMLElement | null>(null);
 
   /** The focusable element the menu should return focus to on close. */
@@ -222,11 +232,13 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
       return;
     }
     this.#initialFocus.set(initialFocus);
+    this.#lastCloseReason.set(null);
     this.#hooks.open.set(true);
     this.#hooks.onOpen?.(initialFocus);
   }
 
   closeMenu(reason: MenuOverlayCloseReason): void {
+    this.#lastCloseReason.set(reason);
     this.#hooks.open.set(false);
     this.#hooks.onClose?.(reason);
   }
@@ -252,6 +264,10 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   emitInteractOutside(event: PointerEvent | FocusEvent): void {
+    if (!this.#hooks.open()) {
+      this.#pendingOutsideVeto = null;
+      return;
+    }
     const veto =
       this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
     this.#pendingOutsideVeto = null;

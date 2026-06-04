@@ -19,6 +19,7 @@ import {
 } from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
+import { handleMenuTabOut } from './menu-tab-out';
 
 /**
  * Tri-state-free checkbox item. Click and Enter toggle `checked`, emit
@@ -126,8 +127,7 @@ export class ForMenuCheckboxItem {
       return;
     }
     if (event.key === 'Tab') {
-      event.preventDefault();
-      this.ctx.closeMenu('tab');
+      handleMenuTabOut(this.ctx);
       return;
     }
     this.ctx.handleTypeahead(event);

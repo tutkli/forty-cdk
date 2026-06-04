@@ -152,6 +152,7 @@ export class ForMenubar implements ForMenubarContext {
   readonly #menuItemList = createMenuItemList<ForMenuItemHandle>(() => this.loop());
   readonly #menuContentEl = signal<HTMLElement | null>(null);
   readonly #menuInitialFocus = signal<'first' | 'last'>('first');
+  readonly #menuLastCloseReason = signal<ForMenuCloseReason | null>(null);
 
   /**
    * Single `ForMenuContext` provided to descendant `[forMenuContent]` and
@@ -177,6 +178,7 @@ export class ForMenubar implements ForMenubarContext {
     loop: this.loop,
     initialFocus: this.#menuInitialFocus.asReadonly(),
     setInitialFocus: (target) => this.#menuInitialFocus.set(target),
+    lastCloseReason: this.#menuLastCloseReason.asReadonly(),
     triggerId: computed(() => this.activeTrigger()?.triggerId() ?? ''),
     contentId: computed(() => this.activeTrigger()?.contentId() ?? ''),
     ariaLabel: computed(() => this.activeTrigger()?.ariaLabel() ?? null),
@@ -218,19 +220,22 @@ export class ForMenubar implements ForMenubarContext {
     openMenu: () => {
       // Open requires a trigger value — see openTrigger.
     },
-    closeMenu: (_reason: ForMenuCloseReason) => {
+    closeMenu: (reason: ForMenuCloseReason) => {
+      this.#menuLastCloseReason.set(reason);
       this.closeOpen();
     },
     emitEscapeKeyDown: (event) => {
       if (!event.defaultPrevented) {
         event.stopPropagation();
+        this.#menuLastCloseReason.set('escape');
         this.closeOpen();
       }
     },
     emitPointerDownOutside: () => {},
     emitFocusOutside: () => {},
     emitInteractOutside: (event) => {
-      if (!event.defaultPrevented) {
+      if (this.value() !== '' && !event.defaultPrevented) {
+        this.#menuLastCloseReason.set('pointerDownOutside');
         this.closeOpen();
       }
     },
@@ -306,6 +311,7 @@ export class ForMenubar implements ForMenubarContext {
       return;
     }
     this.#menuInitialFocus.set(initialFocus);
+    this.#menuLastCloseReason.set(null);
     this.#lastValue.set(value);
     if (this.value() !== value) {
       this.value.set(value);

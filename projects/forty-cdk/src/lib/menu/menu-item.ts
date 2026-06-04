@@ -14,6 +14,7 @@ import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard
 import { emitVetoableEvent, type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
+import { handleMenuTabOut } from './menu-tab-out';
 
 /**
  * A single action inside `[forMenuContent]`. Apply on a `<button>` so
@@ -118,10 +119,7 @@ export class ForMenuItem {
       return;
     }
     if (event.key === 'Tab') {
-      // Per APG: Tab closes the menu. preventDefault so focus return to the
-      // trigger isn't fighting the browser's Tab advancement.
-      event.preventDefault();
-      this.ctx.closeMenu('tab');
+      handleMenuTabOut(this.ctx);
       return;
     }
     this.ctx.handleTypeahead(event);
