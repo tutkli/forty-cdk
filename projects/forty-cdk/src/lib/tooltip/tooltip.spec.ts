@@ -285,6 +285,25 @@ describe('ForTooltip', () => {
       const wrapper = r.query<HTMLElement>('[forTooltip]')!;
       expect(wrapper.getAttribute('data-disabled')).toBe('');
     });
+
+    it('force-closes an already-open tooltip when disabled flips to true', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(content.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
+
+      r.instance.isDisabled.set(true);
+      await flush(r.fixture);
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(content.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
   });
 
   describe('floating-ui positioning', () => {
@@ -373,13 +392,20 @@ describe('ForTooltip', () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         template: `
-          <div forTooltip [openDelay]="0" [closeDelay]="0" (openChange)="emitted.push($event)">
+          <div
+            forTooltip
+            [(open)]="isOpen"
+            [openDelay]="0"
+            [closeDelay]="0"
+            (openChange)="emitted.push($event)"
+          >
             <button type="button" forTooltipTrigger>T</button>
             <div forTooltipContent>C</div>
           </div>
         `,
       })
       class Host {
+        readonly isOpen = signal(false);
         readonly emitted: boolean[] = [];
       }
 
