@@ -106,6 +106,13 @@ describe('ForDateField', () => {
       expect(seg(r, 'year').getAttribute('aria-valuemax')).toBe('9999');
     });
 
+    it('reports a February day max of 28 while the year is empty', async () => {
+      const r = renderHost(Host);
+      await type(r, 'month', '02');
+      expect(seg(r, 'year').getAttribute('aria-valuenow')).toBeNull();
+      expect(seg(r, 'day').getAttribute('aria-valuemax')).toBe('28');
+    });
+
     it('marks literals aria-hidden and keeps them out of the tab order', () => {
       const r = renderHost(Host);
       const literal = r.query('[data-testid="literal"]')!;
