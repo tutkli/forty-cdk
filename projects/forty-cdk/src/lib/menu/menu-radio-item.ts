@@ -18,6 +18,7 @@ import {
 } from '../_internal/vetoable-event/vetoable-event';
 import { injectMenuContext } from './menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
+import { handleMenuTabOut } from './menu-tab-out';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 
 /**
@@ -129,8 +130,7 @@ export class ForMenuRadioItem {
       return;
     }
     if (event.key === 'Tab') {
-      event.preventDefault();
-      this.menu.closeMenu('tab');
+      handleMenuTabOut(this.menu);
       return;
     }
     this.menu.handleTypeahead(event);

@@ -79,6 +79,25 @@ test.describe('Menubar', () => {
     await expect(el(page, 'trigger-file')).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('Tab from inside an open menu closes it and advances focus out of the menubar', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+
+    await page.keyboard.press('Tab');
+
+    // Per APG: Tab moves focus out of the menubar entirely. The menu closes
+    // and focus advances to the next tabbable element (the `after` input),
+    // not back to the trigger.
+    await expect(el(page, 'menu-file')).toHaveCount(0);
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'trigger-file')).not.toBeFocused();
+  });
+
   test('ArrowRight inside a menu closes it and opens the next trigger\'s menu', async ({ page }) => {
     await gotoFixture(page, 'menubar');
     await el(page, 'trigger-file').focus();

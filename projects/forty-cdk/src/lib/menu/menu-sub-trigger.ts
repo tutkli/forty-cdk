@@ -3,6 +3,7 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectMenuContext } from './menu-context';
+import { handleMenuTabOut } from './menu-tab-out';
 
 /**
  * The `menuitem` inside the parent menu that opens its `[forMenuSub]`.
@@ -148,8 +149,7 @@ export class ForMenuSubTrigger {
     }
 
     if (event.key === 'Tab') {
-      event.preventDefault();
-      parent.closeMenu('tab');
+      handleMenuTabOut(parent);
       return;
     }
 

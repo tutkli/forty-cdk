@@ -175,6 +175,7 @@ export class ForDropdownMenu implements ForMenuContext {
   readonly triggerId = this.#overlay.triggerId;
   readonly contentId = this.#overlay.contentId;
   readonly initialFocus = this.#overlay.initialFocus;
+  readonly lastCloseReason = this.#overlay.lastCloseReason;
   readonly trigger = this.#overlay.trigger;
   readonly content = this.#overlay.content;
   readonly anchor = computed<ReferenceElement | null>(() => this.#overlay.trigger());

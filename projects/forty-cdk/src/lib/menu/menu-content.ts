@@ -90,6 +90,10 @@ export class ForMenuContent {
         target: () => this.ctx.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
         veto: () => this.ctx.emitAutoFocusOnClose(),
+        // Skip on `'tab'` closes — Tab already moved focus to the trigger
+        // and let the browser advance from there; re-focusing would steal
+        // it back.
+        skip: () => this.ctx.lastCloseReason() === 'tab',
       },
     });
   }

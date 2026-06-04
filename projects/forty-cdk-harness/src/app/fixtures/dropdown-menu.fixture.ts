@@ -31,7 +31,7 @@ import { queryFlag } from './_query-flag';
         </div>
       }
     </div>
-    <input id="after" placeholder="after-trigger" />
+    <input id="after" data-testid="after" placeholder="after-trigger" />
   `,
 })
 export class DropdownMenuFixture {

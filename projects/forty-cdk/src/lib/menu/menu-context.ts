@@ -146,6 +146,15 @@ export interface ForMenuContext {
   closeMenu(reason: ForMenuCloseReason): void;
 
   /**
+   * Reason of the most recent close, or `null` while the menu is open / has
+   * never closed. Reset to `null` on every open. `[forMenuContent]` reads it
+   * to skip its return-focus when the close was a `'tab'` — letting Tab move
+   * focus out of the menu (per WAI-ARIA APG) instead of snapping it back to
+   * the trigger.
+   */
+  readonly lastCloseReason: Signal<ForMenuCloseReason | null>;
+
+  /**
    * Abort a pending pointer-driven (hover) close on this menu, if one is
    * scheduled. A descendant submenu walks up the `parentMenu` chain calling
    * this so the whole open chain stays alive while the pointer travels

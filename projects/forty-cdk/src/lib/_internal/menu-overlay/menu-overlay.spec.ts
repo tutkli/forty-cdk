@@ -310,6 +310,47 @@ describe('MenuOverlay', () => {
     });
   });
 
+  describe('lastCloseReason', () => {
+    it('is null initially', () => {
+      const { overlay } = build();
+      expect(overlay.lastCloseReason()).toBeNull();
+    });
+
+    it('records the reason passed to closeMenu', () => {
+      const { overlay } = build();
+      overlay.closeMenu('tab');
+      expect(overlay.lastCloseReason()).toBe('tab');
+
+      overlay.closeMenu('select');
+      expect(overlay.lastCloseReason()).toBe('select');
+    });
+
+    it('resets to null on openMenu', () => {
+      const { overlay } = build();
+      overlay.closeMenu('tab');
+      expect(overlay.lastCloseReason()).toBe('tab');
+
+      overlay.openMenu('first');
+      expect(overlay.lastCloseReason()).toBeNull();
+    });
+
+    it('records the implicit reason from a toggle-close', () => {
+      const { overlay } = build();
+      overlay.openMenu('first');
+      expect(overlay.lastCloseReason()).toBeNull();
+
+      overlay.toggle();
+      expect(overlay.lastCloseReason()).toBe('programmatic');
+    });
+
+    it('records `escape` when an undismissed escape closes the menu', () => {
+      const { overlay, hooks } = build();
+      hooks.open.set(true);
+      overlay.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      expect(overlay.lastCloseReason()).toBe('escape');
+    });
+  });
+
   describe('escape veto', () => {
     it('closes when no consumer vetoes and dismissible is true', () => {
       const { overlay, hooks } = build();
@@ -338,7 +379,8 @@ describe('MenuOverlay', () => {
 
   describe('outside veto coordination', () => {
     it('reuses the same veto wrapper between pointerDownOutside and interactOutside', () => {
-      const { overlay, emitted } = build();
+      const { overlay, hooks, emitted } = build();
+      hooks.open.set(true);
       const pointer = new PointerEvent('pointerdown');
       overlay.emitPointerDownOutside(pointer);
       overlay.emitInteractOutside(pointer);
@@ -369,6 +411,17 @@ describe('MenuOverlay', () => {
 
       expect(emitted.interactOutside.length).toBe(1);
       expect(hooks.open()).toBe(false);
+    });
+
+    it('ignores interactOutside once the menu is already closed, preserving the close reason', () => {
+      const { overlay, hooks, emitted } = build();
+      overlay.closeMenu('tab');
+      expect(hooks.open()).toBe(false);
+
+      overlay.emitInteractOutside(new PointerEvent('pointerdown'));
+
+      expect(emitted.interactOutside.length).toBe(0);
+      expect(overlay.lastCloseReason()).toBe('tab');
     });
   });
 
