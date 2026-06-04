@@ -12,9 +12,9 @@ No ARIA semantics. Use it to reserve space for media before it loads (preventing
 
 ## Inputs
 
-| API     | Type            | Description                                                                                                                  |
-| ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `ratio` | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. |
+| API     | Type            | Description                                                                                                                                                                       |
+| ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ratio` | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. Non-positive or non-finite values fall back to `1`. |
 
 ## Usage
 
