@@ -226,6 +226,43 @@ test.describe('ScrollArea (geometry + drag)', () => {
     });
   });
 
+  // `type="auto"` and `type="always"` are synonyms today: both render a
+  // scrollbar only for an axis that actually overflows, and neither reserves an
+  // empty track when the content fits. The contract is observable only against
+  // a real browser layout, since `data-state` combines overflow presence
+  // (geometry, zero in jsdom) with the `type` rule.
+  test.describe('type="auto" vs type="always" (synonyms today)', () => {
+    for (const type of ['auto', 'always'] as const) {
+      test(`type="${type}": scrollbar is visible when the axis overflows`, async ({ page }) => {
+        await gotoFixture(page, 'scroll-area', { type });
+        await waitForOverflowMeasured(page);
+
+        await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
+        await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'visible');
+        await expect(el(page, 'thumb-vertical')).toBeVisible();
+      });
+
+      test(`type="${type}": scrollbar stays hidden (no reserved track) when content fits`, async ({
+        page,
+      }) => {
+        // Content smaller than the viewport → no overflow. Unlike Radix's
+        // reserved-track `always`, both modes leave the scrollbar hidden.
+        await gotoFixture(page, 'scroll-area', {
+          type,
+          viewportWidth: '300',
+          viewportHeight: '200',
+          contentWidth: '150',
+          contentHeight: '100',
+        });
+
+        await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
+        await expect(el(page, 'scrollbar-horizontal')).toHaveAttribute('data-state', 'hidden');
+        await expect(el(page, 'scrollbar-vertical')).toBeHidden();
+        await expect(el(page, 'scrollbar-horizontal')).toBeHidden();
+      });
+    }
+  });
+
   // Touch path coverage for the synthetic thumb's pointer drag. The
   // viewport hides native scrollbars via the global stylesheet
   // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the

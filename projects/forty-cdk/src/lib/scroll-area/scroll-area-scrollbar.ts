@@ -40,13 +40,17 @@ export class ForScrollAreaScrollbar {
     return this.ctx.scrollHeight() - this.ctx.clientHeight() > 1;
   });
 
-  /** `'visible' | 'hidden'` — combines `type` rules with overflow presence. */
+  /**
+   * `'visible' | 'hidden'` — combines `type` rules with overflow presence. A
+   * non-overflowing axis is always `'hidden'` regardless of `type`, so `'auto'`
+   * and `'always'` resolve identically (the library never reserves an empty
+   * track); they are synonyms today and share this arm.
+   */
   readonly state = computed<'visible' | 'hidden'>(() => {
     if (!this.hasOverflow()) return 'hidden';
     switch (this.ctx.type()) {
-      case 'always':
-        return 'visible';
       case 'auto':
+      case 'always':
         return 'visible';
       case 'hover':
         return this.ctx.hovering() || this.ctx.scrolling() ? 'visible' : 'hidden';

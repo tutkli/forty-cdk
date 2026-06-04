@@ -50,9 +50,14 @@ export class ForScrollArea implements ForScrollAreaContext {
   readonly #defaults = inject(FOR_SCROLL_AREA_DEFAULTS);
 
   /**
-   * When the synthetic scrollbars are visible:
-   * - `auto`: shown only when content overflows.
-   * - `always`: shown whenever there is overflow, regardless of interaction.
+   * When the synthetic scrollbars are visible. All four modes only ever render
+   * a scrollbar for an axis that actually overflows — there is no reserved
+   * empty track:
+   * - `auto`: shown whenever the axis overflows, regardless of interaction.
+   * - `always`: synonym of `auto` today. The library never reserves track
+   *   space for a non-overflowing axis (see the ScrollArea README), so there
+   *   is no observable difference; the value is kept for API parity with Radix
+   *   and forward compatibility.
    * - `scroll`: shown during scroll, faded after `scrollHideDelay` ms.
    * - `hover`: shown while the cursor is over the area (and during scroll).
    */
