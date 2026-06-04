@@ -187,6 +187,45 @@ test.describe('ScrollArea (geometry + drag)', () => {
     await expect(el(page, 'corner')).toHaveAttribute('hidden', '');
   });
 
+  // Visibility-mode contract for `type="hover"` / `type="scroll"`. The
+  // scrollbar's `data-state` combines overflow presence (geometry, zero in
+  // jsdom) with the interaction signals (`hovering` / `scrolling`), so the
+  // toggle only resolves correctly against a real browser layout — the Vitest
+  // layer would have to fake both the overflow box and the interaction.
+  test.describe('visibility modes', () => {
+    test('type="hover": scrollbar shows on pointerenter and hides on pointerleave', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', { type: 'hover' });
+
+      // Hovering the area reveals the scrollbar — this also implicitly waits
+      // for overflow to be measured, since `data-state` only flips to
+      // `visible` once the directive has detected overflow.
+      await el(page, 'root').hover();
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
+
+      // Move the pointer off the area → back to hidden.
+      await page.mouse.move(2, 2);
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
+    });
+
+    test('type="scroll": scrollbar shows during scroll then fades after the hide delay', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', { type: 'scroll' });
+
+      // Scrolling the viewport flips the scrollbar visible (and implicitly
+      // waits for overflow measurement — a no-overflow area never shows).
+      await el(page, 'viewport').evaluate((node) => {
+        (node as HTMLElement).scrollTop = 100;
+      });
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'visible');
+
+      // After the 600 ms scroll-hide delay with no further scroll it fades.
+      await expect(el(page, 'scrollbar-vertical')).toHaveAttribute('data-state', 'hidden');
+    });
+  });
+
   // Touch path coverage for the synthetic thumb's pointer drag. The
   // viewport hides native scrollbars via the global stylesheet
   // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the

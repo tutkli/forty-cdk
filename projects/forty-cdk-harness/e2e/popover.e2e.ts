@@ -8,6 +8,25 @@ test.describe('Popover', () => {
     await expect(el(page, 'first')).toBeFocused();
   });
 
+  test('initialFocus="container" focuses the content host itself', async ({ page }) => {
+    await gotoFixture(page, 'popover', { initialFocusContainer: '1' });
+    await el(page, 'trigger').click();
+    // The content host (not its first focusable child) receives focus.
+    await expect(el(page, 'popover')).toBeFocused();
+    await expect(el(page, 'first')).not.toBeFocused();
+  });
+
+  test('returnFocus=false leaves focus where it is on close', async ({ page }) => {
+    await gotoFixture(page, 'popover', { noReturnFocus: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
+
+    // Close via the in-content close button; focus must not snap back to the trigger.
+    await el(page, 'close-btn').click();
+    await expect(el(page, 'popover')).toHaveCount(0);
+    await expect(el(page, 'trigger')).not.toBeFocused();
+  });
+
   test('Tab walks through the popover content in DOM order', async ({ page }) => {
     // Popover is non-modal, so Tab is not trapped — we only assert in-order
     // navigation through the visible popover content.

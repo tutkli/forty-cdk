@@ -296,85 +296,12 @@ describe('ForPopover', () => {
     });
   });
 
-  describe('focus management', () => {
-    it('moves focus to the first focusable inside content on mount', async () => {
-      const r = renderHost(PopoverHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(document.activeElement?.id).toBe('ok');
-    });
-
-    it('focuses the content host itself when initialFocus="container"', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div forPopover [(open)]="open" initialFocus="container" ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent>
-                <button id="inside">in</button>
-              </div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(false);
-      }
-
-      const r = renderHost(Host);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
-      expect(document.activeElement).toBe(content);
-    });
-
-    it('returns focus to the trigger on unmount', async () => {
-      const r = renderHost(PopoverHost);
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-      trigger.focus();
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      // Focus is now inside the popover — close it.
-      r.instance.open.set(false);
-      await flush(r.fixture);
-
-      expect(document.activeElement).toBe(trigger);
-    });
-
-    it('keeps focus where it is when returnFocus=false', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
-        template: `
-          <div forPopover [(open)]="open" [returnFocus]="false" ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-            @if (open()) {
-              <div forPopoverContent>
-                <button id="inside">in</button>
-              </div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(false);
-      }
-
-      const r = renderHost(Host);
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-      trigger.focus();
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      r.instance.open.set(false);
-      await flush(r.fixture);
-
-      expect(document.activeElement).not.toBe(trigger);
-    });
-  });
+  // Focus-outcome assertions (`document.activeElement` after open / close,
+  // `initialFocus`, `returnFocus`) live in `popover.e2e.ts`: jsdom mis-models
+  // `document.activeElement` and the focus-event order, so the real-browser
+  // suite is the contract layer for focus moves. The Vitest layer keeps the
+  // mount / unmount wiring (content portalled in, removed on close) and the
+  // autoFocus veto-object shape below. See testing.md §E2E.
 
   assertDismissableLayerContract({
     mount: async (options = {}) => {
@@ -477,18 +404,24 @@ describe('ForPopover', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
+      // Wiring: the veto event fires once with a callable preventDefault and is
+      // not prevented by default. The resulting focus move into content is a
+      // focus outcome asserted in popover.e2e.ts.
       expect(r.instance.captured).toHaveLength(1);
       expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
       expect(r.instance.captured[0]?.defaultPrevented).toBe(false);
-      expect(document.activeElement?.id).toBe('inside');
     });
 
-    it('skips the imperative focus move when (autoFocusOnOpen) calls preventDefault', async () => {
+    it('records the (autoFocusOnOpen) veto when the handler calls preventDefault', async () => {
       @Component({
         imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
         template: `
-          <input id="anchor" type="search" />
-          <div forPopover [(open)]="open" (autoFocusOnOpen)="$event.preventDefault()" ariaLabel="t">
+          <div
+            forPopover
+            [(open)]="open"
+            (autoFocusOnOpen)="captured.push($event); $event.preventDefault()"
+            ariaLabel="t"
+          >
             <button forPopoverTrigger>Open</button>
             @if (open()) {
               <div forPopoverContent>
@@ -500,17 +433,17 @@ describe('ForPopover', () => {
       })
       class Host {
         readonly open = signal(false);
+        readonly captured: VetoableEvent[] = [];
       }
 
       const r = renderHost(Host);
-      const anchor = (r.fixture.nativeElement as HTMLElement).querySelector(
-        '#anchor',
-      ) as HTMLInputElement;
-      anchor.focus();
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('anchor');
+      // Wiring: the veto is observed as prevented. That the imperative focus
+      // move is skipped is a focus outcome asserted in popover.e2e.ts.
+      expect(r.instance.captured).toHaveLength(1);
+      expect(r.instance.captured[0]?.defaultPrevented).toBe(true);
     });
 
     it('skips the trigger return-focus when (autoFocusOnClose) calls preventDefault', async () => {
@@ -538,25 +471,18 @@ describe('ForPopover', () => {
       }
 
       const r = renderHost(Host);
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-      trigger.focus();
       r.instance.open.set(true);
       await flush(r.fixture);
-
-      const sentinel = document.createElement('button');
-      sentinel.id = 'sentinel';
-      document.body.appendChild(sentinel);
-      sentinel.focus();
 
       r.instance.open.set(false);
       await flush(r.fixture);
 
+      // Wiring: the close-time veto fires once with a callable preventDefault
+      // and reports as prevented. That return-focus is then skipped (focus
+      // stays where it was) is a focus outcome asserted in popover.e2e.ts.
       expect(r.instance.captured).toHaveLength(1);
       expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
       expect(r.instance.captured[0]?.defaultPrevented).toBe(true);
-      // Return-focus vetoed — focus did not move back to the trigger.
-      expect(document.activeElement?.id).toBe('sentinel');
-      sentinel.remove();
     });
   });
 

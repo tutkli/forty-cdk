@@ -7,6 +7,7 @@ import {
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
   ForScrollAreaViewport,
+  type ForScrollAreaType,
 } from 'forty-cdk';
 
 /**
@@ -18,9 +19,11 @@ import {
  * geometry, drives drag gestures on it, and exercises `ResizeObserver` by
  * navigating with different query params.
  *
- * `type="always"` forces both scrollbars visible whenever there is overflow,
- * regardless of hover / scroll interaction, so specs don't need to fake
- * pointerenter on the root before measuring.
+ * `type="always"` (the default here) forces both scrollbars visible whenever
+ * there is overflow, regardless of hover / scroll interaction, so specs don't
+ * need to fake pointerenter on the root before measuring. `?type=hover` and
+ * `?type=scroll` exercise the visibility-mode contract (`data-state` toggling
+ * on pointerenter / leave and on scroll-then-fade) against real layout.
  *
  * Query params (all default to a useful baseline that produces both axes of
  * overflow against a 300×200 viewport with 1000×800 content):
@@ -28,6 +31,7 @@ import {
  *  - `?viewportHeight=N` — viewport height in CSS pixels (default 200).
  *  - `?contentWidth=N` — content width in CSS pixels (default 1000).
  *  - `?contentHeight=N` — content height in CSS pixels (default 800).
+ *  - `?type=always|hover|scroll` — scrollbar visibility mode (default always).
  */
 @Component({
   selector: 'app-scroll-area-fixture',
@@ -115,7 +119,7 @@ import {
     <div
       data-testid="root"
       forScrollArea
-      type="always"
+      [type]="type"
       [style.width.px]="viewportWidth"
       [style.height.px]="viewportHeight"
     >
@@ -148,6 +152,7 @@ export class ScrollAreaFixture {
   protected readonly viewportHeight = this.#numParam('viewportHeight', 200);
   protected readonly contentWidth = this.#numParam('contentWidth', 1000);
   protected readonly contentHeight = this.#numParam('contentHeight', 800);
+  protected readonly type = this.#typeParam();
 
   /**
    * Expected ratios surfaced as `<output>` so a spec can read them as plain
@@ -162,5 +167,10 @@ export class ScrollAreaFixture {
     if (!raw) return fallback;
     const n = Number.parseFloat(raw);
     return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+
+  #typeParam(): ForScrollAreaType {
+    const raw = this.#route.snapshot.queryParamMap.get('type');
+    return raw === 'hover' || raw === 'scroll' ? raw : 'always';
   }
 }

@@ -504,8 +504,14 @@ describe('Menu items / content', () => {
     });
   });
 
+  // Roving navigation moves real DOM focus, so the focus *outcome*
+  // (`document.activeElement`) is asserted against a real browser in
+  // menu-base.e2e.ts. Here we assert the directive's wiring reaction: the
+  // host-bound `data-highlighted` attribute (set by each item's own
+  // focus / blur handler) lands on the item the navigate / typeahead callback
+  // selected. See testing.md rule #6 (the DOM is the contract) and §E2E.
   describe('navigation', () => {
-    it('ArrowDown moves focus to the next enabled item, skipping disabled', async () => {
+    it('ArrowDown highlights the next enabled item, skipping disabled', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -516,7 +522,7 @@ describe('Menu items / content', () => {
       await flush(r.fixture);
 
       // Skips disabled #paste, lands on #bold
-      expect(document.activeElement?.id).toBe('bold');
+      expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('ArrowUp wraps to the last enabled item by default (loop=true)', async () => {
@@ -529,7 +535,7 @@ describe('Menu items / content', () => {
       pressKey(cut, 'ArrowUp');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('right');
+      expect(document.querySelector('#right')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('Home jumps to the first item', async () => {
@@ -542,7 +548,7 @@ describe('Menu items / content', () => {
       pressKey(right, 'Home');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('cut');
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('End jumps to the last enabled item', async () => {
@@ -555,7 +561,7 @@ describe('Menu items / content', () => {
       pressKey(cut, 'End');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('right');
+      expect(document.querySelector('#right')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('reflects data-highlighted on the focused item, moving with arrow nav', async () => {
@@ -574,14 +580,13 @@ describe('Menu items / content', () => {
       pressKey(cut, 'ArrowDown');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('copy');
       expect(copy.getAttribute('data-highlighted')).toBe('');
       expect(cut.hasAttribute('data-highlighted')).toBe(false);
     });
   });
 
   describe('typeahead', () => {
-    it('focuses the first item whose text matches the prefix', async () => {
+    it('highlights the first item whose text matches the prefix', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -591,7 +596,7 @@ describe('Menu items / content', () => {
       pressKey(cut, 'i');
       await flush(r.fixture);
 
-      expect(document.activeElement?.id).toBe('italic');
+      expect(document.querySelector('#italic')!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('skips disabled items during typeahead', async () => {
@@ -604,8 +609,8 @@ describe('Menu items / content', () => {
       pressKey(cut, 'p');
       await flush(r.fixture);
 
-      // 'paste' is disabled — typeahead should not focus it.
-      expect(document.activeElement?.id).not.toBe('paste');
+      // 'paste' is disabled — typeahead should not highlight it.
+      expect(document.querySelector('#paste')!.hasAttribute('data-highlighted')).toBe(false);
     });
 
     describe('textValue override', () => {
@@ -620,7 +625,7 @@ describe('Menu items / content', () => {
         pressKey(archive, 'a');
         await flush(r.fixture);
 
-        expect(document.activeElement?.id).toBe('archive');
+        expect(archive.getAttribute('data-highlighted')).toBe('');
       });
 
       it('falls back to textContent when textValue is empty', async () => {
@@ -633,7 +638,7 @@ describe('Menu items / content', () => {
         await flush(r.fixture);
 
         // 'copy' has no textValue and a clean textContent — fallback path.
-        expect(document.activeElement?.id).toBe('copy');
+        expect(document.querySelector('#copy')!.getAttribute('data-highlighted')).toBe('');
       });
 
       it('applies the textValue override to ForMenuCheckboxItem', async () => {
@@ -645,7 +650,7 @@ describe('Menu items / content', () => {
         pressKey(archive, 'b');
         await flush(r.fixture);
 
-        expect(document.activeElement?.id).toBe('bold');
+        expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
       });
 
       it('applies the textValue override to ForMenuRadioItem', async () => {
@@ -657,7 +662,7 @@ describe('Menu items / content', () => {
         pressKey(archive, 'l');
         await flush(r.fixture);
 
-        expect(document.activeElement?.id).toBe('left');
+        expect(document.querySelector('#left')!.getAttribute('data-highlighted')).toBe('');
       });
     });
   });
