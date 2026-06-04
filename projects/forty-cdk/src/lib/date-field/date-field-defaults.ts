@@ -7,15 +7,19 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * surrounding injector scope. Configure with `provideForDateFieldDefaults` at
  * the application root or in any component's `providers`; partial overrides
  * merge with the parent scope.
- *
- * The date field has no per-scope tunables today — this stub exists so future
- * additions don't churn the public API surface (see the require-defaults
- * convention in `CLAUDE.md`).
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForDateFieldDefaults {}
+export interface ForDateFieldDefaults {
+  /**
+   * Accessible value announced (via `aria-valuetext`) for an empty editable
+   * segment, so screen readers report the segment's empty state instead of
+   * silence. Override for localization.
+   */
+  emptySegmentText: string;
+}
 
-const FALLBACK: ForDateFieldDefaults = {};
+const FALLBACK: ForDateFieldDefaults = {
+  emptySegmentText: 'Empty',
+};
 
 const { token, provideDefaults } = createDefaults<ForDateFieldDefaults>(
   'FOR_DATE_FIELD_DEFAULTS',

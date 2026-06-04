@@ -36,6 +36,7 @@ import {
   type ForTimeFieldSegmentHandle,
   type TimeFieldSegment,
 } from './time-field-context';
+import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 
 /** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
 interface TimeParts {
@@ -114,6 +115,7 @@ export class ForTimeField<D>
   implements FormValueControl<D | null>, ForTimeFieldContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
 
   /**
    * The active, time-capable date adapter, resolved from `FOR_DATE_ADAPTER`
@@ -309,6 +311,9 @@ export class ForTimeField<D>
   }
 
   segmentValueText(type: TimeSegmentType): string | null {
+    if (this.isSegmentEmpty(type)) {
+      return this.#defaults.emptySegmentText;
+    }
     if (type !== 'dayPeriod') {
       return null;
     }
