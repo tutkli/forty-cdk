@@ -84,6 +84,8 @@ export class HoverCardCoordinator {
  * library defaults at the root). Each call establishes a new coordinator
  * scope.
  */
-export function provideForHoverCardDefaults(defaults: Partial<ForHoverCardDefaults>): Provider[] {
+export function provideForHoverCardDefaults(
+  defaults: Partial<ForHoverCardDefaults> = {},
+): Provider[] {
   return [...provideDefaults(defaults), HoverCardCoordinator];
 }

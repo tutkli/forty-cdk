@@ -433,6 +433,33 @@ describe('ForHoverCard', () => {
 
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
     });
+
+    it('is callable with no arguments to establish a fresh coordinator scope', () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults()],
+        template: `
+          <span forHoverCard #card="forHoverCard" [openDelay]="0">
+            <a forHoverCardTrigger href="/x">Trigger</a>
+            @if (card.open()) {
+              <div forHoverCardContent>Content</div>
+            }
+          </span>
+        `,
+      })
+      class NoArgsHost {}
+
+      const { query, flush } = renderHost(NoArgsHost);
+      flush();
+
+      const trigger = query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+
+      expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
+    });
   });
 
   describe('prefers-reduced-motion: reduce', () => {

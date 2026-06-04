@@ -556,6 +556,31 @@ describe('ForTooltip', () => {
       // a hardcoded 300ms input that ignored the scope, so this stayed open.
       expect(r.instance.open()).toBe(false);
     });
+
+    it('is callable with no arguments to establish a fresh coordinator scope', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults()],
+        template: `
+          <div forTooltip [(open)]="open" [openDelay]="0">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class NoArgsHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(NoArgsHost);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
   });
 
   describe('prefers-reduced-motion: reduce', () => {
