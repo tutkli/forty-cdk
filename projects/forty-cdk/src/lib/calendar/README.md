@@ -136,6 +136,28 @@ import { provideForCalendarDefaults } from 'forty-cdk';
 providers: [provideForCalendarDefaults({ firstDayOfWeek: 1 })];
 ```
 
+## SSR / hydration
+
+The active adapter's `today()` and `format()` resolve against the **runtime** time zone and default locale. Rendered on the server they reflect the _server's_ environment, so a render near midnight (or under a different server locale) can disagree with the browser by up to a day — `ForCalendar` reads `today()` once to mark the `data-today` / `aria-current="date"` cell, so the mismatch surfaces there as a hydration error and a flicker. For SSR, pin a fixed "today" / time zone / locale for both environments, or defer the today-highlight so it only computes client-side:
+
+```ts
+import { ChangeDetectionStrategy, Component, afterNextRender, signal } from '@angular/core';
+import { CalendarDate, today, getLocalTimeZone } from '@internationalized/date';
+
+@Component({
+  selector: 'app-date',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  /* ... */
+})
+export class DatePage {
+  readonly date = signal<CalendarDate | null>(null);
+
+  constructor() {
+    afterNextRender(() => this.date.set(today(getLocalTimeZone())));
+  }
+}
+```
+
 ## Accessibility notes
 
 - **`role="grid"`** on the table, `columnheader` weekday headers, `gridcell` days — the APG Date Picker Dialog technique over a real `<table>`.

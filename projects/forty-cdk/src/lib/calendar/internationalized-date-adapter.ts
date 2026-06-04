@@ -17,6 +17,10 @@ import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
  */
 @Injectable()
 export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
+  /**
+   * Today as a `CalendarDate` in the runtime time zone (`getLocalTimeZone()`).
+   * Subject to the SSR/hydration caveat on {@link DateAdapter.today}.
+   */
   today(): CalendarDate {
     return today(getLocalTimeZone());
   }
@@ -77,6 +81,10 @@ export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
     return date instanceof CalendarDate;
   }
 
+  /**
+   * Formats through the runtime's default locale and time zone. Subject to the
+   * SSR/hydration caveat on {@link DateAdapter.format}.
+   */
   format(date: CalendarDate, options: Intl.DateTimeFormatOptions): string {
     return new Intl.DateTimeFormat(undefined, options).format(date.toDate(getLocalTimeZone()));
   }
