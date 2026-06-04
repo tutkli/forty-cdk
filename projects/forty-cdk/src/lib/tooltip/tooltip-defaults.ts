@@ -109,6 +109,6 @@ export class TooltipCoordinator {
  * class Toolbar {}
  * ```
  */
-export function provideForTooltipDefaults(defaults: Partial<ForTooltipDefaults>): Provider[] {
+export function provideForTooltipDefaults(defaults: Partial<ForTooltipDefaults> = {}): Provider[] {
   return [...provideDefaults(defaults), TooltipCoordinator];
 }
