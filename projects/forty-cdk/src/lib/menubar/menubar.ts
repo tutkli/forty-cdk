@@ -8,6 +8,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
@@ -141,8 +142,14 @@ export class ForMenubar implements ForMenubarContext {
 
   // -- Multiplexed ForMenuContext for the currently-active menu -------------
 
-  readonly #menuItems = new Collection<ForMenuItemHandle>();
-  readonly #menuItemTypeahead = injectTypeahead();
+  /**
+   * The bar's menu-item navigation reuses the shared `MenuItemList` (the
+   * same item-collection / typeahead / navigate / focus mechanics that back
+   * `MenuOverlay`), so the per-active-trigger multiplexing below only has to
+   * cover the parts the single-owner overlay can't — open / anchor / ids /
+   * close derived from `activeTrigger`.
+   */
+  readonly #menuItemList = createMenuItemList<ForMenuItemHandle>(() => this.loop());
   readonly #menuContentEl = signal<HTMLElement | null>(null);
   readonly #menuInitialFocus = signal<'first' | 'last'>('first');
 
@@ -195,12 +202,12 @@ export class ForMenubar implements ForMenubarContext {
      * routes the close + open).
      */
     dismissableExemptions: computed(() => this.#triggerCollection.items().map((t) => t.host)),
-    registerItem: (h) => this.#menuItems.register(h),
-    unregisterItem: (h) => this.#menuItems.unregister(h),
-    navigate: (current, action) => this.#navigateMenuItems(current, action),
-    handleTypeahead: (event) => this.#handleMenuItemTypeahead(event),
-    focusFirstEnabledItem: () => this.#focusFirstEnabledMenuItem(),
-    focusLastEnabledItem: () => this.#focusLastEnabledMenuItem(),
+    registerItem: (h) => this.#menuItemList.registerItem(h),
+    unregisterItem: (h) => this.#menuItemList.unregisterItem(h),
+    navigate: (current, action) => this.#menuItemList.navigate(current, action),
+    handleTypeahead: (event) => this.#menuItemList.handleTypeahead(event),
+    focusFirstEnabledItem: () => this.#menuItemList.focusFirstEnabledItem(),
+    focusLastEnabledItem: () => this.#menuItemList.focusLastEnabledItem(),
     toggle: () => {
       // Without a specific trigger value, toggle from the menubar context
       // can only close. Triggers themselves drive the open path.
@@ -370,64 +377,5 @@ export class ForMenubar implements ForMenubarContext {
       return text.trim().toLowerCase().startsWith(buffer);
     });
     match?.host.focus();
-  }
-
-  // -- Internal: menu-item navigation / typeahead / focus -------------------
-
-  #navigateMenuItems(currentItem: HTMLElement, action: ListNavigationAction): void {
-    const items = this.#menuItems.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((i) => i.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
-  }
-
-  #handleMenuItemTypeahead(event: KeyboardEvent): void {
-    if (!this.#menuItemTypeahead.handle(event)) {
-      return;
-    }
-    const buffer = this.#menuItemTypeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#menuItems.items();
-    const match = items.find((i) => {
-      if (i.disabled()) {
-        return false;
-      }
-      const override = i.textValue?.() ?? '';
-      const source = override !== '' ? override : (i.host.textContent ?? '');
-      return source.trim().toLowerCase().startsWith(buffer);
-    });
-    match?.host.focus();
-  }
-
-  #focusFirstEnabledMenuItem(): boolean {
-    const target = this.#menuItems.items().find((i) => !i.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
-  }
-
-  #focusLastEnabledMenuItem(): boolean {
-    const items = this.#menuItems.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
   }
 }

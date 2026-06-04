@@ -1,12 +1,7 @@
 import { inject, type ModelSignal, type OutputEmitterRef, type Signal, signal } from '@angular/core';
 
-import { Collection, type CollectionHandle } from '../collection/collection';
 import { IdGenerator } from '../id-generator/id-generator';
-import {
-  type ListNavigationAction,
-  moveIndex,
-} from '../keyboard-navigation/keyboard-navigation';
-import { injectTypeahead } from '../typeahead/typeahead';
+import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import {
   createVetoableNativeEvent,
   emitVetoableEvent,
@@ -14,6 +9,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../vetoable-event/vetoable-event';
+import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
 
 /**
  * Reason a menu requested close. Mirrors `ForMenuCloseReason` from
@@ -29,14 +25,12 @@ export type MenuOverlayCloseReason =
   | 'programmatic';
 
 /**
- * Item handle the helper's `Collection` registers. Structurally compatible
- * with primitives' `ForMenuItemHandle` — typing is generic so the helper
- * stays orthogonal to `menu/menu-context.ts` (no cycle into a primitive).
+ * Item handle the helper's item list registers. Re-exported alias of the
+ * shared `MenuItemHandle` — structurally compatible with primitives'
+ * `ForMenuItemHandle` and kept under this name for backward compatibility
+ * with the helper's existing consumers / specs.
  */
-export interface MenuOverlayItemHandle extends CollectionHandle {
-  readonly disabled: Signal<boolean>;
-  readonly textValue?: Signal<string>;
-}
+export type MenuOverlayItemHandle = MenuItemHandle;
 
 /**
  * Wiring the directive forwards into the helper. Inputs / outputs / models
@@ -55,6 +49,24 @@ export interface MenuOverlayHooks {
   readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
   readonly autoFocusOnOpen: OutputEmitterRef<VetoableEvent>;
   readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
+
+  /**
+   * Optional side effect run after `openMenu` flips `open` to `true`,
+   * receiving the resolved initial-focus target. `[forMenuSub]` uses it to
+   * cancel in-flight hover scheduling and reset its focus-suppression flag
+   * (a keyboard / click open supersedes hover). Top-level roots
+   * (`[forDropdownMenu]` / `[forContextMenu]`) pass neither hook.
+   */
+  readonly onOpen?: (initialFocus: 'first' | 'last') => void;
+
+  /**
+   * Optional side effect run after `closeMenu` flips `open` to `false`,
+   * receiving the close reason. `[forMenuSub]` uses it to cancel in-flight
+   * hover scheduling, reset its focus-suppression flag, and propagate the
+   * close upward through the menu chain for every reason except `'escape'`
+   * / `'programmatic'`. Top-level roots pass neither hook.
+   */
+  readonly onClose?: (reason: MenuOverlayCloseReason) => void;
 }
 
 /**
@@ -66,9 +78,10 @@ export interface MenuOverlayHooks {
  * The helper owns:
  *
  * - id generation for trigger / content,
- * - the item `Collection` + typeahead instance,
+ * - the item list (`MenuItemList`: the item `Collection` + typeahead +
+ *   `navigate` / `handleTypeahead` / `focusFirst/LastEnabledItem`), shared
+ *   with `[forMenubar]`'s multiplexed menu context,
  * - trigger / content / initial-focus signals,
- * - `navigate`, `handleTypeahead`, `focusFirst/LastEnabledItem`,
  * - `toggle` / `openMenu` / `closeMenu` (honouring `disabled`),
  * - the `(escapeKeyDown)` / `(pointerDownOutside)` / `(focusOutside)` /
  *   `(interactOutside)` veto plumbing (including the shared
@@ -101,8 +114,7 @@ export interface MenuOverlayHooks {
  */
 export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
   readonly #idGen = inject(IdGenerator);
-  readonly #typeahead = injectTypeahead();
-  readonly #items = new Collection<H>();
+  readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
 
   /** Unique id for the trigger element. Stable across the menu's lifetime. */
@@ -136,6 +148,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
 
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
+    this.#itemList = createMenuItemList<H>(() => hooks.loop());
     this.triggerId = signal(this.#idGen.next(`${idPrefix}-trigger`));
     this.contentId = signal(this.#idGen.next(`${idPrefix}-content`));
   }
@@ -165,73 +178,32 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   registerItem(handle: H): void {
-    this.#items.register(handle);
+    this.#itemList.registerItem(handle);
   }
 
   unregisterItem(handle: H): void {
-    this.#items.unregister(handle);
+    this.#itemList.unregisterItem(handle);
   }
 
   /** Items registered with the menu, in DOM order. Exposed for tests / sub-menu wiring. */
   items(): readonly H[] {
-    return this.#items.items();
+    return this.#itemList.items();
   }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((i) => i.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.#hooks.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
+    this.#itemList.navigate(currentItem, action);
   }
 
   handleTypeahead(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) {
-      return;
-    }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#items.items();
-    const match = items.find((i) => {
-      if (i.disabled()) {
-        return false;
-      }
-      const override = i.textValue?.() ?? '';
-      const source = override !== '' ? override : (i.host.textContent ?? '');
-      return source.trim().toLowerCase().startsWith(buffer);
-    });
-    match?.host.focus();
+    this.#itemList.handleTypeahead(event);
   }
 
   focusFirstEnabledItem(): boolean {
-    const target = this.#items.items().find((i) => !i.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
+    return this.#itemList.focusFirstEnabledItem();
   }
 
   focusLastEnabledItem(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
+    return this.#itemList.focusLastEnabledItem();
   }
 
   toggle(initialFocus: 'first' | 'last' = 'first'): void {
@@ -251,10 +223,12 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     }
     this.#initialFocus.set(initialFocus);
     this.#hooks.open.set(true);
+    this.#hooks.onOpen?.(initialFocus);
   }
 
-  closeMenu(_reason: MenuOverlayCloseReason): void {
+  closeMenu(reason: MenuOverlayCloseReason): void {
     this.#hooks.open.set(false);
+    this.#hooks.onClose?.(reason);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
