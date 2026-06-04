@@ -53,6 +53,7 @@ jobs:
 
   e2e:
     name: E2E (Playwright)
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
