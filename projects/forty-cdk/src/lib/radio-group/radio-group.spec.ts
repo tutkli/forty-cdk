@@ -469,21 +469,23 @@ describe('ForRadioGroup', () => {
       readonly color = signal('');
     }
 
-    it('hides indicators while no radio is selected', () => {
+    it('reflects data-state unchecked without a hidden attribute while no radio is selected', () => {
       const { el } = renderHost(IndicatorHost);
       const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
-      expect(Array.from(inds).every((n) => n.hasAttribute('hidden'))).toBe(true);
+      expect(Array.from(inds).some((n) => n.hasAttribute('hidden'))).toBe(false);
+      expect(Array.from(inds).every((n) => n.getAttribute('data-state') === 'unchecked')).toBe(true);
     });
 
-    it('shows only the selected radio\'s indicator', () => {
+    it('reflects data-state on the selected radio\'s indicator without a hidden attribute', () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.color.set('blue');
       flush();
 
       const red = el.querySelector<HTMLElement>('[data-ind="red"]')!;
       const blue = el.querySelector<HTMLElement>('[data-ind="blue"]')!;
-      expect(red.hasAttribute('hidden')).toBe(true);
+      expect(red.hasAttribute('hidden')).toBe(false);
       expect(blue.hasAttribute('hidden')).toBe(false);
+      expect(red.getAttribute('data-state')).toBe('unchecked');
       expect(blue.getAttribute('data-state')).toBe('checked');
     });
 

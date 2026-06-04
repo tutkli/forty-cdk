@@ -201,14 +201,14 @@ describe('ForCheckbox', () => {
       readonly indeterminate = signal(false);
     }
 
-    it('hides the indicator while unchecked', () => {
+    it('reflects data-state unchecked without a hidden attribute while unchecked', () => {
       const { el } = renderHost(IndicatorHost);
       const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
-      expect(ind.hasAttribute('hidden')).toBe(true);
+      expect(ind.hasAttribute('hidden')).toBe(false);
       expect(ind.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('shows the indicator while checked', () => {
+    it('reflects data-state checked without a hidden attribute while checked', () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.agreed.set(true);
       flush();
@@ -218,7 +218,7 @@ describe('ForCheckbox', () => {
       expect(ind.getAttribute('data-state')).toBe('checked');
     });
 
-    it('shows the indicator while indeterminate', () => {
+    it('reflects data-state indeterminate without a hidden attribute while indeterminate', () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.indeterminate.set(true);
       flush();
