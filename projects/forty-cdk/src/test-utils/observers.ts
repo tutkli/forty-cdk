@@ -12,6 +12,15 @@
  * polyfill as "original", silently turning their restore into a no-op
  * and leaving the stub installed for the rest of the worker.
  *
+ * Symmetrically, a sibling spec that swaps in its own fake observer and
+ * restores it by assignment (`globalThis.ResizeObserver = original`) leaves
+ * the key present-but-`undefined` once `original` was itself absent — so a
+ * mere `'ResizeObserver' in globalThis` presence check would treat that
+ * leaked `undefined` as a real global and skip the stub, surfacing
+ * `ResizeObserver is not a constructor` when a primitive then constructs one.
+ * The guard therefore checks for a usable constructor (`typeof === 'function'`),
+ * not just key presence, and the teardown restores the exact prior value.
+ *
  * Usage:
  * ```ts
  * let restoreObservers: () => void;
@@ -27,9 +36,9 @@ export function installObserverPolyfills(): () => void {
     IntersectionObserver?: typeof IntersectionObserver;
   };
 
-  const hadRO = 'ResizeObserver' in globalThis;
+  const hadUsableRO = typeof g.ResizeObserver === 'function';
   const originalRO = g.ResizeObserver;
-  if (!hadRO) {
+  if (!hadUsableRO) {
     g.ResizeObserver = class {
       observe(): void {}
       unobserve(): void {}
@@ -37,9 +46,9 @@ export function installObserverPolyfills(): () => void {
     } as unknown as typeof ResizeObserver;
   }
 
-  const hadIO = 'IntersectionObserver' in globalThis;
+  const hadUsableIO = typeof g.IntersectionObserver === 'function';
   const originalIO = g.IntersectionObserver;
-  if (!hadIO) {
+  if (!hadUsableIO) {
     g.IntersectionObserver = class {
       readonly root = null;
       readonly rootMargin = '';
@@ -55,12 +64,12 @@ export function installObserverPolyfills(): () => void {
   }
 
   return () => {
-    if (hadRO) {
+    if (hadUsableRO) {
       g.ResizeObserver = originalRO;
     } else {
       delete g.ResizeObserver;
     }
-    if (hadIO) {
+    if (hadUsableIO) {
       g.IntersectionObserver = originalIO;
     } else {
       delete g.IntersectionObserver;

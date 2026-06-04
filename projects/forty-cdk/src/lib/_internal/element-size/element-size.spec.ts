@@ -49,18 +49,23 @@ class Host {
 }
 
 describe('injectElementSize', () => {
-  let originalRO: typeof ResizeObserver;
+  let hadRO: boolean;
+  let originalRO: typeof ResizeObserver | undefined;
 
   beforeEach(() => {
+    hadRO = 'ResizeObserver' in globalThis;
     originalRO = globalThis.ResizeObserver;
-     
+
     (globalThis as any).ResizeObserver = FakeResizeObserver as any;
     FakeResizeObserver.instances = [];
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });
   afterEach(() => {
-     
-    (globalThis as any).ResizeObserver = originalRO;
+    if (hadRO) {
+      (globalThis as any).ResizeObserver = originalRO;
+    } else {
+      delete (globalThis as any).ResizeObserver;
+    }
   });
 
   it('returns null until a target is set', () => {
