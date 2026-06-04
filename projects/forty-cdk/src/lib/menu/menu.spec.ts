@@ -200,6 +200,46 @@ describe('Menu items / content', () => {
       );
     });
 
+    it('defaults the separator aria-orientation to horizontal', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('hr[forMenuSeparator]')!.getAttribute('aria-orientation')).toBe(
+        'horizontal',
+      );
+    });
+
+    it('reflects a configurable separator orientation to aria-orientation', async () => {
+      @Component({
+        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuSeparator],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <hr id="sep" forMenuSeparator [orientation]="orientation()" />
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const sep = document.querySelector<HTMLElement>('#sep')!;
+      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
+
+      r.instance.orientation.set('horizontal');
+      await flush(r.fixture);
+      expect(sep.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
     it('reflects aria-checked on checkbox items', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
