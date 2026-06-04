@@ -91,7 +91,7 @@ export interface OverlayShellReturnFocusConfig {
 
 /**
  * Single config for the overlay-content lifecycle. Each sub-bundle is
- * individually optional so the seven concrete primitives (Popover, Menu,
+ * individually optional so the nine concrete primitives (Popover, Menu,
  * MenuSub, ContextMenu, DropdownMenu, Combobox, Select, Tooltip, HoverCard)
  * can opt in to only the pieces they need.
  *
