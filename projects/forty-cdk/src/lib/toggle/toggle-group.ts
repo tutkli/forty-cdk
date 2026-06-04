@@ -20,6 +20,7 @@ import {
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import { FOR_TOGGLE_DEFAULTS } from './toggle-defaults';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,
   type ForToggleGroupContext,
@@ -78,6 +79,7 @@ export class ForToggleGroup
   implements FormValueControl<readonly string[]>, ForToggleGroupContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_TOGGLE_DEFAULTS);
 
   /**
    * Two-way bindable. The currently pressed values, in arbitrary order.
@@ -108,8 +110,11 @@ export class ForToggleGroup
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  /** When true (default), arrow nav wraps at the ends. */
-  readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * When true (default), arrow nav wraps at the ends. The default is read
+   * from `provideForToggleDefaults` for the surrounding scope.
+   */
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
    * Roving-tabindex tracker. Items promote themselves to active on `(focus)`

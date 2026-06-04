@@ -3,6 +3,7 @@ import { form, FormField, required, requiredError, validate } from '@angular/for
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../test-utils';
+import { provideForToggleDefaults } from './toggle-defaults';
 import { ForToggleGroup } from './toggle-group';
 import { ForToggleGroupItem } from './toggle-group-item';
 
@@ -318,6 +319,28 @@ describe('ForToggleGroup', () => {
       r.flush();
 
       const right = itemOf(r.el, 'right');
+      right.focus();
+      pressKey(right, 'ArrowRight');
+
+      expect(document.activeElement).toBe(right);
+    });
+
+    it('reads the loop default from provideForToggleDefaults when no [loop] input is set', () => {
+      @Component({
+        imports: [ForToggleGroup, ForToggleGroupItem],
+        providers: [provideForToggleDefaults({ loop: false })],
+        template: `
+          <div forToggleGroup>
+            <button forToggleGroupItem value="left" data-test-id="left">Left</button>
+            <button forToggleGroupItem value="center" data-test-id="center">Center</button>
+            <button forToggleGroupItem value="right" data-test-id="right">Right</button>
+          </div>
+        `,
+      })
+      class ScopedDefaultsHost {}
+
+      const { el } = renderHost(ScopedDefaultsHost);
+      const right = itemOf(el, 'right');
       right.focus();
       pressKey(right, 'ArrowRight');
 

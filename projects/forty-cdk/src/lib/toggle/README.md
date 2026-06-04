@@ -119,7 +119,7 @@ export class DemoAlignment {
 | `touched`     | `false`        | Two-way bindable. Set on focusout outside the group.                                                      |
 | `orientation` | `'horizontal'` | Layout direction for keyboard navigation.                                                                 |
 | `dir`         | `'ltr'`        | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                      |
-| `loop`        | `true`         | When `true`, arrow nav wraps at the ends.                                                                 |
+| `loop`        | `true`         | When `true`, arrow nav wraps at the ends. The default is read from `provideForToggleDefaults`.            |
 
 ### Inputs (`ForToggleGroupItem`)
 
