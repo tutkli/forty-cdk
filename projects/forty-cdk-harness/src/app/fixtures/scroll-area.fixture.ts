@@ -19,11 +19,13 @@ import {
  * geometry, drives drag gestures on it, and exercises `ResizeObserver` by
  * navigating with different query params.
  *
- * `type="always"` (the default here) forces both scrollbars visible whenever
- * there is overflow, regardless of hover / scroll interaction, so specs don't
- * need to fake pointerenter on the root before measuring. `?type=hover` and
- * `?type=scroll` exercise the visibility-mode contract (`data-state` toggling
- * on pointerenter / leave and on scroll-then-fade) against real layout.
+ * `type="always"` (the default here) keeps both scrollbars painted and
+ * `data-state="visible"` regardless of overflow or hover / scroll interaction,
+ * so specs don't need to fake pointerenter on the root before measuring — and
+ * the divergence block asserts the track stays painted when content fits
+ * (where `auto` self-hides). `?type=hover` and `?type=scroll` exercise the
+ * visibility-mode contract (`data-state` toggling on pointerenter / leave and
+ * on scroll-then-fade) against real layout.
  *
  * Query params (all default to a useful baseline that produces both axes of
  * overflow against a 300×200 viewport with 1000×800 content):
@@ -32,8 +34,9 @@ import {
  *  - `?contentWidth=N` — content width in CSS pixels (default 1000).
  *  - `?contentHeight=N` — content height in CSS pixels (default 800).
  *  - `?type=auto|always|hover|scroll` — scrollbar visibility mode (default
- *    always). `auto` and `always` are synonyms today; both are accepted so a
- *    spec can assert they behave identically against real layout.
+ *    always). `always` keeps the track painted regardless of overflow; `auto`
+ *    self-hides when content fits — the divergence block asserts both against
+ *    real layout.
  */
 @Component({
   selector: 'app-scroll-area-fixture',
