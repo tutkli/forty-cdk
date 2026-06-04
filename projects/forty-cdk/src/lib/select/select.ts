@@ -313,7 +313,7 @@ export class ForSelect<T = string>
     const equals = this.isItemEqualToValue();
     const items = this.#items.items();
     for (const v of values) {
-      const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
+      const opt = items.find((o) => equals(o.value(), v));
       if (opt) {
         return opt.host;
       }

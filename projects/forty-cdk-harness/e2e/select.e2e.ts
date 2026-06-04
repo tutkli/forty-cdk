@@ -216,6 +216,50 @@ test.describe('Select', () => {
         .toMatch(/^-?\d+px -?\d+px$/);
     });
 
+    test('anchors on a selected option even when it is disabled (#395)', async ({ page }) => {
+      // `?selected=banana` pre-selects the option that is rendered `disabled`;
+      // `?spacer=1` pushes the trigger down so the listbox has room to center
+      // the selected option without hitting the top viewport-padding clamp.
+      // Anchoring must still target the *selected* option (banana) — not the
+      // first enabled one (apple) — so banana's vertical center lines up with
+      // the trigger's vertical center, the item-aligned contract.
+      await gotoFixture(page, 'select', {
+        position: 'item-aligned',
+        selected: 'banana',
+        spacer: '1',
+      });
+      const trigger = el(page, 'trigger');
+      await trigger.click();
+
+      const content = el(page, 'content');
+      await expect(content).toBeVisible();
+      // Wait for the async computePosition to resolve (translate written).
+      await expect
+        .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
+        .toMatch(/^-?\d+px -?\d+px$/);
+
+      const triggerBox = await trigger.boundingBox();
+      const bananaBox = await el(page, 'opt-banana').boundingBox();
+      const appleBox = await el(page, 'opt-apple').boundingBox();
+      expect(triggerBox).not.toBeNull();
+      expect(bananaBox).not.toBeNull();
+      expect(appleBox).not.toBeNull();
+
+      const triggerCenter = triggerBox!.y + triggerBox!.height / 2;
+      const bananaCenter = bananaBox!.y + bananaBox!.height / 2;
+      const appleCenter = appleBox!.y + appleBox!.height / 2;
+
+      // The disabled-but-selected option (banana) is the alignment target: its
+      // center lines up with the trigger center (small cross-browser slack).
+      // With the bug, anchoring skipped the disabled selection and fell back to
+      // the first enabled option (apple) — which would sit one row (32px) above
+      // the trigger center instead.
+      expect(Math.abs(bananaCenter - triggerCenter)).toBeLessThanOrEqual(2);
+      expect(Math.abs(bananaCenter - triggerCenter)).toBeLessThan(
+        Math.abs(appleCenter - triggerCenter),
+      );
+    });
+
     test('falls back to the first enabled option when nothing is selected', async ({ page }) => {
       // The fallback branch in `itemAligned` middleware: with no
       // `selectedOption`, it queries `[role="option"]` excluding aria-disabled

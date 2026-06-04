@@ -33,6 +33,12 @@ import { queryFlag } from './_query-flag';
   ],
   template: `
     <input id="before" data-testid="before" placeholder="before-trigger" />
+    @if (spacer) {
+      <!-- Pushes the trigger down so item-aligned positioning has room to
+           center the selected option over it without clamping to the top
+           viewport padding. -->
+      <div data-testid="spacer" style="height: 240px;"></div>
+    }
     <div
       forSelect
       [(value)]="value"
@@ -60,7 +66,15 @@ import { queryFlag } from './_query-flag';
   `,
 })
 export class SelectFixture {
-  protected readonly value = signal<readonly string[]>([]);
+  // `?selected=<value>` pre-fills the selection so specs can exercise the
+  // "selected-but-disabled" anchoring path (e.g. `?selected=banana`, which is
+  // rendered as a `disabled` option). Empty by default.
+  protected readonly value = signal<readonly string[]>(
+    (() => {
+      const selected = inject(ActivatedRoute).snapshot.queryParamMap.get('selected');
+      return selected ? [selected] : [];
+    })(),
+  );
   protected readonly open = signal(false);
 
   // `?position=item-aligned` switches the [forSelectContent] positioner to
@@ -74,6 +88,11 @@ export class SelectFixture {
   // `?modal=1` routes [forSelectContent] through `_internal/modal-shell` (focus
   // trap + inert siblings + body-scroll-lock) instead of the anchored popover.
   protected readonly modal = queryFlag('modal');
+
+  // `?spacer=1` inserts vertical space above the trigger so the item-aligned
+  // positioner can center a selected option over the trigger without hitting
+  // the top viewport-padding clamp.
+  protected readonly spacer = queryFlag('spacer');
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
