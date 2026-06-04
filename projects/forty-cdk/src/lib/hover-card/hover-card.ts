@@ -132,8 +132,10 @@ export class ForHoverCard implements ForHoverCardContext {
 
   /**
    * Fires when the user presses Escape while the card is open, regardless of
-   * whether focus is on the trigger or inside the portaled content. Call
-   * `preventDefault()` on the emitted veto to suppress the automatic
+   * where focus currently lives — on the trigger, inside the portaled
+   * content, or on an unrelated element (the common case for a card opened by
+   * hover). Routed through the content's document-level dismissable layer.
+   * Call `preventDefault()` on the emitted veto to suppress the automatic
    * close. The native `KeyboardEvent` is on `.event`.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
@@ -256,8 +258,9 @@ export class ForHoverCard implements ForHoverCardContext {
 
   /**
    * Emit `(escapeKeyDown)` and, unless the consumer calls `preventDefault()`
-   * on the veto, close immediately. Called by the trigger and the portaled
-   * content so Escape works no matter where focus currently lives.
+   * on the veto, close immediately. Driven by the content's document-level
+   * dismissable layer so Escape works no matter where focus currently lives
+   * — including a hover-opened card with focus on an unrelated element.
    */
   emitEscapeKeyDown(event: KeyboardEvent): void {
     if (!this.open()) {

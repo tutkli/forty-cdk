@@ -24,6 +24,27 @@ test.describe('HoverCard', () => {
     await expect(el(page, 'card')).toHaveCount(0);
   });
 
+  test('closes on Escape when hover-opened with focus on an unrelated element', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+
+    // Hover-open the card, then move focus to an unrelated element so the
+    // Escape keydown dispatches there rather than on the trigger / content.
+    // This is the case #381 regressed on: a card opened by mouse hover while
+    // focus sits elsewhere must still dismiss on Escape via the
+    // document-level dismissable layer.
+    await el(page, 'trigger').hover();
+    await expect(el(page, 'card')).toBeVisible();
+
+    const before = page.locator('#before');
+    await before.focus();
+    await expect(before).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'card')).toHaveCount(0);
+  });
+
   // Hover semantics on touch: a tap is NOT a hover, so HoverCard must
   // remain closed after a bare `tap()` on the trigger. The keyboard-focus
   // path is the touch-accessible fallback — it still opens the card the

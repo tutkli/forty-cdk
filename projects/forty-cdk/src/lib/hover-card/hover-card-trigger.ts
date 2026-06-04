@@ -11,6 +11,10 @@ import { injectHoverCardContext } from './hover-card-context';
  * Reflects `data-state` so consumers can style the trigger when its card is
  * open (e.g. an underline that turns solid). No `aria-describedby` is
  * applied — hover-card content is not a description for assistive tech.
+ *
+ * Escape dismissal is owned by the content's document-level dismissable
+ * layer (see `ForHoverCardContent`), so it works from the trigger and from
+ * unrelated focus alike — the trigger carries no Escape listener of its own.
  */
 @Directive({
   selector: '[forHoverCardTrigger]',
@@ -21,7 +25,6 @@ import { injectHoverCardContext } from './hover-card-context';
     '(pointerleave)': 'onPointerLeave()',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
-    '(keydown.escape)': 'onEscape($event)',
   },
 })
 export class ForHoverCardTrigger {
@@ -50,9 +53,5 @@ export class ForHoverCardTrigger {
 
   protected onBlur(): void {
     this.ctx.scheduleClose('focus');
-  }
-
-  protected onEscape(event: Event): void {
-    this.ctx.emitEscapeKeyDown(event as KeyboardEvent);
   }
 }
