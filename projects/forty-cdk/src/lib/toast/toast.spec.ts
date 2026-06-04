@@ -846,6 +846,32 @@ describe('ForToastManager (programmatic)', () => {
     });
   });
 
+  it('ref.closed resolves with reason "auto" when the viewport timer fires', async () => {
+    vi.useFakeTimers();
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'A', duration: 1_000 });
+    r.flush();
+    const closed = ref.closed;
+    vi.advanceTimersByTime(1_000);
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+    await expect(closed).resolves.toEqual({ reason: 'auto', result: undefined });
+  });
+
+  it('ref.closed resolves with reason "escape" through the viewport path', async () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'A' });
+    r.flush();
+    const closed = ref.closed;
+    const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+    t.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+    await expect(closed).resolves.toEqual({ reason: 'escape', result: undefined });
+  });
+
   it('error variant gets role=alert', () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'Boom', variant: 'error' });
