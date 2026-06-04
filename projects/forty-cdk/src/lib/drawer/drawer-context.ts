@@ -1,11 +1,8 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-/**
- * Edge from which the drawer enters the viewport. The active snap-point
- * dimension (height for top/bottom, width for left/right) is laid out
- * along the axis perpendicular to this edge.
- */
-export type ForDrawerSide = 'top' | 'right' | 'bottom' | 'left';
+import { type ForDrawerSide } from '../_internal/drawer-stack/drawer-side';
+
+export { type ForDrawerSide };
 
 /**
  * A snap point. Three accepted shapes (Vaul-aligned):
