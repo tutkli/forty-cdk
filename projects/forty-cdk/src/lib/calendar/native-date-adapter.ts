@@ -24,6 +24,10 @@ function clampDay(year: number, month: number, day: number): Date {
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {
+  /**
+   * Today at local midnight in the runtime time zone. Subject to the
+   * SSR/hydration caveat on {@link DateAdapter.today}.
+   */
   today(): Date {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -102,6 +106,10 @@ export class NativeDateAdapter implements DateAdapter<Date> {
     return date instanceof Date && !Number.isNaN(date.getTime());
   }
 
+  /**
+   * Formats through the runtime's default locale. Subject to the SSR/hydration
+   * caveat on {@link DateAdapter.format}.
+   */
   format(date: Date, options: Intl.DateTimeFormatOptions): string {
     return new Intl.DateTimeFormat(undefined, options).format(date);
   }

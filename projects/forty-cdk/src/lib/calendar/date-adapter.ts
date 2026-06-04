@@ -25,7 +25,21 @@ import { inject, InjectionToken } from '@angular/core';
  * @typeParam D The immutable date representation the adapter operates on.
  */
 export interface DateAdapter<D> {
-  /** Today's date in the local time zone. */
+  /**
+   * Today's date in the runtime time zone.
+   *
+   * **SSR / hydration caveat.** The result depends on the runtime time zone, so
+   * a server render and a client hydration can disagree by up to a day near
+   * midnight — the server may compute a different calendar day than the
+   * browser. `ForCalendar` reads this once to mark the `data-today` /
+   * `aria-current="date"` cell, so a mismatch surfaces there as a hydration
+   * error and a flicker on the highlighted "today" cell.
+   *
+   * **SSR-safe pattern.** Have the consumer supply a fixed "today" (or pin a
+   * time zone) for the server render, or defer the today-highlight to
+   * `afterNextRender` so `today()` is only computed client-side. See the
+   * calendar README's "SSR / hydration" section.
+   */
   today(): D;
 
   /**
@@ -104,6 +118,17 @@ export interface DateAdapter<D> {
 
   /**
    * Formats `date` for display using the runtime's default locale.
+   *
+   * **SSR / hydration caveat.** The result resolves against the runtime's
+   * default locale, so a server render and a client hydration can produce
+   * different strings when the server and browser locales differ — surfacing as
+   * a hydration mismatch on every formatted value (heading, weekday headers,
+   * cell labels). The runtime time zone applies too for adapters that format
+   * through a wall-clock instant.
+   *
+   * **SSR-safe pattern.** Pin a locale (or format client-side) for the server
+   * render so both environments resolve the same locale. See the calendar
+   * README's "SSR / hydration" section.
    *
    * @param options Standard `Intl.DateTimeFormat` options (e.g.
    *   `{ month: 'long', year: 'numeric' }` for a calendar heading,
