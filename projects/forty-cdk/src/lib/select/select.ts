@@ -292,14 +292,23 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return [];
     }
+    // Resolve from the live option registry first so a pre-set value renders
+    // the option label as soon as `[forSelectOption]` registers, then the
+    // cached snapshot (warmed by `afterEveryRender`, used while the listbox is
+    // unmounted), then the serialized form value so non-string items still
+    // render meaningfully on a cold cache.
+    const items = this.#items.items();
     const cached = this.#cachedOptions();
     const equals = this.isItemEqualToValue();
     const toFormValue = this.itemToFormValue();
     const labels: string[] = [];
     for (const v of values) {
+      const live = items.find((o) => equals(o.value(), v));
+      if (live) {
+        labels.push((live.host.textContent ?? '').trim());
+        continue;
+      }
       const opt = cached.find((o) => equals(o.value, v));
-      // Fall back to the serialized form value so non-string items still
-      // render a meaningful label before the option cache warms up.
       labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : toFormValue(v));
     }
     return labels;
