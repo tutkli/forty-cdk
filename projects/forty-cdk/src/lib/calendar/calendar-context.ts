@@ -97,6 +97,11 @@ export interface ForCalendarContext<D> {
   pageMonths(delta: number): void;
   /** Resolve and apply a keydown originating on the cell for `fromDate`. */
   handleCellKeydown(event: KeyboardEvent, fromDate: D): void;
+  /**
+   * Move DOM focus to the roving cell (the gridcell matching the focused date).
+   * Returns `false` when no matching cell is currently rendered.
+   */
+  focusActiveCell(): boolean;
 
   registerCell(handle: ForCalendarCellHandle<D>): void;
   unregisterCell(handle: ForCalendarCellHandle<D>): void;

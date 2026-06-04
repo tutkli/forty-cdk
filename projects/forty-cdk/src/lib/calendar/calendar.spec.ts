@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
@@ -77,6 +77,7 @@ function keyOf(date: Date): string {
   `,
 })
 class CalendarHost {
+  readonly calendar = viewChild.required(ForCalendar);
   readonly value = signal<Date | null>(new Date(2026, 5, 15));
   readonly min = signal<Date | null>(null);
   readonly max = signal<Date | null>(null);
@@ -295,6 +296,30 @@ describe('ForCalendar', () => {
       pressKey(focusedCell(r), 'ArrowRight');
       await flush(r.fixture);
       expect(focusedCell(r)).toBe(cell(r, JUN_15));
+    });
+  });
+
+  describe('focusActiveCell', () => {
+    it('moves DOM focus to the roving cell and reports success', () => {
+      const r = renderHost(CalendarHost);
+
+      const moved = r.instance.calendar().focusActiveCell();
+
+      expect(moved).toBe(true);
+      expect(document.activeElement).toBe(focusedCell(r));
+      expect(document.activeElement).toBe(cell(r, JUN_15));
+    });
+
+    it('follows the focused date after keyboard navigation', async () => {
+      const r = renderHost(CalendarHost);
+
+      pressKey(focusedCell(r), 'ArrowRight');
+      await flush(r.fixture);
+
+      const moved = r.instance.calendar().focusActiveCell();
+
+      expect(moved).toBe(true);
+      expect(document.activeElement).toBe(cell(r, new Date(2026, 5, 16)));
     });
   });
 

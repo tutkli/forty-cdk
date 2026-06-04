@@ -466,14 +466,7 @@ export class ForDatePicker<D>
   }
 
   focusCalendarCell(): boolean {
-    const cell = this.#contentEl()?.querySelector<HTMLElement>(
-      '[role="gridcell"][tabindex="0"]',
-    );
-    if (!cell) {
-      return false;
-    }
-    cell.focus();
-    return true;
+    return this.calendar()?.focusActiveCell() ?? false;
   }
 
   // One dismiss-coordination surface, hiding the modal-vs-overlay branching.
