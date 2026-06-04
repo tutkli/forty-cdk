@@ -40,6 +40,9 @@ const CALENDAR_PIECES = [ForCalendar, ForCalendarGrid, ForCalendarGridHeader, Fo
       forDatePicker
       [(value)]="value"
       [(open)]="open"
+      (openChange)="openChanges.push($event)"
+      (pointerDownOutside)="onPointerDownOutside($event)"
+      (interactOutside)="interactOutsideCount = interactOutsideCount + 1"
       [minDate]="minDate()"
       [maxDate]="maxDate()"
       [disabled]="disabled()"
@@ -91,6 +94,14 @@ class Host {
   readonly closeOnSelect = signal(true);
   readonly modal = signal(false);
   readonly ariaLabel = signal<string | null>('Choose date');
+  readonly openChanges: boolean[] = [];
+  interactOutsideCount = 0;
+  vetoPointerDownOutside = false;
+  onPointerDownOutside(event: { preventDefault(): void }): void {
+    if (this.vetoPointerDownOutside) {
+      event.preventDefault();
+    }
+  }
 }
 
 type R = RenderResult<Host>;
@@ -178,6 +189,47 @@ describe('ForDatePicker', () => {
       );
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
+    });
+
+    it('closes exactly once on an outside pointer-down (shared veto, no double-close)', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+      expect(r.instance.openChanges).toEqual([true]);
+
+      // A real outside pointer-down routes through the dismissable layer's
+      // `onPointerDownOutside` AND the composite `onInteractOutside` for the
+      // same physical event; the shared veto must collapse them into a single
+      // close.
+      document.body.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(content()).toBeNull();
+      // The single physical interaction surfaces the composite output once …
+      expect(r.instance.interactOutsideCount).toBe(1);
+      // … and produces exactly one open→closed transition, not two.
+      expect(r.instance.openChanges).toEqual([true, false]);
+    });
+
+    it('preventDefault in (pointerDownOutside) vetoes the composite close (shared veto)', async () => {
+      const r = renderHost(Host);
+      r.instance.vetoPointerDownOutside = true;
+      await openPicker(r);
+
+      // The pointer handler vetoes; because the same veto wrapper is reused for
+      // the composite `interactOutside`, the close is suppressed even though
+      // both channels fire for this one event.
+      document.body.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.interactOutsideCount).toBe(1);
+      expect(r.instance.open()).toBe(true);
+      expect(content()).not.toBeNull();
+      expect(r.instance.openChanges).toEqual([true]);
     });
   });
 
