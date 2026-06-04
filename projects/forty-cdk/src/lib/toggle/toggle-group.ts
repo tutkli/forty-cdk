@@ -18,6 +18,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,
@@ -109,6 +110,15 @@ export class ForToggleGroup
 
   /** When true (default), arrow nav wraps at the ends. */
   readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
+   * Roving-tabindex tracker. Items promote themselves to active on `(focus)`
+   * and read `active()` in their tabindex computed, so re-entry (Shift+Tab
+   * back into the group) restores the last focused item — matching Tabs /
+   * Tree. Before any focus, `active()` is `null` and the tabindex falls back
+   * to the first-selected / first-enabled entry point.
+   */
+  readonly roving = new RovingTabindex();
 
   readonly #items = new Collection<ForToggleGroupItemHandle>();
 

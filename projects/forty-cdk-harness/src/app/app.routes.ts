@@ -60,6 +60,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/toolbar.fixture').then((m) => m.ToolbarFixture),
   },
   {
+    path: 'toggle-group',
+    loadComponent: () =>
+      import('./fixtures/toggle-group.fixture').then((m) => m.ToggleGroupFixture),
+  },
+  {
     path: 'hover-card',
     loadComponent: () => import('./fixtures/hover-card.fixture').then((m) => m.HoverCardFixture),
   },

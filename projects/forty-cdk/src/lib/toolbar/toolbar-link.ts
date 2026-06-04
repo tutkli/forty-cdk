@@ -17,6 +17,7 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-orientation]': 'toolbar?.orientation()',
+    '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
   },
@@ -32,9 +33,18 @@ export class ForToolbarLink {
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Tabindex per APG: once any toolbar item has been focused, the roving
+   * tracker owns the tab stop so re-entry restores the last focused item;
+   * before that, fall back to the first-enabled entry point. Disabled links
+   * are always -1; a link used outside a toolbar keeps its natural 0.
+   */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.disabled() || !this.toolbar) {
       return this.disabled() ? -1 : 0;
+    }
+    if (this.toolbar.roving.active() !== null) {
+      return this.toolbar.roving.tabindexFor(this.#host.nativeElement);
     }
     return this.toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
@@ -61,6 +71,13 @@ export class ForToolbarLink {
     if (this.disabled()) {
       event.preventDefault();
     }
+  }
+
+  protected onFocus(): void {
+    if (this.disabled() || !this.toolbar) {
+      return;
+    }
+    this.toolbar.roving.setActive(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

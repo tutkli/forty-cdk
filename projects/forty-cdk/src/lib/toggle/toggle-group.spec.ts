@@ -138,6 +138,40 @@ describe('ForToggleGroup', () => {
     });
   });
 
+  describe('roving tab stop follows focus', () => {
+    it('moves tabindex=0 to the focused item so re-entry restores it', () => {
+      const { el, flush } = renderHost(ToggleGroupHost);
+      const left = itemOf(el, 'left');
+      const center = itemOf(el, 'center');
+
+      left.focus();
+      pressKey(left, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(center);
+
+      expect(left.getAttribute('tabindex')).toBe('-1');
+      expect(center.getAttribute('tabindex')).toBe('0');
+      expect(itemOf(el, 'right').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('keeps the active tab stop after the focus leaves the group', () => {
+      const { el, flush } = renderHost(ToggleGroupHost);
+      const left = itemOf(el, 'left');
+      const right = itemOf(el, 'right');
+
+      left.focus();
+      pressKey(left, 'End');
+      flush();
+      expect(document.activeElement).toBe(right);
+
+      right.blur();
+      flush();
+
+      expect(left.getAttribute('tabindex')).toBe('-1');
+      expect(right.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
   describe('single mode (default)', () => {
     it('replaces the current selection on click', () => {
       const r = renderHost(ToggleGroupHost);
