@@ -62,6 +62,21 @@ class AriaLabelHost {
 }
 
 @Component({
+  imports: [ForDialog, ForDialogTitle],
+  template: `
+    <button (click)="open.set(true)">Open</button>
+    @if (open()) {
+      <div forDialog (close)="open.set(false)" [ariaLabel]="''">
+        <h2 forDialogTitle>Confirm</h2>
+      </div>
+    }
+  `,
+})
+class EmptyAriaLabelHost {
+  readonly open = signal(false);
+}
+
+@Component({
   imports: [ForDialog, ForDialogClose],
   template: `
     @if (a()) {
@@ -180,6 +195,17 @@ describe('ForDialog (declarative)', () => {
       const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
       expect(dialog.getAttribute('aria-label')).toBe('Quick prompt');
       expect(dialog.hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('emits no aria-label for an empty ariaLabel and keeps aria-labelledby', async () => {
+      const r = renderHost(EmptyAriaLabelHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+      const title = dialog.querySelector<HTMLElement>('[forDialogTitle]')!;
+      expect(dialog.hasAttribute('aria-label')).toBe(false);
+      expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
     });
   });
 
