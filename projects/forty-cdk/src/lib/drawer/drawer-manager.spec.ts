@@ -1,7 +1,7 @@
 import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';
@@ -61,15 +61,11 @@ function setup(extraProviders: Parameters<typeof TestBed.configureTestingModule>
 }
 
 describe('ForDrawerManager (programmatic)', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
-    document
-      .querySelectorAll(
-        '[role="dialog"], [role="alertdialog"], [forDrawer], #external-trigger',
-      )
-      .forEach((n) => n.remove());
+    document.querySelectorAll('#external-trigger').forEach((n) => n.remove());
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
     TestBed.resetTestingModule();
   });
 

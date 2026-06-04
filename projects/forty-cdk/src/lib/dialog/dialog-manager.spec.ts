@@ -1,7 +1,7 @@
 import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey } from '../../test-utils';
+import { afterEachOverlayCleanup, pressKey } from '../../test-utils';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';
@@ -58,15 +58,11 @@ function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
 }
 
 describe('ForDialogManager (programmatic)', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
-    document
-      .querySelectorAll(
-        '[role="dialog"], [role="alertdialog"], [data-for-dialog-backdrop], [forDialog], #external-trigger',
-      )
-      .forEach((n) => n.remove());
+    document.querySelectorAll('#external-trigger').forEach((n) => n.remove());
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
     TestBed.resetTestingModule();
   });
 

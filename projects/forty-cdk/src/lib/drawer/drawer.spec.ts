@@ -5,7 +5,13 @@ import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { flush, pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pressKey,
+  renderHost,
+  withReducedMotion,
+} from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
@@ -128,10 +134,7 @@ class SnapPointsHost {
 }
 
 describe('ForDrawer (declarative)', () => {
-  afterEach(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  });
+  afterEachOverlayCleanup();
 
   describe('a11y baseline', () => {
     it('sets role=dialog, aria-modal, and ties labelledby/describedby to title/description', async () => {
@@ -1277,9 +1280,7 @@ describe('ForDrawer (declarative)', () => {
 });
 
 describe('ForDrawerTrigger', () => {
-  afterEach(() => {
-    document.body.style.overflow = '';
-  });
+  afterEachOverlayCleanup();
 
   @Component({
     imports: [ForDrawer, ForDrawerTrigger],
@@ -1346,6 +1347,8 @@ describe('ForDrawerTrigger', () => {
 });
 
 describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
+  afterEachOverlayCleanup();
+
   @Component({
     imports: [ForDrawer, ForDrawerWrapper],
     template: `
@@ -1389,8 +1392,6 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
   }
 
   afterEach(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
     document.body.style.backgroundColor = '';
   });
 
