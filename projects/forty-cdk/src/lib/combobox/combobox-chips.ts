@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, input } from '@angular/core';
 
 import { injectComboboxContext } from './combobox-context';
 
@@ -38,7 +38,11 @@ import { injectComboboxContext } from './combobox-context';
 export class ForComboboxChips {
   protected readonly ctx = injectComboboxContext('ForComboboxChips');
 
-  protected ariaLabel(): string {
-    return 'Selected items';
-  }
+  /**
+   * Accessible name for the chip cluster, exposed as `role="group"`'s
+   * `aria-label` so screen readers announce the selected chips as a single
+   * unit. Defaults to `'Selected items'`; set `[ariaLabel]` to localize or
+   * override it.
+   */
+  readonly ariaLabel = input<string | null>('Selected items');
 }
