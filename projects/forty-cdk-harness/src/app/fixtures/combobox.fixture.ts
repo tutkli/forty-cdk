@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ForCombobox,
+  type ForComboboxAutocomplete,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxOption,
 } from 'forty-cdk';
+
+import { queryFlag } from './_query-flag';
 
 const ALL_FRUITS = ['apple', 'apricot', 'banana', 'blueberry', 'cherry', 'date'] as const;
 type Fruit = (typeof ALL_FRUITS)[number];
@@ -15,7 +18,14 @@ type Fruit = (typeof ALL_FRUITS)[number];
   imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" ariaLabel="Fruit search">
+    <div
+      forCombobox
+      [(query)]="query"
+      [(value)]="value"
+      [(open)]="open"
+      [autocompleteMode]="autocompleteMode"
+      ariaLabel="Fruit search"
+    >
       <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
       @if (open()) {
         <div forComboboxContent data-testid="content">
@@ -38,7 +48,14 @@ type Fruit = (typeof ALL_FRUITS)[number];
 export class ComboboxFixture {
   protected readonly query = signal('');
   protected readonly value = signal<readonly Fruit[]>([]);
-  protected readonly open = signal(false);
+  // `?open=1` starts the listbox open so options render and the inline-autocomplete
+  // snapshot is populated before a spec drives input (used by the IME case).
+  protected readonly open = signal(queryFlag('open'));
+  // `?inline=1` switches on inline autocomplete (`both` keeps the listbox too)
+  // so the IME spec can assert completion is suppressed while composing.
+  protected readonly autocompleteMode: ForComboboxAutocomplete = queryFlag('inline')
+    ? 'both'
+    : 'list';
 
   protected readonly filtered = computed(() => {
     const q = this.query().toLowerCase();
