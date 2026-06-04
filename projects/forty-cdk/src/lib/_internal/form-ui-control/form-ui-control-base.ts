@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
@@ -10,7 +11,6 @@ import {
 import type { ValidationError } from '@angular/forms/signals';
 
 import { injectFieldWiring } from '../field/field-wiring';
-import { injectFormControlReflection } from '../form-control-reflection/form-control-reflection';
 
 /**
  * Abstract base for primitives that implement `FormValueControl<T>` or
@@ -24,10 +24,12 @@ import { injectFormControlReflection } from '../form-control-reflection/form-con
  * `FormCheckboxControl` — and any control-shape-specific members
  * (`min` / `max` / `pattern`, `multiple`, `orientation`, etc.).
  *
- * The base constructor wires `injectFormControlReflection({...})` so each
- * subclass gets `data-touched` / `data-dirty` / `data-pending` /
- * `data-invalid` reflection on its host element automatically — subclasses
- * don't need to opt in.
+ * The base constructor reflects the four form-state booleans (`touched` /
+ * `dirty` / `pending` / `invalid`) as boolean `data-*` attributes on each
+ * subclass's host element automatically — subclasses don't need to opt in.
+ * Imperative `toggleAttribute` writes (present with empty string when truthy,
+ * absent otherwise) keep the subclass's declarative `host: { ... }` block free
+ * of these attributes; no conflict because they aren't bound elsewhere.
  *
  * Implemented as an `@Directive()`-decorated abstract class because Angular
  * recognises signal inputs only when `input()` / `model()` calls appear
@@ -97,11 +99,11 @@ export abstract class FormUiControlBase {
   }
 
   constructor() {
-    injectFormControlReflection({
-      touched: this.touched,
-      dirty: this.dirty,
-      pending: this.pending,
-      invalid: this.invalid,
+    effect(() => {
+      this.#hostEl.toggleAttribute('data-touched', this.touched());
+      this.#hostEl.toggleAttribute('data-dirty', this.dirty());
+      this.#hostEl.toggleAttribute('data-pending', this.pending());
+      this.#hostEl.toggleAttribute('data-invalid', this.invalid());
     });
     injectFieldWiring({
       invalid: this.invalid,

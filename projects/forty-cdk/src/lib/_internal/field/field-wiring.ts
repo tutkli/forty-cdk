@@ -133,8 +133,9 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  * reactively and migrates the attributes (clearing the previously-targeted
  * element) once it appears.
  *
- * Imperative DOM writes (mirroring `injectFormControlReflection`) so the
- * caller's declarative `host: { ... }` block stays free of these attributes.
+ * Imperative DOM writes (mirroring `FormUiControlBase`'s `data-*` reflection)
+ * so the caller's declarative `host: { ... }` block stays free of these
+ * attributes.
  *
  * @param handle The control's state signals (all optional). `host` is filled
  *   in from the calling directive's `ElementRef`. Pass `labelledElement` to
