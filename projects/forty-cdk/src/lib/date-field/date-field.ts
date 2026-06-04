@@ -47,8 +47,12 @@ interface DateTimeParts {
   second: number | null;
 }
 
-/** Year used to resolve day ranges (Feb length) while the year segment is empty. */
-const RESOLVER_YEAR = 2000;
+/**
+ * Year used to resolve day ranges (Feb length) while the year segment is empty.
+ * Deliberately a common (non-leap) year so an empty-year February reports
+ * `aria-valuemax="28"` rather than briefly jumping to 29.
+ */
+const RESOLVER_YEAR = 2001;
 
 /**
  * Headless, segmented, spin-editable date input — the keyboard-first
