@@ -8,6 +8,7 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
+import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_TOOLBAR_CONTEXT,
@@ -82,6 +83,16 @@ export class ForToolbar implements ForToolbarContext {
    */
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * Roving-tabindex tracker shared by every toolbar item (buttons, links, and
+   * nested toggle-group items). Items promote themselves to active on
+   * `(focus)` and read `active()` in their tabindex computed, so re-entry
+   * (Shift+Tab back into the toolbar) restores the last focused item —
+   * matching Tabs / Tree. Before any focus, `active()` is `null` and the
+   * tabindex falls back to the first-enabled entry point.
+   */
+  readonly roving = new RovingTabindex();
 
   readonly #items = new Collection<ForToolbarItemHandle>();
 

@@ -134,7 +134,7 @@ export class DemoAlignment {
 - **ArrowLeft / ArrowRight** moves focus in horizontal mode (or vertical, swapped via `orientation`). Disabled items are skipped.
 - **ArrowUp / ArrowDown** moves focus in vertical mode.
 - **Home / End** jump to the first / last enabled item.
-- **Tab** enters and exits the group at the entry-point item: the first selected item, or the first enabled item when no value is selected.
+- **Tab** enters and exits the group at the entry-point item. Before any interaction that is the first selected item, or the first enabled item when no value is selected; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the group restores it.
 
 Arrow keys move focus only — selection requires an explicit click or Space / Enter. There is no selection-on-focus, unlike `[forRadioGroup]`.
 
@@ -142,7 +142,7 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 
 - **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed` — the data attribute mirrors the logical "is this option active" state, not the ARIA term.
 - **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Use `[forRadioGroup]` if you need to enforce one-of-N.
-- **Roving tabindex** is computed from the group's value: with at least one selection the first selected item is the entry point; otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
+- **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value — with at least one selection the first selected item, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
 
 ## Signal Forms usage
 

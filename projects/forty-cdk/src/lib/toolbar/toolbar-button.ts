@@ -19,6 +19,7 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'toolbar?.orientation()',
+    '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -33,9 +34,18 @@ export class ForToolbarButton {
     () => this.disabled() || (this.toolbar?.disabled() ?? false),
   );
 
+  /**
+   * Tabindex per APG: once any toolbar item has been focused, the roving
+   * tracker owns the tab stop so re-entry restores the last focused item;
+   * before that, fall back to the first-enabled entry point. Disabled items
+   * are always -1; a button used outside a toolbar keeps its natural 0.
+   */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled() || !this.toolbar) {
       return this.effectiveDisabled() ? -1 : 0;
+    }
+    if (this.toolbar.roving.active() !== null) {
+      return this.toolbar.roving.tabindexFor(this.#host.nativeElement);
     }
     return this.toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
@@ -56,6 +66,13 @@ export class ForToolbarButton {
       (h) => toolbar.registerItem(h),
       (h) => toolbar.unregisterItem(h),
     );
+  }
+
+  protected onFocus(): void {
+    if (this.effectiveDisabled() || !this.toolbar) {
+      return;
+    }
+    this.toolbar.roving.setActive(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

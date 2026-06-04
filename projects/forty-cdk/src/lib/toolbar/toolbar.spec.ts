@@ -158,6 +158,61 @@ describe('ForToolbar', () => {
     });
   });
 
+  describe('roving tab stop follows focus', () => {
+    it('moves tabindex=0 to the focused item so re-entry restores it', () => {
+      const { queryAll, flush } = renderHost(ToolbarHost);
+      flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+      const link = document.querySelector<HTMLAnchorElement>('a')!;
+
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(buttons[1]);
+
+      pressKey(buttons[1]!, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(link);
+
+      expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
+      expect(buttons[1]!.getAttribute('tabindex')).toBe('-1');
+      expect(link.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('keeps the active tab stop after focus leaves the toolbar', () => {
+      const { queryAll, flush } = renderHost(ToolbarHost);
+      flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(buttons[1]);
+
+      buttons[1]!.blur();
+      flush();
+
+      expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
+      expect(buttons[1]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('follows focus across nested toggle-group items sharing the toolbar roving', () => {
+      const { queryAll, flush } = renderHost(ToolbarWithGroupHost);
+      flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+      // [Undo, B, I, Redo]
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'ArrowRight');
+      flush();
+      expect(document.activeElement).toBe(buttons[1]);
+
+      expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
+      expect(buttons[1]!.getAttribute('tabindex')).toBe('0');
+      expect(buttons[2]!.getAttribute('tabindex')).toBe('-1');
+      expect(buttons[3]!.getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
   describe('toggle-group composition', () => {
     it('toggle items participate in the toolbar roving', () => {
       const { queryAll, flush } = renderHost(ToolbarWithGroupHost);

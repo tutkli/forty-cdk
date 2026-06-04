@@ -36,6 +36,7 @@ import { injectToggleGroupContext } from './toggle-group-context';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
+    '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -57,15 +58,20 @@ export class ForToggleGroupItem {
   );
 
   /**
-   * Tabindex per APG: 0 if this item is the current entry point (the
-   * roving host's first-focusable when nested inside one, otherwise the
-   * group's), -1 otherwise. Disabled items are always -1.
+   * Tabindex per APG: once any item has been focused, the roving tracker owns
+   * the tab stop so re-entry restores the last focused item; before that, fall
+   * back to the entry point (first selected / first enabled). The roving host
+   * is the toolbar when nested inside one, otherwise the group. Disabled items
+   * are always -1.
    */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
     const owner = this.#rovingHost ?? this.group;
+    if (owner.roving.active() !== null) {
+      return owner.roving.tabindexFor(this.#host.nativeElement);
+    }
     return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
@@ -100,6 +106,14 @@ export class ForToggleGroupItem {
       return;
     }
     this.group.toggle(this.value());
+  }
+
+  protected onFocus(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    const owner = this.#rovingHost ?? this.group;
+    owner.roving.setActive(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

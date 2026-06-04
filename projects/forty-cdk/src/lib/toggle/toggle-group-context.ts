@@ -5,6 +5,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 
 /**
  * Per-item handle stored in the group's `Collection`. The directive
@@ -28,6 +29,13 @@ export interface ForToggleGroupContext {
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;
+
+  /**
+   * Roving-tabindex tracker. Items call `setActive` on `(focus)` and prefer
+   * `active()` in their tabindex computed so the tab stop follows the last
+   * focused item (APG re-entry), matching Tabs / Tree.
+   */
+  readonly roving: RovingTabindex;
 
   isSelected(value: string): boolean;
   toggle(value: string): void;

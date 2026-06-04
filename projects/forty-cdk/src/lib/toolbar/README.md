@@ -69,7 +69,7 @@ export class DemoToolbar {
 
 ## Accessibility notes
 
-- **Single Tab stop.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Arrow keys move focus inside, Home / End jump to the first / last enabled item.
+- **Single Tab stop that follows focus.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Before any interaction the entry point is the first enabled item; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the toolbar restores it (matching APG and the Tabs / Tree primitives). Arrow keys move focus inside, Home / End jump to the first / last enabled item.
 - **Always label the toolbar.** Pass `aria-label` (or `aria-labelledby`) so screen-reader users know what the toolbar acts on. Not optional — APG requires it.
 - **Disabled items stay focusable on `<a forToolbarLink>`.** Native `<a>` has no `disabled` attribute; we expose `aria-disabled="true"` and suppress click. Removing the link from the focus order would deviate from APG; users can still hear "disabled".
 - **Toggle groups don't change roles.** Inside a toolbar, `[forToggleGroup]` keeps `role="group"` (semantically a related set of buttons). The toolbar role lives only on the outer container.

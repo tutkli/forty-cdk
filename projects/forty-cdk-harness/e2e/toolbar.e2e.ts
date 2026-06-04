@@ -112,4 +112,38 @@ test.describe('Toolbar', () => {
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });
+
+  test('Shift+Tab re-entry restores the last focused item after arrowing', async ({ page }) => {
+    await gotoFixture(page, 'toolbar');
+
+    // Enter the toolbar, arrow to the second focusable item, then Tab out.
+    await el(page, 'before').focus();
+    await rovingFirst(page, 'btn-1');
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'toggle'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+
+    // Shift+Tab back in must land on the last focused item, not btn-1.
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'toggle'));
+  });
+
+  test('re-entry restores a nested toggle-group item that last held focus', async ({ page }) => {
+    await gotoFixture(page, 'toolbar');
+
+    // Walk into a nested toggle-group item (btn-1 → toggle → tg-bold).
+    await el(page, 'btn-1').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'toggle'));
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'tg-bold'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+
+    // Re-entry restores the nested toggle item, proving the toggle item
+    // shares the toolbar's roving tracker.
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'tg-bold'));
+  });
 });

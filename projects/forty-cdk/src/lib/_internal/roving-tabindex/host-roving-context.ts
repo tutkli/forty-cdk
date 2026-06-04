@@ -5,6 +5,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../keyboard-navigation/keyboard-navigation';
+import type { RovingTabindex } from './roving-tabindex';
 
 /**
  * Per-item handle stored in a host-roving container's `Collection`. The
@@ -57,9 +58,19 @@ export interface HostRovingContext {
   readonly disabled: Signal<boolean>;
 
   /**
+   * Roving-tabindex tracker owned by the host. Embedded items call
+   * `setActive` on `(focus)` and prefer `active()` in their tabindex
+   * computed so the host's single tab stop follows the last focused item
+   * (APG re-entry), exactly like Tabs / Tree. Before any focus `active()`
+   * is `null` and the item falls back to {@link isFirstFocusableItem}.
+   */
+  readonly roving: RovingTabindex;
+
+  /**
    * Predicate for the per-item `tabindex` host binding. Returns `true`
    * for the single item that should currently carry `tabindex=0`
    * (the host's "entry point"); every other registered item is `-1`.
+   * Only consulted before the roving tracker has an active item.
    */
   isFirstFocusableItem(el: HTMLElement): boolean;
 
