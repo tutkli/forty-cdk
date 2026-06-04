@@ -1,10 +1,10 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  afterNextRender,
   computed,
   DOCUMENT,
   DestroyRef,
   ElementRef,
+  Injectable,
   inject,
   PLATFORM_ID,
   signal,
@@ -25,6 +25,60 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
 }
 
 /**
+ * Owns the single, application-wide `MutationObserver` that watches `dir`
+ * attribute changes across the whole document, and exposes them as a
+ * monotonically increasing `revision` tick.
+ *
+ * One observer covers every primitive: `injectTextDirection` derives each
+ * host's ambient direction from a `computed` keyed on `revision`, so N
+ * primitives reflecting `[attr.dir]` on first render coalesce into a single
+ * observer callback (microtask-batched) → one `revision` bump → N ambient
+ * recomputes — O(N), not the O(N²) cascade of N per-instance observers each
+ * retriggering on every other's reflection.
+ *
+ * SSR-safe: on the server no observer is created, the DOM is never touched,
+ * and `revision` stays `0`.
+ *
+ * The observer callback writing `#revision` is the single, intentional
+ * "external imperative source → signal" exception, isolated here.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ */
+@Injectable({ providedIn: 'root' })
+class AmbientDirection {
+  readonly #doc = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #destroyRef = inject(DestroyRef);
+
+  readonly #revision = signal(0);
+
+  /**
+   * Bumps whenever any `dir` attribute changes anywhere in the document.
+   * Stays `0` on the server.
+   */
+  readonly revision = this.#revision.asReadonly();
+
+  constructor() {
+    if (!this.#isBrowser) {
+      return;
+    }
+
+    const win = this.#doc.defaultView;
+    if (win && typeof win.MutationObserver === 'function') {
+      const observer = new win.MutationObserver(() =>
+        this.#revision.update((v) => v + 1),
+      );
+      observer.observe(this.#doc.documentElement, {
+        attributes: true,
+        attributeFilter: ['dir'],
+        subtree: true,
+      });
+      this.#destroyRef.onDestroy(() => observer.disconnect());
+    }
+  }
+}
+
+/**
  * Resolves the effective writing direction for the host element, reactive to
  * runtime changes.
  *
@@ -39,14 +93,17 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  * relying on `direction` in a stylesheet.
  *
  * SSR-safe: with no browser platform the ambient value is `'ltr'` and the DOM
- * is never touched. Reactive: a `MutationObserver` watches `dir` attribute
- * changes on `<html>` and on the host's ancestor chain, so a runtime flip
- * (e.g. a locale switch toggling `<html dir>`) updates the returned signal.
- * The observer is disconnected on the calling injection context's
- * `DestroyRef.onDestroy`.
+ * is never touched. Reactive: a single application-wide `MutationObserver`
+ * (owned by the root `AmbientDirection` service) watches `dir` attribute
+ * changes across the whole document and publishes them as a shared `revision`
+ * tick; the ambient is a `computed` keyed on that tick that reads the host's
+ * ancestor chain synchronously. A runtime flip (e.g. a locale switch toggling
+ * `<html dir>`, or an ancestor wrapper toggling its `dir`) bumps the tick and
+ * recomputes the returned signal — regardless of how many primitives are
+ * mounted, there is exactly one observer.
  *
  * Must be called from an injection context (it injects `ElementRef`,
- * `DOCUMENT`, `PLATFORM_ID`, and `DestroyRef`).
+ * `DOCUMENT`, `PLATFORM_ID`, and `AmbientDirection`).
  *
  * Internal — not re-exported from `public-api.ts`.
  */
@@ -56,49 +113,16 @@ export function injectTextDirection(
   const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   const doc = inject(DOCUMENT);
+  const direction = inject(AmbientDirection);
 
-  const ambient = signal<WritingDirection>('ltr');
-
-  if (isBrowser) {
-    const root = doc.documentElement;
-
-    const resolveAmbient = (): void => {
-      // Start the search at the parent: the host reflects its own resolved
-      // `dir` (see the `[attr.dir]` binding on every primitive root), so
-      // `host.closest('[dir]')` would match the host itself and feed the
-      // resolved value back as the ambient value. Walking from the parent
-      // reads the genuine inherited direction.
-      const ancestor = host.parentElement?.closest('[dir]');
-      ambient.set(normalizeDir(ancestor?.getAttribute('dir') ?? root?.dir));
-    };
-
-    // Resolve once synchronously so a `dir` already present in the DOM at
-    // construction (the canonical `<html dir="rtl">` setup) is reflected on
-    // the very first render without a flash of the wrong direction.
-    resolveAmbient();
-
-    // Re-resolve after the first render: when the ancestor `dir` is itself an
-    // Angular binding (`<div [attr.dir]="…">`), it is applied during change
-    // detection *after* this directive constructs, so the synchronous read
-    // above misses it. The post-render pass picks it up.
-    afterNextRender(() => resolveAmbient());
-
-    const win = doc.defaultView;
-    if (win && typeof win.MutationObserver === 'function') {
-      // Watching the whole document subtree for `dir` changes covers both the
-      // `<html dir>` flip and any ancestor wrapper toggling its `dir`, without
-      // having to re-walk the ancestor chain on every mutation. The callback
-      // writing `ambient` is the documented "external imperative source →
-      // signal" case — no derived state is computed inside it.
-      const observer = new win.MutationObserver(() => resolveAmbient());
-      observer.observe(root, {
-        attributes: true,
-        attributeFilter: ['dir'],
-        subtree: true,
-      });
-      inject(DestroyRef).onDestroy(() => observer.disconnect());
+  const ambient = computed<WritingDirection>(() => {
+    direction.revision();
+    if (!isBrowser) {
+      return 'ltr';
     }
-  }
+    const ancestor = host.parentElement?.closest('[dir]');
+    return normalizeDir(ancestor?.getAttribute('dir') ?? doc.documentElement?.dir);
+  });
 
   return computed(() => explicitDir() ?? ambient());
 }

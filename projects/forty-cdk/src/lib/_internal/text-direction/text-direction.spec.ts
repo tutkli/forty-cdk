@@ -36,11 +36,33 @@ class Host {
   readonly ancestorDir = signal<string | null>(null);
 }
 
+@Component({
+  imports: [DirProbe],
+  template: `
+    <div [attr.dir]="ancestorDir()">
+      @for (i of probes; track i) {
+        <span probeDir></span>
+      }
+    </div>
+  `,
+})
+class MultiHost {
+  readonly probes = [0, 1, 2, 3, 4];
+  readonly ancestorDir = signal<string | null>(null);
+}
+
 function render() {
   const fixture = TestBed.createComponent(Host);
   const probe = fixture.debugElement.children[0].children[0].injector.get(DirProbe);
   const host = fixture.nativeElement.querySelector('[probeDir]') as HTMLElement;
   return { fixture, probe, host };
+}
+
+function renderMulti() {
+  const fixture = TestBed.createComponent(MultiHost);
+  const probeHosts = (): HTMLElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll('[probeDir]')) as HTMLElement[];
+  return { fixture, probeHosts };
 }
 
 describe('injectTextDirection', () => {
@@ -109,6 +131,38 @@ describe('injectTextDirection', () => {
       document.documentElement.setAttribute('dir', 'rtl');
       await flush(fixture);
       expect(host.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('creates at most one document-level dir observer across many primitives', async () => {
+      const observeSpy = vi.spyOn(globalThis.MutationObserver.prototype, 'observe');
+
+      const { fixture, probeHosts } = renderMulti();
+      await flush(fixture);
+
+      const hosts = probeHosts();
+      expect(hosts).toHaveLength(5);
+      for (const host of hosts) {
+        expect(host.getAttribute('dir')).toBe('ltr');
+      }
+
+      const documentObserveCalls = observeSpy.mock.calls.filter(
+        ([target]) => target === document.documentElement,
+      );
+      expect(documentObserveCalls).toHaveLength(1);
+    });
+
+    it('updates every probe on a single <html dir> flip', async () => {
+      const { fixture, probeHosts } = renderMulti();
+      await flush(fixture);
+      for (const host of probeHosts()) {
+        expect(host.getAttribute('dir')).toBe('ltr');
+      }
+
+      document.documentElement.setAttribute('dir', 'rtl');
+      await flush(fixture);
+      for (const host of probeHosts()) {
+        expect(host.getAttribute('dir')).toBe('rtl');
+      }
     });
   });
 
