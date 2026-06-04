@@ -1,5 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
@@ -42,6 +43,18 @@ export class ForAccordionTrigger {
     }
     return this.item.expanded() && !this.parent.canCollapse(this.item.value());
   });
+
+  constructor() {
+    const handle = {
+      host: this.#host.nativeElement,
+      disabled: this.item.disabled,
+    };
+    registerHandle(
+      handle,
+      (h) => this.parent.registerTrigger(h),
+      (h) => this.parent.unregisterTrigger(h),
+    );
+  }
 
   protected onKeyDown(event: KeyboardEvent): void {
     const action = resolveListNavigation(event, {

@@ -1,19 +1,17 @@
-import {
-  booleanAttribute,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  model,
-} from '@angular/core';
+import { booleanAttribute, Directive, input, model } from '@angular/core';
 
+import { Collection } from '../_internal/collection/collection';
 import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { FOR_ACCORDION_CONTEXT, type ForAccordionContext } from './accordion-context';
+import {
+  FOR_ACCORDION_CONTEXT,
+  type ForAccordionContext,
+  type ForAccordionTriggerHandle,
+} from './accordion-context';
 
 /**
  * Root of the Accordion primitive. Holds the open value(s) and orchestrates
@@ -47,7 +45,7 @@ import { FOR_ACCORDION_CONTEXT, type ForAccordionContext } from './accordion-con
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
 })
 export class ForAccordion implements ForAccordionContext {
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #triggers = new Collection<ForAccordionTriggerHandle>();
 
   /** When true, multiple items can be expanded simultaneously. */
   readonly multiple = input(false, { transform: booleanAttribute });
@@ -113,22 +111,28 @@ export class ForAccordion implements ForAccordionContext {
   }
 
   focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void {
-    const triggers = Array.from(
-      this.#host.nativeElement.querySelectorAll<HTMLElement>('[forAccordionTrigger]'),
-    );
+    const triggers = this.#triggers.items();
     if (triggers.length === 0) {
       return;
     }
-    const currentIndex = triggers.indexOf(currentTrigger);
+    const currentIndex = triggers.findIndex((t) => t.host === currentTrigger);
     if (currentIndex === -1 && action !== 'first' && action !== 'last') {
       return;
     }
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
       loop: true,
-      isDisabled: (i) => triggers[i]?.hasAttribute('disabled') ?? false,
+      isDisabled: (i) => triggers[i]?.disabled() ?? false,
     });
     if (next !== null) {
-      triggers[next]?.focus();
+      triggers[next]?.host.focus();
     }
+  }
+
+  registerTrigger(handle: ForAccordionTriggerHandle): void {
+    this.#triggers.register(handle);
+  }
+
+  unregisterTrigger(handle: ForAccordionTriggerHandle): void {
+    this.#triggers.unregister(handle);
   }
 }
