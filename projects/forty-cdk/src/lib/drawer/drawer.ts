@@ -107,7 +107,7 @@ function dragDirections(side: ForDrawerSide, hasSnapPoints: boolean): readonly S
   host: {
     '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
     '[attr.aria-modal]': 'modal() ? "true" : null',
-    '[attr.aria-label]': 'ariaLabel()',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-side]': 'side()',

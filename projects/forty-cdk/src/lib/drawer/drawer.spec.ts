@@ -133,6 +133,20 @@ class SnapPointsHost {
   readonly changes: Array<ForDrawerSnapPoint | null> = [];
 }
 
+@Component({
+  imports: [ForDrawer, ForDrawerTitle],
+  template: `
+    @if (open()) {
+      <div forDrawer (close)="open.set(false)" [ariaLabel]="''">
+        <h2 forDrawerTitle>Drawer title</h2>
+      </div>
+    }
+  `,
+})
+class EmptyAriaLabelHost {
+  readonly open = signal(false);
+}
+
 describe('ForDrawer (declarative)', () => {
   afterEachOverlayCleanup();
 
@@ -160,6 +174,17 @@ describe('ForDrawer (declarative)', () => {
 
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
       expect(drawer.getAttribute('role')).toBe('alertdialog');
+    });
+
+    it('emits no aria-label for an empty ariaLabel and keeps aria-labelledby', async () => {
+      const r = renderHost(EmptyAriaLabelHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      const title = drawer.querySelector<HTMLElement>('[forDrawerTitle]')!;
+      expect(drawer.hasAttribute('aria-label')).toBe(false);
+      expect(drawer.getAttribute('aria-labelledby')).toBe(title.id);
     });
 
     it('marks the handle as aria-hidden', async () => {
