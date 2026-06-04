@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   model,
   numberAttribute,
   output,
@@ -286,7 +287,10 @@ export class ForCombobox<T = string>
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
 
-  readonly #activeId = signal<string | null>(null);
+  readonly #activeId = linkedSignal<string, string | null>({
+    source: () => this.query(),
+    computation: () => null,
+  });
   readonly activeId = this.#activeId.asReadonly();
 
   readonly #initialFocus = signal<'first' | 'last'>('first');
@@ -582,10 +586,6 @@ export class ForCombobox<T = string>
     if (this.openOnQuery() && hasListbox && query.length > 0 && !this.open()) {
       this.openMenu();
     }
-    // After the query changes the previously-active option may no longer
-    // exist (the consumer filtered it out). Reset; the auto-highlight
-    // afterEveryRender pass seeds a sensible default after the next render.
-    this.#activeId.set(null);
   }
 
   setActiveId(id: string | null): void {
