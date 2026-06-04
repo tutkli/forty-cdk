@@ -1231,6 +1231,49 @@ describe('ForSelect', () => {
       expect(value.textContent).toBe('Tokyo');
     });
 
+    it('renders the option label for a pre-set object value before the listbox is ever opened', async () => {
+      // Cold cache: the listbox is never opened, so the `afterEveryRender`
+      // snapshot that warms `#cachedOptions` never runs. With the options
+      // mounted, `selectedLabels` must resolve the label from the live option
+      // registry instead of falling back to the serialized id (`toId` → "2").
+      @Component({
+        imports: [...BASE_IMPORTS, ForSelectValue],
+        template: `
+          <div
+            forSelect
+            [(value)]="value"
+            [isItemEqualToValue]="byId"
+            [itemToFormValue]="toId"
+          >
+            <button forSelectTrigger>
+              <span forSelectValue placeholder="Pick a city"></span>
+            </button>
+            <div forSelectContent>
+              <button data-test-id="paris" forSelectOption [value]="paris">Paris</button>
+              <button data-test-id="berlin" forSelectOption [value]="berlin">Berlin</button>
+              <button data-test-id="tokyo" forSelectOption [value]="tokyo">Tokyo</button>
+            </div>
+          </div>
+        `,
+      })
+      class ColdCacheHost {
+        readonly paris = PARIS;
+        readonly berlin = BERLIN;
+        readonly tokyo = TOKYO;
+        readonly value = signal<readonly City[]>([BERLIN]);
+        readonly byId = (a: City, b: City) => a.id === b.id;
+        readonly toId = (c: City) => String(c.id);
+      }
+
+      const r = renderHost(ColdCacheHost);
+      await flush(r.fixture);
+
+      // The listbox was never opened — the root still reflects the closed state.
+      expect(r.query<HTMLElement>('[forSelect]')!.getAttribute('data-state')).toBe('closed');
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Berlin');
+    });
+
     it('toggles object values in/out by id in multi mode', async () => {
       const r = renderHost(ObjectHost);
       r.instance.multiple.set(true);
