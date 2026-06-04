@@ -145,7 +145,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     computation: (_current, prev) => prev?.source ?? '',
   });
 
-  #pendingTimer: ReturnType<typeof setTimeout> | null = null;
+  #openTimer: ReturnType<typeof setTimeout> | null = null;
+  #closeTimer: ReturnType<typeof setTimeout> | null = null;
   #skipDelayTimer: ReturnType<typeof setTimeout> | null = null;
   #skipDelayActive = false;
 
@@ -198,7 +199,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
     if (this.disabled() || value === '') return;
-    this.#cancelPending();
+    this.#clearCloseTimer();
+    this.#clearOpenTimer();
     if (this.value() === value) return;
     if (reason === 'click' || reason === 'keyboard') {
       this.open(value);
@@ -209,26 +211,29 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       this.open(value);
       return;
     }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
+    this.#openTimer = setTimeout(() => {
+      this.#openTimer = null;
       this.open(value);
     }, delay);
   }
 
   scheduleClose(reason: NavigationMenuScheduleReason): void {
-    this.#cancelPending();
-    if (this.value() === '') return;
     if (reason === 'click' || reason === 'keyboard') {
+      this.#clearOpenTimer();
+      this.#clearCloseTimer();
       this.close();
       return;
     }
+    if (this.#openTimer !== null) return;
+    this.#clearCloseTimer();
+    if (this.value() === '') return;
     const delay = Math.max(0, this.closeDelay());
     if (delay === 0) {
       this.close();
       return;
     }
-    this.#pendingTimer = setTimeout(() => {
-      this.#pendingTimer = null;
+    this.#closeTimer = setTimeout(() => {
+      this.#closeTimer = null;
       this.close();
     }, delay);
   }
@@ -401,9 +406,21 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   #cancelPending(): void {
-    if (this.#pendingTimer !== null) {
-      clearTimeout(this.#pendingTimer);
-      this.#pendingTimer = null;
+    this.#clearOpenTimer();
+    this.#clearCloseTimer();
+  }
+
+  #clearOpenTimer(): void {
+    if (this.#openTimer !== null) {
+      clearTimeout(this.#openTimer);
+      this.#openTimer = null;
+    }
+  }
+
+  #clearCloseTimer(): void {
+    if (this.#closeTimer !== null) {
+      clearTimeout(this.#closeTimer);
+      this.#closeTimer = null;
     }
   }
 
