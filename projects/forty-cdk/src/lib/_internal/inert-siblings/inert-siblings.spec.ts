@@ -218,6 +218,50 @@ describe('InertSiblingsStack', () => {
     handle.deactivate();
   });
 
+  it('inerts a sibling appended to body while an owner is active', async () => {
+    const sibling1 = appendChild();
+    const sibling2 = appendChild();
+    const owner = appendChild();
+    track(sibling1, sibling2, owner);
+
+    const handle = stack.activate(owner);
+
+    expect(sibling1.hasAttribute('inert')).toBe(true);
+    expect(sibling2.hasAttribute('inert')).toBe(true);
+
+    const lateSibling = appendChild();
+    track(lateSibling);
+
+    await Promise.resolve();
+
+    expect(lateSibling.hasAttribute('inert')).toBe(true);
+    expect(lateSibling.getAttribute('aria-hidden')).toBe('true');
+    expect(owner.hasAttribute('inert')).toBe(false);
+
+    handle.deactivate();
+
+    expect(sibling1.hasAttribute('inert')).toBe(false);
+    expect(sibling1.hasAttribute('aria-hidden')).toBe(false);
+    expect(lateSibling.hasAttribute('inert')).toBe(false);
+    expect(lateSibling.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('stops inerting late siblings once the stack empties', async () => {
+    const owner = appendChild();
+    track(owner);
+
+    const handle = stack.activate(owner);
+    handle.deactivate();
+
+    const lateSibling = appendChild();
+    track(lateSibling);
+
+    await Promise.resolve();
+
+    expect(lateSibling.hasAttribute('inert')).toBe(false);
+    expect(lateSibling.hasAttribute('aria-hidden')).toBe(false);
+  });
+
   it('non-portaled owner: protects its body-level ancestor instead of itself', () => {
     const appShell = appendChild();
     const ownerInPlace = document.createElement('div');
