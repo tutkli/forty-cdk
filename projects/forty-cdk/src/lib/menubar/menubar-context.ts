@@ -6,6 +6,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { MenuSiblingNavigator } from '../menu/menu-context';
 
 /**
  * Per-trigger configuration that the menubar root reads when its menu is the
@@ -38,7 +39,7 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
  * (skip-delay) model — and so the multiplexed `ForMenuContext` can route
  * `[forMenuContent]` to whichever trigger is currently active.
  */
-export interface ForMenubarContext {
+export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
    * Two-way bindable. The value of the open trigger, or `''` for none.
    * The `model()` change emitter (`(valueChange)`) fires only on internal
@@ -89,14 +90,6 @@ export interface ForMenubarContext {
 
   /** Close the currently-open menu, if any. Returns focus to the trigger. */
   closeOpen(): void;
-
-  /**
-   * Switch to the previous/next sibling menu (skipping disabled triggers,
-   * wrapping when `loop`), open it, and focus its first item. Called from
-   * inside an open menu's content when ArrowLeft/Right fires with no
-   * submenu open.
-   */
-  switchToSibling(direction: 'next' | 'prev'): void;
 
   /**
    * Hover-after-open. When some menu is open and pointer enters a sibling
