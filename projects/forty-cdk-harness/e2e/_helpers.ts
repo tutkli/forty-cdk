@@ -327,3 +327,75 @@ export async function rovingFirst(
 export function expectFocused(locator: Locator): Promise<void> {
   return expect(locator).toBeFocused();
 }
+
+/**
+ * Drive an IME composition sequence on `input` entirely from script. Playwright
+ * has no real IME engine, so these mirror what the browser emits during a
+ * `compositionstart → insertCompositionText → compositionend` cycle — the path
+ * CJK input methods and many Android soft keyboards take — to exercise a
+ * directive's composition guard against real browser focus / caret semantics.
+ * jsdom emits no composition events at all, so this can only be covered here.
+ *
+ * The three phases are separate so a spec can assert the mid-composition state
+ * (no value rewrite, no inline completion) before committing on
+ * `compositionend`. `input` must already be focused: both `ForOtpInput` and
+ * `ForComboboxInput` skip their unfocused value-sync effect only while focused,
+ * so an unfocused input would have the composing text clobbered back to the
+ * model before the assertions run.
+ */
+export async function imeStart(input: Locator): Promise<void> {
+  await input.evaluate((el) =>
+    el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })),
+  );
+}
+
+/**
+ * Mid-composition update: point the input's visible value + caret at the
+ * composing text and fire an `input` event carrying `isComposing: true` and
+ * `inputType: 'insertCompositionText'` (what Android soft keyboards send), with
+ * no real keystroke since there is no IME engine to produce one.
+ */
+export async function imeUpdate(
+  input: Locator,
+  value: string,
+  caret = value.length,
+): Promise<void> {
+  await input.evaluate(
+    (el, { value, caret }) => {
+      const i = el as HTMLInputElement;
+      i.value = value;
+      i.setSelectionRange(caret, caret);
+      i.dispatchEvent(
+        new InputEvent('input', {
+          bubbles: true,
+          isComposing: true,
+          inputType: 'insertCompositionText',
+          data: value,
+        }),
+      );
+    },
+    { value, caret },
+  );
+}
+
+/** Commit the composition: fire `compositionend` carrying the final `data`. */
+export async function imeEnd(input: Locator, data: string): Promise<void> {
+  await input.evaluate(
+    (el, data) =>
+      el.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data })),
+    data,
+  );
+}
+
+/** Read an input's current `.value` regardless of visibility. */
+export function inputValue(input: Locator): Promise<string> {
+  return input.evaluate((el) => (el as HTMLInputElement).value);
+}
+
+/** Read an input's `[selectionStart, selectionEnd]` caret / selection range. */
+export function selectionRange(input: Locator): Promise<[number, number]> {
+  return input.evaluate((el) => {
+    const i = el as HTMLInputElement;
+    return [i.selectionStart ?? -1, i.selectionEnd ?? -1];
+  });
+}
