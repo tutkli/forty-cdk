@@ -41,8 +41,28 @@ import {
       }
     </div>
     <input data-testid="after" placeholder="after-region" />
+
+    <!-- Second instance whose trigger declares NO tabindex: it relies on the
+         directive's host-bound default (tabindex="-1") so the return-focus
+         e2e proves the out-of-the-box behaviour with zero consumer setup. -->
+    <div forContextMenu [(open)]="openDefault" ariaLabel="Context menu (default tabindex)">
+      <div
+        data-testid="region-default"
+        forContextMenuTrigger
+        style="width: 240px; height: 80px; background: #efe; border: 1px solid #9c9; padding: 8px;"
+      >
+        Right-click here (default tabindex)
+      </div>
+      @if (openDefault()) {
+        <div forMenuContent data-testid="menu-default">
+          <button data-testid="default-item-1" forMenuItem>Item one</button>
+          <button data-testid="default-item-2" forMenuItem>Item two</button>
+        </div>
+      }
+    </div>
   `,
 })
 export class ContextMenuFixture {
   protected readonly open = signal(false);
+  protected readonly openDefault = signal(false);
 }

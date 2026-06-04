@@ -18,7 +18,7 @@ const IMPORTS = [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuI
   imports: IMPORTS,
   template: `
     <div forContextMenu [(open)]="open" [disabled]="disabled()">
-      <div id="region" forContextMenuTrigger tabindex="-1">
+      <div id="region" forContextMenuTrigger>
         Right-click here
         <button id="inner-btn" type="button">Inner</button>
       </div>
@@ -108,6 +108,32 @@ describe('ForContextMenu', () => {
       expect(region.hasAttribute('data-disabled')).toBe(false);
       expect(region.hasAttribute('aria-disabled')).toBe(false);
       expect(region.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('host-binds a default tabindex="-1" so return-focus works without consumer setup', () => {
+      // The host template no longer declares its own `tabindex`; the
+      // directive supplies the focusable default. (Real return-focus is a
+      // Playwright concern — jsdom mis-models `activeElement` — but the
+      // attribute that makes it possible is a DOM contract we can assert.)
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      expect(region.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('lets a consumer-provided tabindex override the default', () => {
+      @Component({
+        imports: [ForContextMenu, ForContextMenuTrigger],
+        template: `
+          <div forContextMenu>
+            <div id="region" forContextMenuTrigger tabindex="0">Right-click here</div>
+          </div>
+        `,
+      })
+      class OverrideHost {}
+
+      const r = renderHost(OverrideHost);
+      const region = r.query<HTMLElement>('#region')!;
+      expect(region.getAttribute('tabindex')).toBe('0');
     });
   });
 

@@ -59,6 +59,24 @@ test.describe('ContextMenu', () => {
     await expect(el(page, 'menu')).toHaveCount(0);
   });
 
+  // The `region-default` trigger declares NO `tabindex` of its own — it
+  // relies on the directive's host-bound default (`tabindex="-1"`). This
+  // proves return-focus works out of the box with zero consumer setup:
+  // without a focusable trigger, `returnFocus` would silently drop focus to
+  // <body> on close (the a11y regression #425 guards against).
+  test('closing returns focus to a trigger with the default tabindex', async ({ page }) => {
+    await gotoFixture(page, 'context-menu');
+    const trigger = el(page, 'region-default');
+
+    await trigger.click({ button: 'right' });
+    await expect(el(page, 'menu-default')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'menu-default')).toHaveCount(0);
+
+    await expect(trigger).toBeFocused();
+  });
+
   // Geometry assertions previously stubbed in context-menu.spec.ts — moved
   // here per CLAUDE.md "Testing notes" / #195: the math is fed by real
   // `getBoundingClientRect()` reads on the focused trigger / descendant, so
