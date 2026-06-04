@@ -1,4 +1,4 @@
-import type { TimeSegmentType } from '../time-field/build-time-segments';
+import type { TimeSegmentType } from '../_internal/datetime/segment-types';
 
 /** Which calendar part an editable date segment edits. */
 export type DateSegmentType = 'day' | 'month' | 'year';

@@ -14,6 +14,7 @@ import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { dayPeriodNames, from12, resolveHourCycle, to12 } from '../_internal/datetime/hour-cycle';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   assertTimeCapable,
@@ -22,13 +23,9 @@ import {
 } from '../calendar/date-adapter';
 import {
   buildTimeSegments,
-  dayPeriodNames,
   type EditableTimeSegmentSpec,
-  from12,
-  resolveHourCycle,
   type TimeGranularity,
   type TimeSegmentType,
-  to12,
 } from './build-time-segments';
 import {
   FOR_TIME_FIELD_CONTEXT,

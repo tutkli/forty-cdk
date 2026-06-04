@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import { dayPeriodNames, from12, resolveHourCycle, to12 } from '../_internal/datetime/hour-cycle';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -22,7 +23,6 @@ import {
   injectDateAdapter,
   type TimeCapableDateAdapter,
 } from '../calendar/date-adapter';
-import { dayPeriodNames, from12, resolveHourCycle, to12 } from '../time-field/build-time-segments';
 import {
   buildDateTimeSegments,
   type DateTimeSegmentType,
