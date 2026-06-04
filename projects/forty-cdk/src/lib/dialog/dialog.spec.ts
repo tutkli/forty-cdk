@@ -5,7 +5,13 @@ import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { flush, pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pressKey,
+  renderHost,
+  withReducedMotion,
+} from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
@@ -118,10 +124,7 @@ class DismissableContractHost {
 }
 
 describe('ForDialog (declarative)', () => {
-  afterEach(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  });
+  afterEachOverlayCleanup();
 
   describe('portal cleanup', () => {
     it('removes the portaled dialog and backdrop from document.body on close', async () => {
@@ -1114,10 +1117,7 @@ describe('ForDialog (declarative)', () => {
 });
 
 describe('ForDialogTrigger', () => {
-  afterEach(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  });
+  afterEachOverlayCleanup();
 
   @Component({
     imports: [ForDialog, ForDialogTrigger],

@@ -1,6 +1,12 @@
 import { Component, signal } from '@angular/core';
 
-import { flush, pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pressKey,
+  renderHost,
+  withReducedMotion,
+} from '../../test-utils';
 import { ForDrawer } from './drawer';
 import type { ForDrawerCloseReason } from './drawer-context';
 
@@ -53,9 +59,9 @@ class NestedHost {
 }
 
 describe('ForDrawer nested', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
     document.body.style.backgroundColor = '';
   });
 

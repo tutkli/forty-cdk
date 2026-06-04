@@ -9,6 +9,7 @@ import {
 import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-context';
 import { TestBed } from '@angular/core/testing';
 
+import { afterEachOverlayCleanup } from '../../test-utils/overlay-cleanup';
 import { renderHost } from '../../test-utils/render';
 import { withReducedMotion } from '../../test-utils/reduced-motion';
 import { ForToast } from './toast';
@@ -210,6 +211,8 @@ function getLiveAnnouncerRegion(politeness: 'polite' | 'assertive'): HTMLElement
 }
 
 describe('ForToast (declarative)', () => {
+  afterEachOverlayCleanup();
+
   describe('static accessibility', () => {
     it('non-error variants get role=status + aria-live=polite', () => {
       const { el } = renderHost(DeclarativeHost);
@@ -707,6 +710,8 @@ describe('ForToast (declarative)', () => {
 });
 
 describe('ForToastManager (programmatic)', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -985,6 +990,8 @@ describe('ForToastManager (programmatic)', () => {
 });
 
 describe('ForToastViewport', () => {
+  afterEachOverlayCleanup();
+
   it('host has role=region with default aria-label "Notifications"', () => {
     const r = renderHost(ProgrammaticHost);
     const v = r.el.querySelector<HTMLElement>('for-toast-viewport, [forToastViewport]')!;
@@ -1053,6 +1060,8 @@ describe('ForToastViewport', () => {
 });
 
 describe('ForToastViewport regions (multi-viewport)', () => {
+  afterEachOverlayCleanup();
+
   it('reflects the resolved region on data-region (default when unset)', () => {
     const r = renderHost(MultiViewportHost);
     r.instance.regionA.set('alerts');
@@ -1166,6 +1175,8 @@ describe('ForToastViewport regions (multi-viewport)', () => {
 });
 
 describe('global defaults via provideForToastDefaults', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -1210,6 +1221,8 @@ describe('global defaults via provideForToastDefaults', () => {
 });
 
 describe('zoneless', () => {
+  afterEachOverlayCleanup();
+
   afterEach(() => {
     vi.useRealTimers();
   });
