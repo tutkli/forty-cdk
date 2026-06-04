@@ -155,6 +155,23 @@ this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
+**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(drag)` / `(release)` / `(activeSnapPointChange)` outputs via the `onDrag` / `onRelease` / `onActiveSnapPointChange` config callbacks:
+
+```ts
+this.#drawers.open(ConfirmDrawer, {
+  data,
+  snapPoints: ['148px', '50%', 1],
+  defaultSnapPoint: '148px',
+  onDrag: ({ percentageDragged }) => this.dragProgress.set(percentageDragged),
+  onRelease: ({ willClose, nextSnapPoint }) => {
+    /* … */
+  },
+  onActiveSnapPointChange: (snap) => this.activeSnap.set(snap),
+});
+```
+
+`onActiveSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
+
 ## ForDrawer inputs / models
 
 | Name                        | Type                                        | Default    | Notes                                                                                                                                                                                      |

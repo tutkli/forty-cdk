@@ -347,6 +347,59 @@ describe('ForDrawerManager (programmatic)', () => {
     });
   });
 
+  describe('drag / release / active-snap observability', () => {
+    it('onActiveSnapPointChange fires with the landed default snap on mount', () => {
+      const { drawers } = setup();
+      const landed: (string | number | null)[] = [];
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        onActiveSnapPointChange: (snap) => landed.push(snap),
+      });
+      expect(landed).toEqual(['148px']);
+    });
+
+    it('does not invoke onActiveSnapPointChange when the consumer pins defaultSnapPoint', () => {
+      const { drawers } = setup();
+      const landed: (string | number | null)[] = [];
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        defaultSnapPoint: '50%',
+        onActiveSnapPointChange: (snap) => landed.push(snap),
+      });
+      expect(landed).toEqual([]);
+    });
+
+    it('accepts onDrag / onRelease callbacks without throwing', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', 1],
+        onDrag: () => {},
+        onRelease: () => {},
+      });
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+
+    it('stops emitting onActiveSnapPointChange after close', async () => {
+      const { drawers } = setup();
+      const landed: (string | number | null)[] = [];
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        onActiveSnapPointChange: (snap) => landed.push(snap),
+      });
+      expect(landed).toEqual(['148px']);
+      ref.close();
+      await ref.closed;
+      expect(landed).toEqual(['148px']);
+    });
+  });
+
   describe('child pieces work inside the opened component', () => {
     @Component({
       imports: [

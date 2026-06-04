@@ -15,7 +15,12 @@ import {
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
 import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
 import { ForDrawer } from './drawer';
-import { type ForDrawerSide, type ForDrawerSnapPoint } from './drawer-context';
+import {
+  type ForDrawerDragEvent,
+  type ForDrawerReleaseEvent,
+  type ForDrawerSide,
+  type ForDrawerSnapPoint,
+} from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
 import { ForDrawerProgrammaticHost } from './drawer-programmatic-host';
 import { ForDrawerRef } from './drawer-ref';
@@ -131,6 +136,29 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * on unmount. Call `event.preventDefault()` to skip the return-focus.
    */
   autoFocusOnClose?: (event: VetoableEvent) => void;
+
+  /**
+   * Mirrors the declarative `(drag)` output: invoked on every pointer-move
+   * frame of a swipe gesture with `percentageDragged` ∈ `[0, 1]`. Lets a
+   * programmatic consumer drive bespoke drag visualizations the way the
+   * directive consumer can.
+   */
+  onDrag?: (event: ForDrawerDragEvent) => void;
+
+  /**
+   * Mirrors the declarative `(release)` output: invoked once the pointer is
+   * released, after the directive has resolved the next snap point / close
+   * decision. Read `willClose` and `nextSnapPoint` from the payload.
+   */
+  onRelease?: (event: ForDrawerReleaseEvent) => void;
+
+  /**
+   * Mirrors the declarative `(activeSnapPointChange)` output: invoked with
+   * the landed snap point whenever the drawer transitions internally
+   * (mount-time default and drag release). Use this to read back the active
+   * snap that the declarative API exposes via `[(activeSnapPoint)]`.
+   */
+  onActiveSnapPointChange?: (snapPoint: ForDrawerSnapPoint | null) => void;
 }
 
 /**
@@ -273,6 +301,22 @@ export class ForDrawerManager {
       ref.close(drawerInstance.lastCloseValue() as R);
     });
 
+    // Forward the drag/release/active-snap streams the programmatic host
+    // already exposes via `hostDirectives`, so an imperatively-opened
+    // snap-point drawer has the same observability as the declarative API.
+    // Each subscription is torn down with the shell.
+    const subs = [closeSub];
+    const { onDrag, onRelease, onActiveSnapPointChange } = config;
+    if (onDrag) {
+      subs.push(drawerInstance.drag.subscribe(onDrag));
+    }
+    if (onRelease) {
+      subs.push(drawerInstance.release.subscribe(onRelease));
+    }
+    if (onActiveSnapPointChange) {
+      subs.push(drawerInstance.activeSnapPoint.subscribe(onActiveSnapPointChange));
+    }
+
     // The directive's own `afterNextRender` lifecycle wires the focus trap,
     // scroll lock, dismissable layer, swipe gesture, scale coordinator, and
     // ForDrawerStack registration. The first `detectChanges` above runs the
@@ -298,7 +342,9 @@ export class ForDrawerManager {
       // and pops the drawer-stack node. The user component's view destroys
       // ahead of the shell because Angular tears down child views first, so
       // `[forDrawerClose]`, `[forDrawerTitle]`, etc. all unregister cleanly.
-      closeSub.unsubscribe();
+      for (const sub of subs) {
+        sub.unsubscribe();
+      }
       userRef.destroy();
       this.#appRef.detachView(shellRef.hostView);
       shellRef.destroy();
