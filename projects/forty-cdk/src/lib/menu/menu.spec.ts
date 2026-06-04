@@ -150,6 +150,41 @@ describe('Menu items / content', () => {
 
       expect(content.getAttribute('role')).toBe('menu');
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
+      expect(content.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('lets ariaLabel win over aria-labelledby when set on the root', async () => {
+      @Component({
+        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+        template: `
+          <div forDropdownMenu [(open)]="open" [ariaLabel]="ariaLabel()">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="cut" forMenuItem>Cut</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly ariaLabel = signal<string | null>('Actions');
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-label')).toBe('Actions');
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+
+      r.instance.ariaLabel.set(null);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLElement>('[forDropdownMenuTrigger]')!;
+      expect(content.hasAttribute('aria-label')).toBe(false);
+      expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
     it('sets the right role on each item type', async () => {

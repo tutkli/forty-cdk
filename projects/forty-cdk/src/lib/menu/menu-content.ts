@@ -32,8 +32,8 @@ import { injectMenuContext } from './menu-context';
   host: {
     role: 'menu',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'ctx.triggerId()',
-    '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
+    '[attr.aria-label]': 'ctx.ariaLabel() || null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     tabindex: '-1',
   },
