@@ -33,6 +33,35 @@ export interface GraceRect {
   readonly left: number;
 }
 
+/**
+ * Resolves which side a submenu actually rendered on by comparing the
+ * geometry of the trigger and content rects, independent of any requested
+ * placement. Picks the axis (horizontal vs vertical) with the larger
+ * centre-to-centre separation, then the direction along it.
+ *
+ * This is the load-bearing fix for the safe-triangle: `injectFloating` only
+ * writes the resolved `data-side` inside the async `computePosition().then()`,
+ * so on the first hover-open it is still `undefined` and a `flip` near a
+ * viewport edge would have armed the grace polygon toward the *requested*
+ * side. Deriving the side from the live rects at arm time reflects the real
+ * placement even before positioning settles.
+ *
+ * @param trigger Sub-trigger rect (client coords), from `getBoundingClientRect`.
+ * @param content Submenu content rect (client coords), from `getBoundingClientRect`.
+ */
+export function resolveGraceSide(trigger: GraceRect, content: GraceRect): FloatingSide {
+  const triggerCenterX = (trigger.left + trigger.right) / 2;
+  const triggerCenterY = (trigger.top + trigger.bottom) / 2;
+  const contentCenterX = (content.left + content.right) / 2;
+  const contentCenterY = (content.top + content.bottom) / 2;
+  const dx = contentCenterX - triggerCenterX;
+  const dy = contentCenterY - triggerCenterY;
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0 ? 'right' : 'left';
+  }
+  return dy >= 0 ? 'bottom' : 'top';
+}
+
 /** An ordered list of vertices describing a simple (non-self-intersecting) polygon. */
 export type Polygon = readonly Point[];
 
@@ -78,7 +107,7 @@ export function isPointInPolygon(point: Point, polygon: Polygon): boolean {
  *
  * @param cursor Pointer position (client coords) captured at pointer-leave.
  * @param rect Submenu content rect (client coords), from `getBoundingClientRect`.
- * @param side Resolved side the content rendered on (`content.dataset.side`).
+ * @param side Resolved side the content actually rendered on, from {@link resolveGraceSide}.
  */
 export function buildSubmenuGracePolygon(
   cursor: Point,

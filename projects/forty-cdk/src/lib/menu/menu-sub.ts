@@ -20,6 +20,7 @@ import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
+  resolveGraceSide,
 } from '../_internal/pointer-grace/pointer-grace';
 import {
   emitVetoableEvent,
@@ -360,7 +361,8 @@ export class ForMenuSub implements ForMenuContext {
       return;
     }
     const rect = content.getBoundingClientRect();
-    const side = (content.dataset['side'] as FloatingSide | undefined) ?? this.side();
+    const trigger = this.trigger();
+    const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
     const polygon = buildSubmenuGracePolygon(cursor, rect, side);
     this.#disarmPointerGrace();
     this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {

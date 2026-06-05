@@ -2,6 +2,7 @@ import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   isPointInPolygon,
+  resolveGraceSide,
   type GraceRect,
   type Point,
   type Polygon,
@@ -34,6 +35,43 @@ describe('isPointInPolygon', () => {
     ];
     expect(isPointInPolygon({ x: 8, y: 5 }, triangle)).toBe(true);
     expect(isPointInPolygon({ x: 1, y: 9 }, triangle)).toBe(false);
+  });
+});
+
+describe('resolveGraceSide', () => {
+  const trigger: GraceRect = { left: 100, top: 50, right: 200, bottom: 80 };
+
+  it('resolves "right" when the content sits to the right of the trigger', () => {
+    const content: GraceRect = { left: 208, top: 50, right: 388, bottom: 200 };
+    expect(resolveGraceSide(trigger, content)).toBe('right');
+  });
+
+  it('resolves "left" when the content sits to the left of the trigger', () => {
+    const content: GraceRect = { left: -88, top: 50, right: 92, bottom: 200 };
+    expect(resolveGraceSide(trigger, content)).toBe('left');
+  });
+
+  it('resolves the real side after a flip even when the requested side was the opposite', () => {
+    // Requested side was "right", but a viewport-edge flip rendered the
+    // content to the left. The geometry must report "left" regardless.
+    const flipped: GraceRect = { left: -88, top: 50, right: 92, bottom: 200 };
+    expect(resolveGraceSide(trigger, flipped)).toBe('left');
+  });
+
+  it('resolves "bottom" when the content sits below the trigger', () => {
+    const content: GraceRect = { left: 100, top: 88, right: 280, bottom: 238 };
+    expect(resolveGraceSide(trigger, content)).toBe('bottom');
+  });
+
+  it('resolves "top" when the content sits above the trigger', () => {
+    const content: GraceRect = { left: 100, top: -160, right: 280, bottom: -10 };
+    expect(resolveGraceSide(trigger, content)).toBe('top');
+  });
+
+  it('prefers the axis with the larger centre-to-centre separation', () => {
+    // Content is slightly right but far below: vertical separation dominates.
+    const content: GraceRect = { left: 210, top: 300, right: 390, bottom: 450 };
+    expect(resolveGraceSide(trigger, content)).toBe('bottom');
   });
 });
 
