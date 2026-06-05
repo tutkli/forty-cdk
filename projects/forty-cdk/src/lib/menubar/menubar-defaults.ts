@@ -4,14 +4,18 @@ import { createDefaults } from '../_internal/defaults/defaults';
 
 /**
  * Defaults inherited by descendant menubars in the surrounding injector
- * scope. Configure with `provideForMenubarDefaults`. The shape is a stub
- * today — present so future per-scope tuning can land without churning the
- * public surface.
+ * scope. Configure with `provideForMenubarDefaults` either at the
+ * application root or in any component's `providers` array; partial
+ * overrides merge with the parent scope.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForMenubarDefaults {}
+export interface ForMenubarDefaults {
+  /** ms before the open menu closes after the pointer leaves the bar. */
+  closeDelay: number;
+}
 
-const FALLBACK: ForMenubarDefaults = {};
+const FALLBACK: ForMenubarDefaults = {
+  closeDelay: 150,
+};
 
 const { token, provideDefaults } = createDefaults<ForMenubarDefaults>(
   'FOR_MENUBAR_DEFAULTS',

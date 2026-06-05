@@ -15,7 +15,7 @@ import { ForMenuContent, ForMenuItem, ForMenubar, ForMenubarTrigger } from 'fort
   imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
   template: `
     <input data-testid="before" placeholder="before-menubar" />
-    <div forMenubar [(value)]="open" aria-label="Main">
+    <div forMenubar [(value)]="open" [dismissible]="dismissible()" aria-label="Main">
       @for (menu of menus; track menu.value) {
         <button [attr.data-testid]="'trigger-' + menu.value" forMenubarTrigger [value]="menu.value">
           {{ menu.label }}
@@ -42,6 +42,14 @@ export class MenubarFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly open = signal('');
+
+  /**
+   * `?dismissible=false` flips off Escape / outside-interaction dismissal so
+   * the E2E suite can assert a non-dismissible menubar menu stays open.
+   */
+  protected readonly dismissible = computed(
+    () => this.#route.snapshot.queryParamMap.get('dismissible') !== 'false',
+  );
 
   protected readonly menus = [
     {

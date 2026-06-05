@@ -129,4 +129,78 @@ test.describe('Menubar', () => {
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });
+
+  test('hovering a sibling trigger switches the open menu (hover-after-open)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+
+    // First open is intentional — open File via the keyboard.
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    // Now hovering Edit instantly switches the open menu (no delay).
+    await el(page, 'trigger-edit').hover();
+    await expect(el(page, 'menu-file')).toHaveCount(0);
+    await expect(el(page, 'menu-edit')).toBeVisible();
+
+    // And on to View.
+    await el(page, 'trigger-view').hover();
+    await expect(el(page, 'menu-edit')).toHaveCount(0);
+    await expect(el(page, 'menu-view')).toBeVisible();
+  });
+
+  test('moving the pointer off the bar closes the open menu after the close delay', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    // Move the pointer onto the bar first (so the subsequent leave fires from
+    // a real hover state), then off to empty space far below the bar / menu.
+    await el(page, 'trigger-file').hover();
+    await page.mouse.move(5, 600);
+
+    // The menu dismisses after the configured closeDelay (default 150ms).
+    await expect(el(page, 'menu-file')).toHaveCount(0);
+  });
+
+  test('hovering from a trigger into its open menu does not close it', async ({ page }) => {
+    await gotoFixture(page, 'menubar');
+
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    // Travelling from the trigger down into the portaled menu must keep it
+    // open — the hover-bridge cancels the close that the bar-leave schedules.
+    await el(page, 'item-file-1').hover();
+    // Give well past the close delay; the menu must still be there.
+    await page.waitForTimeout(300);
+    await expect(el(page, 'menu-file')).toBeVisible();
+  });
+
+  test('[dismissible]="false" keeps the menu open on Escape and outside click', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar', { dismissible: 'false' });
+
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    // Escape is a no-op while non-dismissible.
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    // An outside pointer-down in empty space (far from the bar and the menu,
+    // which is anchored top-left) is likewise ignored. A pointer-leave of the
+    // bar would also be ignored, so the menu stays open.
+    await page.mouse.click(1100, 500);
+    await expect(el(page, 'menu-file')).toBeVisible();
+  });
 });

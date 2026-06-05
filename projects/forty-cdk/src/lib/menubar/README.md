@@ -71,6 +71,8 @@ The menu surface, items, separators, groups, and submenus come from the [`menu/`
 | `dir`         | `'ltr'`        | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.         |
 | `loop`        | `true`         | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.                                   |
 | `disabled`    | `false`        | When `true`, every trigger interaction is a no-op.                                                         |
+| `dismissible` | `true`         | When `false`, the open menu ignores Escape, outside interaction, and pointer-leave — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav). |
+| `closeDelay`  | `150`          | ms before the open menu closes after the pointer leaves the bar (and any open menu). Defaults from `provideForMenubarDefaults`. |
 | `ariaLabel`   | `null`         | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).                          |
 
 ## Inputs (`ForMenubarTrigger`)
@@ -108,7 +110,9 @@ Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape 
 ## Behavior notes
 
 - **One open at a time.** Opening trigger `B` while `A` is open implicitly closes `A` and opens `B` with its first item focused.
-- **First open is intentional, subsequent are hover.** While no menu is open, hovering or focusing a trigger does _not_ auto-open. After the user opens any menu via click / keyboard, hovering or focusing a sibling trigger opens it instantly (no delay).
+- **First open is intentional, subsequent are hover.** While no menu is open, hovering a trigger does _not_ auto-open, and keyboard focus alone never opens a menu. After the user opens any menu via click / keyboard, hovering a sibling trigger opens it instantly (no delay).
+- **Hover-leave dismisses.** Once a menu is open, moving the pointer off the bar (and away from the open menu) closes it after `closeDelay` (default `150`ms). Re-entering the bar, a trigger, or the open menu before the delay elapses cancels the pending close, so travelling from a trigger down into its menu keeps it open. Touch / pen pointers don't trigger this — they dismiss by tapping outside. Set `[dismissible]="false"` to pin the menu open regardless.
+- **Dismissal.** Escape, an outside pointer interaction, and pointer-leave all close the open menu when `dismissible` is `true` (default). `[dismissible]="false"` suppresses all three.
 - **Roving tabindex.** Only one trigger is in the tab sequence at a time — the open trigger, the most-recently-focused trigger, or the first enabled one when nothing's focused.
 - **Mount equals open.** Each menu's `[forMenuContent]` is wrapped in `@if (value() === '<id>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive does not toggle `[hidden]`.
 - **Disabled triggers stay focusable** (per APG) — they still reflect `data-disabled=""` and `aria-disabled="true"` and are skipped by ArrowLeft / ArrowRight, typeahead, and cross-menu nav.
