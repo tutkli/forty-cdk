@@ -125,17 +125,20 @@ export class ForComboboxInput {
     const caret = el.selectionStart ?? el.value.length;
     const prefix = el.value.slice(0, caret);
 
-    this.ctx.setQueryFromInput(prefix);
-
+    const atEnd = caret === el.value.length;
     const mode = this.ctx.autocompleteMode();
     const inlineActive =
-      allowInline && !isDelete && (mode === 'inline' || mode === 'both') && prefix.length > 0;
+      allowInline &&
+      !isDelete &&
+      atEnd &&
+      (mode === 'inline' || mode === 'both') &&
+      prefix.length > 0;
 
     if (inlineActive) {
+      this.ctx.setQueryFromInput(prefix);
       this.#applyInlineCompletion(prefix);
-    } else if (el.value !== prefix) {
-      // Keep input.value pinned to the user's prefix when no completion runs.
-      el.value = prefix;
+    } else {
+      this.ctx.setQueryFromInput(el.value);
     }
   }
 
