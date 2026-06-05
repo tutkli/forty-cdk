@@ -285,17 +285,19 @@ export class ForSlider
     }
     let bestIndex = 0;
     let bestDelta = Math.abs(values[0]! - target);
+    let bestValue = values[0]!;
     for (let i = 1; i < values.length; i++) {
-      const delta = Math.abs(values[i]! - target);
-      // Tie-breaker: when target lies between two equal-distance thumbs, prefer
-      // the one in the direction the user is heading (i.e. the one whose move
-      // toward target won't cross a neighbor). For now: prefer earlier index
-      // for ties below the midpoint, later for ties above.
+      const value = values[i]!;
+      const delta = Math.abs(value - target);
       if (delta < bestDelta) {
         bestIndex = i;
         bestDelta = delta;
-      } else if (delta === bestDelta && target > values[i - 1]!) {
-        bestIndex = i;
+        bestValue = value;
+      } else if (delta === bestDelta) {
+        if (target > bestValue) {
+          bestIndex = i;
+          bestValue = value;
+        }
       }
     }
     return bestIndex;
