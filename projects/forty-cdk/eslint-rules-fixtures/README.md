@@ -1,10 +1,10 @@
 # forty-cdk ESLint rule fixtures
 
-Each `*.fixture.ts` file in this directory intentionally violates exactly one of
-the five `forty-cdk/*` test-isolation rules defined in
-[`eslint.config.js`](../../../eslint.config.js) (the
-`@forty-cdk-test-isolation-rules` block). They are documentation-as-code: by
-linting them with the rule *enabled* you can verify it fires.
+Each `*.fixture.ts` file in this directory intentionally violates exactly one
+`forty-cdk/*` rule defined in [`eslint.config.js`](../../../eslint.config.js)
+(the five test-isolation rules in the `@forty-cdk-test-isolation-rules` block,
+plus `no-effect-state-propagation`). They are documentation-as-code: by linting
+them with the rule *enabled* you can verify it fires.
 
 The fixtures are deliberately:
 
@@ -30,6 +30,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `observer-polyfill-must-restore.fixture.ts` — 1 error.
 - `scoped-fake-timers.fixture.ts` — 1 warning (Rule 4 is `warn`, not `error`).
 - `no-directive-internal-signal-read.fixture.ts` — 1 error.
+- `no-effect-state-propagation.fixture.ts` — 2 errors (the `.set` and `.update` read-and-write forms).
 
 The default `pnpm lint` ignores this directory (configured at the top of
 `eslint.config.js`) so CI doesn't pick up these intentional violations.

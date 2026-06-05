@@ -680,6 +680,149 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    // Mechanizes CLAUDE.md's most-emphasized rule — "Never propagate state
+    // inside `effect()`". Flags an `effect(() => …)` whose synchronous body
+    // both *reads* a signal reactively and *writes* the same signal via
+    // `.set(…)` / `.update(…)`. That read-and-write pattern is the canonical
+    // state-propagation anti-pattern: it derives state from a signal inside
+    // the effect and feeds it back, creating implicit cycles, double
+    // change-detection passes, and ordering bugs. Use `computed()` /
+    // `linkedSignal()` instead (CLAUDE.md § "Never propagate state inside
+    // `effect()`").
+    //
+    // Scope and escape hatches (kept deliberately narrow to avoid false
+    // positives on legitimate bridge effects):
+    //   - Only the effect callback's *own* synchronous statements are
+    //     inspected. Reads / writes inside nested function expressions (a
+    //     `ResizeObserver` / event callback, a `queueMicrotask`, etc.) fire
+    //     outside the reactive scope, so they are not counted.
+    //   - A read wrapped in `untracked(() => sig())` is the documented escape
+    //     hatch for genuinely needing the current value without subscribing —
+    //     such reads are ignored, so pairing `untracked()` reads with writes
+    //     does not trip the rule.
+    //   - Writes are matched by callee shape (`<base>.set` / `<base>.update`);
+    //     a write only fires the rule when `<base>` is also read as `<base>()`
+    //     in a tracked position in the same callback.
+    //
+    // The synthetic violation in the acceptance criteria —
+    // `effect(() => { s.set(s() + 1) })` — is exactly the read-and-write the
+    // rule flags. Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-effect-state-propagation.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#509
+    'no-effect-state-propagation': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid reading and writing the same signal inside an `effect()` callback (state propagation). Use `computed()` / `linkedSignal()` instead (CLAUDE.md § "Never propagate state inside `effect()`").',
+        },
+        schema: [],
+        messages: {
+          forbidden:
+            'Do not propagate state inside `effect()`: the same signal (`{{ signal }}`) is read reactively and written via `.set`/`.update` in this effect. This creates implicit cycles, double change-detection, and ordering bugs. Derive it with `computed()` / `linkedSignal()` instead, or wrap the read in `untracked()` if you genuinely need the current value (CLAUDE.md § "Never propagate state inside `effect()`").',
+        },
+      },
+      create(context) {
+        const sourceCode = context.sourceCode || context.getSourceCode();
+        // A stable key for the signal expression being read / written, so
+        // `this.#activeId` reads pair with `this.#activeId.set(…)` writes and
+        // `count` pairs with `count.set(…)`. Source text is exact enough for
+        // the member / identifier shapes signals take.
+        function exprKey(node) {
+          return sourceCode.getText(node);
+        }
+        // Walk a callback's *own* body, collecting tracked reads and writes
+        // without descending into nested function scopes or `untracked(…)`.
+        function analyzeCallback(fnNode) {
+          const trackedReads = new Map(); // key -> first read node
+          const writes = []; // { key, node }
+          const stack = [fnNode.body];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
+            }
+            if (!node.type) continue;
+            // Do not descend into nested function scopes — their reads / writes
+            // run outside this effect's reactive run (observer callbacks, etc.).
+            if (
+              node !== fnNode &&
+              (node.type === 'FunctionExpression' ||
+                node.type === 'ArrowFunctionExpression' ||
+                node.type === 'FunctionDeclaration')
+            ) {
+              continue;
+            }
+            if (node.type === 'CallExpression') {
+              const callee = node.callee;
+              // `untracked(() => …)` — the documented escape hatch. Skip the
+              // whole subtree; the read inside is intentionally not tracked.
+              if (callee.type === 'Identifier' && callee.name === 'untracked') {
+                continue;
+              }
+              // Write: `<base>.set(…)` / `<base>.update(…)`.
+              if (
+                callee.type === 'MemberExpression' &&
+                !callee.computed &&
+                callee.property.type === 'Identifier' &&
+                (callee.property.name === 'set' || callee.property.name === 'update')
+              ) {
+                writes.push({ key: exprKey(callee.object), node });
+                // Still descend into the arguments — a read may live there.
+                for (const arg of node.arguments) stack.push(arg);
+                continue;
+              }
+              // Tracked read: a zero-argument call `<sig>()` whose callee is an
+              // identifier or member access (`count()`, `this.#activeId()`).
+              if (
+                node.arguments.length === 0 &&
+                (callee.type === 'Identifier' || callee.type === 'MemberExpression')
+              ) {
+                const key = exprKey(callee);
+                if (!trackedReads.has(key)) {
+                  trackedReads.set(key, node);
+                }
+                // A read has no children worth scanning for this rule.
+                continue;
+              }
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return { trackedReads, writes };
+        }
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (callee.type !== 'Identifier' || callee.name !== 'effect') return;
+            const cb = node.arguments[0];
+            if (
+              !cb ||
+              (cb.type !== 'ArrowFunctionExpression' && cb.type !== 'FunctionExpression')
+            ) {
+              return;
+            }
+            const { trackedReads, writes } = analyzeCallback(cb);
+            const reported = new Set();
+            for (const write of writes) {
+              if (trackedReads.has(write.key) && !reported.has(write.key)) {
+                reported.add(write.key);
+                context.report({
+                  node: write.node,
+                  messageId: 'forbidden',
+                  data: { signal: write.key },
+                });
+              }
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -824,6 +967,10 @@ module.exports = tseslint.config(
 
       // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
+
+      // ---- No state propagation inside effect() (CLAUDE.md § "Never
+      // propagate state inside `effect()`"). ----
+      'forty-cdk/no-effect-state-propagation': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
