@@ -1,4 +1,14 @@
-import { booleanAttribute, computed, Directive, input, model, signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  DestroyRef,
+  Directive,
+  inject,
+  input,
+  model,
+  numberAttribute,
+  signal,
+} from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../_internal/collection/collection';
@@ -22,6 +32,7 @@ import {
   type ForMenubarContext,
   type ForMenubarTriggerHandle,
 } from './menubar-context';
+import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
 
 /**
  * Headless implementation of the
@@ -30,8 +41,9 @@ import {
  * A horizontal (or vertical) bar of triggers, each opening a dropdown menu.
  * The bar owns "which child menu is open" — opening another implicitly
  * closes the previous. Cross-menu ArrowLeft / ArrowRight navigation,
- * hover-after-first-open (skip-delay), and roving tabindex among triggers
- * are wired automatically.
+ * hover-after-first-open (switch siblings instantly, dismiss on hover-leave
+ * after `closeDelay`), and roving tabindex among triggers are wired
+ * automatically.
  *
  * Surface composition:
  *
@@ -69,6 +81,9 @@ import {
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
+    '(pointerenter)': 'cancelPendingClose()',
+    '(pointermove)': 'cancelPendingClose()',
+    '(pointerleave)': 'onBarPointerLeave($event)',
   },
   providers: [
     { provide: FOR_MENUBAR_CONTEXT, useExisting: ForMenubar },
@@ -80,6 +95,8 @@ import {
   ],
 })
 export class ForMenubar implements ForMenubarContext {
+  readonly #defaults = inject(FOR_MENUBAR_DEFAULTS);
+
   /**
    * Two-way bindable. The value of the open trigger, or `''` when none.
    * The `model()` change emitter (`(valueChange)`) fires only on internal
@@ -102,8 +119,24 @@ export class ForMenubar implements ForMenubarContext {
   readonly loop = input(true, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Whether the open menu closes on Escape, an outside interaction, or the
+   * pointer leaving the bar. When `false`, the menu stays open until the
+   * consumer flips `value` (or a trigger / item interaction switches it).
+   * Matches the dismiss contract of `[forDropdownMenu]` / `[forContextMenu]`.
+   * Default `true`.
+   */
+  readonly dismissible = input(true, { transform: booleanAttribute });
+
   /** Optional accessible name for the menubar. */
   readonly ariaLabel = input<string | null>(null);
+
+  /**
+   * ms before the open menu closes after the pointer leaves the bar (and any
+   * open menu). Default `150`. The default is read from
+   * `provideForMenubarDefaults` for the surrounding scope.
+   */
+  readonly closeDelay = input<number>(this.#defaults.closeDelay, { transform: numberAttribute });
 
   readonly #triggerCollection = new Collection<ForMenubarTriggerHandle>();
   readonly triggers = this.#triggerCollection.items;
@@ -140,6 +173,16 @@ export class ForMenubar implements ForMenubarContext {
 
   readonly #triggerTypeahead = injectTypeahead();
 
+  #closeTimer: ReturnType<typeof setTimeout> | null = null;
+  #detachContentPointerFn: (() => void) | null = null;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.#clearCloseTimer();
+      this.#detachContentPointer();
+    });
+  }
+
   // -- Multiplexed ForMenuContext for the currently-active menu -------------
 
   /**
@@ -163,7 +206,7 @@ export class ForMenubar implements ForMenubarContext {
   readonly menuCtx: ForMenuContext = {
     open: computed(() => this.value() !== ''),
     disabled: this.disabled,
-    dismissible: signal(true),
+    dismissible: this.dismissible,
     returnFocus: signal(true),
     dir: this.dir,
     side: computed(() => this.activeTrigger()?.side()),
@@ -190,11 +233,15 @@ export class ForMenubar implements ForMenubarContext {
     },
     unregisterTrigger: () => {},
     content: this.#menuContentEl.asReadonly(),
-    registerContent: (el) => this.#menuContentEl.set(el),
+    registerContent: (el) => {
+      this.#menuContentEl.set(el);
+      this.#attachContentPointer(el);
+    },
     unregisterContent: (el) => {
       if (this.#menuContentEl() === el) {
         this.#menuContentEl.set(null);
       }
+      this.#detachContentPointer();
     },
     parentMenu: null,
     menubar: this,
@@ -225,7 +272,7 @@ export class ForMenubar implements ForMenubarContext {
       this.closeOpen();
     },
     emitEscapeKeyDown: (event) => {
-      if (!event.defaultPrevented) {
+      if (!event.defaultPrevented && this.dismissible()) {
         event.stopPropagation();
         this.#menuLastCloseReason.set('escape');
         this.closeOpen();
@@ -234,7 +281,7 @@ export class ForMenubar implements ForMenubarContext {
     emitPointerDownOutside: () => {},
     emitFocusOutside: () => {},
     emitInteractOutside: (event) => {
-      if (this.value() !== '' && !event.defaultPrevented) {
+      if (this.value() !== '' && !event.defaultPrevented && this.dismissible()) {
         this.#menuLastCloseReason.set('pointerDownOutside');
         this.closeOpen();
       }
@@ -358,12 +405,99 @@ export class ForMenubar implements ForMenubarContext {
     if (this.disabled()) {
       return;
     }
+    // Entering any trigger aborts a pending hover-leave close — the pointer
+    // is still travelling across the bar, so keep the open menu alive.
+    this.#clearCloseTimer();
     // Per Radix: hover-after-open opens siblings instantly; while no menu is
     // open, hover does nothing (first open requires keyboard / click).
     if (this.value() === '' || this.value() === value) {
       return;
     }
     this.openTrigger(value, 'first');
+  }
+
+  /**
+   * Abort a scheduled hover-leave close, if any. Bound to the bar's
+   * `pointerenter` / `pointermove` so re-entering the bar (or its open menu)
+   * keeps the menu open. Also called by the multiplexed content's
+   * `pointerenter` so travelling from a trigger into its portaled menu does
+   * not trip the close timer.
+   */
+  cancelPendingClose(): void {
+    this.#clearCloseTimer();
+  }
+
+  /**
+   * The pointer left the bar. Schedule a close after `closeDelay`; entering
+   * the bar, a trigger, or the open menu again cancels it. No-op while no
+   * menu is open or for non-mouse pointers (touch / pen drive open/close via
+   * tap, not hover).
+   */
+  protected onBarPointerLeave(event: PointerEvent): void {
+    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      return;
+    }
+    this.#scheduleCloseByPointer();
+  }
+
+  #scheduleCloseByPointer(): void {
+    this.#clearCloseTimer();
+    // A non-dismissible menu stays pinned open: hover-leave is held to the
+    // same contract as Escape / outside interaction.
+    if (this.value() === '' || !this.dismissible()) {
+      return;
+    }
+    const delay = Math.max(0, this.closeDelay());
+    if (delay === 0) {
+      this.#closeByPointer();
+      return;
+    }
+    this.#closeTimer = setTimeout(() => {
+      this.#closeTimer = null;
+      this.#closeByPointer();
+    }, delay);
+  }
+
+  #closeByPointer(): void {
+    if (this.value() === '') {
+      return;
+    }
+    this.#menuLastCloseReason.set('pointerDownOutside');
+    this.closeOpen();
+  }
+
+  #attachContentPointer(el: HTMLElement): void {
+    this.#detachContentPointer();
+    const onEnter = (event: PointerEvent): void => {
+      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+        return;
+      }
+      this.#clearCloseTimer();
+    };
+    const onLeave = (event: PointerEvent): void => {
+      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+        return;
+      }
+      this.#scheduleCloseByPointer();
+    };
+    el.addEventListener('pointerenter', onEnter);
+    el.addEventListener('pointerleave', onLeave);
+    this.#detachContentPointerFn = () => {
+      el.removeEventListener('pointerenter', onEnter);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }
+
+  #detachContentPointer(): void {
+    this.#detachContentPointerFn?.();
+    this.#detachContentPointerFn = null;
+  }
+
+  #clearCloseTimer(): void {
+    if (this.#closeTimer !== null) {
+      clearTimeout(this.#closeTimer);
+      this.#closeTimer = null;
+    }
   }
 
   handleTriggerTypeahead(event: KeyboardEvent): void {

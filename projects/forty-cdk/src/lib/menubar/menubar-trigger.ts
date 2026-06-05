@@ -37,9 +37,9 @@ import { injectMenubarContext } from './menubar-context';
  * - **Typeahead** — printable keys focus the first sibling trigger whose label
  *   starts with the buffered string.
  *
- * While some other trigger's menu is open, hovering or focusing this trigger
- * opens it immediately (no delay) — Radix-style "first open is intentional,
- * subsequent are hover".
+ * While some other trigger's menu is open, hovering this trigger opens it
+ * immediately (no delay) — Radix-style "first open is intentional, subsequent
+ * are hover". Keyboard focus alone never opens a menu.
  */
 @Directive({
   selector: '[forMenubarTrigger]',
@@ -178,12 +178,12 @@ export class ForMenubarTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
-    // Roving tab stop follows focus.
+    // Roving tab stop follows focus — but focus alone never opens a menu.
+    // Keyboard traversal across triggers (ArrowLeft / ArrowRight, typeahead)
+    // only moves focus; opening is reserved for hover (pointerenter),
+    // click, and the open keys. Cross-menu nav while a menu is open is driven
+    // by the items, not by trigger focus. (Radix-aligned.)
     this.menubar.setFocusedTrigger(this.#host.nativeElement);
-    // Hover-after-open semantics: while some menu is open, focusing a
-    // sibling trigger opens it. While nothing's open, focus alone does
-    // not auto-open (Radix-aligned).
-    this.menubar.pointerEnterTrigger(this.value());
   }
 
   protected onPointerEnter(): void {

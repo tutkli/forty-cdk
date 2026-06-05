@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { ForMenuContent } from '../menu/menu-content';
@@ -21,6 +22,7 @@ const IMPORTS = [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem];
       [dir]="dir()"
       [loop]="loop()"
       [disabled]="disabled()"
+      [dismissible]="dismissible()"
       aria-label="Main"
     >
       <button forMenubarTrigger value="file">File</button>
@@ -55,6 +57,7 @@ class MenubarHost {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly loop = signal(true);
   readonly disabled = signal(false);
+  readonly dismissible = signal(true);
   readonly editDisabled = signal(false);
   readonly selects: string[] = [];
   record(id: string): void {
@@ -100,6 +103,21 @@ class MenubarHost {
 class MenubarWithSubmenuHost {
   readonly open = signal<string>('');
   readonly recent = signal(false);
+}
+
+/**
+ * Builds a pointer event with an explicit `pointerType`. jsdom's
+ * `PointerEvent` constructor doesn't populate `pointerType` from its init
+ * dict, and the hover-close listeners gate on `pointerType === 'mouse'`, so
+ * the spec defines it directly.
+ */
+function pointerEvent(
+  type: 'pointerenter' | 'pointerleave' | 'pointermove',
+  { pointerType = 'mouse' } = {},
+): PointerEvent {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperty(event, 'pointerType', { value: pointerType, configurable: true });
+  return event;
 }
 
 describe('ForMenubar', () => {
@@ -401,14 +419,16 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBe('');
     });
 
-    it('focuses a sibling trigger and opens its menu when one is already open', async () => {
+    it('does NOT open a sibling on focus alone while a menu is open (focus is not hover)', async () => {
       const r = renderHost(MenubarHost);
       r.instance.open.set('file');
       await flush(r.fixture);
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
       edit.focus();
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('edit');
+      // Keyboard focus traversal must not force-open a sibling; only hover
+      // (pointerenter) switches the open menu (see issue #504).
+      expect(r.instance.open()).toBe('file');
     });
   });
 
@@ -468,6 +488,169 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('file');
+    });
+  });
+
+  describe('dismissible', () => {
+    it('[dismissible]="false" keeps the menu open on Escape', async () => {
+      const r = renderHost(MenubarHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('[dismissible]="false" keeps the menu open on outside pointer-down', async () => {
+      const r = renderHost(MenubarHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      outside.remove();
+    });
+
+    it('still closes on Escape / outside when dismissible (default) is true', async () => {
+      const r = renderHost(MenubarHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('[dismissible]="false" keeps the menu open when the pointer leaves the bar', () => {
+      vi.useFakeTimers();
+      try {
+        const { instance, query, flush } = renderHost(MenubarHost);
+        instance.dismissible.set(false);
+        instance.open.set('file');
+        flush();
+
+        const bar = query<HTMLElement>('[forMenubar]')!;
+        bar.dispatchEvent(pointerEvent('pointerleave'));
+        flush();
+        vi.advanceTimersByTime(500);
+        flush();
+
+        expect(instance.open()).toBe('file');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('hover-close', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('closes the open menu after closeDelay when the pointer leaves the bar', () => {
+      const { instance, query, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      const bar = query<HTMLElement>('[forMenubar]')!;
+      bar.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+
+      vi.advanceTimersByTime(149);
+      flush();
+      expect(instance.open()).toBe('file');
+
+      vi.advanceTimersByTime(1);
+      flush();
+      expect(instance.open()).toBe('');
+    });
+
+    it('re-entering the bar before closeDelay cancels the pending close', () => {
+      const { instance, query, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      const bar = query<HTMLElement>('[forMenubar]')!;
+      bar.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(100);
+
+      bar.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.open()).toBe('file');
+    });
+
+    it('entering the portaled menu content cancels the pending close', () => {
+      const { instance, query, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const bar = query<HTMLElement>('[forMenubar]')!;
+      bar.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(100);
+
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.open()).toBe('file');
+    });
+
+    it('leaving the portaled menu content schedules a close', () => {
+      const { instance, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+
+      vi.advanceTimersByTime(150);
+      flush();
+      expect(instance.open()).toBe('');
+    });
+
+    it('ignores a non-mouse pointer leave (touch dismisses by tap, not hover)', () => {
+      const { instance, query, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      const bar = query<HTMLElement>('[forMenubar]')!;
+      bar.dispatchEvent(pointerEvent('pointerleave', { pointerType: 'touch' }));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.open()).toBe('file');
+    });
+
+    it('hover-switch between open siblings stays instant (no close delay in between)', () => {
+      const { instance, queryAll, flush } = renderHost(MenubarHost);
+      instance.open.set('file');
+      flush();
+
+      // Moving directly onto a sibling trigger (without leaving the bar) opens
+      // it immediately — the hover-bridge keeps the menu chain alive.
+      const view = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
+      view.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(instance.open()).toBe('view');
     });
   });
 
