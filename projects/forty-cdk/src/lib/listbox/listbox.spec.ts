@@ -152,6 +152,50 @@ describe('ForListbox', () => {
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
     });
+
+    it('multi-select with ≥2 preselected options exposes exactly one tabindex=0', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.isMulti.set(true);
+      fixture.componentInstance.picked.set(['banana', 'cherry']);
+      flush();
+
+      const zeros = ['apple', 'apricot', 'banana', 'blueberry', 'cherry'].filter(
+        (v) => optOf(el, v).getAttribute('tabindex') === '0',
+      );
+      expect(zeros).toEqual(['banana']);
+    });
+
+    it('multi-select tab entry is the first selected enabled option in DOM order', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.isMulti.set(true);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: false },
+        { value: 'banana', label: 'Banana', disabled: true },
+        { value: 'cherry', label: 'Cherry', disabled: false },
+      ]);
+      fixture.componentInstance.picked.set(['banana', 'cherry']);
+      flush();
+
+      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
+      expect(optOf(el, 'cherry').getAttribute('tabindex')).toBe('0');
+      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('roving takes over after an option is focused (multi + preselection)', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.isMulti.set(true);
+      fixture.componentInstance.picked.set(['banana', 'cherry']);
+      flush();
+
+      optOf(el, 'apple').focus();
+      flush();
+
+      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
+      const zeros = ['apple', 'apricot', 'banana', 'blueberry', 'cherry'].filter(
+        (v) => optOf(el, v).getAttribute('tabindex') === '0',
+      );
+      expect(zeros).toEqual(['apple']);
+    });
   });
 
   describe('single-mode click semantics', () => {

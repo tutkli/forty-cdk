@@ -79,13 +79,7 @@ export class ForListboxOption<T = string> {
     if (this.#group.roving.active() !== null) {
       return this.#group.roving.tabindexFor(this.#host.nativeElement);
     }
-    if (this.selected()) {
-      return 0;
-    }
-    if (this.#group.value().length > 0) {
-      return -1;
-    }
-    return this.#group.isFirstEnabledOption(this.#host.nativeElement) ? 0 : -1;
+    return this.#group.isFirstFocusableOption(this.#host.nativeElement) ? 0 : -1;
   });
 
   constructor() {

@@ -163,6 +163,20 @@ export class ForListbox<T = string>
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
+  readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
+    const selected = this.value();
+    if (selected.length === 0) {
+      return null;
+    }
+    const equals = this.isItemEqualToValue();
+    for (const option of this.#options.items()) {
+      if (!option.disabled() && selected.some((v) => equals(v, option.value()))) {
+        return option.host;
+      }
+    }
+    return null;
+  });
+
   /**
    * Anchor index for APG range-selection actions (Shift+Space). Set on every
    * unmodified activation (click / Space / Enter); not affected by Shift+Arrow,
@@ -375,7 +389,11 @@ export class ForListbox<T = string>
     return true;
   }
 
-  isFirstEnabledOption(el: HTMLElement): boolean {
+  isFirstFocusableOption(el: HTMLElement): boolean {
+    const firstSelected = this.#firstSelectedHost();
+    if (firstSelected) {
+      return firstSelected === el;
+    }
     return this.#firstEnabledHost() === el;
   }
 

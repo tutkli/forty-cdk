@@ -155,7 +155,7 @@ export class DemoPriorities {
 
 ### Single mode (and the basics for both)
 
-- **Tab** moves focus into / out of the listbox; lands on the selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction).
+- **Tab** moves focus into / out of the listbox; lands on the first selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction). With several preselected options in multi mode, only the first selected one is the tab stop — the group exposes a single `tabindex="0"`.
 - **ArrowDown / ArrowUp** in vertical, **ArrowRight / ArrowLeft** in horizontal: move focus, wrap-around, skip disabled.
 - **Home / End** jump to first / last enabled option.
 - **Space / Enter** activate the focused option (toggles in multi, selects in single) via the underlying button.
