@@ -24,6 +24,12 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  defaultItemToFormValue,
+  isInArray,
+  singleSelected,
+  toggleInArray,
+} from '../_internal/selection/selection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   createVetoableNativeEvent,
@@ -131,9 +137,7 @@ export class ForCombobox<T = string>
    * format — typically a per-item id — when the backend expects that:
    * `[itemToFormValue]="(it) => it.id"`.
    */
-  readonly itemToFormValue = input<(item: T) => string>((item) =>
-    typeof item === 'string' ? item : JSON.stringify(item),
-  );
+  readonly itemToFormValue = input<(item: T) => string>(defaultItemToFormValue);
 
   /**
    * Two-way bindable. Whether the listbox is currently shown. Internal
@@ -351,10 +355,7 @@ export class ForCombobox<T = string>
    * {@link selected}, which pairs every selected value with its resolved
    * label for chip rendering.
    */
-  readonly selectedItem = computed<T | null>(() => {
-    const values = this.value();
-    return values.length === 1 ? values[0]! : null;
-  });
+  readonly selectedItem = singleSelected(this.value);
 
   protected override fieldLabelledElement(): HTMLElement | null {
     return this.input();
@@ -462,8 +463,7 @@ export class ForCombobox<T = string>
   }
 
   isSelected(v: T): boolean {
-    const equals = this.isItemEqualToValue();
-    return this.value().some((x) => equals(x, v));
+    return isInArray(this.value(), v, this.isItemEqualToValue());
   }
 
   isActive(id: string): boolean {
@@ -475,14 +475,9 @@ export class ForCombobox<T = string>
       return;
     }
     const v = handle.value();
-    const equals = this.isItemEqualToValue();
     if (this.multiple()) {
       // Toggle in/out of the array. Stay open so the user can keep picking.
-      const current = this.value();
-      const next = current.some((x) => equals(x, v))
-        ? current.filter((x) => !equals(x, v))
-        : [...current, v];
-      this.value.set(next);
+      this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
       if (this.commitOnSelect()) {
         // Reset query so the next typed prefix searches afresh — matches
         // Base UI / Material Autocomplete multi behavior.
