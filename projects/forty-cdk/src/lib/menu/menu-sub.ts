@@ -243,6 +243,7 @@ export class ForMenuSub implements ForMenuContext {
   emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
   emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
   emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
+  requestClose = this.#overlay.requestClose.bind(this.#overlay);
 
   constructor() {
     const parent = inject(FOR_MENU_CONTEXT, { skipSelf: true, optional: true });

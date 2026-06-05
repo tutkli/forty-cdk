@@ -8,6 +8,7 @@ import type {
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { Point } from '../_internal/pointer-grace/pointer-grace';
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
  * Minimal upward contract a menu uses to move between sibling menus of an
@@ -177,10 +178,23 @@ export interface ForMenuContext {
    */
   onTriggerPointerLeave?(cursor: Point): void;
 
+  /**
+   * Escape is consumer-owned (its close emits `(escapeKeyDown)`, stops
+   * propagation, and closes with reason `'escape'`); Content forwards the raw
+   * `KeyboardEvent`.
+   */
   emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(event: PointerEvent): void;
-  emitFocusOutside(event: FocusEvent): void;
-  emitInteractOutside(event: PointerEvent | FocusEvent): void;
+  /**
+   * Outside-interaction emit forwarders. `injectOverlayShell` builds and
+   * reuses one `VetoableNativeEvent` across the specific and composite
+   * channels, then hands it to these forwarders to fire the matching output
+   * and calls `requestClose` when un-vetoed.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before

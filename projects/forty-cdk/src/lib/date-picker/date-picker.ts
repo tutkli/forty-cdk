@@ -469,81 +469,54 @@ export class ForDatePicker<D>
     return this.calendar()?.focusActiveCell() ?? false;
   }
 
-  // One dismiss-coordination surface, hiding the modal-vs-overlay branching.
-  // `#dismiss.<channel>(veto, { close })` emits the matching directive
-  // `output()` and — when `close` is requested — runs the close decision. The
-  // shared veto wrapper between `pointerDownOutside` / `focusOutside` and the
-  // composite `interactOutside` is owned here: the dismissable layer always
-  // invokes the specific listener before the composite one for the same
-  // physical event, so a `preventDefault()` in either handler vetoes the close.
-  // This shared veto is the single guard preventing a double-close.
-  //
-  // The overlay path (`emit*`) builds the veto from the raw DOM event the shell
-  // hands it and asks this surface to own the close. The modal path
-  // (`forward*`) hands a veto the modal-shell already built and owns the close
-  // itself (via `requestClose`), so it asks this surface to emit only. Either
-  // way the same `output()`s fire and the same shared-veto guard applies.
-  readonly #dismiss = {
-    pendingOutsideVeto: null as VetoableNativeEvent<PointerEvent | FocusEvent> | null,
-    escapeKeyDown: (veto: VetoableNativeEvent<KeyboardEvent>, close: boolean): void => {
-      this.escapeKeyDown.emit(veto);
-      if (close && !veto.defaultPrevented && this.dismissible()) {
-        veto.event.stopPropagation();
-        this.close();
-      }
-    },
-    pointerDownOutside: (veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void => {
-      this.#dismiss.pendingOutsideVeto = veto;
-      this.pointerDownOutside.emit(veto as VetoableNativeEvent<PointerEvent>);
-    },
-    focusOutside: (veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void => {
-      this.#dismiss.pendingOutsideVeto = veto;
-      this.focusOutside.emit(veto as VetoableNativeEvent<FocusEvent>);
-    },
-    interactOutside: (veto: VetoableNativeEvent<PointerEvent | FocusEvent>, close: boolean): void => {
-      const shared = this.#dismiss.pendingOutsideVeto ?? veto;
-      this.#dismiss.pendingOutsideVeto = null;
-      this.interactOutside.emit(shared);
-      if (close && !shared.defaultPrevented && this.dismissible()) {
-        this.close();
-      }
-    },
-  };
+  // Both the anchored (`injectOverlayShell`) and modal (`injectModalShell`)
+  // surfaces now own the shared `#pendingOutsideVeto` reuse between the
+  // specific outside channels and the composite `interactOutside`, so this
+  // directive only forwards the shell-built veto to the matching `output()`
+  // and owns the close decision via `requestClose`. Escape is the one channel
+  // this directive still owns end-to-end on the anchored path (the modal path
+  // routes it through `emitEscapeKeyDown` on the shell, which builds the veto
+  // and calls `requestClose` itself).
 
+  /**
+   * Anchored-path Escape. Builds the veto, emits `(escapeKeyDown)`, and —
+   * unless vetoed and `dismissible` is off — stops propagation and closes.
+   */
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.#dismiss.escapeKeyDown(createVetoableNativeEvent(event), true);
+    const veto = createVetoableNativeEvent(event);
+    this.escapeKeyDown.emit(veto);
+    if (!veto.defaultPrevented && this.dismissible()) {
+      event.stopPropagation();
+      this.close();
+    }
   }
 
-  emitPointerDownOutside(event: PointerEvent): void {
-    this.#dismiss.pointerDownOutside(createVetoableNativeEvent<PointerEvent | FocusEvent>(event));
+  /**
+   * Outside-interaction emit forwarders shared by both shells. The shell
+   * builds and reuses the veto; these only fire the matching output.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
+    this.pointerDownOutside.emit(veto);
+  }
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+    this.focusOutside.emit(veto);
+  }
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.interactOutside.emit(veto);
   }
 
-  emitFocusOutside(event: FocusEvent): void {
-    this.#dismiss.focusOutside(createVetoableNativeEvent<PointerEvent | FocusEvent>(event));
-  }
-
-  emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    this.#dismiss.interactOutside(createVetoableNativeEvent<PointerEvent | FocusEvent>(event), true);
-  }
-
-  /** Routes a modal-shell-built Escape veto through the shared dismiss surface (shell owns the close). */
+  /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.#dismiss.escapeKeyDown(veto, false);
+    this.escapeKeyDown.emit(veto);
   }
 
-  /** Routes a modal-shell-built pointer-down-outside veto through the shared dismiss surface. */
-  forwardPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#dismiss.pointerDownOutside(veto);
-  }
-
-  /** Routes a modal-shell-built focus-outside veto through the shared dismiss surface. */
-  forwardFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#dismiss.focusOutside(veto);
-  }
-
-  /** Routes the modal-shell-built composite veto through the shared dismiss surface (shell owns the close). */
-  forwardInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#dismiss.interactOutside(veto, false);
+  /**
+   * Implicit close requested by either shell after an un-vetoed outside
+   * interaction (or, on the modal path, an un-vetoed Escape). Marks the
+   * control touched and closes.
+   */
+  requestClose(): void {
+    this.close();
   }
 
   emitAutoFocusOnOpen(): boolean {

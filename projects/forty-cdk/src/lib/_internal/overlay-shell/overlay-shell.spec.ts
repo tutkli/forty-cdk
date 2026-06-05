@@ -126,6 +126,18 @@ describe('injectOverlayShell', () => {
   });
 
   describe('dismiss bundle', () => {
+    function dispatchPointerOutside(target: Element): void {
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: target, configurable: true });
+      document.dispatchEvent(event);
+    }
+
+    function dispatchFocusOutside(target: Element): void {
+      const event = new FocusEvent('focusin', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: target, configurable: true });
+      document.dispatchEvent(event);
+    }
+
     it('does not register escape handling when dismiss is omitted', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
@@ -141,7 +153,7 @@ describe('injectOverlayShell', () => {
       ctx.destroy();
     });
 
-    it('forwards onEscapeKeyDown through the dismissable layer', async () => {
+    it('forwards the raw Escape event to emitEscapeKeyDown', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
       const calls: string[] = [];
@@ -149,13 +161,17 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
-          emitEscapeKeyDown: () => calls.push('escape'),
+          dismissible: signal(true),
+          requestClose: () => calls.push('close'),
+          emitEscapeKeyDown: (event) => calls.push(`escape:${event.type}`),
         },
       }));
       await flush(ctx.fixture);
 
       pressKey(document, 'Escape');
-      expect(calls).toEqual(['escape']);
+      // Escape is consumer-owned: only the raw forward fires, the shell never
+      // calls requestClose for the Escape channel.
+      expect(calls).toEqual(['escape:keydown']);
       ctx.destroy();
     });
 
@@ -167,6 +183,8 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
+          dismissible: signal(true),
+          requestClose: () => calls.push('close'),
           // Escape intentionally omitted.
           emitPointerDownOutside: () => calls.push('pointer'),
         },
@@ -176,18 +194,42 @@ describe('injectOverlayShell', () => {
       pressKey(document, 'Escape');
       expect(calls).toEqual([]);
 
-      // Outside pointer-down still fires.
       const outside = document.createElement('div');
       document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      document.dispatchEvent(event);
+      dispatchPointerOutside(outside);
       expect(calls).toEqual(['pointer']);
 
       ctx.destroy();
     });
 
-    it('preventDefault on emitEscapeKeyDown vetoes the implicit dismiss', async () => {
+    it('reuses one veto across pointerDownOutside and the composite interactOutside', async () => {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const pointerVetoes: unknown[] = [];
+      const interactVetoes: unknown[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        dismiss: {
+          dismissible: signal(true),
+          requestClose: () => {},
+          emitPointerDownOutside: (veto) => pointerVetoes.push(veto),
+          emitInteractOutside: (veto) => interactVetoes.push(veto),
+        },
+      }));
+      await flush(ctx.fixture);
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      dispatchPointerOutside(outside);
+
+      expect(pointerVetoes).toHaveLength(1);
+      expect(interactVetoes).toHaveLength(1);
+      expect(pointerVetoes[0]).toBe(interactVetoes[0]);
+      ctx.destroy();
+    });
+
+    it('preventDefault on pointerDownOutside vetoes the composite-driven requestClose', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
       const calls: string[] = [];
@@ -195,20 +237,95 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
-          emitEscapeKeyDown: (event) => {
-            calls.push('escape');
-            event.preventDefault();
-          },
+          dismissible: signal(true),
+          requestClose: () => calls.push('close'),
+          emitPointerDownOutside: (veto) => veto.preventDefault(),
+          emitInteractOutside: () => calls.push('interact'),
         },
       }));
       await flush(ctx.fixture);
 
-      pressKey(document, 'Escape');
-      expect(calls).toEqual(['escape']);
-      // Surface still mounted because no onDismiss was wired (we only check
-      // the handler ran and event.defaultPrevented is honored — the
-      // dismissable layer itself owns the contract).
-      expect(document.body.contains(ctx.surface()!)).toBe(true);
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      dispatchPointerOutside(outside);
+
+      expect(calls).toEqual(['interact']);
+      ctx.destroy();
+    });
+
+    it('requestClose runs with the matching reason when un-vetoed', async () => {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const reasons: string[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        dismiss: {
+          dismissible: signal(true),
+          requestClose: (reason) => reasons.push(reason),
+          emitInteractOutside: () => {},
+        },
+      }));
+      await flush(ctx.fixture);
+
+      const outsidePointer = document.createElement('div');
+      document.body.appendChild(outsidePointer);
+      dispatchPointerOutside(outsidePointer);
+
+      const outsideFocus = document.createElement('button');
+      document.body.appendChild(outsideFocus);
+      dispatchFocusOutside(outsideFocus);
+
+      expect(reasons).toEqual(['pointerDownOutside', 'focusOutside']);
+      ctx.destroy();
+    });
+
+    it('does not requestClose when dismissible() is false', async () => {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const calls: string[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        dismiss: {
+          dismissible: signal(false),
+          requestClose: () => calls.push('close'),
+          emitInteractOutside: () => calls.push('interact'),
+        },
+      }));
+      await flush(ctx.fixture);
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      dispatchPointerOutside(outside);
+
+      expect(calls).toEqual(['interact']);
+      ctx.destroy();
+    });
+
+    it('falls back to a fresh veto when interactOutside fires without a prior specific channel', async () => {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const calls: string[] = [];
+      const interactVetoes: unknown[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        dismiss: {
+          dismissible: signal(true),
+          requestClose: () => calls.push('close'),
+          // No emitPointerDownOutside / emitFocusOutside channel wired.
+          emitInteractOutside: (veto) => interactVetoes.push(veto),
+        },
+      }));
+      await flush(ctx.fixture);
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      dispatchPointerOutside(outside);
+
+      expect(interactVetoes).toHaveLength(1);
+      expect(calls).toEqual(['close']);
       ctx.destroy();
     });
   });
@@ -423,6 +540,8 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
+          dismissible: signal(true),
+          requestClose: () => {},
           // If the layer was still active during teardown, removing the
           // surface from the DOM could route a focusin to handleFocusIn and
           // call this. The shell's order (dismissable.deactivate registers
@@ -455,6 +574,8 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
+          dismissible: signal(true),
+          requestClose: () => {},
           emitEscapeKeyDown: () => calls.push('escape'),
         },
         initialFocus: { move: 'first' },

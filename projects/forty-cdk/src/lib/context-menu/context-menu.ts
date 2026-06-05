@@ -194,6 +194,7 @@ export class ForContextMenu implements ForMenuContext {
   emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
   emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
   emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
+  requestClose = this.#overlay.requestClose.bind(this.#overlay);
   emitAutoFocusOnOpen = this.#overlay.emitAutoFocusOnOpen.bind(this.#overlay);
   emitAutoFocusOnClose = this.#overlay.emitAutoFocusOnClose.bind(this.#overlay);
 

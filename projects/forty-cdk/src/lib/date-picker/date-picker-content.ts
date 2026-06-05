@@ -70,11 +70,11 @@ export class ForDatePickerContent {
         },
         dismiss: {
           dismissible: ctx.dismissible,
-          requestClose: () => ctx.close(),
+          requestClose: () => ctx.requestClose(),
           emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
-          emitPointerDownOutside: (veto) => ctx.forwardPointerDownOutside(veto),
-          emitFocusOutside: (veto) => ctx.forwardFocusOutside(veto),
-          emitInteractOutside: (veto) => ctx.forwardInteractOutside(veto),
+          emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
+          emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
+          emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         },
       });
       return;
@@ -95,10 +95,12 @@ export class ForDatePickerContent {
         hideWhenDetached: ctx.hideWhenDetached,
       },
       dismiss: {
+        dismissible: ctx.dismissible,
+        requestClose: () => ctx.requestClose(),
         emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (event) => ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => ctx.emitInteractOutside(event),
+        emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         // Trigger is exempt — its own click toggles open/close; without
         // exemption pointer-down-outside would race and double-close.
         exemptElements: () => {
