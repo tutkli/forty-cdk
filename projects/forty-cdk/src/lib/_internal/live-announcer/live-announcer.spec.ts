@@ -83,6 +83,29 @@ describe('LiveAnnouncer', () => {
     expect(document.querySelector('[aria-live="assertive"]')!.textContent).toBe('');
   });
 
+  it('clear() cancels a pending announce so it never paints', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    announcer.announce('pending');
+    // Region created synchronously by announce(); the write is still queued.
+    const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    expect(region.textContent).toBe('');
+
+    announcer.clear();
+    await Promise.resolve();
+
+    expect(region.textContent).toBe('');
+  });
+
+  it('a new announce supersedes the pending microtask of the prior one', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    announcer.announce('stale');
+    announcer.announce('fresh');
+    await Promise.resolve();
+
+    const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    expect(region.textContent).toBe('fresh');
+  });
+
   it('keeps live regions visually hidden (accessible but not visible)', () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('x');

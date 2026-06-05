@@ -202,6 +202,52 @@ describe('attachSwipeDismiss', () => {
     cleanup();
   });
 
+  it('ignores a second pointerdown mid-gesture so the first pointer still ends the swipe', () => {
+    const { el, rec, cleanup } = setup({ directions: ['right'], threshold: 50 });
+    // Arm with pointer 1.
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(rec.starts).toHaveLength(1);
+
+    // A second pointer touches down mid-gesture: it must NOT take over tracking.
+    pointer(el, 'pointerdown', { clientX: 200, clientY: 200, pointerId: 2 });
+    // The second pointer's moves are ignored (still tracking pointer 1).
+    pointer(el, 'pointermove', { clientX: 240, clientY: 200, pointerId: 2 });
+    expect(rec.moves.every((d) => d.originalEvent.pointerId === 1)).toBe(true);
+
+    // Pointer 1's pointerup is honored and ends the swipe past the threshold.
+    pointer(el, 'pointerup', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(rec.ends).toHaveLength(1);
+    expect(rec.cancels).toEqual([]);
+    cleanup();
+  });
+
+  it('does not release the first pointer capture when a second pointerdown arrives', () => {
+    const { el, rec, cleanup } = setup({ directions: ['right'], threshold: 50 });
+    const captured: number[] = [];
+    const released: number[] = [];
+    el.setPointerCapture = (id: number): void => {
+      captured.push(id);
+    };
+    el.hasPointerCapture = (id: number): boolean => captured.includes(id) && !released.includes(id);
+    el.releasePointerCapture = (id: number): void => {
+      released.push(id);
+    };
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(captured).toEqual([1]);
+
+    pointer(el, 'pointerdown', { clientX: 200, clientY: 200, pointerId: 2 });
+    // The first pointer's capture is untouched (no orphaned capture).
+    expect(released).toEqual([]);
+
+    pointer(el, 'pointerup', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(released).toEqual([1]);
+    expect(rec.ends).toHaveLength(1);
+    cleanup();
+  });
+
   it('cleanup removes listeners and a follow-up gesture is silent', () => {
     const { el, rec, cleanup } = setup();
     cleanup();

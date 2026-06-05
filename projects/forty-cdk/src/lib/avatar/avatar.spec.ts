@@ -85,6 +85,68 @@ describe('ForAvatar', () => {
       expect(root.getAttribute('data-status')).toBe('error');
     });
 
+    it('reports loaded for a cached image with a positive naturalWidth', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 48 });
+
+      fixture.componentInstance.src.set('https://example.test/cached.png');
+      flush();
+      await Promise.resolve();
+      flush();
+
+      const root = query<HTMLElement>('[forAvatar]')!;
+      expect(root.getAttribute('data-status')).toBe('loaded');
+    });
+
+    it('does not classify a cached zero-intrinsic-size SVG as error (verifies via decode)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      // Cached, complete, but zero intrinsic size — a valid SVG without
+      // explicit width/height looks identical to a broken image by
+      // naturalWidth alone. decode() resolves, so it must end up loaded.
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 0 });
+      img.decode = (): Promise<void> => Promise.resolve();
+
+      fixture.componentInstance.src.set('https://example.test/icon.svg');
+      flush();
+      await Promise.resolve();
+      flush();
+
+      const root = query<HTMLElement>('[forAvatar]')!;
+      // Stays loading until decode() settles — never flips to error.
+      expect(root.getAttribute('data-status')).toBe('loading');
+
+      await Promise.resolve();
+      await Promise.resolve();
+      flush();
+
+      expect(root.getAttribute('data-status')).toBe('loaded');
+      expect(fixture.componentInstance.emitted).not.toContain('error');
+    });
+
+    it('reports error for a cached zero-size image whose decode rejects', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 0 });
+      img.decode = (): Promise<void> => Promise.reject(new Error('broken'));
+
+      fixture.componentInstance.src.set('https://example.test/broken.png');
+      flush();
+      await Promise.resolve();
+      flush();
+
+      await Promise.resolve();
+      await Promise.resolve();
+      flush();
+
+      const root = query<HTMLElement>('[forAvatar]')!;
+      expect(root.getAttribute('data-status')).toBe('error');
+    });
+
     it('throws a prefixed error when [forAvatarImage] is used without [forAvatar]', () => {
       @Component({
         imports: [ForAvatarImage],

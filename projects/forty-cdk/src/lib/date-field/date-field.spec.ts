@@ -205,6 +205,44 @@ describe('ForDateField', () => {
       expect(adapter.getDate(value)).toBe(28); // clamped, 2025 is not a leap year
     });
 
+    it('re-clamps the day segment so aria-valuenow never exceeds aria-valuemax on month step', async () => {
+      // Incomplete field (no year): the value stays null, so the day part is
+      // not re-derived from a clamped composed value — the segment itself must
+      // be re-clamped on the month step to keep the spinbutton invariant.
+      const r = renderHost(Host);
+      await type(r, 'day', '31');
+      await type(r, 'month', '01'); // 31 Jan
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('31');
+
+      await key(r, 'month', 'ArrowUp'); // → February (28 days, empty year)
+
+      const day = seg(r, 'day');
+      const now = Number(day.getAttribute('aria-valuenow'));
+      const max = Number(day.getAttribute('aria-valuemax'));
+      expect(max).toBe(28);
+      expect(now).toBe(28);
+      expect(now).toBeLessThanOrEqual(max);
+      expect(day.textContent?.trim()).toBe('28');
+      // Field is still incomplete, so no value is composed.
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('re-clamps the day on Home/End jump of the month into a shorter month', async () => {
+      const r = renderHost(Host);
+      await type(r, 'day', '31');
+      await type(r, 'month', '01'); // 31 Jan, year empty
+
+      await key(r, 'month', 'End'); // → December (31 days)
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('31');
+
+      await type(r, 'month', '02'); // February (28 days, empty year)
+      const day = seg(r, 'day');
+      expect(Number(day.getAttribute('aria-valuenow'))).toBeLessThanOrEqual(
+        Number(day.getAttribute('aria-valuemax')),
+      );
+      expect(day.getAttribute('aria-valuenow')).toBe('28');
+    });
+
     it('clamps a composed value down to maxDate', async () => {
       const r = renderHost(Host);
       r.instance.maxDate.set(new Date(2026, 11, 1));

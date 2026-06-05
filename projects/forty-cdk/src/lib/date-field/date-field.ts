@@ -594,7 +594,26 @@ export class ForDateField<D>
     });
   }
 
-  #commitParts(next: DateTimeParts): void {
+  /**
+   * Re-clamps `day` to the resolved month/year length so the day segment's
+   * `aria-valuenow` never exceeds its `aria-valuemax` after stepping the month
+   * or year (e.g. day 31 + step to February → 28/29). Only ever shrinks the
+   * day; an empty day is left untouched.
+   */
+  #clampDay(parts: DateTimeParts): DateTimeParts {
+    if (parts.day === null) {
+      return parts;
+    }
+    const probe = this.adapter.createDate(parts.year ?? RESOLVER_YEAR, parts.month ?? 1, 1);
+    const maxDay = this.adapter.getDaysInMonth(probe);
+    if (parts.day <= maxDay) {
+      return parts;
+    }
+    return { ...parts, day: maxDay };
+  }
+
+  #commitParts(rawNext: DateTimeParts): void {
+    const next = this.#clampDay(rawNext);
     this.#parts.set(next);
     const granularity = this.granularity();
     const needHour = granularity !== 'day';

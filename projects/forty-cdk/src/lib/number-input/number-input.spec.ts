@@ -209,6 +209,33 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(1234.5);
     });
 
+    it('parses a correctly grouped integer', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1,234,567');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1234567);
+    });
+
+    it('rejects a misgrouped integer instead of collapsing it', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '9');
+      flush();
+      // "1,2,3" is not valid grouping; it must NOT silently parse to 123.
+      typeInto(input, '1,2,3');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(9);
+    });
+
     it('does not clamp while typing (clamps on commit)', () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(10);

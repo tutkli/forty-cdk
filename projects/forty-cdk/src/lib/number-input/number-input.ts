@@ -19,6 +19,11 @@ import {
 } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
 
+/** Escapes a string for safe interpolation into a `RegExp` source. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** Group / decimal separators for a given locale, derived once via `Intl`. */
 function localeSeparators(locale: string | undefined): { group: string; decimal: string } {
   let group = ',';
@@ -366,10 +371,15 @@ export class ForNumberInput
 
   /**
    * Parse the input's locale-formatted text into a number, or `null` when it
-   * is not a valid plain decimal. Grouping separators are stripped and the
-   * locale decimal separator is normalized to `.`, then the canonical form is
-   * validated against a strict numeric regex (optional sign + digits + a
-   * single optional decimal) before `Number()`.
+   * is not a valid plain decimal. The locale decimal separator is normalized to
+   * `.`, group separators are validated for placement then stripped, and the
+   * canonical form is validated against a strict numeric regex (optional sign +
+   * digits + a single optional decimal) before `Number()`.
+   *
+   * Grouping placement is strict: a group separator may appear only in the
+   * integer part and only at 3-digit boundaries, so a correctly grouped
+   * `"1,234,567"` parses while a misgrouped `"1,2,3"` is rejected (`null`)
+   * rather than silently collapsing to `123`.
    *
    * Exponent notation is intentionally rejected — `2e3` is not valid
    * spinbutton input and silently parsing it to `2000` is surprising. So are
@@ -379,20 +389,37 @@ export class ForNumberInput
    */
   #parse(text: string): number | null {
     const { group, decimal } = this.#separators();
-    let normalized = text.trim().split(group).join('');
+    // Strip currency symbols, percent signs, and any other non-numeric noise
+    // the locale may include, leaving digits, sign, the locale group/decimal
+    // separators, and the exponent letters — the strict gates below reject
+    // exponent notation, so stripping `eE` here would let `2e3` slip through
+    // as `23` instead of being seen (and refused) as malformed.
+    const noise = new RegExp(`[^\\d${escapeRegExp(group)}${escapeRegExp(decimal)}eE+-]`, 'g');
+    const cleaned = text.trim().replace(noise, '');
+    if (cleaned.includes(group) && !this.#groupingIsValid(cleaned, group, decimal)) {
+      return null;
+    }
+    let normalized = cleaned.split(group).join('');
     if (decimal !== '.') {
       normalized = normalized.split(decimal).join('.');
     }
-    // Strip currency symbols, percent signs, and any other non-numeric noise
-    // the locale may include, leaving digits, sign, decimal point, and the
-    // exponent letters — the strict gate below is what ultimately rejects
-    // exponent notation, so stripping `eE` here would let `2e3` slip through
-    // as `23` instead of being seen (and refused) as malformed.
-    normalized = normalized.replace(/[^\d.eE+-]/g, '');
     if (!/^[+-]?\d+(?:\.\d+)?$/.test(normalized)) {
       return null;
     }
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  /**
+   * Validates that every group separator in `cleaned` sits at a legal 3-digit
+   * boundary within the integer part (none in the fractional part). Permits a
+   * leading sign and a shorter leading group (`1,234` / `12,345` / `123,456`).
+   */
+  #groupingIsValid(cleaned: string, group: string, decimal: string): boolean {
+    const integerPart = cleaned.split(decimal)[0] ?? '';
+    const sign = /^[+-]/.test(integerPart) ? integerPart[0]! : '';
+    const digitsWithGroups = sign ? integerPart.slice(1) : integerPart;
+    const g = escapeRegExp(group);
+    return new RegExp(`^\\d{1,3}(?:${g}\\d{3})+$`).test(digitsWithGroups);
   }
 }

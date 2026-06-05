@@ -143,6 +143,42 @@ describe('BodyScrollLock', () => {
     });
   });
 
+  describe('scrollbar-gutter: stable', () => {
+    afterEach(() => {
+      document.documentElement.style.removeProperty('scrollbar-gutter');
+      document.body.style.removeProperty('scrollbar-gutter');
+    });
+
+    it('does not write padding-right when the gutter is reserved on <html>', () => {
+      document.documentElement.style.setProperty('scrollbar-gutter', 'stable');
+      lock.lock();
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('does not double-pad when the gutter is "stable both-edges"', () => {
+      document.documentElement.style.setProperty('scrollbar-gutter', 'stable both-edges');
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('honors the gutter when set on <body> instead of <html>', () => {
+      document.body.style.setProperty('scrollbar-gutter', 'stable');
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('');
+      lock.unlock();
+    });
+
+    it('leaves a pre-existing inline padding-right untouched on unlock under a stable gutter', () => {
+      document.documentElement.style.setProperty('scrollbar-gutter', 'stable');
+      document.body.style.paddingRight = '24px';
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('24px');
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('24px');
+    });
+  });
+
   it('isolates state across application bootstraps', () => {
     lock.lock();
     expect(document.body.style.overflow).toBe('hidden');
