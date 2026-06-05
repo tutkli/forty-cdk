@@ -2,6 +2,7 @@ import {
   afterNextRender,
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   type Signal,
@@ -68,6 +69,8 @@ export class ForNavigationMenuContent {
   protected readonly triggerId = computed(() => this.menu.triggerIdFor(this.value()));
   protected readonly motion = computed(() => this.menu.motionFor(this.value()));
 
+  readonly #mounted = signal(false);
+
   constructor() {
     const handle = {
       host: this.#host,
@@ -93,11 +96,29 @@ export class ForNavigationMenuContent {
     // trigger's document order, so an overlapping A→B transition keeps a
     // deterministic child order regardless of which panel mounted last.
     afterNextRender(() => {
-      const viewport = this.menu.viewport();
-      if (viewport) {
-        viewport.insertPanel(this.#host, this.menu.triggerHostFor(this.value()));
-      }
+      this.#reparent();
+      this.#mounted.set(true);
     });
+
+    // Re-parent (and re-order) the panel reactively once mounted.
+    // `triggerHostFor` reads the menu's trigger collection, so this re-runs
+    // whenever this panel's trigger registers or unregisters — closing the
+    // race where the trigger registers AFTER the content (both defer to
+    // `afterNextRender`). Until the trigger is known the panel sorts last;
+    // once it registers the viewport re-orders it into trigger document
+    // order. The re-parent is a DOM side effect on the imperative viewport
+    // handle (no signal writes), and it waits for `#mounted` so it never runs
+    // before `afterNextRender` has attached the panel under the viewport.
+    effect(() => {
+      if (!this.#mounted()) return;
+      this.#reparent();
+    });
+  }
+
+  #reparent(): void {
+    const viewport = this.menu.viewport();
+    if (!viewport) return;
+    viewport.insertPanel(this.#host, this.menu.triggerHostFor(this.value()));
   }
 
   protected onEscape(event: KeyboardEvent): void {

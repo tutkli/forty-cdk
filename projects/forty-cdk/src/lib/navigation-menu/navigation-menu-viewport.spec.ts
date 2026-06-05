@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 
+import { flush as flushAsync } from '../../test-utils/flush';
 import { renderHost } from '../../test-utils/render';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
@@ -143,6 +144,66 @@ class OverlappingMegaMenuHost {
   readonly mountCompany = signal(false);
 }
 
+/**
+ * Mounts each trigger independently of its content so a content panel can
+ * re-parent into the viewport BEFORE its own trigger has registered — the
+ * registration race the viewport must tolerate. Trigger and content both
+ * defer their registration to `afterNextRender`, so in real apps the order
+ * is non-deterministic; toggling these booleans lets the spec force the
+ * trigger to register strictly after the content.
+ */
+@Component({
+  selector: 'late-trigger-mega-menu-host',
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuViewport,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          @if (mountProductsTrigger()) {
+            <button forNavigationMenuTrigger>Products</button>
+          }
+          @if (mountProducts()) {
+            <div forNavigationMenuContent data-id="products">products panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="solutions">
+          @if (mountSolutionsTrigger()) {
+            <button forNavigationMenuTrigger>Solutions</button>
+          }
+          @if (mountSolutions()) {
+            <div forNavigationMenuContent data-id="solutions">solutions panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="company">
+          @if (mountCompanyTrigger()) {
+            <button forNavigationMenuTrigger>Company</button>
+          }
+          @if (mountCompany()) {
+            <div forNavigationMenuContent data-id="company">company panel</div>
+          }
+        </li>
+      </ul>
+      <div forNavigationMenuViewport data-id="viewport"></div>
+    </nav>
+  `,
+})
+class LateTriggerMegaMenuHost {
+  readonly open = signal('');
+  readonly mountProducts = signal(false);
+  readonly mountSolutions = signal(false);
+  readonly mountCompany = signal(false);
+  readonly mountProductsTrigger = signal(true);
+  readonly mountSolutionsTrigger = signal(true);
+  readonly mountCompanyTrigger = signal(true);
+}
+
 describe('ForNavigationMenuViewport', () => {
   let originalRO: typeof ResizeObserver;
 
@@ -283,6 +344,66 @@ describe('ForNavigationMenuViewport', () => {
         'solutions',
         'company',
       ]);
+    });
+  });
+
+  describe('deterministic panel order under a trigger-registration race', () => {
+    const panelIds = (viewport: HTMLElement): string[] =>
+      (Array.from(viewport.children) as HTMLElement[]).map((c) => c.getAttribute('data-id') ?? '');
+
+    it('slots a panel into trigger order once its late-registering trigger appears', async () => {
+      const { fixture, query } = renderHost(LateTriggerMegaMenuHost);
+      const host = fixture.componentInstance;
+      // 'products' (the earliest trigger) starts WITHOUT its trigger so its
+      // content can re-parent while triggerHostFor('products') is still null.
+      host.mountProductsTrigger.set(false);
+      await flushAsync(fixture);
+
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+
+      // 'company' (last trigger) enters first with its trigger present.
+      host.open.set('company');
+      host.mountCompany.set(true);
+      await flushAsync(fixture);
+      expect(panelIds(viewport)).toEqual(['company']);
+
+      // 'products' enters while its trigger is still unmounted. With no known
+      // trigger host it can only be appended last (degraded order) for now.
+      host.open.set('products');
+      host.mountProducts.set(true);
+      await flushAsync(fixture);
+      expect(panelIds(viewport)).toEqual(['company', 'products']);
+
+      // The 'products' trigger finally registers. Ordering must re-run and
+      // move the panel ahead of 'company', matching trigger document order —
+      // not the mount order it briefly degraded to.
+      host.mountProductsTrigger.set(true);
+      await flushAsync(fixture);
+      expect(panelIds(viewport)).toEqual(['products', 'company']);
+    });
+
+    it('re-appends a panel last when its trigger unregisters', async () => {
+      const { fixture, query } = renderHost(LateTriggerMegaMenuHost);
+      const host = fixture.componentInstance;
+      await flushAsync(fixture);
+
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+
+      // Both panels mount with their triggers present, in trigger order.
+      host.open.set('company');
+      host.mountCompany.set(true);
+      await flushAsync(fixture);
+      host.open.set('products');
+      host.mountProducts.set(true);
+      await flushAsync(fixture);
+      expect(panelIds(viewport)).toEqual(['products', 'company']);
+
+      // Remove the 'products' trigger while its panel stays mounted
+      // (animate.leave shape). Ordering re-runs: with no trigger to anchor
+      // it, the panel falls to the end.
+      host.mountProductsTrigger.set(false);
+      await flushAsync(fixture);
+      expect(panelIds(viewport)).toEqual(['company', 'products']);
     });
   });
 
