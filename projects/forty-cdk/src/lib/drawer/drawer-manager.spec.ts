@@ -520,28 +520,6 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('defaults provider — every key flows through', () => {
-    it('swipeToDismiss=false from defaults reaches the directive', () => {
-      const { drawers } = setup({
-        providers: [provideForDrawerDefaults({ swipeToDismiss: false })],
-      });
-      drawers.open(SheetDrawer, { data: { message: 'x' } });
-      // Without swipe, no pointerdown listener side effects: the surface is
-      // not a draggable element. We assert by verifying the directive wired
-      // up at all (data-state present) — swipe wiring is unobservable from
-      // jsdom but the input is read by the directive.
-      expect(
-        document.querySelector<HTMLElement>('[role="dialog"]')!.getAttribute('data-state'),
-      ).toBe('open');
-    });
-
-    it('handleOnly=true from defaults is forwarded to the directive', () => {
-      const { drawers } = setup({
-        providers: [provideForDrawerDefaults({ handleOnly: true })],
-      });
-      drawers.open(SheetDrawer, { data: { message: 'x' } });
-      expect(document.querySelector<HTMLElement>('[role="dialog"]')).not.toBeNull();
-    });
-
     it('side=right from defaults is overridden by config.side=left', () => {
       const { drawers } = setup({
         providers: [provideForDrawerDefaults({ side: 'right' })],

@@ -333,6 +333,25 @@ test.describe('Drawer', () => {
       expect(dragCount).toBeGreaterThan(1);
     });
 
+    test('swipeToDismiss=false: a drag past closeThreshold does not arm or dismiss', async ({
+      page,
+    }) => {
+      // Same 200px drawer and 120px drag that dismisses with the default
+      // swipeToDismiss=true (first test in this block). With the input
+      // disabled the pointerdown listener never arms the gesture: no `(drag)`
+      // fires and the drawer stays mounted with no close reason.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', noSwipeToDismiss: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+    });
+
     test('drag short of closeThreshold returns to rest without closing', async ({ page }) => {
       // 200px × 0.25 = 50px threshold; 30px does not cross it. (release)
       // emits with willClose=false and the drawer stays mounted at offset 0.
@@ -772,17 +791,35 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
     });
 
-    // The fixture does not currently expose a scrollable inner area —
-    // the drawer content (`first`, `second`, `text-input`, `close-btn`)
-    // has no overflow, so there is no way to drive a touchmove that the
-    // inner scroller consumes (which is exactly what the test would
-    // verify the swipe-dismiss helper ignores). Adding a scrollable
-    // child belongs to the original drawer wave (#269 explicitly tells
-    // us not to modify fixtures in this PR); parked with `test.fixme`
-    // so the audit row stays honest and the gap is discoverable.
-    test.fixme('@mobile scroll-inside-drawer does NOT dismiss', async () => {
-      // Will be implemented once the drawer fixture exposes a
-      // scrollable inner area (see #269 acceptance criterion).
+    test('@mobile scroll-inside-drawer does NOT dismiss while the inner scroller can still scroll', async ({
+      page,
+    }) => {
+      // The swipe-dismiss helper's `isScrollableAtEdge` guard: a 'down'
+      // gesture that starts inside a scrollable child whose `scrollTop > 0`
+      // (so it can still scroll its content up) must scroll the content, not
+      // arm the drawer swipe. jsdom returns zero for scrollHeight/clientHeight/
+      // scrollTop so this is observable only against a real laid-out overflow
+      // box. The `?scrollable=1` fixture exposes an 80px-tall scroller with
+      // 600px of content.
+      await gotoFixture(page, 'drawer', { drawerHeight: '300', scrollable: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+
+      // Scroll the inner content away from the top so the 'down' gesture has
+      // room to scroll up (scrollTop > 0).
+      await el(page, 'scroll-content').evaluate((node) => {
+        (node as HTMLElement).scrollTop = 100;
+      });
+
+      // A downward drag starting inside the scroller. With scrollTop > 0 the
+      // helper leaves the gesture to the inner scroller: the drawer never arms
+      // (no (drag) emission) and stays mounted with no close reason.
+      await dragFrom(page, el(page, 'scroll-content'), { dx: 0, dy: 120 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
   });
 });

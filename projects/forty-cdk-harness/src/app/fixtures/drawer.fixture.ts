@@ -66,6 +66,21 @@ import { queryFlag } from './_query-flag';
         background: #f5f5f5;
         padding: 16px;
       }
+      /*
+       * A scrollable inner area so the swipe-dismiss helper's
+       * isScrollableAtEdge guard can be exercised against a real laid-out
+       * overflow box: a 'down' gesture that starts inside this scroller while
+       * it is scrolled away from the top must scroll the content, not arm the
+       * drawer swipe. jsdom returns zero for scrollHeight/clientHeight/scrollTop
+       * so this lives in the E2E layer only.
+       */
+      [data-testid='scroll-content'] {
+        height: 80px;
+        overflow-y: auto;
+      }
+      [data-testid='scroll-content'] .tall {
+        height: 600px;
+      }
     `,
   ],
   template: `
@@ -84,6 +99,7 @@ import { queryFlag } from './_query-flag';
         [snapPoints]="snapPoints()"
         [(activeSnapPoint)]="activeSnapPoint"
         [handleOnly]="handleOnly"
+        [swipeToDismiss]="swipeToDismiss"
         [scaleBackground]="scaleBackground"
         [setBackgroundColorOnScale]="setBackgroundColorOnScale"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
@@ -98,6 +114,11 @@ import { queryFlag } from './_query-flag';
           <div data-testid="backdrop" forDrawerBackdrop></div>
         }
         <div data-testid="handle" forDrawerHandle></div>
+        @if (scrollable) {
+          <div data-testid="scroll-content">
+            <div class="tall">Scrollable content</div>
+          </div>
+        }
         <button data-testid="first">First</button>
         <button data-testid="second">Second</button>
         <input data-testid="text-input" />
@@ -176,6 +197,8 @@ export class DrawerFixture {
   protected readonly vetoOpen = queryFlag('vetoOpen');
   protected readonly vetoClose = queryFlag('vetoClose');
   protected readonly handleOnly = queryFlag('handleOnly');
+  protected readonly swipeToDismiss = !queryFlag('noSwipeToDismiss');
+  protected readonly scrollable = queryFlag('scrollable');
   protected readonly backdrop = queryFlag('backdrop');
   protected readonly scaleBackground = queryFlag('scaleBackground');
   protected readonly setBackgroundColorOnScale = !queryFlag('noBgColorOnScale');

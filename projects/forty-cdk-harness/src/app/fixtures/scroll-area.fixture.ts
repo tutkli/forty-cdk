@@ -76,6 +76,10 @@ import {
         /* Force-visible regardless of hover so the spec doesn't have to
            pointerenter the root to read the thumb's bounding box. */
         opacity: 1;
+        /* A consumer display rule (author selector). The directive's inline
+           display:none must still win while the scrollbar is hidden — the
+           type="auto" self-hide spec asserts toBeHidden() against this. */
+        display: flex;
       }
       [forScrollAreaScrollbar][orientation='vertical'] {
         top: 0;
