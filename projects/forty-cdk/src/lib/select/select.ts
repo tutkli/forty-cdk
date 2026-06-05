@@ -23,6 +23,12 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  defaultItemToFormValue,
+  isInArray,
+  singleSelected,
+  toggleInArray,
+} from '../_internal/selection/selection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
@@ -108,9 +114,7 @@ export class ForSelect<T = string>
    * format — typically a per-item id — when the backend expects that:
    * `[itemToFormValue]="(it) => it.id"`.
    */
-  readonly itemToFormValue = input<(item: T) => string>((item) =>
-    typeof item === 'string' ? item : JSON.stringify(item),
-  );
+  readonly itemToFormValue = input<(item: T) => string>(defaultItemToFormValue);
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
@@ -120,10 +124,7 @@ export class ForSelect<T = string>
    * `value()[0]`. The array-backed `value` model remains the source of
    * truth and the `FormValueControl` contract; this is a derived accessor.
    */
-  readonly selected = computed<T | null>(() => {
-    const values = this.value();
-    return values.length === 1 ? values[0]! : null;
-  });
+  readonly selected = singleSelected(this.value);
 
   /**
    * Two-way bindable. Whether the listbox is currently shown. The `model()`
@@ -405,21 +406,15 @@ export class ForSelect<T = string>
   }
 
   isSelected(v: T): boolean {
-    const equals = this.isItemEqualToValue();
-    return this.value().some((x) => equals(x, v));
+    return isInArray(this.value(), v, this.isItemEqualToValue());
   }
 
   activate(v: T): void {
     if (this.disabled() || this.readonly()) {
       return;
     }
-    const equals = this.isItemEqualToValue();
     if (this.multiple()) {
-      const current = this.value();
-      const next = current.some((x) => equals(x, v))
-        ? current.filter((x) => !equals(x, v))
-        : [...current, v];
-      this.value.set(next);
+      this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
       // Multi-select stays open — consumer closes via outside pointer / Escape / Tab.
       return;
     }
