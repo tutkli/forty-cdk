@@ -157,6 +157,22 @@ describe('ForTimeField', () => {
       expect(root(r).getAttribute('data-empty')).toBeNull();
     });
 
+    it('anchors a value composed with no bound date on the DST-stable sentinel', async () => {
+      const r = renderHost(Host);
+      r.instance.granularity.set('second');
+      await flush(r.fixture);
+      await type(r, 'hour', '02');
+      await type(r, 'minute', '30');
+      await type(r, 'second', '15');
+      const value = r.instance.value()!;
+      expect(value.getFullYear()).toBe(2000);
+      expect(value.getMonth()).toBe(0);
+      expect(value.getDate()).toBe(1);
+      expect(adapter.getHours(value)).toBe(2);
+      expect(adapter.getMinutes(value)).toBe(30);
+      expect(adapter.getSeconds(value)).toBe(15);
+    });
+
     it('reflects aria-valuenow as segments are filled', async () => {
       const r = renderHost(Host);
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBeNull();

@@ -63,9 +63,10 @@ interface TimeParts {
  * It implements `FormValueControl<D | null>` from `@angular/forms/signals`, so
  * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
  * The value stays `null` until every visible segment is filled. When no value
- * is bound yet, the composed value is anchored on the adapter's `today()` and
- * carries the entered time; bind an existing date-time as `value` to edit its
- * time in place.
+ * is bound yet, the composed value is anchored on a fixed, DST-stable sentinel
+ * date (`2000-01-01`) rather than today, so a wall-clock time always round-trips
+ * to the same instant; bind an existing date-time as `value` to edit its time in
+ * place.
  *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
@@ -128,6 +129,17 @@ export class ForTimeField<D>
    * empty. Required by `FormValueControl<D | null>`. The `model()` change
    * emitter (`(valueChange)`) fires only when the field itself composes a new
    * value, never on consumer writes via `[(value)]`.
+   *
+   * When no value is bound, the composed date-time anchors its date part on a
+   * fixed, DST-stable sentinel date (`2000-01-01`) instead of today. This avoids
+   * two `today()` hazards on adapters whose `D` carries a time zone (e.g.
+   * `NativeDateAdapter`'s `Date`): a wall-clock time on a DST-transition day that
+   * does not exist or is ambiguous would silently shift the emitted instant, and
+   * a today-anchored value would leak the current date into a time-only control
+   * (so a persisted value re-derives a different time next week). Consumers
+   * reading the emitted value should treat only its time-of-day component as
+   * meaningful while no date is bound. `CalendarDateTime` (no time zone) is
+   * unaffected, but anchors on the same sentinel for consistency.
    */
   readonly value = model<D | null>(null);
 
@@ -504,7 +516,7 @@ export class ForTimeField<D>
       (!needMinute || next.minute !== null) &&
       (!needSecond || next.second !== null);
     if (complete) {
-      const base = this.value() ?? this.adapter.today();
+      const base = this.value() ?? this.#sentinelDate();
       const composed = this.adapter.setTime(
         base,
         next.hour!,
@@ -515,6 +527,10 @@ export class ForTimeField<D>
     } else {
       this.value.set(null);
     }
+  }
+
+  #sentinelDate(): D {
+    return this.adapter.createDate(2000, 1, 1);
   }
 
   #clampToBounds(date: D): D {
