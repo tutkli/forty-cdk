@@ -145,10 +145,15 @@ export class ForToastViewport {
 
   /**
    * Maximum number of toasts rendered at once. Older toasts collapse out of
-   * the visible stack but stay in `manager.toasts()` until dismissed.
-   * `Infinity` (default) renders all live toasts.
+   * the visible stack but stay in `manager.toasts()` until dismissed. When
+   * unset (`null`, the default), the viewport falls back to the global
+   * `provideForToastDefaults({ maxVisible })` value (itself `Infinity` unless
+   * configured, which renders all live toasts). Setting `[maxVisible]`
+   * per-viewport overrides the global default.
    */
-  readonly maxVisible = input(Infinity, { transform: numberAttribute });
+  readonly maxVisible = input<number | null>(null, {
+    transform: (v: unknown): number | null => (v == null ? null : numberAttribute(v)),
+  });
 
   /**
    * Default swipe direction(s) applied to every programmatic toast that
@@ -166,6 +171,15 @@ export class ForToastViewport {
   protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
 
   /**
+   * Resolved `maxVisible` limit: the per-viewport `[maxVisible]` when set,
+   * otherwise the global `provideForToastDefaults({ maxVisible })` value.
+   */
+  protected readonly resolvedMaxVisible = computed(() => {
+    const own = this.maxVisible();
+    return own ?? this.#manager.defaultMaxVisible();
+  });
+
+  /**
    * Whether this viewport is the active renderer for its region. The manager
    * grants this to the first viewport mounted per region; dormant viewports
    * render nothing so a single `show()` yields exactly one toast node.
@@ -178,7 +192,8 @@ export class ForToastViewport {
     }
     const region = this.region();
     const all = this.#manager.toasts().filter((toast) => toast.config.region === region);
-    const limit = Number.isFinite(this.maxVisible()) ? this.maxVisible() : all.length;
+    const resolved = this.resolvedMaxVisible();
+    const limit = Number.isFinite(resolved) ? resolved : all.length;
     if (all.length <= limit) {
       return all;
     }
