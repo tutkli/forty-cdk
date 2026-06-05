@@ -113,6 +113,24 @@ export class ForRadioGroup
     });
   }
 
+  /**
+   * Move focus to a radio, implementing `FormUiControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus
+   * the host `role="radiogroup"` wrapper — which is not focusable and carries
+   * no keyboard map — so focus-on-error would silently go nowhere. Targets the
+   * selected radio's host when one matches, else the first enabled radio host;
+   * no-op when the group is disabled or has no enabled radio.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.disabled()) {
+      return;
+    }
+    const v = this.value();
+    const selected = this.#items.items().find((item) => !item.disabled() && item.value() === v);
+    const target = selected?.host ?? this.#firstEnabledHost();
+    target?.focus(options);
+  }
+
   isSelected(v: string): boolean {
     return this.value() === v;
   }

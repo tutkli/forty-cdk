@@ -628,5 +628,20 @@ describe('ForRadioGroup', () => {
       flush();
       expect(groupOf(el).getAttribute('aria-required')).toBe('true');
     });
+
+    it('focus-on-error moves focus onto a radio, not the group host', () => {
+      const { el, fixture, flush } = renderHost(SignalFormsHost);
+      flush();
+      fixture.componentInstance.checkout.shipping().focusBoundControl();
+      expect(document.activeElement).toBe(radioOf(el, 'standard'));
+    });
+
+    it('focus-on-error targets the selected radio when one is checked', () => {
+      const { el, fixture, flush } = renderHost(SignalFormsHost);
+      fixture.componentInstance.model.set({ shipping: 'express' });
+      flush();
+      fixture.componentInstance.checkout.shipping().focusBoundControl();
+      expect(document.activeElement).toBe(radioOf(el, 'express'));
+    });
   });
 });

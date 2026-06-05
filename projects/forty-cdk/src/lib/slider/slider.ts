@@ -368,6 +368,21 @@ export class ForSlider
     this.valueCommit.emit(this.value());
   }
 
+  /**
+   * Move focus to a thumb, implementing `FormUiControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus
+   * the host `role="group"` wrapper — which is not focusable and carries no
+   * keyboard map — so focus-on-error would silently go nowhere. Targets the
+   * first registered thumb (the roving-tabindex entry point); no-op when the
+   * slider is disabled or has no thumbs.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.#thumbs.items()[0]?.host.focus(options);
+  }
+
   registerThumb(handle: ForSliderThumbHandle): void {
     this.#thumbs.register(handle);
   }
