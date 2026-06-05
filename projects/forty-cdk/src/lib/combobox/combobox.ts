@@ -10,6 +10,7 @@ import {
   numberAttribute,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -372,12 +373,14 @@ export class ForCombobox<T = string>
       disabled: this.disabled,
     });
 
-    // Bridge: keep `aria-activedescendant` (`#activeId`) in sync with the
-    // registered option set. This effect ONLY moves the activedescendant
-    // pointer (and scrolls the matching option into view) — it does not
-    // derive data into another signal. Per CLAUDE.md that's the canonical
-    // bridge use of `effect()` and is exempt from the "no signal-derivation
-    // in effect" rule.
+    // `#activeId` is the activedescendant pointer, not derived data: this
+    // effect performs imperative DOM moves (`scrollIntoView`) and seeds the
+    // pointer in response to the registered option set changing. It reacts to
+    // `#items.items()`, `autoHighlight()` and `open()`; the `#activeId` read
+    // is `untracked()` so the effect never re-runs from its own write (no
+    // read-and-write of the same signal in the reactive scope) — re-seeding
+    // after the active option unmounts is driven by the `items` change that
+    // accompanies it, which also clears `#activeId` in `unregisterOption`.
     //
     // `#snapshot.prime()` eagerly pulls the snapshot caches so their
     // `linkedSignal` `prev` slot gets seeded while the listbox is open.
@@ -401,7 +404,12 @@ export class ForCombobox<T = string>
       // never scroll the consumer's window. Scrolling the active option out
       // of view clears the activedescendant and re-enters this branch, so an
       // off-window seed would snap the listbox back to the top on every tick.
-      if (this.autoHighlight() && this.open() && this.#activeId() === null && items.length > 0) {
+      if (
+        this.autoHighlight() &&
+        this.open() &&
+        untracked(() => this.#activeId()) === null &&
+        items.length > 0
+      ) {
         const total = this.totalCount();
         if (total !== undefined) {
           this.#snapshot.seedFromIndexedSnapshot(

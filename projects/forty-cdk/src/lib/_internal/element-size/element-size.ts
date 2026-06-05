@@ -23,8 +23,9 @@ export interface ElementBox {
  * Implementation notes:
  * - One `ResizeObserver` per call. The browser batches all observers, so
  *   creating several is cheap.
- * - The signal write happens inside the observer callback, which fires
- *   outside any reactive scope — no `effect()` self-cycle.
+ * - The last emitted box is held in a plain `prev` variable, not read back
+ *   from the `out` signal, so the effect never reads-and-writes the same
+ *   signal (the activation `sync(el)` would otherwise be a self-cycle).
  * - A single synchronous `sync(el)` runs when the effect attaches the
  *   observer, so the target is measured exactly once on first activation.
  * - Cleaned up via `DestroyRef`.
@@ -33,6 +34,7 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
   const out = signal<ElementBox | null>(null);
   let observed: HTMLElement | null = null;
   let observer: ResizeObserver | null = null;
+  let prev: ElementBox | null = null;
 
   const measure = (el: HTMLElement): ElementBox => ({
     width: el.clientWidth,
@@ -43,7 +45,6 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
 
   const sync = (el: HTMLElement): void => {
     const next = measure(el);
-    const prev = out();
     if (
       !prev ||
       prev.width !== next.width ||
@@ -51,6 +52,7 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
       prev.scrollWidth !== next.scrollWidth ||
       prev.scrollHeight !== next.scrollHeight
     ) {
+      prev = next;
       out.set(next);
     }
   };
@@ -65,6 +67,7 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
     }
     observed = el;
     if (!el) {
+      prev = null;
       out.set(null);
       return;
     }
