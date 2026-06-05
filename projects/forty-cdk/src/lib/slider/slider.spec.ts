@@ -1,4 +1,5 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
@@ -512,6 +513,75 @@ describe('ForSlider', () => {
 
     // "drag end marks touched" requires laid-out track geometry to drive a
     // pointer drag through `pointerToValue`, so it lives in `slider.e2e.ts`.
+  });
+
+  describe('focus()', () => {
+    @Component({
+      imports: [ForSlider, ForSliderTrack, ForSliderThumb],
+      template: `
+        <div forSlider [(value)]="picked" [disabled]="disabled()">
+          <span forSliderTrack>
+            @for (v of picked(); let i = $index; track i) {
+              <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+            }
+          </span>
+        </div>
+      `,
+    })
+    class FocusHost {
+      readonly slider = viewChild.required(ForSlider);
+      readonly picked = signal<readonly number[]>([50]);
+      readonly disabled = signal(false);
+    }
+
+    it('focuses the first thumb', () => {
+      const { el, instance } = renderHost(FocusHost);
+      instance.slider().focus();
+      expect(document.activeElement).toBe(thumb(el, 0));
+    });
+
+    it('focuses the first thumb in a multi-thumb slider', () => {
+      const { el, instance, flush } = renderHost(FocusHost);
+      instance.picked.set([20, 80]);
+      flush();
+      instance.slider().focus();
+      expect(document.activeElement).toBe(thumb(el, 0));
+    });
+
+    it('is a no-op when the slider is disabled', () => {
+      const { instance, flush } = renderHost(FocusHost);
+      instance.disabled.set(true);
+      flush();
+      const before = document.activeElement;
+      instance.slider().focus();
+      expect(document.activeElement).toBe(before);
+    });
+
+    describe('Signal Forms focus-on-error', () => {
+      @Component({
+        imports: [ForSlider, ForSliderTrack, ForSliderThumb, FormField],
+        template: `
+          <div forSlider [formField]="settings.volume">
+            <span forSliderTrack>
+              @for (v of settings.volume().value(); let i = $index; track i) {
+                <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+              }
+            </span>
+          </div>
+        `,
+      })
+      class SignalFormsHost {
+        readonly model = signal({ volume: [50] as readonly number[] });
+        readonly settings = form(this.model);
+      }
+
+      it('moves focus onto a thumb, not the group host', () => {
+        const { el, fixture, flush } = renderHost(SignalFormsHost);
+        flush();
+        fixture.componentInstance.settings.volume().focusBoundControl();
+        expect(document.activeElement).toBe(thumb(el, 0));
+      });
+    });
   });
 
   describe('form integration', () => {
