@@ -136,6 +136,15 @@ export class ForListbox<T = string>
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
+   * When true (default), arrow navigation wraps at the ends — moving past the
+   * last option focuses the first and vice versa. Set `false` to stop at the
+   * boundaries. Mirrors the `loop` input on `ForSelect`, `ForToggleGroup` and
+   * `ForCombobox`. Range extension (Shift+Arrow) never wraps regardless of
+   * this input, per the APG.
+   */
+  readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -227,7 +236,7 @@ export class ForListbox<T = string>
     }
     const currentIndex = options.findIndex((o) => o.host === currentOption);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
-      loop: true,
+      loop: false,
       isDisabled: (i) => options[i]!.disabled(),
     });
     if (next === null) {
@@ -351,7 +360,7 @@ export class ForListbox<T = string>
     }
     const currentIndex = options.findIndex((o) => o.host === currentOption);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
-      loop: true,
+      loop: this.loop(),
       isDisabled: (i) => options[i]!.disabled(),
     });
     if (next === null) {

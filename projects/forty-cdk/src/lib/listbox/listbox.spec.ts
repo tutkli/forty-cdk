@@ -28,6 +28,7 @@ const GROUP_IMPORTS = [
       [dir]="dir()"
       [selectionFollowsFocus]="follow()"
       [disabled]="rootDisabled()"
+      [loop]="loop()"
     >
       @for (opt of options(); track opt.value) {
         <li>
@@ -52,6 +53,7 @@ class ListboxHost {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly follow = signal(false);
   readonly rootDisabled = signal(false);
+  readonly loop = signal(true);
   readonly options = signal([
     { value: 'apple', label: 'Apple', disabled: false },
     { value: 'apricot', label: 'Apricot', disabled: false },
@@ -255,6 +257,20 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'cherry'));
     });
 
+    it('stops at the ends when loop=false', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.loop.set(false);
+      flush();
+
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'ArrowUp');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+
+      optOf(el, 'cherry').focus();
+      pressKey(optOf(el, 'cherry'), 'ArrowDown');
+      expect(document.activeElement).toBe(optOf(el, 'cherry'));
+    });
+
     it('Home / End jump', () => {
       const { el } = renderHost(ListboxHost);
       optOf(el, 'banana').focus();
@@ -451,6 +467,24 @@ describe('ForListbox', () => {
         r.flush();
         expect(document.activeElement).toBe(optOf(r.el, 'b'));
         expect(r.fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('Shift+ArrowDown on the last option is a no-op (no wrap, no opposite-end toggle)', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'cherry').focus();
+        pressKey(optOf(el, 'cherry'), 'ArrowDown', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'cherry'));
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('Shift+ArrowUp on the first option is a no-op (no wrap, no opposite-end toggle)', () => {
+        const { el, fixture, flush } = setupMulti();
+        optOf(el, 'apple').focus();
+        pressKey(optOf(el, 'apple'), 'ArrowUp', { shiftKey: true });
+        flush();
+        expect(document.activeElement).toBe(optOf(el, 'apple'));
+        expect(fixture.componentInstance.picked()).toEqual([]);
       });
     });
 
