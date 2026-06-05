@@ -1,6 +1,6 @@
-import { Directive, inject } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { FOR_AVATAR_CONTEXT } from './avatar-context';
+import { injectAvatarContext } from './avatar-context';
 
 /**
  * Marker for the avatar's fallback content (initials, generic icon, …).
@@ -18,13 +18,5 @@ import { FOR_AVATAR_CONTEXT } from './avatar-context';
   },
 })
 export class ForAvatarFallback {
-  protected readonly parent = inject(FOR_AVATAR_CONTEXT, { optional: true })!;
-
-  constructor() {
-    if (!this.parent) {
-      throw new Error(
-        '[forty-cdk/avatar] ForAvatarFallback must be used inside a [forAvatar] element.',
-      );
-    }
-  }
+  protected readonly parent = injectAvatarContext('ForAvatarFallback');
 }

@@ -1,6 +1,6 @@
-import { Directive, inject } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { FOR_PROGRESS_CONTEXT } from './progress-context';
+import { injectProgressContext } from './progress-context';
 
 /**
  * Visual fill paired with `[forProgress]`. Reflects `data-state` and
@@ -32,15 +32,7 @@ import { FOR_PROGRESS_CONTEXT } from './progress-context';
   },
 })
 export class ForProgressIndicator {
-  protected readonly context = inject(FOR_PROGRESS_CONTEXT, { optional: true })!;
-
-  constructor() {
-    if (!this.context) {
-      throw new Error(
-        '[forty-cdk/progress] ForProgressIndicator must be used inside a [forProgress] element.',
-      );
-    }
-  }
+  protected readonly context = injectProgressContext('ForProgressIndicator');
 
   protected percentageAttr(): number | null {
     const p = this.context.percentage();

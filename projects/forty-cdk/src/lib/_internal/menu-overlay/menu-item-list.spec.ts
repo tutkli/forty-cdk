@@ -119,6 +119,71 @@ describe('MenuItemList', () => {
       list.handleTypeahead(new KeyboardEvent('keydown', { key: 'Enter' }));
       expect(document.activeElement).toBe(before);
     });
+
+    it('cycles among same-initial items on repeated presses, resuming from focus', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const copy = makeItem('copy', { text: 'Copy' });
+      const clear = makeItem('clear', { text: 'Clear' });
+      const paste = makeItem('paste', { text: 'Paste' });
+      list.registerItem(cut);
+      list.registerItem(copy);
+      list.registerItem(clear);
+      list.registerItem(paste);
+
+      const pressC = () => {
+        const event = new KeyboardEvent('keydown', { key: 'c' });
+        (document.activeElement ?? document.body).dispatchEvent(event);
+        list.handleTypeahead(event);
+      };
+
+      cut.host.focus();
+      pressC();
+      expect(document.activeElement).toBe(copy.host);
+      pressC();
+      expect(document.activeElement).toBe(clear.host);
+      pressC();
+      expect(document.activeElement).toBe(cut.host);
+    });
+
+    it('skips disabled items while cycling', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const copy = makeItem('copy', { text: 'Copy', disabled: true });
+      const clear = makeItem('clear', { text: 'Clear' });
+      list.registerItem(cut);
+      list.registerItem(copy);
+      list.registerItem(clear);
+
+      const pressC = () => {
+        const event = new KeyboardEvent('keydown', { key: 'c' });
+        (document.activeElement ?? document.body).dispatchEvent(event);
+        list.handleTypeahead(event);
+      };
+
+      cut.host.focus();
+      pressC();
+      expect(document.activeElement).toBe(clear.host);
+      pressC();
+      expect(document.activeElement).toBe(cut.host);
+    });
+
+    it('prefix-matches the full buffer for distinct characters', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const copy = makeItem('copy', { text: 'Copy' });
+      list.registerItem(cut);
+      list.registerItem(copy);
+
+      cut.host.focus();
+      const c = new KeyboardEvent('keydown', { key: 'c' });
+      cut.host.dispatchEvent(c);
+      list.handleTypeahead(c);
+      const o = new KeyboardEvent('keydown', { key: 'o' });
+      (document.activeElement ?? document.body).dispatchEvent(o);
+      list.handleTypeahead(o);
+      expect(document.activeElement).toBe(copy.host);
+    });
   });
 
   describe('focusFirst/LastEnabledItem', () => {

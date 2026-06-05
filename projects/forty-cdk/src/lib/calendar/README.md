@@ -29,7 +29,7 @@ bootstrapApplication(App, {
 | Class                   | Selector                  | Role                                                                                        |
 | ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
 | `ForCalendar`           | `[forCalendar]`           | Root. Owns `value`, the focused date, the visible month, and the shared context.            |
-| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title. `aria-live="polite"`; its text is set to the visible period.              |
+| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title and the grid's `aria-labelledby` target; its text is set to the visible period. |
 | `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                              |
 | `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                  |
 | `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`. |
@@ -161,7 +161,7 @@ export class DatePage {
 ## Accessibility notes
 
 - **`role="grid"`** on the table, `columnheader` weekday headers, `gridcell` days — the APG Date Picker Dialog technique over a real `<table>`.
-- **`aria-labelledby`** wires the grid to the `aria-live="polite"` heading, so screen readers announce the new month/year on every navigation.
+- **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.
 - **`aria-selected`** is always emitted (`"true"` / `"false"`); **`aria-current="date"`** marks today; **`aria-disabled`** marks unavailable dates (truthy-only).
 - **Roving tabindex**: exactly one cell (the focused date) is tabbable. `Tab` enters and leaves the grid in one stop.
 - **Boolean `data-*`** on the cell — `data-selected`, `data-today`, `data-highlighted` (the focused/roving cell), `data-disabled`, `data-outside-month` — present when true, absent when false.

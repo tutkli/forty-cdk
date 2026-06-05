@@ -83,15 +83,33 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
       return;
     }
     const items = this.#items.items();
-    const match = items.find((i) => {
-      if (i.disabled()) {
-        return false;
+    if (items.length === 0) {
+      return;
+    }
+
+    const cycle = this.#typeahead.isRepeatedChar();
+    const query = cycle ? buffer[0]! : buffer;
+    const currentIndex = items.findIndex((i) => i.host === event.target);
+    // Single-character typeahead cycles: each (re-)press of one key steps to the
+    // next same-initial item after the current focus and wraps around (APG menu
+    // typeahead). A distinct multi-character prefix re-anchors on the current
+    // focus (inclusive) so a growing prefix keeps the current item when it still
+    // matches; both fall back to the top when nothing is focused.
+    const anchor = currentIndex >= 0 ? currentIndex : -1;
+    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
+
+    for (let offset = 0; offset < items.length; offset++) {
+      const item = items[(start + offset) % items.length]!;
+      if (item.disabled()) {
+        continue;
       }
-      const override = i.textValue?.() ?? '';
-      const source = override !== '' ? override : (i.host.textContent ?? '');
-      return source.trim().toLowerCase().startsWith(buffer);
-    });
-    match?.host.focus();
+      const override = item.textValue?.() ?? '';
+      const source = override !== '' ? override : (item.host.textContent ?? '');
+      if (source.trim().toLowerCase().startsWith(query)) {
+        item.host.focus();
+        return;
+      }
+    }
   }
 
   focusFirstEnabledItem(): boolean {

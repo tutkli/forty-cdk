@@ -1,4 +1,4 @@
-import { InjectionToken, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Quality bucket reflected on `data-quality`. Mirrors the HTML5 `<meter>`
@@ -20,3 +20,17 @@ export interface ForMeterContext {
 }
 
 export const FOR_METER_CONTEXT = new InjectionToken<ForMeterContext>('FOR_METER_CONTEXT');
+
+/**
+ * Injects the nearest {@link ForMeterContext}, throwing a descriptive error
+ * when used outside a `[forMeter]` element.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectMeterContext(piece: string): ForMeterContext {
+  const ctx = inject(FOR_METER_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(`[forty-cdk/meter] ${piece} must be used inside a [forMeter] element.`);
+  }
+  return ctx;
+}

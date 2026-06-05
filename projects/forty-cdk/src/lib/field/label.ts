@@ -4,10 +4,14 @@ import { FOR_FIELD_CONTEXT } from './field-context';
 
 /**
  * Accessible label for a form control. Inside a `[forField]` it auto-wires:
- * it adopts the field's `labelId`, registers itself so the control gains
- * `aria-labelledby`, and (on a non-`<label>` element, or for a non-native
- * control) focuses the control on click. On a native `<label>` it emits `for`
- * so the browser handles click-to-focus.
+ * it adopts the field's `labelId` and registers itself so the control gains
+ * `aria-labelledby`.
+ *
+ * Click-to-activate is consistent across both host shapes: a native `<label>`
+ * emits `for` and the browser forwards the click to the control (toggling a
+ * checkbox / switch, activating a button); a non-`<label>` host has no native
+ * `for` forwarding, so the directive forwards the click itself — clicking the
+ * label activates the control either way, not just focuses it.
  *
  * Usable standalone (Radix-style) outside a field — there it is an inert
  * marker and the consumer wires native `for` themselves.
@@ -54,7 +58,7 @@ export class ForLabel {
 
   protected onClick(): void {
     if (this.ctx && this.#host.nativeElement.tagName !== 'LABEL') {
-      this.ctx.focusControl();
+      this.ctx.clickControl();
     }
   }
 }

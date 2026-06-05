@@ -1583,7 +1583,7 @@ describe('ForSelectIndicator', () => {
     }
 
     // Non-`<label>` label element: `[forLabel]` skips the native `for`
-    // association and routes click-to-focus through `focusControl()`.
+    // association and forwards the click to the trigger via `clickControl()`.
     @Component({
       imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForField, ForLabel],
       template: `

@@ -74,4 +74,8 @@ Style off the reflected state:
 }
 ```
 
-> Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, but a label click focuses the control's host rather than the inner active element.
+### Label-click activation
+
+Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, clicking the label toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input — matching native `<label for>` behavior consistently.
+
+> Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
