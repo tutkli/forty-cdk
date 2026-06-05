@@ -64,7 +64,7 @@ function pointer(
 })
 class ProgrammaticHost {
   readonly toasts = inject(ForToastManager);
-  readonly maxVisible = signal<number>(Infinity);
+  readonly maxVisible = signal<number | null>(null);
   readonly hotkey = signal<string>('');
   readonly tpl =
     viewChild.required<TemplateRef<ForToastTemplateContext<{ label: string }>>>('titleOnly');
@@ -1303,6 +1303,48 @@ describe('global defaults via provideForToastDefaults', () => {
     vi.advanceTimersByTime(1);
     fixture.detectChanges();
     expect(fixture.componentInstance.toasts.count()).toBe(0);
+  });
+
+  it('default maxVisible caps a viewport that leaves [maxVisible] unset', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideForToastDefaults({ maxVisible: 3 })],
+    });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const toasts = fixture.componentInstance.toasts;
+    toasts.show({ title: 'A' });
+    toasts.show({ title: 'B' });
+    toasts.show({ title: 'C' });
+    toasts.show({ title: 'D' });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const titles = Array.from(el.querySelectorAll<HTMLElement>('[forToastTitle]')).map((e) =>
+      e.textContent?.trim(),
+    );
+    expect(titles).toEqual(['B', 'C', 'D']);
+    expect(toasts.count()).toBe(4);
+  });
+
+  it('per-viewport [maxVisible] overrides the global default', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideForToastDefaults({ maxVisible: 3 })],
+    });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.componentInstance.maxVisible.set(1);
+    fixture.detectChanges();
+    const toasts = fixture.componentInstance.toasts;
+    toasts.show({ title: 'A' });
+    toasts.show({ title: 'B' });
+    toasts.show({ title: 'C' });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const titles = Array.from(el.querySelectorAll<HTMLElement>('[forToastTitle]')).map((e) =>
+      e.textContent?.trim(),
+    );
+    expect(titles).toEqual(['C']);
+    expect(toasts.count()).toBe(3);
   });
 
   it('default hotkey applies when viewport leaves [hotkey] empty', () => {
