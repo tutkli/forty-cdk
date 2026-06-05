@@ -416,6 +416,23 @@ describe('ForNumberInput', () => {
 
       expect(() => renderHost(Orphan)).toThrow(/must be used inside a \[forNumberInputGroup\]/);
     });
+
+    it('disables the buttons while no [forNumberInput] is registered in the group', () => {
+      @Component({
+        imports: [ForNumberInputGroup, ForNumberInputIncrement, ForNumberInputDecrement],
+        template: `
+          <div forNumberInputGroup>
+            <button forNumberInputDecrement data-test-id="dec">−</button>
+            <button forNumberInputIncrement data-test-id="inc">+</button>
+          </div>
+        `,
+      })
+      class FieldlessHost {}
+
+      const { el } = renderHost(FieldlessHost);
+      expect(incOf(el).hasAttribute('disabled')).toBe(true);
+      expect(decOf(el).hasAttribute('disabled')).toBe(true);
+    });
   });
 
   describe('Intl formatting', () => {

@@ -3,11 +3,10 @@ export { ForNumberInputGroup } from './number-input-group';
 export { ForNumberInputIncrement } from './number-input-increment';
 export { ForNumberInputDecrement } from './number-input-decrement';
 export {
-  FOR_NUMBER_INPUT_CONTEXT,
   FOR_NUMBER_INPUT_GROUP,
-  injectNumberInputContext,
+  injectNumberInputGroup,
   type ForNumberInputContext,
-  type ForNumberInputRegistry,
+  type ForNumberInputGroupContext,
 } from './number-input-context';
 export {
   FOR_NUMBER_INPUT_DEFAULTS,

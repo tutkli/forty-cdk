@@ -16,6 +16,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
+import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
 import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
@@ -83,7 +84,7 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
   },
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForMenuSub }],
 })
-export class ForMenuSub implements ForMenuContext {
+export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly #defaults = inject(FOR_MENU_DEFAULTS);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -165,7 +166,7 @@ export class ForMenuSub implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly #overlay = createMenuOverlay('for-menu-sub', {
+  protected readonly _overlay = createMenuOverlay('for-menu-sub', {
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,
@@ -194,14 +195,7 @@ export class ForMenuSub implements ForMenuContext {
     },
   });
 
-  readonly triggerId = this.#overlay.triggerId;
-  readonly contentId = this.#overlay.contentId;
-  readonly initialFocus = this.#overlay.initialFocus;
-  readonly lastCloseReason = this.#overlay.lastCloseReason;
-  readonly trigger = this.#overlay.trigger;
-  readonly anchor = computed<ReferenceElement | null>(() => this.#overlay.trigger());
-
-  readonly content = this.#overlay.content;
+  readonly anchor = computed<ReferenceElement | null>(() => this._overlay.trigger());
 
   // --- Pointer-driven (hover) open/close state. Additive to click/keyboard. ---
   #openTimer: ReturnType<typeof setTimeout> | null = null;
@@ -228,24 +222,8 @@ export class ForMenuSub implements ForMenuContext {
     return parentContent ? [parentContent] : [];
   });
 
-  setInitialFocus = this.#overlay.setInitialFocus.bind(this.#overlay);
-  registerTrigger = this.#overlay.registerTrigger.bind(this.#overlay);
-  unregisterTrigger = this.#overlay.unregisterTrigger.bind(this.#overlay);
-  registerItem = this.#overlay.registerItem.bind(this.#overlay);
-  unregisterItem = this.#overlay.unregisterItem.bind(this.#overlay);
-  navigate = this.#overlay.navigate.bind(this.#overlay);
-  handleTypeahead = this.#overlay.handleTypeahead.bind(this.#overlay);
-  focusFirstEnabledItem = this.#overlay.focusFirstEnabledItem.bind(this.#overlay);
-  focusLastEnabledItem = this.#overlay.focusLastEnabledItem.bind(this.#overlay);
-  toggle = this.#overlay.toggle.bind(this.#overlay);
-  openMenu = this.#overlay.openMenu.bind(this.#overlay);
-  emitEscapeKeyDown = this.#overlay.emitEscapeKeyDown.bind(this.#overlay);
-  emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
-  emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
-  emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
-  requestClose = this.#overlay.requestClose.bind(this.#overlay);
-
   constructor() {
+    super();
     const parent = inject(FOR_MENU_CONTEXT, { skipSelf: true, optional: true });
     if (!parent) {
       throw new Error(
@@ -257,20 +235,20 @@ export class ForMenuSub implements ForMenuContext {
     inject(DestroyRef).onDestroy(() => this.#teardownPointer());
   }
 
-  registerContent(el: HTMLElement): void {
-    this.#overlay.registerContent(el);
+  override registerContent(el: HTMLElement): void {
+    this._overlay.registerContent(el);
     this.#attachContentPointer(el);
   }
-  unregisterContent(el: HTMLElement): void {
-    if (this.#overlay.content() === el) {
-      this.#overlay.unregisterContent(el);
+  override unregisterContent(el: HTMLElement): void {
+    if (this._overlay.content() === el) {
+      this._overlay.unregisterContent(el);
       this.#detachContentPointer?.();
       this.#detachContentPointer = null;
     }
   }
 
-  closeMenu(reason: ForMenuCloseReason): void {
-    this.#overlay.closeMenu(reason);
+  override closeMenu(reason: ForMenuCloseReason): void {
+    this._overlay.closeMenu(reason);
   }
 
   // --- Pointer-driven (hover) open/close. Additive to click / keyboard. ---
@@ -356,7 +334,7 @@ export class ForMenuSub implements ForMenuContext {
   }
 
   #armPointerGrace(cursor: Point): void {
-    const content = this.#overlay.content();
+    const content = this._overlay.content();
     if (!this.#isBrowser || !content) {
       this.scheduleCloseByPointer();
       return;
@@ -458,7 +436,7 @@ export class ForMenuSub implements ForMenuContext {
     this.#detachContentPointer = null;
   }
 
-  emitAutoFocusOnOpen(): boolean {
+  override emitAutoFocusOnOpen(): boolean {
     // Hover-open leaves focus where it is — only keyboard / click moves it in.
     if (this.#suppressFocusMoves) {
       return true;
@@ -466,7 +444,7 @@ export class ForMenuSub implements ForMenuContext {
     return emitVetoableEvent(this.autoFocusOnOpen);
   }
 
-  emitAutoFocusOnClose(): boolean {
+  override emitAutoFocusOnClose(): boolean {
     // Hover-close must not yank focus back to the trigger.
     if (this.#suppressFocusMoves) {
       return true;

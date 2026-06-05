@@ -13,6 +13,7 @@ import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
+import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
@@ -57,7 +58,7 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
   },
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu }],
 })
-export class ForContextMenu implements ForMenuContext {
+export class ForContextMenu extends MenuOverlayHost implements ForMenuContext {
   readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
 
   readonly open = model<boolean>(false);
@@ -144,7 +145,7 @@ export class ForContextMenu implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly #overlay = createMenuOverlay('for-context-menu', {
+  protected readonly _overlay = createMenuOverlay('for-context-menu', {
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,
@@ -157,13 +158,6 @@ export class ForContextMenu implements ForMenuContext {
     autoFocusOnClose: this.autoFocusOnClose,
   });
 
-  readonly triggerId = this.#overlay.triggerId;
-  readonly contentId = this.#overlay.contentId;
-  readonly initialFocus = this.#overlay.initialFocus;
-  readonly lastCloseReason = this.#overlay.lastCloseReason;
-  readonly trigger = this.#overlay.trigger;
-  readonly content = this.#overlay.content;
-
   readonly #anchor = signal<ReferenceElement | null>(null);
   readonly anchor = this.#anchor.asReadonly();
 
@@ -175,28 +169,6 @@ export class ForContextMenu implements ForMenuContext {
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;
-
-  setInitialFocus = this.#overlay.setInitialFocus.bind(this.#overlay);
-  registerTrigger = this.#overlay.registerTrigger.bind(this.#overlay);
-  unregisterTrigger = this.#overlay.unregisterTrigger.bind(this.#overlay);
-  registerContent = this.#overlay.registerContent.bind(this.#overlay);
-  unregisterContent = this.#overlay.unregisterContent.bind(this.#overlay);
-  registerItem = this.#overlay.registerItem.bind(this.#overlay);
-  unregisterItem = this.#overlay.unregisterItem.bind(this.#overlay);
-  navigate = this.#overlay.navigate.bind(this.#overlay);
-  handleTypeahead = this.#overlay.handleTypeahead.bind(this.#overlay);
-  focusFirstEnabledItem = this.#overlay.focusFirstEnabledItem.bind(this.#overlay);
-  focusLastEnabledItem = this.#overlay.focusLastEnabledItem.bind(this.#overlay);
-  toggle = this.#overlay.toggle.bind(this.#overlay);
-  openMenu = this.#overlay.openMenu.bind(this.#overlay);
-  closeMenu = this.#overlay.closeMenu.bind(this.#overlay);
-  emitEscapeKeyDown = this.#overlay.emitEscapeKeyDown.bind(this.#overlay);
-  emitPointerDownOutside = this.#overlay.emitPointerDownOutside.bind(this.#overlay);
-  emitFocusOutside = this.#overlay.emitFocusOutside.bind(this.#overlay);
-  emitInteractOutside = this.#overlay.emitInteractOutside.bind(this.#overlay);
-  requestClose = this.#overlay.requestClose.bind(this.#overlay);
-  emitAutoFocusOnOpen = this.#overlay.emitAutoFocusOnOpen.bind(this.#overlay);
-  emitAutoFocusOnClose = this.#overlay.emitAutoFocusOnClose.bind(this.#overlay);
 
   /** Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates. */
   setVirtualAnchor(x: number, y: number): void {

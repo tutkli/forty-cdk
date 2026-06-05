@@ -4,115 +4,58 @@ import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation'
 import type { ForComboboxOptionHandle } from './combobox-context';
 
 /**
- * Plain entry in the cached / position-keyed snapshot. Mirrors what inline
+ * Plain entry in the label cache / position-keyed map. Mirrors what inline
  * autocomplete and the chip / `selected` fallback paths need: a stable id, the
- * underlying value, the resolved label string, and (for the indexed map) the
- * disabled flag so virtualized navigation can skip over off-window disabled
- * options.
+ * underlying value, and the resolved label string.
  */
-interface SnapshotEntry<T> {
+export interface SnapshotEntry<T> {
   readonly id: string;
   readonly value: T;
   readonly label: string;
 }
 
-interface IndexedSnapshotEntry<T> extends SnapshotEntry<T> {
+/**
+ * Position-keyed entry. Adds the `disabled` flag so virtualized navigation can
+ * skip over off-window disabled options.
+ */
+export interface IndexedSnapshotEntry<T> extends SnapshotEntry<T> {
   readonly disabled: boolean;
 }
 
 /**
- * Constructor dependencies for `ComboboxSnapshot`. Wires the helper to the
- * host directive's signal graph + a small set of imperative callbacks. The
- * host is the only owner of the activedescendant, so the helper reads / writes
- * it through accessors instead of holding its own copy.
- */
-export interface ComboboxSnapshotDeps<T> {
-  /** Live registered options. Same signal the host exposes as `options`. */
-  readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
-  /** Total option count for the virtualized path. `undefined` ⇒ non-virtualized. */
-  readonly totalCount: Signal<number | undefined>;
-  /** Inclusive-exclusive range of currently rendered options when virtualizing. */
-  readonly visibleRange: Signal<readonly [number, number] | undefined>;
-  /** Whether keyboard navigation wraps at the ends. */
-  readonly loop: Signal<boolean>;
-  /** Read the host's current activedescendant id. */
-  readonly getActiveId: () => string | null;
-  /** Write the host's activedescendant id. */
-  readonly setActiveId: (id: string | null) => void;
-  /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
-  readonly emitScrollToIndex: (idx: number) => void;
-}
-
-/**
- * Virtualization snapshot machinery for `ForCombobox`. Encapsulates three
- * pieces of state that together make typeahead, inline autocomplete, and
- * keyboard navigation work across a virtualized window where the active
- * option may be unmounted at any time:
+ * Always-on label cache for `ForCombobox`. Keeps a flat list of
+ * `{ id, value, label }` tuples that persists across listbox close / open
+ * cycles, driving inline autocomplete and the `selected` label fallback.
  *
- * - **Cached options** — flat list of `{ id, value, label }` tuples that
- *   persists across listbox close / open cycles. Drives inline autocomplete
- *   and the `selected` label fallback.
- * - **Snapshot by position** — same data keyed by absolute `posInSet`, plus
- *   the `disabled` flag. Drives navigation past the rendered window so
- *   `moveIndex` knows about disabled boundaries it can't see.
- * - **Pending active position** — when navigation lands on a position outside
- *   the visible window the helper emits `(scrollToIndex)` and remembers the
- *   target here. The host's bridge effect calls `tryResolvePending` once the
- *   freshly-mounted option carries that posInSet so activedescendant seeds
- *   without a roundtrip through user code.
+ * Persistence: when the consumer's `@if` unmounts the content
+ * (`items().length === 0`) the prior cache is carried over so chips outside
+ * the listbox area and inline completion after close keep resolving labels.
+ * Resets only when the consumer's `totalCount` transitions — a query / source
+ * rebuild signal in the virtualized case.
  *
- * The helper is internal — not re-exported from `combobox/index.ts` or
- * `public-api.ts`. Instantiate it once per host directive in its constructor.
+ * The option's `label` is itself a `Signal<string>` so we never peek at
+ * `textContent`. Internal helper — not re-exported from `combobox/index.ts`
+ * or `public-api.ts`. Constructed once per host directive, on every combobox
+ * (virtualized or not).
  */
-export class ComboboxSnapshot<T> {
-  readonly #deps: ComboboxSnapshotDeps<T>;
+export class OptionLabelCache<T> {
+  readonly #items: Signal<readonly ForComboboxOptionHandle<T>[]>;
+  readonly #totalCount: Signal<number | undefined>;
 
-  /**
-   * Snapshot of the registered options as plain `{ id, value, label }`
-   * tuples. Drives inline-autocomplete matching in the input directive and
-   * the label-resolution fallback in `selected`.
-   *
-   * Persists across listbox close / open cycles: when the consumer's `@if`
-   * unmounts the content (`items().length === 0`) the prior cache is
-   * carried over so chips outside the listbox area and inline completion
-   * after close keep resolving labels. Resets only when the consumer's
-   * `totalCount` transitions — a query / source rebuild signal in the
-   * virtualized case.
-   *
-   * The option's `label` is itself a `Signal<string>` so we never need to
-   * peek at `textContent`; this used to be an `afterEveryRender`-driven
-   * cache for exactly that reason but the post-render phase is unnecessary.
-   */
   readonly #cachedOptions: Signal<readonly SnapshotEntry<T>[]>;
 
-  /**
-   * Snapshot keyed by absolute index (`posInSet`), persisted across unmount
-   * so navigation can walk past the rendered window when virtualizing.
-   *
-   * Reset whenever the consumer's `totalCount` transitions — a query change
-   * typically rebuilds the source array, so previously-folded entries no
-   * longer point at the same items. On any other reactive trigger (option
-   * mount / unmount) the prior map is carried over and the currently-
-   * rendered options are overlaid in place.
-   */
-  readonly #snapshotByPos: Signal<Map<number, IndexedSnapshotEntry<T>>>;
-
-  /**
-   * When navigation lands on a posInSet outside the visible window, the
-   * directive emits `(scrollToIndex)` and remembers the target here. The
-   * host's bridge effect calls `tryResolvePending` to seed
-   * `aria-activedescendant` once the option for that posInSet mounts.
-   */
-  readonly #pendingActivePos = signal<number | null>(null);
-
-  constructor(deps: ComboboxSnapshotDeps<T>) {
-    this.#deps = deps;
+  constructor(deps: {
+    readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
+    readonly totalCount: Signal<number | undefined>;
+  }) {
+    this.#items = deps.items;
+    this.#totalCount = deps.totalCount;
 
     this.#cachedOptions = linkedSignal<
       { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
       readonly SnapshotEntry<T>[]
     >({
-      source: () => ({ total: deps.totalCount(), items: deps.items() }),
+      source: () => ({ total: this.#totalCount(), items: this.#items() }),
       computation: ({ total, items }, prev) => {
         // On a `totalCount` transition the `items()` array may still hold the
         // previous window — signal commits run serially, so the @for re-render
@@ -136,6 +79,95 @@ export class ComboboxSnapshot<T> {
         return [...merged.values()];
       },
     });
+  }
+
+  /**
+   * Pull the cache so its `linkedSignal` `prev` slot gets seeded while the
+   * listbox is open. Called from the host's bridge effect — without an eager
+   * pull the lazy cache never runs during the open cycle (no other consumer
+   * pulls it in non-virtualized usage), and persistence across close → re-open
+   * would start from an empty `prev`.
+   */
+  prime(): void {
+    this.#cachedOptions();
+  }
+
+  /**
+   * Snapshot of the registered options as plain `{ id, value, label }` tuples.
+   * Drives inline-autocomplete matching and the label-resolution fallback in
+   * `ForCombobox.selected`.
+   */
+  entries(): readonly SnapshotEntry<T>[] {
+    return this.#cachedOptions();
+  }
+}
+
+/**
+ * Dependencies for `VirtualizedNavigator`. Wires the helper to the host
+ * directive's signal graph + a small set of imperative callbacks. The host is
+ * the only owner of the activedescendant, so the helper reads / writes it
+ * through accessors instead of holding its own copy.
+ */
+export interface VirtualizedNavigatorDeps<T> {
+  /** Live registered options. Same signal the host exposes as `options`. */
+  readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
+  /** Total option count for the virtualized path. Always defined here. */
+  readonly totalCount: Signal<number | undefined>;
+  /** Inclusive-exclusive range of currently rendered options when virtualizing. */
+  readonly visibleRange: Signal<readonly [number, number] | undefined>;
+  /** Whether keyboard navigation wraps at the ends. */
+  readonly loop: Signal<boolean>;
+  /** Read the host's current activedescendant id. */
+  readonly getActiveId: () => string | null;
+  /** Write the host's activedescendant id. */
+  readonly setActiveId: (id: string | null) => void;
+  /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
+  readonly emitScrollToIndex: (idx: number) => void;
+}
+
+/**
+ * Virtualization navigation engine for `ForCombobox`. Constructed lazily — only
+ * once the consumer sets `totalCount()` — so a non-virtualized combobox never
+ * pulls this position-map machinery into its hot path. Encapsulates the two
+ * pieces of state that make keyboard navigation work across a virtualized
+ * window where the active option may be unmounted at any time:
+ *
+ * - **Snapshot by position** — option data keyed by absolute `posInSet`, plus
+ *   the `disabled` flag. Drives navigation past the rendered window so
+ *   `moveIndex` knows about disabled boundaries it can't see.
+ * - **Pending active position** — when navigation lands on a position outside
+ *   the visible window the helper emits `(scrollToIndex)` and remembers the
+ *   target here. The host's bridge effect calls `tryResolvePending` once the
+ *   freshly-mounted option carries that posInSet so activedescendant seeds
+ *   without a roundtrip through user code.
+ *
+ * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
+ */
+export class VirtualizedNavigator<T> {
+  readonly #deps: VirtualizedNavigatorDeps<T>;
+
+  /**
+   * Snapshot keyed by absolute index (`posInSet`), persisted across unmount so
+   * navigation can walk past the rendered window.
+   *
+   * Reset whenever the consumer's `totalCount` transitions — a query change
+   * typically rebuilds the source array, so previously-folded entries no
+   * longer point at the same items. On any other reactive trigger (option
+   * mount / unmount) the prior map is carried over and the currently-rendered
+   * options are overlaid in place.
+   */
+  readonly #snapshotByPos: Signal<Map<number, IndexedSnapshotEntry<T>>>;
+
+  /**
+   * When navigation lands on a posInSet outside the visible window, the
+   * directive emits `(scrollToIndex)` and remembers the target here. The
+   * host's bridge effect calls `tryResolvePending` to seed
+   * `aria-activedescendant` once the option for that posInSet mounts.
+   */
+  readonly #pendingActivePos = signal<number | null>(null);
+
+  constructor(deps: VirtualizedNavigatorDeps<T>) {
+    this.#deps = deps;
 
     this.#snapshotByPos = linkedSignal<
       { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
@@ -143,7 +175,7 @@ export class ComboboxSnapshot<T> {
     >({
       source: () => ({ total: deps.totalCount(), items: deps.items() }),
       computation: ({ total, items }, prev) => {
-        // Same `items()`-still-stale handling as `#cachedOptions` above.
+        // Same `items()`-still-stale handling as `OptionLabelCache` above.
         if (prev && prev.source.total !== total) {
           return new Map();
         }
@@ -164,52 +196,17 @@ export class ComboboxSnapshot<T> {
   }
 
   /**
-   * Pulls both caches so their `linkedSignal` `prev` slot gets seeded while
-   * the listbox is open. Called from the host's bridge effect — without an
-   * eager pull the lazy caches never run during the open cycle (no other
-   * consumer pulls them in non-virtualized usage), and persistence across
-   * close → re-open would start from an empty `prev`.
+   * Pull the position-map so its `linkedSignal` `prev` slot gets seeded while
+   * the listbox is open. Called from the host's bridge effect alongside the
+   * label cache, but only when virtualizing.
    */
   prime(): void {
-    this.#cachedOptions();
     this.#snapshotByPos();
   }
 
   /**
-   * Snapshot of the registered options as plain `{ id, value, label }`
-   * tuples merged with any off-window entries known from the indexed
-   * snapshot. Live entries take precedence (freshest data) — they appear
-   * first, followed by indexed entries sorted by absolute position.
-   *
-   * Drives inline-autocomplete matching and the label-resolution fallback
-   * in `ForCombobox.selected`.
-   */
-  cachedOptions(): readonly SnapshotEntry<T>[] {
-    const live = this.#cachedOptions();
-    if (this.#deps.totalCount() === undefined) {
-      return live;
-    }
-    // Virtualized: merge in entries that previously rendered so typeahead
-    // and inline autocomplete can match against options scrolled out of
-    // view. The live entries take precedence (freshest data).
-    const indexed = this.#snapshotByPos();
-    if (indexed.size === 0) {
-      return live;
-    }
-    const seen = new Set(live.map((o) => o.id));
-    const merged: SnapshotEntry<T>[] = [...live];
-    const positions = [...indexed.keys()].sort((a, b) => a - b);
-    for (const pos of positions) {
-      const entry = indexed.get(pos)!;
-      if (seen.has(entry.id)) continue;
-      merged.push({ id: entry.id, value: entry.value, label: entry.label });
-    }
-    return merged;
-  }
-
-  /**
    * Position-keyed snapshot for `ForCombobox.selected`'s scrolled-out-of-view
-   * fallback. Read-only for callers — mutations belong to the helper.
+   * fallback and for the merged-label lookup. Read-only for callers.
    */
   snapshotByPos(): ReadonlyMap<number, IndexedSnapshotEntry<T>> {
     return this.#snapshotByPos();
@@ -240,10 +237,10 @@ export class ComboboxSnapshot<T> {
 
   /**
    * Auto-highlight the first or last enabled option that is **currently
-   * rendered**, ordered by absolute `posInSet`. Used in the virtualized
-   * branch of the host's auto-highlight effect — for non-virtualized lists
-   * the host walks the live `items()` array directly. No-op if `totalCount`
-   * is unset / zero or nothing is rendered.
+   * rendered**, ordered by absolute `posInSet`. Used in the virtualized branch
+   * of the host's auto-highlight effect — for non-virtualized lists the host
+   * walks the live `items()` array directly. No-op if `totalCount` is unset /
+   * zero or nothing is rendered.
    *
    * Deliberately *passive*: it only ever moves `aria-activedescendant`, never
    * the consumer's scroll position. Auto-highlight re-runs every time the
@@ -252,7 +249,7 @@ export class ComboboxSnapshot<T> {
    * seed emitted `(scrollToIndex)` toward the absolute first option, every
    * wheel tick that unmounted the active row would snap the listbox straight
    * back to the top. Off-window targets are reached only through explicit
-   * keyboard navigation (`navigateVirtualized`), which owns scroll-into-view.
+   * keyboard navigation (`navigate`), which owns scroll-into-view.
    */
   seedFromIndexedSnapshot(direction: 'first' | 'last'): void {
     const total = this.#deps.totalCount();
@@ -278,13 +275,13 @@ export class ComboboxSnapshot<T> {
 
   /**
    * Virtualized arrow / Home / End navigation. Walks `moveIndex` against the
-   * absolute total, using the indexed snapshot to learn about disabled
-   * options outside the rendered window. When the target is in the visible
-   * range and a live option is present, seeds activedescendant directly;
-   * otherwise stashes the target in `#pendingActivePos` and emits
-   * `(scrollToIndex)` so the consumer can scroll it into view.
+   * absolute total, using the indexed snapshot to learn about disabled options
+   * outside the rendered window. When the target is in the visible range and a
+   * live option is present, seeds activedescendant directly; otherwise stashes
+   * the target in `#pendingActivePos` and emits `(scrollToIndex)` so the
+   * consumer can scroll it into view.
    */
-  navigateVirtualized(direction: 'next' | 'prev' | 'first' | 'last'): void {
+  navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
     const total = this.#deps.totalCount();
     if (total === undefined || total <= 0) {
       return;
@@ -317,8 +314,8 @@ export class ComboboxSnapshot<T> {
       action = 'last';
     }
 
-    // Disabled lookup against the indexed snapshot — entries we've never
-    // seen are assumed enabled (the consumer filtered them in).
+    // Disabled lookup against the indexed snapshot — entries we've never seen
+    // are assumed enabled (the consumer filtered them in).
     const isDisabled = (i: number) => indexed.get(i)?.disabled === true;
 
     const next = moveIndex(currentPos, total, action, {
@@ -339,8 +336,8 @@ export class ComboboxSnapshot<T> {
         live.host.scrollIntoView?.({ block: 'nearest' });
         return;
       }
-      // Range claims it's in-window but the option hasn't mounted yet —
-      // fall through to the pending path so the next render seeds it.
+      // Range claims it's in-window but the option hasn't mounted yet — fall
+      // through to the pending path so the next render seeds it.
     }
     this.#pendingActivePos.set(next);
     this.#deps.emitScrollToIndex(next);
@@ -348,8 +345,8 @@ export class ComboboxSnapshot<T> {
 
   /**
    * Drop any pending virtualized navigation. Called by `closeMenu` so a
-   * pending request from the previous open cycle doesn't seed
-   * activedescendant after the listbox re-opens.
+   * pending request from the previous open cycle doesn't seed activedescendant
+   * after the listbox re-opens.
    */
   resetPending(): void {
     this.#pendingActivePos.set(null);

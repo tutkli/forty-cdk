@@ -1,9 +1,14 @@
-import { Component, provideZonelessChangeDetection, signal, type Signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup } from '../../test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
-import { ComboboxSnapshot } from './combobox-snapshot';
+import {
+  type IndexedSnapshotEntry,
+  OptionLabelCache,
+  type SnapshotEntry,
+  VirtualizedNavigator,
+} from './combobox-snapshot';
 
 interface FakeOption {
   readonly handle: ForComboboxOptionHandle<string>;
@@ -42,8 +47,49 @@ function makeHandle(opts: {
   };
 }
 
-interface SnapshotHarness {
-  readonly snapshot: ComboboxSnapshot<string>;
+/**
+ * Replicates the host's `cachedOptions()` merge: the live label cache, plus
+ * any off-window entries from the navigator's position-map (sorted by absolute
+ * position, live entries winning by id).
+ */
+function mergedCachedOptions(
+  live: readonly SnapshotEntry<string>[],
+  indexed: ReadonlyMap<number, IndexedSnapshotEntry<string>>,
+): readonly SnapshotEntry<string>[] {
+  if (indexed.size === 0) {
+    return live;
+  }
+  const seen = new Set(live.map((o) => o.id));
+  const merged: SnapshotEntry<string>[] = [...live];
+  for (const pos of [...indexed.keys()].sort((a, b) => a - b)) {
+    const entry = indexed.get(pos)!;
+    if (seen.has(entry.id)) continue;
+    merged.push({ id: entry.id, value: entry.value, label: entry.label });
+  }
+  return merged;
+}
+
+interface LabelCacheHarness {
+  readonly cache: OptionLabelCache<string>;
+  readonly setItems: (items: readonly ForComboboxOptionHandle<string>[]) => void;
+  readonly setTotal: (n: number | undefined) => void;
+  readonly entries: () => readonly SnapshotEntry<string>[];
+}
+
+function createLabelCache(initialTotal?: number): LabelCacheHarness {
+  const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
+  const total = signal<number | undefined>(initialTotal);
+  const cache = new OptionLabelCache<string>({ items, totalCount: total });
+  return {
+    cache,
+    setItems: (next) => items.set(next),
+    setTotal: (n) => total.set(n),
+    entries: () => cache.entries(),
+  };
+}
+
+interface NavigatorHarness {
+  readonly navigator: VirtualizedNavigator<string>;
   readonly setItems: (items: readonly ForComboboxOptionHandle<string>[]) => void;
   readonly setTotal: (n: number | undefined) => void;
   readonly setRange: (r: readonly [number, number] | undefined) => void;
@@ -51,26 +97,23 @@ interface SnapshotHarness {
   readonly getActive: () => string | null;
   readonly emitted: readonly number[];
   readonly resetEmitted: () => void;
-  readonly items: Signal<readonly ForComboboxOptionHandle<string>[]>;
-  readonly total: Signal<number | undefined>;
-  readonly range: Signal<readonly [number, number] | undefined>;
 }
 
-function createHarness(
+function createNavigator(
   initial: {
-    total?: number | undefined;
+    total?: number;
     range?: readonly [number, number] | undefined;
     loop?: boolean;
   } = {},
-): SnapshotHarness {
+): NavigatorHarness {
   const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
-  const total = signal<number | undefined>(initial.total);
+  const total = signal<number | undefined>(initial.total ?? 100);
   const range = signal<readonly [number, number] | undefined>(initial.range);
   const loop = signal(initial.loop ?? true);
   const active = signal<string | null>(null);
   const emitted: number[] = [];
 
-  const snapshot = new ComboboxSnapshot<string>({
+  const navigator = new VirtualizedNavigator<string>({
     items,
     totalCount: total,
     visibleRange: range,
@@ -83,7 +126,7 @@ function createHarness(
   });
 
   return {
-    snapshot,
+    navigator,
     setItems: (next) => items.set(next),
     setTotal: (n) => total.set(n),
     setRange: (r) => range.set(r),
@@ -93,129 +136,123 @@ function createHarness(
     resetEmitted: () => {
       emitted.length = 0;
     },
-    items,
-    total,
-    range,
   };
 }
 
-describe('ComboboxSnapshot', () => {
+describe('OptionLabelCache', () => {
   afterEachOverlayCleanup();
 
-  describe('cachedOptions persistence', () => {
-    it('starts empty', () => {
-      const h = createHarness();
-      expect(h.snapshot.cachedOptions()).toEqual([]);
-    });
-
-    it('captures registered options on prime', () => {
-      const h = createHarness();
-      const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-      const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
-      h.setItems([a.handle, b.handle]);
-      h.snapshot.prime();
-      const cache = h.snapshot.cachedOptions();
-      expect(cache.map((e) => e.id)).toEqual(['a', 'b']);
-      expect(cache.map((e) => e.label)).toEqual(['Apple', 'Banana']);
-    });
-
-    it('carries entries across an unmount (close → reopen)', () => {
-      const h = createHarness();
-      const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-      const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
-      h.setItems([a.handle, b.handle]);
-      h.snapshot.prime();
-      // Listbox closes → consumer's @if unmounts the @for; items() goes to [].
-      h.setItems([]);
-      const stillCached = h.snapshot.cachedOptions();
-      expect(stillCached.map((e) => e.id)).toEqual(['a', 'b']);
-    });
-
-    it('resets when totalCount transitions', () => {
-      const h = createHarness({ total: 100 });
-      const a = makeHandle({ id: 'r-50', value: 'fifty', label: 'Row 50', posInSet: 50 });
-      h.setItems([a.handle]);
-      h.snapshot.prime();
-      expect(h.snapshot.cachedOptions().some((e) => e.label === 'Row 50')).toBe(true);
-
-      // Consumer rebuilds the source array (e.g. query change) → totalCount flips.
-      h.setTotal(20);
-      h.snapshot.prime();
-      // Old entries are gone — the cache resets on totalCount transition.
-      expect(h.snapshot.cachedOptions().some((e) => e.label === 'Row 50')).toBe(false);
-    });
+  it('starts empty', () => {
+    const h = createLabelCache();
+    expect(h.entries()).toEqual([]);
   });
 
-  describe('snapshotByPos and merged cachedOptions', () => {
-    it('keys entries by posInSet under virtualization', () => {
-      const h = createHarness({ total: 100 });
+  it('captures registered options on prime', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
+    h.setItems([a.handle, b.handle]);
+    h.cache.prime();
+    const cache = h.entries();
+    expect(cache.map((e) => e.id)).toEqual(['a', 'b']);
+    expect(cache.map((e) => e.label)).toEqual(['Apple', 'Banana']);
+  });
+
+  it('carries entries across an unmount (close → reopen)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
+    h.setItems([a.handle, b.handle]);
+    h.cache.prime();
+    // Listbox closes → consumer's @if unmounts the @for; items() goes to [].
+    h.setItems([]);
+    expect(h.entries().map((e) => e.id)).toEqual(['a', 'b']);
+  });
+
+  it('resets when totalCount transitions', () => {
+    const h = createLabelCache(100);
+    const a = makeHandle({ id: 'r-50', value: 'fifty', label: 'Row 50', posInSet: 50 });
+    h.setItems([a.handle]);
+    h.cache.prime();
+    expect(h.entries().some((e) => e.label === 'Row 50')).toBe(true);
+
+    // Consumer rebuilds the source array (e.g. query change) → totalCount flips.
+    h.setTotal(20);
+    h.cache.prime();
+    // Old entries are gone — the cache resets on totalCount transition.
+    expect(h.entries().some((e) => e.label === 'Row 50')).toBe(false);
+  });
+});
+
+describe('VirtualizedNavigator', () => {
+  afterEachOverlayCleanup();
+
+  describe('snapshotByPos and merged label resolution', () => {
+    it('keys entries by posInSet', () => {
+      const h = createNavigator();
       const a = makeHandle({ id: 'r-0', value: 'a', label: 'Row 0', posInSet: 0 });
       const b = makeHandle({ id: 'r-1', value: 'b', label: 'Row 1', posInSet: 1 });
       h.setItems([a.handle, b.handle]);
-      h.snapshot.prime();
-      const indexed = h.snapshot.snapshotByPos();
+      h.navigator.prime();
+      const indexed = h.navigator.snapshotByPos();
       expect(indexed.get(0)?.label).toBe('Row 0');
       expect(indexed.get(1)?.label).toBe('Row 1');
     });
 
-    it('merges off-window entries into cachedOptions when virtualizing', () => {
-      const h = createHarness({ total: 100, range: [0, 2] });
+    it('merges off-window entries when resolving labels (host merge replicated)', () => {
+      const label = createLabelCache(100);
+      const nav = createNavigator({ range: [0, 2] });
       const a = makeHandle({ id: 'r-0', value: 'a', label: 'Row 0', posInSet: 0 });
       const b = makeHandle({ id: 'r-1', value: 'b', label: 'Row 1', posInSet: 1 });
-      h.setItems([a.handle, b.handle]);
-      h.snapshot.prime();
+      label.setItems([a.handle, b.handle]);
+      nav.setItems([a.handle, b.handle]);
+      label.cache.prime();
+      nav.navigator.prime();
 
       // Scroll to a different window — previously-rendered options unmount but
       // the indexed snapshot remembers them.
       const c = makeHandle({ id: 'r-50', value: 'c', label: 'Row 50', posInSet: 50 });
-      h.setItems([c.handle]);
-      h.setRange([50, 51]);
-      h.snapshot.prime();
+      label.setItems([c.handle]);
+      label.setTotal(100);
+      nav.setItems([c.handle]);
+      nav.setRange([50, 51]);
+      label.cache.prime();
+      nav.navigator.prime();
 
-      const merged = h.snapshot.cachedOptions();
+      const merged = mergedCachedOptions(label.entries(), nav.navigator.snapshotByPos());
       const labels = merged.map((e) => e.label);
-      // Live entry first, then off-window entries by absolute position.
       expect(labels).toContain('Row 50');
       expect(labels).toContain('Row 0');
       expect(labels).toContain('Row 1');
     });
-
-    it('skips merging for non-virtualized lists (no totalCount)', () => {
-      const h = createHarness();
-      const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-      h.setItems([a.handle]);
-      h.snapshot.prime();
-      // No totalCount → cachedOptions returns the live cache untouched.
-      expect(h.snapshot.cachedOptions().map((e) => e.id)).toEqual(['a']);
-    });
   });
 
-  describe('navigateVirtualized + pending resolution', () => {
+  describe('navigate + pending resolution', () => {
     it('emits scrollToIndex when target is outside the visible range', () => {
-      const h = createHarness({ total: 100, range: [0, 10] });
+      const h = createNavigator({ range: [0, 10] });
       const items = Array.from({ length: 10 }, (_, i) =>
         makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
       );
       h.setItems(items.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
 
       // Active at posInSet 0; navigate to last (99) — out of [0, 10).
       h.setActive('r-0');
-      h.snapshot.navigateVirtualized('last');
+      h.navigator.navigate('last');
       expect(h.emitted).toContain(99);
       // Pending — activedescendant unchanged until the option mounts.
       expect(h.getActive()).toBe('r-0');
     });
 
     it('resolves pending once the target option mounts', () => {
-      const h = createHarness({ total: 100, range: [0, 10] });
+      const h = createNavigator({ range: [0, 10] });
       const initial = Array.from({ length: 10 }, (_, i) =>
         makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
       );
       h.setItems(initial.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
       h.setActive('r-0');
-      h.snapshot.navigateVirtualized('last');
+      h.navigator.navigate('last');
 
       // Consumer reacts to scrollToIndex and mounts the windowed slice [90, 100).
       const windowed = Array.from({ length: 10 }, (_, i) => {
@@ -230,27 +267,27 @@ describe('ComboboxSnapshot', () => {
       h.setItems(windowed.map((it) => it.handle));
       h.setRange([90, 100]);
       // Bridge effect normally calls this; in isolation we drive it directly.
-      const resolved = h.snapshot.tryResolvePending();
+      const resolved = h.navigator.tryResolvePending();
       expect(resolved).toBe(true);
       expect(h.getActive()).toBe('r-99');
     });
 
     it('keeps in-window targets local without emitting scrollToIndex', () => {
-      const h = createHarness({ total: 100, range: [0, 10] });
+      const h = createNavigator({ range: [0, 10] });
       const items = Array.from({ length: 10 }, (_, i) =>
         makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
       );
       h.setItems(items.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
       h.setActive('r-0');
 
-      h.snapshot.navigateVirtualized('next');
+      h.navigator.navigate('next');
       expect(h.emitted).toEqual([]);
       expect(h.getActive()).toBe('r-1');
     });
 
     it('skips disabled positions known via the indexed snapshot', () => {
-      const h = createHarness({ total: 5, range: [0, 5] });
+      const h = createNavigator({ total: 5, range: [0, 5] });
       const items = [
         makeHandle({ id: 'r-0', value: 'a', label: 'a', posInSet: 0 }),
         makeHandle({ id: 'r-1', value: 'b', label: 'b', posInSet: 1, disabled: true }),
@@ -259,37 +296,37 @@ describe('ComboboxSnapshot', () => {
         makeHandle({ id: 'r-4', value: 'e', label: 'e', posInSet: 4 }),
       ];
       h.setItems(items.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
       h.setActive('r-0');
 
-      h.snapshot.navigateVirtualized('next');
+      h.navigator.navigate('next');
       // 0 → next enabled is 2 (1 is disabled).
       expect(h.getActive()).toBe('r-2');
     });
 
     it('seedFromIndexedSnapshot picks the first enabled position', () => {
-      const h = createHarness({ total: 100, range: [0, 5] });
+      const h = createNavigator({ range: [0, 5] });
       const items = [
         makeHandle({ id: 'r-0', value: 'a', label: 'a', posInSet: 0, disabled: true }),
         makeHandle({ id: 'r-1', value: 'b', label: 'b', posInSet: 1 }),
         makeHandle({ id: 'r-2', value: 'c', label: 'c', posInSet: 2 }),
       ];
       h.setItems(items.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
 
-      h.snapshot.seedFromIndexedSnapshot('first');
+      h.navigator.seedFromIndexedSnapshot('first');
       expect(h.getActive()).toBe('r-1');
     });
 
     it('never scrolls the window when re-seeding after the active option scrolls out of view', () => {
-      const h = createHarness({ total: 1000, range: [0, 14] });
+      const h = createNavigator({ total: 1000, range: [0, 14] });
       // Initial window includes index 0, so it lands in the indexed snapshot.
       const initial = Array.from({ length: 14 }, (_, i) =>
         makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
       );
       h.setItems(initial.map((it) => it.handle));
-      h.snapshot.prime();
-      h.snapshot.seedFromIndexedSnapshot('first');
+      h.navigator.prime();
+      h.navigator.seedFromIndexedSnapshot('first');
       expect(h.getActive()).toBe('r-0');
 
       // User scrolls down: the window advances and index 0 unmounts. The host
@@ -304,11 +341,11 @@ describe('ComboboxSnapshot', () => {
       );
       h.setItems(scrolled.map((it) => it.handle));
       h.setRange([30, 44]);
-      h.snapshot.prime();
+      h.navigator.prime();
       h.setActive(null);
       h.resetEmitted();
 
-      h.snapshot.seedFromIndexedSnapshot('first');
+      h.navigator.seedFromIndexedSnapshot('first');
 
       // Seeds the topmost *rendered* row, not absolute index 0, and requests
       // no scroll — emitting scrollToIndex(0) here is what snapped a
@@ -320,17 +357,17 @@ describe('ComboboxSnapshot', () => {
 
   describe('resetPending', () => {
     it('drops a pending request so it does not seed after reopen', () => {
-      const h = createHarness({ total: 100, range: [0, 10] });
+      const h = createNavigator({ range: [0, 10] });
       const items = Array.from({ length: 10 }, (_, i) =>
         makeHandle({ id: `r-${i}`, value: `v${i}`, label: `Row ${i}`, posInSet: i }),
       );
       h.setItems(items.map((it) => it.handle));
-      h.snapshot.prime();
+      h.navigator.prime();
       h.setActive('r-0');
-      h.snapshot.navigateVirtualized('last');
+      h.navigator.navigate('last');
       expect(h.emitted).toContain(99);
 
-      h.snapshot.resetPending();
+      h.navigator.resetPending();
 
       // Even if r-99 mounts, no resolution happens.
       const target = makeHandle({
@@ -341,35 +378,38 @@ describe('ComboboxSnapshot', () => {
       });
       h.setItems([target.handle]);
       h.setRange([99, 100]);
-      const resolved = h.snapshot.tryResolvePending();
+      const resolved = h.navigator.tryResolvePending();
       expect(resolved).toBe(false);
       expect(h.getActive()).toBe('r-0');
     });
   });
+});
 
-  describe('zoneless reactivity', () => {
-    @Component({
-      template: '',
-    })
-    class ZonelessHost {}
+describe('combobox-snapshot zoneless reactivity', () => {
+  @Component({
+    template: '',
+  })
+  class ZonelessHost {}
 
-    beforeEach(() => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    });
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
 
-    it('updates cachedOptions reactively without Zone.js', () => {
-      TestBed.createComponent(ZonelessHost);
+  it('updates the label cache reactively without Zone.js', () => {
+    TestBed.createComponent(ZonelessHost);
 
-      const h = createHarness();
-      const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-      h.setItems([a.handle]);
-      h.snapshot.prime();
-      expect(h.snapshot.cachedOptions().map((e) => e.id)).toEqual(['a']);
+    const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
+    const total = signal<number | undefined>(undefined);
+    const cache = new OptionLabelCache<string>({ items, totalCount: total });
 
-      const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
-      h.setItems([a.handle, b.handle]);
-      h.snapshot.prime();
-      expect(h.snapshot.cachedOptions().map((e) => e.id)).toEqual(['a', 'b']);
-    });
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    items.set([a.handle]);
+    cache.prime();
+    expect(cache.entries().map((e) => e.id)).toEqual(['a']);
+
+    const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
+    items.set([a.handle, b.handle]);
+    cache.prime();
+    expect(cache.entries().map((e) => e.id)).toEqual(['a', 'b']);
   });
 });

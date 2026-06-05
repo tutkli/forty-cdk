@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { injectNumberInputContext } from './number-input-context';
+import { injectNumberInputGroup } from './number-input-context';
 
 /**
  * Auxiliary "step down" button for a `[forNumberInput]`. Apply on a `<button>`
@@ -27,16 +27,21 @@ import { injectNumberInputContext } from './number-input-context';
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.disabled]': 'isDisabled() ? "" : null',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
-    '(click)': 'ctx.decrement()',
+    '(click)': 'step()',
   },
 })
 export class ForNumberInputDecrement {
-  protected readonly ctx = injectNumberInputContext('ForNumberInputDecrement');
+  protected readonly group = injectNumberInputGroup('ForNumberInputDecrement');
 
   /** Accessible name for the button. Emits `aria-label` only when truthy. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly isDisabled = computed(
-    () => this.ctx.disabled() || this.ctx.readonly() || this.ctx.atMin(),
-  );
+  protected readonly isDisabled = computed(() => {
+    const field = this.group.field();
+    return !field || field.disabled() || field.readonly() || field.atMin();
+  });
+
+  protected step(): void {
+    this.group.field()?.decrement();
+  }
 }

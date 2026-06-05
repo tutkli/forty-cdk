@@ -30,13 +30,17 @@ export interface ForNumberInputContext {
 }
 
 /**
- * Registry owned by `[forNumberInputGroup]`. A `[forNumberInput]` nested under
- * the group registers itself so the group (and the buttons reading through it)
- * can drive the single spinbutton. Coordination flows through this registry —
- * not the DOM — because the focusable spinbutton lives on a void `<input>` that
- * can't contain the sibling buttons as descendants.
+ * The single coordination surface `[forNumberInputGroup]` exposes. A
+ * `[forNumberInput]` nested under the group registers itself, and the
+ * auxiliary `[forNumberInputIncrement]` / `[forNumberInputDecrement]` buttons
+ * read the registered spinbutton through `field()` to step the value and
+ * reflect their min / max disabled state. Coordination flows through this
+ * registry — not the DOM — because the focusable spinbutton lives on a void
+ * `<input>` that can't contain the sibling buttons as descendants.
  */
-export interface ForNumberInputRegistry {
+export interface ForNumberInputGroupContext {
+  /** The registered spinbutton, or `null` while none is mounted. */
+  readonly field: Signal<ForNumberInputContext | null>;
   /** Register the spinbutton the group coordinates. */
   register(field: ForNumberInputContext): void;
   /** Remove a previously registered spinbutton. */
@@ -44,29 +48,25 @@ export interface ForNumberInputRegistry {
 }
 
 /**
- * Injection token for the coordination surface the buttons read. Provided by
- * `[forNumberInputGroup]`, which forwards to the registered `[forNumberInput]`.
+ * Injection token for the `[forNumberInputGroup]` coordination surface. The
+ * spinbutton joins it via `register`; the buttons read the registered field
+ * through `field()`.
  */
-export const FOR_NUMBER_INPUT_CONTEXT = new InjectionToken<ForNumberInputContext>(
-  'FOR_NUMBER_INPUT_CONTEXT',
-);
-
-/** Injection token for the `[forNumberInputGroup]` registry the spinbutton joins. */
-export const FOR_NUMBER_INPUT_GROUP = new InjectionToken<ForNumberInputRegistry>(
+export const FOR_NUMBER_INPUT_GROUP = new InjectionToken<ForNumberInputGroupContext>(
   'FOR_NUMBER_INPUT_GROUP',
 );
 
 /**
- * Resolve the coordination context the increment / decrement buttons read, or
- * throw a descriptive error. The buttons are only meaningful inside a
+ * Resolve the surrounding `[forNumberInputGroup]`, or throw a descriptive
+ * error. The increment / decrement buttons are only meaningful inside a
  * `[forNumberInputGroup]` that wraps a `[forNumberInput]`.
  */
-export function injectNumberInputContext(piece: string): ForNumberInputContext {
-  const ctx = inject(FOR_NUMBER_INPUT_CONTEXT, { optional: true });
-  if (!ctx) {
+export function injectNumberInputGroup(piece: string): ForNumberInputGroupContext {
+  const group = inject(FOR_NUMBER_INPUT_GROUP, { optional: true });
+  if (!group) {
     throw new Error(
       `[forty-cdk/number-input] ${piece} must be used inside a [forNumberInputGroup] that wraps a [forNumberInput].`,
     );
   }
-  return ctx;
+  return group;
 }

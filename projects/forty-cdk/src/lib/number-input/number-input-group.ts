@@ -1,10 +1,9 @@
-import { computed, Directive, signal } from '@angular/core';
+import { Directive, signal } from '@angular/core';
 
 import {
-  FOR_NUMBER_INPUT_CONTEXT,
   FOR_NUMBER_INPUT_GROUP,
   type ForNumberInputContext,
-  type ForNumberInputRegistry,
+  type ForNumberInputGroupContext,
 } from './number-input-context';
 
 /**
@@ -15,9 +14,10 @@ import {
  *
  * It is required _only_ when you use the stepper buttons: a `<input>` is a void
  * element and can't contain the buttons as DOM descendants, so the buttons
- * can't inject the spinbutton's context directly. The group provides that
- * context and forwards it to the `[forNumberInput]` registered beneath it. A
- * standalone `[forNumberInput]` (keyboard / `[(value)]` only) needs no group.
+ * can't inject the spinbutton's context directly. The group registers the
+ * `[forNumberInput]` beneath it and exposes it via `field()`, which the buttons
+ * read. A standalone `[forNumberInput]` (keyboard / `[(value)]` only) needs no
+ * group.
  *
  * @example
  * ```html
@@ -31,27 +31,12 @@ import {
 @Directive({
   selector: '[forNumberInputGroup]',
   exportAs: 'forNumberInputGroup',
-  providers: [
-    { provide: FOR_NUMBER_INPUT_CONTEXT, useExisting: ForNumberInputGroup },
-    { provide: FOR_NUMBER_INPUT_GROUP, useExisting: ForNumberInputGroup },
-  ],
+  providers: [{ provide: FOR_NUMBER_INPUT_GROUP, useExisting: ForNumberInputGroup }],
 })
-export class ForNumberInputGroup implements ForNumberInputContext, ForNumberInputRegistry {
+export class ForNumberInputGroup implements ForNumberInputGroupContext {
   readonly #field = signal<ForNumberInputContext | null>(null);
 
-  readonly value = computed(() => this.#field()?.value() ?? null);
-  readonly disabled = computed(() => this.#field()?.disabled() ?? false);
-  readonly readonly = computed(() => this.#field()?.readonly() ?? false);
-  readonly atMin = computed(() => this.#field()?.atMin() ?? false);
-  readonly atMax = computed(() => this.#field()?.atMax() ?? false);
-
-  increment(by?: number): void {
-    this.#field()?.increment(by);
-  }
-
-  decrement(by?: number): void {
-    this.#field()?.decrement(by);
-  }
+  readonly field = this.#field.asReadonly();
 
   register(field: ForNumberInputContext): void {
     this.#field.set(field);

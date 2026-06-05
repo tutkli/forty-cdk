@@ -43,7 +43,7 @@ import {
   type ForComboboxContext,
   type ForComboboxOptionHandle,
 } from './combobox-context';
-import { ComboboxSnapshot } from './combobox-snapshot';
+import { OptionLabelCache, VirtualizedNavigator } from './combobox-snapshot';
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -301,42 +301,50 @@ export class ForCombobox<T = string>
   readonly initialFocus = this.#initialFocus.asReadonly();
 
   /**
-   * Virtualization snapshot — keeps option metadata across close/open and
-   * scroll-out-of-view, drives inline autocomplete matching, and powers
-   * keyboard navigation past the rendered window. See `combobox-snapshot.ts`
-   * for the full contract.
+   * Always-on label cache — keeps `{ id, value, label }` tuples across
+   * close/open and scroll-out-of-view to drive inline autocomplete matching
+   * and the `selected` label fallback. See `combobox-snapshot.ts`.
    */
-  readonly #snapshot = new ComboboxSnapshot<T>({
+  readonly #labelCache = new OptionLabelCache<T>({
     items: this.#items.items,
     totalCount: this.totalCount,
-    visibleRange: this.visibleRange,
-    loop: this.loop,
-    getActiveId: () => this.#activeId(),
-    setActiveId: (id) => this.#activeId.set(id),
-    emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
   });
+
+  /**
+   * Virtualization navigation engine — constructed lazily the first time the
+   * consumer sets `totalCount()`, so a non-virtualized combobox never pulls
+   * the position-map machinery. Powers keyboard navigation past the rendered
+   * window and the scrolled-out-of-view label fallback.
+   */
+  #navigator: VirtualizedNavigator<T> | null = null;
+
+  #requireNavigator(): VirtualizedNavigator<T> {
+    return (this.#navigator ??= new VirtualizedNavigator<T>({
+      items: this.#items.items,
+      totalCount: this.totalCount,
+      visibleRange: this.visibleRange,
+      loop: this.loop,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#activeId.set(id),
+      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+    }));
+  }
 
   readonly selected = computed<readonly { value: T; label: string }[]>(() => {
     const values = this.value();
     if (values.length === 0) {
       return [];
     }
-    const cached = this.#snapshot.cachedOptions();
-    const indexed = this.#snapshot.snapshotByPos();
+    // `cachedOptions()` already merges off-window entries from the indexed
+    // snapshot when virtualizing, so a selected option scrolled out of view
+    // still resolves here without a separate position-map lookup.
+    const cached = this.cachedOptions();
     const equals = this.isItemEqualToValue();
     const toLabel = this.itemToStringLabel();
     return values.map((v) => {
       const opt = cached.find((o) => equals(o.value, v));
       if (opt) {
         return { value: v, label: opt.label };
-      }
-      // Fall back to the indexed snapshot — covers the virtualization case
-      // where a selected option has scrolled out of view (so isn't in the
-      // live `cached` list) but was rendered earlier.
-      for (const entry of indexed.values()) {
-        if (equals(entry.value, v)) {
-          return { value: v, label: entry.label };
-        }
       }
       // Fall back to the consumer-provided label fn so non-string items
       // still render a meaningful string before the option cache warms up.
@@ -382,19 +390,26 @@ export class ForCombobox<T = string>
     // after the active option unmounts is driven by the `items` change that
     // accompanies it, which also clears `#activeId` in `unregisterOption`.
     //
-    // `#snapshot.prime()` eagerly pulls the snapshot caches so their
+    // `#labelCache.prime()` eagerly pulls the label cache so its
     // `linkedSignal` `prev` slot gets seeded while the listbox is open.
-    // Without this, the lazy caches never run during the open cycle (no
-    // other consumer pulls them in non-virtualized usage), and persistence
-    // across close→re-open would start from an empty `prev`.
+    // Without this, the lazy cache never runs during the open cycle (no
+    // other consumer pulls it in non-virtualized usage), and persistence
+    // across close→re-open would start from an empty `prev`. The
+    // virtualization navigator (and its position-map) is primed only when
+    // the consumer set `totalCount()`, so a plain combobox never builds it.
     effect(() => {
-      this.#snapshot.prime();
+      this.#labelCache.prime();
       const items = this.#items.items();
+      const virtualized = this.totalCount() !== undefined;
 
       // Resolve a pending virtualized navigation: once the option for the
       // requested posInSet mounts, seed activedescendant to its id.
-      if (this.#snapshot.tryResolvePending()) {
-        return;
+      if (virtualized) {
+        const navigator = this.#requireNavigator();
+        navigator.prime();
+        if (navigator.tryResolvePending()) {
+          return;
+        }
       }
 
       // Auto-highlight the first / last enabled option whenever the listbox
@@ -410,9 +425,8 @@ export class ForCombobox<T = string>
         untracked(() => this.#activeId()) === null &&
         items.length > 0
       ) {
-        const total = this.totalCount();
-        if (total !== undefined) {
-          this.#snapshot.seedFromIndexedSnapshot(
+        if (virtualized) {
+          this.#requireNavigator().seedFromIndexedSnapshot(
             this.#initialFocus() === 'last' ? 'last' : 'first',
           );
         } else {
@@ -539,7 +553,7 @@ export class ForCombobox<T = string>
       return;
     }
     if (this.totalCount() !== undefined) {
-      this.#snapshot.navigateVirtualized(direction);
+      this.#requireNavigator().navigate(direction);
       return;
     }
     const items = this.#items.items();
@@ -595,7 +609,27 @@ export class ForCombobox<T = string>
   }
 
   cachedOptions(): readonly { id: string; value: T; label: string }[] {
-    return this.#snapshot.cachedOptions();
+    const live = this.#labelCache.entries();
+    if (this.totalCount() === undefined) {
+      return live;
+    }
+    // Virtualized: merge in entries that previously rendered so typeahead and
+    // inline autocomplete can match against options scrolled out of view. The
+    // live entries take precedence (freshest data) and appear first, followed
+    // by off-window indexed entries sorted by absolute position.
+    const indexed = this.#requireNavigator().snapshotByPos();
+    if (indexed.size === 0) {
+      return live;
+    }
+    const seen = new Set(live.map((o) => o.id));
+    const merged: { id: string; value: T; label: string }[] = [...live];
+    const positions = [...indexed.keys()].sort((a, b) => a - b);
+    for (const pos of positions) {
+      const entry = indexed.get(pos)!;
+      if (seen.has(entry.id)) continue;
+      merged.push({ id: entry.id, value: entry.value, label: entry.label });
+    }
+    return merged;
   }
 
   clear(clearQuery: boolean = true): void {
@@ -639,7 +673,7 @@ export class ForCombobox<T = string>
     }
     this.open.set(false);
     this.#activeId.set(null);
-    this.#snapshot.resetPending();
+    this.#navigator?.resetPending();
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {

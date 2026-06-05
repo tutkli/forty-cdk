@@ -165,6 +165,12 @@ describe('ForCalendar', () => {
       expect(heading.textContent).toContain('2026');
     });
 
+    it('reflects role="rowgroup" on the grid header', () => {
+      const r = renderHost(CalendarHost);
+      const header = r.query('[forCalendarGridHeader]')!;
+      expect(header.getAttribute('role')).toBe('rowgroup');
+    });
+
     it('keeps exactly one tabbable cell — the focused date', () => {
       const r = renderHost(CalendarHost);
       const tabbable = tabbableCells(r);
