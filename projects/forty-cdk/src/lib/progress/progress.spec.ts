@@ -60,6 +60,27 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-state')).toBe('loading');
     });
 
+    it('reflects data-percentage / data-min / data-max on the root, matching meter', () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(25);
+      flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.getAttribute('data-min')).toBe('0');
+      expect(el.getAttribute('data-max')).toBe('100');
+      expect(el.getAttribute('data-percentage')).toBe('25');
+    });
+
+    it('omits data-percentage on the root when indeterminate', () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(null);
+      flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.hasAttribute('data-percentage')).toBe(false);
+      expect(el.getAttribute('data-min')).toBe('0');
+    });
+
     it('reflects state="complete" when value === max', () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(100);

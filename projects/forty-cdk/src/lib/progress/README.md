@@ -20,7 +20,7 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 | `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                         |
 | `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition. |
 
-The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, and `data-max`. The indicator additionally reflects `data-percentage` and the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
+The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, `data-min`, `data-max`, and `data-percentage` (absent while indeterminate), matching the meter root so the root can be styled from `data-percentage` directly. The indicator reflects the same `data-percentage` plus the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
 
 ## CSS custom properties
 

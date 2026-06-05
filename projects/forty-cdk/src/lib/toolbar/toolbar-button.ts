@@ -15,7 +15,6 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
   host: {
     type: 'button',
     '[attr.tabindex]': 'tabindex()',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'toolbar?.orientation()',

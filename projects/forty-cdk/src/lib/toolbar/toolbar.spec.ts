@@ -16,7 +16,7 @@ import { ForToolbarSeparator } from './toolbar-separator';
       <button forToolbarButton>One</button>
       <button forToolbarButton [disabled]="middleDisabled()">Two</button>
       <span forToolbarSeparator></span>
-      <a forToolbarLink href="/x">Three</a>
+      <a forToolbarLink href="/x" [disabled]="linkDisabled()">Three</a>
     </div>
   `,
 })
@@ -25,6 +25,7 @@ class ToolbarHost {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly disabled = signal(false);
   readonly middleDisabled = signal(false);
+  readonly linkDisabled = signal(false);
 }
 
 @Component({
@@ -260,6 +261,24 @@ describe('ForToolbar', () => {
       const buttons = queryAll<HTMLButtonElement>('button');
       expect(buttons[0]!.hasAttribute('disabled')).toBe(true);
       expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
+    });
+
+    it('disabled button emits native disabled without aria-disabled', () => {
+      const { fixture, queryAll, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.middleDisabled.set(true);
+      flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+      expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
+      expect(buttons[1]!.hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('disabled link keeps aria-disabled (no native disabled on <a>)', () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.linkDisabled.set(true);
+      flush();
+      const link = query<HTMLAnchorElement>('a')!;
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+      expect(link.hasAttribute('disabled')).toBe(false);
     });
   });
 

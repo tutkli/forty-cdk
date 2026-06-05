@@ -43,7 +43,9 @@ import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
     '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.data-state]': 'state()',
     '[attr.data-value]': 'clampedValue() ?? null',
+    '[attr.data-min]': '0',
     '[attr.data-max]': 'max()',
+    '[attr.data-percentage]': 'percentageAttr()',
   },
   providers: [{ provide: FOR_PROGRESS_CONTEXT, useExisting: ForProgress }],
 })
@@ -120,6 +122,11 @@ export class ForProgress implements ForProgressContext {
   });
 
   readonly #announcer = inject(LiveAnnouncer);
+
+  protected percentageAttr(): number | null {
+    const p = this.percentage();
+    return p === null ? null : Math.round(p * 100) / 100;
+  }
 
   constructor() {
     let lastState: ForProgressState | null = null;
