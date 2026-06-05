@@ -193,6 +193,99 @@ test.describe('Slider (track click)', () => {
   });
 });
 
+test.describe('Slider (coincident thumbs)', () => {
+  test('two thumbs at the same value can be separated by dragging the upper one toward max', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'slider', { initial: '80,80' });
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    // Press just above the coincident value (~82%): the direction-aware
+    // tie-break grabs the UPPER thumb (index 1) so it can lift off toward
+    // max, then drag rightward to ~95%.
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.82,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.9,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.waitForTimeout(20);
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.95,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.waitForTimeout(20);
+    await page.mouse.up();
+
+    const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
+    expect(lo).toBe(80);
+    expect(hi).toBeGreaterThan(80);
+  });
+
+  test('two thumbs at the same value can be separated by dragging the lower one toward min', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'slider', { initial: '80,80' });
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    // Press just below the coincident value (~78%): the tie-break grabs the
+    // LOWER thumb (index 0) so it can move toward min, then drag leftward.
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.78,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.7,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.waitForTimeout(20);
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.6,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.waitForTimeout(20);
+    await page.mouse.up();
+
+    const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
+    expect(hi).toBe(80);
+    expect(lo).toBeLessThan(80);
+  });
+
+  test('the thumb grabbed at pointer-down stays the active one for the whole drag', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'slider', { initial: '80,80' });
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    // Grab the upper thumb (press above the coincident value) and drag it all
+    // the way past the LEFT edge. If the active thumb were re-resolved per
+    // move, crossing below 80 would hand control to the lower thumb and the
+    // upper value would never end up pinned at the lower neighbour. Instead it
+    // must stay the upper thumb, which clamps to its lower neighbour (80).
+    await page.mouse.move(
+      trackBox!.x + trackBox!.width * 0.82,
+      trackBox!.y + trackBox!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(trackBox!.x - 500, trackBox!.y + trackBox!.height / 2);
+    await page.waitForTimeout(20);
+    await page.mouse.up();
+
+    const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
+    // Upper thumb stayed active and clamped down to its lower neighbour; the
+    // lower thumb never moved.
+    expect(lo).toBe(80);
+    expect(hi).toBe(80);
+  });
+});
+
 test.describe('Slider (RTL)', () => {
   test('RTL flips horizontal mapping: dragging to the visual-right edge → min', async ({ page }) => {
     await gotoFixture(page, 'slider', { dir: 'rtl' });
