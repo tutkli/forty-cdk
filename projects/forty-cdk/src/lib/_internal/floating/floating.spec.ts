@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   type ElementRef,
   provideZonelessChangeDetection,
   signal,
@@ -111,6 +112,51 @@ class ModernBubble {
 class ModernBubbleHost {
   readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
   readonly bubble = viewChild.required<ModernBubble>('bubble');
+}
+
+// Fixture that counts how often the positioning effect reads `sideOffset`.
+// The counter lives on the host (spec-owned state, not a directive internal),
+// so a spec can assert the effect did NOT re-run on an offset change while
+// the overlay is closed.
+@Component({
+  selector: 'tracking-bubble',
+  template: '<ng-content />',
+})
+class TrackingBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly side = signal<'top' | 'right' | 'bottom' | 'left'>('bottom');
+  readonly rawSideOffset = signal(8);
+
+  sideOffsetReads = 0;
+  readonly sideOffset = computed(() => {
+    this.sideOffsetReads++;
+    return this.rawSideOffset();
+  });
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      side: this.side,
+      sideOffset: this.sideOffset,
+      portal: false,
+    });
+  }
+}
+
+@Component({
+  imports: [TrackingBubble],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <tracking-bubble #bubble>Content</tracking-bubble>
+    </div>
+  `,
+})
+class TrackingBubbleHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<TrackingBubble>('bubble');
 }
 
 @Component({
@@ -351,6 +397,67 @@ describe('injectFloating', () => {
       } finally {
         window.removeEventListener('unhandledrejection', onUnhandled);
       }
+    });
+  });
+
+  describe('reactivity while closed', () => {
+    it('does not re-run positioning on offset/side changes while closed', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TrackingBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      // Closed: the effect early-returns after reading open/reference and
+      // never reaches the sideOffset read.
+      const readsWhileClosed = bubble.sideOffsetReads;
+      bubble.rawSideOffset.set(16);
+      bubble.side.set('top');
+      await flushPositioning(fixture);
+      expect(bubble.sideOffsetReads).toBe(readsWhileClosed);
+
+      // Open: the effect now reads sideOffset (tracks the rest of the config).
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+      expect(bubble.sideOffsetReads).toBeGreaterThan(readsWhileClosed);
+
+      // Open: a further offset change re-runs the effect and re-reads it.
+      const readsWhileOpen = bubble.sideOffsetReads;
+      bubble.rawSideOffset.set(24);
+      await flushPositioning(fixture);
+      expect(bubble.sideOffsetReads).toBeGreaterThan(readsWhileOpen);
+    });
+  });
+
+  describe('reposition anti-flash baseline', () => {
+    it('re-arms clip-path on a config change while open before the new position resolves', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+      // First position resolved → baseline dropped, surface painted.
+      expect(bubbleEl.style.clipPath).toBe('');
+      expect(bubbleEl.style.translate).not.toBe('');
+
+      // A side change while open re-runs the effect: onCleanup clears the
+      // styles, then the effect synchronously re-arms the clip-path baseline
+      // so the surface stays hidden at the (now-cleared) stale position until
+      // the async computePosition resolves. Synchronous detectChanges flushes
+      // the effect without letting the position promise resolve.
+      bubble.side.set('bottom');
+      fixture.detectChanges();
+      expect(bubbleEl.style.clipPath).toBe('inset(50%)');
+      expect(bubbleEl.style.translate).toBe('');
+
+      // Once the new position resolves the baseline drops again.
+      await flushPositioning(fixture);
+      expect(bubbleEl.style.clipPath).toBe('');
+      expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
   });
 

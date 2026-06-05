@@ -126,4 +126,43 @@ describe('injectItemAlignedPositioner', () => {
     expect(lbEl.dataset['position']).toBe('item-aligned');
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
   });
+
+  it('clears translate / --for-* / data-position on close so a reopen starts clean', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(Host);
+    await flushPositioning(fixture);
+
+    const lb = fixture.componentInstance.lb();
+    const lbEl = document.querySelector<HTMLElement>('item-aligned-listbox')!;
+    const trigger = fixture.componentInstance.anchor().nativeElement;
+
+    lb.reference.set(trigger);
+    lb.open.set(true);
+    await flushPositioning(fixture);
+
+    // Sanity: the positioner wrote everything on open.
+    expect(lbEl.dataset['position']).toBe('item-aligned');
+    expect(lbEl.style.translate).not.toBe('');
+    expect(lbEl.style.getPropertyValue('--for-anchor-width')).not.toBe('');
+    expect(lbEl.style.getPropertyValue('--for-anchor-height')).not.toBe('');
+    expect(lbEl.style.getPropertyValue('--for-select-content-available-height')).not.toBe('');
+
+    lb.open.set(false);
+    await flushPositioning(fixture);
+
+    // Closed: every style, CSS var, and data-* attribute is wiped, including
+    // the clip-path baseline.
+    expect(lbEl.dataset['position']).toBeUndefined();
+    expect(lbEl.style.translate).toBe('');
+    expect(lbEl.style.getPropertyValue('clip-path')).toBe('');
+    expect(lbEl.style.getPropertyValue('--for-anchor-width')).toBe('');
+    expect(lbEl.style.getPropertyValue('--for-anchor-height')).toBe('');
+    expect(lbEl.style.getPropertyValue('--for-select-content-available-height')).toBe('');
+
+    // Reopen: the positioner runs clean and re-writes the position.
+    lb.open.set(true);
+    await flushPositioning(fixture);
+    expect(lbEl.dataset['position']).toBe('item-aligned');
+    expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
+  });
 });

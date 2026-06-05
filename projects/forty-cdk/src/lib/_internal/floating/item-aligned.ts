@@ -167,11 +167,18 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
   effect((onCleanup) => {
     const isOpen = config.open();
     const reference = config.reference();
-    const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
 
     if (!isOpen || !reference) {
       return;
     }
+
+    const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
+
+    // Re-arm the `clip-path: inset(50%)` baseline on every open effect run.
+    // `onCleanup` now calls `resetItemAlignedStyles` which clears it, so
+    // without re-arming a reopen / selection change would paint at the
+    // previous frame's stale `translate` until `computePosition` re-resolves.
+    el.style.clipPath = 'inset(50%)';
 
     let initialScrollDone = false;
 
@@ -224,6 +231,30 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
       });
     });
 
-    onCleanup(() => cleanup());
+    // Clean up symmetrically with what computePosition wrote — mirrors
+    // `injectFloating` — so a same-instance reopen doesn't inherit stale
+    // `translate` / `--for-*` / `data-position` or a dropped anti-flash
+    // baseline.
+    onCleanup(() => {
+      cleanup();
+      resetItemAlignedStyles(el);
+    });
   });
+}
+
+/**
+ * Strip every inline style, CSS custom property, and `data-*` attribute
+ * `injectItemAlignedPositioner` writes to the listbox (including the
+ * `clip-path` hide baseline). Mirrors `resetFloatingStyles` in `floating.ts`
+ * so a closed-then-reopened listbox starts from a clean slate — no leftover
+ * `translate` jumping the next open, no stale `--for-*` poisoning size
+ * styles, no orphaned `data-position`.
+ */
+function resetItemAlignedStyles(el: HTMLElement): void {
+  el.style.removeProperty('translate');
+  el.style.removeProperty('clip-path');
+  el.style.removeProperty('--for-anchor-width');
+  el.style.removeProperty('--for-anchor-height');
+  el.style.removeProperty('--for-select-content-available-height');
+  el.removeAttribute('data-position');
 }
