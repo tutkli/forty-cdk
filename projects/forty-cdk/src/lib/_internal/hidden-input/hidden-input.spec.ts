@@ -1,9 +1,11 @@
+import { ɵPLATFORM_SERVER_ID } from '@angular/common';
 import {
   Component,
   Directive,
   ElementRef,
   inject,
   input,
+  PLATFORM_ID,
   provideZonelessChangeDetection,
   signal,
   type Signal,
@@ -43,9 +45,16 @@ class Host {
   readonly disabled = signal(false);
 }
 
-function setup(): { fixture: ComponentFixture<Host>; host: Host; form: HTMLFormElement } {
+function setup(platformId?: unknown): {
+  fixture: ComponentFixture<Host>;
+  host: Host;
+  form: HTMLFormElement;
+} {
   TestBed.configureTestingModule({
-    providers: [provideZonelessChangeDetection()],
+    providers: [
+      provideZonelessChangeDetection(),
+      ...(platformId === undefined ? [] : [{ provide: PLATFORM_ID, useValue: platformId }]),
+    ],
   });
   const fixture = TestBed.createComponent(Host);
   fixture.detectChanges();
@@ -172,5 +181,37 @@ describe('injectHiddenInput', () => {
 
     fixture.destroy();
     expect(form.querySelectorAll('input[type="hidden"]').length).toBe(0);
+  });
+
+  it('after activation there is exactly one hidden input per value (no duplicates)', () => {
+    const { fixture, host, form } = setup();
+    host.name.set('color');
+    host.values.set(['red']);
+    fixture.detectChanges();
+    // Re-running change detection must not append duplicate siblings.
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    const inputs = hiddenInputs(form);
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]!.value).toBe('red');
+    expect(formData(form)).toEqual([['color', 'red']]);
+  });
+
+  describe('server platform (SSR)', () => {
+    it('is a no-op: never calls createElement and mounts no inputs', () => {
+      const createSpy = vi.spyOn(document, 'createElement');
+      const { fixture, host, form } = setup(ɵPLATFORM_SERVER_ID);
+
+      host.name.set('color');
+      host.values.set(['red']);
+      fixture.detectChanges();
+
+      expect(createSpy).not.toHaveBeenCalledWith('input');
+      expect(hiddenInputs(form)).toHaveLength(0);
+      expect(formData(form)).toEqual([]);
+
+      createSpy.mockRestore();
+    });
   });
 });

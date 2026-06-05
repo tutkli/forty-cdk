@@ -1,4 +1,13 @@
-import { DOCUMENT, DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  DOCUMENT,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  PLATFORM_ID,
+  type Signal,
+} from '@angular/core';
 
 export interface HiddenInputConfig<T = string> {
   /**
@@ -41,8 +50,18 @@ export interface HiddenInputConfig<T = string> {
  * Inputs are inserted right after the directive's host element so they
  * live inside whatever `<form>` the host lives in. Lifecycle is wired to
  * `DestroyRef`: the inputs are removed when the directive is destroyed.
+ *
+ * Browser-only: on the server this is a no-op — no `<input>` is created or
+ * serialized. The inputs are mounted on the client only, after hydration,
+ * so the server-rendered markup (the host primitive alone) and the hydrated
+ * DOM agree and there is no hydration mismatch or duplicated/double-submitted
+ * field for native-form consumers.
  */
 export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): void {
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
+
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const doc = inject(DOCUMENT);
   const inputs: HTMLInputElement[] = [];
