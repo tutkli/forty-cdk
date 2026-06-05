@@ -233,9 +233,28 @@ export function injectFloating(config: FloatingConfig): void {
   const fallbackShiftPadding = config.shiftPadding ?? 8;
 
   effect((onCleanup) => {
+    // Read `open`/`reference` first and early-return before establishing
+    // dependencies on the rest of the config. A closed overlay must only
+    // track `open`/`reference` — reading the rest up front would re-run this
+    // effect on any offset/side change while closed, defeating the "don't
+    // pay for positioning while closed" intent.
     const isOpen = config.open();
     const reference = config.reference();
+
+    if (!isOpen || !reference) {
+      return;
+    }
+
     const arrowEl = config.arrow?.() ?? null;
+
+    // Re-arm the `clip-path: inset(50%)` baseline at the start of every open
+    // effect run, not only in `afterNextRender`. A config change while open
+    // re-runs this effect: `onCleanup` calls `resetFloatingStyles`, which
+    // clears `clip-path`, so without re-arming the surface would paint at the
+    // previous frame's stale `translate` until the async `computePosition`
+    // resolves. Re-arming hides it until the first resolved position drops the
+    // baseline again below.
+    el.style.clipPath = 'inset(50%)';
 
     // Resolve placement from `side` + `align` with sensible defaults.
     const sideInput = config.side?.() ?? 'bottom';
@@ -256,10 +275,6 @@ export function injectFloating(config: FloatingConfig): void {
     const arrowPaddingVal = config.arrowPadding?.() ?? 0;
     const stickyVal = config.sticky?.() ?? false;
     const hideOnDetach = config.hideWhenDetached?.() ?? false;
-
-    if (!isOpen || !reference) {
-      return;
-    }
 
     const middleware: Middleware[] = [
       offset({ mainAxis: sideOffsetVal, crossAxis: alignOffsetVal }),
