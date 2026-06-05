@@ -80,6 +80,11 @@ import {
       border: 1px solid #99c;
       padding: 8px;
     }
+    .edge {
+      position: fixed;
+      top: 120px;
+      right: 8px;
+    }
   `,
   template: `
     <div class="surfaces">
@@ -156,6 +161,29 @@ import {
 
       <input data-testid="after" placeholder="after" />
     </div>
+
+    <!--
+      DropdownMenu pinned to the right viewport edge. The submenu requests
+      side="right" but there is no room there, so floating-ui flip renders it
+      on the left. Exercises the safe-triangle arming the grace polygon on the
+      resolved (flipped) side (#502).
+    -->
+    <div class="edge" forDropdownMenu [(open)]="edgeOpen" ariaLabel="Edge dropdown">
+      <button data-testid="edge-trigger" forDropdownMenuTrigger>Edge</button>
+      @if (edgeOpen()) {
+        <div forMenuContent data-testid="edge-menu" class="menu">
+          <button data-testid="edge-item-1" forMenuItem class="item">Item one</button>
+          <div forMenuSub [(open)]="edgeSubOpen" side="right" [sideOffset]="8">
+            <button data-testid="edge-sub-trigger" forMenuSubTrigger class="item">More tools</button>
+            @if (edgeSubOpen()) {
+              <div forMenuSubContent data-testid="edge-sub-menu" class="menu">
+                <button data-testid="edge-sub-item-1" forMenuItem class="item">Save page</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
   `,
 })
 export class MenuSubFixture {
@@ -168,4 +196,7 @@ export class MenuSubFixture {
 
   protected readonly mbValue = signal('');
   protected readonly mbSubOpen = signal(false);
+
+  protected readonly edgeOpen = signal(false);
+  protected readonly edgeSubOpen = signal(false);
 }

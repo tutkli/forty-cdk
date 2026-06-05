@@ -123,6 +123,45 @@ test.describe('Submenu pointer hover — DropdownMenu', () => {
   });
 });
 
+test.describe('Submenu pointer hover — near-edge flip (#502)', () => {
+  test('a flipped submenu arms its safe triangle on the resolved (flipped) side', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub');
+    await el(page, 'edge-trigger').click();
+    await expect(el(page, 'edge-menu')).toBeVisible();
+
+    await el(page, 'edge-sub-trigger').hover();
+    await expect(el(page, 'edge-sub-menu')).toBeVisible();
+
+    // The submenu requested side="right" but is pinned to the viewport's right
+    // edge, so floating-ui's `flip` rendered it on the left.
+    await expect(el(page, 'edge-sub-menu')).toHaveAttribute('data-side', 'left');
+
+    const triggerBox = await el(page, 'edge-sub-trigger').boundingBox();
+    const subMenuBox = await el(page, 'edge-sub-menu').boundingBox();
+    expect(triggerBox).not.toBeNull();
+    expect(subMenuBox).not.toBeNull();
+    // Confirm the content really is to the LEFT of the trigger.
+    expect(subMenuBox!.x).toBeLessThan(triggerBox!.x);
+
+    // Travel LEFT off the trigger toward the flipped (left-side) content and
+    // dwell past the close delay (100ms). Before #502 the grace polygon was
+    // armed toward the requested *right* side, so this leftward travel fell
+    // outside it and the submenu closed instantly. With the resolved side it
+    // stays open.
+    const { x, y, height } = subMenuBox!;
+    await page.mouse.move(x + subMenuBox!.width + 4, y + height / 2, { steps: 8 });
+    await page.waitForTimeout(180);
+    await expect(el(page, 'edge-sub-menu')).toBeVisible();
+
+    // Completing the travel into the content keeps it open and interactive.
+    await page.mouse.move(x + subMenuBox!.width / 2, y + height / 2, { steps: 8 });
+    await expect(el(page, 'edge-sub-menu')).toBeVisible();
+    await expect(el(page, 'edge-sub-item-1')).toBeVisible();
+  });
+});
+
 test.describe('Submenu pointer hover — ContextMenu', () => {
   test('hovering the sub-trigger opens its submenu', async ({ page }) => {
     await gotoFixture(page, 'menu-sub');
