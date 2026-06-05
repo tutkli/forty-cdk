@@ -377,50 +377,41 @@ describe('MenuOverlay', () => {
     });
   });
 
-  describe('outside veto coordination', () => {
-    it('reuses the same veto wrapper between pointerDownOutside and interactOutside', () => {
+  // The shared `#pendingOutsideVeto` reuse between the specific outside
+  // channels and the composite `interactOutside` now lives in
+  // `injectOverlayShell` (see overlay-shell.spec). The helper only forwards
+  // the shell-built veto to the matching output and owns the close decision.
+  describe('outside dismiss', () => {
+    it('forwards the veto verbatim to the matching output', () => {
       const { overlay, hooks, emitted } = build();
       hooks.open.set(true);
-      const pointer = new PointerEvent('pointerdown');
-      overlay.emitPointerDownOutside(pointer);
-      overlay.emitInteractOutside(pointer);
+      const pointerVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(
+        new PointerEvent('pointerdown'),
+      );
+      overlay.emitPointerDownOutside(pointerVeto as VetoableNativeEvent<PointerEvent>);
+      overlay.emitInteractOutside(pointerVeto);
 
       expect(emitted.pointerDownOutside.length).toBe(1);
       expect(emitted.interactOutside.length).toBe(1);
-      expect(emitted.pointerDownOutside[0]).toBe(emitted.interactOutside[0]);
+      expect(emitted.pointerDownOutside[0]).toBe(pointerVeto);
+      expect(emitted.interactOutside[0]).toBe(pointerVeto);
     });
 
-    it('vetoing pointerDownOutside also vetoes the composite interactOutside', () => {
+    it('requestClose closes with the channel reason when dismissible', () => {
       const { overlay, hooks } = build();
       hooks.open.set(true);
-      hooks.pointerDownOutside.subscribe((e) => e.preventDefault());
-
-      const pointer = new PointerEvent('pointerdown');
-      overlay.emitPointerDownOutside(pointer);
-      overlay.emitInteractOutside(pointer);
-
-      expect(hooks.open()).toBe(true);
-    });
-
-    it('falls back to a fresh veto when interactOutside fires without a prior specific listener', () => {
-      const { overlay, hooks, emitted } = build();
-      hooks.open.set(true);
-
-      const pointer = new PointerEvent('pointerdown');
-      overlay.emitInteractOutside(pointer);
-
-      expect(emitted.interactOutside.length).toBe(1);
+      overlay.requestClose('focusOutside');
       expect(hooks.open()).toBe(false);
+      expect(overlay.lastCloseReason()).toBe('focusOutside');
     });
 
-    it('ignores interactOutside once the menu is already closed, preserving the close reason', () => {
-      const { overlay, hooks, emitted } = build();
+    it('requestClose is ignored once the menu is already closed, preserving the close reason', () => {
+      const { overlay, hooks } = build();
       overlay.closeMenu('tab');
       expect(hooks.open()).toBe(false);
 
-      overlay.emitInteractOutside(new PointerEvent('pointerdown'));
+      overlay.requestClose('pointerDownOutside');
 
-      expect(emitted.interactOutside.length).toBe(0);
       expect(overlay.lastCloseReason()).toBe('tab');
     });
   });

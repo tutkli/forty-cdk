@@ -59,10 +59,12 @@ export class ForPopoverContent {
         arrow: this.ctx.arrow,
       },
       dismiss: {
+        dismissible: this.ctx.dismissible,
+        requestClose: () => this.ctx.requestClose(),
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+        emitPointerDownOutside: (veto) => this.ctx.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => this.ctx.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => this.ctx.emitInteractOutside(veto),
         // The trigger lives outside the portaled content but is logically
         // "inside" the popover for outside-pointer / outside-focus checks
         // — without this, clicking the trigger to close would race with

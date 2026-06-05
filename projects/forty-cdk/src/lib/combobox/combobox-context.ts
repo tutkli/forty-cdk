@@ -4,6 +4,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
  * Why the combobox closed. Mirrors the menu / select vocabulary so consumers
@@ -189,10 +190,23 @@ export interface ForComboboxContext<T = unknown> {
   openMenu(initialFocus?: 'first' | 'last'): void;
   closeMenu(reason: ForComboboxCloseReason): void;
 
+  /**
+   * Escape is consumer-owned and routed through the input directive (focus
+   * stays in the input), so it is invoked directly with the raw
+   * `KeyboardEvent` rather than through the dismissable layer.
+   */
   emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(event: PointerEvent): void;
-  emitFocusOutside(event: FocusEvent): void;
-  emitInteractOutside(event: PointerEvent | FocusEvent): void;
+  /**
+   * Outside-interaction emit forwarders. `injectOverlayShell` builds and
+   * reuses one `VetoableNativeEvent` across the specific and composite
+   * channels, then hands it to these forwarders to fire the matching output
+   * and calls `requestClose` when un-vetoed.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
 
   /** Flip the `touched` model. Called by input on blur-to-outside and by dismiss events. */
   markTouched(): void;

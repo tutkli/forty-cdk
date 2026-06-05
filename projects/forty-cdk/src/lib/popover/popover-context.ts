@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
  * Coordination contract owned by `ForPopover`. Trigger / Content register
@@ -61,11 +62,23 @@ export interface ForPopoverContext {
   /** Toggle from a trigger click. Honours `disabled`. */
   toggle(): void;
 
-  /** Hooks into the dismissable-layer event pipeline so Content can emit them on the root. */
+  /**
+   * Escape is consumer-owned (its close differs per primitive); Content
+   * forwards the raw `KeyboardEvent` so the root emits `(escapeKeyDown)` and
+   * runs its own close decision.
+   */
   emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(event: PointerEvent): void;
-  emitFocusOutside(event: FocusEvent): void;
-  emitInteractOutside(event: PointerEvent | FocusEvent): void;
+  /**
+   * Outside-interaction emit forwarders. `injectOverlayShell` builds and
+   * reuses one `VetoableNativeEvent` across the specific and composite
+   * channels, then hands it to these forwarders to fire the matching output
+   * and calls `requestClose` when un-vetoed.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
+  requestClose(): void;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before

@@ -32,7 +32,6 @@ import {
 } from '../_internal/selection/selection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
-  createVetoableNativeEvent,
   emitVetoableNativeEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
@@ -643,12 +642,6 @@ export class ForCombobox<T = string>
     this.#snapshot.resetPending();
   }
 
-  // Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
-  // the composite `interactOutside`. The dismissable layer always invokes
-  // the specific listener before the composite one for the same physical
-  // event, so a `preventDefault()` in either handler vetoes the close.
-  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-
   emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
     if (!vetoed && this.dismissible()) {
@@ -657,25 +650,30 @@ export class ForCombobox<T = string>
     }
   }
 
-  emitPointerDownOutside(event: PointerEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.pointerDownOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
+  /**
+   * Outside-interaction emit forwarders. The shared `#pendingOutsideVeto`
+   * reuse between the specific outside channels and the composite
+   * `interactOutside` lives in `injectOverlayShell`; these only fire the
+   * matching output with the veto the shell built.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
+    this.pointerDownOutside.emit(veto);
   }
-
-  emitFocusOutside(event: FocusEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+    this.focusOutside.emit(veto);
   }
-
-  emitInteractOutside(event: PointerEvent | FocusEvent): void {
-    const veto =
-      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#pendingOutsideVeto = null;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
     this.interactOutside.emit(veto);
-    if (!veto.defaultPrevented && this.dismissible()) {
-      this.markTouched();
-      this.closeMenu('pointerDownOutside');
-    }
+  }
+
+  /**
+   * Implicit close requested by the shell after an un-vetoed outside
+   * interaction. Marks the control touched and closes with the channel's
+   * reason.
+   */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
+    this.markTouched();
+    this.closeMenu(reason);
   }
 
   markTouched(): void {

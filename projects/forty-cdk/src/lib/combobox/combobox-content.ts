@@ -78,12 +78,14 @@ export class ForComboboxContent {
         hideWhenDetached: this.ctx.hideWhenDetached,
       },
       dismiss: {
+        dismissible: this.ctx.dismissible,
+        requestClose: (reason) => this.ctx.requestClose(reason),
         // Escape is handled by the input directive (focus stays in the
         // input, so Escape there shouldn't bubble through nested layers
         // before the input sees it). Omitted here intentionally.
-        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+        emitPointerDownOutside: (veto) => this.ctx.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => this.ctx.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => this.ctx.emitInteractOutside(veto),
         // The input owns the visible focus and toggles via its own click /
         // focus handlers. Without exemption pointer-down on the input would
         // race the dismissal layer.

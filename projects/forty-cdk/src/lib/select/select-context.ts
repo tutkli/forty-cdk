@@ -183,17 +183,23 @@ export interface ForSelectContext<T = unknown> {
    */
   commitOnTab(value: T): void;
 
-  // --- Anchored (overlay-shell) dismiss pipeline: each method builds the
-  //     veto, emits it, and closes when not vetoed. Used by the non-modal
-  //     `[forSelectContent]` path. ---
+  // --- Shared dismiss pipeline. Escape is consumer-owned (emits
+  //     `(escapeKeyDown)`, stops propagation, marks touched, and closes with
+  //     reason `'escape'`); the outside channels are owned by the shell, which
+  //     builds + reuses one veto across the specific and composite channels,
+  //     hands it to these forwarders to fire the matching output, and calls
+  //     the content's `requestClose` when un-vetoed. Used by both the anchored
+  //     (`injectOverlayShell`) and modal (`injectModalShell`) paths. ---
   emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(event: PointerEvent): void;
-  emitFocusOutside(event: FocusEvent): void;
-  emitInteractOutside(event: PointerEvent | FocusEvent): void;
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
 
   // --- Modal (modal-shell) dismiss pipeline: the shell builds the veto and
-  //     requests the close itself, so the context only forwards `.emit`. Used
-  //     by the modal `[forSelectContent]` path. ---
+  //     requests the close itself, forwarding `.emit` through these output
+  //     refs. The escape ref is also used by the modal path. ---
   readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
   readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
   readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;

@@ -84,26 +84,27 @@ export interface ForDatePickerContext {
   focusCalendarCell(): boolean;
 
   /**
-   * Dismiss coordination — the overlay-shell hands a raw DOM event; the
-   * directive builds the veto, emits the matching `output()`, and — for the
-   * outside family — shares the veto so the immediately-following composite
-   * `interactOutside` cannot trigger a second close.
+   * Anchored-path Escape — consumer-owned. Builds the veto, emits
+   * `(escapeKeyDown)`, and closes unless vetoed (or `dismissible` is off).
    */
   emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(event: PointerEvent): void;
-  emitFocusOutside(event: FocusEvent): void;
-  emitInteractOutside(event: PointerEvent | FocusEvent): void;
+  /**
+   * Outside-interaction emit forwarders shared by both shells. The shell
+   * builds and reuses one `VetoableNativeEvent` across the specific and
+   * composite channels; these only fire the matching `output()` and the shell
+   * calls `requestClose` when un-vetoed.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Implicit close requested by either shell after an un-vetoed dismissal. */
+  requestClose(): void;
 
   /**
-   * Dismiss coordination — the modal-shell builds the veto itself, then hands
-   * it back so it flows through the same `output()` + shared-veto logic the
-   * overlay path uses. A single internal coordination surface backs both paths,
-   * so double-close prevention is identical regardless of mode.
+   * Modal-path Escape forwarder — the modal-shell builds the veto and owns the
+   * close; this only fires `(escapeKeyDown)`.
    */
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
-  forwardPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
-  forwardFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
-  forwardInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
 
   /**
    * Auto-focus hooks. Content fires these just before its imperative `.focus()`

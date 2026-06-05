@@ -154,10 +154,16 @@ export class ForSelectContent {
     injectOverlayShell({
       positioner,
       dismiss: {
+        dismissible: ctx.dismissible,
+        // Mirror the modal path's touched-on-dismiss behaviour.
+        requestClose: (reason) => {
+          ctx.markTouched();
+          ctx.closeMenu(reason);
+        },
         emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (event) => ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => ctx.emitInteractOutside(event),
+        emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         // Trigger button is exempt — its own click handler toggles open/close;
         // without exemption pointer-down-outside would race and double-close.
         exemptElements: () => {

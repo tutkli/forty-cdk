@@ -65,10 +65,12 @@ export class ForMenuContent {
         hideWhenDetached: this.ctx.hideWhenDetached,
       },
       dismiss: {
+        dismissible: this.ctx.dismissible,
+        requestClose: (reason) => this.ctx.requestClose(reason),
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (event) => this.ctx.emitPointerDownOutside(event),
-        emitFocusOutside: (event) => this.ctx.emitFocusOutside(event),
-        emitInteractOutside: (event) => this.ctx.emitInteractOutside(event),
+        emitPointerDownOutside: (veto) => this.ctx.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => this.ctx.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => this.ctx.emitInteractOutside(veto),
         // DropdownMenu's trigger is exempt (its own click handler toggles —
         // without exemption pointer-down-outside would race and double-close).
         // ContextMenu exempts nothing so left-clicks on the region close the

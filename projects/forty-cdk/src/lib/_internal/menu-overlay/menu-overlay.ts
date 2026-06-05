@@ -3,7 +3,6 @@ import { inject, type ModelSignal, type OutputEmitterRef, type Signal, signal } 
 import { IdGenerator } from '../id-generator/id-generator';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import {
-  createVetoableNativeEvent,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   type VetoableEvent,
@@ -83,10 +82,11 @@ export interface MenuOverlayHooks {
  *   with `[forMenubar]`'s multiplexed menu context,
  * - trigger / content / initial-focus signals,
  * - `toggle` / `openMenu` / `closeMenu` (honouring `disabled`),
- * - the `(escapeKeyDown)` / `(pointerDownOutside)` / `(focusOutside)` /
- *   `(interactOutside)` veto plumbing (including the shared
- *   `#pendingOutsideVeto` so the specific outside listener and the composite
- *   `interactOutside` see the same veto wrapper for one physical event),
+ * - the consumer-owned Escape close (`emitEscapeKeyDown`) and the
+ *   `requestClose` the shell invokes after an un-vetoed outside interaction.
+ *   The shared `#pendingOutsideVeto` reuse between the specific outside
+ *   listeners and the composite `interactOutside` lives in
+ *   `injectOverlayShell`, not here,
  * - the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto pass-throughs.
  *
  * It deliberately does NOT own:
@@ -101,9 +101,9 @@ export interface MenuOverlayHooks {
  *   outputs off the directive's compiled metadata.
  *
  * Class form (rather than a function-based factory) is deliberate: the
- * helper has private mutable state (`#pendingOutsideVeto`, the trigger /
- * content signals, the initial-focus signal) that maps cleanly to instance
- * fields, and the directives read several of its fields back through getter
+ * helper has private mutable state (the trigger / content signals, the
+ * initial-focus signal) that maps cleanly to instance fields, and the
+ * directives read several of its fields back through getter
  * forwarding. Encapsulating that as a class keeps the directive's surface
  * obvious at the call site and matches the Angular idiom for cross-cutting
  * mutable state co-located with DI.
@@ -147,14 +147,6 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
 
   /** The mounted `[forMenuContent]` element, or `null` while the menu is closed. */
   readonly content = this.#contentEl.asReadonly();
-
-  /**
-   * Shared veto wrapper between `pointerDownOutside` / `focusOutside` and
-   * the composite `interactOutside`. The dismissable layer always invokes
-   * the specific listener before the composite one for the same physical
-   * event, so a `preventDefault()` in either handler vetoes the close.
-   */
-  #pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
 
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
@@ -251,30 +243,36 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     }
   }
 
-  emitPointerDownOutside(event: PointerEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#hooks.pointerDownOutside.emit(
-      this.#pendingOutsideVeto as VetoableNativeEvent<PointerEvent>,
-    );
+  /**
+   * Outside-interaction emit forwarders. The shared `#pendingOutsideVeto`
+   * reuse between the specific outside channels and the composite
+   * `interactOutside` lives in `injectOverlayShell`; these only fire the
+   * matching output with the veto the shell built.
+   */
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
+    this.#hooks.pointerDownOutside.emit(veto);
+  }
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+    this.#hooks.focusOutside.emit(veto);
+  }
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.#hooks.interactOutside.emit(veto);
   }
 
-  emitFocusOutside(event: FocusEvent): void {
-    this.#pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#hooks.focusOutside.emit(this.#pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-  }
-
-  emitInteractOutside(event: PointerEvent | FocusEvent): void {
+  /**
+   * Implicit close requested by `injectOverlayShell` after an un-vetoed
+   * outside interaction. The shell owns the shared `#pendingOutsideVeto`
+   * reuse between the specific outside channels and the composite
+   * `interactOutside`; this helper only owns the close. The `open()` guard
+   * keeps a stale event from re-closing an already-closed menu and clobbering
+   * its `lastCloseReason` (e.g. a `'tab'` close must survive so the content
+   * skips its return-focus).
+   */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
     if (!this.#hooks.open()) {
-      this.#pendingOutsideVeto = null;
       return;
     }
-    const veto =
-      this.#pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-    this.#pendingOutsideVeto = null;
-    this.#hooks.interactOutside.emit(veto);
-    if (!veto.defaultPrevented && this.#hooks.dismissible()) {
-      this.closeMenu('pointerDownOutside');
-    }
+    this.closeMenu(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {

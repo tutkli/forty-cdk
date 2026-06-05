@@ -7,6 +7,10 @@ import {
 import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
+import {
+  createVetoableNativeEvent,
+  type VetoableNativeEvent,
+} from '../vetoable-event/vetoable-event';
 
 /**
  * Tagged-union positioner config. The shell delegates to either
@@ -21,22 +25,67 @@ export type OverlayShellPositionerConfig =
   | ({ readonly kind: 'item-aligned' } & ItemAlignedConfig);
 
 /**
- * Optional dismissable-layer wiring. Each callback is individually optional
- * so a primitive can opt out of a single channel — Combobox keeps Escape on
- * its input directive (focus stays in the input) and wires only
- * pointer-down / focus-outside through the shared layer.
+ * Dismissable-layer wiring. The shell owns the pointer/focus/interact veto
+ * reuse that every trigger-anchored overlay (Popover, Menu / MenuSub /
+ * ContextMenu / DropdownMenu, Combobox, Select, date-picker) used to
+ * duplicate verbatim as a per-primitive `#pendingOutsideVeto` field:
  *
- * Each handler receives the native event and may call `preventDefault()` to
- * veto the implicit dismiss, exactly mirroring `DismissableLayerActivateOptions`.
+ * - The specific outside channels (pointer-down-outside / focus-outside) fire
+ *   on the same physical interaction as the composite `interactOutside`, and
+ *   the dismissable layer always invokes the specific listener first. The
+ *   shell builds a single `VetoableNativeEvent` on the specific call, hands it
+ *   to the consumer's emitter, and reuses it for the immediately-following
+ *   composite call so a `preventDefault()` from either handler vetoes the
+ *   close.
+ * - When the consumer doesn't veto AND `dismissible()` is `true`, the shell
+ *   calls `requestClose(reason)` with the channel's reason
+ *   (`'pointerDownOutside' | 'focusOutside'`) from the composite handler.
+ *   `dismissible` / `requestClose` are required whenever any outside channel
+ *   is wired and unused otherwise.
+ * - `exemptElements` is recomputed on every event so DOM mutations (newly
+ *   portaled siblings, swapped triggers) are picked up live.
  *
- * `exemptElements` is recomputed on every event so DOM mutations (newly
- * portaled siblings, swapped triggers) are picked up live.
+ * Escape stays a one-shot, consumer-owned channel (`emitEscapeKeyDown`
+ * receives the raw `KeyboardEvent` and forwards verbatim to the layer): it
+ * never participates in the shared `#pendingOutsideVeto` reuse, and its close
+ * behaviour differs per primitive (hover-card schedules a close, the input-
+ * focused combobox owns Escape on its input directive and omits it here). The
+ * shell therefore leaves Escape's emit + close decision entirely to the
+ * consumer.
+ *
+ * Each callback is individually optional so a primitive can opt out of a
+ * single channel; the shell registers a layer listener only for the channels
+ * the consumer actually forwards.
  */
 export interface OverlayShellDismissConfig {
+  /**
+   * Whether an un-vetoed outside interaction fires the implicit
+   * `requestClose`. Required when any outside channel
+   * (`emitPointerDownOutside` / `emitFocusOutside` / `emitInteractOutside`)
+   * is wired.
+   */
+  readonly dismissible?: Signal<boolean>;
+  /**
+   * Called with the matching reason when the consumer doesn't veto an outside
+   * interaction. The consumer owns the close (and any bookkeeping such as
+   * marking the control touched); the shell never touches the directive's
+   * close output directly. Required alongside `dismissible`.
+   */
+  readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
+  /** Forwards the raw Escape `KeyboardEvent` to the consumer; close is consumer-owned. */
   readonly emitEscapeKeyDown?: (event: KeyboardEvent) => void;
-  readonly emitPointerDownOutside?: (event: PointerEvent) => void;
-  readonly emitFocusOutside?: (event: FocusEvent) => void;
-  readonly emitInteractOutside?: (event: PointerEvent | FocusEvent) => void;
+  /** Forwards the pointer-down-outside veto to the directive's `(pointerDownOutside)` output. */
+  readonly emitPointerDownOutside?: (veto: VetoableNativeEvent<PointerEvent>) => void;
+  /** Forwards the focus-outside veto to the directive's `(focusOutside)` output. */
+  readonly emitFocusOutside?: (veto: VetoableNativeEvent<FocusEvent>) => void;
+  /** Forwards the composite veto to the directive's `(interactOutside)` output. */
+  readonly emitInteractOutside?: (veto: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
+  /**
+   * Extra elements whose subtrees count as "inside" for outside-pointer /
+   * outside-focus checks (e.g. an anchored trigger that lives outside the
+   * portaled content). Recomputed on every event so DOM mutations are
+   * picked up.
+   */
   readonly exemptElements?: () => readonly Element[];
 }
 
@@ -119,11 +168,14 @@ export interface OverlayShellConfig {
  *    `injectPortal` itself — the consumer must NOT either, on pain of
  *    double-portaling (see #106).
  * 2. Dismissable layer. When `dismiss` is configured, creates a layer for
- *    the host element and activates it inside `afterNextRender` with the
- *    forwarded callbacks. The native event's `preventDefault()` still vetoes
- *    the implicit dismiss because the wiring goes through
- *    `DismissableLayerActivateOptions` verbatim. Deactivation runs from the
- *    shell's `DestroyRef.onDestroy` hook.
+ *    the host element and activates it inside `afterNextRender`. The shell
+ *    owns the triple-veto + composite `interactOutside` bookkeeping: it
+ *    builds one `VetoableNativeEvent` per physical interaction and reuses it
+ *    across the specific (`pointerDownOutside` / `focusOutside`) and composite
+ *    (`interactOutside`) channels, so a `preventDefault()` from either
+ *    suppresses the implicit close. When the consumer doesn't veto and
+ *    `dismissible()` is `true`, the shell calls `requestClose(reason)`.
+ *    Deactivation runs from the shell's `DestroyRef.onDestroy` hook.
  * 3. Initial focus. When `initialFocus` is configured, runs `veto()` first;
  *    if it returns truthy the imperative focus move is skipped (this is the
  *    `(autoFocusOnOpen)` veto). Otherwise the shell either calls the
@@ -153,10 +205,12 @@ export interface OverlayShellConfig {
  * injectOverlayShell({
  *   positioner: { kind: 'floating', reference: ctx.reference, open: ctx.open, ... },
  *   dismiss: {
- *     emitEscapeKeyDown: (e) => ctx.emitEscapeKeyDown(e),
- *     emitPointerDownOutside: (e) => ctx.emitPointerDownOutside(e),
- *     emitFocusOutside: (e) => ctx.emitFocusOutside(e),
- *     emitInteractOutside: (e) => ctx.emitInteractOutside(e),
+ *     dismissible: ctx.dismissible,
+ *     requestClose: () => ctx.open.set(false),
+ *     emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
+ *     emitPointerDownOutside: (veto) => ctx.pointerDownOutside.emit(veto),
+ *     emitFocusOutside: (veto) => ctx.focusOutside.emit(veto),
+ *     emitInteractOutside: (veto) => ctx.interactOutside.emit(veto),
  *     exemptElements: () => (ctx.trigger() ? [ctx.trigger()!] : []),
  *   },
  *   initialFocus: {
@@ -201,24 +255,54 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   //    fully-rendered host element (exempt-element queries, focus targets).
   afterNextRender(() => {
     if (layer && dismissCfg) {
-      // Forward verbatim — `preventDefault()` semantics flow through the
-      // `DismissableLayerActivateOptions` contract unchanged.
+      // Pointer-down-outside and focus-outside both fire on the same physical
+      // interaction as the composite `interactOutside`, and the dismissable
+      // layer always invokes the specific listener before the composite one.
+      // We build a single veto wrapper on the specific call and reuse it for
+      // the composite call, so a `preventDefault()` in either handler vetoes
+      // the close. Escape never enters this reuse — it is a one-shot,
+      // consumer-owned channel forwarded verbatim below.
+      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
+      const requestClose = dismissCfg.requestClose;
+      const dismissible = dismissCfg.dismissible;
       const options: DismissableLayerActivateOptions = {};
+
+      if (dismissCfg.exemptElements) {
+        options.exemptElements = dismissCfg.exemptElements;
+      }
+      // Escape: forwarded verbatim. The consumer owns the emit + close
+      // decision (combobox routes it through its input directive instead and
+      // omits this channel; hover-card schedules a timed close).
       if (dismissCfg.emitEscapeKeyDown) {
         options.onEscapeKeyDown = dismissCfg.emitEscapeKeyDown;
       }
       if (dismissCfg.emitPointerDownOutside) {
-        options.onPointerDownOutside = dismissCfg.emitPointerDownOutside;
+        const emit = dismissCfg.emitPointerDownOutside;
+        options.onPointerDownOutside = (event) => {
+          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          emit(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
+        };
       }
       if (dismissCfg.emitFocusOutside) {
-        options.onFocusOutside = dismissCfg.emitFocusOutside;
+        const emit = dismissCfg.emitFocusOutside;
+        options.onFocusOutside = (event) => {
+          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          emit(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
+        };
       }
       if (dismissCfg.emitInteractOutside) {
-        options.onInteractOutside = dismissCfg.emitInteractOutside;
+        const emit = dismissCfg.emitInteractOutside;
+        options.onInteractOutside = (event) => {
+          const veto =
+            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+          pendingOutsideVeto = null;
+          emit(veto);
+          if (!veto.defaultPrevented && dismissible?.() && requestClose) {
+            requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
+          }
+        };
       }
-      if (dismissCfg.exemptElements) {
-        options.exemptElements = dismissCfg.exemptElements;
-      }
+
       layer.activate(options);
     }
 

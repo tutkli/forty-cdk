@@ -278,13 +278,19 @@ export class ForMenubar implements ForMenubarContext {
         this.closeOpen();
       }
     },
+    // The menubar has no per-trigger `(pointerDownOutside)` / `(focusOutside)`
+    // / `(interactOutside)` outputs, so these emit forwarders are no-ops; the
+    // shell-owned veto reuse simply has nowhere to surface. The implicit close
+    // runs through `requestClose` below.
     emitPointerDownOutside: () => {},
     emitFocusOutside: () => {},
-    emitInteractOutside: (event) => {
-      if (this.value() !== '' && !event.defaultPrevented && this.dismissible()) {
-        this.#menuLastCloseReason.set('pointerDownOutside');
-        this.closeOpen();
+    emitInteractOutside: () => {},
+    requestClose: (reason) => {
+      if (this.value() === '') {
+        return;
       }
+      this.#menuLastCloseReason.set(reason);
+      this.closeOpen();
     },
     // Menubar doesn't expose `(autoFocusOnOpen)` / `(autoFocusOnClose)` as
     // public outputs — bar-level menus default to APG-prescribed focus
