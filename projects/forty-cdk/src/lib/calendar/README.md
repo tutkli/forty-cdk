@@ -33,7 +33,7 @@ bootstrapApplication(App, {
 | `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                              |
 | `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                  |
 | `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`. |
-| `ForCalendarGridHeader` | `[forCalendarGridHeader]` | Header rowgroup holding the weekday `columnheader`s. Also exposes `weekDays()`.             |
+| `ForCalendarGridHeader` | `[forCalendarGridHeader]` | Header rowgroup (`role="rowgroup"`) holding the weekday `columnheader`s. Also exposes `weekDays()`. |
 | `ForCalendarCell`       | `[forCalendarCell]`       | One day (`role="gridcell"`). Roving tab stop, ARIA state, and keyboard / click interaction. |
 
 ## Inputs / models — `ForCalendar`
