@@ -72,7 +72,12 @@ export interface ForListboxContext<T = unknown> {
    * to indicate the event was consumed.
    */
   handleTypeahead(event: KeyboardEvent): boolean;
-  isFirstEnabledOption(el: HTMLElement): boolean;
+  /**
+   * Pre-focus tab-stop policy: with at least one selection, the first selected
+   * enabled option is the sole entry point; otherwise the first enabled option
+   * in DOM order. Guarantees a single `tabindex="0"` before roving takes over.
+   */
+  isFirstFocusableOption(el: HTMLElement): boolean;
 
   registerOption(handle: ForListboxOptionHandle<T>): void;
   unregisterOption(handle: ForListboxOptionHandle<T>): void;
