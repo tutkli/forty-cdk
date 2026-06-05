@@ -92,10 +92,41 @@ export class ForAvatarImage {
     }
     if (this.#host.complete) {
       // Cached image: load/error events may not fire — derive from naturalWidth.
-      this.#emit(this.#host.naturalWidth > 0 ? 'loaded' : 'error');
+      if (this.#host.naturalWidth > 0) {
+        this.#emit('loaded');
+        return;
+      }
+      // A complete image with zero intrinsic width is ambiguous: it may be a
+      // broken image OR a valid SVG with no intrinsic dimensions. Don't
+      // pessimistically flag `error` and hide a valid image — verify with
+      // `decode()`, which resolves for a decodable (even zero-size) image and
+      // rejects for a broken one. Stay `loading` until it settles.
+      this.#emit('loading');
+      this.#verifyCachedZeroSize(src);
       return;
     }
     this.#emit('loading');
+  }
+
+  #verifyCachedZeroSize(src: string): void {
+    const decode = this.#host.decode?.bind(this.#host);
+    if (!decode) {
+      // No `decode()` (older engines / jsdom): keep the legacy heuristic.
+      this.#emit('error');
+      return;
+    }
+    decode().then(
+      () => {
+        if (this.#host.getAttribute('src') === src) {
+          this.#emit('loaded');
+        }
+      },
+      () => {
+        if (this.#host.getAttribute('src') === src) {
+          this.#emit('error');
+        }
+      },
+    );
   }
 
   // Initialized in constructor.

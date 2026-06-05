@@ -10,7 +10,9 @@ type Politeness = 'polite' | 'assertive';
  *
  * Sequential identical announcements are flushed through a microtask so the
  * region is briefly emptied — without that, screen readers ignore repeated
- * text that hasn't actually changed.
+ * text that hasn't actually changed. Each write carries a generation token, so
+ * a superseding `announce()` or a `clear()` cancels the prior pending write
+ * before it can paint a stale message.
  *
  * The regions are detached again when the service's injector is destroyed
  * (one bootstrap per SSR request, or `TestBed.resetTestingModule()`), so a
@@ -32,6 +34,7 @@ export class LiveAnnouncer {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #regions = new Map<Politeness, HTMLElement>();
+  #generation = 0;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -57,13 +60,20 @@ export class LiveAnnouncer {
     const region = this.#getRegion(politeness);
     // Reset first so identical consecutive messages still trigger the reader.
     region.textContent = '';
+    // Bump the generation so a superseding announce (or a clear) cancels this
+    // pending write before it paints.
+    const generation = ++this.#generation;
     queueMicrotask(() => {
+      if (generation !== this.#generation) {
+        return;
+      }
       region.textContent = message;
     });
   }
 
-  /** Empty all live regions. Pending microtask writes still fire — call again afterwards if needed. */
+  /** Empty all live regions and cancel any pending announce so it never paints. */
   clear(): void {
+    this.#generation++;
     for (const region of this.#regions.values()) {
       region.textContent = '';
     }

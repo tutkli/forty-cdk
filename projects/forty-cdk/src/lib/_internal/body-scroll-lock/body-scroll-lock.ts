@@ -56,7 +56,11 @@ export class BodyScrollLock {
       const scrollbarWidth = win ? win.innerWidth - docEl.clientWidth : 0;
 
       body.style.overflow = 'hidden';
-      if (scrollbarWidth > 0 && win) {
+      // Skip padding compensation when `scrollbar-gutter: stable` already
+      // reserves the gutter: the space stays reserved across the overflow
+      // toggle, so there is no content shift to compensate and adding
+      // padding-right would double-pad.
+      if (scrollbarWidth > 0 && win && !this.#gutterIsStable(win, docEl, body)) {
         const computed = win.getComputedStyle(body).paddingRight;
         const currentPx = parseFloat(computed) || 0;
         body.style.paddingRight = `${currentPx + scrollbarWidth}px`;
@@ -84,5 +88,22 @@ export class BodyScrollLock {
         this.#wrotePaddingRight = false;
       }
     }
+  }
+
+  /**
+   * True when the scroll container reserves the scrollbar gutter via
+   * `scrollbar-gutter: stable` (or `stable both-edges`). The gutter then
+   * survives the `overflow: hidden` toggle, so no padding compensation is
+   * needed. Checked on both `<html>` (the document scroller) and `<body>`,
+   * since either can carry the property.
+   */
+  #gutterIsStable(win: Window, docEl: HTMLElement, body: HTMLElement): boolean {
+    for (const el of [docEl, body]) {
+      const gutter = win.getComputedStyle(el).getPropertyValue('scrollbar-gutter');
+      if (gutter.trim().split(/\s+/).includes('stable')) {
+        return true;
+      }
+    }
+    return false;
   }
 }

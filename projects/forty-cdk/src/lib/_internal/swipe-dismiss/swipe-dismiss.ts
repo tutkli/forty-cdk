@@ -12,6 +12,9 @@
  * Behavior summary:
  * - On `pointerdown` the start position is recorded but no swipe is
  *   announced yet. This avoids fake start/cancel pairs on plain clicks.
+ *   A second `pointerdown` while a pointer is already tracked is ignored,
+ *   so the first pointer keeps its capture and its `pointerup` still ends
+ *   the gesture (no orphaned capture on multi-touch).
  * - On `pointermove` the helper waits until the drag exceeds an internal
  *   "arm" distance (a few pixels), picks the dominant axis, and decides
  *   the candidate direction. If that direction is not in the allowed
@@ -134,6 +137,13 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
   const onPointerDown = (event: PointerEvent): void => {
     // Mouse: only the primary button arms a potential swipe.
     if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+    // A pointer is already being tracked (the gesture is armed, or pending
+    // arm): ignore the second pointerdown so its id/start don't overwrite the
+    // first pointer's state and orphan its capture. The first pointer's
+    // pointerup is then still honored.
+    if (pointerId !== null) {
       return;
     }
     if (opts.getDirections().length === 0) {
