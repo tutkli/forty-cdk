@@ -25,6 +25,19 @@ test.describe('Listbox', () => {
     await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('Shift+Space selects the focused option in single mode (native button activation)', async ({
+    page,
+  }) => {
+    // Single-mode does not intercept Shift+Space (range select is multi-only),
+    // so the keydown is never preventDefaulted and the browser fires the
+    // native button click — selecting the focused option. jsdom does not
+    // synthesize that click, which is why this lives here and not in Vitest.
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+    await page.keyboard.press('Shift+ ');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'true');
+  });
+
   test('Tab exits the listbox to the next focusable element', async ({ page }) => {
     await gotoFixture(page, 'listbox');
     await el(page, 'opt-apple').focus();

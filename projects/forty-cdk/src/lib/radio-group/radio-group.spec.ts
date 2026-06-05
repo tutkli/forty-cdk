@@ -413,22 +413,40 @@ describe('ForRadioGroup', () => {
   });
 
   describe('touched on focusout', () => {
-    it('sets touched=true when focus leaves the group entirely', () => {
+    it('reflects data-touched when focus leaves the group entirely', async () => {
       const { el, flush } = renderHost(RadioGroupHost);
       const group = groupOf(el);
       const outside = document.createElement('button');
       document.body.append(outside);
       try {
+        expect(group.hasAttribute('data-touched')).toBe(false);
+
         radioOf(el, 'red').focus();
         const blur = new FocusEvent('focusout', { bubbles: true, relatedTarget: outside });
         group.dispatchEvent(blur);
-        flush();
-        // Internal state — verify by triggering interaction afterwards still works:
-        radioOf(el, 'red').click();
-        flush();
-        expect(radioOf(el, 'red').getAttribute('aria-checked')).toBe('true');
+        await flush();
+
+        expect(group.hasAttribute('data-touched')).toBe(true);
       } finally {
         outside.remove();
+      }
+    });
+
+    it('stays untouched when focus moves to another radio within the group', async () => {
+      const { el, flush } = renderHost(RadioGroupHost);
+      const group = groupOf(el);
+      try {
+        radioOf(el, 'red').focus();
+        const blur = new FocusEvent('focusout', {
+          bubbles: true,
+          relatedTarget: radioOf(el, 'green'),
+        });
+        group.dispatchEvent(blur);
+        await flush();
+
+        expect(group.hasAttribute('data-touched')).toBe(false);
+      } finally {
+        radioOf(el, 'red').blur();
       }
     });
   });

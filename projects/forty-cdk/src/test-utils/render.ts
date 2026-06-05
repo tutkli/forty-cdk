@@ -1,5 +1,6 @@
 import { provideZonelessChangeDetection, type Type } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { flush } from './flush';
 
 export interface RenderResult<T> {
   fixture: ComponentFixture<T>;
@@ -7,7 +8,13 @@ export interface RenderResult<T> {
   el: HTMLElement;
   query: <E extends Element = HTMLElement>(selector: string) => E | null;
   queryAll: <E extends Element = HTMLElement>(selector: string) => E[];
-  flush: () => void;
+  /**
+   * The canonical {@link flush} waiter bound to this fixture. `await` it to
+   * drain Angular's render pipeline (including `afterNextRender` callbacks),
+   * exactly like `await flush(fixture)`. It is the same async implementation —
+   * not a synchronous `detectChanges()` shadow.
+   */
+  flush: () => Promise<void>;
 }
 
 /**
@@ -35,6 +42,6 @@ export function renderHost<T>(host: Type<T>): RenderResult<T> {
       root.querySelector<E>(selector),
     queryAll: <E extends Element = HTMLElement>(selector: string) =>
       Array.from(root.querySelectorAll<E>(selector)),
-    flush: () => fixture.detectChanges(),
+    flush: () => flush(fixture),
   };
 }

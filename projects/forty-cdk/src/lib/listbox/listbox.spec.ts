@@ -562,15 +562,6 @@ describe('ForListbox', () => {
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
       });
 
-      it('no-op in single mode (Space falls through to native click)', () => {
-        const { el, fixture, flush } = renderHost(ListboxHost);
-        optOf(el, 'apple').focus();
-        pressKey(optOf(el, 'apple'), ' ', { shiftKey: true });
-        flush();
-        // Space was preventDefaulted-by-nobody; native click on a button doesn't fire
-        // from a synthetic `keydown` event in jsdom. Single-mode picks stays empty.
-        expect(fixture.componentInstance.picked()).toEqual([]);
-      });
     });
 
     describe('Ctrl/Cmd+A', () => {
