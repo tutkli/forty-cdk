@@ -168,4 +168,19 @@ export class ForField implements ForFieldContext {
   focusControl(): void {
     this.#targetEl()?.focus();
   }
+
+  /**
+   * Forward a click to the control's focusable element and focus it — matching
+   * the activation a native `<label for>` triggers via the browser, so a
+   * non-`<label>` `[forLabel]` toggles a custom-role control instead of only
+   * focusing it.
+   */
+  clickControl(): void {
+    const target = this.#targetEl();
+    if (!target) {
+      return;
+    }
+    target.click();
+    target.focus();
+  }
 }

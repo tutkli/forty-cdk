@@ -1,4 +1,4 @@
-import { InjectionToken, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 /** State of a progress bar reflected on `data-state`. */
 export type ForProgressState = 'indeterminate' | 'loading' | 'complete';
@@ -18,3 +18,17 @@ export interface ForProgressContext {
 }
 
 export const FOR_PROGRESS_CONTEXT = new InjectionToken<ForProgressContext>('FOR_PROGRESS_CONTEXT');
+
+/**
+ * Injects the nearest {@link ForProgressContext}, throwing a descriptive
+ * error when used outside a `[forProgress]` element.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectProgressContext(piece: string): ForProgressContext {
+  const ctx = inject(FOR_PROGRESS_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(`[forty-cdk/progress] ${piece} must be used inside a [forProgress] element.`);
+  }
+  return ctx;
+}

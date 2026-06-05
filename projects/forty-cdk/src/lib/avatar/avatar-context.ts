@@ -1,4 +1,4 @@
-import { InjectionToken, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Lifecycle stages of the avatar's image:
@@ -26,3 +26,17 @@ export interface ForAvatarContext {
 }
 
 export const FOR_AVATAR_CONTEXT = new InjectionToken<ForAvatarContext>('FOR_AVATAR_CONTEXT');
+
+/**
+ * Injects the nearest {@link ForAvatarContext}, throwing a descriptive error
+ * when used outside a `[forAvatar]` element.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectAvatarContext(piece: string): ForAvatarContext {
+  const ctx = inject(FOR_AVATAR_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(`[forty-cdk/avatar] ${piece} must be used inside a [forAvatar] element.`);
+  }
+  return ctx;
+}

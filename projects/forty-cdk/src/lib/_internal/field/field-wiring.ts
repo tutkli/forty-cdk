@@ -98,8 +98,16 @@ export interface ForFieldContext {
   registerDescription(): () => void;
   /** Mark an error region present; returns an unregister callback. */
   registerError(): () => void;
-  /** Move focus to the registered control's host. */
+  /** Move focus to the registered control's focusable element. */
   focusControl(): void;
+  /**
+   * Forward a click to the registered control's focusable element, then focus
+   * it — the same outcome a native `<label for>` produces through the browser's
+   * click-forwarding (toggling a checkbox / switch, activating a button). Used
+   * by a non-`<label>` `[forLabel]`, which has no native `for` forwarding, so
+   * label-click activation stays consistent across host shapes.
+   */
+  clickControl(): void;
 }
 
 /** Injection token for the surrounding `ForField` coordination contract. */

@@ -3,6 +3,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   inject,
   Injector,
   input,
@@ -13,6 +14,7 @@ import {
 
 import { Collection } from '../_internal/collection/collection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { buildMonthMatrix } from './build-month-matrix';
@@ -94,6 +96,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #defaults = inject(FOR_CALENDAR_DEFAULTS);
   readonly #idGen = inject(IdGenerator);
   readonly #injector = inject(Injector);
+  readonly #announcer = inject(LiveAnnouncer);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER`. */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForCalendar');
@@ -161,6 +164,18 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly visibleMonthLabel = computed(() =>
     this.adapter.format(this.visibleMonth(), { month: 'long', year: 'numeric' }),
   );
+
+  constructor() {
+    let lastLabel: string | null = null;
+    effect(() => {
+      const label = this.visibleMonthLabel();
+      const previous = lastLabel;
+      lastLabel = label;
+      if (previous !== null && previous !== label) {
+        this.#announcer.announce(label, 'polite');
+      }
+    });
+  }
 
   readonly #matrix = computed(() =>
     buildMonthMatrix(this.adapter, this.visibleMonth(), this.#resolvedFirstDayOfWeek()),

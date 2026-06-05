@@ -62,6 +62,19 @@ export class Typeahead {
     return true;
   }
 
+  /**
+   * Whether the buffer is a single printable character, optionally pressed
+   * repeatedly (every character identical — `"c"`, `"cc"`, `"ccc"`). Callers
+   * use this to switch from prefix matching to cycling among same-initial
+   * items, matching the WAI-ARIA APG menu typeahead behavior: pressing one key
+   * (and re-pressing it) steps through every item that starts with it, instead
+   * of looking for a literal `"ccc"` prefix that never exists.
+   */
+  isRepeatedChar(): boolean {
+    const buffer = this.#buffer();
+    return buffer.length >= 1 && [...buffer].every((ch) => ch === buffer[0]);
+  }
+
   reset(): void {
     if (this.#timeoutId !== null) {
       clearTimeout(this.#timeoutId);

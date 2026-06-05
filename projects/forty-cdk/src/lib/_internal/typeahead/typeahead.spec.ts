@@ -96,6 +96,24 @@ describe('Typeahead', () => {
     expect(t.buffer()).toBe('');
   });
 
+  it('flags a single character and a same-character repeat as a cycle', () => {
+    const t = new Typeahead();
+    expect(t.isRepeatedChar()).toBe(false);
+    t.handle(key('c'));
+    expect(t.isRepeatedChar()).toBe(true);
+    t.handle(key('c'));
+    expect(t.isRepeatedChar()).toBe(true);
+    t.handle(key('c'));
+    expect(t.isRepeatedChar()).toBe(true);
+  });
+
+  it('does not flag a repeat for distinct characters', () => {
+    const t = new Typeahead();
+    t.handle(key('c'));
+    t.handle(key('u'));
+    expect(t.isRepeatedChar()).toBe(false);
+  });
+
   it('reset() clears buffer and timer', () => {
     const t = new Typeahead({ debounceMs: 300 });
     t.handle(key('a'));

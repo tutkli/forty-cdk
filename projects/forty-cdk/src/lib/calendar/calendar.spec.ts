@@ -150,7 +150,7 @@ const JUN_15 = new Date(2026, 5, 15);
 
 describe('ForCalendar', () => {
   describe('structure & ARIA', () => {
-    it('renders grid / columnheader roles and labels the grid by the live heading', () => {
+    it('renders grid / columnheader roles and labels the grid by the heading', () => {
       const r = renderHost(CalendarHost);
       const grid = r.query('[forCalendarGrid]')!;
       const heading = r.query('[data-testid="heading"]')!;
@@ -159,7 +159,6 @@ describe('ForCalendar', () => {
       expect(r.queryAll('th[scope="col"]').length).toBe(7);
       expect(r.queryAll('[role="gridcell"]').length).toBeGreaterThanOrEqual(28);
 
-      expect(heading.getAttribute('aria-live')).toBe('polite');
       expect(heading.id).toBeTruthy();
       expect(grid.getAttribute('aria-labelledby')).toBe(heading.id);
       expect(heading.textContent).toContain('2026');
@@ -169,6 +168,12 @@ describe('ForCalendar', () => {
       const r = renderHost(CalendarHost);
       const header = r.query('[forCalendarGridHeader]')!;
       expect(header.getAttribute('role')).toBe('rowgroup');
+    });
+
+    it('does not make the heading a live region (announcement uses a separate region)', () => {
+      const r = renderHost(CalendarHost);
+      const heading = r.query('[data-testid="heading"]')!;
+      expect(heading.hasAttribute('aria-live')).toBe(false);
     });
 
     it('keeps exactly one tabbable cell — the focused date', () => {
@@ -417,6 +422,23 @@ describe('ForCalendar', () => {
       r.query('[data-testid="next"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await flush(r.fixture);
       expect(cell(r, JUN_15)).toBeTruthy();
+    });
+
+    it('announces the new period via a separate off-screen live region when paging', async () => {
+      const r = renderHost(CalendarHost);
+      const liveRegion = () =>
+        Array.from(document.body.querySelectorAll('[aria-live="polite"]')).find(
+          (el) => !el.closest('[forCalendar]'),
+        );
+
+      expect(liveRegion()?.textContent ?? '').toBe('');
+
+      r.query('[data-testid="next"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      const heading = r.query('[data-testid="heading"]')!;
+      expect(liveRegion()?.textContent).toBe(heading.textContent?.trim());
+      expect(liveRegion()?.textContent).toContain('2026');
     });
 
     it('disables prev / next at the min / max bounds', async () => {

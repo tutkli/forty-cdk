@@ -1,6 +1,6 @@
-import { Directive, inject } from '@angular/core';
+import { Directive } from '@angular/core';
 
-import { FOR_METER_CONTEXT } from './meter-context';
+import { injectMeterContext } from './meter-context';
 
 /**
  * Visual fill paired with `[forMeter]`. Reflects `data-quality`,
@@ -20,15 +20,7 @@ import { FOR_METER_CONTEXT } from './meter-context';
   },
 })
 export class ForMeterIndicator {
-  protected readonly context = inject(FOR_METER_CONTEXT, { optional: true })!;
-
-  constructor() {
-    if (!this.context) {
-      throw new Error(
-        '[forty-cdk/meter] ForMeterIndicator must be used inside a [forMeter] element.',
-      );
-    }
-  }
+  protected readonly context = injectMeterContext('ForMeterIndicator');
 
   protected percentageAttr(): number {
     return Math.round(this.context.percentage() * 100) / 100;

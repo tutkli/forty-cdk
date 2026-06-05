@@ -2413,8 +2413,8 @@ describe('ForCombobox virtualization', () => {
       readonly invalid = signal(false);
     }
 
-    // Non-`<label>` label element routes click-to-focus through
-    // `focusControl()` instead of the native `for` association.
+    // Non-`<label>` label element forwards the click to the input via
+    // `clickControl()` instead of the native `for` association.
     @Component({
       imports: [ForCombobox, ForComboboxInput, ForField, ForLabel],
       template: `

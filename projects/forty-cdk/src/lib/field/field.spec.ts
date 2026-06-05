@@ -173,6 +173,41 @@ describe('ForField', () => {
     });
   });
 
+  describe('label-click activation', () => {
+    @Component({
+      imports: [ForField, ForLabel, ForSwitch],
+      template: `
+        <div forField>
+          <span forLabel data-test-id="label">Notify</span>
+          <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+        </div>
+      `,
+    })
+    class NonLabelHost {
+      readonly checked = signal(false);
+    }
+
+    it('toggles a custom-role control when a non-`<label>` host is clicked', async () => {
+      const { el, flush } = renderHost(NonLabelHost);
+      const control = q(el, 'control');
+      expect(control.getAttribute('aria-checked')).toBe('false');
+
+      q(el, 'label').click();
+      await flush();
+      expect(control.getAttribute('aria-checked')).toBe('true');
+
+      q(el, 'label').click();
+      await flush();
+      expect(control.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('focuses the control after forwarding the click', () => {
+      const { el } = renderHost(NonLabelHost);
+      q(el, 'label').click();
+      expect(document.activeElement).toBe(q(el, 'control'));
+    });
+  });
+
   describe('standalone label (no field)', () => {
     @Component({
       imports: [ForLabel],
