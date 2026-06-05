@@ -84,6 +84,17 @@ export class ForNavigationMenuViewport {
 
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
+  // Tracked panels in insertion order, each with its last known trigger host.
+  // Ordering resolves a trigger's document position from this list rather than
+  // a DOM `aria-labelledby` → `getElementById` round-trip, which silently
+  // returns `null` while a trigger's registration races its content's (both
+  // defer to `afterNextRender`) and degrades ordering to mount order. The
+  // content re-invokes `insertPanel` once its trigger registers, so the list
+  // and the resulting DOM order self-heal. Insertion order is preserved so
+  // panels whose trigger is not yet known keep a stable relative position
+  // (sorted to the end) instead of thrashing as siblings re-insert.
+  readonly #panels: { panel: HTMLElement; triggerHost: HTMLElement | null }[] = [];
+
   constructor() {
     const handle: ForNavigationMenuViewportHandle = {
       host: this.host,
@@ -131,30 +142,62 @@ export class ForNavigationMenuViewport {
   }
 
   #insertPanel(panel: HTMLElement, triggerHost: HTMLElement | null): void {
-    // `insertBefore(node, null)` appends, and re-inserting a node where it
-    // already sits is a no-op, so this is always correct and idempotent.
-    this.host.insertBefore(panel, this.#referenceFor(panel, triggerHost));
-  }
-
-  #referenceFor(panel: HTMLElement, triggerHost: HTMLElement | null): HTMLElement | null {
-    if (!triggerHost) return null;
-    for (const child of Array.from(this.host.children) as HTMLElement[]) {
-      if (child === panel) continue;
-      const childTrigger = this.#triggerFor(child);
-      if (!childTrigger || childTrigger === triggerHost) continue;
-      const followsMine =
-        (triggerHost.compareDocumentPosition(childTrigger) &
-          Node.DOCUMENT_POSITION_FOLLOWING) !==
-        0;
-      if (followsMine) return child;
+    const existing = this.#panels.find((p) => p.panel === panel);
+    if (existing) {
+      existing.triggerHost = triggerHost;
+    } else {
+      this.#panels.push({ panel, triggerHost });
     }
-    return null;
+    this.#reorder();
   }
 
-  #triggerFor(panel: HTMLElement): HTMLElement | null {
-    const triggerId = panel.getAttribute('aria-labelledby');
-    if (!triggerId) return null;
-    return this.host.ownerDocument.getElementById(triggerId);
+  // Reconcile the viewport's children to a single deterministic order: panels
+  // whose trigger host is known come first, sorted by the trigger's document
+  // position; panels whose trigger is not yet known follow, in insertion
+  // order. Computing one total order (rather than inserting each panel
+  // relative to the others) makes the result independent of the order in
+  // which panels call `insertPanel`, so a registration race converges instead
+  // of thrashing. Nodes already in their target slot are left untouched, so
+  // re-running this never disturbs an unaffected panel mid-animation.
+  #reorder(): void {
+    this.#prunePanels();
+    const ordered = [...this.#panels].sort((a, b) => {
+      if (a.triggerHost && b.triggerHost) {
+        if (a.triggerHost === b.triggerHost) return 0;
+        const rel = a.triggerHost.compareDocumentPosition(b.triggerHost);
+        if ((rel & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) return -1;
+        if ((rel & Node.DOCUMENT_POSITION_PRECEDING) !== 0) return 1;
+        return 0;
+      }
+      if (a.triggerHost) return -1;
+      if (b.triggerHost) return 1;
+      return 0;
+    });
+    // Reconcile against the host's live children by index: walk the target
+    // order, and whenever the child currently at position `i` is not the panel
+    // that belongs there, move it in. Moving into the already-correct slot is
+    // a no-op, so an unaffected panel is never disturbed mid-animation. Using
+    // the live child at `i` as the reference (rather than a not-yet-inserted
+    // sibling) keeps every `insertBefore` valid on the first re-parent too.
+    for (let i = 0; i < ordered.length; i++) {
+      const panel = ordered[i]!.panel;
+      const current = this.host.children[i] ?? null;
+      if (current !== panel) {
+        this.host.insertBefore(panel, current);
+      }
+    }
+  }
+
+  // Drop panels the consumer's `@if` already destroyed so the tracking list
+  // does not leak detached nodes across mount/unmount cycles. A freshly
+  // mounted panel still sits under its `[forNavigationMenuItem]` (connected,
+  // pending its first re-parent) and must be kept.
+  #prunePanels(): void {
+    for (let i = this.#panels.length - 1; i >= 0; i--) {
+      if (!this.#panels[i]!.panel.isConnected) {
+        this.#panels.splice(i, 1);
+      }
+    }
   }
 
   #measureSize(): { width: number; height: number } {
