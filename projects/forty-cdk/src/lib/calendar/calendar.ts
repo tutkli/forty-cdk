@@ -19,6 +19,7 @@ import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { buildMonthMatrix } from './build-month-matrix';
 import {
+  type CalendarDateLabelFormatter,
   type CalendarWeek,
   type CalendarWeekday,
   FOR_CALENDAR_CONTEXT,
@@ -120,6 +121,24 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    */
   readonly isDateUnavailable = input<(date: D) => boolean>(() => false);
 
+  /**
+   * Formats the full accessible date string each gridcell exposes as its
+   * `aria-label` (the visible content stays the bare day number). Defaults to
+   * the localized full date (e.g. `"Monday, June 15, 2026"`), with
+   * outside-month padding days suffixed (`" (outside month)"`) so assistive
+   * tech can tell them apart from the visible month. Override to localize that
+   * suffix or change the format entirely.
+   */
+  readonly dateLabel = input<CalendarDateLabelFormatter<D>>((date, { adapter, outsideMonth }) => {
+    const formatted = adapter.format(date, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    return outsideMonth ? `${formatted} (outside month)` : formatted;
+  });
+
   /** Disables the whole calendar: no focus movement, no selection. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -200,6 +219,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
         key: this.#dateKey(date),
         date,
         label: String(adapter.getDate(date)),
+        dateLabel: this.getDateLabel(date),
       })),
     }));
   });
@@ -257,6 +277,13 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return true;
     }
     return this.isDateUnavailable()(date);
+  }
+
+  getDateLabel(date: D): string {
+    return this.dateLabel()(date, {
+      adapter: this.adapter,
+      outsideMonth: this.isOutsideMonth(date),
+    });
   }
 
   selectDate(date: D): void {

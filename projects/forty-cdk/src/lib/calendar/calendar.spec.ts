@@ -11,6 +11,7 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
+import type { CalendarDateLabelFormatter } from './calendar-context';
 import {
   InternationalizedDateAdapter,
   provideInternationalizedDateAdapter,
@@ -90,6 +91,31 @@ class CalendarHost {
   readonly readonly = signal(false);
   readonly firstDayOfWeek = signal<number | null>(null);
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value" [dateLabel]="dateLabel">
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date" [attr.data-testid]="'cell-' + cell.key"></td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CustomLabelHost {
+  readonly value = new Date(2026, 5, 15);
+  readonly dateLabel: CalendarDateLabelFormatter<Date> = (date, { adapter, outsideMonth }) =>
+    `${adapter.getDate(date)}${outsideMonth ? ' (other)' : ''}`;
 }
 
 @Component({
@@ -242,6 +268,42 @@ describe('ForCalendar', () => {
       expect(cell(r, JUN_15).hasAttribute('data-outside-month')).toBe(false);
       const cells = r.queryAll('[data-outside-month]');
       expect(cells.length).toBeGreaterThan(0);
+    });
+
+    it('exposes the full localized date as aria-label on every gridcell', () => {
+      const r = renderHost(CalendarHost);
+      const label = cell(r, JUN_15).getAttribute('aria-label');
+      expect(label).toBe(
+        adapter.format(JUN_15, {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+      );
+      expect(label).toContain('15');
+      expect(label).toContain('2026');
+      expect(r.queryAll('[role="gridcell"]:not([aria-label])').length).toBe(0);
+    });
+
+    it('distinguishes outside-month cells in the default aria-label', () => {
+      const r = renderHost(CalendarHost);
+      const outside = r.queryAll('[data-outside-month]');
+      expect(outside.length).toBeGreaterThan(0);
+      for (const td of outside) {
+        expect(td.getAttribute('aria-label')).toContain('(outside month)');
+      }
+      expect(cell(r, JUN_15).getAttribute('aria-label')).not.toContain('(outside month)');
+    });
+
+    it('lets consumers override the aria-label via the dateLabel input', () => {
+      const r = renderHost(CustomLabelHost);
+      expect(cell(r, JUN_15).getAttribute('aria-label')).toBe('15');
+      const outside = r.queryAll('[data-outside-month]');
+      expect(outside.length).toBeGreaterThan(0);
+      for (const td of outside) {
+        expect(td.getAttribute('aria-label')).toContain('(other)');
+      }
     });
   });
 
