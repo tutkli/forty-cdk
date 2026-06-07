@@ -31,6 +31,9 @@ export class ForHoverCardTrigger {
   protected readonly ctx = injectHoverCardContext('ForHoverCardTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  #hovered = false;
+  #focused = false;
+
   constructor() {
     registerHandle(
       this.#host.nativeElement,
@@ -40,18 +43,29 @@ export class ForHoverCardTrigger {
   }
 
   protected onPointerEnter(): void {
+    this.#hovered = true;
     this.ctx.scheduleOpen('hover-trigger');
   }
 
   protected onPointerLeave(): void {
-    this.ctx.scheduleClose('hover-trigger');
+    this.#hovered = false;
+    this.#scheduleCloseIfInactive('hover-trigger');
   }
 
   protected onFocus(): void {
+    this.#focused = true;
     this.ctx.scheduleOpen('focus');
   }
 
   protected onBlur(): void {
-    this.ctx.scheduleClose('focus');
+    this.#focused = false;
+    this.#scheduleCloseIfInactive('focus');
+  }
+
+  #scheduleCloseIfInactive(reason: 'hover-trigger' | 'focus'): void {
+    if (this.#hovered || this.#focused) {
+      return;
+    }
+    this.ctx.scheduleClose(reason);
   }
 }

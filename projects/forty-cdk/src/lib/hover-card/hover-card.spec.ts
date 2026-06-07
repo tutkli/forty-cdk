@@ -126,16 +126,18 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('rejects consumer writes to [(open)] while disabled', () => {
+    it('honors a consumer programmatic [(open)] write while disabled', () => {
       const { fixture, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isDisabled.set(true);
       flush();
 
+      // `open` is a stock `model()` (like Popover) — the consumer owns it.
+      // `disabled` gates the directive's own hover/focus interaction and
+      // force-closes only when it flips to true, but it never fights an
+      // explicit consumer write through [(open)].
       fixture.componentInstance.isOpen.set(true);
       flush();
-      // The directive must override the attempt: open stays false and the
-      // consumer's signal is reset.
-      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(fixture.componentInstance.isOpen()).toBe(true);
     });
   });
 
@@ -226,6 +228,56 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(new FocusEvent('blur'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not close on pointerleave while the trigger is still focused', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not close on blur while the pointer is still over the trigger', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
       flush();
       vi.advanceTimersByTime(0);
       flush();
@@ -379,6 +431,57 @@ describe('ForHoverCard', () => {
       flush();
       expect(captured.length).toBe(2);
       expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('(openChange) output', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('emits both true AND false in the uncontrolled (observe-only) case', () => {
+      const emitted: boolean[] = [];
+
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        template: `
+          <span
+            forHoverCard
+            #card="forHoverCard"
+            [openDelay]="0"
+            [closeDelay]="0"
+            (openChange)="emitted.push($event)"
+          >
+            <a forHoverCardTrigger href="/x">Trigger</a>
+            @if (card.open()) {
+              <div forHoverCardContent>Content</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly emitted = emitted;
+      }
+
+      const { query, flush } = renderHost(Host);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+
+      // Without any [(open)] binding the closing transition must still emit —
+      // the bug was that the hand-rolled bridge dropped the false emit here.
+      expect(emitted).toEqual([true, false]);
     });
   });
 
