@@ -738,6 +738,59 @@ describe('ForCombobox', () => {
       expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
       expect(input.getAttribute('aria-activedescendant')).toBeNull();
     });
+
+    it('scrolls the auto-highlight-seeded option into view on open (#568)', async () => {
+      // jsdom on Windows leaves `scrollIntoView` undefined on the prototype
+      // (the production code safe-calls it). Stub it so the call is observable,
+      // restoring the prototype afterwards so the global state doesn't leak.
+      const had = 'scrollIntoView' in Element.prototype;
+      const stub = vi.fn();
+      Element.prototype.scrollIntoView = stub;
+      try {
+        const r = renderHost(ComboboxHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apple = getOption('apple');
+        expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
+        // The seeded option's host is the element scrolled into view.
+        expect(stub.mock.contexts).toContain(apple);
+      } finally {
+        if (!had) {
+          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        }
+      }
+    });
+
+    it('seeds the activedescendant without an unbounded self-cycle (#568)', async () => {
+      // The auto-highlight decision is a pure derivation in the `#activeId`
+      // linkedSignal, so a stable item set must settle without the effect
+      // re-running over and over (a self-cycle would scroll the seed on every
+      // tick). Guards against a future regression that reintroduces the
+      // read-and-write-in-the-same-effect-scope smell.
+      const had = 'scrollIntoView' in Element.prototype;
+      const stub = vi.fn();
+      Element.prototype.scrollIntoView = stub;
+      try {
+        const r = renderHost(ComboboxHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apple = getOption('apple');
+        expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
+        const afterOpen = stub.mock.calls.length;
+        expect(afterOpen).toBeLessThanOrEqual(2);
+
+        // A flush with nothing changed must not re-seed or re-scroll.
+        await flush(r.fixture);
+        expect(stub.mock.calls.length).toBe(afterOpen);
+        expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
+      } finally {
+        if (!had) {
+          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        }
+      }
+    });
   });
 
   describe('hidden input (form submit)', () => {
