@@ -26,7 +26,7 @@ import {
   type ForCalendarContext,
 } from './calendar-context';
 import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
-import { type DateAdapter, injectDateAdapter } from './date-adapter';
+import { compareDateOf, type DateAdapter, injectDateAdapter } from './date-adapter';
 
 /**
  * Headless implementation of a single-date calendar grid following the
@@ -210,7 +210,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return false;
     }
     const previousMonthLastDay = this.adapter.addDays(this.visibleMonth(), -1);
-    return this.adapter.compareDate(previousMonthLastDay, min) < 0;
+    return compareDateOf(this.adapter, previousMonthLastDay, min) < 0;
   });
 
   readonly isNextMonthDisabled = computed(() => {
@@ -219,7 +219,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return false;
     }
     const nextMonthFirstDay = this.adapter.addMonths(this.visibleMonth(), 1);
-    return this.adapter.compareDate(nextMonthFirstDay, max) > 0;
+    return compareDateOf(this.adapter, nextMonthFirstDay, max) > 0;
   });
 
   isSelected(date: D): boolean {
@@ -249,11 +249,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     }
     const adapter = this.adapter;
     const min = this.min();
-    if (min !== null && adapter.compareDate(date, min) < 0) {
+    if (min !== null && compareDateOf(adapter, date, min) < 0) {
       return true;
     }
     const max = this.max();
-    if (max !== null && adapter.compareDate(date, max) > 0) {
+    if (max !== null && compareDateOf(adapter, date, max) > 0) {
       return true;
     }
     return this.isDateUnavailable()(date);
@@ -342,11 +342,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   #clampToBounds(date: D): D {
     const adapter = this.adapter;
     const min = this.min();
-    if (min !== null && adapter.compareDate(date, min) < 0) {
+    if (min !== null && compareDateOf(adapter, date, min) < 0) {
       return min;
     }
     const max = this.max();
-    if (max !== null && adapter.compareDate(date, max) > 0) {
+    if (max !== null && compareDateOf(adapter, date, max) > 0) {
       return max;
     }
     return date;

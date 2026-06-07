@@ -11,11 +11,14 @@ function clampDay(year: number, month: number, day: number): Date {
 }
 
 /**
- * Zero-dependency {@link DateAdapter} over the built-in `Date`. The calendar
- * operations treat dates as days at local midnight; the time-zone component is
- * ignored. It is also **time-capable** — `Date` natively carries a wall-clock
- * time, so the optional `getHours` / `getMinutes` / `getSeconds` / `setTime`
- * accessors are implemented, letting `ForTimeField` use this adapter directly.
+ * Zero-dependency {@link DateAdapter} over the built-in `Date`. `today` and
+ * `createDate` produce days at local midnight, and the calendar grid stays
+ * day-granular. It is also **time-capable** — `Date` natively carries a
+ * wall-clock time, so the optional `getHours` / `getMinutes` / `getSeconds` /
+ * `setTime` accessors are implemented, letting `ForTimeField` use this adapter
+ * directly. Consistently with that, `compare` orders by the full instant
+ * (day *and* time), matching `InternationalizedDateTimeAdapter`, so a date-time
+ * `minDate`/`maxDate` clamps identically on both.
  *
  * This is the fallback adapter. Prefer `provideInternationalizedDateAdapter()`
  * for correct internationalised calendars (or
@@ -77,21 +80,7 @@ export class NativeDateAdapter implements DateAdapter<Date> {
   }
 
   compare(a: Date, b: Date): number {
-    const ay = a.getFullYear();
-    const by = b.getFullYear();
-    if (ay !== by) {
-      return ay - by;
-    }
-    const am = a.getMonth();
-    const bm = b.getMonth();
-    if (am !== bm) {
-      return am - bm;
-    }
-    return a.getDate() - b.getDate();
-  }
-
-  compareDate(a: Date, b: Date): number {
-    return this.compare(a, b);
+    return a.getTime() - b.getTime();
   }
 
   isSameDay(a: Date, b: Date): boolean {

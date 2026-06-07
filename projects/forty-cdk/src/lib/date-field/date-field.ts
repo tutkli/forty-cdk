@@ -144,14 +144,18 @@ export class ForDateField<D>
 
   /**
    * Minimum selectable date (inclusive). A composed value below it is clamped
-   * up. Named `minDate` (not `min`) because `FormUiControl.min` is reserved for
-   * a numeric validator bound by `[formField]`.
+   * up. The comparison is by the **full instant** (`DateAdapter.compare`), so at
+   * `granularity > 'day'` a non-midnight `minDate` clamps the time too, and the
+   * result is identical across time-capable adapters. Named `minDate` (not
+   * `min`) because `FormUiControl.min` is reserved for a numeric validator bound
+   * by `[formField]`.
    */
   readonly minDate = input<D | null>(null);
 
   /**
    * Maximum selectable date (inclusive). A composed value above it is clamped
-   * down. Named `maxDate` (not `max`) for the same reason as {@link minDate}.
+   * down. Compared by the **full instant** like {@link minDate}. Named `maxDate`
+   * (not `max`) for the same reason as {@link minDate}.
    */
   readonly maxDate = input<D | null>(null);
 

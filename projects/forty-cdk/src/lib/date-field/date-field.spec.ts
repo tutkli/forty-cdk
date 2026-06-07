@@ -1,7 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
+import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
+import {
+  InternationalizedDateTimeAdapter,
+  provideInternationalizedDateTimeAdapter,
+} from '../calendar/internationalized-date-time-adapter';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import { ForDateField } from './date-field';
 import { ForDateFieldLiteral } from './date-field-literal';
@@ -494,6 +499,124 @@ describe('ForDateField', () => {
       pressKey(dseg(r, 'dayPeriod'), 'p');
       await flush(r.fixture);
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
+    });
+  });
+
+  describe('date-time bounds clamping (#501)', () => {
+    @Component({
+      selector: 'native-date-time-host',
+      imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDateField
+          [(value)]="value"
+          [granularity]="'minute'"
+          [minDate]="minDate()"
+          [maxDate]="maxDate()"
+          [locale]="'en-US'"
+          #field="forDateField"
+        >
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+      `,
+    })
+    class NativeDateTimeHost {
+      readonly value = signal<Date | null>(null);
+      readonly minDate = signal<Date | null>(null);
+      readonly maxDate = signal<Date | null>(null);
+    }
+
+    @Component({
+      selector: 'intl-date-time-host',
+      imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+      providers: [...provideInternationalizedDateTimeAdapter()],
+      template: `
+        <div
+          forDateField
+          [(value)]="value"
+          [granularity]="'minute'"
+          [minDate]="minDate()"
+          [maxDate]="maxDate()"
+          [locale]="'en-US'"
+          #field="forDateField"
+        >
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+      `,
+    })
+    class IntlDateTimeHost {
+      readonly value = signal<CalendarDateTime | null>(null);
+      readonly minDate = signal<CalendarDateTime | null>(null);
+      readonly maxDate = signal<CalendarDateTime | null>(null);
+    }
+
+    const native = new NativeDateAdapter();
+    const intl = new InternationalizedDateTimeAdapter();
+
+    const nseg = <H>(r: RenderResult<H>, type: string) => r.query(`[data-testid="${type}"]`)!;
+    const compose = async <H>(r: RenderResult<H>) => {
+      const parts: [string, string][] = [
+        ['month', '06'],
+        ['day', '20'],
+        ['year', '2026'],
+        ['hour', '08'],
+        ['minute', '00'],
+      ];
+      for (const [type, digits] of parts) {
+        for (const d of digits) pressKey(nseg(r, type), d);
+      }
+      await flush(r.fixture);
+    };
+
+    it('clamps a sub-min time up to minDate on the native adapter (full instant)', async () => {
+      const r = renderHost(NativeDateTimeHost);
+      r.instance.minDate.set(new Date(2026, 5, 20, 9, 0));
+      await flush(r.fixture);
+      await compose(r);
+      const value = r.instance.value()!;
+      expect(native.getDate(value)).toBe(20);
+      expect(native.getHours(value)).toBe(9);
+      expect(native.getMinutes(value)).toBe(0);
+    });
+
+    it('clamps a sub-min time up to minDate on the internationalized date-time adapter', async () => {
+      const r = renderHost(IntlDateTimeHost);
+      r.instance.minDate.set(new CalendarDateTime(2026, 6, 20, 9, 0));
+      await flush(r.fixture);
+      await compose(r);
+      const value = r.instance.value()!;
+      expect(intl.getDate(value)).toBe(20);
+      expect(intl.getHours(value)).toBe(9);
+      expect(intl.getMinutes(value)).toBe(0);
+    });
+
+    it('clamps a past-max time down to maxDate on the native adapter (full instant)', async () => {
+      const r = renderHost(NativeDateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 20, 8, 0));
+      r.instance.maxDate.set(new Date(2026, 5, 20, 7, 0));
+      await flush(r.fixture);
+      pressKey(nseg(r, 'hour'), 'ArrowUp');
+      await flush(r.fixture);
+      const value = r.instance.value()!;
+      expect(native.getHours(value)).toBe(7);
+      expect(native.getMinutes(value)).toBe(0);
     });
   });
 
