@@ -264,14 +264,50 @@ For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors 
 
 Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forSelect]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
 
-Two inputs configure the object behaviour. Defaults make string mode work unchanged:
+Three inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).               |
-| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
+| Input                  | Default                                                            | Purpose                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).                                                             |
+| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                |
+| `[itemToLabel]`        | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
 
-The visible option label still comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
+The visible option label normally comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
+
+### Pre-set object values and the `@if (open())` pattern
+
+`[forSelectValue]` reads the selected option's label from the rendered option's `textContent`. With the recommended `@if (select.open())` markup the listbox stays unmounted until first opened, so an object value set **before** the user opens the listbox has no option to read from — `[forSelectValue]` shows the serialized form value (`[itemToFormValue]`, e.g. an id) as a last-resort fallback until the listbox is opened once.
+
+Supply `[itemToLabel]` to resolve the label directly from the value, independent of the mounted options. It then renders correctly on first paint and never flickers from the id to the real label:
+
+```html
+<div
+  forSelect
+  #select="forSelect"
+  [(value)]="city"
+  [isItemEqualToValue]="byId"
+  [itemToFormValue]="toId"
+  [itemToLabel]="toName"
+  placeholder="Pick a city"
+>
+  <button forSelectTrigger>
+    <span forSelectValue></span>
+  </button>
+  @if (select.open()) {
+  <div forSelectContent>
+    @for (c of cities(); track c.id) {
+    <button forSelectOption [value]="c">{{ c.name }}</button>
+    }
+  </div>
+  }
+</div>
+```
+
+```ts
+readonly toName = (c: City) => c.name;
+```
+
+When `[itemToLabel]` is set it is authoritative for every selected value (single and multi mode), so the rendered label is identical whether or not the listbox has been opened. String-value selects render the value verbatim and never need it. Consumers who instead keep `[forSelectContent]` mounted (drop the `@if`) get the option `textContent` for free and don't need `[itemToLabel]`.
 
 ```html
 <div

@@ -1274,6 +1274,93 @@ describe('ForSelect', () => {
       expect(value.textContent).toBe('Berlin');
     });
 
+    @Component({
+      imports: [...BASE_IMPORTS, ForSelectValue],
+      template: `
+        <div
+          forSelect
+          [(open)]="open"
+          [(value)]="value"
+          [isItemEqualToValue]="byId"
+          [itemToFormValue]="toId"
+          [itemToLabel]="itemToLabel()"
+          [multiple]="multiple()"
+        >
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick a city"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="paris" forSelectOption [value]="paris">Paris</button>
+              <button data-test-id="berlin" forSelectOption [value]="berlin">Berlin</button>
+              <button data-test-id="tokyo" forSelectOption [value]="tokyo">Tokyo</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class IfPatternHost {
+      readonly paris = PARIS;
+      readonly berlin = BERLIN;
+      readonly tokyo = TOKYO;
+      readonly open = signal(false);
+      readonly value = signal<readonly City[]>([BERLIN]);
+      readonly multiple = signal(false);
+      readonly itemToLabel = signal<((c: City) => string) | undefined>(undefined);
+      readonly byId = (a: City, b: City) => a.id === b.id;
+      readonly toId = (c: City) => String(c.id);
+    }
+
+    it('renders a pre-set object value as the serialized id in the documented @if pattern without itemToLabel', async () => {
+      // Documents the gap: with `@if (open())` the listbox is never mounted, so
+      // the live registry is empty and the `afterEveryRender` cache never warms.
+      // `selectedLabels` falls back to the serialized form value (`toId` → "2").
+      const r = renderHost(IfPatternHost);
+      await flush(r.fixture);
+
+      expect(r.query<HTMLElement>('[forSelect]')!.getAttribute('data-state')).toBe('closed');
+      expect(r.query<HTMLElement>('[forSelectContent]')).toBeNull();
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('2');
+    });
+
+    it('renders the label for a pre-set object value in the @if pattern when itemToLabel is supplied', async () => {
+      const r = renderHost(IfPatternHost);
+      r.instance.itemToLabel.set((c) => c.name);
+      await flush(r.fixture);
+
+      // The listbox is never opened — the content stays unmounted.
+      expect(r.query<HTMLElement>('[forSelect]')!.getAttribute('data-state')).toBe('closed');
+      expect(r.query<HTMLElement>('[forSelectContent]')).toBeNull();
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Berlin');
+    });
+
+    it('keeps itemToLabel authoritative once the listbox opens (no flicker)', async () => {
+      const r = renderHost(IfPatternHost);
+      r.instance.itemToLabel.set((c) => `City: ${c.name}`);
+      await flush(r.fixture);
+
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('City: Berlin');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      // The option's rendered textContent is "Berlin", but `itemToLabel` wins.
+      expect(value.textContent).toBe('City: Berlin');
+    });
+
+    it('joins itemToLabel results in multi mode', async () => {
+      const r = renderHost(IfPatternHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set([PARIS, TOKYO]);
+      r.instance.itemToLabel.set((c) => c.name);
+      await flush(r.fixture);
+
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Paris, Tokyo');
+    });
+
     it('toggles object values in/out by id in multi mode', async () => {
       const r = renderHost(ObjectHost);
       r.instance.multiple.set(true);

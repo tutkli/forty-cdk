@@ -56,7 +56,10 @@ import { FOR_SELECT_DEFAULTS } from './select-defaults';
  * `[forSelectOption][value]`; object identity is resolved by the
  * consumer-supplied `[isItemEqualToValue]` and the hidden inputs serialize
  * via `[itemToFormValue]`. Option display text is read from the rendered
- * `textContent`, so no separate label function is needed.
+ * `textContent`, so no separate label function is needed — supply the
+ * optional `[itemToLabel]` only when a pre-set object value must render its
+ * label before the listbox is ever opened (the documented `@if (open())`
+ * pattern).
  *
  * Selection is always modeled as `readonly T[]`:
  * - In single mode (`multiple=false`, default), the array has 0 or 1 element
@@ -114,6 +117,21 @@ export class ForSelect<T = string>
    * `[itemToFormValue]="(it) => it.id"`.
    */
   readonly itemToFormValue = input<(item: T) => string>(defaultItemToFormValue);
+
+  /**
+   * Resolve the display label for an item without the listbox mounted.
+   * When set, {@link selectedLabels} (and therefore `[forSelectValue]`)
+   * renders this for any selected value, so a pre-set object value shows
+   * its label on first paint — before the listbox has ever been opened, in
+   * the documented `@if (forSelect.open())` pattern. Without it, object-value
+   * labels resolve from the rendered option `textContent`, which is only
+   * available once the content mounts; the serialized form value is shown as
+   * a last-resort fallback in the meantime: `[itemToLabel]="(c) => c.name"`.
+   *
+   * Defaults to `undefined` (string mode renders the value verbatim, so no
+   * label function is needed).
+   */
+  readonly itemToLabel = input<((item: T) => string) | undefined>(undefined);
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
@@ -292,10 +310,18 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return [];
     }
-    // Resolve from the live option registry first so a pre-set value renders
-    // the option label as soon as `[forSelectOption]` registers, then the
-    // cached snapshot (warmed by `afterEveryRender`, used while the listbox is
-    // unmounted), then the serialized form value so non-string items still
+    // When `[itemToLabel]` is supplied it is authoritative: the label resolves
+    // without the listbox mounted, so a pre-set object value renders correctly
+    // on first paint in the documented `@if (open())` pattern and never flickers
+    // from a serialized id to the real label once the listbox is first opened.
+    const itemToLabel = this.itemToLabel();
+    if (itemToLabel) {
+      return values.map(itemToLabel);
+    }
+    // Otherwise resolve from the live option registry first so a pre-set value
+    // renders the option label as soon as `[forSelectOption]` registers, then
+    // the cached snapshot (warmed by `afterEveryRender`, used while the listbox
+    // is unmounted), then the serialized form value so non-string items still
     // render meaningfully on a cold cache.
     const items = this.#items.items();
     const cached = this.#cachedOptions();
