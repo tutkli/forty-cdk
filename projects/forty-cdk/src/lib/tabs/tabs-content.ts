@@ -1,6 +1,15 @@
-import { computed, Directive, ElementRef, inject, input, signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { injectHasFocusableContent } from '../_internal/focusable-content/focusable-content';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectTabsContext } from './tabs-context';
 
@@ -13,16 +22,19 @@ import { injectTabsContext } from './tabs-context';
  * so the mounted-but-inactive panel is removed from the accessibility tree
  * and focus order automatically.
  *
- * APG: when the panel does not contain focusable content, it must itself
- * be focusable so SR users can read it. We always set `tabindex=0` for
- * v1 — refine later if a `[interactiveContent]` opt-out is justified.
+ * APG: a `tabpanel` is a tab stop (`tabindex="0"`) **only** when it has no
+ * focusable content of its own — that lets screen-reader users reach an
+ * otherwise-unreachable panel, while a panel that already contains a form,
+ * links, or buttons does not add a redundant tab stop. The directive detects
+ * focusable descendants automatically (reactive to subtree changes); set
+ * `[interactiveContent]` to override the detection in either direction.
  */
 @Directive({
   selector: '[forTabsContent]',
   exportAs: 'forTabsContent',
   host: {
     role: 'tabpanel',
-    tabindex: '0',
+    '[attr.tabindex]': 'tabindex()',
     '[id]': 'id()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-hidden]': 'selected() ? null : "true"',
@@ -37,10 +49,37 @@ export class ForTabsContent {
 
   readonly value = input.required<string>();
 
+  /**
+   * Overrides the automatic focusable-content detection that drives the
+   * panel's `tabindex`. Leave unset (default `null`) to let the directive
+   * decide: a panel with no focusable descendants gets `tabindex="0"` so it
+   * is reachable by Tab, a panel with focusable descendants gets none. Set
+   * `true` when the panel always holds its own focusable content (skip the
+   * extra tab stop without paying for detection); set `false` to force the
+   * panel to be a tab stop regardless of its content.
+   */
+  readonly interactiveContent = input<boolean | null, unknown>(null, {
+    transform: (value: unknown) => (value == null ? null : booleanAttribute(value)),
+  });
+
   readonly id = signal(this.#idGen.next('for-tabs-content'));
+
+  readonly #hasFocusableContent = injectHasFocusableContent();
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
   protected readonly labelledBy = computed(() => this.group.triggerIdFor(this.value()));
+
+  /**
+   * APG tabindex: `0` only when the panel has no focusable content of its
+   * own, so SR users can focus the panel itself; otherwise no `tabindex`
+   * attribute, so the panel does not add a redundant tab stop. An explicit
+   * `interactiveContent` wins over the automatic detection.
+   */
+  protected readonly tabindex = computed<'0' | null>(() => {
+    const override = this.interactiveContent();
+    const interactive = override ?? this.#hasFocusableContent();
+    return interactive ? null : '0';
+  });
 
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

@@ -24,7 +24,7 @@ export interface ForTabsContentHandle {
  * `aria-labelledby` wiring), and the root drives keyboard navigation.
  */
 export interface ForTabsContext {
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   readonly disabled: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;

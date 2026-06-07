@@ -70,7 +70,7 @@ export class ForTabsTrigger {
     if (this.selected()) {
       return 0;
     }
-    if (this.group.value() !== '') {
+    if (this.group.value() !== null) {
       return -1;
     }
     return this.group.isFirstEnabledTrigger(this.#host.nativeElement) ? 0 : -1;

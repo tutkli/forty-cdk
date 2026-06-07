@@ -44,12 +44,14 @@ export class ForTabs implements ForTabsContext {
   readonly #defaults = inject(FOR_TABS_DEFAULTS);
 
   /**
-   * Two-way bindable. The selected tab's value. The `model()` change emitter
-   * (`(valueChange)`) fires only on internal selection changes (trigger click
-   * or automatic-mode arrow nav), never on consumer writes via `[(value)]` —
-   * observe transitions without binding back.
+   * Two-way bindable. The selected tab's value, or `null` when nothing is
+   * selected. `null` is the canonical unset state — distinct from a tab whose
+   * `value` is the empty string `''`, which is a legal, selectable value. The
+   * `model()` change emitter (`(valueChange)`) fires only on internal
+   * selection changes (trigger click or automatic-mode arrow nav), never on
+   * consumer writes via `[(value)]` — observe transitions without binding back.
    */
-  readonly value = model<string>('');
+  readonly value = model<string | null>(null);
 
   readonly activationMode = input<TabsActivationMode>(this.#defaults.activationMode);
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');

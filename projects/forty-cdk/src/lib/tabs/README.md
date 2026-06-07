@@ -17,7 +17,7 @@ Headless implementation of the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/AR
 
 | API              | Type                                | Description                                                                                                                            |
 | ---------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`          | `model<string>`                     | Two-way bindable. The selected tab's value.                                                                                            |
+| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state — distinct from a tab whose `value` is `''`. |
 | `activationMode` | `input<'automatic' \| 'manual'>`    | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter. |
 | `orientation`    | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`.                                                             |
 | `dir`            | `input<'ltr' \| 'rtl'>`             | Default `'ltr'`. Swaps ArrowLeft / ArrowRight.                                                                                         |
@@ -35,11 +35,12 @@ Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the
 
 ### `ForTabsContent`
 
-| API     | Type                     | Description                                         |
-| ------- | ------------------------ | --------------------------------------------------- |
-| `value` | `input.required<string>` | Pairs the panel with the trigger of the same value. |
+| API                  | Type                       | Description                                                                                                                                                                                                                       |
+| -------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `input.required<string>`   | Pairs the panel with the trigger of the same value.                                                                                                                                                                              |
+| `interactiveContent` | `input<boolean \| null>`   | Overrides the automatic focusable-content detection that drives `tabindex`. Default `null` (auto-detect). `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless.    |
 
-Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"`, `aria-hidden` (when inactive), `inert` (when inactive), `data-state="active" \| "inactive"`.
+Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"` **only when the panel has no focusable descendants** (APG), `aria-hidden` (when inactive), `inert` (when inactive), `data-state="active" \| "inactive"`.
 
 The directive does **not** apply `[hidden]`. Two patterns work:
 
@@ -93,5 +94,5 @@ export class DemoSettings {
 
 - **Label the tablist** via `aria-label` on `ForTabsList`, or `aria-labelledby` pointing to a heading.
 - **Choose `activationMode='automatic'`** when panels render quickly; `'manual'` when activation has noticeable cost (network, heavy computation).
-- **Panel `tabindex="0"`** is set unconditionally so screen-reader users can focus the panel itself when it lacks focusable children. If your panel always contains focusable content, the extra tab stop is redundant — a future input may opt out.
+- **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop — the directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction.
 - **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`.

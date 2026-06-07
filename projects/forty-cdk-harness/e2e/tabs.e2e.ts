@@ -104,16 +104,28 @@ test.describe('Tabs (manual activation)', () => {
 });
 
 test.describe('Tabs (Tab into panel)', () => {
-  test('Tab out of the tablist moves focus into the active panel', async ({ page }) => {
+  test('Tab out of the tablist lands directly in the active panel with focusable content', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'tabs');
     await el(page, 'trigger-a').focus();
-    // Panels carry `tabindex="0"` themselves (APG), so Tab lands on the
-    // panel host first — one more Tab moves into the panel's focusable
-    // child so `expectFocused` verifies a real reachable element.
-    await page.keyboard.press('Tab');
-    await expectFocused(el(page, 'content-a'));
-
+    // Panel A embeds a focusable <button>, so per the APG the panel host is
+    // NOT a tab stop (it carries no tabindex). Tab out of the tablist moves
+    // focus straight to the panel's focusable child.
+    await expect(el(page, 'content-a')).not.toHaveAttribute('tabindex');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'panel-button-a'));
+  });
+
+  test('a text-only panel is itself a tab stop (tabindex=0)', async ({ page }) => {
+    // Select panel D (text only) and Tab out of the tablist — the panel host
+    // owns the tab stop because it has no focusable descendants.
+    await gotoFixture(page, 'tabs', { disabled: 'none' });
+    await el(page, 'trigger-d').focus();
+    await page.keyboard.press(' ');
+    await expect(el(page, 'content-d')).toHaveAttribute('tabindex', '0');
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'content-d'));
   });
 });
