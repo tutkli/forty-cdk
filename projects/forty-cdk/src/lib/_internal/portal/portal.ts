@@ -1,12 +1,7 @@
-import {
-  DOCUMENT,
-  PLATFORM_ID,
-  afterNextRender,
-  DestroyRef,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import { DOCUMENT, PLATFORM_ID, DestroyRef, ElementRef, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+
+import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 
 export interface PortalConfig {
   /**
@@ -37,22 +32,18 @@ export interface PortalConfig {
  * and the portaled position is established once the client takes over.
  *
  * Implementation note — destroy ordering. The deferred `appendChild` is
- * registered as `afterNextRender`; the destroy hook runs `el.remove()`. If
- * the directive is torn down between construction and the next render
- * (rare, but happens in synchronous open/close test paths or fast SPA
- * navigations), the destroy hook sees a not-yet-portaled element and
+ * registered via `afterNextRenderCancellable`; the destroy hook runs
+ * `el.remove()`. If the directive is torn down between construction and the
+ * next render (rare, but happens in synchronous open/close test paths or fast
+ * SPA navigations), the destroy hook sees a not-yet-portaled element and
  * `el.remove()` is effectively a no-op against the original parent. Without
  * defending against it, the queued `afterNextRender` would still fire after
  * destroy and re-attach the element to `target` with no remaining destroy
- * hook to clean it up — a leak. We mitigate by:
- *
- *   1. Capturing the `AfterRenderRef` returned by `afterNextRender` and
- *      calling `.destroy()` from the destroy hook so the queued callback is
- *      cancelled if it hasn't fired yet.
- *   2. Setting a `destroyed` flag the queued callback re-checks before
- *      touching the DOM, in case it interleaves before `.destroy()` takes
- *      effect (belt-and-suspenders for harnesses that flush render queues
- *      synchronously inside teardown).
+ * hook to clean it up — a leak. The shared `afterNextRenderCancellable`
+ * helper cancels the queued callback on destroy (it captures the
+ * `AfterRenderRef`, calls `.destroy()` from its own destroy hook, and guards
+ * the callback with a `destroyed` flag), so the `appendChild` never runs once
+ * the directive is gone.
  */
 export function injectPortal(config: PortalConfig = {}): void {
   if (!isPlatformBrowser(inject(PLATFORM_ID))) {
@@ -64,23 +55,20 @@ export function injectPortal(config: PortalConfig = {}): void {
   const el = host.nativeElement;
   const target = config.target ?? doc.body;
 
-  let destroyed = false;
-
-  const ref = afterNextRender(() => {
-    if (destroyed) return;
+  afterNextRenderCancellable(() => {
     if (el.parentNode !== target) {
       target.appendChild(el);
     }
   });
 
   destroyRef.onDestroy(() => {
-    destroyed = true;
-    // Cancel the queued render callback first — otherwise an interleaved
-    // render flush could re-attach the element after we've removed it.
-    ref.destroy();
     // `Element.remove()` is a no-op when the node has no parent, so this is
     // safe whether the portal moved the element to `target`, the element is
-    // still in its original parent, or it's been detached already.
+    // still in its original parent, or it's been detached already. It also
+    // cleans up the synchronous-teardown ordering, where the pending
+    // `appendChild` flushes just before this hook runs: the cancellation in
+    // `afterNextRenderCancellable` covers the true-async path (queued render
+    // after destroy), `el.remove()` covers the synchronous one.
     el.remove();
   });
 }

@@ -1,7 +1,7 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../../test-utils';
+import { flush, nextMacrotask, pressKey, renderHost } from '../../../test-utils';
 import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 
 /**
@@ -555,6 +555,48 @@ describe('injectOverlayShell', () => {
       // No spurious focus-outside fired during teardown.
       expect(calls).toEqual([]);
       ctx.destroy();
+    });
+  });
+
+  describe('destroy before first render', () => {
+    // Mirrors portal.spec.ts' destroy-before-render test. The shell activates
+    // the dismissable layer inside `afterNextRenderCancellable`. A destroy
+    // between construction and the first render must cancel that callback —
+    // otherwise the layer is pushed onto the stack with no teardown hook left
+    // to pop it, leaving a dead topmost entry that swallows every later
+    // Escape / pointer-down-outside.
+    it('does not leak a dead topmost dismissable-layer entry', async () => {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const calls: string[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        dismiss: {
+          dismissible: signal(true),
+          requestClose: () => calls.push('close'),
+          emitEscapeKeyDown: () => calls.push('escape'),
+          emitPointerDownOutside: () => calls.push('pointer'),
+        },
+      }));
+
+      // Destroy synchronously — BEFORE the macrotask hop that lets the queued
+      // render callback run.
+      ctx.destroy();
+      await nextMacrotask();
+
+      // The queued layer.activate() was cancelled, so the stack is empty: an
+      // Escape and a pointer-down-outside after teardown reach no handler.
+      pressKey(document, 'Escape');
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      document.dispatchEvent(event);
+
+      expect(calls).toEqual([]);
+      outside.remove();
     });
   });
 
