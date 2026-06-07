@@ -69,6 +69,38 @@ test.describe('TimeField', () => {
     await expect(el(page, 'value')).toHaveText('empty');
   });
 
+  test('Home / End jump the focused segment to its min / max bound', async ({ page }) => {
+    await gotoFixture(page, 'time-field', { preset: '1' });
+    await expect(el(page, 'value')).toHaveText('13:45');
+
+    await el(page, 'minute').focus();
+    await page.keyboard.press('Home');
+    await expect(el(page, 'value')).toHaveText('13:00');
+
+    await page.keyboard.press('End');
+    await expect(el(page, 'value')).toHaveText('13:59');
+
+    await el(page, 'hour').focus();
+    await page.keyboard.press('Home');
+    await expect(el(page, 'value')).toHaveText('00:59');
+    await page.keyboard.press('End');
+    await expect(el(page, 'value')).toHaveText('23:59');
+  });
+
+  test('blurring the field out marks it touched', async ({ page }) => {
+    await gotoFixture(page, 'time-field');
+    await expect(el(page, 'field')).not.toHaveAttribute('data-touched', '');
+
+    await el(page, 'hour').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'minute'));
+    await expect(el(page, 'field')).not.toHaveAttribute('data-touched', '');
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'field')).toHaveAttribute('data-touched', '');
+  });
+
   test('12-hour mode: typing p sets PM on the entered hour', async ({ page }) => {
     await gotoFixture(page, 'time-field', { h12: '1' });
     await el(page, 'hour').focus();
