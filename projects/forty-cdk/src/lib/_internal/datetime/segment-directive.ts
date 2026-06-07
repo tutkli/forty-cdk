@@ -13,8 +13,12 @@ import type { SegmentHandle, SegmentType } from './segment-editor';
  * `dir` / `roving` come off the root directly.
  */
 export interface SegmentEditorContext {
-  /** Whether the field is disabled. */
-  readonly disabled: Signal<boolean>;
+  /**
+   * The field's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Segments read this so a disabled field
+   * (or fieldset) is inert and exposes `aria-disabled`.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   /** Whether the field is read-only. */
   readonly readonly: Signal<boolean>;
   /** Resolved writing direction (mirrors ArrowLeft / ArrowRight navigation). */
@@ -67,11 +71,11 @@ export interface SegmentEditorContext {
     '[attr.aria-valuenow]': 'valueNow()',
     '[attr.aria-valuetext]': 'ctx.segmentValueText(segment())',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-placeholder]': 'ctx.isSegmentEmpty(segment()) ? "" : null',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
@@ -114,7 +118,7 @@ export abstract class ForDateTimeSegmentBase {
    * locale order is the field's single tab entry; disabled fields are skipped.
    */
   protected readonly tabindex = computed<-1 | 0>(() => {
-    if (this.ctx.disabled()) {
+    if (this.ctx.effectiveDisabled()) {
       return -1;
     }
     if (this.ctx.roving.hasActive()) {
@@ -138,7 +142,7 @@ export abstract class ForDateTimeSegmentBase {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled()) {
+    if (this.ctx.effectiveDisabled()) {
       return;
     }
     const type = this.segment();

@@ -18,6 +18,7 @@ import {
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { FOR_FIELD_CONTEXT, type FieldControlHandle } from '../_internal/field/field-wiring';
+import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 
@@ -81,7 +82,7 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
     role: 'group',
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.data-complete]': 'complete() ? "" : null',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
   },
   providers: [{ provide: FOR_OTP_INPUT_CONTEXT, useExisting: ForOtpInput }],
 })
@@ -91,6 +92,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #field = inject(FOR_FIELD_CONTEXT, { optional: true });
+  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /** The injected real `<input>`, once created in the browser. */
   readonly #inputEl = signal<HTMLInputElement | null>(null);
@@ -131,8 +133,21 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   /** Accessible name for the group. Emits `aria-label` only when truthy. */
   readonly ariaLabel = input<string | null>(null);
 
-  /** When true, interaction is ignored and `aria-disabled` / `data-disabled` are reflected. */
+  /**
+   * When true, interaction is ignored and `aria-disabled` / `data-disabled` are
+   * reflected. Behavior and ARIA gate off {@link effectiveDisabled}, which also
+   * folds in a surrounding disabled `[forFieldset]`.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * The control's own {@link disabled} OR'd with a surrounding disabled
+   * `[forFieldset]`. Drives interaction gating and `aria-disabled` /
+   * `data-disabled`, so a disabled group disables the OTP input too.
+   */
+  readonly effectiveDisabled = computed(
+    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
+  );
 
   /** When true, interaction is ignored but the control stays focusable; `aria-readonly="true"`. */
   readonly readonly = input(false, { transform: booleanAttribute });
@@ -204,14 +219,14 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       // Legacy iOS numeric-keypad hint; modern browsers honour inputmode.
       setAttr(el, 'pattern', this.#inputMode() === 'numeric' ? '[0-9]*' : null);
       setAttr(el, 'name', this.name() || null);
-      el.toggleAttribute('disabled', this.disabled());
+      el.toggleAttribute('disabled', this.effectiveDisabled());
       el.toggleAttribute('readonly', this.readonly());
-      setAttr(el, 'aria-disabled', this.disabled() ? 'true' : null);
+      setAttr(el, 'aria-disabled', this.effectiveDisabled() ? 'true' : null);
       setAttr(el, 'aria-readonly', this.readonly() ? 'true' : null);
       setAttr(el, 'aria-required', this.required() ? 'true' : null);
       setAttr(el, 'aria-invalid', this.invalid() ? 'true' : null);
       setAttr(el, 'aria-busy', this.pending() ? 'true' : null);
-      el.toggleAttribute('data-disabled', this.disabled());
+      el.toggleAttribute('data-disabled', this.effectiveDisabled());
       el.toggleAttribute('data-readonly', this.readonly());
       el.toggleAttribute('data-touched', this.touched());
       el.toggleAttribute('data-dirty', this.dirty());
@@ -286,7 +301,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
           host: el,
           invalid: this.invalid,
           required: this.required,
-          disabled: this.disabled,
+          disabled: this.effectiveDisabled,
           touched: this.touched,
           errors: this.errors,
         };
@@ -360,7 +375,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
     if (!el) {
       return;
     }
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       el.value = this.#clampedValue();
       return;
     }
@@ -380,7 +395,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
 
   #onPaste(event: ClipboardEvent): void {
     const el = this.#inputEl();
-    if (!el || this.disabled() || this.readonly()) {
+    if (!el || this.effectiveDisabled() || this.readonly()) {
       return;
     }
     event.preventDefault();

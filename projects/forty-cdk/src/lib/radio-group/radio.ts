@@ -53,7 +53,7 @@ export class ForRadio {
 
   readonly checked = computed(() => this.group.isSelected(this.value()));
 
-  readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());
+  readonly effectiveDisabled = computed(() => this.disabled() || this.group.effectiveDisabled());
 
   constructor() {
     const handle = {

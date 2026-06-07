@@ -21,7 +21,7 @@ import { injectComboboxContext } from './combobox-context';
     'aria-label': 'Clear',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
-    '[attr.disabled]': 'ctx.disabled() || ctx.readonly() ? "" : null',
+    '[attr.disabled]': 'ctx.effectiveDisabled() || ctx.readonly() ? "" : null',
     '[attr.tabindex]': '-1',
     '(click)': 'onClick()',
   },
@@ -34,7 +34,7 @@ export class ForComboboxClear {
   );
 
   protected onClick(): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     this.ctx.clear(true);

@@ -24,7 +24,12 @@ export interface ForSliderContext {
   readonly largeStep: Signal<number>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
-  readonly disabled: Signal<boolean>;
+  /**
+   * The slider's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Thumb, track, and range pieces read
+   * this so a disabled slider (or fieldset) is inert and exposes `aria-disabled`.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly minStepsBetweenThumbs: Signal<number>;
   readonly inverted: Signal<boolean>;

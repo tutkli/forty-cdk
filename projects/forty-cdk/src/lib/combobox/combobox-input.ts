@@ -38,15 +38,15 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-controls]': 'ctx.contentId()',
     '[attr.aria-autocomplete]': 'ariaAutocomplete()',
     '[attr.aria-activedescendant]': 'ctx.open() ? (ctx.activeId() ?? null) : null',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx.required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx.invalid() ? "true" : null',
     '[attr.aria-busy]': 'ctx.pending() ? "true" : null',
-    '[attr.disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.readonly]': 'ctx.readonly() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '(input)': 'onInput($event)',
     '(compositionstart)': 'onCompositionStart()',
     '(compositionend)': 'onCompositionEnd()',
@@ -94,14 +94,14 @@ export class ForComboboxInput {
 
   protected onCompositionEnd(): void {
     this.#composing = false;
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     this.#syncQuery(true, false);
   }
 
   protected onInput(event: Event): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     if (this.#composing) {
@@ -165,7 +165,7 @@ export class ForComboboxInput {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled()) {
+    if (this.ctx.effectiveDisabled()) {
       return;
     }
 
@@ -179,7 +179,7 @@ export class ForComboboxInput {
       this.ctx.multiple() &&
       this.#host.nativeElement.value === '' &&
       !this.ctx.readonly() &&
-      !this.ctx.disabled()
+      !this.ctx.effectiveDisabled()
     ) {
       const chips = this.ctx.chips();
       const last = chips[chips.length - 1];

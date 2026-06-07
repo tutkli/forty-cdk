@@ -38,7 +38,7 @@ export class ForNumberInputIncrement {
 
   protected readonly isDisabled = computed(() => {
     const field = this.group.field();
-    return !field || field.disabled() || field.readonly() || field.atMax();
+    return !field || field.effectiveDisabled() || field.readonly() || field.atMax();
   });
 
   protected step(): void {

@@ -21,7 +21,7 @@ import { ForComboboxChip } from './combobox-chip';
     type: 'button',
     tabindex: '-1',
     '[attr.aria-label]': 'ariaLabel()',
-    '[attr.disabled]': 'ctx.disabled() || ctx.readonly() ? "" : null',
+    '[attr.disabled]': 'ctx.effectiveDisabled() || ctx.readonly() ? "" : null',
     '(click)': 'onClick($event)',
   },
 })
@@ -44,7 +44,7 @@ export class ForComboboxChipRemove {
   protected readonly ariaLabel = computed(() => `Remove ${this.#chip!.label()}`);
 
   protected onClick(event: MouseEvent): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     // Don't let the click bubble up to the chip body — that would trigger

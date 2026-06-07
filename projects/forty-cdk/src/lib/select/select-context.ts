@@ -65,7 +65,12 @@ export interface ForSelectContext<T = unknown> {
   readonly open: ModelSignal<boolean>;
   readonly multiple: Signal<boolean>;
 
-  readonly disabled: Signal<boolean>;
+  /**
+   * The select's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Trigger and options read this so a
+   * disabled select (or fieldset) is inert and exposes `aria-disabled`.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly required: Signal<boolean>;
   readonly invalid: Signal<boolean>;

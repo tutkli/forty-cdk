@@ -69,13 +69,13 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -211,7 +211,7 @@ export class ForListbox<T = string>
   }
 
   activate(v: T): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     if (this.multiple()) {
@@ -224,7 +224,7 @@ export class ForListbox<T = string>
   }
 
   extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
-    if (this.disabled() || !this.multiple()) {
+    if (this.effectiveDisabled() || !this.multiple()) {
       return;
     }
     const options = this.#options.items();
@@ -253,7 +253,7 @@ export class ForListbox<T = string>
   }
 
   selectRangeToFocused(currentOption: HTMLElement): void {
-    if (this.disabled() || this.readonly() || !this.multiple()) {
+    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
       return;
     }
     const options = this.#options.items();
@@ -281,7 +281,7 @@ export class ForListbox<T = string>
   }
 
   selectAll(): void {
-    if (this.disabled() || this.readonly() || !this.multiple()) {
+    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
       return;
     }
     const enabled: T[] = [];
@@ -301,7 +301,7 @@ export class ForListbox<T = string>
   }
 
   selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
-    if (this.disabled() || !this.multiple()) {
+    if (this.effectiveDisabled() || !this.multiple()) {
       return;
     }
     const options = this.#options.items();
@@ -341,7 +341,7 @@ export class ForListbox<T = string>
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const options = this.#options.items();

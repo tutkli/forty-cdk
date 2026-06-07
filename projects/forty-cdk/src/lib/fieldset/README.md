@@ -24,7 +24,9 @@ The `disabled` input:
 
 - reflects `data-disabled` on the group host,
 - emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` on any other element),
-- and propagates to descendant `[forField]` controls via context — so a disabled group reaches custom-role controls like `forSwitch` that a native `<fieldset disabled>` cannot. A field outside any fieldset is unaffected.
+- and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. A control outside any fieldset is unaffected.
+
+Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]` — the inner group cannot re-enable what the outer disabled.
 
 ## Example
 

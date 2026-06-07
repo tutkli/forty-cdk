@@ -9,8 +9,12 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 export interface ForNumberInputContext {
   /** Current numeric value, or `null` while the field is empty. */
   readonly value: Signal<number | null>;
-  /** Whether the spinbutton is disabled. */
-  readonly disabled: Signal<boolean>;
+  /**
+   * The spinbutton's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. The increment / decrement buttons read
+   * this so a disabled fieldset also disables stepping.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   /** Whether the spinbutton is read-only. */
   readonly readonly: Signal<boolean>;
   /** `true` when the value sits at (or below) `min`. */

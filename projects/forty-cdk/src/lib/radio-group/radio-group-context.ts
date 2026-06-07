@@ -20,7 +20,12 @@ export interface ForRadioHandle {
  */
 export interface ForRadioGroupContext {
   readonly value: Signal<string>;
-  readonly disabled: Signal<boolean>;
+  /**
+   * The group's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Each `ForRadio` ORs this into its own
+   * `effectiveDisabled`, so a disabled group (or fieldset) disables every radio.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;

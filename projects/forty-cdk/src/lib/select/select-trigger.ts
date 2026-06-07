@@ -32,14 +32,14 @@ import { injectSelectContext } from './select-context';
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx.required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx.invalid() ? "true" : null',
     '[attr.aria-busy]': 'ctx.pending() ? "true" : null',
-    '[attr.disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(focusout)': 'onFocusOut($event)',
@@ -62,7 +62,7 @@ export class ForSelectTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled()) {
+    if (this.ctx.effectiveDisabled()) {
       return;
     }
     if (event.key === 'ArrowDown') {

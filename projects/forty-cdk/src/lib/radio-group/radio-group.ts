@@ -47,13 +47,13 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
   host: {
     role: 'radiogroup',
     '[attr.aria-orientation]': 'orientation()',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
@@ -109,7 +109,7 @@ export class ForRadioGroup
         const v = this.value();
         return v ? [v] : [];
       }),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
   }
 
@@ -122,7 +122,7 @@ export class ForRadioGroup
    * no-op when the group is disabled or has no enabled radio.
    */
   focus(options?: FocusOptions): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const v = this.value();
@@ -136,14 +136,14 @@ export class ForRadioGroup
   }
 
   select(v: string): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.value.set(v);
   }
 
   navigate(currentRadio: HTMLElement, action: ListNavigationAction): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const items = this.#items.items();

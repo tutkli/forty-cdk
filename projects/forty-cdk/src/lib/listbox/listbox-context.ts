@@ -24,7 +24,13 @@ export interface ForListboxOptionHandle<T = unknown> {
 export interface ForListboxContext<T = unknown> {
   readonly value: Signal<readonly T[]>;
   readonly multiple: Signal<boolean>;
-  readonly disabled: Signal<boolean>;
+  /**
+   * The listbox's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Each `ForListboxOption` ORs this into
+   * its own `effectiveDisabled`, so a disabled listbox (or fieldset) disables
+   * every option.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;

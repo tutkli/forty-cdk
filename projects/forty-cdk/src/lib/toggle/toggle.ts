@@ -32,14 +32,14 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
   host: {
     type: 'button',
     '[attr.aria-pressed]': 'checked() ? "true" : "false"',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.name]': 'name() || null',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
     '(blur)': 'touched.set(true)',
@@ -61,12 +61,12 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
     injectHiddenInput({
       name: this.name,
       values: computed(() => (this.checked() ? ['on'] : [])),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
   }
 
   protected onClick(): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.checked.update((v) => !v);

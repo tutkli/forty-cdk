@@ -63,13 +63,13 @@ import {
   host: {
     role: 'group',
     '[attr.aria-orientation]': 'orientation()',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -148,7 +148,7 @@ export class ForToggleGroup
     injectHiddenInput({
       name: this.name,
       values: this.value,
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
     reconcileRovingActive(this.roving, this.#items.items);
   }
@@ -158,7 +158,7 @@ export class ForToggleGroup
   }
 
   toggle(v: string): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -172,7 +172,7 @@ export class ForToggleGroup
   }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const items = this.#items.items();

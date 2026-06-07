@@ -21,7 +21,7 @@ import { injectSliderContext } from './slider-context';
   exportAs: 'forSliderRange',
   host: {
     '[attr.data-orientation]': 'ctx.orientation()',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[style.--for-slider-range-start]': 'ctx.rangeStart()',
     '[style.--for-slider-range-end]': 'ctx.rangeEnd()',
     '[style.--for-slider-range-size]': 'ctx.rangeEnd() - ctx.rangeStart()',

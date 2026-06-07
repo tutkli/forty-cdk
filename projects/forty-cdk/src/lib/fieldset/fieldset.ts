@@ -52,14 +52,27 @@ import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset-contex
 export class ForFieldset implements ForFieldsetContext {
   readonly #idGen = inject(IdGenerator);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #parent = inject(FOR_FIELDSET_CONTEXT, { optional: true, skipSelf: true });
   readonly #legends = signal(0);
 
   /**
-   * Whether the group is disabled. Reflects `data-disabled`, emits the native
-   * `disabled` attribute on a `<fieldset>` (or `aria-disabled` elsewhere), and
-   * propagates to descendant `[forField]` controls via context.
+   * Whether the group is disabled, as bound by the consumer via `[disabled]`.
+   * The host reflection and descendant controls read the composed
+   * {@link disabled} signal below, which also folds in an enclosing disabled
+   * `[forFieldset]`.
    */
-  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly disabledInput = input(false, { transform: booleanAttribute, alias: 'disabled' });
+
+  /**
+   * Effective disabled: the group's own `[disabled]` OR'd with an enclosing
+   * disabled `[forFieldset]`. Reflects `data-disabled`, emits the native
+   * `disabled` attribute on a `<fieldset>` (or `aria-disabled` elsewhere), and
+   * propagates to descendant controls via context — so a disabled fieldset
+   * reaches custom-role controls (`forSwitch`, `forCheckbox`, …) a native
+   * `<fieldset disabled>` can't, and nesting composes like native fieldsets
+   * (a disabled outer group cannot be re-enabled by an inner one).
+   */
+  readonly disabled = computed(() => this.disabledInput() || (this.#parent?.disabled() ?? false));
 
   /** Id of the legend element; the group's `aria-labelledby` resolves here. */
   readonly legendId = signal(this.#idGen.next('for-fieldset-legend'));

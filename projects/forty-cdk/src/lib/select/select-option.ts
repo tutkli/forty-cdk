@@ -75,7 +75,7 @@ export class ForSelectOption<T = string> {
   readonly id = signal(this.#idGen.next('for-select-option'));
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
-  readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
   readonly #highlighted = signal(false);
   /** True while this option has DOM focus. Reflected as `data-highlighted`. */

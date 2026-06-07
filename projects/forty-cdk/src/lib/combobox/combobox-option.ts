@@ -95,7 +95,7 @@ export class ForComboboxOption<T = string> {
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   /** True when this option is the current activedescendant. Reflected as `data-highlighted`. */
   readonly highlighted = computed(() => this.#ctx.isActive(this.id()));
-  readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.disabled());
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
   protected readonly ariaSelected = computed(() => {
     if (this.#ctx.multiple()) {

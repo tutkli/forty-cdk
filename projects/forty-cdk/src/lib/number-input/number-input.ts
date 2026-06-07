@@ -84,15 +84,15 @@ function localeSeparators(locale: string | undefined): { group: string; decimal:
     '[attr.aria-valuemin]': 'min() ?? null',
     '[attr.aria-valuemax]': 'max() ?? null',
     '[attr.aria-valuetext]': 'valueText()',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
-    '[attr.disabled]': 'disabled() ? "" : null',
+    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.readonly]': 'readonly() ? "" : null',
     '[attr.data-empty]': 'value() === null ? "" : null',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(input)': 'onInput($event)',
     '(keydown)': 'onKeyDown($event)',
@@ -241,7 +241,7 @@ export class ForNumberInput
    * clamped baseline (`min ?? 0`). Clamps to `[min, max]`.
    */
   increment(by: number = this.step()): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -253,7 +253,7 @@ export class ForNumberInput
    * clamped baseline (`min ?? 0`). Clamps to `[min, max]`.
    */
   decrement(by: number = this.step()): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -262,7 +262,7 @@ export class ForNumberInput
 
   /** Live-parse the typed text into the value (unclamped — clamping waits for commit). */
   protected onInput(event: Event): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const raw = (event.target as HTMLInputElement).value;
@@ -279,7 +279,7 @@ export class ForNumberInput
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     switch (event.key) {

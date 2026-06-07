@@ -113,7 +113,7 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
   host: {
     '[attr.dir]': 'dir()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
   },
   providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker }],
 })
@@ -357,7 +357,7 @@ export class ForDatePicker<D>
         }
         return [`${date}T${hour}:${minute}`];
       }),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
 
     // Eager validation: a date-time picker needs a time-capable adapter. Fail
@@ -380,7 +380,7 @@ export class ForDatePicker<D>
         return;
       }
       const sub = calendar.value.subscribe((date) => {
-        if (this.readonly() || this.disabled()) {
+        if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
         const selected = date as D | null;
@@ -424,7 +424,7 @@ export class ForDatePicker<D>
         return;
       }
       const sub = timeField.value.subscribe((value) => {
-        if (this.readonly() || this.disabled()) {
+        if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
         const next = value as D | null;
@@ -471,7 +471,7 @@ export class ForDatePicker<D>
   }
 
   toggle(): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     this.open.update((v) => !v);
