@@ -1,4 +1,5 @@
-import { DestroyRef, effect, inject, type Signal, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { DestroyRef, effect, inject, PLATFORM_ID, type Signal, signal } from '@angular/core';
 
 export interface ElementBox {
   /** Border-box width in CSS pixels. */
@@ -21,6 +22,8 @@ export interface ElementBox {
  * sees a non-null target, then on every `ResizeObserver` callback.
  *
  * Implementation notes:
+ * - Browser-only: `ResizeObserver` is a DOM API, so off-browser (SSR) the
+ *   helper returns a frozen `signal(null)` and never constructs an observer.
  * - One `ResizeObserver` per call. The browser batches all observers, so
  *   creating several is cheap.
  * - The last emitted box is held in a plain `prev` variable, not read back
@@ -31,6 +34,10 @@ export interface ElementBox {
  * - Cleaned up via `DestroyRef`.
  */
 export function injectElementSize(target: Signal<HTMLElement | null>): Signal<ElementBox | null> {
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return signal<ElementBox | null>(null).asReadonly();
+  }
+
   const out = signal<ElementBox | null>(null);
   let observed: HTMLElement | null = null;
   let observer: ResizeObserver | null = null;

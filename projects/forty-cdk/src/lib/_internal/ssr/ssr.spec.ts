@@ -23,6 +23,12 @@ import { ForDisclosureContent } from '../../disclosure/disclosure-content';
 import { ForDisclosureTrigger } from '../../disclosure/disclosure-trigger';
 import { ForRadio } from '../../radio-group/radio';
 import { ForRadioGroup } from '../../radio-group/radio-group';
+import { ForScrollArea } from '../../scroll-area/scroll-area';
+import { ForScrollAreaContent } from '../../scroll-area/scroll-area-content';
+import { ForScrollAreaCorner } from '../../scroll-area/scroll-area-corner';
+import { ForScrollAreaScrollbar } from '../../scroll-area/scroll-area-scrollbar';
+import { ForScrollAreaThumb } from '../../scroll-area/scroll-area-thumb';
+import { ForScrollAreaViewport } from '../../scroll-area/scroll-area-viewport';
 import { ForSwitch } from '../../switch/switch';
 import { ForTabs } from '../../tabs/tabs';
 import { ForTabsContent } from '../../tabs/tabs-content';
@@ -152,6 +158,32 @@ class DialogFixture {
 })
 class AvatarFixture {}
 
+@Component({
+  imports: [
+    ForScrollArea,
+    ForScrollAreaViewport,
+    ForScrollAreaContent,
+    ForScrollAreaScrollbar,
+    ForScrollAreaThumb,
+    ForScrollAreaCorner,
+  ],
+  template: `
+    <div forScrollArea>
+      <div forScrollAreaViewport>
+        <div forScrollAreaContent>content</div>
+      </div>
+      <div forScrollAreaScrollbar orientation="vertical">
+        <div forScrollAreaThumb></div>
+      </div>
+      <div forScrollAreaScrollbar orientation="horizontal">
+        <div forScrollAreaThumb></div>
+      </div>
+      <div forScrollAreaCorner></div>
+    </div>
+  `,
+})
+class ScrollAreaFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -162,6 +194,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TooltipFixture,
   DialogFixture,
   AvatarFixture,
+  ScrollAreaFixture,
 ];
 
 function configureServer(): void {
