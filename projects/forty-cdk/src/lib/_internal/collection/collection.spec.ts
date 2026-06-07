@@ -1,4 +1,7 @@
-﻿import { Collection } from './collection';
+﻿import { Component, Directive, provideZonelessChangeDetection } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { Collection } from './collection';
 
 interface Handle {
   readonly host: HTMLElement;
@@ -163,5 +166,104 @@ describe('Collection', () => {
     expect(col.indexOfHost(a)).toBe(0);
     expect(col.indexOfHost(c)).toBe(1);
     expect(col.indexOfHost(b)).toBe(-1);
+  });
+
+  it('returns a frozen items() array that callers cannot mutate', () => {
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+
+    const items = col.items();
+    expect(Object.isFrozen(items)).toBe(true);
+    expect(() => (items as Handle[]).sort()).toThrow();
+    expect(() => (items as Handle[]).push(handle('c', c))).toThrow();
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b']);
+  });
+
+  it('observes the parent without subtree, so a nested mutation does not invalidate it', async () => {
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+
+    const before = col.items();
+
+    const grandchild = document.createElement('div');
+    a.appendChild(grandchild);
+    await waitForMutationObserver();
+
+    expect(col.items()).toBe(before);
+  });
+
+  it('invalidates only the owning collection when sibling subtrees mutate', async () => {
+    const outer = new Collection<Handle>();
+    const innerHost = document.createElement('div');
+    const x = document.createElement('div');
+    const y = document.createElement('div');
+    innerHost.append(x, y);
+    host.appendChild(innerHost);
+
+    const inner = new Collection<Handle>();
+    outer.register(handle('a', a));
+    outer.register(handle('b', b));
+    inner.register(handle('x', x));
+    inner.register(handle('y', y));
+
+    const outerBefore = outer.items();
+    const innerBefore = inner.items();
+
+    innerHost.append(y, x);
+    await waitForMutationObserver();
+
+    expect(inner.items().map((h) => h.id)).toEqual(['y', 'x']);
+    expect(inner.items()).not.toBe(innerBefore);
+    expect(outer.items()).toBe(outerBefore);
+  });
+
+  it('disconnects the observer and clears membership on destroy', async () => {
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+
+    col.destroy();
+    expect(col.items()).toEqual([]);
+
+    host.append(c, a, b);
+    await waitForMutationObserver();
+    expect(col.items()).toEqual([]);
+
+    col.register(handle('a', a));
+    expect(col.items()).toEqual([]);
+  });
+
+  it('disconnects the observer when the owning injection context is destroyed', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+
+    let col!: Collection<Handle>;
+
+    @Directive({ selector: '[owner]' })
+    class OwnerDir {
+      readonly collection = new Collection<Handle>();
+      constructor() {
+        col = this.collection;
+      }
+    }
+
+    @Component({ selector: 'host-cmp', imports: [OwnerDir], template: '<div owner></div>' })
+    class HostCmp {}
+
+    const fixture = TestBed.createComponent(HostCmp);
+    fixture.detectChanges();
+
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b']);
+
+    fixture.destroy();
+
+    expect(col.items()).toEqual([]);
+    host.append(c, a, b);
+    await waitForMutationObserver();
+    expect(col.items()).toEqual([]);
   });
 });
