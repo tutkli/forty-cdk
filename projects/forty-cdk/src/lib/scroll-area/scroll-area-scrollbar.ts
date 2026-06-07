@@ -31,9 +31,33 @@ export class ForScrollAreaScrollbar {
   readonly ctx = injectScrollAreaContext('ForScrollAreaScrollbar');
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  /** Reactive size of the track (so the thumb can recompute on layout changes). */
+  /**
+   * Reactive size of the track itself, measured independently of the viewport.
+   * The thumb's size and travel are computed against the *track* length, which
+   * the consumer is free to lay out shorter than the viewport (e.g. insets, a
+   * reserved corner, padding), so the viewport's reported client dimensions are
+   * not a substitute — the track must be observed directly.
+   *
+   * The target is a constant (`this.host` never changes), so `injectElementSize`'s
+   * target-swap branch is dead weight here; it is reused only for its
+   * `ResizeObserver` plumbing and change-deduped emission.
+   */
   readonly #hostRef = signal<HTMLElement | null>(this.host);
   readonly size = injectElementSize(this.#hostRef);
+
+  readonly #dragging = signal(false);
+  /** True while the thumb is being dragged. Pins the track visible / painted. */
+  readonly dragging = this.#dragging.asReadonly();
+
+  /**
+   * Marks the track as actively dragged so an in-flight drag is never aborted
+   * by the scrollbar self-hiding (`type="hover"` / `"scroll"` fading the track,
+   * or a consumer `display:none` on `data-state="hidden"`). Called by the thumb
+   * on pointer-down / drag-end.
+   */
+  setDragging(dragging: boolean): void {
+    this.#dragging.set(dragging);
+  }
 
   readonly hasOverflow = computed<boolean>(() => {
     if (this.orientation() === 'horizontal') {
@@ -45,19 +69,25 @@ export class ForScrollAreaScrollbar {
   /**
    * Whether the track is rendered at all. `'always'` keeps it painted
    * unconditionally (a stable, always-present track — Radix parity); every
-   * other `type` paints only the axis that actually overflows. Gates both the
-   * `hidden` attribute and the inline `display: none` self-removal.
+   * other `type` paints only the axis that actually overflows. An in-flight
+   * thumb drag also pins it painted so the gesture is never aborted by the
+   * track self-removing. Gates both the `hidden` attribute and the inline
+   * `display: none` self-removal.
    */
-  readonly painted = computed<boolean>(() => this.ctx.type() === 'always' || this.hasOverflow());
+  readonly painted = computed<boolean>(
+    () => this.dragging() || this.ctx.type() === 'always' || this.hasOverflow(),
+  );
 
   /**
-   * `'visible' | 'hidden'`. `'always'` resolves to `'visible'` regardless of
-   * overflow — the track is permanently present. `'auto'` shows whenever the
-   * axis overflows; `'hover'` / `'scroll'` additionally gate on the interaction
-   * signals. A non-overflowing axis is `'hidden'` for every mode except
-   * `'always'`.
+   * `'visible' | 'hidden'`. An in-flight thumb drag forces `'visible'` so a
+   * consumer fade on `data-state="hidden"` can't hide the track mid-gesture.
+   * Otherwise: `'always'` resolves to `'visible'` regardless of overflow — the
+   * track is permanently present. `'auto'` shows whenever the axis overflows;
+   * `'hover'` / `'scroll'` additionally gate on the interaction signals. A
+   * non-overflowing axis is `'hidden'` for every mode except `'always'`.
    */
   readonly state = computed<'visible' | 'hidden'>(() => {
+    if (this.dragging()) return 'visible';
     switch (this.ctx.type()) {
       case 'always':
         return 'visible';

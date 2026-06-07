@@ -37,10 +37,19 @@ import {
  *    always). `always` keeps the track painted regardless of overflow; `auto`
  *    self-hides when content fits — the divergence block asserts both against
  *    real layout.
+ *  - `?dir=ltr|rtl` — writing direction bound to `[dir]` on the root (default
+ *    unset → ambient `ltr`). `rtl` pins the horizontal thumb to the right edge
+ *    and inverts the drag, exercised by the RTL block.
+ *  - `?hideOnLeave=1` — collapse a `data-state="hidden"` scrollbar to
+ *    `display:none` (a consumer fade rule), used by the drag-survives-self-hide
+ *    spec to prove an in-flight drag pins the track painted.
  */
 @Component({
   selector: 'app-scroll-area-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[attr.data-hide-on-leave]': 'hideOnLeave ? "" : null',
+  },
   imports: [
     ForScrollArea,
     ForScrollAreaViewport,
@@ -80,6 +89,13 @@ import {
            display:none must still win while the scrollbar is hidden — the
            type="auto" self-hide spec asserts toBeHidden() against this. */
         display: flex;
+      }
+      /* Opt-in consumer fade rule: when the host carries [data-hide-on-leave],
+         a scrollbar in the hidden state collapses to display:none. The
+         drag-survives-self-hide spec uses this to prove an in-flight drag pins
+         the track visible (so it is never collapsed mid-gesture). */
+      :host([data-hide-on-leave]) [forScrollAreaScrollbar][data-state='hidden'] {
+        display: none;
       }
       [forScrollAreaScrollbar][orientation='vertical'] {
         top: 0;
@@ -129,6 +145,7 @@ import {
       data-testid="root"
       forScrollArea
       [type]="type"
+      [dir]="dir"
       [style.width.px]="viewportWidth"
       [style.height.px]="viewportHeight"
     >
@@ -162,6 +179,16 @@ export class ScrollAreaFixture {
   protected readonly contentWidth = this.#numParam('contentWidth', 1000);
   protected readonly contentHeight = this.#numParam('contentHeight', 800);
   protected readonly type = this.#typeParam();
+  protected readonly dir = this.#dirParam();
+
+  /**
+   * Opt-in consumer fade: when `?hideOnLeave=1` the host collapses any
+   * `data-state="hidden"` scrollbar to `display:none`, mirroring a consumer
+   * that hides the track on `type="hover"` leave. The drag-survives-self-hide
+   * spec uses it to prove an in-flight drag keeps the track painted.
+   */
+  protected readonly hideOnLeave =
+    this.#route.snapshot.queryParamMap.get('hideOnLeave') === '1';
 
   /**
    * Expected ratios surfaced as `<output>` so a spec can read them as plain
@@ -181,5 +208,10 @@ export class ScrollAreaFixture {
   #typeParam(): ForScrollAreaType {
     const raw = this.#route.snapshot.queryParamMap.get('type');
     return raw === 'hover' || raw === 'scroll' || raw === 'auto' ? raw : 'always';
+  }
+
+  #dirParam(): 'ltr' | 'rtl' | null {
+    const raw = this.#route.snapshot.queryParamMap.get('dir');
+    return raw === 'rtl' || raw === 'ltr' ? raw : null;
   }
 }
