@@ -88,7 +88,7 @@ describe('ForCheckbox', () => {
       setName: (name) => r.fixture.componentInstance.fieldName.set(name),
     };
     return result;
-  });
+  }, { customRoleStaysFocusable: true });
 
   describe('click', () => {
     it('toggles aria-checked between true/false', () => {

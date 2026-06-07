@@ -29,7 +29,6 @@ import { injectRadioGroupContext } from './radio-group-context';
     '[id]': 'id()',
     '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',

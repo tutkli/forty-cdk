@@ -33,7 +33,6 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     type: 'button',
     '[attr.aria-pressed]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
-    '[attr.disabled]': 'disabled() ? "" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',

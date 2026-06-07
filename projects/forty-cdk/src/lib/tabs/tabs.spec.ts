@@ -562,7 +562,9 @@ describe('ForTabs', () => {
       flush();
 
       const b = triggerOf(el, 'b');
-      expect(b.hasAttribute('disabled')).toBe(true);
+      expect(b.hasAttribute('disabled')).toBe(false);
+      expect(b.getAttribute('aria-disabled')).toBe('true');
+      expect(b.getAttribute('data-disabled')).toBe('');
 
       b.click();
       flush();
@@ -574,7 +576,8 @@ describe('ForTabs', () => {
       fixture.componentInstance.rootDisabled.set(true);
       flush();
 
-      expect(triggerOf(el, 'a').hasAttribute('disabled')).toBe(true);
+      expect(triggerOf(el, 'a').hasAttribute('disabled')).toBe(false);
+      expect(triggerOf(el, 'a').getAttribute('aria-disabled')).toBe('true');
       triggerOf(el, 'a').click();
       flush();
       expect(fixture.componentInstance.active()).toBeNull();

@@ -206,7 +206,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Home / End** jump to first / last enabled option.
 - **Space / Enter** activate the focused option (toggles in multi, selects in single) via the underlying button.
 - **Typeahead**: typing characters focuses the first option whose visible text starts with the typed prefix (case-insensitive, debounced).
-- Disabled options are skipped on arrow nav.
+- Disabled options are skipped on arrow nav. They keep `aria-disabled="true"` and `data-disabled=""` (no native `disabled` attribute, per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
 
 ### Multi mode (APG-recommended range selection)
 
