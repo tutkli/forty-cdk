@@ -161,6 +161,75 @@ describe('attachSwipeDismiss', () => {
     cleanup();
   });
 
+  it('pointercancel releases the captured pointer (guarded by hasPointerCapture)', () => {
+    const { el, rec, cleanup } = setup({ directions: ['right'], threshold: 50 });
+    const captured: number[] = [];
+    const released: number[] = [];
+    el.setPointerCapture = (id: number): void => {
+      captured.push(id);
+    };
+    el.hasPointerCapture = (id: number): boolean => captured.includes(id) && !released.includes(id);
+    el.releasePointerCapture = (id: number): void => {
+      released.push(id);
+    };
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 80, clientY: 0, pointerId: 1 });
+    expect(captured).toEqual([1]);
+
+    pointer(el, 'pointercancel', { clientX: 80, clientY: 0, pointerId: 1 });
+    expect(released).toEqual([1]);
+    expect(rec.cancels).toHaveLength(1);
+    cleanup();
+  });
+
+  it('a mid-gesture direction change to empty aborts the armed swipe', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const rec: Recorder = { starts: [], moves: [], ends: [], cancels: [] };
+    let directions: readonly SwipeDirection[] = ['right'];
+    const released: number[] = [];
+    el.setPointerCapture = (): void => {};
+    el.hasPointerCapture = (id: number): boolean => !released.includes(id);
+    el.releasePointerCapture = (id: number): void => {
+      released.push(id);
+    };
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => directions,
+      getThreshold: () => 50,
+      onSwipeStart: (d) => rec.starts.push(d),
+      onSwipeMove: (d) => rec.moves.push(d),
+      onSwipeEnd: (d) => rec.ends.push(d),
+      onSwipeCancel: (d) => rec.cancels.push(d),
+    });
+
+    // Arm the swipe while 'right' is allowed.
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 20, clientY: 0, pointerId: 1 });
+    expect(rec.starts).toHaveLength(1);
+    expect(rec.moves).toHaveLength(1);
+
+    // Toggle the allowed set to empty mid-gesture.
+    directions = [];
+    pointer(el, 'pointermove', { clientX: 40, clientY: 0, pointerId: 1 });
+
+    // The armed swipe aborts: cancel fires, capture is released, and no
+    // further move is emitted.
+    expect(rec.cancels).toHaveLength(1);
+    expect(rec.cancels[0]!.direction).toBe('right');
+    expect(rec.moves).toHaveLength(1);
+    expect(released).toEqual([1]);
+
+    // A subsequent move on the now-dead gesture is silent (state was reset).
+    pointer(el, 'pointermove', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(rec.moves).toHaveLength(1);
+    expect(rec.cancels).toHaveLength(1);
+
+    dispose();
+    el.remove();
+  });
+
   it('returning empty directions disables swipe', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
