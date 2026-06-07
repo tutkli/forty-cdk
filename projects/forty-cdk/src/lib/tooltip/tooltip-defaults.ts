@@ -1,6 +1,7 @@
-import { DestroyRef, inject, Injectable, type Provider, signal } from '@angular/core';
+import { inject, Injectable, type Provider } from '@angular/core';
 
 import { createDefaults } from '../_internal/defaults/defaults';
+import { SkipDelayCoordinator } from '../_internal/hover-intent/skip-delay-coordinator';
 
 /**
  * Defaults that descendant tooltips inherit from their injector scope.
@@ -36,54 +37,16 @@ const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(
 export const FOR_TOOLTIP_DEFAULTS = token;
 
 /**
- * Per-injector-scope state owned by forty-cdk tooltip. Holds the
- * skip-delay flag and the resolved `ForTooltipDefaults`. Each call to
- * `provideForTooltipDefaults` re-provides this class so the corresponding
- * subtree gets its own coordinator (and therefore its own skip-delay
- * window). Tooltips inject it on construction.
+ * Per-injector-scope state owned by forty-cdk tooltip. Thin subclass of the
+ * shared `SkipDelayCoordinator` bound to this primitive's own DI token, so
+ * each call to `provideForTooltipDefaults` re-provides it and the
+ * corresponding subtree gets its own skip-delay window, independent from any
+ * hover-card scope. Tooltips inject it on construction.
  */
 @Injectable({ providedIn: 'root' })
-export class TooltipCoordinator {
-  readonly #defaults = inject(FOR_TOOLTIP_DEFAULTS);
-  readonly #skipDelay = signal(false);
-  #timer: ReturnType<typeof setTimeout> | null = null;
-
-  /** Resolved default open delay (ms) for tooltips in this scope. */
-  readonly openDelay = this.#defaults.openDelay;
-
-  /** Resolved default close delay (ms) for tooltips in this scope. */
-  readonly closeDelay = this.#defaults.closeDelay;
-
-  /** Resolved skip-delay window (ms) for tooltips in this scope. */
-  readonly skipDelayDuration = this.#defaults.skipDelayDuration;
-
-  /** True while a peer in this scope just closed and the next open is instant. */
-  readonly skipDelay = this.#skipDelay.asReadonly();
-
+export class TooltipCoordinator extends SkipDelayCoordinator {
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.cancelSkipDelay());
-  }
-
-  /** Opens the skip-delay window. Called by tooltips when they finish closing. */
-  startSkipDelay(): void {
-    this.cancelSkipDelay();
-    this.#skipDelay.set(true);
-    this.#timer = setTimeout(
-      () => {
-        this.#skipDelay.set(false);
-        this.#timer = null;
-      },
-      Math.max(0, this.skipDelayDuration),
-    );
-  }
-
-  /** Cancels any pending skip-delay window. */
-  cancelSkipDelay(): void {
-    if (this.#timer !== null) {
-      clearTimeout(this.#timer);
-      this.#timer = null;
-    }
-    this.#skipDelay.set(false);
+    super(inject(FOR_TOOLTIP_DEFAULTS));
   }
 }
 

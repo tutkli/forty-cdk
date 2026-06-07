@@ -26,6 +26,9 @@ export class ForTooltipTrigger {
   protected readonly ctx = injectTooltipContext('ForTooltipTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  #hovered = false;
+  #focused = false;
+
   constructor() {
     registerHandle(
       this.#host.nativeElement,
@@ -35,19 +38,30 @@ export class ForTooltipTrigger {
   }
 
   protected onPointerEnter(): void {
+    this.#hovered = true;
     this.ctx.scheduleOpen('hover');
   }
 
   protected onPointerLeave(): void {
-    this.ctx.scheduleClose('hover');
+    this.#hovered = false;
+    this.#scheduleCloseIfInactive('hover');
   }
 
   protected onFocus(): void {
+    this.#focused = true;
     this.ctx.scheduleOpen('focus');
   }
 
   protected onBlur(): void {
-    this.ctx.scheduleClose('focus');
+    this.#focused = false;
+    this.#scheduleCloseIfInactive('focus');
+  }
+
+  #scheduleCloseIfInactive(reason: 'hover' | 'focus'): void {
+    if (this.#hovered || this.#focused) {
+      return;
+    }
+    this.ctx.scheduleClose(reason);
   }
 
   protected onEscape(event: Event): void {

@@ -232,6 +232,52 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('hover / focus interplay', () => {
+    it('does not close on pointerleave while the trigger is still focused', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Pointer leaves but focus stays — APG keeps the tooltip open.
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Removing focus too (now neither hovered nor focused) closes it.
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('does not close on blur while the pointer is still over the trigger', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+  });
+
   describe('escape key', () => {
     it('closes immediately, bypassing closeDelay', async () => {
       const r = renderHost(TooltipHost);
@@ -417,6 +463,34 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new PointerEvent('pointerleave'));
       await flush(r.fixture);
 
+      expect(r.instance.emitted).toEqual([true, false]);
+    });
+
+    it('emits both true AND false in the uncontrolled (observe-only) case', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [openDelay]="0" [closeDelay]="0" (openChange)="emitted.push($event)">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly emitted: boolean[] = [];
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+
+      // Without any [(open)] binding the closing transition must still emit —
+      // the bug was that the hand-rolled bridge dropped the false emit here.
       expect(r.instance.emitted).toEqual([true, false]);
     });
 

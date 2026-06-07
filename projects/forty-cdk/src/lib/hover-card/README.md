@@ -19,7 +19,7 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 | API           | Type                                                       | Description                                                                                                                                           |
 | ------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`        | `WritableSignal<boolean>` (two-way bindable as `[(open)]`) | `(openChange)` fires only on internal transitions (delay timers, escape, blur, and the force-close that runs when `disabled` flips to true).          |
+| `open`        | `model<boolean>` (two-way bindable as `[(open)]`)          | `(openChange)` fires only on internal transitions (delay timers, escape, blur, and the force-close that runs when `disabled` flips to true).          |
 | `side`        | `input<FloatingSide>`                                      | Anchor side. Default `'top'`.                                                                                                                         |
 | `align`       | `input<FloatingAlign>`                                     | Alignment along `side`. Default `'center'`.                                                                                                           |
 | `sideOffset`  | `input<number>`                                            | Gap (px) between trigger and card along the main axis. Default `8`.                                                                                   |
