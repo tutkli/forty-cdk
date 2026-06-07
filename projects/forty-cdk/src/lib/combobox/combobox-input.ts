@@ -196,7 +196,7 @@ export class ForComboboxInput {
         if (!this.ctx.open()) {
           // Open with the natural extreme as the auto-highlight bias —
           // navigate('next') won't fire here because items aren't registered
-          // yet; the root's auto-highlight effect seeds the activedescendant
+          // yet; the root's `activeId` linkedSignal seeds the activedescendant
           // once the options register.
           this.ctx.openMenu('first');
         } else {
