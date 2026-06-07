@@ -33,6 +33,15 @@ import {
  *
  * For programmatic use (open arbitrary components imperatively), see
  * `ForDialogManager.open()`.
+ *
+ * `data-state` is a static `"open"`: because mount is the consumer's
+ * responsibility (the host only exists inside `@if (open())`), the element is
+ * present iff the dialog is open, so the attribute can never be `"closed"`.
+ * This intentionally diverges from Radix, which keeps the node mounted and
+ * flips `data-state="closed"` to drive an exit transition. Here, exit styling
+ * is the consumer's `animate.leave` (see the usage example above), not a
+ * `data-state="closed"` selector — so a `[data-state="closed"]` rule would
+ * never match and is not a bug.
  */
 @Directive({
   selector: '[forDialog]',

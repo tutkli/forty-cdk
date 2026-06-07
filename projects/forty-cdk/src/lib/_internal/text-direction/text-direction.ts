@@ -102,6 +102,16 @@ class AmbientDirection {
  * recomputes the returned signal — regardless of how many primitives are
  * mounted, there is exactly one observer.
  *
+ * Limitation: the shared observer watches `dir` attribute mutations only
+ * (`attributeFilter: ['dir']`), not `childList`. The ambient therefore does
+ * **not** recompute when the host is moved into a different-`dir` subtree
+ * without any `dir` attribute itself changing (e.g. a parent re-parents the
+ * element under an existing `[dir="rtl"]` ancestor). Detecting that would need
+ * a `childList`/`subtree` observer over the whole document — far costlier than
+ * this case warrants. Reparenting between subtrees with different ambient
+ * directions is rare; consumers who hit it should set an explicit `[dir]` on
+ * the moved element or trigger any `dir` mutation to force a recompute.
+ *
  * Must be called from an injection context (it injects `ElementRef`,
  * `DOCUMENT`, `PLATFORM_ID`, and `AmbientDirection`).
  *
