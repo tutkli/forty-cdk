@@ -1,12 +1,6 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  DOCUMENT,
-  ElementRef,
-  inject,
-  type Signal,
-} from '@angular/core';
+import { DestroyRef, DOCUMENT, ElementRef, inject, type Signal } from '@angular/core';
 
+import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissableLayer } from '../dismissable-layer/dismissable-layer';
 import { findFirstFocusable, injectFocusTrap } from '../focus-trap/focus-trap';
@@ -239,7 +233,14 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   // 3. Side-effect setup runs after Angular has applied input bindings.
   //    Reading `config.modal()` etc. in the constructor would always see the
   //    default value because the input writes haven't flowed through yet.
-  afterNextRender(() => {
+  //    `afterNextRenderCancellable` makes the destroy-before-render path safe.
+  //    On the true-async path (queued render after destroy) the callback is
+  //    cancelled, so inert siblings / focus trap / scroll lock / dismissable
+  //    layer are never activated (`activatedAsModal` stays false). On the
+  //    synchronous-teardown path the callback flushes just before the destroy
+  //    hook, so it sets `activatedAsModal = true` and the destroy hook below
+  //    tears the side-effect stack back down. Either way nothing leaks.
+  afterNextRenderCancellable(() => {
     const isModal = config.modal();
     activatedAsModal = isModal;
 

@@ -1,5 +1,6 @@
-import { afterNextRender, DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
+import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 
+import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import {
   injectDismissableLayer,
   type DismissableLayerActivateOptions,
@@ -253,7 +254,16 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   // 3. afterNextRender — activate the layer and run initial focus once
   //    input bindings have settled. Both pieces depend on having a
   //    fully-rendered host element (exempt-element queries, focus targets).
-  afterNextRender(() => {
+  //    `afterNextRenderCancellable` makes the destroy-before-render path safe.
+  //    On the true-async path (queued render after destroy) the callback is
+  //    cancelled, so the dismissable layer is never pushed onto the stack. On
+  //    the synchronous-teardown path the callback flushes just before the
+  //    layer's own `DestroyRef.onDestroy` (registered above via
+  //    `injectDismissableLayer`, so it runs first among the destroy hooks),
+  //    which pops the just-pushed layer. Either way the stack is left without
+  //    a dead topmost entry that would swallow every later Escape /
+  //    pointer-down-outside.
+  afterNextRenderCancellable(() => {
     if (layer && dismissCfg) {
       // Pointer-down-outside and focus-outside both fire on the same physical
       // interaction as the composite `interactOutside`, and the dismissable

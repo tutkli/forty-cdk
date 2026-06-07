@@ -1,7 +1,7 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../../test-utils';
+import { flush, nextMacrotask, pressKey, renderHost } from '../../../test-utils';
 import { injectModalShell, type ModalShellConfig, type ModalShellHandle } from './modal-shell';
 
 /**
@@ -589,6 +589,49 @@ describe('injectModalShell', () => {
       ctx.close();
       expect(order).toEqual(['autoFocusOnClose']);
       ctx.destroy();
+    });
+  });
+
+  describe('destroy before first render', () => {
+    // Mirrors portal.spec.ts' destroy-before-render test. The shell activates
+    // inert siblings + focus trap (a document keydown listener via the
+    // dismissable layer) + scroll lock inside `afterNextRenderCancellable`. A
+    // destroy between construction and the first render must cancel that
+    // callback — otherwise the page is left permanently with `<body>` children
+    // inert + aria-hidden, scroll locked, and a dead topmost dismissable layer
+    // swallowing every later Escape.
+    it('does not leak body inert, scroll lock, or a document keydown listener', async () => {
+      const sibling = document.createElement('div');
+      sibling.id = 'sibling';
+      document.body.appendChild(sibling);
+
+      const escapeCalls: string[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+        dismiss: makeDismissConfig({
+          emitEscapeKeyDown: () => escapeCalls.push('escape'),
+        }),
+      }));
+
+      // Destroy synchronously — BEFORE the macrotask hop that lets the queued
+      // render callback run. This is the path SPA navigations and synchronous
+      // test teardowns hit.
+      ctx.destroy();
+      await nextMacrotask();
+
+      // The queued callback was cancelled: no global side effect was activated.
+      expect(sibling.hasAttribute('inert')).toBe(false);
+      expect(sibling.hasAttribute('aria-hidden')).toBe(false);
+      expect(document.body.style.overflow).toBe('');
+
+      // No orphaned document keydown listener / dead dismissable layer: an
+      // Escape after teardown reaches no handler.
+      pressKey(document, 'Escape');
+      expect(escapeCalls).toEqual([]);
+
+      sibling.remove();
     });
   });
 
