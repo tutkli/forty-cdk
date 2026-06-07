@@ -103,6 +103,33 @@ test.describe('Tabs (manual activation)', () => {
   });
 });
 
+test.describe('Tabs (roving self-heal)', () => {
+  test('removing the focused trigger keeps the tablist keyboard-reachable', async ({ page }) => {
+    await gotoFixture(page, 'tabs', { disabled: 'none' });
+    // Trigger a is selected and owns the tab stop; focus it then remove it.
+    await el(page, 'trigger-a').focus();
+    await el(page, 'remove-active').click();
+
+    expect(await page.locator('[role="tab"][tabindex="0"]').count()).toBe(1);
+    // Re-entry from the control lands on the first surviving enabled trigger.
+    await el(page, 'remove-active').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-b'));
+  });
+
+  test('disabling the focused trigger keeps the tablist keyboard-reachable', async ({ page }) => {
+    await gotoFixture(page, 'tabs', { disabled: 'none' });
+    await el(page, 'trigger-a').focus();
+    await el(page, 'disable-active').click();
+
+    expect(await page.locator('[role="tab"][tabindex="0"]').count()).toBe(1);
+    await expect(el(page, 'trigger-a')).toHaveAttribute('tabindex', '-1');
+    await el(page, 'disable-active').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-b'));
+  });
+});
+
 test.describe('Tabs (Tab into panel)', () => {
   test('Tab out of the tablist lands directly in the active panel with focusable content', async ({
     page,

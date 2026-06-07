@@ -339,6 +339,52 @@ describe('ForTabs', () => {
     });
   });
 
+  describe('roving self-heal (active item removed / disabled)', () => {
+    const tabindexOf = (host: HTMLElement, id: string) =>
+      triggerOf(host, id).getAttribute('tabindex');
+
+    it('removing the focused trigger re-engages the first-enabled fallback', async () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.active.set('b');
+      flush();
+
+      triggerOf(el, 'b').focus();
+      flush();
+      expect(tabindexOf(el, 'b')).toBe('0');
+
+      fixture.componentInstance.tabs.set([
+        { value: 'a', label: 'A', disabled: false },
+        { value: 'c', label: 'C', disabled: false },
+      ]);
+      await flush();
+
+      const tabbable = triggers(el).filter((t) => t.getAttribute('tabindex') === '0');
+      expect(tabbable.length).toBe(1);
+      expect(tabindexOf(el, 'a')).toBe('0');
+    });
+
+    it('disabling the focused trigger re-engages the first-enabled fallback', async () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.active.set('a');
+      flush();
+
+      triggerOf(el, 'a').focus();
+      flush();
+      expect(tabindexOf(el, 'a')).toBe('0');
+
+      fixture.componentInstance.tabs.set([
+        { value: 'a', label: 'A', disabled: true },
+        { value: 'b', label: 'B', disabled: false },
+        { value: 'c', label: 'C', disabled: false },
+      ]);
+      await flush();
+
+      const tabbable = triggers(el).filter((t) => t.getAttribute('tabindex') === '0');
+      expect(tabbable.length).toBe(1);
+      expect(tabindexOf(el, 'b')).toBe('0');
+    });
+  });
+
   describe('click activation', () => {
     it('selects the clicked trigger and reveals its panel', () => {
       const { el, fixture, flush } = renderHost(TabsHost);

@@ -44,4 +44,34 @@ test.describe('Listbox', () => {
     await page.keyboard.press('Tab');
     await expect(el(page, 'after')).toBeFocused();
   });
+
+  test('removing the focused option keeps the listbox keyboard-reachable (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox');
+    // Apple owns the tab stop; focus it, then remove it at runtime.
+    await el(page, 'opt-apple').focus();
+    await el(page, 'remove-active').click();
+
+    // Exactly one option remains tabbable, and Tab from the control re-enters
+    // the listbox at the next enabled option (banana is disabled → cherry).
+    expect(await page.locator('[role="option"][tabindex="0"]').count()).toBe(1);
+    await el(page, 'remove-active').focus();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'opt-cherry')).toBeFocused();
+  });
+
+  test('disabling the focused option keeps the listbox keyboard-reachable (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+    await el(page, 'disable-active').click();
+
+    expect(await page.locator('[role="option"][tabindex="0"]').count()).toBe(1);
+    await expect(el(page, 'opt-apple')).toHaveAttribute('tabindex', '-1');
+    await el(page, 'disable-active').focus();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'opt-cherry')).toBeFocused();
+  });
 });

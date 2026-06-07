@@ -129,6 +129,39 @@ test.describe('Toolbar', () => {
     await expectFocused(el(page, 'toggle'));
   });
 
+  test('removing the focused item keeps the toolbar keyboard-reachable (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toolbar');
+    // btn-1 owns the tab stop; focus it, then remove it at runtime.
+    await el(page, 'btn-1').focus();
+    await el(page, 'remove-active').click();
+
+    expect(
+      await page.locator('[data-testid="toolbar"] [tabindex="0"]').count(),
+    ).toBe(1);
+    // Re-entry from the control lands on the next enabled item (toggle).
+    await el(page, 'remove-active').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'toggle'));
+  });
+
+  test('disabling the focused item keeps the toolbar keyboard-reachable (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toolbar');
+    await el(page, 'btn-1').focus();
+    await el(page, 'disable-active').click();
+
+    expect(
+      await page.locator('[data-testid="toolbar"] [tabindex="0"]').count(),
+    ).toBe(1);
+    await expect(el(page, 'btn-1')).toHaveAttribute('tabindex', '-1');
+    await el(page, 'disable-active').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'toggle'));
+  });
+
   test('re-entry restores a nested toggle-group item that last held focus', async ({ page }) => {
     await gotoFixture(page, 'toolbar');
 

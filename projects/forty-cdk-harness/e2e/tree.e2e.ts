@@ -141,6 +141,49 @@ test.describe('Tree', () => {
     await expectFocused(el(page, 'item-notes'));
   });
 
+  test('collapsing a parent that holds the active node moves the tab stop to the parent (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree', { expandAll: '1' });
+    // Focus a deep descendant, then collapse its ancestor `documents`.
+    await el(page, 'item-alpha').focus();
+    await expectFocused(el(page, 'item-alpha'));
+
+    await page.keyboard.press('ArrowLeft'); // alpha → projects (parent)
+    await expectFocused(el(page, 'item-projects'));
+    await page.keyboard.press('ArrowLeft'); // projects → documents (parent)
+    await expectFocused(el(page, 'item-documents'));
+    await page.keyboard.press('ArrowLeft'); // collapse documents
+    await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
+
+    // The tab stop is the still-visible collapsed parent, and there is
+    // exactly one tabbable treeitem — the tree stays keyboard-reachable.
+    expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
+    await expect(el(page, 'item-documents')).toHaveAttribute('tabindex', '0');
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'item-documents'));
+  });
+
+  test('disabling the active node keeps the tree keyboard-reachable (self-heal)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree');
+    // Focus `notes` so it owns the tab stop, then disable it at runtime.
+    await el(page, 'item-notes').focus();
+    await expect(el(page, 'item-notes')).toHaveAttribute('tabindex', '0');
+    await el(page, 'disable-notes').click();
+
+    await expect(el(page, 'item-notes')).toHaveAttribute('aria-disabled', 'true');
+    // The tab stop is handed back to a visible enabled node; exactly one
+    // treeitem remains tabbable and Tab re-enters the tree.
+    expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'item-notes')).not.toBeFocused();
+  });
+
   test('selectionFollowsFocus selects the focused node during navigation', async ({ page }) => {
     await gotoFixture(page, 'tree', { selectionFollowsFocus: '1' });
     await el(page, 'item-documents').focus();

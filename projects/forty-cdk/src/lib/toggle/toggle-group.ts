@@ -18,6 +18,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { FOR_TOGGLE_DEFAULTS } from './toggle-defaults';
@@ -149,6 +150,7 @@ export class ForToggleGroup
       values: this.value,
       disabled: this.disabled,
     });
+    reconcileRovingActive(this.roving, this.#items.items);
   }
 
   isSelected(v: string): boolean {
@@ -206,6 +208,7 @@ export class ForToggleGroup
 
   unregisterItem(handle: ForToggleGroupItemHandle): void {
     this.#items.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 
   protected onFocusOut(event: FocusEvent): void {
