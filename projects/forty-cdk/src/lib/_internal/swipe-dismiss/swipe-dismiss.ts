@@ -22,11 +22,16 @@
  * - Once armed, `onSwipeStart` fires (with the constrained delta) and
  *   `onSwipeMove` fires for every subsequent move including the arming
  *   one. Pointer capture is requested so events keep flowing if the
- *   pointer leaves the element.
+ *   pointer leaves the element. `getDirections()` is re-read on every
+ *   armed move: if the active direction is toggled out of the allowed
+ *   set mid-gesture, the swipe is aborted (`onSwipeCancel` fires and the
+ *   captured pointer is released).
  * - On `pointerup`, if the projection along the active direction
  *   reaches `getThreshold()`, `onSwipeEnd` fires; otherwise
  *   `onSwipeCancel` fires.
  * - On `pointercancel`, `onSwipeCancel` always fires.
+ * - `pointerup`, `pointercancel`, mid-gesture abort, and cleanup all
+ *   release the requested pointer capture symmetrically.
  *
  * Movement perpendicular to the active direction is clamped to `0`,
  * and movement opposite to the direction is clamped to `0` as well —
@@ -134,6 +139,16 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
     pointerId = null;
   };
 
+  const releaseCapture = (id: number): void => {
+    try {
+      if (el.hasPointerCapture?.(id)) {
+        el.releasePointerCapture?.(id);
+      }
+    } catch {
+      // Some environments (jsdom) reject release on detached nodes.
+    }
+  };
+
   const onPointerDown = (event: PointerEvent): void => {
     // Mouse: only the primary button arms a potential swipe.
     if (event.pointerType === 'mouse' && event.button !== 0) {
@@ -188,6 +203,20 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
     if (!direction) {
       return;
     }
+    // The allowed set can toggle mid-gesture (the "off switch"). If the active
+    // direction is no longer allowed, abort the armed swipe: release capture
+    // and fire onSwipeCancel so the consumer can settle back.
+    if (!opts.getDirections().includes(direction)) {
+      const detail: SwipeEventDetail = {
+        direction,
+        delta: constrainedDelta(dx, dy, direction),
+        originalEvent: event,
+      };
+      releaseCapture(event.pointerId);
+      reset();
+      opts.onSwipeCancel?.(detail);
+      return;
+    }
     opts.onSwipeMove?.({
       direction,
       delta: constrainedDelta(dx, dy, direction),
@@ -213,13 +242,7 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
       } else {
         opts.onSwipeCancel?.(detail);
       }
-      try {
-        if (el.hasPointerCapture?.(event.pointerId)) {
-          el.releasePointerCapture?.(event.pointerId);
-        }
-      } catch {
-        // ignore
-      }
+      releaseCapture(event.pointerId);
     }
     reset();
   };
@@ -236,6 +259,7 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
         delta: constrainedDelta(dx, dy, direction),
         originalEvent: event,
       });
+      releaseCapture(event.pointerId);
     }
     reset();
   };
@@ -251,13 +275,7 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
     el.removeEventListener('pointerup', onPointerUp);
     el.removeEventListener('pointercancel', onPointerCancel);
     if (pointerId !== null) {
-      try {
-        if (el.hasPointerCapture?.(pointerId)) {
-          el.releasePointerCapture?.(pointerId);
-        }
-      } catch {
-        // ignore
-      }
+      releaseCapture(pointerId);
     }
   };
 }
