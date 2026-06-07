@@ -12,6 +12,9 @@
     "@angular/forms": {
       "optional": true
     },
+    "@floating-ui/dom": {
+      "optional": true
+    },
     "@internationalized/date": {
       "optional": true
     }

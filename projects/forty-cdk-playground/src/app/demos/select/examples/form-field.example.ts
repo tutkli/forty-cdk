@@ -53,7 +53,7 @@ interface Profile {
             <div forSelectContent class="pg-select-content" animate.enter="pg-pop-in">
               @for (plan of plans; track plan) {
                 <button forSelectOption type="button" class="pg-select-option" [value]="plan">
-                  <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
+                  <span forSelectIndicator class="pg-select-indicator">
                     <app-icon name="check" />
                   </span>
                   {{ plan }}

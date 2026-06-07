@@ -78,7 +78,7 @@ const COUNTRIES: readonly Country[] = [
             <div forSelectContent class="pg-select-content" animate.enter="pg-pop-in">
               @for (country of countries; track country.code) {
                 <button forSelectOption type="button" class="pg-select-option" [value]="country">
-                  <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
+                  <span forSelectIndicator class="pg-select-indicator">
                     <app-icon name="check" />
                   </span>
                   {{ country.name }}

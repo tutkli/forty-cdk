@@ -109,7 +109,7 @@ const COUNTRIES = [
                   [label]="country"
                   class="pg-combobox-option"
                 >
-                  <span forComboboxIndicator [forceMount]="true" class="pg-combobox-indicator">
+                  <span forComboboxIndicator class="pg-combobox-indicator">
                     <app-icon name="check" />
                   </span>
                   {{ country }}
