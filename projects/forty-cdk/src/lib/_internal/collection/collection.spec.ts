@@ -9,6 +9,10 @@ function handle(id: string, host: HTMLElement): Handle {
   return { id, host };
 }
 
+function waitForMutationObserver(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('Collection', () => {
   let host: HTMLElement;
   let a: HTMLElement;
@@ -37,20 +41,47 @@ describe('Collection', () => {
     expect(col.items()).toEqual([]);
   });
 
-  it('returns items in registration order', () => {
+  it('returns items in DOM document order regardless of registration order', () => {
     const col = new Collection<Handle>();
     col.register(handle('c', c));
     col.register(handle('a', a));
     col.register(handle('b', b));
 
-    expect(col.items().map((h) => h.id)).toEqual(['c', 'a', 'b']);
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
   });
 
-  it('returns items in registration order when there is fewer than 2', () => {
+  it('returns the sole item when there is fewer than 2', () => {
     const col = new Collection<Handle>();
     const single = handle('a', a);
     col.register(single);
     expect(col.items()).toEqual([single]);
+  });
+
+  it('reflects the new DOM order after the hosts are reordered post-registration', async () => {
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+    col.register(handle('c', c));
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+    expect(col.indexOfHost(c)).toBe(2);
+
+    host.append(c, a, b);
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['c', 'a', 'b']);
+    expect(col.indexOfHost(c)).toBe(0);
+    expect(col.indexOfHost(b)).toBe(2);
+  });
+
+  it('keeps detached hosts at the end in a stable relative order', () => {
+    const col = new Collection<Handle>();
+    const detached = document.createElement('div');
+    col.register(handle('detached', detached));
+    col.register(handle('b', b));
+    col.register(handle('a', a));
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'detached']);
   });
 
   it('deduplicates double-registers', () => {
@@ -109,8 +140,6 @@ describe('Collection', () => {
     const second = col.items();
     expect(second).toBe(first);
 
-    // A mutation produces a new reference (since `update` swaps the array),
-    // but subsequent reads remain stable.
     col.register(handle('c', c));
     const third = col.items();
     expect(third).not.toBe(first);
@@ -126,13 +155,13 @@ describe('Collection', () => {
     expect(col.findByHost(b)).toBeUndefined();
   });
 
-  it('indexOfHost returns the registration-order index', () => {
+  it('indexOfHost returns the DOM document-order index', () => {
     const col = new Collection<Handle>();
     col.register(handle('c', c));
     col.register(handle('a', a));
 
-    expect(col.indexOfHost(c)).toBe(0);
-    expect(col.indexOfHost(a)).toBe(1);
+    expect(col.indexOfHost(a)).toBe(0);
+    expect(col.indexOfHost(c)).toBe(1);
     expect(col.indexOfHost(b)).toBe(-1);
   });
 });
