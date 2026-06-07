@@ -9,6 +9,7 @@ import {
 } from '../calendar/internationalized-date-time-adapter';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import { ForDateField } from './date-field';
+import { provideForDateFieldDefaults } from './date-field-defaults';
 import { ForDateFieldLiteral } from './date-field-literal';
 import { ForDateFieldSegment } from './date-field-segment';
 
@@ -499,6 +500,95 @@ describe('ForDateField', () => {
       pressKey(dseg(r, 'dayPeriod'), 'p');
       await flush(r.fixture);
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
+    });
+  });
+
+  describe('segment aria-labels (#513)', () => {
+    @Component({
+      imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDateField [granularity]="'minute'" [hourCycle]="12" [locale]="'en-US'" #field="forDateField">
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span
+                forDateFieldSegment
+                [segment]="seg.type!"
+                [ariaLabel]="seg.type === 'day' ? customDay() : null"
+                [attr.data-testid]="seg.type"
+                >{{ seg.text }}</span
+              >
+            }
+          }
+        </div>
+      `,
+    })
+    class LabelsHost {
+      readonly customDay = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+      providers: [
+        ...provideNativeDateAdapter(),
+        ...provideForDateFieldDefaults({
+          segmentLabels: { dayPeriod: 'Día/Noche', day: 'día' },
+        }),
+      ],
+      template: `
+        <div forDateField [granularity]="'minute'" [hourCycle]="12" [locale]="'en-US'" #field="forDateField">
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+      `,
+    })
+    class LocalizedHost {}
+
+    const lseg = (el: HTMLElement, type: string) =>
+      el.querySelector(`[data-testid="${type}"]`)!;
+
+    it('labels an unlabelled AM/PM segment "AM/PM", never the raw "dayPeriod" token', () => {
+      const r = renderHost(LabelsHost);
+      const dayPeriod = lseg(r.fixture.nativeElement, 'dayPeriod');
+      expect(dayPeriod.getAttribute('aria-label')).toBe('AM/PM');
+      expect(dayPeriod.getAttribute('aria-label')).not.toBe('dayPeriod');
+    });
+
+    it('labels the numeric segments by their part name by default', () => {
+      const r = renderHost(LabelsHost);
+      const host = r.fixture.nativeElement;
+      expect(lseg(host, 'month').getAttribute('aria-label')).toBe('month');
+      expect(lseg(host, 'day').getAttribute('aria-label')).toBe('day');
+      expect(lseg(host, 'year').getAttribute('aria-label')).toBe('year');
+      expect(lseg(host, 'hour').getAttribute('aria-label')).toBe('hour');
+      expect(lseg(host, 'minute').getAttribute('aria-label')).toBe('minute');
+    });
+
+    it('lets an explicit ariaLabel win over the default', async () => {
+      const r = renderHost(LabelsHost);
+      const day = lseg(r.fixture.nativeElement, 'day');
+      expect(day.getAttribute('aria-label')).toBe('day');
+      r.instance.customDay.set('Day of birth');
+      await flush(r.fixture);
+      expect(day.getAttribute('aria-label')).toBe('Day of birth');
+    });
+
+    it('localizes labels via provideForDateFieldDefaults, keeping unset keys at the default', () => {
+      const r = renderHost(LocalizedHost);
+      const host = r.fixture.nativeElement;
+      expect(lseg(host, 'dayPeriod').getAttribute('aria-label')).toBe('Día/Noche');
+      expect(lseg(host, 'day').getAttribute('aria-label')).toBe('día');
+      expect(lseg(host, 'month').getAttribute('aria-label')).toBe('month');
+      expect(lseg(host, 'year').getAttribute('aria-label')).toBe('year');
     });
   });
 

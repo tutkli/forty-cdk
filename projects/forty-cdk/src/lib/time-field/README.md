@@ -102,9 +102,17 @@ The hour, minute, and second clamp to their valid ranges (hour to the cycle, min
 ```ts
 import { provideForTimeFieldDefaults } from 'forty-cdk';
 
-// app config or a component's providers (stub today; present for forward-compat)
-providers: [provideForTimeFieldDefaults()];
+// app config or a component's providers — localize segment labels and the
+// empty-segment announcement for every nested [forTimeField].
+providers: [
+  provideForTimeFieldDefaults({
+    emptySegmentText: 'Vacío',
+    segmentLabels: { hour: 'hora', minute: 'minuto', second: 'segundo', dayPeriod: 'AM/PM' },
+  }),
+];
 ```
+
+`segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
 ## Accessibility notes
 

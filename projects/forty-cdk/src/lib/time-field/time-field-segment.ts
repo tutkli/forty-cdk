@@ -1,8 +1,12 @@
-import { Directive, input } from '@angular/core';
+import { computed, Directive, inject, input } from '@angular/core';
 
 import { ForDateTimeSegmentBase } from '../_internal/datetime/segment-directive';
 import type { TimeSegmentType } from './build-time-segments';
 import { injectTimeFieldContext } from './time-field-context';
+import {
+  DEFAULT_TIME_FIELD_SEGMENT_LABELS,
+  FOR_TIME_FIELD_DEFAULTS,
+} from './time-field-defaults';
 
 /**
  * One editable spinbutton segment of a `[forTimeField]` — the hour, minute,
@@ -28,12 +32,26 @@ import { injectTimeFieldContext } from './time-field-context';
 })
 export class ForTimeFieldSegment extends ForDateTimeSegmentBase {
   protected readonly ctx = injectTimeFieldContext('ForTimeFieldSegment');
+  readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
 
   /** Which time part this segment edits. */
   readonly segment = input.required<TimeSegmentType>();
 
-  /** Accessible name for this segment. Falls back to the segment type when unset. */
+  /**
+   * Accessible name for this segment. Falls back to the scope's localized
+   * default label for the part (via `provideForTimeFieldDefaults`), which in
+   * turn defaults to the part name — and `'AM/PM'` for the `dayPeriod` segment.
+   */
   readonly ariaLabel = input<string | null>(null);
+
+  protected override readonly resolvedAriaLabel = computed(() => {
+    const type = this.segment();
+    return (
+      this.ariaLabel() ??
+      this.#defaults.segmentLabels[type] ??
+      DEFAULT_TIME_FIELD_SEGMENT_LABELS[type]
+    );
+  });
 
   constructor() {
     super();

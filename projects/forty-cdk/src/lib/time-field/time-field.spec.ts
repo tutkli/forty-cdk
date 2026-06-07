@@ -5,6 +5,7 @@ import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import type { TimeSegmentType } from './build-time-segments';
 import { ForTimeField } from './time-field';
+import { provideForTimeFieldDefaults } from './time-field-defaults';
 import { ForTimeFieldLiteral } from './time-field-literal';
 import { ForTimeFieldSegment } from './time-field-segment';
 
@@ -337,6 +338,93 @@ describe('ForTimeField', () => {
       const value = r.instance.value()!;
       expect(adapter.getHours(value)).toBe(8);
       expect(adapter.getMinutes(value)).toBe(15);
+    });
+  });
+
+  describe('segment aria-labels (#513)', () => {
+    @Component({
+      imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forTimeField [hourCycle]="12" [granularity]="'second'" [locale]="'en-US'" #field="forTimeField">
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forTimeFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span
+                forTimeFieldSegment
+                [segment]="seg.type!"
+                [ariaLabel]="seg.type === 'hour' ? customHour() : null"
+                [attr.data-testid]="seg.type"
+                >{{ seg.text }}</span
+              >
+            }
+          }
+        </div>
+      `,
+    })
+    class LabelsHost {
+      readonly customHour = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+      providers: [
+        ...provideNativeDateAdapter(),
+        ...provideForTimeFieldDefaults({
+          segmentLabels: { dayPeriod: 'Día/Noche', hour: 'hora' },
+        }),
+      ],
+      template: `
+        <div forTimeField [hourCycle]="12" [granularity]="'second'" [locale]="'en-US'" #field="forTimeField">
+          @for (seg of field.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forTimeFieldLiteral>{{ seg.text }}</span>
+            } @else {
+              <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+      `,
+    })
+    class LocalizedHost {}
+
+    const lseg = (el: HTMLElement, type: string) =>
+      el.querySelector(`[data-testid="${type}"]`)!;
+
+    it('labels an unlabelled AM/PM segment "AM/PM", never the raw "dayPeriod" token', () => {
+      const r = renderHost(LabelsHost);
+      const dayPeriod = lseg(r.fixture.nativeElement, 'dayPeriod');
+      expect(dayPeriod.getAttribute('aria-label')).toBe('AM/PM');
+      expect(dayPeriod.getAttribute('aria-label')).not.toBe('dayPeriod');
+    });
+
+    it('labels the numeric segments by their part name by default', () => {
+      const r = renderHost(LabelsHost);
+      const host = r.fixture.nativeElement;
+      expect(lseg(host, 'hour').getAttribute('aria-label')).toBe('hour');
+      expect(lseg(host, 'minute').getAttribute('aria-label')).toBe('minute');
+      expect(lseg(host, 'second').getAttribute('aria-label')).toBe('second');
+    });
+
+    it('lets an explicit ariaLabel win over the default', async () => {
+      const r = renderHost(LabelsHost);
+      const hour = lseg(r.fixture.nativeElement, 'hour');
+      expect(hour.getAttribute('aria-label')).toBe('hour');
+      r.instance.customHour.set('Start hour');
+      await flush(r.fixture);
+      expect(hour.getAttribute('aria-label')).toBe('Start hour');
+    });
+
+    it('localizes labels via provideForTimeFieldDefaults, keeping unset keys at the default', () => {
+      const r = renderHost(LocalizedHost);
+      const host = r.fixture.nativeElement;
+      expect(lseg(host, 'dayPeriod').getAttribute('aria-label')).toBe('Día/Noche');
+      expect(lseg(host, 'hour').getAttribute('aria-label')).toBe('hora');
+      expect(lseg(host, 'minute').getAttribute('aria-label')).toBe('minute');
+      expect(lseg(host, 'second').getAttribute('aria-label')).toBe('second');
     });
   });
 
