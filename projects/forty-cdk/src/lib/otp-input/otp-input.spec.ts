@@ -334,6 +334,31 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBeNull();
     });
 
+    it('fires valueComplete when a full value is replaced by a different full value via paste', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '123456');
+      await flush();
+      expect(instance.completed()).toBe('123456');
+
+      instance.completed.set(null);
+      pasteInto(input, '654321');
+      await flush();
+      expect(instance.code()).toBe('654321');
+      expect(instance.completed()).toBe('654321');
+    });
+
+    it('does not re-fire valueComplete when a full value is replaced by the same full value via paste', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '123456');
+      await flush();
+      expect(instance.completed()).toBe('123456');
+
+      instance.completed.set(null);
+      pasteInto(input, '123456');
+      await flush();
+      expect(instance.completed()).toBeNull();
+    });
+
     it('re-fires valueComplete after dropping below full and completing again', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '123456');

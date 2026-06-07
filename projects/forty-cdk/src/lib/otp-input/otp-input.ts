@@ -415,8 +415,9 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
 
   #commit(next: string): void {
     const wasComplete = this.complete();
+    const prev = this.value();
     this.value.set(next);
-    if (!wasComplete && next.length === this.length()) {
+    if (next.length === this.length() && (!wasComplete || next !== prev)) {
       this.valueComplete.emit(next);
     }
   }
