@@ -377,24 +377,21 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'blueberry'));
     });
 
-    it('skips disabled matches', () => {
+    it('skips disabled matches on a multi-character prefix', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
-        { value: 'apple', label: 'Apple', disabled: false },
-        { value: 'apricot', label: 'Apricot', disabled: true },
+        { value: 'banana', label: 'Banana', disabled: false },
+        { value: 'avocet', label: 'Avocet', disabled: true },
         { value: 'avocado', label: 'Avocado', disabled: false },
       ]);
       flush();
 
-      optOf(el, 'apple').focus();
-      pressKey(optOf(el, 'apple'), 'a');
+      // 'av' matches avocet first but it is disabled, so focus lands on avocado.
+      optOf(el, 'banana').focus();
+      pressKey(optOf(el, 'banana'), 'a');
       flush();
-      // 'apple' matches first but the focus is already there — typeahead's
-      // prefix match returns first enabled match in list order, which is apple.
-      expect(document.activeElement).toBe(optOf(el, 'apple'));
-
-      // Type 'av' to skip apricot (disabled).
-      pressKey(optOf(el, 'apple'), 'v');
+      expect(document.activeElement).toBe(optOf(el, 'avocado'));
+      pressKey(optOf(el, 'avocado'), 'v');
       flush();
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
     });
@@ -407,6 +404,43 @@ describe('ForListbox', () => {
       // Space is not a typeahead character; focus stays on apple.
       expect(document.activeElement).toBe(optOf(el, 'apple'));
       expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('cycles through same-initial options on repeated key with wrap', () => {
+      const { el, flush } = renderHost(ListboxHost);
+
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'a');
+      flush();
+      expect(document.activeElement).toBe(optOf(el, 'apricot'));
+
+      pressKey(optOf(el, 'apricot'), 'a');
+      flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+
+      pressKey(optOf(el, 'apple'), 'a');
+      flush();
+      expect(document.activeElement).toBe(optOf(el, 'apricot'));
+    });
+
+    it('skips disabled options while cycling on repeated key', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: false },
+        { value: 'apricot', label: 'Apricot', disabled: true },
+        { value: 'avocado', label: 'Avocado', disabled: false },
+        { value: 'banana', label: 'Banana', disabled: false },
+      ]);
+      flush();
+
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'a');
+      flush();
+      expect(document.activeElement).toBe(optOf(el, 'avocado'));
+
+      pressKey(optOf(el, 'avocado'), 'a');
+      flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
   });
 

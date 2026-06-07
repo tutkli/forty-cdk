@@ -375,15 +375,26 @@ export class ForListbox<T = string>
       return true;
     }
     const options = this.#options.items();
-    const match = options.find((o) => {
-      if (o.disabled()) {
-        return false;
+    if (options.length === 0) {
+      return true;
+    }
+
+    const cycle = this.#typeahead.isRepeatedChar();
+    const query = cycle ? buffer[0]! : buffer;
+    const currentIndex = options.findIndex((o) => o.host === event.target);
+    const anchor = currentIndex >= 0 ? currentIndex : -1;
+    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
+
+    for (let offset = 0; offset < options.length; offset++) {
+      const option = options[(start + offset) % options.length]!;
+      if (option.disabled()) {
+        continue;
       }
-      const text = (o.host.textContent ?? '').trim().toLowerCase();
-      return text.startsWith(buffer);
-    });
-    if (match) {
-      match.host.focus();
+      const text = (option.host.textContent ?? '').trim().toLowerCase();
+      if (text.startsWith(query)) {
+        option.host.focus();
+        return true;
+      }
     }
     return true;
   }
