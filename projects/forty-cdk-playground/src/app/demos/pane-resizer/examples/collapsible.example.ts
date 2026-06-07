@@ -5,14 +5,14 @@ import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';
 
 @Component({
-  selector: 'app-separator-collapsible-example',
+  selector: 'app-pane-resizer-collapsible-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DemoLayout, ForPaneResizer, ControlSwitch],
   template: `
     <playground-demo
       title="Collapsible panel"
-      subtitle="With collapsible on, Enter / Space on the focused resizer snaps the panel to its min and a second press restores the last expanded size — APG-optional behaviour for separators that back a collapsible pane. Drag or the arrow keys still resize as usual."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/separator/examples/collapsible.example.ts"
+      subtitle="With collapsible on, Enter / Space on the focused resizer snaps the panel to its min and a second press restores the last expanded size — APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual."
+      sourcePath="projects/forty-cdk-playground/src/app/demos/pane-resizer/examples/collapsible.example.ts"
     >
       <div demo class="cs-split">
         <aside id="cs-side" class="cs-side" [style.flex-basis.px]="size()">
@@ -56,8 +56,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         />
 
         <p class="pg-state">
-          size: <b>{{ size() }}px</b
-          ><br />
+          size: <b>{{ size() }}px</b><br />
           state: <b>{{ collapsed() ? 'collapsed' : 'expanded' }}</b>
         </p>
       </div>
@@ -150,7 +149,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
     }
   `,
 })
-export class SeparatorCollapsibleExample {
+export class PaneResizerCollapsibleExample {
   protected readonly size = signal(220);
   protected readonly collapsible = signal(true);
 

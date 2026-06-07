@@ -1262,10 +1262,6 @@ a.pg-nav-link.active {
   color: var(--pg-primary);
 }
 
-.pg-select-indicator[data-state='unchecked'] {
-  opacity: 0;
-}
-
 .pg-select-group-label {
   padding: 0.35rem 0.6rem 0.2rem;
   font-size: 0.7rem;
@@ -1460,10 +1456,6 @@ a.pg-nav-link.active {
   width: 1.1em;
   height: 1.1em;
   color: var(--pg-primary);
-}
-
-.pg-combobox-indicator[data-state='unchecked'] {
-  opacity: 0;
 }
 
 .pg-combobox-empty {

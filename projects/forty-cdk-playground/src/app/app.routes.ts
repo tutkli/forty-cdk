@@ -52,6 +52,11 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/separator/separator.page').then((m) => m.SeparatorPage),
   },
   {
+    path: 'pane-resizer',
+    loadComponent: () =>
+      import('./demos/pane-resizer/pane-resizer.page').then((m) => m.PaneResizerPage),
+  },
+  {
     path: 'aspect-ratio',
     loadComponent: () =>
       import('./demos/aspect-ratio/aspect-ratio.page').then((m) => m.AspectRatioPage),

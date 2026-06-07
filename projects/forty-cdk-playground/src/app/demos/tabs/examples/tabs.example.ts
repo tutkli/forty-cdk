@@ -26,7 +26,7 @@ interface TabEntry {
   template: `
     <playground-demo
       title="Roving tabindex & activation"
-      subtitle="A tablist with roving tabindex. Focus the tabs and move with the arrow keys, Home and End — orientation and dir change which arrows apply. In manual mode arrows only move focus; Enter or Space activates."
+      subtitle="A tablist with roving tabindex. Focus the tabs and move with the arrow keys, Home and End — orientation and dir change which arrows apply. In manual mode arrows only move focus; Enter or Space activates. Clear selection sets the value to null — the canonical no-active-tab state, where every enabled trigger is roving-eligible and no panel shows."
       sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/tabs.example.ts"
     >
       <div demo class="tb-demo">
@@ -84,8 +84,12 @@ interface TabEntry {
         <app-control-switch label="disabled" [(checked)]="disabled" />
         <app-control-switch label="disable billing tab" [(checked)]="disableBilling" />
 
+        <div class="pg-btn-row">
+          <button type="button" class="pg-btn" (click)="value.set(null)">Clear selection</button>
+        </div>
+
         <p class="pg-state">
-          value: <b>{{ value() }}</b>
+          value: <b>{{ value() ?? 'null' }}</b>
         </p>
       </div>
     </playground-demo>
@@ -211,7 +215,7 @@ export class TabsExample {
     { value: 'manual', label: 'manual' },
   ];
 
-  protected readonly value = signal('profile');
+  protected readonly value = signal<string | null>('profile');
   protected readonly loop = signal(true);
   protected readonly disabled = signal(false);
   protected readonly disableBilling = signal(false);
