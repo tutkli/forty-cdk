@@ -166,6 +166,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Accessibility notes
 
 - **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.
+- **Focus alone does not open.** A trigger opens on hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
 - **Trigger labels are mandatory.** Each `[forNavigationMenuTrigger]` needs visible text or an `aria-label`. The directive does not invent one.
 - **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
 - **Indicator follows the active trigger.** Subscribed to `afterEveryRender`, so it tracks layout changes without polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.

@@ -9,9 +9,15 @@ import {
 } from './navigation-menu-context';
 
 /**
- * Disclosure trigger. Apply on `<button>`. Hover / focus / click open the
- * paired `[forNavigationMenuContent]`; arrow keys move focus across siblings;
- * Escape closes; Enter / Space toggle.
+ * Disclosure trigger. Apply on `<button>`. Hover / click open the paired
+ * `[forNavigationMenuContent]`; arrow keys move focus across siblings;
+ * ArrowDown (horizontal) / ArrowRight (vertical) open; Escape closes;
+ * Enter / Space toggle.
+ *
+ * Per the APG disclosure-navigation pattern this does NOT open on plain
+ * focus: Tabbing across the trigger row must not auto-expand panels, and a
+ * programmatic return-focus (e.g. after Escape) must not synchronously
+ * re-open the panel that just closed.
  */
 @Directive({
   selector: '[forNavigationMenuTrigger]',
@@ -28,7 +34,6 @@ import {
     '(click)': 'onClick()',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
-    '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -78,11 +83,6 @@ export class ForNavigationMenuTrigger {
   protected onPointerLeave(): void {
     if (this.disabled()) return;
     this.menu.scheduleClose('hover');
-  }
-
-  protected onFocus(): void {
-    if (this.disabled()) return;
-    this.menu.scheduleOpen(this.value(), 'focus');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

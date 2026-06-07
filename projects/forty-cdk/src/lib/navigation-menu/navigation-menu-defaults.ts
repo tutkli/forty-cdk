@@ -9,7 +9,7 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * overrides merge with the parent scope.
  */
 export interface ForNavigationMenuDefaults {
-  /** ms before a hover/focus opens an item. */
+  /** ms before a hover opens an item. */
   delayDuration: number;
   /** ms before an item closes after hover leaves. */
   closeDelay: number;

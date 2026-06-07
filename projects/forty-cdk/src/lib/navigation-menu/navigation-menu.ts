@@ -106,8 +106,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
-   * ms before a hover/focus opens an item. Default `200`. The default is
-   * read from `provideForNavigationMenuDefaults` for the surrounding scope.
+   * ms before a hover opens an item. Default `200`. The default is read from
+   * `provideForNavigationMenuDefaults` for the surrounding scope.
    */
   readonly delayDuration = input<number>(this.#defaults.delayDuration);
 

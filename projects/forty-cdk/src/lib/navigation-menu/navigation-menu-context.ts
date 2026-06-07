@@ -105,7 +105,7 @@ export interface ForNavigationMenuContext {
   motionFor(value: string): ForNavigationMenuMotion | null;
 }
 
-export type NavigationMenuScheduleReason = 'hover' | 'focus' | 'keyboard' | 'click';
+export type NavigationMenuScheduleReason = 'hover' | 'keyboard' | 'click';
 
 /** Per-item context, consumed by the trigger and content. */
 export interface ForNavigationMenuItemContext {
