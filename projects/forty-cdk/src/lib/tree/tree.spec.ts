@@ -156,6 +156,60 @@ describe('ForTree', () => {
     });
   });
 
+  describe('reorder follows DOM order, not registration order', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree>
+          @for (id of ids(); track id) {
+            <li forTreeItem [value]="id" [attr.data-test-id]="id">
+              <div forTreeItemLabel><span>{{ id }}</span></div>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class ReorderHost {
+      readonly ids = signal<readonly string[]>(['a', 'b', 'c']);
+    }
+
+    async function setupReorder() {
+      const result = renderHost(ReorderHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('updates aria-posinset / aria-setsize after the list is sorted', async () => {
+      const { el, fixture } = await setupReorder();
+
+      expect(itemOf(el, 'a').getAttribute('aria-posinset')).toBe('1');
+      expect(itemOf(el, 'c').getAttribute('aria-posinset')).toBe('3');
+      expect(itemOf(el, 'a').getAttribute('aria-setsize')).toBe('3');
+
+      fixture.componentInstance.ids.set(['c', 'a', 'b']);
+      await flush(fixture);
+
+      expect(itemOf(el, 'c').getAttribute('aria-posinset')).toBe('1');
+      expect(itemOf(el, 'a').getAttribute('aria-posinset')).toBe('2');
+      expect(itemOf(el, 'b').getAttribute('aria-posinset')).toBe('3');
+      expect(itemOf(el, 'b').getAttribute('aria-setsize')).toBe('3');
+    });
+
+    it('moves arrow-key navigation order to match the visible order after a sort', async () => {
+      const { el, fixture } = await setupReorder();
+
+      fixture.componentInstance.ids.set(['c', 'a', 'b']);
+      await flush(fixture);
+
+      pressKey(itemOf(el, 'c'), 'ArrowDown');
+      await flush(fixture);
+
+      expect(itemOf(el, 'a').getAttribute('tabindex')).toBe('0');
+      expect(itemOf(el, 'a').hasAttribute('data-highlighted')).toBe(true);
+      expect(itemOf(el, 'c').getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
   describe('aria-level / aria-setsize / aria-posinset', () => {
     it('computes level / posinset / setsize across two nesting levels', async () => {
       const { el } = await setup((i) => i.open.set(['documents', 'photos']));

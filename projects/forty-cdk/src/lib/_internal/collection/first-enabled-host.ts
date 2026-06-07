@@ -14,8 +14,7 @@ export interface DisableableHandle extends CollectionHandle {
  * Returns the host element of the first non-disabled handle in `items`, or
  * `null` if every handle is disabled (or the list is empty). Iteration
  * follows the order of the input array — pass `Collection.items()` to get
- * registration order (which equals DOM order under standard `@for` / `@if`
- * usage).
+ * DOM document order.
  *
  * Used by primitives that pick a roving-tabindex entry point: when there's
  * no selection, the first enabled child becomes the tab stop.
