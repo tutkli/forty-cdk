@@ -1,5 +1,7 @@
 import { Directive } from '@angular/core';
 
+import { ForDateTimeLiteralBase } from '../_internal/datetime/literal-directive';
+
 /**
  * A decorative separator (`/`, `.`, `-`) between the editable segments of a
  * `[forDateField]`. Apply on the element rendering the literal text; it is
@@ -10,8 +12,5 @@ import { Directive } from '@angular/core';
 @Directive({
   selector: '[forDateFieldLiteral]',
   exportAs: 'forDateFieldLiteral',
-  host: {
-    'aria-hidden': 'true',
-  },
 })
-export class ForDateFieldLiteral {}
+export class ForDateFieldLiteral extends ForDateTimeLiteralBase {}
