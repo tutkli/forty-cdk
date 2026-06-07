@@ -48,7 +48,6 @@ import { injectSelectContext } from './select-context';
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',

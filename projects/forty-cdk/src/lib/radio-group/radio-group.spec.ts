@@ -360,8 +360,9 @@ describe('ForRadioGroup', () => {
       flush();
 
       const greenRadio = radioOf(el, 'green');
-      expect(greenRadio.hasAttribute('disabled')).toBe(true);
+      expect(greenRadio.hasAttribute('disabled')).toBe(false);
       expect(greenRadio.getAttribute('aria-disabled')).toBe('true');
+      expect(greenRadio.getAttribute('data-disabled')).toBe('');
 
       greenRadio.click();
       flush();
@@ -380,8 +381,10 @@ describe('ForRadioGroup', () => {
       flush();
       expect(fixture.componentInstance.color()).toBe('');
 
-      // Each radio inherits effectiveDisabled and exposes the disabled attr.
-      expect(radioOf(el, 'red').hasAttribute('disabled')).toBe(true);
+      // Each radio inherits effectiveDisabled and reflects aria-disabled /
+      // data-disabled, but stays focusable (no native disabled) per APG.
+      expect(radioOf(el, 'red').hasAttribute('disabled')).toBe(false);
+      expect(radioOf(el, 'red').getAttribute('aria-disabled')).toBe('true');
     });
 
     it('group readonly blocks selection but radios stay enabled / focusable', () => {

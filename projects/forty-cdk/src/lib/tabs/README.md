@@ -31,7 +31,7 @@ Headless implementation of the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/AR
 | `value`    | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`. |
 | `disabled` | `input<boolean>`         | Disables this trigger; arrow nav skips it.                            |
 
-Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `disabled`, `tabindex`, `data-state="active" \| "inactive"`.
+Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`, `data-state="active" \| "inactive"`, `data-disabled`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-activatable, with arrow nav skipping it.
 
 ### `ForTabsContent`
 

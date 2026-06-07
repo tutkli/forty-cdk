@@ -15,7 +15,7 @@ A switch is a binary on/off control whose state changes immediately on activatio
 | API        | Type                                                      | Description                                                                                              |
 | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.                                        |
-| `disabled` | `input<boolean>`                                          | Ignores click; reflects `disabled` and `aria-disabled`.                                                  |
+| `disabled` | `input<boolean>`                                          | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).           |
 | `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.                                         |
 | `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                         |
 | `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.                                                                          |
@@ -107,6 +107,6 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Accessibility notes
 
 - **Use a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`. Enter and Space toggle the switch via native button behavior. On other elements (e.g. `<div>`), keyboard activation is on you.
-- **Native `disabled` removes the switch from the tab order.** APG allows this; if you want the switch to stay focusable while inactive, use `readonly` instead.
+- **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
 - **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).

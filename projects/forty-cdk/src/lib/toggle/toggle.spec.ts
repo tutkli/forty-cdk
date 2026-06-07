@@ -64,15 +64,17 @@ describe('ForToggle', () => {
       expect(btn.getAttribute('data-state')).toBe('checked');
     });
 
-    it('reflects disabled via aria-disabled, [disabled], and data-disabled', () => {
+    it('reflects disabled via aria-disabled and data-disabled, staying focusable (no native disabled)', () => {
       const r = renderHost(ToggleHost);
       r.instance.disabled.set(true);
       r.flush();
 
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
       expect(btn.getAttribute('aria-disabled')).toBe('true');
-      expect(btn.hasAttribute('disabled')).toBe(true);
+      expect(btn.hasAttribute('disabled')).toBe(false);
       expect(btn.getAttribute('data-disabled')).toBe('');
+      btn.focus();
+      expect(document.activeElement).toBe(btn);
     });
   });
 
@@ -110,7 +112,7 @@ describe('ForToggle', () => {
       setName: (name) => r.instance.fieldName.set(name),
     };
     return result;
-  });
+  }, { customRoleStaysFocusable: true });
 
   describe('click', () => {
     it('toggles checked on click', () => {

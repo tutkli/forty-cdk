@@ -10,7 +10,12 @@
  *     corresponding flag is `false` — never `"false"`.
  *   - Each flag, when set to `true`, reflects on the control's host
  *     element with the canonical attribute set:
- *       - `disabled`  → native `disabled` + `aria-disabled="true"` + `data-disabled=""`
+ *       - `disabled`  → `aria-disabled="true"` + `data-disabled=""`. Native
+ *         form elements (`<input>`, `<textarea>`) also reflect the native
+ *         `disabled` attribute; custom-role controls (`role="checkbox"`,
+ *         `"switch"`, a toggle `<button>`, …) deliberately do NOT — they stay
+ *         focusable so assistive tech can announce them, per the APG
+ *         (`customRoleStaysFocusable`).
  *       - `readonly`  → `aria-readonly="true"` + `data-readonly=""` (no native disabled)
  *       - `required`  → `aria-required="true"`
  *       - `invalid`   → `aria-invalid="true"` + `data-invalid=""`
@@ -56,6 +61,16 @@ export interface FormControlContractOptions {
    * `pending`).
    */
   flags?: ReadonlyArray<FormControlFlag | 'name'>;
+  /**
+   * Whether this control carries a custom ARIA role (`checkbox`, `switch`, a
+   * toggle `<button>` reflecting `aria-pressed`, …) rather than being a native
+   * form element. Custom-role controls MUST stay focusable when disabled so
+   * assistive tech can announce them — they emit `aria-disabled` /
+   * `data-disabled` only, never the native `disabled` attribute that would
+   * drop them from the focus order. Native form elements (`<input>`,
+   * `<textarea>`) instead keep the native `disabled`. Defaults to `false`.
+   */
+  customRoleStaysFocusable?: boolean;
 }
 
 const ALL_FLAGS: ReadonlyArray<FormControlFlag | 'name'> = [
@@ -85,6 +100,7 @@ export function assertFormControlContract(
 ): void {
   const flags = new Set(options.flags ?? ALL_FLAGS);
   const has = (f: FormControlFlag | 'name'): boolean => flags.has(f);
+  const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
 
   describe('form-control contract', () => {
     it('omits truthy-only ARIA flags when the underlying signal is false', async () => {
@@ -111,20 +127,39 @@ export function assertFormControlContract(
     });
 
     if (has('disabled')) {
-      it('reflects disabled → native disabled + aria-disabled + data-disabled', async () => {
-        const ctx = await mount();
-        ctx.setFlag('disabled', true);
-        await ctx.flush();
-        expect(ctx.control.hasAttribute('disabled')).toBe(true);
-        expect(ctx.control.getAttribute('aria-disabled')).toBe('true');
-        expect(ctx.control.getAttribute('data-disabled')).toBe('');
+      if (customRoleStaysFocusable) {
+        it('reflects disabled → aria-disabled + data-disabled, stays focusable (no native disabled)', async () => {
+          const ctx = await mount();
+          ctx.setFlag('disabled', true);
+          await ctx.flush();
+          expect(ctx.control.hasAttribute('disabled')).toBe(false);
+          expect(ctx.control.getAttribute('aria-disabled')).toBe('true');
+          expect(ctx.control.getAttribute('data-disabled')).toBe('');
+          ctx.control.focus();
+          expect(document.activeElement).toBe(ctx.control);
 
-        ctx.setFlag('disabled', false);
-        await ctx.flush();
-        expect(ctx.control.hasAttribute('disabled')).toBe(false);
-        expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
-        expect(ctx.control.hasAttribute('data-disabled')).toBe(false);
-      });
+          ctx.setFlag('disabled', false);
+          await ctx.flush();
+          expect(ctx.control.hasAttribute('disabled')).toBe(false);
+          expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
+          expect(ctx.control.hasAttribute('data-disabled')).toBe(false);
+        });
+      } else {
+        it('reflects disabled → native disabled + aria-disabled + data-disabled', async () => {
+          const ctx = await mount();
+          ctx.setFlag('disabled', true);
+          await ctx.flush();
+          expect(ctx.control.hasAttribute('disabled')).toBe(true);
+          expect(ctx.control.getAttribute('aria-disabled')).toBe('true');
+          expect(ctx.control.getAttribute('data-disabled')).toBe('');
+
+          ctx.setFlag('disabled', false);
+          await ctx.flush();
+          expect(ctx.control.hasAttribute('disabled')).toBe(false);
+          expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
+          expect(ctx.control.hasAttribute('data-disabled')).toBe(false);
+        });
+      }
     }
 
     if (has('readonly')) {

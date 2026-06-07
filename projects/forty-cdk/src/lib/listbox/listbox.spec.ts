@@ -953,7 +953,8 @@ describe('ForListbox', () => {
       optOf(el, 'apple').click();
       flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
-      expect(optOf(el, 'apple').hasAttribute('disabled')).toBe(true);
+      expect(optOf(el, 'apple').hasAttribute('disabled')).toBe(false);
+      expect(optOf(el, 'apple').getAttribute('aria-disabled')).toBe('true');
     });
   });
 

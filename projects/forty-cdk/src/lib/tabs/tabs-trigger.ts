@@ -31,7 +31,6 @@ import { injectTabsContext } from './tabs-context';
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-controls]': 'controlsId()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',

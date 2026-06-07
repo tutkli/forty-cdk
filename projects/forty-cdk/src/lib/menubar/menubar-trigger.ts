@@ -53,7 +53,6 @@ import { injectMenubarContext } from './menubar-context';
     '[attr.aria-expanded]': 'isOpen() ? "true" : "false"',
     '[attr.aria-controls]': 'isOpen() ? contentId() : null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'isOpen() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'menubar.orientation()',

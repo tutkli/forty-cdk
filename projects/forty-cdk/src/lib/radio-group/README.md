@@ -33,7 +33,7 @@ The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for
 | `value`    | `input.required<string>` | This radio's identifier. Must be unique within the group and non-empty.                              |
 | `disabled` | `input<boolean>`         | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation. |
 
-The radio host gets `aria-checked`, `aria-disabled`, `disabled`, `tabindex`, `data-state`, and `data-disabled`. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
+The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, and `data-disabled`. A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
 
 ## Stand-alone usage
 
@@ -122,4 +122,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 - **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
 - **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
-- **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation, the `disabled` attribute, and SR-friendly semantics. Other host elements lose those defaults.
+- **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.

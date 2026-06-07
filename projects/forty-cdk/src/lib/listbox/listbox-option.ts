@@ -34,7 +34,6 @@ import { injectListboxContext } from './listbox-context';
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
