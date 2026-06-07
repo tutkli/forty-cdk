@@ -1,38 +1,11 @@
-import type { TimeSegmentType } from '../_internal/datetime/segment-types';
+import type { FieldSpec, SegmentType } from '../_internal/datetime/segment-editor';
 
-/** Which calendar part an editable date segment edits. */
-export type DateSegmentType = 'day' | 'month' | 'year';
-
-/**
- * Every editable part a date(-time) field can render — the date parts plus, at
- * `granularity > 'day'`, the time parts (`hour` / `minute` / `second` / the
- * AM·PM `dayPeriod`).
- */
-export type DateTimeSegmentType = DateSegmentType | TimeSegmentType;
+export type { DateSegmentType, SegmentType as DateTimeSegmentType } from '../_internal/datetime/segment-editor';
 
 /** Date-time precision of a date field; `'day'` keeps it date-only. */
 export type FieldGranularity = 'day' | 'hour' | 'minute' | 'second';
 
-/** Spec for a single editable spinbutton segment. */
-export interface EditableSegmentSpec {
-  readonly kind: 'editable';
-  /** The date or time part this segment edits. */
-  readonly type: DateTimeSegmentType;
-  /** Maximum number of digits the segment accepts before it is full (`0` for the AM/PM toggle). */
-  readonly digits: number;
-}
-
-/** Spec for a non-editable separator rendered between segments. */
-export interface LiteralSegmentSpec {
-  readonly kind: 'literal';
-  /** The separator characters (`/`, `.`, `-`, …) for the runtime locale. */
-  readonly literal: string;
-}
-
-/** A single entry in the locale-ordered segment list. */
-export type SegmentSpec = EditableSegmentSpec | LiteralSegmentSpec;
-
-const DIGITS: Record<DateTimeSegmentType, number> = {
+const DIGITS: Record<SegmentType, number> = {
   day: 2,
   month: 2,
   year: 4,
@@ -57,14 +30,14 @@ const DIGITS: Record<DateTimeSegmentType, number> = {
  *
  * @param locale BCP 47 locale, or `undefined` for the runtime default.
  */
-export function buildSegments(locale: string | undefined): readonly SegmentSpec[] {
+export function buildSegments(locale: string | undefined): readonly FieldSpec[] {
   const parts = new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   }).formatToParts(REFERENCE_DATE);
 
-  const segments: SegmentSpec[] = [];
+  const segments: FieldSpec[] = [];
   for (const part of parts) {
     switch (part.type) {
       case 'day':
@@ -110,7 +83,7 @@ export function buildDateTimeSegments(
   locale: string | undefined,
   granularity: FieldGranularity,
   hourCycle: 12 | 24,
-): readonly SegmentSpec[] {
+): readonly FieldSpec[] {
   if (granularity === 'day') {
     return buildSegments(locale);
   }
@@ -129,7 +102,7 @@ export function buildDateTimeSegments(
   }
 
   const parts = new Intl.DateTimeFormat(locale, options).formatToParts(REFERENCE_DATE_TIME);
-  const segments: SegmentSpec[] = [];
+  const segments: FieldSpec[] = [];
   for (const part of parts) {
     switch (part.type) {
       case 'day':
