@@ -8,10 +8,10 @@ Headless single-date calendar grid following the [WAI-ARIA Grid pattern](https:/
 
 All date math goes through a `DateAdapter<D>`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers:
 
-| Provider                                  | Date type `D`                          | Dependency                                            |
-| ----------------------------------------- | -------------------------------------- | ----------------------------------------------------- |
-| `provideInternationalizedDateAdapter()`   | `CalendarDate` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`              | `Date`                                 | None (zero-dependency fallback)                       |
+| Provider                                | Date type `D`                              | Dependency                                                 |
+| --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
+| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
@@ -26,27 +26,27 @@ bootstrapApplication(App, {
 
 ## Pieces
 
-| Class                   | Selector                  | Role                                                                                        |
-| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
-| `ForCalendar`           | `[forCalendar]`           | Root. Owns `value`, the focused date, the visible month, and the shared context.            |
-| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title and the grid's `aria-labelledby` target; its text is set to the visible period. |
-| `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                              |
-| `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                  |
-| `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`. |
+| Class                   | Selector                  | Role                                                                                                |
+| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ForCalendar`           | `[forCalendar]`           | Root. Owns `value`, the focused date, the visible month, and the shared context.                    |
+| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title and the grid's `aria-labelledby` target; its text is set to the visible period.    |
+| `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                                      |
+| `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                          |
+| `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`.        |
 | `ForCalendarGridHeader` | `[forCalendarGridHeader]` | Header rowgroup (`role="rowgroup"`) holding the weekday `columnheader`s. Also exposes `weekDays()`. |
-| `ForCalendarCell`       | `[forCalendarCell]`       | One day (`role="gridcell"`). Roving tab stop, ARIA state, and keyboard / click interaction. |
+| `ForCalendarCell`       | `[forCalendarCell]`       | One day (`role="gridcell"`). Roving tab stop, ARIA state, and keyboard / click interaction.         |
 
 ## Inputs / models — `ForCalendar`
 
-| API                 | Type                          | Description                                                                                                       |
-| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`            | Two-way bindable selected date, or `null`. `(valueChange)` fires only on internal selection. Default `null`.      |
-| `min`               | `input<D \| null>`            | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                               |
-| `max`               | `input<D \| null>`            | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                 |
-| `isDateUnavailable` | `input<(date: D) => boolean>` | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                |
-| `disabled`          | `input<boolean>`              | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                      |
-| `readonly`          | `input<boolean>`              | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                              |
-| `firstDayOfWeek`    | `input<number \| null>`       | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`). |
+| API                 | Type                            | Description                                                                                                                  |
+| ------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`              | Two-way bindable selected date, or `null`. `(valueChange)` fires only on internal selection. Default `null`.                 |
+| `min`               | `input<D \| null>`              | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                          |
+| `max`               | `input<D \| null>`              | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                            |
+| `isDateUnavailable` | `input<(date: D) => boolean>`   | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                           |
+| `disabled`          | `input<boolean>`                | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                 |
+| `readonly`          | `input<boolean>`                | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                         |
+| `firstDayOfWeek`    | `input<number \| null>`         | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).      |
 | `dir`               | `input<'ltr' \| 'rtl' \| null>` | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows. |
 
 ## Usage
@@ -96,7 +96,7 @@ import {
           @for (week of grid.weeks(); track week.key) {
             <tr>
               @for (cell of week.days; track cell.key) {
-                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+                <td forCalendarCell class="calendar-cell" [date]="cell.date">{{ cell.label }}</td>
               }
             </tr>
           }
@@ -112,18 +112,56 @@ export class DatePage {
 
 The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]` yourself (`[data-selected]`, `[data-today]`, `[data-outside-month]`, `[data-highlighted]`, and `:not([data-disabled])` for the enabled state).
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                     | Attribute            | Values            |
+| ------------------------- | -------------------- | ----------------- |
+| `[forCalendar]`           | `data-disabled`      | present \| absent |
+| `[forCalendar]`           | `data-readonly`      | present \| absent |
+| `[forCalendarPrevButton]` | `data-disabled`      | present \| absent |
+| `[forCalendarNextButton]` | `data-disabled`      | present \| absent |
+| `[forCalendarCell]`       | `data-selected`      | present \| absent |
+| `[forCalendarCell]`       | `data-today`         | present \| absent |
+| `[forCalendarCell]`       | `data-highlighted`   | present \| absent |
+| `[forCalendarCell]`       | `data-disabled`      | present \| absent |
+| `[forCalendarCell]`       | `data-outside-month` | present \| absent |
+
+```css
+.calendar-cell {
+  cursor: pointer;
+}
+.calendar-cell[data-selected] {
+  background: var(--accent);
+  color: white;
+}
+.calendar-cell[data-today] {
+  outline: 1px solid var(--accent);
+}
+.calendar-cell[data-outside-month] {
+  opacity: 0.4;
+}
+.calendar-cell[data-disabled] {
+  cursor: default;
+  opacity: 0.3;
+}
+```
+
 ## Keyboard
 
 LTR (horizontal arrows mirror under `dir="rtl"`):
 
-| Key                               | Behavior                                                       |
-| --------------------------------- | -------------------------------------------------------------- |
-| **ArrowLeft / ArrowRight**        | Previous / next day.                                           |
-| **ArrowUp / ArrowDown**           | Same weekday, previous / next week.                            |
-| **Home / End**                    | First / last day of the focused week.                          |
-| **PageUp / PageDown**             | Same day-of-month, previous / next month (re-pages the grid).  |
-| **Shift+PageUp / Shift+PageDown** | Same month, previous / next year.                              |
-| **Enter / Space**                 | Select the focused date.                                       |
+| Key                               | Behavior                                                      |
+| --------------------------------- | ------------------------------------------------------------- |
+| **ArrowLeft / ArrowRight**        | Previous / next day.                                          |
+| **ArrowUp / ArrowDown**           | Same weekday, previous / next week.                           |
+| **Home / End**                    | First / last day of the focused week.                         |
+| **PageUp / PageDown**             | Same day-of-month, previous / next month (re-pages the grid). |
+| **Shift+PageUp / Shift+PageDown** | Same month, previous / next year.                             |
+| **Enter / Space**                 | Select the focused date.                                      |
 
 Focus that crosses a month boundary re-pages the visible grid and keeps the focused cell in view. Day-of-month is constrained when paging (e.g. Jan 31 → Feb 28). Paging (the prev / next buttons and `PageUp` / `PageDown`) also clamps the focused date into the `[min, max]` range, so it never lands on a cell outside the selectable bounds; day / week arrows still move freely across unavailable dates so keyboard navigation is never trapped.
 

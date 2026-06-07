@@ -132,6 +132,47 @@ The dismiss outputs and the auto-focus pair are vetoable: each receives a `Vetoa
 
 The popover opens / closes alongside the input but never steals focus from it — handy for live-search panels where every keystroke matters.
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute            | Values             |
+| --------------------- | -------------------- | ------------------ |
+| `[forPopover]`        | `data-state`         | `open` \| `closed` |
+| `[forPopover]`        | `data-disabled`      | present \| absent  |
+| `[forPopoverTrigger]` | `data-state`         | `open` \| `closed` |
+| `[forPopoverTrigger]` | `data-disabled`      | present \| absent  |
+| `[forPopoverContent]` | `data-state`         | `open` \| `closed` |
+| `[forPopoverArrow]`   | `data-popover-arrow` | present            |
+
+### CSS custom properties
+
+See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+
+`[forPopoverContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forPopoverArrow]` reads the consumer-settable `--for-arrow-offset`:
+
+| Element               | Custom property                  | Type / range        | Direction | Meaning                                                                                                      |
+| --------------------- | -------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `[forPopoverContent]` | `--for-anchor-width`             | px                  | out       | Trigger (reference) width — match it with `width: var(--for-anchor-width)`.                                  |
+| `[forPopoverContent]` | `--for-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
+| `[forPopoverContent]` | `--for-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
+| `[forPopoverContent]` | `--for-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forPopoverContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| `[forPopoverArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge — typically a negative `px` (e.g. `-4px`).   |
+
+> `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class — see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
+
+```css
+.popover-trigger .chevron {
+  transition: transform 150ms;
+}
+.popover-trigger[data-state='open'] .chevron {
+  transform: rotate(180deg);
+}
+```
+
 ## Keyboard
 
 - **Tab / Shift+Tab** moves focus through the popover and beyond (no trap). When focus leaves, `focusOutside` fires and the popover closes unless prevented.
@@ -147,21 +188,6 @@ The popover opens / closes alongside the input but never steals focus from it �
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
-
-## CSS custom properties
-
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
-
-`[forPopoverContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forPopoverArrow]` reads the consumer-settable `--for-arrow-offset`:
-
-| Element              | Custom property                  | Type / range            | Direction | Meaning                                                                                              |
-| -------------------- | -------------------------------- | ----------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `[forPopoverContent]` | `--for-anchor-width`             | px                      | out       | Trigger (reference) width — match it with `width: var(--for-anchor-width)`.                          |
-| `[forPopoverContent]` | `--for-anchor-height`            | px                      | out       | Trigger (reference) height.                                                                          |
-| `[forPopoverContent]` | `--for-available-width`          | px                      | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
-| `[forPopoverContent]` | `--for-available-height`         | px                      | out       | Space available along the block axis — clamp with `max-height`.                                      |
-| `[forPopoverContent]` | `--for-content-transform-origin` | `<origin>` keywords     | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forPopoverArrow]`   | `--for-arrow-offset`             | px (default `0px`)      | in        | Consumer-set. How far the arrow pokes out past the popover edge — typically a negative `px` (e.g. `-4px`). |
 
 ## Accessibility notes
 

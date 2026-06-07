@@ -14,12 +14,12 @@ There is no WAI-ARIA pattern for "avatar" — it is a presentational composition
 
 ## Inputs / outputs / models
 
-| API                       | Type                      | Owner            | Description                                                                               |
-| ------------------------- | ------------------------- | ---------------- | ----------------------------------------------------------------------------------------- |
-| `fallbackDelayMs`         | `input<number>`           | `ForAvatar`      | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
-| `status`                  | `Signal<ForAvatarStatus>` | `ForAvatar`      | Read-only current status.                                                                 |
-| `shouldShowFallback`      | `Signal<boolean>`         | `ForAvatar`      | `true` when the consumer should render the fallback. Drives `@if`.                        |
-| `(loadStatusChanged)`     | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
+| API                   | Type                      | Owner            | Description                                                                               |
+| --------------------- | ------------------------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| `fallbackDelayMs`     | `input<number>`           | `ForAvatar`      | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
+| `status`              | `Signal<ForAvatarStatus>` | `ForAvatar`      | Read-only current status.                                                                 |
+| `shouldShowFallback`  | `Signal<boolean>`         | `ForAvatar`      | `true` when the consumer should render the fallback. Drives `@if`.                        |
+| `(loadStatusChanged)` | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
 
 The host element of every piece carries `data-status="idle" \| "loading" \| "loaded" \| "error"`.
 
@@ -33,16 +33,16 @@ import { ForAvatar, ForAvatarImage, ForAvatarFallback } from 'forty-cdk';
   selector: 'demo-avatar',
   imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
   template: `
-    <span forAvatar #a="forAvatar" fallbackDelayMs="500">
-      <img forAvatarImage [src]="user.avatarUrl" [alt]="user.name" />
+    <span forAvatar #a="forAvatar" class="avatar" fallbackDelayMs="500">
+      <img forAvatarImage class="avatar-image" [src]="user.avatarUrl" [alt]="user.name" />
       @if (a.shouldShowFallback()) {
-        <span forAvatarFallback>{{ initials() }}</span>
+        <span forAvatarFallback class="avatar-fallback">{{ initials() }}</span>
       }
     </span>
   `,
   styles: [
     `
-      [forAvatar] {
+      .avatar {
         display: inline-flex;
         width: 40px;
         height: 40px;
@@ -53,13 +53,13 @@ import { ForAvatar, ForAvatarImage, ForAvatarFallback } from 'forty-cdk';
         align-items: center;
         justify-content: center;
       }
-      [forAvatarImage] {
+      .avatar-image {
         width: 100%;
         height: 100%;
         object-fit: cover;
       }
-      [forAvatarImage][data-status='loading'],
-      [forAvatarImage][data-status='error'] {
+      .avatar-image[data-status='loading'],
+      .avatar-image[data-status='error'] {
         display: none;
       }
     `,
@@ -77,3 +77,24 @@ export class DemoAvatar {
 - **Multiple images per avatar are not supported.** Each `[forAvatar]` expects exactly one `[forAvatarImage]`. If you need cascading sources (CDN → fallback URL → fallback content), swap `src` on a single image.
 - **`alt` is consumer territory.** Because `<img>` is the host element, the consumer keeps full control of `alt` — set `""` for purely decorative avatars next to a name, or describe the person if the avatar stands alone.
 - **The image stays in the DOM.** Hide it via CSS `[data-status="loading"], [data-status="error"] { display: none }` if your consumer-side styling needs it gone. The fallback uses `@if`, so it only mounts when needed.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute     | Values                                     |
+| --------------------- | ------------- | ------------------------------------------ |
+| `[forAvatar]`         | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
+| `img[forAvatarImage]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
+| `[forAvatarFallback]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
+
+```css
+.avatar-image:not([data-status='loaded']) {
+  display: none;
+}
+.avatar-fallback[data-status='error'] {
+  color: #b00020;
+}
+```

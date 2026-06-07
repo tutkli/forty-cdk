@@ -38,12 +38,6 @@ The `data-quality` reflection follows the HTML5 spec:
 | above `high`    | `[low, high]`         | `sub-optimum`    |
 | above `high`    | below `low`           | `even-less-good` |
 
-## CSS custom properties
-
-| Element               | Custom property          | Type / range          | Meaning                                                                                                          |
-| --------------------- | ------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `[forMeterIndicator]` | `--for-meter-percentage` | percentage `0%`–`100%` | `value` as a CSS percentage of `[min, max]` (`data-percentage` mirrored as a `%` value). Drive `width` / `transform` from it. |
-
 ## Usage
 
 ```ts
@@ -55,14 +49,14 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk';
   imports: [ForMeter, ForMeterIndicator],
   template: `
     <label for="disk">Disk usage</label>
-    <div id="disk" forMeter [value]="used()" [low]="20" [high]="80" [optimum]="40">
-      <div forMeterIndicator></div>
+    <div id="disk" forMeter class="meter" [value]="used()" [low]="20" [high]="80" [optimum]="40">
+      <div forMeterIndicator class="meter-indicator"></div>
     </div>
     <output>{{ used() }}%</output>
   `,
   styles: [
     `
-      [forMeter] {
+      .meter {
         position: relative;
         height: 8px;
         width: 200px;
@@ -70,18 +64,18 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk';
         border-radius: 4px;
         overflow: hidden;
       }
-      [forMeterIndicator] {
+      .meter-indicator {
         height: 100%;
         width: var(--for-meter-percentage, 0%);
         transition: width 200ms;
       }
-      [forMeterIndicator][data-quality='optimum'] {
+      .meter-indicator[data-quality='optimum'] {
         background: #16a34a;
       }
-      [forMeterIndicator][data-quality='sub-optimum'] {
+      .meter-indicator[data-quality='sub-optimum'] {
         background: #ca8a04;
       }
-      [forMeterIndicator][data-quality='even-less-good'] {
+      .meter-indicator[data-quality='even-less-good'] {
         background: #dc2626;
       }
     `,
@@ -89,6 +83,40 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk';
 })
 export class DemoDisk {
   readonly used = signal(72);
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute         | Values                                                 |
+| --------------------- | ----------------- | ------------------------------------------------------ |
+| `[forMeter]`          | `data-quality`    | `optimum` &#124; `sub-optimum` &#124; `even-less-good` |
+| `[forMeter]`          | `data-value`      | current value, clamped to `[min, max]`                 |
+| `[forMeter]`          | `data-min`        | lower bound                                            |
+| `[forMeter]`          | `data-max`        | upper bound                                            |
+| `[forMeter]`          | `data-percentage` | `value` as a number in `0`–`100`                       |
+| `[forMeterIndicator]` | `data-quality`    | `optimum` &#124; `sub-optimum` &#124; `even-less-good` |
+| `[forMeterIndicator]` | `data-value`      | current value, clamped to `[min, max]`                 |
+| `[forMeterIndicator]` | `data-min`        | lower bound                                            |
+| `[forMeterIndicator]` | `data-max`        | upper bound                                            |
+| `[forMeterIndicator]` | `data-percentage` | `value` as a number in `0`–`100`                       |
+
+### CSS custom properties
+
+| Property                 | Meaning                                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `--for-meter-percentage` | `value` as a CSS percentage of `[min, max]` (`0%`–`100%`), set on `[forMeterIndicator]`. Drive `width` / `transform` from it. |
+
+```css
+.meter-indicator {
+  width: var(--for-meter-percentage, 0%);
+}
+.meter-indicator[data-quality='even-less-good'] {
+  background: #dc2626;
 }
 ```
 

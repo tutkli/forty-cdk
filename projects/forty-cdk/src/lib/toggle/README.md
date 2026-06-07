@@ -128,6 +128,38 @@ export class DemoAlignment {
 | `value`    | required | Identifier added to / removed from the group's `value`.   |
 | `disabled` | `false`  | Per-item disabled, in addition to the group's `disabled`. |
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece                  | Attribute          | Values                     |
+| ---------------------- | ------------------ | -------------------------- |
+| `[forToggle]`          | `data-state`       | `checked` \| `unchecked`   |
+| `[forToggle]`          | `data-disabled`    | present \| absent          |
+| `[forToggle]`          | `data-readonly`    | present \| absent          |
+| `[forToggleGroup]`     | `data-orientation` | `horizontal` \| `vertical` |
+| `[forToggleGroup]`     | `data-disabled`    | present \| absent          |
+| `[forToggleGroupItem]` | `data-state`       | `checked` \| `unchecked`   |
+| `[forToggleGroupItem]` | `data-disabled`    | present \| absent          |
+| `[forToggleGroupItem]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.toggle {
+  background: var(--surface);
+}
+
+.toggle[data-state='checked'] {
+  background: var(--accent);
+}
+
+.toggle[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
 ## Keyboard
 
 - **Enter / Space** on the focused item toggles it (native button behavior).

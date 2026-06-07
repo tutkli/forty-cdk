@@ -19,17 +19,17 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 
 ## Inputs (root)
 
-| API                 | Type                                | Description                                                                  |
-| ------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
-| `value`             | `model<string>`                     | Two-way bindable. Open item id, or `''`.                                     |
-| `orientation`       | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`.                                                      |
-| `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.                                          |
-| `loop`              | `input<boolean>`                    | Whether arrow nav wraps. Default `true`.                                     |
-| `disabled`          | `input<boolean>`                    | Disables the whole menu.                                                     |
+| API                 | Type                                | Description                                                                                                                                               |
+| ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<string>`                     | Two-way bindable. Open item id, or `''`.                                                                                                                  |
+| `orientation`       | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`.                                                                                                                                   |
+| `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.                                                                                                                       |
+| `loop`              | `input<boolean>`                    | Whether arrow nav wraps. Default `true`.                                                                                                                  |
+| `disabled`          | `input<boolean>`                    | Disables the whole menu.                                                                                                                                  |
 | `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`. Default `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists. |
-| `delayDuration`     | `input<number>`                     | ms before hover/focus opens. Default `200`.                                  |
-| `closeDelay`        | `input<number>`                     | ms before pointer-leave closes. Default `150`.                               |
-| `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant. Default `300`. |
+| `delayDuration`     | `input<number>`                     | ms before hover/focus opens. Default `200`.                                                                                                               |
+| `closeDelay`        | `input<number>`                     | ms before pointer-leave closes. Default `150`.                                                                                                            |
+| `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant. Default `300`.                                                                              |
 
 ## Usage
 
@@ -60,30 +60,94 @@ import {
     <nav forNavigationMenu aria-label="Main" [(value)]="open">
       <ul forNavigationMenuList>
         <li forNavigationMenuItem value="products">
-          <button forNavigationMenuTrigger>Products</button>
+          <button forNavigationMenuTrigger class="navigation-menu-trigger">Products</button>
           @if (open() === 'products') {
-            <div forNavigationMenuContent animate.enter="fade-in" animate.leave="fade-out">
+            <div
+              forNavigationMenuContent
+              class="navigation-menu-content"
+              animate.enter="fade-in"
+              animate.leave="fade-out"
+            >
               <a href="/p/web" forNavigationMenuLink>Web</a>
               <a href="/p/mobile" forNavigationMenuLink active>Mobile</a>
             </div>
           }
         </li>
         <li forNavigationMenuItem value="company">
-          <button forNavigationMenuTrigger>Company</button>
+          <button forNavigationMenuTrigger class="navigation-menu-trigger">Company</button>
           @if (open() === 'company') {
-            <div forNavigationMenuContent>
+            <div forNavigationMenuContent class="navigation-menu-content">
               <a href="/about" forNavigationMenuLink>About</a>
               <a href="/jobs" forNavigationMenuLink>Careers</a>
             </div>
           }
         </li>
-        <span forNavigationMenuIndicator></span>
+        <span forNavigationMenuIndicator class="navigation-menu-indicator"></span>
       </ul>
     </nav>
   `,
 })
 export class DemoNav {
   readonly open = signal('');
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                          | Attribute          | Values                                               |
+| ------------------------------ | ------------------ | ---------------------------------------------------- |
+| `[forNavigationMenu]`          | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenu]`          | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenu]`          | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuList]`      | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenuItem]`      | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuItem]`      | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuTrigger]`   | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuTrigger]`   | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuContent]`   | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuContent]`   | `data-motion`      | `from-start` \| `from-end` \| `to-start` \| `to-end` |
+| `[forNavigationMenuLink]`      | `data-active`      | present \| absent                                    |
+| `[forNavigationMenuIndicator]` | `data-state`       | `visible` \| `hidden`                                |
+| `[forNavigationMenuIndicator]` | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenuViewport]`  | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuViewport]`  | `data-orientation` | `horizontal` \| `vertical`                           |
+
+`data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
+
+### CSS custom properties
+
+`[forNavigationMenuIndicator]` exposes the active trigger's geometry (relative to `[forNavigationMenuList]`) so the indicator visual can be driven entirely from CSS. The optional shared `[forNavigationMenuViewport]` exposes the active panel's natural size so consumers can transition `width` / `height` between trigger groups.
+
+| Property                                 | Meaning                                                |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `--for-navigation-menu-indicator-x`      | Horizontal offset of the active trigger (px).          |
+| `--for-navigation-menu-indicator-y`      | Vertical offset of the active trigger (px).            |
+| `--for-navigation-menu-indicator-width`  | Active trigger width (px).                             |
+| `--for-navigation-menu-indicator-height` | Active trigger height (px).                            |
+| `--for-navigation-menu-viewport-width`   | Active content's natural width (px), on the Viewport.  |
+| `--for-navigation-menu-viewport-height`  | Active content's natural height (px), on the Viewport. |
+
+```css
+.navigation-menu-trigger svg {
+  transition: transform 150ms;
+}
+.navigation-menu-trigger[data-state='open'] svg {
+  transform: rotate(180deg);
+}
+
+.navigation-menu-indicator {
+  transform: translateX(var(--for-navigation-menu-indicator-x));
+  width: var(--for-navigation-menu-indicator-width);
+  transition:
+    transform 200ms,
+    width 200ms;
+}
+.navigation-menu-indicator[data-state='hidden'] {
+  opacity: 0;
 }
 ```
 
@@ -98,19 +162,6 @@ export class DemoNav {
 | ArrowUp / ArrowDown (vertical)                 | Moves focus across triggers.                                               |
 | Home / End                                     | Jump to first / last enabled trigger.                                      |
 | Escape                                         | Closes and returns focus to the trigger.                                   |
-
-## CSS custom properties
-
-`[forNavigationMenuIndicator]` exposes the active trigger's geometry (relative to `[forNavigationMenuList]`) so the indicator visual can be driven entirely from CSS:
-
-| Element                       | Custom property                          | Type / range | Meaning                          |
-| ----------------------------- | ---------------------------------------- | ------------ | -------------------------------- |
-| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-x`      | px           | Horizontal offset of the active trigger. |
-| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-y`      | px           | Vertical offset of the active trigger.   |
-| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-width`  | px           | Active trigger width.            |
-| `[forNavigationMenuIndicator]` | `--for-navigation-menu-indicator-height` | px           | Active trigger height.           |
-
-The optional shared `[forNavigationMenuViewport]` additionally exposes `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` (the active panel's natural size) — see [Mega-menu (shared `Viewport`)](#mega-menu-shared-viewport).
 
 ## Accessibility notes
 
@@ -141,26 +192,26 @@ When present, each `[forNavigationMenuContent]` re-parents its host into the Vie
 <nav forNavigationMenu [(value)]="open" aria-label="Main">
   <ul forNavigationMenuList>
     <li forNavigationMenuItem value="products">
-      <button forNavigationMenuTrigger>Products</button>
+      <button forNavigationMenuTrigger class="navigation-menu-trigger">Products</button>
       @if (open() === 'products') {
-      <div forNavigationMenuContent>…</div>
+      <div forNavigationMenuContent class="navigation-menu-content">…</div>
       }
     </li>
     <li forNavigationMenuItem value="solutions">
-      <button forNavigationMenuTrigger>Solutions</button>
+      <button forNavigationMenuTrigger class="navigation-menu-trigger">Solutions</button>
       @if (open() === 'solutions') {
-      <div forNavigationMenuContent>…</div>
+      <div forNavigationMenuContent class="navigation-menu-content">…</div>
       }
     </li>
   </ul>
 
   <!-- Single shared surface. Content panels re-parent into here on open. -->
-  <div forNavigationMenuViewport></div>
+  <div forNavigationMenuViewport class="navigation-menu-viewport"></div>
 </nav>
 ```
 
 ```css
-[forNavigationMenuViewport] {
+.navigation-menu-viewport {
   position: relative;
   width: var(--for-navigation-menu-viewport-width);
   height: var(--for-navigation-menu-viewport-height);
@@ -169,21 +220,21 @@ When present, each `[forNavigationMenuContent]` re-parents its host into the Vie
     height 200ms;
 }
 
-[forNavigationMenuContent] {
+.navigation-menu-content {
   position: absolute;
   inset-inline-start: 0;
   top: 0;
 }
-[forNavigationMenuContent][data-motion='from-start'] {
+.navigation-menu-content[data-motion='from-start'] {
   animation: slide-in-from-start 200ms;
 }
-[forNavigationMenuContent][data-motion='from-end'] {
+.navigation-menu-content[data-motion='from-end'] {
   animation: slide-in-from-end 200ms;
 }
-[forNavigationMenuContent][data-motion='to-start'] {
+.navigation-menu-content[data-motion='to-start'] {
   animation: slide-out-to-start 200ms;
 }
-[forNavigationMenuContent][data-motion='to-end'] {
+.navigation-menu-content[data-motion='to-end'] {
   animation: slide-out-to-end 200ms;
 }
 ```

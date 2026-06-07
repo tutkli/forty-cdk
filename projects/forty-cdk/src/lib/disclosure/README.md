@@ -49,10 +49,12 @@ import { ForDisclosure, ForDisclosureTrigger, ForDisclosureContent } from 'forty
   selector: 'demo-faq',
   imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
   template: `
-    <div forDisclosure [(open)]="isOpen">
-      <button type="button" forDisclosureTrigger>{{ isOpen() ? 'Hide' : 'Show' }} details</button>
+    <div forDisclosure class="disclosure" [(open)]="isOpen">
+      <button type="button" forDisclosureTrigger class="disclosure-trigger">
+        {{ isOpen() ? 'Hide' : 'Show' }} details
+      </button>
       @if (isOpen()) {
-        <div forDisclosureContent>
+        <div forDisclosureContent class="disclosure-content">
           <p>Hidden content goes here.</p>
         </div>
       }
@@ -67,11 +69,35 @@ export class DemoFaq {
 The library ships no styles. Hide animations / transitions can be driven off `data-state` on the trigger and content:
 
 ```css
-[forDisclosureContent][data-state='closed'] {
+.disclosure-content[data-state='closed'] {
   /* … */
 }
-[forDisclosureContent][data-state='open'] {
+.disclosure-content[data-state='open'] {
   /* … */
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                    | Attribute       | Values             |
+| ------------------------ | --------------- | ------------------ |
+| `[forDisclosure]`        | `data-state`    | `open` \| `closed` |
+| `[forDisclosure]`        | `data-disabled` | present \| absent  |
+| `[forDisclosureTrigger]` | `data-state`    | `open` \| `closed` |
+| `[forDisclosureTrigger]` | `data-disabled` | present \| absent  |
+| `[forDisclosureContent]` | `data-state`    | `open` \| `closed` |
+| `[forDisclosureContent]` | `data-disabled` | present \| absent  |
+
+```css
+.disclosure-trigger .chevron {
+  transition: transform 150ms ease;
+}
+.disclosure-trigger[data-state='open'] .chevron {
+  transform: rotate(180deg);
 }
 ```
 

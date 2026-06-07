@@ -17,7 +17,7 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
 | `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                       |
 | `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`. |
-| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).          |
+| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).         |
 | `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.       |
 | `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).             |
 | `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                             |
@@ -345,17 +345,51 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 
 The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
 
-## CSS custom properties
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece                    | Attribute          | Values                                                              |
+| ------------------------ | ------------------ | ------------------------------------------------------------------- |
+| `[forCombobox]`          | `data-state`       | `open` \| `closed`                                                  |
+| `[forCombobox]`          | `data-disabled`    | present / absent                                                    |
+| `[forComboboxInput]`     | `data-state`       | `open` \| `closed`                                                  |
+| `[forComboboxInput]`     | `data-disabled`    | present / absent                                                    |
+| `[forComboboxContent]`   | `data-state`       | `open` \| `closed`                                                  |
+| `[forComboboxOption]`    | `data-state`       | `checked` \| `unchecked` (membership in `value()`, both modes)      |
+| `[forComboboxOption]`    | `data-highlighted` | present / absent (the current `aria-activedescendant`)              |
+| `[forComboboxOption]`    | `data-disabled`    | present / absent                                                    |
+| `[forComboboxIndicator]` | `data-state`       | `checked` \| `unchecked` (mirrors the parent option)                |
+| `[forComboboxChip]`      | `data-value`       | the chip's serialized value (verbatim string, or `itemToFormValue`) |
+| `[forComboboxChip]`      | `data-disabled`    | present / absent                                                    |
+
+Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus` — `data-highlighted` is the canonical hook for styling the keyboard-active option.
+
+### CSS custom properties
 
 `[forComboboxContent]` is portaled to `document.body` and gets its position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close):
 
-| Custom property                  | Type / range        | Meaning                                                                                              |
-| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | px                  | Anchor (input / wrapper) width — match the listbox to the input with `width: var(--for-anchor-width)`. |
-| `--for-anchor-height`            | px                  | Anchor height.                                                                                       |
-| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
-| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                      |
+| Custom property                  | Type / range        | Meaning                                                                                                    |
+| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | px                  | Anchor (input / wrapper) width — match the listbox to the input with `width: var(--for-anchor-width)`.     |
+| `--for-anchor-height`            | px                  | Anchor height.                                                                                             |
+| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.            |
+| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                            |
 | `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input. |
+
+> `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
+
+```css
+.option[data-highlighted] {
+  background: var(--accent);
+}
+
+.option:not([data-disabled]) {
+  cursor: pointer;
+}
+```
 
 ## Accessibility notes
 

@@ -74,6 +74,51 @@ import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } fro
 export class DemoSave {}
 ```
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute       | Values             |
+| --------------------- | --------------- | ------------------ |
+| `[forTooltip]`        | `data-state`    | `open` \| `closed` |
+| `[forTooltip]`        | `data-disabled` | present \| absent  |
+| `[forTooltipTrigger]` | `data-state`    | `open` \| `closed` |
+| `[forTooltipContent]` | `data-state`    | `open` \| `closed` |
+
+### CSS custom properties
+
+See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+
+`[forTooltipContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forTooltipArrow]` reads the consumer-settable `--for-arrow-offset`:
+
+| Element               | Custom property                  | Type / range        | Direction | Meaning                                                                                                      |
+| --------------------- | -------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `[forTooltipContent]` | `--for-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
+| `[forTooltipContent]` | `--for-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
+| `[forTooltipContent]` | `--for-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
+| `[forTooltipContent]` | `--for-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forTooltipContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| `[forTooltipArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge — typically a negative `px` (e.g. `-4px`).    |
+
+> `[forTooltipContent]` is portaled to `document.body`, so styles scoped to the `[forTooltip]` wrapper won't reach it. Style the bubble with a global stylesheet or a class on the content directive itself. See [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner custom-property list (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) and the animation / arrow recipes.
+
+```css
+.my-tooltip {
+  opacity: 0;
+  transform: scale(0.9);
+  transform-origin: var(--for-content-transform-origin);
+  transition:
+    opacity 120ms,
+    transform 120ms;
+}
+.my-tooltip[data-state='open'] {
+  opacity: 1;
+  transform: scale(1);
+}
+```
+
 ## Keyboard
 
 - **Tab** to the trigger → opens the tooltip after `openDelay`.
@@ -93,21 +138,6 @@ export class DemoSave {}
   ```bash
   npm install @floating-ui/dom
   ```
-
-## CSS custom properties
-
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
-
-`[forTooltipContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forTooltipArrow]` reads the consumer-settable `--for-arrow-offset`:
-
-| Element              | Custom property                  | Type / range        | Direction | Meaning                                                                                              |
-| -------------------- | -------------------------------- | ------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `[forTooltipContent]` | `--for-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                           |
-| `[forTooltipContent]` | `--for-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                          |
-| `[forTooltipContent]` | `--for-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
-| `[forTooltipContent]` | `--for-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                      |
-| `[forTooltipContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forTooltipArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge — typically a negative `px` (e.g. `-4px`). |
 
 ## Accessibility notes
 

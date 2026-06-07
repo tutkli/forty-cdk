@@ -11,7 +11,7 @@ All time math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`,
 | Provider                                    | Date-time type `D`                             | Dependency                                                 |
 | ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
 | `provideInternationalizedDateTimeAdapter()` | `CalendarDateTime` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`                | `Date`                                          | None (zero-dependency fallback)                            |
+| `provideNativeDateAdapter()`                | `Date`                                         | None (zero-dependency fallback)                            |
 
 > The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeField` throws a descriptive error if it is the active adapter.
 
@@ -28,25 +28,25 @@ When no value is bound yet, a composed value is anchored on the adapter's `today
 
 ## Pieces
 
-| Class                 | Selector                | Role                                                                                                  |
-| --------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ForTimeField`        | `[forTimeField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.          |
-| `ForTimeFieldSegment` | `[forTimeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing.    |
-| `ForTimeFieldLiteral` | `[forTimeFieldLiteral]` | A decorative separator (`:`, a space). `aria-hidden`, out of the tab order.                           |
+| Class                 | Selector                | Role                                                                                               |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `ForTimeField`        | `[forTimeField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.       |
+| `ForTimeFieldSegment` | `[forTimeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing. |
+| `ForTimeFieldLiteral` | `[forTimeFieldLiteral]` | A decorative separator (`:`, a space). `aria-hidden`, out of the tab order.                        |
 
 ## Inputs / models — `ForTimeField`
 
-| API           | Type                                                  | Description                                                                                                          |
-| ------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<D \| null>`                                    | Two-way bindable entered time, or `null` while any visible segment is empty. The `FormValueControl` backing. Default `null`. |
-| `minTime`     | `input<D \| null>`                                    | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` — see note. Default `null`. |
-| `maxTime`     | `input<D \| null>`                                    | Latest time-of-day (inclusive). A composed value later in the day is clamped down. Default `null`.                  |
-| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12- or 24-hour cycle. Default `null` → derived from the locale. 12-hour adds the AM/PM segment.                     |
-| `granularity` | `input<'hour' \| 'minute' \| 'second'>`              | Smallest editable unit. Default `'minute'`.                                                                         |
-| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and AM/PM names. Default `null` → runtime locale.                 |
-| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>`    | Per-segment placeholder while empty. Unspecified parts fall back to `hh` / `mm` / `ss` / `--`. Default `{}`.        |
-| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`. Default `null`.                                  |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. Default `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation. |
+| API           | Type                                              | Description                                                                                                                      |
+| ------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<D \| null>`                                | Two-way bindable entered time, or `null` while any visible segment is empty. The `FormValueControl` backing. Default `null`.     |
+| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` — see note. Default `null`. |
+| `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive). A composed value later in the day is clamped down. Default `null`.                               |
+| `hourCycle`   | `input<12 \| 24 \| null>`                         | 12- or 24-hour cycle. Default `null` → derived from the locale. 12-hour adds the AM/PM segment.                                  |
+| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit. Default `'minute'`.                                                                                      |
+| `locale`      | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. Default `null` → runtime locale.                               |
+| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `hh` / `mm` / `ss` / `--`. Default `{}`.                     |
+| `ariaLabel`   | `input<string \| null>`                           | Accessible name for the group. Emits no `aria-label` while `null`. Default `null`.                                               |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. Default `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.             |
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 
@@ -69,7 +69,9 @@ import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cd
         @if (seg.isLiteral) {
           <span forTimeFieldLiteral>{{ seg.text }}</span>
         } @else {
-          <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          <span forTimeFieldSegment class="time-field-segment" [segment]="seg.type!">{{
+            seg.text
+          }}</span>
         }
       }
     </div>
@@ -86,14 +88,14 @@ The library is styleless: style the boolean `data-*` hooks on the segments yours
 
 Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.                               |
-| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                  |
+| Key                        | Behavior                                                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                                       |
+| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                          |
 | **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight. |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                            |
-| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                       |
-| **Backspace / Delete**     | Clear a numeric segment (the value becomes `null` until refilled).                         |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                     |
+| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                               |
+| **Backspace / Delete**     | Clear a numeric segment (the value becomes `null` until refilled).                                 |
 
 The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
 
@@ -113,6 +115,34 @@ providers: [
 ```
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                   | Attribute          | Values            |
+| ----------------------- | ------------------ | ----------------- |
+| `[forTimeField]`        | `data-disabled`    | present \| absent |
+| `[forTimeField]`        | `data-readonly`    | present \| absent |
+| `[forTimeField]`        | `data-empty`       | present \| absent |
+| `[forTimeFieldSegment]` | `data-highlighted` | present \| absent |
+| `[forTimeFieldSegment]` | `data-placeholder` | present \| absent |
+| `[forTimeFieldSegment]` | `data-disabled`    | present \| absent |
+| `[forTimeFieldSegment]` | `data-readonly`    | present \| absent |
+
+`[forTimeFieldLiteral]` carries no `data-*` hooks — it is `aria-hidden` and purely decorative; style it directly via your own class.
+
+```css
+.time-field-segment[data-placeholder] {
+  color: gray;
+}
+
+.time-field-segment[data-highlighted] {
+  background: highlight;
+}
+```
 
 ## Accessibility notes
 

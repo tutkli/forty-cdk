@@ -6,11 +6,11 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 
 ## Pieces
 
-| Class                 | Selector                | Role                                                                                               |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `ForToolbar`          | `[forToolbar]`          | Root. `role="toolbar"`. Owns roving + nav.                                                         |
-| `ForToolbarButton`    | `[forToolbarButton]`    | Plain push button. Apply on `<button>`.                                                            |
-| `ForToolbarLink`      | `[forToolbarLink]`      | Hyperlink. Apply on `<a>`.                                                                         |
+| Class                 | Selector                | Role                                                                                                                                       |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ForToolbar`          | `[forToolbar]`          | Root. `role="toolbar"`. Owns roving + nav.                                                                                                 |
+| `ForToolbarButton`    | `[forToolbarButton]`    | Plain push button. Apply on `<button>`.                                                                                                    |
+| `ForToolbarLink`      | `[forToolbarLink]`      | Hyperlink. Apply on `<a>`.                                                                                                                 |
 | `ForToolbarSeparator` | `[forToolbarSeparator]` | Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `role="separator"` + `aria-orientation` + `data-orientation`. |
 
 ## Inputs (root)
@@ -46,9 +46,9 @@ import {
     ForToggleGroupItem,
   ],
   template: `
-    <div forToolbar aria-label="Formatting">
-      <button forToolbarButton (click)="undo()">Undo</button>
-      <button forToolbarButton (click)="redo()">Redo</button>
+    <div forToolbar class="toolbar" aria-label="Formatting">
+      <button forToolbarButton class="toolbar-button" (click)="undo()">Undo</button>
+      <button forToolbarButton class="toolbar-button" (click)="redo()">Redo</button>
       <span forToolbarSeparator></span>
       <div forToggleGroup multiple [(value)]="formatting">
         <button forToggleGroupItem value="bold">B</button>
@@ -56,7 +56,7 @@ import {
         <button forToggleGroupItem value="underline">U</button>
       </div>
       <span forToolbarSeparator></span>
-      <a forToolbarLink href="/help">Help</a>
+      <a forToolbarLink class="toolbar-link" href="/help">Help</a>
     </div>
   `,
 })
@@ -64,6 +64,39 @@ export class DemoToolbar {
   readonly formatting = signal<readonly string[]>([]);
   undo() {}
   redo() {}
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                   | Attribute          | Values                     |
+| ----------------------- | ------------------ | -------------------------- |
+| `[forToolbar]`          | `data-orientation` | `horizontal` \| `vertical` |
+| `[forToolbar]`          | `data-disabled`    | present \| absent          |
+| `[forToolbarButton]`    | `data-orientation` | `horizontal` \| `vertical` |
+| `[forToolbarButton]`    | `data-disabled`    | present \| absent          |
+| `[forToolbarLink]`      | `data-orientation` | `horizontal` \| `vertical` |
+| `[forToolbarLink]`      | `data-disabled`    | present \| absent          |
+| `[forToolbarSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.toolbar {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.toolbar[data-orientation='vertical'] {
+  flex-direction: column;
+}
+
+.toolbar-button[data-disabled],
+.toolbar-link[data-disabled] {
+  opacity: 0.4;
+  pointer-events: none;
 }
 ```
 

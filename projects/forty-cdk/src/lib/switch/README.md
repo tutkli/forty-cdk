@@ -6,23 +6,23 @@ A switch is a binary on/off control whose state changes immediately on activatio
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
+| Class       | Selector      | Role                                                                 |
+| ----------- | ------------- | -------------------------------------------------------------------- |
 | `ForSwitch` | `[forSwitch]` | Single directive on a `<button>`. Wires ARIA + click + Signal Forms. |
 
 ## Inputs / models
 
-| API | Type | Description |
-| --- | --- | --- |
-| `checked` | `model<boolean>` | Two-way bindable on/off state. Required by `FormCheckboxControl`. |
-| `disabled` | `input<boolean>` | Ignores click; reflects `disabled` and `aria-disabled`. |
-| `readonly` | `input<boolean>` | Ignores click; reflects `aria-readonly="true"`. Stays focusable. |
-| `required` | `input<boolean>` | Reflects `aria-required="true"`. |
-| `invalid` | `input<boolean>` | Reflects `aria-invalid="true"`. |
-| `pending` | `input<boolean>` | Reflects `aria-busy="true"` while async validation is in flight. |
-| `name` | `input<string \| undefined>` | Reflects on `name`. |
-| `errors` | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
-| `touched` | `model<boolean>` | Set to `true` on blur. Two-way so the field can read it back. |
+| API        | Type                                                      | Description                                                                                              |
+| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.                                        |
+| `disabled` | `input<boolean>`                                          | Ignores click; reflects `disabled` and `aria-disabled`.                                                  |
+| `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.                                         |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                         |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.                                                                          |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.                                         |
+| `name`     | `input<string \| undefined>`                              | Reflects on `name`.                                                                                      |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.                                            |
 
 The host gets `data-state="checked" \| "unchecked"`, `data-disabled`, and `data-readonly` for CSS hooks.
 
@@ -36,7 +36,7 @@ import { ForSwitch } from 'forty-cdk';
   selector: 'demo-toggle',
   imports: [ForSwitch],
   template: `
-    <button forSwitch [(checked)]="enabled">
+    <button forSwitch class="switch" [(checked)]="enabled">
       <span class="thumb"></span>
     </button>
     <p>Notifications: {{ enabled() ? 'on' : 'off' }}</p>
@@ -75,6 +75,32 @@ export class DemoSettings {
   readonly settings = form(this.model, (s) => {
     required(s.termsAccepted);
   });
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece         | Attribute       | Values                   |
+| ------------- | --------------- | ------------------------ |
+| `[forSwitch]` | `data-state`    | `checked` \| `unchecked` |
+| `[forSwitch]` | `data-disabled` | present \| absent        |
+| `[forSwitch]` | `data-readonly` | present \| absent        |
+| `[forSwitch]` | `data-touched`  | present \| absent        |
+| `[forSwitch]` | `data-dirty`    | present \| absent        |
+| `[forSwitch]` | `data-pending`  | present \| absent        |
+| `[forSwitch]` | `data-invalid`  | present \| absent        |
+
+```css
+.switch .thumb {
+  transition: transform 150ms;
+}
+
+.switch[data-state='checked'] .thumb {
+  transform: translateX(100%);
 }
 ```
 

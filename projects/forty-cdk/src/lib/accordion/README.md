@@ -66,13 +66,13 @@ import {
     <div forAccordion [(value)]="open" collapsible>
       <div forAccordionItem value="shipping">
         <h3>
-          <button type="button" forAccordionTrigger>Shipping</button>
+          <button type="button" forAccordionTrigger class="accordion-trigger">Shipping</button>
         </h3>
         <section forAccordionContent>Ships in 24h.</section>
       </div>
       <div forAccordionItem value="returns">
         <h3>
-          <button type="button" forAccordionTrigger>Returns</button>
+          <button type="button" forAccordionTrigger class="accordion-trigger">Returns</button>
         </h3>
         <section forAccordionContent>Free 30-day returns.</section>
       </div>
@@ -81,6 +81,33 @@ import {
 })
 export class DemoFaq {
   readonly open = signal<readonly string[]>([]);
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                   | Attribute          | Values                     |
+| ----------------------- | ------------------ | -------------------------- |
+| `[forAccordion]`        | `data-orientation` | `horizontal` \| `vertical` |
+| `[forAccordionItem]`    | `data-state`       | `open` \| `closed`         |
+| `[forAccordionItem]`    | `data-disabled`    | present \| absent          |
+| `[forAccordionItem]`    | `data-orientation` | `horizontal` \| `vertical` |
+| `[forAccordionTrigger]` | `data-state`       | `open` \| `closed`         |
+| `[forAccordionTrigger]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forAccordionContent]` | `data-state`       | `open` \| `closed`         |
+| `[forAccordionContent]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.trigger-chevron {
+  transition: transform 150ms ease;
+}
+
+.accordion-trigger[data-state='open'] .trigger-chevron {
+  transform: rotate(180deg);
 }
 ```
 

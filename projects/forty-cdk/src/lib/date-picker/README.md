@@ -16,7 +16,7 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 ## Pieces
 
 | Class                  | Selector                 | Role                                                                                                            |
-| ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| ---------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `ForDatePicker`        | `[forDatePicker]`        | Root + `FormValueControl<D \| null>`. Owns `value`, `open`, the shared context, and the close-on-select bridge. |
 | `ForDatePickerTrigger` | `[forDatePickerTrigger]` | The focusable button (`aria-haspopup="dialog"`). Opens the surface; carries the form-control ARIA state.        |
 | `ForDatePickerContent` | `[forDatePickerContent]` | The floating `role="dialog"` surface. Non-modal popover by default; modal dialog when `[modal]`.                |
@@ -24,23 +24,23 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 
 ## Inputs / models — `ForDatePicker`
 
-| API                 | Type                              | Description                                                                                                  |
-| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `value`             | `model<D \| null>`                | Two-way bindable selected date. `(valueChange)` fires only on internal commits. Default `null`.              |
-| `open`              | `model<boolean>`                  | Two-way bindable surface visibility. `(openChange)` fires only on internal transitions. Default `false`.     |
-| `minDate`           | `input<D \| null>`                | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`. Default `null`.            |
-| `maxDate`           | `input<D \| null>`                | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`. Default `null`.            |
-| `isDateUnavailable` | `input<(date: D) => boolean>`     | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. Default `() => false`.        |
-| `closeOnSelect`     | `input<boolean>`                  | Close the surface after a date is picked. Honoured only at `granularity="day"`. Default `true`.              |
-| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field. |
-| `hourCycle`         | `input<12 \| 24 \| null>`         | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`). Default `null` → locale. |
-| `modal`             | `input<boolean>`                  | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover. Default `false`. |
-| `dismissible`       | `input<boolean>`                  | Escape / outside-pointer dismiss the surface. Default `true`.                                                |
-| `returnFocus`       | `input<boolean>`                  | Return focus to the trigger on close. Default `true`.                                                        |
-| `formatOptions`     | `input<Intl.DateTimeFormatOptions>` | Options for the text rendered by `[forDatePickerValue]`. Default `{ year: 'numeric', month: 'long', day: 'numeric' }`. |
-| `placeholder`       | `input<string>`                   | Fallback text for `[forDatePickerValue]` when empty. Default `''`.                                           |
-| `side` / `align`    | `input`                           | Anchored placement (popover mode only). Defaults `'bottom'` / `'start'`.                                     |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`   | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir`.               |
+| API                 | Type                                             | Description                                                                                                            |
+| ------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                               | Two-way bindable selected date. `(valueChange)` fires only on internal commits. Default `null`.                        |
+| `open`              | `model<boolean>`                                 | Two-way bindable surface visibility. `(openChange)` fires only on internal transitions. Default `false`.               |
+| `minDate`           | `input<D \| null>`                               | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`. Default `null`.                      |
+| `maxDate`           | `input<D \| null>`                               | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`. Default `null`.                      |
+| `isDateUnavailable` | `input<(date: D) => boolean>`                    | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. Default `() => false`.                  |
+| `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured only at `granularity="day"`. Default `true`.                        |
+| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.              |
+| `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`). Default `null` → locale.        |
+| `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover. Default `false`.         |
+| `dismissible`       | `input<boolean>`                                 | Escape / outside-pointer dismiss the surface. Default `true`.                                                          |
+| `returnFocus`       | `input<boolean>`                                 | Return focus to the trigger on close. Default `true`.                                                                  |
+| `formatOptions`     | `input<Intl.DateTimeFormatOptions>`              | Options for the text rendered by `[forDatePickerValue]`. Default `{ year: 'numeric', month: 'long', day: 'numeric' }`. |
+| `placeholder`       | `input<string>`                                  | Fallback text for `[forDatePickerValue]` when empty. Default `''`.                                                     |
+| `side` / `align`    | `input`                                          | Anchored placement (popover mode only). Defaults `'bottom'` / `'start'`.                                               |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir`.                         |
 
 Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`, and the `touched` model) and the floating tunables (`sideOffset`, `alignOffset`, `avoidCollisions`, `collisionPadding`, `sticky`, `hideWhenDetached`).
 
@@ -92,8 +92,8 @@ import {
       [ariaLabel]="'Choose date'"
       #picker="forDatePicker"
     >
-      <button forDatePickerTrigger>
-        <span forDatePickerValue [placeholder]="'Pick a date'"></span>
+      <button forDatePickerTrigger class="date-picker-trigger">
+        <span forDatePickerValue class="date-picker-value" [placeholder]="'Pick a date'"></span>
       </button>
 
       @if (open()) {
@@ -160,39 +160,79 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into
 Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: a calendar selection emits the picked day at midnight, and the picker grafts the previously entered time back on (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
 
 ```html
-<div forDatePicker [(value)]="when" [(open)]="open" granularity="minute" [hourCycle]="24" #picker="forDatePicker">
-  <button forDatePickerTrigger>
-    <span forDatePickerValue [placeholder]="'Pick date & time'"></span>
+<div
+  forDatePicker
+  [(value)]="when"
+  [(open)]="open"
+  granularity="minute"
+  [hourCycle]="24"
+  #picker="forDatePicker"
+>
+  <button forDatePickerTrigger class="date-picker-trigger">
+    <span forDatePickerValue class="date-picker-value" [placeholder]="'Pick date & time'"></span>
   </button>
 
   @if (open()) {
-    <div forDatePickerContent>
-      <div forCalendar [value]="picker.value()" [min]="picker.minDate()" [max]="picker.maxDate()">
-        <!-- …calendar header + grid… -->
-      </div>
-
-      <div forTimeField [value]="picker.value()" [hourCycle]="picker.hourCycle()" #field="forTimeField">
-        @for (seg of field.segments(); track seg.id) {
-          @if (seg.isLiteral) {
-            <span forTimeFieldLiteral>{{ seg.text }}</span>
-          } @else {
-            <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
-          }
-        }
-      </div>
+  <div forDatePickerContent>
+    <div forCalendar [value]="picker.value()" [min]="picker.minDate()" [max]="picker.maxDate()">
+      <!-- …calendar header + grid… -->
     </div>
+
+    <div
+      forTimeField
+      [value]="picker.value()"
+      [hourCycle]="picker.hourCycle()"
+      #field="forTimeField"
+    >
+      @for (seg of field.segments(); track seg.id) { @if (seg.isLiteral) {
+      <span forTimeFieldLiteral>{{ seg.text }}</span>
+      } @else {
+      <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+      } }
+    </div>
+  </div>
   }
 </div>
 ```
 
 The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                    | Attribute          | Values             |
+| ------------------------ | ------------------ | ------------------ |
+| `[forDatePicker]`        | `data-state`       | `open` \| `closed` |
+| `[forDatePicker]`        | `data-disabled`    | present \| absent  |
+| `[forDatePickerTrigger]` | `data-state`       | `open` \| `closed` |
+| `[forDatePickerTrigger]` | `data-disabled`    | present \| absent  |
+| `[forDatePickerContent]` | `data-state`       | `open` \| `closed` |
+| `[forDatePickerValue]`   | `data-placeholder` | present \| absent  |
+
+> `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules — see [Styling floating content](../../../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, `--for-content-transform-origin`); that same guide tabulates the full set.
+
+```css
+.date-picker-trigger .date-picker-value[data-placeholder] {
+  color: var(--muted-foreground);
+}
+
+.date-picker-trigger .chevron {
+  transition: transform 150ms;
+}
+.date-picker-trigger[data-state='open'] .chevron {
+  transform: rotate(180deg);
+}
+```
+
 ## Keyboard
 
-| Key                       | Behavior                                                                  |
-| ------------------------- | ------------------------------------------------------------------------- |
-| **Enter / Space** on trigger | Open the surface (native button activation).                           |
-| **Escape**                | Dismiss the surface and return focus to the trigger (when `dismissible`). |
+| Key                          | Behavior                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| **Enter / Space** on trigger | Open the surface (native button activation).                              |
+| **Escape**                   | Dismiss the surface and return focus to the trigger (when `dismissible`). |
 
 Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`) in non-modal mode, or the first focusable element in modal mode.
 

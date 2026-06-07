@@ -11,20 +11,20 @@ Use the one that matches your semantics. `ForCheckbox` and `ForSwitch` are inten
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
+| Class         | Selector        | Role                                                                 |
+| ------------- | --------------- | -------------------------------------------------------------------- |
 | `ForCheckbox` | `[forCheckbox]` | Single directive on a `<button>`. Wires ARIA + click + Signal Forms. |
 
 ## Inputs / models
 
-| API | Type | Description |
-| --- | --- | --- |
-| `checked` | `model<boolean>` | Two-way bindable on/off. Required by `FormCheckboxControl`. |
-| `indeterminate` | `model<boolean>` | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only — not part of the form value. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>` | Reflected as the matching `aria-*` / `disabled` / `data-*` attributes. |
-| `name` | `input<string>` | Reflected on `name` (empty string omits the attribute). |
-| `errors` | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. |
-| `touched` | `model<boolean>` | Set to `true` on blur. |
+| API                                                          | Type                                                      | Description                                                                                                                         |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.                                                                         |
+| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only — not part of the form value. |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `disabled` / `data-*` attributes.                                                              |
+| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).                                                                             |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.                                                                                             |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.                                                                                                              |
 
 The host gets `data-state="checked" \| "unchecked" \| "indeterminate"` for CSS hooks.
 
@@ -39,7 +39,7 @@ import { ForCheckbox } from 'forty-cdk';
   imports: [ForCheckbox],
   template: `
     <label>
-      <button forCheckbox [(checked)]="agreed">
+      <button forCheckbox class="checkbox" [(checked)]="agreed">
         <span class="indicator"></span>
       </button>
       I agree to the terms
@@ -63,12 +63,13 @@ import { ForCheckbox } from 'forty-cdk';
   template: `
     <button
       forCheckbox
+      class="checkbox"
       [checked]="allChecked()"
       [indeterminate]="someChecked()"
       (click)="toggleAll()"
     ></button>
     @for (item of items(); track item.id) {
-      <button forCheckbox [(checked)]="item.selected"></button>
+      <button forCheckbox class="checkbox" [(checked)]="item.selected"></button>
     }
   `,
 })
@@ -102,13 +103,34 @@ import { ForCheckbox } from 'forty-cdk';
 @Component({
   selector: 'demo-checkout',
   imports: [ForCheckbox /* , FormField from @angular/forms */],
-  template: `
-    <button forCheckbox [formField]="checkout.acceptTerms"></button>
-  `,
+  template: ` <button forCheckbox class="checkbox" [formField]="checkout.acceptTerms"></button> `,
 })
 export class DemoCheckout {
   readonly model = signal({ acceptTerms: false });
   readonly checkout = form(this.model, (s) => required(s.acceptTerms));
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-* attributes below.
+
+### Data attributes
+
+| Piece                    | Attribute       | Values                                      |
+| ------------------------ | --------------- | ------------------------------------------- |
+| `[forCheckbox]`          | `data-state`    | `checked` \| `unchecked` \| `indeterminate` |
+| `[forCheckbox]`          | `data-disabled` | present \| absent                           |
+| `[forCheckbox]`          | `data-readonly` | present \| absent                           |
+| `[forCheckboxIndicator]` | `data-state`    | `checked` \| `unchecked` \| `indeterminate` |
+
+```css
+.checkbox-indicator[data-state='unchecked'] {
+  display: none;
+}
+
+.checkbox[data-state='indeterminate'] .dash {
+  display: block;
 }
 ```
 

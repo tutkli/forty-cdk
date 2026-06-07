@@ -85,7 +85,7 @@ The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **
 
 <!-- surface: id="<id>" must match controls above -->
 @if (open()) {
-  <div forDialog id="my-dialog" (close)="open.set(false)">…</div>
+<div forDialog id="my-dialog" (close)="open.set(false)">…</div>
 }
 ```
 
@@ -177,9 +177,9 @@ The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `
 
 The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action. This shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(close)` output. See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs while trigger-anchored overlays (Popover, DropdownMenu, ContextMenu, Menu sub, Select) use output-shape.
 
-| Input              | Payload                          | Fires on                                                                                                                  |
-| ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.     |
+| Input              | Payload                          | Fires on                                                                                                                                                                                                                                           |
+| ------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.                                                                                                                              |
 | `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus. |
 
 ### Open without stealing focus
@@ -230,6 +230,43 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 | `providers`        | `[]`      | Extra providers for the opened component's injector.                                                    |
 | `autoFocusOnOpen`  | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move. |
 | `autoFocusOnClose` | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.         |
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute                  | Values                                                                         |
+| --------------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`) |
+| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                             |
+| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                               |
+| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
+| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled to body, so use it to select the backdrop)    |
+| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
+
+`[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
+
+> **This dialog portals to `document.body`.** CSS scoped to ancestors of `[forDialog]` (or `[forDialogBackdrop]`) will not apply once the surface is moved to the body. Style it with **global CSS** or a class. Declaratively you write the surface yourself, so add the class directly (`<div forDialog class="my-dialog">`); for programmatically opened instances pass `class` / `classList` on the `ForDialogManager.open()` config — they land on the same `[forDialog]` host that carries `data-state` / `role` / `aria-modal`, merged and never clobbering them.
+
+```css
+.my-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+}
+
+.my-backdrop[data-for-dialog-backdrop] {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.my-trigger[data-state='open'] {
+  background: var(--accent);
+}
+```
 
 ## Keyboard
 

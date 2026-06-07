@@ -26,14 +26,14 @@ Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 ele
 
 ```html
 <div forSelect #select="forSelect" [(value)]="favorite" placeholder="Pick a fruit">
-  <button forSelectTrigger>
+  <button forSelectTrigger class="select-trigger">
     <span forSelectValue></span>
   </button>
   @if (select.open()) {
   <div forSelectContent>
-    <button forSelectOption value="apple">Apple</button>
-    <button forSelectOption value="banana">Banana</button>
-    <button forSelectOption value="cherry">Cherry</button>
+    <button forSelectOption class="select-item" value="apple">Apple</button>
+    <button forSelectOption class="select-item" value="banana">Banana</button>
+    <button forSelectOption class="select-item" value="cherry">Cherry</button>
   </div>
   }
 </div>
@@ -47,14 +47,14 @@ Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle i
 
 ```html
 <div forSelect #select="forSelect" multiple [(value)]="tags">
-  <button forSelectTrigger>
+  <button forSelectTrigger class="select-trigger">
     <span forSelectValue placeholder="Pick tags…"></span>
   </button>
   @if (select.open()) {
   <div forSelectContent>
-    <button forSelectOption value="ng">Angular</button>
-    <button forSelectOption value="ts">TypeScript</button>
-    <button forSelectOption value="rx">RxJS</button>
+    <button forSelectOption class="select-item" value="ng">Angular</button>
+    <button forSelectOption class="select-item" value="ts">TypeScript</button>
+    <button forSelectOption class="select-item" value="rx">RxJS</button>
   </div>
   }
 </div>
@@ -72,6 +72,59 @@ When the listbox mounts, focus lands per the trigger's hint:
 - **ArrowUp** → focuses the currently-selected option, or the last enabled option when no selection exists.
 
 Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected')`.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                  | Attribute          | Values                     |
+| ---------------------- | ------------------ | -------------------------- |
+| `[forSelect]`          | `data-state`       | `open` \| `closed`         |
+| `[forSelect]`          | `data-disabled`    | present \| absent          |
+| `[forSelectTrigger]`   | `data-state`       | `open` \| `closed`         |
+| `[forSelectTrigger]`   | `data-disabled`    | present \| absent          |
+| `[forSelectValue]`     | `data-placeholder` | present \| absent          |
+| `[forSelectContent]`   | `data-state`       | `open` \| `closed`         |
+| `[forSelectContent]`   | `data-orientation` | `vertical` \| `horizontal` |
+| `[forSelectOption]`    | `data-state`       | `checked` \| `unchecked`   |
+| `[forSelectOption]`    | `data-disabled`    | present \| absent          |
+| `[forSelectOption]`    | `data-highlighted` | present \| absent          |
+| `[forSelectIndicator]` | `data-state`       | `checked` \| `unchecked`   |
+
+`data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../../../docs/styling-floating-content.md).
+
+### CSS custom properties
+
+`[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
+
+| Custom property                         | Type / range        | `position`     | Meaning                                                                                                         |
+| --------------------------------------- | ------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`                    | px                  | both           | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                                |
+| `--for-anchor-height`                   | px                  | both           | Trigger height.                                                                                                 |
+| `--for-select-content-available-height` | px                  | `item-aligned` | Viewport height minus `collisionPadding` — clamp with `max-height: var(--for-select-content-available-height)`. |
+| `--for-available-width`                 | px                  | `popper`       | Space available to the content along the inline axis (from floating-ui's `size` middleware).                    |
+| `--for-available-height`                | px                  | `popper`       | Space available to the content along the block axis.                                                            |
+| `--for-content-transform-origin`        | `<origin>` keywords | `popper`       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.    |
+
+> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too; see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list.
+
+```css
+.select-trigger svg {
+  transition: transform 150ms ease;
+}
+.select-trigger[data-state='open'] svg {
+  transform: rotate(180deg);
+}
+
+.select-item[data-highlighted] {
+  background: var(--accent);
+}
+.select-item:not([data-disabled]):hover {
+  cursor: pointer;
+}
+```
 
 ## Keyboard
 
@@ -98,15 +151,21 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 When nothing is selected, the algorithm falls back to the first enabled option. The listbox is clamped inside the viewport with `collisionPadding`; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
 
 ```html
-<div forSelect #select="forSelect" [(value)]="country" position="item-aligned" [collisionPadding]="10">
-  <button forSelectTrigger>
+<div
+  forSelect
+  #select="forSelect"
+  [(value)]="country"
+  position="item-aligned"
+  [collisionPadding]="10"
+>
+  <button forSelectTrigger class="select-trigger">
     <span forSelectValue placeholder="Country"></span>
   </button>
   @if (select.open()) {
   <div forSelectContent class="select-content">
-    <button forSelectOption value="es">Spain</button>
-    <button forSelectOption value="fr">France</button>
-    <button forSelectOption value="de">Germany</button>
+    <button forSelectOption class="select-item" value="es">Spain</button>
+    <button forSelectOption class="select-item" value="fr">France</button>
+    <button forSelectOption class="select-item" value="de">Germany</button>
   </div>
   }
 </div>
@@ -130,12 +189,21 @@ The default stays `popper` (rather than mirroring Radix's `item-aligned` default
 `[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (Angular Material's `touchUi`, native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through `_internal/modal-shell` — a **trapped / inert / scroll-locked** surface — instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
 
 ```html
-<div forSelect [(value)]="value" [(open)]="open" name="country" [modal]="isCoarsePointer()" ariaLabel="Country">
-  <button forSelectTrigger><span forSelectValue placeholder="Country"></span></button>
+<div
+  forSelect
+  [(value)]="value"
+  [(open)]="open"
+  name="country"
+  [modal]="isCoarsePointer()"
+  ariaLabel="Country"
+>
+  <button forSelectTrigger class="select-trigger">
+    <span forSelectValue placeholder="Country"></span>
+  </button>
   @if (open()) {
   <div forSelectContent>
-    <button forSelectOption value="es">Spain</button>
-    <button forSelectOption value="fr">France</button>
+    <button forSelectOption class="select-item" value="es">Spain</button>
+    <button forSelectOption class="select-item" value="fr">France</button>
   </div>
   }
 </div>
@@ -153,19 +221,6 @@ What modal mode changes:
 The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`, `arrowPadding`.
 
 > **Not** a swipe / snap-point sheet. This is the batteries-included _modal_ presentation of a value field. The draggable bottom-sheet (snap points, swipe-to-dismiss) is a different use case — compose a `ForListbox` inside a `ForDrawer` by hand for that. It loses the form-value wiring, which is why it isn't an internal mode here.
-
-## CSS custom properties
-
-`[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
-
-| Custom property                        | Type / range  | `position`     | Meaning                                                                                          |
-| -------------------------------------- | ------------- | -------------- | ------------------------------------------------------------------------------------------------ |
-| `--for-anchor-width`                   | px            | both           | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                 |
-| `--for-anchor-height`                  | px            | both           | Trigger height.                                                                                  |
-| `--for-select-content-available-height` | px            | `item-aligned` | Viewport height minus `collisionPadding` — clamp with `max-height: var(--for-select-content-available-height)`. |
-| `--for-available-width`                | px            | `popper`       | Space available to the content along the inline axis (from floating-ui's `size` middleware).     |
-| `--for-available-height`               | px            | `popper`       | Space available to the content along the block axis.                                             |
-| `--for-content-transform-origin`       | `<origin>` keywords | `popper`       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 
 ## Selection follows focus
 
@@ -196,7 +251,9 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 ```html
 <div forSelect [formField]="form.color">
-  <button forSelectTrigger><span forSelectValue placeholder="Color"></span></button>
+  <button forSelectTrigger class="select-trigger">
+    <span forSelectValue placeholder="Color"></span>
+  </button>
   …
 </div>
 ```
@@ -209,9 +266,9 @@ Real apps usually have richer option models — `{ id, name, ... }` — where th
 
 Two inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                     |
-| ---------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).           |
+| Input                  | Default                                                            | Purpose                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).               |
 | `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
 
 The visible option label still comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
@@ -226,13 +283,13 @@ The visible option label still comes from the rendered `textContent`, so there's
   [itemToFormValue]="toId"
   placeholder="Pick a city"
 >
-  <button forSelectTrigger>
+  <button forSelectTrigger class="select-trigger">
     <span forSelectValue></span>
   </button>
   @if (select.open()) {
   <div forSelectContent>
     @for (c of cities; track c.id) {
-    <button forSelectOption [value]="c">{{ c.name }}</button>
+    <button forSelectOption class="select-item" [value]="c">{{ c.name }}</button>
     }
   </div>
   }

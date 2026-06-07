@@ -24,25 +24,25 @@ bootstrapApplication(App, {
 
 ## Pieces
 
-| Class                 | Selector               | Role                                                                                              |
-| --------------------- | ---------------------- | ------------------------------------------------------------------------------------------------- |
-| `ForDateField`        | `[forDateField]`       | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.      |
+| Class                 | Selector                | Role                                                                                               |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `ForDateField`        | `[forDateField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.       |
 | `ForDateFieldSegment` | `[forDateFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing. |
-| `ForDateFieldLiteral` | `[forDateFieldLiteral]` | A decorative separator (`/`, `.`, `-`). `aria-hidden`, out of the tab order.                      |
+| `ForDateFieldLiteral` | `[forDateFieldLiteral]` | A decorative separator (`/`, `.`, `-`). `aria-hidden`, out of the tab order.                       |
 
 ## Inputs / models — `ForDateField`
 
-| API           | Type                                                  | Description                                                                                                              |
-| ------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<D \| null>`                                    | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing. Default `null`.    |
-| `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below. Default `null`.    |
-| `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive). A composed value above it is clamped down. Default `null`.                                    |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`     | Date-time precision. `'day'` (default) is date-only; coarser-than-day off appends time segments. See below.            |
-| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. Default `null` → locale. 12-hour adds the AM/PM segment.                       |
-| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. Default `null` → runtime locale.                      |
+| API           | Type                                                  | Description                                                                                                                         |
+| ------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<D \| null>`                                    | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing. Default `null`.                |
+| `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below. Default `null`.                |
+| `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive). A composed value above it is clamped down. Default `null`.                                                |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | Date-time precision. `'day'` (default) is date-only; coarser-than-day off appends time segments. See below.                         |
+| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. Default `null` → locale. 12-hour adds the AM/PM segment.                                    |
+| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. Default `null` → runtime locale.                                   |
 | `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`. Default `{}`. |
-| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`. Default `null`.                                     |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. Default `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.   |
+| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`. Default `null`.                                                  |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. Default `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.                |
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 
@@ -60,12 +60,20 @@ import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cd
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
   template: `
-    <div forDateField [(value)]="date" [ariaLabel]="'Date of birth'" #field="forDateField">
+    <div
+      forDateField
+      class="date-field"
+      [(value)]="date"
+      [ariaLabel]="'Date of birth'"
+      #field="forDateField"
+    >
       @for (seg of field.segments(); track seg.id) {
         @if (seg.isLiteral) {
           <span forDateFieldLiteral>{{ seg.text }}</span>
         } @else {
-          <span forDateFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          <span forDateFieldSegment class="date-field-segment" [segment]="seg.type!">{{
+            seg.text
+          }}</span>
         }
       }
     </div>
@@ -82,13 +90,13 @@ The library is styleless: style the boolean `data-*` hooks on the segments yours
 
 Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                  |
-| -------------------------- | ------------------------------------------------------------------------- |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.              |
-| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. Empty seeds from today.  |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                            |
-| **Home / End**             | Jump to the segment minimum / maximum.                                    |
-| **Backspace / Delete**     | Clear the segment (the value becomes `null` until refilled).              |
+| Key                        | Behavior                                                                 |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.             |
+| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. Empty seeds from today. |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                           |
+| **Home / End**             | Jump to the segment minimum / maximum.                                   |
+| **Backspace / Delete**     | Clear the segment (the value becomes `null` until refilled).             |
 
 The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`.
 
@@ -97,14 +105,19 @@ The day clamps to the current month's length (e.g. 31 → 28 in February), and a
 Set `granularity` to `'hour'`, `'minute'`, or `'second'` to append time segments — hour / minute / second and, in 12-hour mode, an AM·PM `dayPeriod` — after the date segments in the same `role="group"`. The whole field stays a single tab stop with one roving cursor across **all** segments; `field.segments()` already returns the combined, locale-ordered list, so the same `@for` template renders it. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
 
 ```html
-<div forDateField [(value)]="when" granularity="minute" [hourCycle]="24" #field="forDateField">
-  @for (seg of field.segments(); track seg.id) {
-    @if (seg.isLiteral) {
-      <span forDateFieldLiteral>{{ seg.text }}</span>
-    } @else {
-      <span forDateFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
-    }
-  }
+<div
+  forDateField
+  class="date-field"
+  [(value)]="when"
+  granularity="minute"
+  [hourCycle]="24"
+  #field="forDateField"
+>
+  @for (seg of field.segments(); track seg.id) { @if (seg.isLiteral) {
+  <span forDateFieldLiteral>{{ seg.text }}</span>
+  } @else {
+  <span forDateFieldSegment class="date-field-segment" [segment]="seg.type!">{{ seg.text }}</span>
+  } }
 </div>
 ```
 
@@ -126,6 +139,37 @@ providers: [
 ```
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece                   | Attribute          | Values            |
+| ----------------------- | ------------------ | ----------------- |
+| `[forDateField]`        | `data-disabled`    | present \| absent |
+| `[forDateField]`        | `data-readonly`    | present \| absent |
+| `[forDateField]`        | `data-empty`       | present \| absent |
+| `[forDateFieldSegment]` | `data-highlighted` | present \| absent |
+| `[forDateFieldSegment]` | `data-placeholder` | present \| absent |
+| `[forDateFieldSegment]` | `data-disabled`    | present \| absent |
+| `[forDateFieldSegment]` | `data-readonly`    | present \| absent |
+
+`data-empty` marks the whole field while any segment is still unfilled (the value is `null`); `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives. `[forDateFieldLiteral]` carries no data-\* attributes (it is `aria-hidden` and out of the tab order).
+
+```css
+.date-field-segment[data-placeholder] {
+  color: GrayText;
+}
+.date-field-segment[data-highlighted] {
+  background: Highlight;
+  color: HighlightText;
+}
+.date-field[data-disabled] {
+  opacity: 0.5;
+}
+```
 
 ## Accessibility notes
 

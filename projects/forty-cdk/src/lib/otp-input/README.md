@@ -12,31 +12,31 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ## Pieces
 
-| Class | Selector | Element | Role |
-| --- | --- | --- | --- |
-| `ForOtpInput` | `[forOtpInput]` | wrapper | `role="group"`. Owns the value, injects the real input, parsing / filtering / paste. |
-| `ForOtpInputSlot` | `[forOtpInputSlot]` | any | One styling surface per index. Exposes `char()` / `active()` / `hasFakeCaret()`. |
+| Class             | Selector            | Element | Role                                                                                 |
+| ----------------- | ------------------- | ------- | ------------------------------------------------------------------------------------ |
+| `ForOtpInput`     | `[forOtpInput]`     | wrapper | `role="group"`. Owns the value, injects the real input, parsing / filtering / paste. |
+| `ForOtpInputSlot` | `[forOtpInputSlot]` | any     | One styling surface per index. Exposes `char()` / `active()` / `hasFakeCaret()`.     |
 
 ## Inputs / models (`ForOtpInput`)
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<string>` | Two-way bindable code. Rendered length is clamped to `length`. |
-| `length` | `input.required<number>` | Number of characters / slots. |
-| `type` | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Defaults to `'numeric'`. Ignored when `allowedPattern` is set. |
-| `allowedPattern` | `input<RegExp \| null>` | Custom allowed-character RegExp (tested per character); overrides `type`. |
-| `mask` | `input<boolean>` | Obscure the rendered `char()` (PIN entry); `value()` stays raw. |
-| `oneTimeCode` | `input<boolean>` | Toggle `autocomplete="one-time-code"` for SMS autofill. Defaults to `true`. |
-| `pasteTransformer` | `input<((pasted: string) => string) \| null>` | Rewrite pasted text before it fills the slots (e.g. strip separators). |
-| `ariaLabel` | `input<string \| null>` | Accessible name for the group. Emits `aria-label` only when truthy. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>` | Shared form-control flags (see [Field](../field/README.md)). |
-| `name` | `input<string>` | Reflected as the real input's `name` for native form submission. |
-| `touched` | `model<boolean>` | Set to `true` on blur. |
+| API                                                                    | Type                                                 | Description                                                                             |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `value`                                                                | `model<string>`                                      | Two-way bindable code. Rendered length is clamped to `length`.                          |
+| `length`                                                               | `input.required<number>`                             | Number of characters / slots.                                                           |
+| `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Defaults to `'numeric'`. Ignored when `allowedPattern` is set. |
+| `allowedPattern`                                                       | `input<RegExp \| null>`                              | Custom allowed-character RegExp (tested per character); overrides `type`.               |
+| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.                         |
+| `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill. Defaults to `true`.             |
+| `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).                  |
+| `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group. Emits `aria-label` only when truthy.                     |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).                            |
+| `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.                        |
+| `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.                                                                  |
 
-| Output | Type | Fires |
-| --- | --- | --- |
-| `valueComplete` | `output<string>` | When every slot is filled, by typing or paste. |
-| `valueInvalid` | `output<{ value: string }>` | When an entered / pasted character is rejected by `type` / `allowedPattern`. |
+| Output          | Type                        | Fires                                                                        |
+| --------------- | --------------------------- | ---------------------------------------------------------------------------- |
+| `valueComplete` | `output<string>`            | When every slot is filled, by typing or paste.                               |
+| `valueInvalid`  | `output<{ value: string }>` | When an entered / pasted character is rejected by `type` / `allowedPattern`. |
 
 `ForOtpInput` also exposes a `slots()` signal (`readonly number[]`) for the `@for`, a `complete()` signal, and a `focus()` method.
 
@@ -44,12 +44,12 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ### Slot (`ForOtpInputSlot`)
 
-| API | Type | Description |
-| --- | --- | --- |
-| `index` | `input.required<number>` | This slot's 0-based position. |
-| `char()` | `Signal<string \| null>` | The slot's character (masked when `mask`), or `null` when empty. |
-| `active()` | `Signal<boolean>` | Whether this slot is the active caret position. |
-| `hasFakeCaret()` | `Signal<boolean>` | Whether to render a fake caret here (active + empty + focused). |
+| API              | Type                     | Description                                                      |
+| ---------------- | ------------------------ | ---------------------------------------------------------------- |
+| `index`          | `input.required<number>` | This slot's 0-based position.                                    |
+| `char()`         | `Signal<string \| null>` | The slot's character (masked when `mask`), or `null` when empty. |
+| `active()`       | `Signal<boolean>`        | Whether this slot is the active caret position.                  |
+| `hasFakeCaret()` | `Signal<boolean>`        | Whether to render a fake caret here (active + empty + focused).  |
 
 The slot host reflects boolean `data-active` / `data-highlighted` (current caret slot) and `data-empty` (no character) for CSS.
 
@@ -69,6 +69,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk';
   template: `
     <div
       forOtpInput
+      class="otp-input"
       [(value)]="code"
       [length]="6"
       type="numeric"
@@ -76,7 +77,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk';
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {
-        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="slot">
+        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="slot otp-input-slot">
           {{ s.char() }}
           @if (s.hasFakeCaret()) {
             <span class="caret"></span>
@@ -95,10 +96,24 @@ export class DemoOtp {
 The styling is yours. The key rule: make the injected `<input>` overlay the slots so it stays the interactive surface, e.g.
 
 ```css
-.slot { position: relative; width: 2.5rem; height: 3rem; /* ... */ }
-[forOtpInput] { position: relative; display: flex; gap: 0.5rem; }
-[forOtpInput] > input { position: absolute; inset: 0; opacity: 0; }
-.caret { /* style + animate; gate the blink on prefers-reduced-motion */ }
+.slot {
+  position: relative;
+  width: 2.5rem;
+  height: 3rem; /* ... */
+}
+.otp-input {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+}
+.otp-input > input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.caret {
+  /* style + animate; gate the blink on prefers-reduced-motion */
+}
 ```
 
 ## Field composition
@@ -116,9 +131,18 @@ import { ForField, ForLabel, ForFieldError, ForOtpInput, ForOtpInputSlot } from 
   template: `
     <div forField>
       <label forLabel>One-time code</label>
-      <div forOtpInput [formField]="login.otp" [length]="6" type="numeric" #otp="forOtpInput">
+      <div
+        forOtpInput
+        class="otp-input"
+        [formField]="login.otp"
+        [length]="6"
+        type="numeric"
+        #otp="forOtpInput"
+      >
         @for (i of otp.slots(); track i) {
-          <div forOtpInputSlot [index]="i" #s="forOtpInputSlot">{{ s.char() }}</div>
+          <div forOtpInputSlot class="otp-input-slot" [index]="i" #s="forOtpInputSlot">
+            {{ s.char() }}
+          </div>
         }
       </div>
       @if (err.shown()) {
@@ -132,6 +156,31 @@ export class DemoOtpField {
   readonly login = form(this.model, (l) => {
     required(l.otp, { message: 'Enter the 6-digit code' });
   });
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece               | Attribute          | Values           |
+| ------------------- | ------------------ | ---------------- |
+| `[forOtpInput]`     | `data-complete`    | present / absent |
+| `[forOtpInput]`     | `data-disabled`    | present / absent |
+| `[forOtpInputSlot]` | `data-active`      | present / absent |
+| `[forOtpInputSlot]` | `data-highlighted` | present / absent |
+| `[forOtpInputSlot]` | `data-empty`       | present / absent |
+
+The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
+
+```css
+.otp-input-slot[data-active] {
+  outline: 2px solid var(--ring);
+}
+.otp-input-slot[data-empty] {
+  color: transparent;
 }
 ```
 
