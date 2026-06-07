@@ -20,19 +20,24 @@ import { ForDialogRef } from './dialog-ref';
 
 /**
  * Injection token for the `data` payload passed to `ForDialogManager.open(component, { data })`.
- * Inject inside the opened component:
+ * The manager always provides this token, falling back to `null` when no `data`
+ * was configured, so inject it inside the opened component:
  *
  * ```ts
- * readonly data = inject(FOR_DIALOG_DATA) as MyShape;
+ * readonly data = inject(FOR_DIALOG_DATA) as MyShape | null;
  * ```
  *
  * Prefer `injectDialogData<T>()` for typed access without manual casts.
  */
 export const FOR_DIALOG_DATA = new InjectionToken<unknown>('FOR_DIALOG_DATA');
 
-/** Typed accessor for the `data` payload. Equivalent to `inject(FOR_DIALOG_DATA) as T`. */
-export function injectDialogData<T = unknown>(): T {
-  return inject(FOR_DIALOG_DATA) as T;
+/**
+ * Typed accessor for the `data` payload. Returns `T | null` because the manager
+ * provides `null` when `open()` is called without `data` — guard for `null`
+ * before dereferencing the payload.
+ */
+export function injectDialogData<T = unknown>(): T | null {
+  return inject(FOR_DIALOG_DATA) as T | null;
 }
 
 export interface ForDialogOpenConfig<D = unknown> {
