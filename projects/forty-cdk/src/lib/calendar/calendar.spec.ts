@@ -3,6 +3,7 @@ import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
+import { compareDateOf, type DateAdapter } from './date-adapter';
 import { ForCalendar } from './calendar';
 import { ForCalendarCell } from './calendar-cell';
 import { ForCalendarGrid } from './calendar-grid';
@@ -551,19 +552,45 @@ describe('ForCalendar', () => {
       expect(native.getDate(nativeLeap)).toBe(28);
     });
 
-    it('compareDate ignores the time component on every adapter (#370)', () => {
+    it('compareDateOf ignores the time component on every adapter (#370, #501)', () => {
       const native = new NativeDateAdapter();
       const dateTime = new InternationalizedDateTimeAdapter();
 
       const nativeMidnight = new Date(2026, 5, 20, 0, 0);
       const nativeMin = new Date(2026, 5, 20, 9, 0);
-      expect(native.compare(nativeMidnight, nativeMin)).toBe(0);
-      expect(native.compareDate(nativeMidnight, nativeMin)).toBe(0);
+      expect(native.compare(nativeMidnight, nativeMin)).toBeLessThan(0);
+      expect(compareDateOf(native, nativeMidnight, nativeMin)).toBe(0);
 
       const dtMidnight = new CalendarDateTime(2026, 6, 20, 0, 0);
       const dtMin = new CalendarDateTime(2026, 6, 20, 9, 0);
       expect(dateTime.compare(dtMidnight, dtMin)).toBeLessThan(0);
-      expect(dateTime.compareDate(dtMidnight, dtMin)).toBe(0);
+      expect(compareDateOf(dateTime, dtMidnight, dtMin)).toBe(0);
+    });
+
+    it('compare orders by the full instant on every time-capable adapter (#501)', () => {
+      const native = new NativeDateAdapter();
+      const dateTime = new InternationalizedDateTimeAdapter();
+
+      const nativeEarly = new Date(2026, 5, 20, 9, 0);
+      const nativeLate = new Date(2026, 5, 20, 17, 0);
+      const dtEarly = new CalendarDateTime(2026, 6, 20, 9, 0);
+      const dtLate = new CalendarDateTime(2026, 6, 20, 17, 0);
+
+      expect(Math.sign(native.compare(nativeEarly, nativeLate))).toBe(
+        Math.sign(dateTime.compare(dtEarly, dtLate)),
+      );
+      expect(native.compare(nativeEarly, nativeLate)).toBeLessThan(0);
+    });
+
+    it('compareDateOf falls back to the y/m/d getters when an adapter omits compareDate (#501)', () => {
+      const native: DateAdapter<Date> = new NativeDateAdapter();
+      expect(native.compareDate).toBeUndefined();
+
+      const sameDay = compareDateOf(native, new Date(2026, 5, 20, 0, 0), new Date(2026, 5, 20, 23, 0));
+      expect(sameDay).toBe(0);
+
+      const earlierDay = compareDateOf(native, new Date(2026, 5, 19, 23, 0), new Date(2026, 5, 20, 0, 0));
+      expect(earlierDay).toBeLessThan(0);
     });
   });
 
@@ -614,8 +641,8 @@ describe('ForCalendar', () => {
       const dtCell = new CalendarDateTime(2026, 6, 20, 0, 0);
       const dtMin = new CalendarDateTime(2026, 6, 20, 9, 0);
 
-      const nativeAvailable = native.compareDate(nativeCell, nativeMin) >= 0;
-      const dtAvailable = dateTime.compareDate(dtCell, dtMin) >= 0;
+      const nativeAvailable = compareDateOf(native, nativeCell, nativeMin) >= 0;
+      const dtAvailable = compareDateOf(dateTime, dtCell, dtMin) >= 0;
       expect(nativeAvailable).toBe(true);
       expect(dtAvailable).toBe(true);
       expect(nativeAvailable).toBe(dtAvailable);

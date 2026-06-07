@@ -92,23 +92,40 @@ export interface DateAdapter<D> {
   addYears(date: D, n: number): D;
 
   /**
-   * Compares two dates by their natural ordering. Returns a negative number
-   * when `a` is before `b`, `0` when they are equal, and a positive number when
-   * `a` is after `b`. Adapters whose `D` carries a time component
-   * (`@internationalized/date`'s `CalendarDateTime`) order by the full
-   * date-time. For day-granular availability and bounds use {@link compareDate},
-   * which ignores the time on every adapter.
+   * Compares two dates by their natural ordering — **the full instant**,
+   * including any time component the adapter's `D` carries. Returns a negative
+   * number when `a` is before `b`, `0` when they are equal, and a positive
+   * number when `a` is after `b`.
+   *
+   * This is the canonical comparator and the only one an adapter must
+   * implement. Time-capable adapters (`Date`, `@internationalized/date`'s
+   * `CalendarDateTime`) order by day *and* time; day-only adapters
+   * (`CalendarDate`) order by day alone because that is all their `D` carries.
+   *
+   * **Bounds granularity.** `minDate` / `maxDate` clamping in the date
+   * primitives compares the full instant through `compare`, so a date-time
+   * `min`/`max` clamps identically on every time-capable adapter (e.g. native
+   * `Date` and `CalendarDateTime` produce the same result for the same input).
+   * For the *calendar grid*, where availability is day-granular so the boundary
+   * day of a date-time `min`/`max` stays selectable, use {@link compareDateOf}
+   * (which honours {@link compareDate} when present and otherwise derives a
+   * day-only comparison from the y/m/d getters).
    */
   compare(a: D, b: D): number;
 
   /**
-   * Compares two dates by calendar day only, ignoring any time component.
-   * Returns a negative number when `a`'s day is before `b`'s, `0` when they
-   * fall on the same calendar day, and a positive number when `a`'s day is
-   * after `b`'s. Used for calendar-grid availability and bounds so the boundary
-   * day of a date-time `min`/`max` stays selectable regardless of adapter.
+   * Optionally compares two dates by calendar day only, ignoring any time
+   * component. Returns a negative number when `a`'s day is before `b`'s, `0`
+   * when they fall on the same calendar day, and a positive number when `a`'s
+   * day is after `b`'s.
+   *
+   * Adapters may **omit** this method: {@link compareDateOf} then derives the
+   * day-only comparison from the {@link getYear} / {@link getMonth} /
+   * {@link getDate} getters, which is correct for any adapter. Implement it only
+   * to override that default (e.g. for a non-Gregorian ordering). Day-only
+   * adapters whose {@link compare} already ignores time need not implement it.
    */
-  compareDate(a: D, b: D): number;
+  compareDate?(a: D, b: D): number;
 
   /** Whether `a` and `b` fall on the same calendar day. */
   isSameDay(a: D, b: D): boolean;
@@ -163,6 +180,40 @@ export interface DateAdapter<D> {
    * @param seconds Second of minute, **0-59**.
    */
   setTime?(date: D, hours: number, minutes: number, seconds: number): D;
+}
+
+/**
+ * Day-only comparison for `adapter`, honouring its optional
+ * {@link DateAdapter.compareDate} when implemented and otherwise deriving the
+ * ordering from the `getYear` / `getMonth` / `getDate` getters. Returns a
+ * negative number when `a`'s calendar day is before `b`'s, `0` when they fall
+ * on the same day, and a positive number when `a`'s day is after `b`'s.
+ *
+ * Use this for day-granular availability and bounds (e.g. the calendar grid),
+ * where the boundary day of a date-time `min`/`max` must stay selectable on
+ * every adapter. For full-instant ordering — including any time component —
+ * call {@link DateAdapter.compare} directly.
+ *
+ * @typeParam D The adapter's immutable date representation.
+ * @param adapter The active date adapter.
+ * @param a The first date.
+ * @param b The second date.
+ */
+export function compareDateOf<D>(adapter: DateAdapter<D>, a: D, b: D): number {
+  if (adapter.compareDate) {
+    return adapter.compareDate(a, b);
+  }
+  const ay = adapter.getYear(a);
+  const by = adapter.getYear(b);
+  if (ay !== by) {
+    return ay - by;
+  }
+  const am = adapter.getMonth(a);
+  const bm = adapter.getMonth(b);
+  if (am !== bm) {
+    return am - bm;
+  }
+  return adapter.getDate(a) - adapter.getDate(b);
 }
 
 /**

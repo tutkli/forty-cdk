@@ -21,6 +21,7 @@ export {
 } from './calendar-defaults';
 export {
   assertTimeCapable,
+  compareDateOf,
   type DateAdapter,
   FOR_DATE_ADAPTER,
   injectDateAdapter,
