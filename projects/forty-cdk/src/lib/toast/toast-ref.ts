@@ -54,11 +54,21 @@ export class ForToastRef<R = unknown, D = unknown> {
   /**
    * Mutate the toast in-place (e.g. to update text on long-running
    * operations: "Saving…" → "Saved"). No-op once dismissed.
+   *
+   * `id` and `region` are normalized at `show()` and are **immutable** — they
+   * are ignored here. `id` is the toast's identity (used for dedupe and
+   * external dismissal); `region` decides which `<for-toast-viewport>` renders
+   * the toast, and changing it would silently unmount and remount the toast in
+   * another viewport (resetting its timer and announcement). To move a toast
+   * to a different region, dismiss it and `show()` a new one.
    */
   update(patch: Partial<ForToastConfig<D>>): void {
     if (this.#closed()) {
       return;
     }
-    this.#config.update((current) => ({ ...current, ...patch }));
+    this.#config.update((current) => {
+      const { id: _id, region: _region, ...mutable } = patch;
+      return { ...current, ...mutable };
+    });
   }
 }

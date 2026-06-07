@@ -150,6 +150,14 @@ export class ForToastViewport {
    * `provideForToastDefaults({ maxVisible })` value (itself `Infinity` unless
    * configured, which renders all live toasts). Setting `[maxVisible]`
    * per-viewport overrides the global default.
+   *
+   * **Overflow is parked, not auto-expired.** A toast pushed out of the
+   * visible window is unmounted, so its auto-dismiss timer is not running
+   * while it waits. It re-enters the window when a newer toast is dismissed,
+   * and its `duration` countdown then restarts from full (a fresh `[forToast]`
+   * mounts). Cap with `maxVisible` for layout, but dismiss explicitly — via
+   * `ForToastRef.dismiss()`, `dismissAll()`, or the action / close button —
+   * if you need overflow toasts to clear on a deadline.
    */
   readonly maxVisible = input<number | null>(null, {
     transform: (v: unknown): number | null => (v == null ? null : numberAttribute(v)),

@@ -11,6 +11,11 @@ import { injectToastContext } from './toast-context';
  * `'action'`. Wire your action handler with `(click)` on this element
  * itself — the close fires after your handler runs (via event order).
  *
+ * The action is the **sanctioned dismissal path even when the toast is
+ * `closable=false`**: a forced-action toast suppresses Escape / swipe / the
+ * close button but keeps the action button live so the user always has a way
+ * out through the control they are meant to use.
+ *
  * Set `[altText]` for WCAG 2.2.1 compliance: the visible label (e.g.
  * "Undo") rarely carries enough context to recover the action once the
  * toast disappears. The alt text replaces the toast's automatic live
