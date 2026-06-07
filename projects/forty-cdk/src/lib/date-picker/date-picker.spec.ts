@@ -46,6 +46,7 @@ const CALENDAR_PIECES = [ForCalendar, ForCalendarGrid, ForCalendarGridHeader, Fo
       [minDate]="minDate()"
       [maxDate]="maxDate()"
       [disabled]="disabled()"
+      [readonly]="readonly()"
       [closeOnSelect]="closeOnSelect()"
       [modal]="modal()"
       [ariaLabel]="ariaLabel()"
@@ -91,6 +92,7 @@ class Host {
   readonly minDate = signal<Date | null>(null);
   readonly maxDate = signal<Date | null>(null);
   readonly disabled = signal(false);
+  readonly readonly = signal(false);
   readonly closeOnSelect = signal(true);
   readonly modal = signal(false);
   readonly ariaLabel = signal<string | null>('Choose date');
@@ -261,6 +263,113 @@ describe('ForDatePicker', () => {
     });
   });
 
+  describe('selection bridge ignores readonly / disabled', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        ForCalendar,
+        ForCalendarGrid,
+        ForCalendarCell,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          [(open)]="open"
+          [disabled]="disabled()"
+          [readonly]="readonly()"
+          [closeOnSelect]="false"
+          name="dob"
+          #picker="forDatePicker"
+        >
+          <button data-testid="trigger" forDatePickerTrigger>
+            <span forDatePickerValue [placeholder]="'Pick a date'"></span>
+          </button>
+
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar [value]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class GuardHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+      readonly disabled = signal(false);
+      readonly readonly = signal(false);
+    }
+
+    type GR = RenderResult<GuardHost>;
+    const touched = (r: GR) =>
+      r.query('[forDatePicker]')!.hasAttribute('data-touched');
+
+    it('a readonly picker ignores a grid selection (no value/touched change)', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 15).getTime());
+      expect(touched(r)).toBe(false);
+    });
+
+    it('a disabled picker ignores a grid selection (no value/touched change)', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.disabled.set(true);
+      r.instance.value.set(new Date(2026, 5, 15));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 15).getTime());
+      expect(touched(r)).toBe(false);
+    });
+
+    it('flipping readonly on after opening blocks subsequent grid selections', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.value.set(new Date(2026, 5, 15));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 20).getTime());
+
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-25')!.click();
+      await flush(r.fixture);
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 20).getTime());
+    });
+  });
+
   describe('value rendering', () => {
     it('shows the placeholder while empty and the formatted date once set', async () => {
       const r = renderHost(Host);
@@ -342,6 +451,10 @@ describe('ForDatePicker', () => {
           [(open)]="open"
           granularity="minute"
           [hourCycle]="24"
+          [minDate]="minDate()"
+          [maxDate]="maxDate()"
+          [disabled]="disabled()"
+          [readonly]="readonly()"
           #picker="forDatePicker"
         >
           <button data-testid="trigger" forDatePickerTrigger>
@@ -383,6 +496,10 @@ describe('ForDatePicker', () => {
     class DateTimeHost {
       readonly value = signal<Date | null>(null);
       readonly open = signal(false);
+      readonly minDate = signal<Date | null>(null);
+      readonly maxDate = signal<Date | null>(null);
+      readonly disabled = signal(false);
+      readonly readonly = signal(false);
     }
 
     type DR = RenderResult<DateTimeHost>;
@@ -422,6 +539,62 @@ describe('ForDatePicker', () => {
       expect(adapter.getHours(value)).toBe(15);
       expect(adapter.getDate(value)).toBe(15);
       expect(adapter.getMinutes(value)).toBe(30);
+    });
+
+    it('a readonly picker ignores a time-field edit (no value/touched change)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 14, 30).getTime());
+      expect(r.query('[forDatePicker]')!.hasAttribute('data-touched')).toBe(false);
+    });
+
+    it('a disabled picker ignores a time-field edit (no value/touched change)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.disabled.set(true);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 14, 30).getTime());
+      expect(r.query('[forDatePicker]')!.hasAttribute('data-touched')).toBe(false);
+    });
+
+    it('flipping readonly on after opening blocks subsequent time-field edits', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+      expect(adapter.getHours(r.instance.value()!)).toBe(15);
+
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+      expect(adapter.getHours(r.instance.value()!)).toBe(15);
+    });
+
+    it('clamps a time-field commit to the picker date bounds', async () => {
+      const r = renderHost(DateTimeHost);
+      const max = new Date(2026, 5, 15, 14, 30);
+      r.instance.maxDate.set(max);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('hour'), 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(max.getTime());
     });
 
     it('renders the value with its time component', async () => {
