@@ -38,13 +38,33 @@ class TwoDisclosureHost {}
 
 describe('ForDisclosure', () => {
   describe('render & wiring', () => {
-    it('links the trigger to the content via id and aria-controls', () => {
-      const { query } = renderHost(DisclosureHost);
+    it('links the trigger to the content via aria-controls once open', () => {
+      const { fixture, query, flush } = renderHost(DisclosureHost);
 
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('gates aria-controls to the open state, mirroring the overlay triggers', () => {
+      const { fixture, query, flush } = renderHost(DisclosureHost);
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+      expect(trigger.hasAttribute('aria-controls')).toBe(true);
+
+      fixture.componentInstance.isOpen.set(false);
+      flush();
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
 
     it('produces unique ids across instances', () => {
@@ -55,8 +75,6 @@ describe('ForDisclosure', () => {
 
       expect(triggers[0]!.id).not.toBe(triggers[1]!.id);
       expect(contents[0]!.id).not.toBe(contents[1]!.id);
-      expect(triggers[0]!.getAttribute('aria-controls')).toBe(contents[0]!.id);
-      expect(triggers[1]!.getAttribute('aria-controls')).toBe(contents[1]!.id);
     });
   });
 

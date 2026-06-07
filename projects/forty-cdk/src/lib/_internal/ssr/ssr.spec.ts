@@ -234,7 +234,10 @@ describe('SSR smoke tests', () => {
     const trigger = f.nativeElement.querySelector('[forDisclosureTrigger]') as HTMLElement;
     const content = f.nativeElement.querySelector('[forDisclosureContent]') as HTMLElement;
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(content.getAttribute('id')).toBe(trigger.getAttribute('aria-controls'));
+    // Closed → aria-controls is gated off (open-only), so it must be absent on
+    // the server too; the stable content id is what hydration matches on.
+    expect(content.getAttribute('id')).toBeTruthy();
+    expect(trigger.hasAttribute('aria-controls')).toBe(false);
   });
 
   it('AvatarImage mounts with data-status server-side without constructing a MutationObserver', () => {
