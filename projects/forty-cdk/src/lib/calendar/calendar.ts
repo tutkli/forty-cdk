@@ -263,7 +263,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled() || this.readonly() || this.isUnavailable(date)) {
       return;
     }
-    this.value.set(date);
+    this.value.set(this.#withPreservedTime(date));
     this.#focusDate(date);
   }
 
@@ -368,6 +368,27 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     }
     handle.host.focus();
     return true;
+  }
+
+  #withPreservedTime(date: D): D {
+    const adapter = this.adapter;
+    const current = this.value();
+    if (
+      current === null ||
+      adapter.supportsTime?.() !== true ||
+      !adapter.getHours ||
+      !adapter.getMinutes ||
+      !adapter.getSeconds ||
+      !adapter.setTime
+    ) {
+      return date;
+    }
+    return adapter.setTime(
+      date,
+      adapter.getHours(current),
+      adapter.getMinutes(current),
+      adapter.getSeconds(current),
+    );
   }
 
   #dateKey(date: D): string {

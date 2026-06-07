@@ -1,5 +1,5 @@
 import { Component, signal, viewChild } from '@angular/core';
-import { CalendarDateTime } from '@internationalized/date';
+import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
@@ -11,7 +11,10 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
-import { InternationalizedDateAdapter } from './internationalized-date-adapter';
+import {
+  InternationalizedDateAdapter,
+  provideInternationalizedDateAdapter,
+} from './internationalized-date-adapter';
 import {
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateTimeAdapter,
@@ -139,6 +142,33 @@ class DateTimeCalendarHost {
   readonly value = signal<CalendarDateTime | null>(new CalendarDateTime(2026, 6, 15, 9, 0));
   readonly min = signal<CalendarDateTime | null>(null);
   readonly max = signal<CalendarDateTime | null>(null);
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideInternationalizedDateAdapter()],
+  template: `
+    <div forCalendar [(value)]="value">
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td
+                  forCalendarCell
+                  [date]="cell.date"
+                  [attr.data-testid]="'cell-' + cell.key"
+                ></td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class DayOnlyCalendarHost {
+  readonly value = signal<CalendarDate | null>(new CalendarDate(2026, 6, 15));
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
@@ -646,6 +676,84 @@ describe('ForCalendar', () => {
       expect(nativeAvailable).toBe(true);
       expect(dtAvailable).toBe(true);
       expect(nativeAvailable).toBe(dtAvailable);
+    });
+  });
+
+  describe('time preservation on selection (#500)', () => {
+    it('preserves the bound time when selecting a cell with a date-time adapter', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.value.set(new CalendarDateTime(2026, 6, 15, 14, 30, 45));
+      await flush(r.fixture);
+
+      const target = r.query('[data-testid="cell-2026-6-20"]')!;
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      const selected = r.instance.value()!;
+      expect(selected.day).toBe(20);
+      expect(selected.hour).toBe(14);
+      expect(selected.minute).toBe(30);
+      expect(selected.second).toBe(45);
+    });
+
+    it('preserves the bound time when selecting via the keyboard', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.value.set(new CalendarDateTime(2026, 6, 15, 8, 5, 0));
+      await flush(r.fixture);
+
+      const focused = r.query('[data-testid="cell-2026-6-15"]')!;
+      pressKey(focused, 'Enter');
+      await flush(r.fixture);
+
+      const selected = r.instance.value()!;
+      expect(selected.day).toBe(15);
+      expect(selected.hour).toBe(8);
+      expect(selected.minute).toBe(5);
+    });
+
+    it('uses midnight when selecting against a null date-time value', async () => {
+      const r = renderHost(DateTimeCalendarHost);
+      r.instance.value.set(null);
+      await flush(r.fixture);
+
+      const target = r.query('[data-testid="cell-2026-6-20"]')!;
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      const selected = r.instance.value()!;
+      expect(selected.day).toBe(20);
+      expect(selected.hour).toBe(0);
+      expect(selected.minute).toBe(0);
+      expect(selected.second).toBe(0);
+    });
+
+    it('preserves the bound time on the time-capable native adapter', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30, 45));
+      await flush(r.fixture);
+
+      cell(r, new Date(2026, 5, 20)).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      const selected = r.instance.value()!;
+      expect(selected.getDate()).toBe(20);
+      expect(selected.getHours()).toBe(14);
+      expect(selected.getMinutes()).toBe(30);
+      expect(selected.getSeconds()).toBe(45);
+    });
+
+    it('leaves a day-only adapter selection at the midnight cell value', async () => {
+      const r = renderHost(DayOnlyCalendarHost);
+      r.instance.value.set(new CalendarDate(2026, 6, 15));
+      await flush(r.fixture);
+
+      const target = r.query('[data-testid="cell-2026-6-20"]')!;
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      const selected = r.instance.value()!;
+      expect(selected.day).toBe(20);
+      expect('hour' in selected).toBe(false);
     });
   });
 });
