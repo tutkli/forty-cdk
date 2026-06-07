@@ -3,8 +3,9 @@ import { Directive } from '@angular/core';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**
- * Trigger button for a `ForDisclosure`. Apply on a `<button type="button">`
- * so Enter/Space toggling come from native button behavior.
+ * Trigger button for a `ForDisclosure`. Apply on a `<button>` so Enter/Space
+ * toggling come from native button behavior. The directive host-binds
+ * `type="button"` so a trigger inside a `<form>` never submits it on toggle.
  *
  * `aria-controls` is emitted only while open — mirroring the overlay triggers'
  * open-only gating — so the reference never dangles at an unmounted panel
@@ -14,6 +15,7 @@ import { injectDisclosureContext } from './disclosure-context';
   selector: '[forDisclosureTrigger]',
   exportAs: 'forDisclosureTrigger',
   host: {
+    type: 'button',
     '[id]': 'ctx.triggerId()',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',

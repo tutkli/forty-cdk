@@ -36,8 +36,35 @@ class DisclosureHost {
 })
 class TwoDisclosureHost {}
 
+@Component({
+  imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+  template: `
+    <form (submit)="submitted = true">
+      <div forDisclosure>
+        <button forDisclosureTrigger>Toggle</button>
+        <section forDisclosureContent>Panel</section>
+      </div>
+    </form>
+  `,
+})
+class FormDisclosureHost {
+  submitted = false;
+}
+
 describe('ForDisclosure', () => {
   describe('render & wiring', () => {
+    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', () => {
+      const { fixture, query, flush } = renderHost(FormDisclosureHost);
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      expect(trigger.getAttribute('type')).toBe('button');
+
+      trigger.click();
+      flush();
+
+      expect(fixture.componentInstance.submitted).toBe(false);
+    });
+
     it('links the trigger to the content via aria-controls once open', () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
 

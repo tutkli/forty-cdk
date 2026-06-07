@@ -39,6 +39,25 @@ class AccordionHost {
   readonly disabledItem = signal<string | null>(null);
 }
 
+@Component({
+  imports: [...ACCORDION_IMPORTS],
+  template: `
+    <form (submit)="submitted = true">
+      <div forAccordion collapsible>
+        <div forAccordionItem value="a">
+          <h3>
+            <button forAccordionTrigger data-test-id="a">A</button>
+          </h3>
+          <section forAccordionContent>Panel A</section>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class FormAccordionHost {
+  submitted = false;
+}
+
 const triggerOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -47,6 +66,18 @@ const contentOf = (host: HTMLElement, id: string) =>
 
 describe('ForAccordion', () => {
   describe('render & wiring', () => {
+    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', () => {
+      const { el, fixture, flush } = renderHost(FormAccordionHost);
+      const trigger = triggerOf(el, 'a');
+
+      expect(trigger.getAttribute('type')).toBe('button');
+
+      trigger.click();
+      flush();
+
+      expect(fixture.componentInstance.submitted).toBe(false);
+    });
+
     it('labels each content by its trigger and marks it a region', () => {
       const { el } = renderHost(AccordionHost);
 

@@ -5,9 +5,10 @@ import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**
- * Header button for a `ForAccordionItem`. Apply on a `<button type="button">`
- * wrapped in a heading element (`<h2>`–`<h6>`) so APG landmark navigation
- * works.
+ * Header button for a `ForAccordionItem`. Apply on a `<button>` wrapped in a
+ * heading element (`<h2>`–`<h6>`) so APG landmark navigation works. The
+ * directive host-binds `type="button"` so a trigger inside a `<form>` never
+ * submits it on toggle.
  *
  * Handles ARIA wiring, click-to-toggle, and the recommended keyboard
  * navigation (ArrowDown / ArrowUp / Home / End).
@@ -20,6 +21,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   selector: '[forAccordionTrigger]',
   exportAs: 'forAccordionTrigger',
   host: {
+    type: 'button',
     '[id]': 'item.triggerId()',
     '[attr.aria-expanded]': 'item.expanded() ? "true" : "false"',
     '[attr.aria-controls]': 'item.expanded() ? item.contentId() : null',
