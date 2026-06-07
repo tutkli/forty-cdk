@@ -10,8 +10,9 @@ import {
  * A single day cell (`role="gridcell"`). Apply on the `<td>` for each day in
  * the grid and bind `[date]` to the cell's date from `weeks()`.
  *
- * Carries the roving tab stop (`tabindex="0"` only on the focused date),
- * `aria-selected` (always emitted), `aria-current="date"` on today,
+ * Carries the roving tab stop (`tabindex="0"` only on the focused date), the
+ * full accessible date as `aria-label` (the bare day number stays the visible
+ * content), `aria-selected` (always emitted), `aria-current="date"` on today,
  * `aria-disabled` on unavailable dates, and the boolean `data-*` styling hooks
  * (`data-selected`, `data-today`, `data-highlighted`, `data-disabled`,
  * `data-outside-month`). Click and `Enter` / `Space` select; arrow / paging
@@ -25,6 +26,7 @@ import {
   host: {
     role: 'gridcell',
     '[attr.tabindex]': 'focused() ? 0 : -1',
+    '[attr.aria-label]': 'dateLabel()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-current]': 'isToday() ? "date" : null',
     '[attr.aria-disabled]': 'unavailable() ? "true" : null',
@@ -49,6 +51,7 @@ export class ForCalendarCell<D> {
   protected readonly focused = computed(() => this.ctx.isFocused(this.date()));
   protected readonly unavailable = computed(() => this.ctx.isUnavailable(this.date()));
   protected readonly outsideMonth = computed(() => this.ctx.isOutsideMonth(this.date()));
+  protected readonly dateLabel = computed(() => this.ctx.getDateLabel(this.date()));
 
   constructor() {
     const handle: ForCalendarCellHandle<unknown> = {

@@ -21,9 +21,32 @@ export interface CalendarDayCell<D> {
   readonly key: string;
   /** The date this cell represents. Bind to `[date]` on `[forCalendarCell]`. */
   readonly date: D;
-  /** Day-of-month label, e.g. `"1"`. */
+  /** Day-of-month label, e.g. `"1"`. The cell's visible content. */
   readonly label: string;
+  /**
+   * Full accessible date string for the cell, host-bound to `aria-label` by
+   * `[forCalendarCell]`. Defaults to the localized full date (e.g.
+   * `"Monday, June 15, 2026"`); outside-month padding days are suffixed so
+   * assistive tech can tell them apart from the visible month. Customize the
+   * format with `ForCalendar`'s `dateLabel` input.
+   */
+  readonly dateLabel: string;
 }
+
+/**
+ * Formats the full accessible date string a calendar gridcell exposes as its
+ * `aria-label`. Supplied to `ForCalendar`'s `dateLabel` input to override the
+ * default localized full date.
+ *
+ * @typeParam D The adapter's date type.
+ * @param date The cell's date.
+ * @param context Formatting context: the active {@link DateAdapter} and whether
+ *   the date falls outside the visible month.
+ */
+export type CalendarDateLabelFormatter<D> = (
+  date: D,
+  context: { readonly adapter: DateAdapter<D>; readonly outsideMonth: boolean },
+) => string;
 
 /** A week row in the calendar grid. */
 export interface CalendarWeek<D> {
@@ -90,6 +113,8 @@ export interface ForCalendarContext<D> {
   isOutsideMonth(date: D): boolean;
   /** Whether `date` cannot be selected (`disabled`, out of `min`/`max`, or unavailable). */
   isUnavailable(date: D): boolean;
+  /** The full accessible date string for `date`'s gridcell (`aria-label`). */
+  getDateLabel(date: D): string;
 
   /** Select `date`, unless the calendar is disabled / read-only or the date is unavailable. */
   selectDate(date: D): void;
