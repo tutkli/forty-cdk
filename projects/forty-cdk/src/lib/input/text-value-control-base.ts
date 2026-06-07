@@ -54,7 +54,7 @@ export abstract class TextValueControlBase
 
   /** Bridges the native `input` event into the `value` model. */
   protected onInput(event: Event): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.value.set((event.target as HTMLInputElement | HTMLTextAreaElement).value);

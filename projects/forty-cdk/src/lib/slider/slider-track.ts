@@ -19,7 +19,7 @@ import { injectSliderContext } from './slider-context';
   exportAs: 'forSliderTrack',
   host: {
     '[attr.data-orientation]': 'ctx.orientation()',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '(pointerdown)': 'onPointerDown($event)',
   },
 })
@@ -33,7 +33,7 @@ export class ForSliderTrack {
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     // Only react to primary button / touch / pen contact.

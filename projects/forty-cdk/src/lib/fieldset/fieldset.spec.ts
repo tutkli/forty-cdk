@@ -120,23 +120,125 @@ describe('ForFieldset', () => {
       template: `
         <div forFieldset [disabled]="disabled()">
           <div forField data-test-id="field">
-            <button forSwitch data-test-id="control"></button>
+            <button forSwitch [(checked)]="checked" data-test-id="control"></button>
           </div>
         </div>
       `,
     })
     class Host {
       readonly disabled = signal(false);
+      readonly checked = signal(false);
     }
 
-    it('a disabled fieldset marks the descendant field data-disabled', () => {
+    it('a disabled fieldset marks the descendant field data-disabled', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const field = q(el, 'field');
       expect(field.hasAttribute('data-disabled')).toBe(false);
 
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       expect(field.hasAttribute('data-disabled')).toBe(true);
+    });
+
+    it('a disabled fieldset makes the descendant control inert and aria-disabled', async () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+      expect(control.getAttribute('aria-disabled')).toBe(null);
+
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+      expect(control.hasAttribute('data-disabled')).toBe(true);
+
+      control.click();
+      await flush();
+
+      // Click is ignored while the surrounding fieldset is disabled.
+      expect(fixture.componentInstance.checked()).toBe(false);
+      expect(control.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('re-enabling the fieldset at runtime restores the control', async () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      control.click();
+      await flush();
+      expect(fixture.componentInstance.checked()).toBe(false);
+
+      fixture.componentInstance.disabled.set(false);
+      await flush();
+      expect(control.getAttribute('aria-disabled')).toBe(null);
+
+      control.click();
+      await flush();
+      expect(fixture.componentInstance.checked()).toBe(true);
+    });
+  });
+
+  describe('nested disabled fieldsets', () => {
+    @Component({
+      imports: [ForFieldset, ForField, ForSwitch],
+      template: `
+        <div forFieldset [disabled]="outer()">
+          <div forFieldset [disabled]="inner()">
+            <div forField>
+              <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+            </div>
+          </div>
+        </div>
+      `,
+    })
+    class Host {
+      readonly outer = signal(false);
+      readonly inner = signal(false);
+      readonly checked = signal(false);
+    }
+
+    it('a disabled inner fieldset disables the control even when the outer is enabled', async () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+
+      fixture.componentInstance.inner.set(true);
+      await flush();
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+
+      control.click();
+      await flush();
+      expect(fixture.componentInstance.checked()).toBe(false);
+    });
+
+    it('a disabled outer fieldset cannot be re-enabled by an inner one (native nesting)', async () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+
+      fixture.componentInstance.outer.set(true);
+      fixture.componentInstance.inner.set(true);
+      await flush();
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+
+      // Inner re-enables, but the outer fieldset is still disabled — its
+      // disabled state composes through the inner one, so the control stays
+      // inert, matching native `<fieldset disabled>` nesting.
+      fixture.componentInstance.inner.set(false);
+      await flush();
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+
+      control.click();
+      await flush();
+      expect(fixture.componentInstance.checked()).toBe(false);
+
+      // Re-enabling the outer (with inner already enabled) restores the control.
+      fixture.componentInstance.outer.set(false);
+      await flush();
+      expect(control.getAttribute('aria-disabled')).toBe(null);
+
+      control.click();
+      await flush();
+      expect(fixture.componentInstance.checked()).toBe(true);
     });
   });
 

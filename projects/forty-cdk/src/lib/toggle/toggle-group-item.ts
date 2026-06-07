@@ -54,7 +54,8 @@ export class ForToggleGroupItem {
   readonly pressed = computed(() => this.group.isSelected(this.value()));
 
   readonly effectiveDisabled = computed(
-    () => this.disabled() || this.group.disabled() || (this.#rovingHost?.disabled() ?? false),
+    () =>
+      this.disabled() || this.group.effectiveDisabled() || (this.#rovingHost?.disabled() ?? false),
   );
 
   /**

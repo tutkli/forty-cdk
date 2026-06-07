@@ -38,7 +38,7 @@ export class ForNumberInputDecrement {
 
   protected readonly isDisabled = computed(() => {
     const field = this.group.field();
-    return !field || field.disabled() || field.readonly() || field.atMin();
+    return !field || field.effectiveDisabled() || field.readonly() || field.atMin();
   });
 
   protected step(): void {

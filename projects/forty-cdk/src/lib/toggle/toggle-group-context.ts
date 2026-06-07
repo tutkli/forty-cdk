@@ -25,7 +25,12 @@ export interface ForToggleGroupItemHandle extends CollectionHandle {
 export interface ForToggleGroupContext {
   readonly value: ModelSignal<readonly string[]>;
   readonly multiple: Signal<boolean>;
-  readonly disabled: Signal<boolean>;
+  /**
+   * The group's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. Each item ORs this into its own
+   * `effectiveDisabled`, so a disabled group (or fieldset) disables every item.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;

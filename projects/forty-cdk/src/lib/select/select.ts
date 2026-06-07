@@ -74,7 +74,7 @@ import { FOR_SELECT_DEFAULTS } from './select-defaults';
   exportAs: 'forSelect',
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
@@ -344,7 +344,7 @@ export class ForSelect<T = string>
       name: this.name,
       values: this.value,
       serialize: (item) => this.itemToFormValue()(item),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
 
     afterEveryRender(() => {
@@ -409,7 +409,7 @@ export class ForSelect<T = string>
   }
 
   activate(v: T): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     if (this.multiple()) {
@@ -423,7 +423,7 @@ export class ForSelect<T = string>
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const items = this.#items.items();
@@ -470,7 +470,7 @@ export class ForSelect<T = string>
   handleClosedTypeahead(event: KeyboardEvent): boolean {
     // Only single-mode replicates native <select>'s "type-to-select" behavior.
     // Multi-select is ambiguous (which one wins?) — caller falls back to opening.
-    if (this.multiple() || this.disabled() || this.readonly()) {
+    if (this.multiple() || this.effectiveDisabled() || this.readonly()) {
       return false;
     }
     if (!this.#closedTypeahead.handle(event)) {
@@ -530,7 +530,7 @@ export class ForSelect<T = string>
   }
 
   toggle(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     if (this.open()) {
@@ -541,7 +541,7 @@ export class ForSelect<T = string>
   }
 
   openMenu(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     this.#initialFocus.set(initialFocus);
@@ -555,7 +555,7 @@ export class ForSelect<T = string>
   }
 
   commitOnTab(value: T): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     if (!this.multiple() && !this.readonly()) {

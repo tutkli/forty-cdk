@@ -79,7 +79,7 @@ import { OptionLabelCache, VirtualizedNavigator } from './combobox-snapshot';
   exportAs: 'forCombobox',
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -378,7 +378,7 @@ export class ForCombobox<T = string>
       name: this.name,
       values: this.value,
       serialize: (item) => this.itemToFormValue()(item),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
 
     // `#activeId` is the activedescendant pointer, not derived data: this
@@ -484,7 +484,7 @@ export class ForCombobox<T = string>
   }
 
   activate(handle: ForComboboxOptionHandle<T>): void {
-    if (this.disabled() || this.readonly() || handle.disabled()) {
+    if (this.effectiveDisabled() || this.readonly() || handle.disabled()) {
       return;
     }
     const v = handle.value();
@@ -524,7 +524,7 @@ export class ForCombobox<T = string>
   }
 
   removeValue(v: T): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const equals = this.isItemEqualToValue();
@@ -549,7 +549,7 @@ export class ForCombobox<T = string>
   }
 
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     if (this.totalCount() !== undefined) {
@@ -590,7 +590,7 @@ export class ForCombobox<T = string>
   }
 
   setQueryFromInput(query: string): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.query.set(query);
@@ -633,7 +633,7 @@ export class ForCombobox<T = string>
   }
 
   clear(clearQuery: boolean = true): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.value.set([]);
@@ -649,7 +649,7 @@ export class ForCombobox<T = string>
   }
 
   toggle(): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     if (this.open()) {
@@ -660,7 +660,7 @@ export class ForCombobox<T = string>
   }
 
   openMenu(initialFocus: 'first' | 'last' = 'first'): void {
-    if (this.disabled() || this.open()) {
+    if (this.effectiveDisabled() || this.open()) {
       return;
     }
     this.#initialFocus.set(initialFocus);

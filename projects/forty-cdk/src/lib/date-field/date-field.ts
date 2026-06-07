@@ -107,11 +107,11 @@ const RESOLVER_YEAR = 2001;
     role: 'group',
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.data-empty]': 'value() === null ? "" : null',
     '(focusout)': 'onFocusOut($event)',
@@ -247,7 +247,7 @@ export class ForDateField<D>
   });
 
   readonly #editor = new SegmentEditor<DateTimeParts>({
-    disabled: this.disabled,
+    disabled: this.effectiveDisabled,
     readonly: this.readonly,
     roving: this.roving,
     cycle: this.#cycle,
@@ -296,7 +296,7 @@ export class ForDateField<D>
         }
         return [`${date}T${hour}:${minute}`];
       }),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
 
     // Eager validation: a date-time field needs a time-capable adapter. Fail

@@ -93,11 +93,11 @@ interface TimeParts {
     role: 'group',
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.data-empty]': 'value() === null ? "" : null',
     '(focusout)': 'onFocusOut($event)',
@@ -230,7 +230,7 @@ export class ForTimeField<D>
   });
 
   readonly #editor = new SegmentEditor<TimeParts, TimeSegmentType>({
-    disabled: this.disabled,
+    disabled: this.effectiveDisabled,
     readonly: this.readonly,
     roving: this.roving,
     cycle: this.#cycle,
@@ -274,7 +274,7 @@ export class ForTimeField<D>
         const second = String(this.adapter.getSeconds(current)).padStart(2, '0');
         return [`${hour}:${minute}:${second}`];
       }),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
   }
 

@@ -23,7 +23,12 @@ export interface ForDatePickerContext {
   /** Whether the surface is open. */
   readonly open: Signal<boolean>;
 
-  readonly disabled: Signal<boolean>;
+  /**
+   * The picker's effective disabled — its own `disabled` input OR'd with a
+   * surrounding disabled `[forFieldset]`. The trigger reads this so a disabled
+   * picker (or fieldset) is inert and exposes `aria-disabled`.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly required: Signal<boolean>;
   readonly invalid: Signal<boolean>;

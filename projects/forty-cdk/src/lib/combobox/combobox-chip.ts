@@ -30,7 +30,7 @@ import { injectComboboxContext } from './combobox-context';
   host: {
     tabindex: '-1',
     '[attr.data-value]': 'dataValue()',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -81,7 +81,7 @@ export class ForComboboxChip<T = string> {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     const chips = this.ctx.chips();

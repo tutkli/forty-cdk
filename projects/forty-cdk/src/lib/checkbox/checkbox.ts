@@ -42,14 +42,14 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     role: 'checkbox',
     type: 'button',
     '[attr.aria-checked]': 'ariaChecked()',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.name]': 'name() || null',
     '[attr.data-state]': 'dataState()',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
     '(blur)': 'touched.set(true)',
@@ -86,12 +86,12 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
       // Matches native `<input type="checkbox">`: only `checked` contributes
       // to form submission; `indeterminate` is purely a presentational flag.
       values: computed(() => (this.checked() ? ['on'] : [])),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
   }
 
   protected onClick(): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     if (this.indeterminate()) {

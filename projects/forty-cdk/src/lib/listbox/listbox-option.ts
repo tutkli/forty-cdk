@@ -69,7 +69,7 @@ export class ForListboxOption<T = string> {
    */
   readonly highlighted = computed(() => this.#group.roving.active() === this.#host.nativeElement);
 
-  readonly effectiveDisabled = computed(() => this.disabled() || this.#group.disabled());
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#group.effectiveDisabled());
 
   protected readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {

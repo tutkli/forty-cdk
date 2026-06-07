@@ -54,13 +54,13 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
   exportAs: 'forSlider',
   host: {
     role: 'group',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
@@ -209,7 +209,7 @@ export class ForSlider
   }
 
   setValueAt(index: number, raw: number): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -227,7 +227,7 @@ export class ForSlider
   }
 
   bumpAt(index: number, key: SliderArrowKey, large: boolean): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
@@ -244,7 +244,7 @@ export class ForSlider
   }
 
   setExtreme(index: number, which: 'min' | 'max'): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.setValueAt(index, which === 'min' ? this.minValue() : this.maxValue());
@@ -304,7 +304,7 @@ export class ForSlider
   }
 
   beginDrag(index: number, event: PointerEvent): void {
-    if (this.disabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const pointerId = event.pointerId;
@@ -377,7 +377,7 @@ export class ForSlider
    * slider is disabled or has no thumbs.
    */
   focus(options?: FocusOptions): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     this.#thumbs.items()[0]?.host.focus(options);

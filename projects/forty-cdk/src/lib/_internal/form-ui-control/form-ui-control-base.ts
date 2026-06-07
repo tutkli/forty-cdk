@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
+import { FOR_FIELDSET_CONTEXT } from '../../fieldset/fieldset-context';
 import { injectFieldWiring } from '../field/field-wiring';
 
 /**
@@ -42,7 +43,12 @@ import { injectFieldWiring } from '../field/field-wiring';
  */
 @Directive()
 export abstract class FormUiControlBase {
-  /** When true, interaction is ignored and `aria-disabled` / `data-disabled` are reflected. */
+  /**
+   * Consumer/Signal-Forms `disabled` input. Subclasses gate behavior and reflect
+   * ARIA/`data-*` off {@link effectiveDisabled}, not this raw input, so a
+   * surrounding disabled `[forFieldset]` also disables the control. Bind to this
+   * via `[disabled]` or `[formField]`; read {@link effectiveDisabled} for state.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /** When true, interaction is ignored but the control stays focusable; `aria-readonly="true"`. */
@@ -68,6 +74,20 @@ export abstract class FormUiControlBase {
 
   /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
   readonly touched = model<boolean>(false);
+
+  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
+
+  /**
+   * The control's own {@link disabled} OR'd with a surrounding disabled
+   * `[forFieldset]`. This is the value that gates interaction and drives
+   * `aria-disabled` / `data-disabled` — a native `<fieldset disabled>` does not
+   * reach custom-role controls (`forSwitch`, `forCheckbox`, …), so the group's
+   * disabled state must compose in here. Subclasses read this, never the raw
+   * {@link disabled} input.
+   */
+  readonly effectiveDisabled = computed(
+    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
+  );
 
   readonly #hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
@@ -108,7 +128,7 @@ export abstract class FormUiControlBase {
     injectFieldWiring({
       invalid: this.invalid,
       required: this.required,
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
       touched: this.touched,
       errors: this.errors,
       labelledElement: computed(() => this.fieldLabelledElement()),

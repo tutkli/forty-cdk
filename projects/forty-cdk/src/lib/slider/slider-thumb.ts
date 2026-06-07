@@ -36,10 +36,10 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.aria-label]': 'label() || null',
     '[attr.aria-labelledby]': 'labelledby() || null',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '[attr.data-index]': 'index()',
     '[style.--for-slider-thumb-position]': 'fraction()',
@@ -70,7 +70,7 @@ export class ForSliderThumb {
    */
   readonly valueText = input<string>('');
 
-  protected readonly tabindex = computed(() => (this.ctx.disabled() ? -1 : 0));
+  protected readonly tabindex = computed(() => (this.ctx.effectiveDisabled() ? -1 : 0));
 
   protected readonly currentValue = computed(() => {
     const i = this.index();
@@ -127,7 +127,7 @@ export class ForSliderThumb {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     switch (event.key) {
@@ -177,7 +177,7 @@ export class ForSliderThumb {
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (this.ctx.disabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
     if (event.button !== undefined && event.button !== 0) {
