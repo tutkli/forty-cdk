@@ -75,6 +75,38 @@ test.describe('DateField', () => {
     await expect(el(page, 'value')).toHaveText('empty');
   });
 
+  test('Home / End jump the focused segment to its min / max bound', async ({ page }) => {
+    await gotoFixture(page, 'date-field', { preset: '1' });
+    await expect(el(page, 'value')).toHaveText('2026-06-15');
+
+    await el(page, 'day').focus();
+    await page.keyboard.press('Home');
+    await expect(el(page, 'value')).toHaveText('2026-06-01');
+
+    await page.keyboard.press('End');
+    await expect(el(page, 'value')).toHaveText('2026-06-30');
+
+    await el(page, 'month').focus();
+    await page.keyboard.press('Home');
+    await expect(el(page, 'value')).toHaveText('2026-01-30');
+    await page.keyboard.press('End');
+    await expect(el(page, 'value')).toHaveText('2026-12-30');
+  });
+
+  test('blurring the field out marks it touched', async ({ page }) => {
+    await gotoFixture(page, 'date-field');
+    await expect(el(page, 'field')).not.toHaveAttribute('data-touched', '');
+
+    await el(page, 'month').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'day'));
+    await expect(el(page, 'field')).not.toHaveAttribute('data-touched', '');
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'field')).toHaveAttribute('data-touched', '');
+  });
+
   test('date-time: typing date then time fills both and auto-advances', async ({ page }) => {
     await gotoFixture(page, 'date-field', { datetime: '1' });
     await el(page, 'month').focus();

@@ -18,6 +18,7 @@ import { queryFlag } from './_query-flag';
 
     <div
       forTimeField
+      data-testid="field"
       [(value)]="value"
       [dir]="dir"
       [hourCycle]="hourCycle"
