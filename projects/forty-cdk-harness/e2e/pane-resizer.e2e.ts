@@ -2,15 +2,14 @@ import { expect, test } from '@playwright/test';
 import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
 
 /**
- * Pointer / drag / RTL math coverage for `[forSeparator]` in its focusable
- * resizer variant. The Vitest layer covers ARIA + signal wiring but cannot
- * exercise `setPointerCapture` or read real pane geometry: jsdom returns zero
- * widths for `getBoundingClientRect()` so any clamping that depends on real
- * px deltas is invisible there. These specs drive real pointer events against
- * the harness's two-pane layout and assert the resulting left-pane width via
- * `boundingBox()`.
+ * Pointer / drag / RTL math coverage for `[forPaneResizer]`. The Vitest layer
+ * covers ARIA + signal wiring but cannot exercise `setPointerCapture` or read
+ * real pane geometry: jsdom returns zero widths for `getBoundingClientRect()`
+ * so any clamping that depends on real px deltas is invisible there. These
+ * specs drive real pointer events against the harness's two-pane layout and
+ * assert the resulting left-pane width via `boundingBox()`.
  *
- * The harness binds the separator's `[(value)]` directly to the left pane's
+ * The harness binds the resizer's `[(value)]` directly to the left pane's
  * inline `width.px` (or `height.px` for horizontal orientation), so the `value`
  * signal and the rendered pane width are 1:1. Assertions use the rendered
  * width via `boundingBox()` because that's the consumer-visible contract; the
@@ -18,27 +17,27 @@ import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
  * tests where pixel-perfect rounding tolerances would obscure the assertion.
  */
 
-test.describe('Separator (focus + tab order)', () => {
+test.describe('PaneResizer (focus + tab order)', () => {
   test('Tab from before-input lands on the resizer', async ({ page }) => {
-    await gotoFixture(page, 'separator');
+    await gotoFixture(page, 'pane-resizer');
     await el(page, 'before').focus();
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'resizer'));
   });
 
   test('Shift+Tab from after-input lands on the resizer', async ({ page }) => {
-    await gotoFixture(page, 'separator');
+    await gotoFixture(page, 'pane-resizer');
     await el(page, 'after').focus();
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'resizer'));
   });
 });
 
-test.describe('Separator (pointer drag)', () => {
+test.describe('PaneResizer (pointer drag)', () => {
   test('drag 100px right grows left pane by ~100px and shrinks right pane by the same delta', async ({
     page,
   }) => {
-    await gotoFixture(page, 'separator');
+    await gotoFixture(page, 'pane-resizer');
     const leftBefore = (await el(page, 'left-pane').boundingBox())!;
     const rightBefore = (await el(page, 'right-pane').boundingBox())!;
 
@@ -61,7 +60,7 @@ test.describe('Separator (pointer drag)', () => {
 
   test('drag past left pane min clamps at min', async ({ page }) => {
     // Initial 200, min 100, dragging -500px would land at -300 → clamped to 100.
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       initial: '200',
       leftMin: '100',
       leftMax: '400',
@@ -78,7 +77,7 @@ test.describe('Separator (pointer drag)', () => {
 
   test('drag past left pane max clamps at max', async ({ page }) => {
     // Initial 200, max 400, dragging +500px would land at 700 → clamped to 400.
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       initial: '200',
       leftMin: '100',
       leftMax: '400',
@@ -93,7 +92,7 @@ test.describe('Separator (pointer drag)', () => {
   });
 
   test('resizeCommit fires once per drag with the final value', async ({ page }) => {
-    await gotoFixture(page, 'separator');
+    await gotoFixture(page, 'pane-resizer');
     await expect(el(page, 'resize-commit-count')).toHaveText('0');
 
     await dragFrom(page, el(page, 'resizer'), { dx: 100, dy: 0 });
@@ -105,9 +104,9 @@ test.describe('Separator (pointer drag)', () => {
   });
 });
 
-test.describe('Separator (keyboard navigation)', () => {
+test.describe('PaneResizer (keyboard navigation)', () => {
   test('ArrowRight moves resizer by step (10px)', async ({ page }) => {
-    await gotoFixture(page, 'separator', { initial: '200', step: '10' });
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10' });
     await el(page, 'resizer').focus();
 
     await page.keyboard.press('ArrowRight');
@@ -118,7 +117,7 @@ test.describe('Separator (keyboard navigation)', () => {
   });
 
   test('ArrowLeft moves resizer by -step (10px)', async ({ page }) => {
-    await gotoFixture(page, 'separator', { initial: '200', step: '10' });
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10' });
     await el(page, 'resizer').focus();
 
     await page.keyboard.press('ArrowLeft');
@@ -129,7 +128,7 @@ test.describe('Separator (keyboard navigation)', () => {
   });
 
   test('Home jumps to min, End jumps to max', async ({ page }) => {
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       initial: '200',
       leftMin: '100',
       leftMax: '400',
@@ -144,7 +143,7 @@ test.describe('Separator (keyboard navigation)', () => {
   });
 
   test('PageUp / PageDown apply largeStep', async ({ page }) => {
-    await gotoFixture(page, 'separator', { initial: '200', largeStep: '50' });
+    await gotoFixture(page, 'pane-resizer', { initial: '200', largeStep: '50' });
     await el(page, 'resizer').focus();
 
     await page.keyboard.press('PageDown');
@@ -155,7 +154,7 @@ test.describe('Separator (keyboard navigation)', () => {
   });
 
   test('resizeCommit fires once per arrow keyup', async ({ page }) => {
-    await gotoFixture(page, 'separator', { initial: '200', step: '10' });
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10' });
     await el(page, 'resizer').focus();
     await expect(el(page, 'resize-commit-count')).toHaveText('0');
 
@@ -165,9 +164,9 @@ test.describe('Separator (keyboard navigation)', () => {
   });
 });
 
-test.describe('Separator (RTL)', () => {
+test.describe('PaneResizer (RTL)', () => {
   test('ArrowRight in RTL moves the value down (leftward in visual terms)', async ({ page }) => {
-    await gotoFixture(page, 'separator', { initial: '200', step: '10', dir: 'rtl' });
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10', dir: 'rtl' });
     await el(page, 'resizer').focus();
 
     // RTL inverts the horizontal arrow keys on a vertical separator: ArrowRight
@@ -180,7 +179,7 @@ test.describe('Separator (RTL)', () => {
   });
 
   test('RTL: dragging right (+dx) shrinks the value (LTR would grow it)', async ({ page }) => {
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       initial: '200',
       leftMin: '100',
       leftMax: '400',
@@ -199,9 +198,9 @@ test.describe('Separator (RTL)', () => {
   });
 });
 
-test.describe('Separator (horizontal orientation)', () => {
+test.describe('PaneResizer (horizontal orientation)', () => {
   test('horizontal separator: ArrowDown grows top pane, ArrowUp shrinks it', async ({ page }) => {
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       orientation: 'horizontal',
       initial: '200',
       step: '10',
@@ -216,7 +215,7 @@ test.describe('Separator (horizontal orientation)', () => {
   });
 
   test('horizontal separator: dragging downward grows the top pane', async ({ page }) => {
-    await gotoFixture(page, 'separator', {
+    await gotoFixture(page, 'pane-resizer', {
       orientation: 'horizontal',
       initial: '200',
       leftMin: '100',
@@ -234,20 +233,19 @@ test.describe('Separator (horizontal orientation)', () => {
   });
 });
 
-// Touch path coverage for the resizer variant's pointer drag. The
-// resizer uses `setPointerCapture` plus listeners for `pointermove` /
-// `pointerup`; on `Mobile Chrome` / `Mobile Safari` (`hasTouch: true`
-// + `isMobile: true` from the device descriptor) Playwright's
-// `page.mouse` dispatches pointer events with `pointerType: 'touch'`
-// via the browser's mobile emulation, so the raw `mouse.*` drag
-// below drives the touch code path natively without bypassing
-// `setPointerCapture` the way `dragFrom`'s synthetic-touch branch
-// (which dispatches via `document.elementFromPoint`) does. Desktop
-// projects re-run the test as a regression guard via the same
-// `mouse.*` calls under `pointerType: 'mouse'`.
-test.describe('Separator (@mobile touch drag)', () => {
+// Touch path coverage for the resizer's pointer drag. The resizer uses
+// `setPointerCapture` plus listeners for `pointermove` / `pointerup`; on
+// `Mobile Chrome` / `Mobile Safari` (`hasTouch: true` + `isMobile: true` from
+// the device descriptor) Playwright's `page.mouse` dispatches pointer events
+// with `pointerType: 'touch'` via the browser's mobile emulation, so the raw
+// `mouse.*` drag below drives the touch code path natively without bypassing
+// `setPointerCapture` the way `dragFrom`'s synthetic-touch branch (which
+// dispatches via `document.elementFromPoint`) does. Desktop projects re-run
+// the test as a regression guard via the same `mouse.*` calls under
+// `pointerType: 'mouse'`.
+test.describe('PaneResizer (@mobile touch drag)', () => {
   test('@mobile touch drag resizes panes', async ({ page }) => {
-    await gotoFixture(page, 'separator');
+    await gotoFixture(page, 'pane-resizer');
     const leftBefore = (await el(page, 'left-pane').boundingBox())!;
 
     const resizerBox = (await el(page, 'resizer').boundingBox())!;

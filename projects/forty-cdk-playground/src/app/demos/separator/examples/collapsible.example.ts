@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForSeparator } from 'forty-cdk';
+import { ForPaneResizer } from 'forty-cdk';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';
@@ -7,7 +7,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
 @Component({
   selector: 'app-separator-collapsible-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSeparator, ControlSwitch],
+  imports: [DemoLayout, ForPaneResizer, ControlSwitch],
   template: `
     <playground-demo
       title="Collapsible panel"
@@ -28,8 +28,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
           }
         </aside>
         <div
-          forSeparator
-          focusable
+          forPaneResizer
           orientation="vertical"
           class="cs-resizer"
           aria-label="Resize sidebar"
