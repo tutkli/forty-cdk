@@ -53,4 +53,25 @@ describe('IdGenerator', () => {
     expect(b).toContain('app-b');
     expect(a).not.toBe(b);
   });
+
+  it('two distinct-APP_ID apps emit non-colliding ids at identical render order', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), { provide: APP_ID, useValue: 'app-a' }],
+    });
+    const genA = TestBed.inject(IdGenerator);
+    const a1 = genA.next();
+    const a2 = genA.next();
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), { provide: APP_ID, useValue: 'app-b' }],
+    });
+    const genB = TestBed.inject(IdGenerator);
+    const b1 = genB.next();
+    const b2 = genB.next();
+
+    expect(a1).not.toBe(b1);
+    expect(a2).not.toBe(b2);
+  });
 });
