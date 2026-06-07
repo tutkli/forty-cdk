@@ -6,39 +6,39 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 ## Pieces
 
-| Class                       | Selector                      | Role                                                                                                                          |
-| --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                              |
-| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                              |
+| Class                       | Selector                      | Role                                                                                                                                                |
+| --------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                                                    |
+| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                                                    |
 | `ForListboxOptionIndicator` | `[forListboxOptionIndicator]` | Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)). |
 
 ## Inputs / models
 
 ### `ForListbox`
 
-| API                                                          | Type                                             | Description                                                                                                                                                               |
-| ------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<readonly T[]>`                            | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly T[]>`.                                              |
-| `selected`                                                   | `Signal<T \| null>`                              | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.   |
-| `isItemEqualToValue`                                         | `input<(a: T, b: T) => boolean>`                 | How two items compare. Defaults to `===`. Override for object values so selection / range actions locate entries by id (or any stable key).                               |
-| `itemToFormValue`                                            | `input<(item: T) => string>`                     | Serialize an item for the hidden form input. Defaults to `String` for strings and `JSON.stringify` for objects. Override to emit a per-item id.                           |
-| `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected. Default `false`.                                                                                                             |
+| API                                                          | Type                                             | Description                                                                                                                                                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                      | `model<readonly T[]>`                            | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly T[]>`.                                                                       |
+| `selected`                                                   | `Signal<T \| null>`                              | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.                             |
+| `isItemEqualToValue`                                         | `input<(a: T, b: T) => boolean>`                 | How two items compare. Defaults to `===`. Override for object values so selection / range actions locate entries by id (or any stable key).                                                        |
+| `itemToFormValue`                                            | `input<(item: T) => string>`                     | Serialize an item for the hidden form input. Defaults to `String` for strings and `JSON.stringify` for objects. Override to emit a per-item id.                                                    |
+| `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected. Default `false`.                                                                                                                                      |
 | `ariaLabel`                                                  | `input<string \| null>`                          | Reactive accessible name for the listbox, reflected as `aria-label`. Default `null` (and an empty string) emits no attribute. Prefer native `aria-labelledby` when a visible label element exists. |
-| `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Default `'vertical'`. Drives keyboard nav and `aria-orientation`.                                                                                                         |
-| `loop`                                                       | `input<boolean>`                                 | When `true` (default), arrow nav wraps at the ends. Set `false` to stop at the boundaries. Range extension (Shift+Arrow) never wraps regardless, per the APG.            |
-| `dir`                                                        | `input<'ltr' \| 'rtl'>`                          | Default `'ltr'`.                                                                                                                                                          |
-| `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, arrow nav also selects the focused option. APG flags this as case-by-case — leave off unless your UX specifically benefits. Default `false`. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                 | Reflected as `aria-*` / `data-*`.                                                                                                                                         |
-| `name`                                                       | `input<string>`                                  | For form association.                                                                                                                                                     |
-| `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.                                                                                                                                                   |
-| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox.                                                                                                                                      |
+| `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Default `'vertical'`. Drives keyboard nav and `aria-orientation`.                                                                                                                                  |
+| `loop`                                                       | `input<boolean>`                                 | When `true` (default), arrow nav wraps at the ends. Set `false` to stop at the boundaries. Range extension (Shift+Arrow) never wraps regardless, per the APG.                                      |
+| `dir`                                                        | `input<'ltr' \| 'rtl'>`                          | Default `'ltr'`.                                                                                                                                                                                   |
+| `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, arrow nav also selects the focused option. APG flags this as case-by-case — leave off unless your UX specifically benefits. Default `false`.                          |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                 | Reflected as `aria-*` / `data-*`.                                                                                                                                                                  |
+| `name`                                                       | `input<string>`                                  | For form association.                                                                                                                                                                              |
+| `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.                                                                                                                                                                            |
+| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox.                                                                                                                                                               |
 
 ### `ForListboxOption`
 
-| API        | Type                | Description                                                                            |
-| ---------- | ------------------- | -------------------------------------------------------------------------------------- |
+| API        | Type                | Description                                                                                            |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
 | `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `isItemEqualToValue`. |
-| `disabled` | `input<boolean>`    | Disables this option independently of the group.                                       |
+| `disabled` | `input<boolean>`    | Disables this option independently of the group.                                                       |
 
 ## Stand-alone usage (single select)
 
@@ -51,9 +51,15 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
   imports: [ForListbox, ForListboxOption],
   template: `
     <ul forListbox [(value)]="picked" aria-label="Fruit">
-      <li><button type="button" forListboxOption value="apple">Apple</button></li>
-      <li><button type="button" forListboxOption value="banana">Banana</button></li>
-      <li><button type="button" forListboxOption value="cherry">Cherry</button></li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="apple">Apple</button>
+      </li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="banana">Banana</button>
+      </li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="cherry">Cherry</button>
+      </li>
     </ul>
   `,
 })
@@ -66,9 +72,11 @@ export class DemoFruit {
 
 ```html
 <ul forListbox multiple [(value)]="tags" aria-label="Tags">
-  <li><button type="button" forListboxOption value="urgent">Urgent</button></li>
-  <li><button type="button" forListboxOption value="bug">Bug</button></li>
-  <li><button type="button" forListboxOption value="ui">UI</button></li>
+  <li>
+    <button type="button" forListboxOption class="listbox-option" value="urgent">Urgent</button>
+  </li>
+  <li><button type="button" forListboxOption class="listbox-option" value="bug">Bug</button></li>
+  <li><button type="button" forListboxOption class="listbox-option" value="ui">UI</button></li>
 </ul>
 ```
 
@@ -80,9 +88,9 @@ Real apps usually have richer option models — `{ id, name, ... }` — where th
 
 Two inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                          |
-| ---------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / range actions locate by id (or any stable key). |
+| Input                  | Default                                                            | Purpose                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / range actions locate by id (or any stable key).     |
 | `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden form input. Override to emit a per-item id (or any wire format your backend wants). |
 
 The visible option label is just the rendered `textContent`, so there's no separate label function. All of the multi-select range actions (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End) dedupe by `isItemEqualToValue`, so object values never accumulate duplicates.
@@ -102,7 +110,11 @@ interface City {
   template: `
     <ul forListbox multiple [(value)]="picked" [isItemEqualToValue]="byId" aria-label="Cities">
       @for (c of cities; track c.id) {
-      <li><button type="button" forListboxOption [value]="c">{{ c.name }}</button></li>
+        <li>
+          <button type="button" forListboxOption class="listbox-option" [value]="c">
+            {{ c.name }}
+          </button>
+        </li>
       }
     </ul>
   `,
@@ -129,9 +141,17 @@ import { ForListbox, ForListboxOption } from 'forty-cdk';
   imports: [ForListbox, ForListboxOption /* , FormField from @angular/forms */],
   template: `
     <ul forListbox multiple [formField]="prefs.priorities" aria-label="Priorities">
-      <li><button type="button" forListboxOption value="speed">Speed</button></li>
-      <li><button type="button" forListboxOption value="quality">Quality</button></li>
-      <li><button type="button" forListboxOption value="cost">Cost</button></li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="speed">Speed</button>
+      </li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="quality">
+          Quality
+        </button>
+      </li>
+      <li>
+        <button type="button" forListboxOption class="listbox-option" value="cost">Cost</button>
+      </li>
     </ul>
   `,
 })
@@ -152,6 +172,31 @@ export class DemoPriorities {
 > Enforce "at least one" with the explicit `validate(...)` length rule above, or with Angular's
 > `minLength(s.priorities, 1)` (which emits a `minLengthError` instead of a `requiredError`).
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                         | Attribute          | Values                     |
+| ----------------------------- | ------------------ | -------------------------- |
+| `[forListbox]`                | `data-orientation` | `horizontal` \| `vertical` |
+| `[forListbox]`                | `data-disabled`    | present \| absent          |
+| `[forListboxOption]`          | `data-state`       | `checked` \| `unchecked`   |
+| `[forListboxOption]`          | `data-highlighted` | present \| absent          |
+| `[forListboxOption]`          | `data-disabled`    | present \| absent          |
+| `[forListboxOptionIndicator]` | `data-state`       | `checked` \| `unchecked`   |
+
+```css
+.listbox-option[data-highlighted] {
+  background: rgb(0 0 0 / 0.06);
+}
+
+.listbox-option[data-state='checked'] {
+  font-weight: 600;
+}
+```
+
 ## Keyboard
 
 ### Single mode (and the basics for both)
@@ -167,13 +212,13 @@ export class DemoPriorities {
 
 The full WAI-ARIA APG "Recommended Selection" model is implemented and active automatically when `multiple` is set. All shortcuts skip disabled options.
 
-| Shortcut                         | Behavior                                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Shift+ArrowDown / ArrowUp**    | Move focus to the next / previous enabled option AND toggle its selected state.                         |
+| Shortcut                         | Behavior                                                                                                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Shift+ArrowDown / ArrowUp**    | Move focus to the next / previous enabled option AND toggle its selected state.                                                                                             |
 | **Shift+Space**                  | Select every enabled option between the anchor (most recent unmodified click / Space) and the focused option, inclusive. Existing selection outside the range is preserved. |
-| **Ctrl+A** (or **Cmd+A** on mac) | Select every enabled option. If every enabled option is already selected, clears the selection.         |
-| **Ctrl+Shift+Home**              | Select from the focused option to the first enabled option, and move focus there.                       |
-| **Ctrl+Shift+End**               | Select from the focused option to the last enabled option, and move focus there.                        |
+| **Ctrl+A** (or **Cmd+A** on mac) | Select every enabled option. If every enabled option is already selected, clears the selection.                                                                             |
+| **Ctrl+Shift+Home**              | Select from the focused option to the first enabled option, and move focus there.                                                                                           |
+| **Ctrl+Shift+End**               | Select from the focused option to the last enabled option, and move focus there.                                                                                            |
 
 The **anchor** for `Shift+Space` is set on every unmodified activation (click, plain Space, plain Enter) and is unaffected by `Shift+ArrowDown`/`ArrowUp` — that lets users click an option, navigate away with Shift+Arrow, and then Shift+Space to select the contiguous block back to where they started.
 

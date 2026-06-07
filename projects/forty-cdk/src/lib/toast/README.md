@@ -9,16 +9,16 @@ Two ways to use the same primitive:
 
 ## Pieces
 
-| Class                 | Selector                                      | Role                                                                                                                                            |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForToastManager`     | injectable                                    | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`.                                                   |
+| Class                 | Selector                                      | Role                                                                                                                                                                                         |
+| --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForToastManager`     | injectable                                    | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`.                                                                                                |
 | `ForToastViewport`    | `[forToastViewport]` / `<for-toast-viewport>` | Mount once per region near the app root. `role="region"`, renders the toasts of its `[region]`. The F6 hotkey is coordinated once by the manager, so it never double-fires across viewports. |
-| `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                             |
-| `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                        |
-| `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                       |
-| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(close)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements. |
-| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(close)` with reason `'manual'`. Carries `aria-label="Close"`.                                                            |
-| `ForToastRef<R>`      | handle                                        | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state.                                                      |
+| `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                                                                          |
+| `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                                                                     |
+| `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                                                                    |
+| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(close)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements.                                              |
+| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(close)` with reason `'manual'`. Carries `aria-label="Close"`.                                                                                                         |
+| `ForToastRef<R>`      | handle                                        | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state.                                                                                                   |
 
 ## Mount the viewport once
 
@@ -49,8 +49,10 @@ Position it from CSS — the directive doesn't impose layout:
 A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:
 
 ```html
-<for-toast-viewport region="system" /> <!-- styled top-right -->
-<for-toast-viewport region="confirmations" /> <!-- styled bottom-center -->
+<for-toast-viewport region="system" />
+<!-- styled top-right -->
+<for-toast-viewport region="confirmations" />
+<!-- styled bottom-center -->
 ```
 
 ```ts
@@ -207,10 +209,10 @@ Optional, opt-in. Set `[swipeDirection]` on a declarative toast (or via `swipeDi
 
 While the gesture is live the host carries:
 
-| Attribute / variable            | Values                                   | Purpose                                                                         |
-| ------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `data-swipe`                    | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". |
-| `data-swipe-direction`          | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
+| Attribute / variable                | Values                                   | Purpose                                                                         |
+| ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". |
+| `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
 | `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
 | `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
 
@@ -247,6 +249,52 @@ Outputs:
 - Hovering or focusing inside the toast pauses the timer; leaving / blurring resumes with the remaining time.
 - The timer also pauses while `document.visibilityState !== 'visible'` (tab backgrounded, window hidden) and resumes when the page becomes visible again, so toasts don't silently expire while the user is not looking. The `visibilitychange` listener is shared across all live toasts (refcounted) — one document-level handler regardless of stack depth.
 - `duration: 0` keeps the toast sticky — only manual / action / programmatic close ends it.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly — style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
+
+### Data attributes
+
+| Piece                                         | Attribute                | Values                                                                                                      |
+| --------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `[forToast]`                                  | `data-state`             | `open` (always present while mounted; the consumer unmounts on close, so there is no `closed` state)        |
+| `[forToast]`                                  | `data-variant`           | `info` &#124; `success` &#124; `warning` &#124; `error`                                                     |
+| `[forToast]`                                  | `data-paused`            | present / absent (the auto-dismiss timer is paused)                                                         |
+| `[forToast]`                                  | `data-swipe`             | `start` &#124; `move` &#124; `cancel` &#124; `end` (absent until a swipe gesture begins)                    |
+| `[forToast]`                                  | `data-swipe-direction`   | `left` &#124; `right` &#124; `up` &#124; `down` (absent until a swipe arms)                                 |
+| `[forToast]`                                  | `data-front-stack-index` | `0`-based index in the visible stack (set by the viewport on the programmatic path; `0` is the front toast) |
+| `[forToastViewport]` / `<for-toast-viewport>` | `data-region`            | the viewport's region name (default `default`)                                                              |
+| `[forToastViewport]` / `<for-toast-viewport>` | `data-toast-count`       | number of toasts currently rendered                                                                         |
+
+### CSS custom properties
+
+Written on the `[forToast]` host while a swipe gesture is live, so the consumer can drive a transform-based animation entirely from CSS.
+
+| Property                       | Meaning                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `--for-toast-swipe-movement-x` | Horizontal pointer travel in px, clamped to the active swipe direction. |
+| `--for-toast-swipe-movement-y` | Vertical pointer travel in px, clamped to the active swipe direction.   |
+
+```css
+[forToast] {
+  transition: transform 200ms ease-out;
+  transform: translate3d(
+    var(--for-toast-swipe-movement-x, 0px),
+    var(--for-toast-swipe-movement-y, 0px),
+    0
+  );
+}
+[forToast][data-swipe='cancel'] {
+  --for-toast-swipe-movement-x: 0px;
+  --for-toast-swipe-movement-y: 0px;
+}
+[forToast][data-variant='error'] {
+  border-inline-start: 4px solid red;
+}
+```
 
 ## Keyboard
 

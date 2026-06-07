@@ -6,16 +6,16 @@ The focusable divider that resizes two panes is a separate primitive — [`ForPa
 
 ## Pieces
 
-| Class          | Selector         | Role                                                                      |
-| -------------- | ---------------- | ------------------------------------------------------------------------- |
-| `ForSeparator` | `[forSeparator]` | Single attribute directive. Static semantic / decorative divider only.    |
+| Class          | Selector         | Role                                                                   |
+| -------------- | ---------------- | ---------------------------------------------------------------------- |
+| `ForSeparator` | `[forSeparator]` | Single attribute directive. Static semantic / decorative divider only. |
 
 ## Inputs
 
-| API           | Type                                | Description                                                                              |
-| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the separator divides along. Defaults to `'horizontal'`.                            |
-| `decorative`  | `input<boolean>`                    | When true, the separator is purely visual (`role="none"`).                               |
+| API           | Type                                | Description                                                   |
+| ------------- | ----------------------------------- | ------------------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the separator divides along. Defaults to `'horizontal'`. |
+| `decorative`  | `input<boolean>`                    | When true, the separator is purely visual (`role="none"`).    |
 
 The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
 
@@ -34,7 +34,7 @@ import { ForSeparator } from 'forty-cdk';
       <p>…</p>
     </section>
 
-    <hr forSeparator />
+    <hr forSeparator class="separator" />
 
     <section>
       <h2>Notifications</h2>
@@ -43,12 +43,38 @@ import { ForSeparator } from 'forty-cdk';
 
     <nav>
       <a href="/a">A</a>
-      <span forSeparator orientation="vertical" decorative></span>
+      <span forSeparator class="separator" orientation="vertical" decorative></span>
       <a href="/b">B</a>
     </nav>
   `,
 })
 export class DemoSeparator {}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece            | Attribute          | Values                     |
+| ---------------- | ------------------ | -------------------------- |
+| `[forSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.separator {
+  background: var(--border);
+}
+
+.separator[data-orientation='horizontal'] {
+  block-size: 1px;
+  inline-size: 100%;
+}
+
+.separator[data-orientation='vertical'] {
+  inline-size: 1px;
+  align-self: stretch;
+}
 ```
 
 ## Accessibility notes

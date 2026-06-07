@@ -61,7 +61,12 @@ import {
         animate.enter="slide-up"
         animate.leave="slide-down"
       >
-        <div forDrawerBackdrop animate.enter="fade-in" animate.leave="fade-out"></div>
+        <div
+          forDrawerBackdrop
+          class="drawer-backdrop"
+          animate.enter="fade-in"
+          animate.leave="fade-out"
+        ></div>
         <div forDrawerHandle aria-hidden="true"></div>
         <h2 forDrawerTitle>Filters</h2>
         <p forDrawerDescription>Apply filters to the listing.</p>
@@ -105,7 +110,12 @@ import {
     ForDrawerClose,
   ],
   template: `
-    <div forDrawerBackdrop animate.enter="fade-in" animate.leave="fade-out"></div>
+    <div
+      forDrawerBackdrop
+      class="drawer-backdrop"
+      animate.enter="fade-in"
+      animate.leave="fade-out"
+    ></div>
     <div forDrawerHandle aria-hidden="true"></div>
     <h2 forDrawerTitle>Delete account?</h2>
     <p forDrawerDescription>{{ data.message }}</p>
@@ -208,13 +218,6 @@ this.#drawers.open(ConfirmDrawer, {
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
-## CSS custom properties
-
-| Element              | Custom property             | Type / range                    | Meaning                                                                                                                              |
-| -------------------- | --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `[forDrawer]` (surface) | `--for-drawer-translate`    | `"<x> <y>"` length pair (`"0px 0px"` at rest) | Live drag delta. Apply with `translate: var(--for-drawer-translate, 0px 0px)` so it composes with the consumer's `transform`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
-| `[forDrawerBackdrop]`   | `--for-drawer-drag-progress` | number `0`–`1` (`0` at rest)    | Drag progress toward the anchored edge (`1` = fully dragged off-screen). Fade with `opacity: calc(1 - var(--for-drawer-drag-progress, 0))`. See [Backdrop drag-fade](#backdrop-drag-fade-css-contract). |
-
 ## Snap points
 
 Three accepted shapes:
@@ -272,12 +275,12 @@ For a seamless release, transition **both** `translate` and your snap-position p
 `[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the Vaul-style "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(drag)` listener required:
 
 ```css
-[forDrawerBackdrop] {
+.drawer-backdrop {
   /* Fades the backdrop as the surface is dragged off-screen. */
   opacity: calc(1 - var(--for-drawer-drag-progress, 0));
   transition: opacity 0.3s ease;
 }
-[forDrawerBackdrop][data-dragging] {
+.drawer-backdrop[data-dragging] {
   transition: none; /* track the pointer 1:1 during the gesture */
 }
 ```
@@ -357,6 +360,47 @@ Each drawer also reflects its position in the stack as `data-depth` (`"0"` for t
 ```
 
 Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular's bottom-up destroy order tears the child down before the parent — the topology stack throws otherwise so the bug is loud at dev time. If both drawers opt into `[scaleBackground]="true"`, the wrapper effect composes with the parent's nested transform automatically.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute                | Values                                       |
+| --------------------- | ------------------------ | -------------------------------------------- |
+| `[forDrawer]`         | `data-state`             | `open`                                       |
+| `[forDrawer]`         | `data-side`              | `top` \| `right` \| `bottom` \| `left`       |
+| `[forDrawer]`         | `data-active-snap-point` | the active snap point stringified, or absent |
+| `[forDrawer]`         | `data-dragging`          | present / absent                             |
+| `[forDrawer]`         | `data-scale-background`  | present / absent                             |
+| `[forDrawer]`         | `data-depth`             | `0` (root) \| `1` (first child) \| …         |
+| `[forDrawer]`         | `data-state-nested`      | `true` / absent                              |
+| `[forDrawerBackdrop]` | `data-state`             | `open`                                       |
+| `[forDrawerBackdrop]` | `data-fade-from-active`  | present / absent                             |
+| `[forDrawerBackdrop]` | `data-dragging`          | present / absent                             |
+| `[forDrawerClose]`    | `data-state`             | `open`                                       |
+| `[forDrawerTrigger]`  | `data-state`             | `open` \| `closed`                           |
+| `[forDrawerTrigger]`  | `data-disabled`          | present / absent                             |
+| `[forDrawerWrapper]`  | `data-state`             | `scaled` \| `idle`                           |
+
+### CSS custom properties
+
+| Property                     | Meaning                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--for-drawer-translate`     | Written on `[forDrawer]` (the surface). Live drag delta as a `"<x> <y>"` length pair (`"0px 0px"` at rest). Apply with `translate: var(--for-drawer-translate, 0px 0px)` so it composes with the consumer's `transform`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
+| `--for-drawer-drag-progress` | Written on `[forDrawerBackdrop]`. Drag progress toward the anchored edge, `0` (at rest) → `1` (fully dragged off-screen). Fade with `opacity: calc(1 - var(--for-drawer-drag-progress, 0))`. See [Backdrop drag-fade](#backdrop-drag-fade-css-contract).                                   |
+
+> This is a modal overlay: the surface and backdrop portal to `document.body`. Style them with global CSS or classes — declaratively, add your class to the surface element (`<div forDrawer class="my-drawer">`); for drawers opened with `ForDrawerManager.open()`, pass `class` / `classList` on the open config so the tokens land on the real `[forDrawer]` host.
+
+```css
+.sheet[data-active-snap-point] {
+  transition: translate 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sheet[data-dragging] {
+  transition: none;
+}
+```
 
 ## Accessibility
 

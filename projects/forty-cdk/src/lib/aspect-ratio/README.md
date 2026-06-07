@@ -12,8 +12,8 @@ No ARIA semantics. Use it to reserve space for media before it loads (preventing
 
 ## Inputs
 
-| API     | Type            | Description                                                                                                                                                                       |
-| ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API     | Type            | Description                                                                                                                                                                      |
+| ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ratio` | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. Non-positive or non-finite values fall back to `1`. |
 
 ## Usage
@@ -64,3 +64,13 @@ export class DemoAspectRatio {}
 - **Width still on you.** The directive only sets `aspect-ratio`; you decide width / max-width / display. The height is computed from the ratio.
 - **Children fill the box.** Use `width: 100%; height: 100%; object-fit: cover` on inner media to fill without distortion. The directive imposes no styles on children.
 - **No role, no a11y.** This is a layout utility. The element it sits on keeps whatever semantics you give it (`<div>`, `<figure>`, `<a>`, …).
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). This primitive is purely structural: its only host effect is the native `aspect-ratio` style, so it reflects no `data-*` attributes and writes no CSS custom properties. Style the host through your own class on `[forAspectRatio]`.
+
+### Data attributes
+
+| Piece              | Attribute | Values |
+| ------------------ | --------- | ------ |
+| `[forAspectRatio]` | _(none)_  | —      |

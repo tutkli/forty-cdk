@@ -4,34 +4,34 @@ Headless implementation of the [WAI-ARIA Radio Group pattern](https://www.w3.org
 
 ## Pieces
 
-| Class | Selector | Role |
-| --- | --- | --- |
+| Class           | Selector          | Role                                                                                                            |
+| --------------- | ----------------- | --------------------------------------------------------------------------------------------------------------- |
 | `ForRadioGroup` | `[forRadioGroup]` | Container. Owns the selected value, orientation, disabled / readonly / form state. Provides the shared context. |
-| `ForRadio` | `[forRadio]` | One radio. Apply on a `<button type="button">`. |
+| `ForRadio`      | `[forRadio]`      | One radio. Apply on a `<button type="button">`.                                                                 |
 
 ## Inputs / models
 
 ### `ForRadioGroup`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<string>` | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Default `'vertical'`. Drives keyboard navigation and `aria-orientation`. |
-| `dir` | `input<'ltr' \| 'rtl'>` | Default `'ltr'`. Swaps ArrowLeft / ArrowRight in horizontal layouts. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>` | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection. |
-| `loop` | `input<boolean>` | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group. |
-| `name` | `input<string>` | For form association. |
-| `errors` | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`. |
-| `touched` | `model<boolean>` | Set to `true` when focus leaves the group entirely. |
+| API                                                          | Type                                                      | Description                                                                                                                                       |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                      | `model<string>`                                           | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`. |
+| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Default `'vertical'`. Drives keyboard navigation and `aria-orientation`.                                                                          |
+| `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Default `'ltr'`. Swaps ArrowLeft / ArrowRight in horizontal layouts.                                                                              |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection.                                                                  |
+| `loop`                                                       | `input<boolean>`                                          | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.                         |
+| `name`                                                       | `input<string>`                                           | For form association.                                                                                                                             |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.                                                                                                                           |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` when focus leaves the group entirely.                                                                                               |
 
 The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for CSS hooks.
 
 ### `ForRadio`
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `input.required<string>` | This radio's identifier. Must be unique within the group and non-empty. |
-| `disabled` | `input<boolean>` | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation. |
+| API        | Type                     | Description                                                                                          |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | This radio's identifier. Must be unique within the group and non-empty.                              |
+| `disabled` | `input<boolean>`         | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation. |
 
 The radio host gets `aria-checked`, `aria-disabled`, `disabled`, `tabindex`, `data-state`, and `data-disabled`. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
 
@@ -47,9 +47,9 @@ import { ForRadioGroup, ForRadio } from 'forty-cdk';
   template: `
     <div forRadioGroup [(value)]="color" aria-labelledby="color-label">
       <span id="color-label">Color</span>
-      <button type="button" forRadio value="red">Red</button>
-      <button type="button" forRadio value="green">Green</button>
-      <button type="button" forRadio value="blue" disabled>Blue</button>
+      <button type="button" forRadio class="radio-group-item" value="red">Red</button>
+      <button type="button" forRadio class="radio-group-item" value="green">Green</button>
+      <button type="button" forRadio class="radio-group-item" value="blue" disabled>Blue</button>
     </div>
   `,
 })
@@ -71,15 +71,42 @@ import { ForRadioGroup, ForRadio } from 'forty-cdk';
   template: `
     <div forRadioGroup [formField]="checkout.shipping" aria-labelledby="ship-label">
       <span id="ship-label">Shipping</span>
-      <button type="button" forRadio value="standard">Standard</button>
-      <button type="button" forRadio value="express">Express</button>
-      <button type="button" forRadio value="overnight">Overnight</button>
+      <button type="button" forRadio class="radio-group-item" value="standard">Standard</button>
+      <button type="button" forRadio class="radio-group-item" value="express">Express</button>
+      <button type="button" forRadio class="radio-group-item" value="overnight">Overnight</button>
     </div>
   `,
 })
 export class DemoShipping {
   readonly model = signal({ shipping: '' });
   readonly checkout = form(this.model, (s) => required(s.shipping));
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute          | Values                     |
+| --------------------- | ------------------ | -------------------------- |
+| `[forRadioGroup]`     | `data-orientation` | `horizontal` \| `vertical` |
+| `[forRadioGroup]`     | `data-disabled`    | present \| absent          |
+| `[forRadioGroup]`     | `data-readonly`    | present \| absent          |
+| `[forRadio]`          | `data-state`       | `checked` \| `unchecked`   |
+| `[forRadio]`          | `data-disabled`    | present \| absent          |
+| `[forRadio]`          | `data-orientation` | `horizontal` \| `vertical` |
+| `[forRadioIndicator]` | `data-state`       | `checked` \| `unchecked`   |
+| `[forRadioIndicator]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.radio-group-indicator[data-state='unchecked'] {
+  display: none;
+}
+
+.radio-group-item:not([data-disabled]):hover {
+  cursor: pointer;
 }
 ```
 

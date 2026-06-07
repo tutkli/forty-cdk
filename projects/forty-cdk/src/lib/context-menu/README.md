@@ -17,7 +17,9 @@ import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } fr
   imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
   template: `
     <div forContextMenu #menu="forContextMenu">
-      <div forContextMenuTrigger class="canvas">Right-click anywhere here.</div>
+      <div forContextMenuTrigger class="canvas context-menu-trigger">
+        Right-click anywhere here.
+      </div>
       @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
           <button forMenuItem (select)="rename()">Rename</button>
@@ -51,7 +53,7 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ```html
 <div forContextMenu [(open)]="open">
-  <div forContextMenuTrigger>Right-click anywhere here.</div>
+  <div forContextMenuTrigger class="context-menu-trigger">Right-click anywhere here.</div>
   @if (open()) {
   <div forMenuContent>…</div>
   }
@@ -89,6 +91,27 @@ Same vetoable dismiss API as DropdownMenu — `(escapeKeyDown)`, `(pointerDownOu
 
 `(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the imperative focus move on mount / unmount. Each receives a `VetoableEvent`; call `preventDefault()` on the veto to skip the move while keeping the menu mounted. These are output-shape because ContextMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece                     | Attribute       | Values             |
+| ------------------------- | --------------- | ------------------ |
+| `[forContextMenu]`        | `data-state`    | `open` \| `closed` |
+| `[forContextMenu]`        | `data-disabled` | present \| absent  |
+| `[forContextMenuTrigger]` | `data-state`    | `open` \| `closed` |
+| `[forContextMenuTrigger]` | `data-disabled` | present \| absent  |
+
+> The menu content (`[forMenuContent]`, from the [`menu/`](../menu/README.md) folder) portals to `document.body`, so it sits outside the trigger's DOM subtree — descendant selectors won't reach it. Style it with **global CSS** or a class on the content element. The content host also exposes the shared positioner custom properties (`--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, `--for-content-transform-origin`); see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list and the animation rules.
+
+```css
+.context-menu-trigger[data-state='open'] {
+  outline: 2px solid hotpink;
+}
+```
+
 ## Behavior notes
 
 - **Trigger is NOT exempt** from outside-pointer / outside-focus checks. Unlike DropdownMenu (where the trigger button toggles via its own click handler), the context-menu region is treated like any other "outside" element — a left-click on the region while the menu is open closes it. Right-clicking again immediately reopens at the new position.
@@ -96,9 +119,3 @@ Same vetoable dismiss API as DropdownMenu — `(escapeKeyDown)`, `(pointerDownOu
 - **Keyboard activators only fire while focus is inside the trigger.** Keyboard events dispatch to the focused element, so `Shift+F10` / `ContextMenu` anywhere outside the trigger goes to the browser default. The trigger is focusable by default (host-bound `tabindex="-1"`), so this works out of the box; use `tabindex="0"` if you want the region itself reachable via Tab.
 - **Native menu suppressed.** The trigger calls `event.preventDefault()` on `contextmenu` and on the keyboard activators. Set `disabled` to let the browser's native menu surface for that region.
 - **Mount equals open.** Same convention as the rest of the library — wrap `[forMenuContent]` in `@if (open())` and use `animate.enter` / `animate.leave` for transitions.
-
-## CSS custom properties
-
-The content surface is `[forMenuContent]` (from the [`menu/`](../menu/README.md) folder). It exposes the floating-ui-resolved geometry — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — as custom properties on the content host. See [menu → CSS custom properties](../menu/README.md#css-custom-properties) for the full table.
-
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.

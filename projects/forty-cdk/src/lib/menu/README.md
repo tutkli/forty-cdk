@@ -32,10 +32,17 @@ Every item type emits a vetoable `(select)` event — handlers receive a `Vetoab
 
 ```html
 <!-- Closes menu by default -->
-<button forMenuItem (select)="save()">Save</button>
+<button forMenuItem class="menu-item" (select)="save()">Save</button>
 
 <!-- Stays open -->
-<button forMenuCheckboxItem [(checked)]="bold" (select)="$event.preventDefault()">Bold</button>
+<button
+  forMenuCheckboxItem
+  class="menu-checkbox-item"
+  [(checked)]="bold"
+  (select)="$event.preventDefault()"
+>
+  Bold
+</button>
 ```
 
 ## Keyboard
@@ -54,7 +61,7 @@ Every item type emits a vetoable `(select)` event — handlers receive a `Vetoab
 
   ```html
   <!-- Without textValue, prefix-match would compare against "3 Archive" -->
-  <button forMenuItem textValue="Archive">
+  <button forMenuItem class="menu-item" textValue="Archive">
     <span class="badge">3</span>
     Archive
   </button>
@@ -71,13 +78,13 @@ Both `[forMenuSub]` (`exportAs: 'forMenuSub'`) and the parent `[forDropdownMenu]
   <button forDropdownMenuTrigger>File</button>
   @if (menu.open()) {
   <div forMenuContent>
-    <button forMenuItem (select)="openFile()">Open</button>
+    <button forMenuItem class="menu-item" (select)="openFile()">Open</button>
     <div forMenuSub #sub="forMenuSub">
-      <button forMenuSubTrigger>Open recent</button>
+      <button forMenuSubTrigger class="menu-sub-trigger">Open recent</button>
       @if (sub.open()) {
       <div forMenuSubContent>
-        <button forMenuItem (select)="openFile('a.txt')">a.txt</button>
-        <button forMenuItem (select)="openFile('b.txt')">b.txt</button>
+        <button forMenuItem class="menu-item" (select)="openFile('a.txt')">a.txt</button>
+        <button forMenuItem class="menu-item" (select)="openFile('b.txt')">b.txt</button>
       </div>
       }
     </div>
@@ -106,27 +113,61 @@ Tune the timings per injector scope with `provideForMenuDefaults` (applies to ev
 import { provideForMenuDefaults } from 'forty-cdk';
 
 bootstrapApplication(App, {
-  providers: [
-    provideForMenuDefaults({ subMenuOpenDelay: 150, subMenuCloseDelay: 200 }),
-  ],
+  providers: [provideForMenuDefaults({ subMenuOpenDelay: 150, subMenuCloseDelay: 200 })],
 });
 ```
 
 Partial overrides inherit unspecified keys from the parent scope (or the library defaults at the root), so a component-level `providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })]` layers on top of an app-level configuration per key.
 
-## CSS custom properties
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                                      | Attribute          | Values                   |
+| ------------------------------------------ | ------------------ | ------------------------ |
+| `[forMenuContent]` / `[forMenuSubContent]` | `data-state`       | `open` \| `closed`       |
+| `[forMenuItem]`                            | `data-disabled`    | present \| absent        |
+| `[forMenuItem]`                            | `data-highlighted` | present \| absent        |
+| `[forMenuCheckboxItem]`                    | `data-state`       | `checked` \| `unchecked` |
+| `[forMenuCheckboxItem]`                    | `data-disabled`    | present \| absent        |
+| `[forMenuCheckboxItem]`                    | `data-highlighted` | present \| absent        |
+| `[forMenuRadioItem]`                       | `data-state`       | `checked` \| `unchecked` |
+| `[forMenuRadioItem]`                       | `data-disabled`    | present \| absent        |
+| `[forMenuRadioItem]`                       | `data-highlighted` | present \| absent        |
+| `[forMenuItemIndicator]`                   | `data-state`       | `checked` \| `unchecked` |
+| `[forMenuSub]`                             | `data-state`       | `open` \| `closed`       |
+| `[forMenuSub]`                             | `data-disabled`    | present \| absent        |
+| `[forMenuSubTrigger]`                      | `data-state`       | `open` \| `closed`       |
+| `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent        |
+
+> `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../../../docs/styling-floating-content.md).
+
+### CSS custom properties
 
 See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.
 
 `[forMenuContent]` / `[forMenuSubContent]` are portaled to `document.body` and get their position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close). These also drive the content surface for `[forDropdownMenu]` and `[forContextMenu]`, which reuse `[forMenuContent]`:
 
-| Custom property                  | Type / range        | Meaning                                                                                              |
-| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | px                  | Anchor (trigger) width — match it with `width: var(--for-anchor-width)`.                             |
-| `--for-anchor-height`            | px                  | Anchor (trigger) height.                                                                             |
-| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.      |
-| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                      |
+| Custom property                  | Type / range        | Meaning                                                                                                      |
+| -------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `--for-anchor-width`             | px                  | Anchor (trigger) width — match it with `width: var(--for-anchor-width)`.                                     |
+| `--for-anchor-height`            | px                  | Anchor (trigger) height.                                                                                     |
+| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
+| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                              |
 | `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+
+```css
+.menu-item[data-highlighted],
+.menu-checkbox-item[data-highlighted],
+.menu-radio-item[data-highlighted] {
+  background: rgba(0, 0, 0, 0.06);
+}
+.menu-sub-trigger[data-state='open'] .chevron {
+  transform: rotate(90deg);
+}
+```
 
 ## Accessibility notes
 

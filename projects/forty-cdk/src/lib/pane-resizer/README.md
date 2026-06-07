@@ -6,32 +6,32 @@ It is essentially a 1-D slider wearing a separator role. The static visual divid
 
 ## Pieces
 
-| Class           | Selector          | Role                                                                                   |
-| --------------- | ----------------- | -------------------------------------------------------------------------------------- |
+| Class            | Selector           | Role                                                                                  |
+| ---------------- | ------------------ | ------------------------------------------------------------------------------------- |
 | `ForPaneResizer` | `[forPaneResizer]` | Single attribute directive. Focusable resizer: tabbable, exposes `aria-value*`, drag. |
 
 ## Inputs
 
-| API           | Type                                | Description                                                                                                  |
-| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the divider line runs along. Defaults to `'horizontal'`. The resize axis runs perpendicular.            |
-| `disabled`    | `input<boolean>`                    | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer.   |
-| `value`       | `model<number>`                     | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).                       |
-| `min`         | `input<number>`                     | Lower bound. Default `0`.                                                                                    |
-| `max`         | `input<number>`                     | Upper bound. Default `100`.                                                                                  |
-| `step`        | `input<number>`                     | Step applied by ArrowKeys. Default `1`.                                                                      |
-| `largeStep`   | `input<number>`                     | Step applied by `Page Up` / `Page Down`. Default `10`.                                                       |
-| `valueText`   | `input<string \| null>`             | Optional `aria-valuetext` string for human-readable values.                                                  |
-| `controls`    | `input<string \| null>`             | Space-separated list of pane ids surfaced as `aria-controls`.                                                |
-| `collapsible` | `input<boolean>`                    | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.        |
-| `dir`         | `input<'ltr' \| 'rtl'>`             | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.               |
+| API           | Type                                | Description                                                                                                |
+| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the divider line runs along. Defaults to `'horizontal'`. The resize axis runs perpendicular.          |
+| `disabled`    | `input<boolean>`                    | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer. |
+| `value`       | `model<number>`                     | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).                     |
+| `min`         | `input<number>`                     | Lower bound. Default `0`.                                                                                  |
+| `max`         | `input<number>`                     | Upper bound. Default `100`.                                                                                |
+| `step`        | `input<number>`                     | Step applied by ArrowKeys. Default `1`.                                                                    |
+| `largeStep`   | `input<number>`                     | Step applied by `Page Up` / `Page Down`. Default `10`.                                                     |
+| `valueText`   | `input<string \| null>`             | Optional `aria-valuetext` string for human-readable values.                                                |
+| `controls`    | `input<string \| null>`             | Space-separated list of pane ids surfaced as `aria-controls`.                                              |
+| `collapsible` | `input<boolean>`                    | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.      |
+| `dir`         | `input<'ltr' \| 'rtl'>`             | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.             |
 
 ## Outputs
 
-| API            | Payload  | Fires                                                                                                       |
-| -------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| `valueChange`  | `number` | Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`. |
-| `resize`       | `number` | Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.                         |
+| API            | Payload  | Fires                                                                                                          |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `valueChange`  | `number` | Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.   |
+| `resize`       | `number` | Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.                            |
 | `resizeCommit` | `number` | Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here. |
 
 The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks. When `disabled`, the host also gets `data-disabled=""`.
@@ -97,6 +97,30 @@ export class DemoSplitPane {
 ### Pointer drag
 
 `pointerdown` captures the pointer, records the starting value, and on each `pointermove` adds the **raw px delta** along the resize axis to `value`, clamped to `[min, max]`. Use this directly for px-unit layouts; for percentage / fractional layouts, listen to `(resize)` and translate yourself, or skip pointer drag and stick to keyboard.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece              | Attribute          | Values                     |
+| ------------------ | ------------------ | -------------------------- |
+| `[forPaneResizer]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forPaneResizer]` | `data-disabled`    | present \| absent          |
+
+```css
+.resizer[data-orientation='vertical'] {
+  cursor: col-resize;
+}
+.resizer[data-orientation='horizontal'] {
+  cursor: row-resize;
+}
+.resizer[data-disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
+```
 
 ## Accessibility notes
 

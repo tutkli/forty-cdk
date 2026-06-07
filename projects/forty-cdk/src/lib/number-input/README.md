@@ -6,29 +6,29 @@ It owns parsing, clamping to `[min, max]`, the full Spinbutton keyboard map, and
 
 ## Pieces
 
-| Class | Selector | Element | Role |
-| --- | --- | --- | --- |
-| `ForNumberInput` | `[forNumberInput]` | `<input>` | The spinbutton. Owns value, parsing, clamping, keyboard. |
-| `ForNumberInputGroup` | `[forNumberInputGroup]` | any wrapper | Coordination wrapper — only needed when you use the stepper buttons. |
-| `ForNumberInputIncrement` | `[forNumberInputIncrement]` | `<button>` | "Step up" affordance (`tabindex="-1"`). |
-| `ForNumberInputDecrement` | `[forNumberInputDecrement]` | `<button>` | "Step down" affordance (`tabindex="-1"`). |
+| Class                     | Selector                    | Element     | Role                                                                 |
+| ------------------------- | --------------------------- | ----------- | -------------------------------------------------------------------- |
+| `ForNumberInput`          | `[forNumberInput]`          | `<input>`   | The spinbutton. Owns value, parsing, clamping, keyboard.             |
+| `ForNumberInputGroup`     | `[forNumberInputGroup]`     | any wrapper | Coordination wrapper — only needed when you use the stepper buttons. |
+| `ForNumberInputIncrement` | `[forNumberInputIncrement]` | `<button>`  | "Step up" affordance (`tabindex="-1"`).                              |
+| `ForNumberInputDecrement` | `[forNumberInputDecrement]` | `<button>`  | "Step down" affordance (`tabindex="-1"`).                            |
 
 > **Why the group?** A `<input>` is a void element, so the stepper buttons can't be its DOM descendants and therefore can't inject its context directly. `[forNumberInputGroup]` provides that context and forwards it to the `[forNumberInput]` registered beneath it. A standalone spinbutton (keyboard / `[(value)]` only) needs no group.
 
 ## Inputs / models (`ForNumberInput`)
 
-| API | Type | Description |
-| --- | --- | --- |
-| `value` | `model<number \| null>` | Two-way bindable value. `null` is the empty input (reflected as `data-empty`). |
-| `min` | `input<number \| undefined>` | Lower bound. Reflected as `aria-valuemin`. Unset → no lower bound. |
-| `max` | `input<number \| undefined>` | Upper bound. Reflected as `aria-valuemax`. Unset → no upper bound. |
-| `step` | `input<number>` | Increment for ArrowUp / ArrowDown and the buttons. Defaults to `1`. |
-| `stepMultiplier` | `input<number>` | Multiplier over `step` for PageUp / PageDown. Defaults to `10` (configurable via `provideForNumberInputDefaults`). |
-| `formatOptions` | `input<Intl.NumberFormatOptions \| null>` | When set, drives the displayed text and `aria-valuetext`. |
-| `locale` | `input<string \| null>` | BCP 47 locale for parsing and formatting. Defaults to the runtime locale. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>` | Shared form-control flags (see [Field](../field/README.md)). |
-| `name` | `input<string>` | Mounts a hidden `<input>` carrying the **raw** number for native form submission. |
-| `touched` | `model<boolean>` | Set to `true` on blur. |
+| API                                                                    | Type                                      | Description                                                                                                        |
+| ---------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `value`                                                                | `model<number \| null>`                   | Two-way bindable value. `null` is the empty input (reflected as `data-empty`).                                     |
+| `min`                                                                  | `input<number \| undefined>`              | Lower bound. Reflected as `aria-valuemin`. Unset → no lower bound.                                                 |
+| `max`                                                                  | `input<number \| undefined>`              | Upper bound. Reflected as `aria-valuemax`. Unset → no upper bound.                                                 |
+| `step`                                                                 | `input<number>`                           | Increment for ArrowUp / ArrowDown and the buttons. Defaults to `1`.                                                |
+| `stepMultiplier`                                                       | `input<number>`                           | Multiplier over `step` for PageUp / PageDown. Defaults to `10` (configurable via `provideForNumberInputDefaults`). |
+| `formatOptions`                                                        | `input<Intl.NumberFormatOptions \| null>` | When set, drives the displayed text and `aria-valuetext`.                                                          |
+| `locale`                                                               | `input<string \| null>`                   | BCP 47 locale for parsing and formatting. Defaults to the runtime locale.                                          |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | Shared form-control flags (see [Field](../field/README.md)).                                                       |
+| `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.                                  |
+| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur.                                                                                             |
 
 The host carries `data-empty` (while the value is `null`), `data-disabled`, and `data-readonly`, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
 
@@ -40,13 +40,13 @@ Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform 
 
 ## Keyboard (Spinbutton APG)
 
-| Key | Behavior |
-| --- | --- |
-| `ArrowUp` / `ArrowDown` | `value ± step`, clamped. |
-| `PageUp` / `PageDown` | `value ± step × stepMultiplier`, clamped. |
-| `Home` / `End` | Set to `min` / `max` (when defined). |
-| `Enter` | Commit (clamp the typed text). |
-| typing | Numeric characters parsed live; clamped on blur / Enter / step. |
+| Key                     | Behavior                                                        |
+| ----------------------- | --------------------------------------------------------------- |
+| `ArrowUp` / `ArrowDown` | `value ± step`, clamped.                                        |
+| `PageUp` / `PageDown`   | `value ± step × stepMultiplier`, clamped.                       |
+| `Home` / `End`          | Set to `min` / `max` (when defined).                            |
+| `Enter`                 | Commit (clamp the typed text).                                  |
+| typing                  | Numeric characters parsed live; clamped on blur / Enter / step. |
 
 Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
 
@@ -66,9 +66,9 @@ import {
   imports: [ForNumberInputGroup, ForNumberInput, ForNumberInputIncrement, ForNumberInputDecrement],
   template: `
     <div forNumberInputGroup>
-      <button forNumberInputDecrement ariaLabel="Decrease">−</button>
+      <button forNumberInputDecrement class="number-input-decrement" ariaLabel="Decrease">−</button>
       <input forNumberInput [(value)]="qty" [min]="0" [max]="10" [step]="1" />
-      <button forNumberInputIncrement ariaLabel="Increase">+</button>
+      <button forNumberInputIncrement class="number-input-increment" ariaLabel="Increase">+</button>
     </div>
     <p>{{ qty() }}</p>
   `,
@@ -126,6 +126,34 @@ export class DemoOrder {
     required(o.qty, { message: 'Quantity is required' });
     min(o.qty, 1, { message: 'At least one' });
   });
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                       | Attribute       | Values                                               |
+| --------------------------- | --------------- | ---------------------------------------------------- |
+| `[forNumberInput]`          | `data-empty`    | present (while `value()` is `null`) / absent         |
+| `[forNumberInput]`          | `data-disabled` | present / absent                                     |
+| `[forNumberInput]`          | `data-readonly` | present / absent                                     |
+| `[forNumberInput]`          | `data-touched`  | present / absent                                     |
+| `[forNumberInput]`          | `data-dirty`    | present / absent                                     |
+| `[forNumberInput]`          | `data-pending`  | present / absent                                     |
+| `[forNumberInput]`          | `data-invalid`  | present / absent                                     |
+| `[forNumberInputIncrement]` | `data-disabled` | present (at `max`, or disabled / read-only) / absent |
+| `[forNumberInputDecrement]` | `data-disabled` | present (at `min`, or disabled / read-only) / absent |
+
+`[forNumberInputGroup]` carries no styling attributes — it is a behavior-only coordination wrapper.
+
+```css
+.number-input-increment[data-disabled],
+.number-input-decrement[data-disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 ```
 

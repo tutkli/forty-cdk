@@ -22,12 +22,6 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, `data-min`, `data-max`, and `data-percentage` (absent while indeterminate), matching the meter root so the root can be styled from `data-percentage` directly. The indicator reflects the same `data-percentage` plus the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
 
-## CSS custom properties
-
-| Element                  | Custom property            | Type / range                 | Meaning                                                                                                                          |
-| ------------------------ | -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `[forProgressIndicator]` | `--for-progress-percentage` | percentage `0%`–`100%` or empty | Completion as a CSS percentage (`data-percentage` mirrored as a `%` value). Absent while indeterminate (`value === null`). Use in `width` or `transform: scaleX(calc(var(--for-progress-percentage) / 100))`. |
-
 ## Usage
 
 ```ts
@@ -38,13 +32,13 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk';
   selector: 'demo-upload',
   imports: [ForProgress, ForProgressIndicator],
   template: `
-    <div forProgress [value]="uploaded()" [max]="total()" announceCompletion>
-      <div forProgressIndicator></div>
+    <div forProgress class="progress" [value]="uploaded()" [max]="total()" announceCompletion>
+      <div forProgressIndicator class="progress-indicator"></div>
     </div>
   `,
   styles: [
     `
-      [forProgress] {
+      .progress {
         position: relative;
         height: 8px;
         width: 240px;
@@ -52,17 +46,17 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk';
         border-radius: 4px;
         overflow: hidden;
       }
-      [forProgressIndicator] {
+      .progress-indicator {
         position: absolute;
         inset: 0;
         background: #4f46e5;
         transform-origin: left center;
         transition: transform 120ms;
       }
-      [forProgressIndicator][data-state='loading'] {
+      .progress-indicator[data-state='loading'] {
         transform: scaleX(calc(var(--for-progress-percentage) / 100));
       }
-      [forProgressIndicator][data-state='indeterminate'] {
+      .progress-indicator[data-state='indeterminate'] {
         transform: scaleX(0.4);
         animation: slide 1.2s infinite ease-in-out;
       }
@@ -80,6 +74,36 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk';
 export class DemoUpload {
   readonly uploaded = signal(0);
   readonly total = signal(200);
+}
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                    | Attribute         | Values                                     |
+| ------------------------ | ----------------- | ------------------------------------------ |
+| `[forProgress]`          | `data-state`      | `indeterminate` \| `loading` \| `complete` |
+| `[forProgress]`          | `data-value`      | clamped value (absent while indeterminate) |
+| `[forProgress]`          | `data-min`        | `0`                                        |
+| `[forProgress]`          | `data-max`        | the `max` value                            |
+| `[forProgress]`          | `data-percentage` | `0`–`100` (absent while indeterminate)     |
+| `[forProgressIndicator]` | `data-state`      | `indeterminate` \| `loading` \| `complete` |
+| `[forProgressIndicator]` | `data-value`      | clamped value (absent while indeterminate) |
+| `[forProgressIndicator]` | `data-max`        | the `max` value                            |
+| `[forProgressIndicator]` | `data-percentage` | `0`–`100` (absent while indeterminate)     |
+
+### CSS custom properties
+
+| Property                    | Meaning                                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--for-progress-percentage` | Completion as a CSS percentage (e.g. `25%`), set on `[forProgressIndicator]`. Absent while indeterminate (`value === null`). |
+
+```css
+.progress-indicator[data-state='loading'] {
+  transform: scaleX(calc(var(--for-progress-percentage) / 100));
 }
 ```
 

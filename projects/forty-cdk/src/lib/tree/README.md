@@ -6,37 +6,37 @@ Selection and expansion are two independent models: `value` (selected nodes) and
 
 ## Pieces
 
-| Class               | Selector             | Role                                                                                               |
-| ------------------- | -------------------- | -------------------------------------------------------------------------------------------------- |
-| `ForTree`           | `[forTree]`          | Root container (`role="tree"`). Owns selection + expansion, navigation, and the shared context.    |
-| `ForTreeItem`       | `[forTreeItem]`      | One node (`role="treeitem"`). Carries ARIA state, the roving tab stop, and the keyboard interaction. |
-| `ForTreeItemLabel`  | `[forTreeItemLabel]` | Pointer target inside an item (click selects + focuses) and the default typeahead text source.      |
-| `ForTreeItemToggle` | `[forTreeItemToggle]`| Optional expand / collapse control. Its presence marks the item a **parent** (emits `aria-expanded`).|
-| `ForTreeGroup`      | `[forTreeGroup]`     | Nested container (`role="group"`) holding a parent's child items. Rendered behind `@if`.            |
+| Class               | Selector              | Role                                                                                                  |
+| ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `ForTree`           | `[forTree]`           | Root container (`role="tree"`). Owns selection + expansion, navigation, and the shared context.       |
+| `ForTreeItem`       | `[forTreeItem]`       | One node (`role="treeitem"`). Carries ARIA state, the roving tab stop, and the keyboard interaction.  |
+| `ForTreeItemLabel`  | `[forTreeItemLabel]`  | Pointer target inside an item (click selects + focuses) and the default typeahead text source.        |
+| `ForTreeItemToggle` | `[forTreeItemToggle]` | Optional expand / collapse control. Its presence marks the item a **parent** (emits `aria-expanded`). |
+| `ForTreeGroup`      | `[forTreeGroup]`      | Nested container (`role="group"`) holding a parent's child items. Rendered behind `@if`.              |
 
 ## Inputs / models
 
 ### `ForTree`
 
-| API                     | Type                                  | Description                                                                                                                            |
-| ----------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly string[]>`            | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number. Default `[]`.                                      |
-| `expanded`              | `model<readonly string[]>`            | Two-way bindable. Open (expanded) parent node values. Always multi. Default `[]`.                                                      |
-| `selected`              | `Signal<string \| null>`              | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.                |
-| `multiple`              | `input<boolean>`                      | When true, multiple nodes can be selected. Default `false`.                                                                            |
-| `disabled`              | `input<boolean>`                      | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.                                                               |
-| `orientation`           | `input<'vertical' \| 'horizontal'>`   | Navigation axis. Default `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`. |
-| `ariaLabel`             | `input<string \| null>`               | Reactive accessible name, reflected as `aria-label`. Default `null` (and empty) emits no attribute. Prefer native `aria-labelledby` when a visible label exists. |
-| `dir`                   | `input<'ltr' \| 'rtl' \| null>`       | Writing direction. Default `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL. |
-| `selectionFollowsFocus` | `input<boolean>`                      | Single-mode only. When true, arrow navigation also selects the focused node. Default from `provideForTreeDefaults` (library default `false`). |
+| API                     | Type                                | Description                                                                                                                                                                              |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly string[]>`          | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number. Default `[]`.                                                                                        |
+| `expanded`              | `model<readonly string[]>`          | Two-way bindable. Open (expanded) parent node values. Always multi. Default `[]`.                                                                                                        |
+| `selected`              | `Signal<string \| null>`            | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.                                                                   |
+| `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected. Default `false`.                                                                                                                              |
+| `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.                                                                                                                 |
+| `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. Default `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.                                        |
+| `ariaLabel`             | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Default `null` (and empty) emits no attribute. Prefer native `aria-labelledby` when a visible label exists.                         |
+| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. Default `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL. |
+| `selectionFollowsFocus` | `input<boolean>`                    | Single-mode only. When true, arrow navigation also selects the focused node. Default from `provideForTreeDefaults` (library default `false`).                                            |
 
 ### `ForTreeItem`
 
-| API         | Type                     | Description                                                                                  |
-| ----------- | ------------------------ | -------------------------------------------------------------------------------------------- |
-| `value`     | `input.required<string>` | The node's value. Must be unique within the tree.                                            |
-| `disabled`  | `input<boolean>`         | Disables this node: not selectable, skipped by keyboard navigation.                          |
-| `textValue` | `input<string>`          | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.     |
+| API         | Type                     | Description                                                                              |
+| ----------- | ------------------------ | ---------------------------------------------------------------------------------------- |
+| `value`     | `input.required<string>` | The node's value. Must be unique within the tree.                                        |
+| `disabled`  | `input<boolean>`         | Disables this node: not selectable, skipped by keyboard navigation.                      |
+| `textValue` | `input<string>`          | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty. |
 
 ## Usage (recursive component)
 
@@ -44,13 +44,7 @@ Trees are recursive, and the idiomatic Angular shape is a small **recursive comp
 
 ```ts
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import {
-  ForTree,
-  ForTreeGroup,
-  ForTreeItem,
-  ForTreeItemLabel,
-  ForTreeItemToggle,
-} from 'forty-cdk';
+import { ForTree, ForTreeGroup, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
 
 interface Node {
   id: string;
@@ -66,10 +60,10 @@ interface Node {
   // the <li role="treeitem"> stays a direct child of <ul role="group">.
   host: { style: 'display: contents' },
   template: `
-    <li forTreeItem [value]="node().id">
+    <li forTreeItem class="tree-item" [value]="node().id">
       <div forTreeItemLabel>
         @if (node().children?.length) {
-          <span forTreeItemToggle>▸</span>
+          <span forTreeItemToggle class="tree-toggle">▸</span>
         }
         {{ node().name }}
       </div>
@@ -135,19 +129,19 @@ In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `S
 
 Vertical, LTR (mirrored for `dir="rtl"`):
 
-| Key                          | Behavior                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| **ArrowDown / ArrowUp**      | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).         |
-| **ArrowRight**               | Closed parent → expand (focus stays); open parent → focus first child; leaf → no-op.              |
-| **ArrowLeft**                | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op.     |
-| **Home / End**               | First / last visible node.                                                                        |
-| **Enter**                    | Select / activate the focused node.                                                               |
-| **Space**                    | Single: select. Multi: toggle the focused node's selection.                                       |
-| **\***                       | Expand every sibling parent at the focused node's level.                                          |
-| **type a character**         | Typeahead: focus the next visible node whose label starts with the buffer.                        |
-| **Shift+ArrowUp/Down**       | Multi: move focus and toggle the new node's selection.                                             |
-| **Shift+Space**              | Multi: select the contiguous range from the anchor to the focused node.                           |
-| **Ctrl/Cmd+A**               | Multi: select every visible enabled node (toggles off when all are already selected).             |
+| Key                     | Behavior                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| **ArrowDown / ArrowUp** | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).     |
+| **ArrowRight**          | Closed parent → expand (focus stays); open parent → focus first child; leaf → no-op.          |
+| **ArrowLeft**           | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op. |
+| **Home / End**          | First / last visible node.                                                                    |
+| **Enter**               | Select / activate the focused node.                                                           |
+| **Space**               | Single: select. Multi: toggle the focused node's selection.                                   |
+| **\***                  | Expand every sibling parent at the focused node's level.                                      |
+| **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
+| **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
+| **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
+| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (toggles off when all are already selected).         |
 
 Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
 
@@ -158,6 +152,37 @@ import { provideForTreeDefaults } from 'forty-cdk';
 
 // app config or a component's providers
 providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece                 | Attribute          | Values                                 |
+| --------------------- | ------------------ | -------------------------------------- |
+| `[forTree]`           | `data-orientation` | `vertical` \| `horizontal`             |
+| `[forTree]`           | `data-disabled`    | present \| absent                      |
+| `[forTreeItem]`       | `data-state`       | `open` \| `closed` (parent items only) |
+| `[forTreeItem]`       | `data-selected`    | present \| absent                      |
+| `[forTreeItem]`       | `data-highlighted` | present \| absent                      |
+| `[forTreeItem]`       | `data-disabled`    | present \| absent                      |
+| `[forTreeItemToggle]` | `data-state`       | `open` \| `closed`                     |
+
+A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemToggle]` is registered inside it); leaves carry neither `data-state` nor `aria-expanded`. Expansion (`data-state`) and selection (`data-selected`) are independent hooks because a node can be both expandable and selected at once.
+
+```css
+.tree-toggle {
+  display: inline-block;
+  transition: transform 150ms;
+}
+.tree-toggle[data-state='open'] {
+  transform: rotate(90deg);
+}
+.tree-item[data-highlighted] {
+  outline: 2px solid Highlight;
+}
 ```
 
 ## Accessibility notes

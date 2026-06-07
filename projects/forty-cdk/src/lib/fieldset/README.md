@@ -6,10 +6,10 @@ Use it on a real `<fieldset>` to lean on native grouping, or on any other elemen
 
 ## Pieces
 
-| Class               | Selector              | Role                                                                                                  |
-| ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| Class               | Selector              | Role                                                                                                       |
+| ------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `ForFieldset`       | `[forFieldset]`       | Group container. Emits `role="group"` + `aria-labelledby` on a non-`<fieldset>`; reflects `data-disabled`. |
-| `ForFieldsetLegend` | `[forFieldsetLegend]` | Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves. Usable standalone (inert). |
+| `ForFieldsetLegend` | `[forFieldsetLegend]` | Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves. Usable standalone (inert).    |
 
 ## How grouping connects
 
@@ -30,19 +30,13 @@ The `disabled` input:
 
 ```ts
 import { Component, signal } from '@angular/core';
-import {
-  ForFieldset,
-  ForFieldsetLegend,
-  ForField,
-  ForLabel,
-  ForFieldControl,
-} from 'forty-cdk';
+import { ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl } from 'forty-cdk';
 
 @Component({
   selector: 'demo-fieldset',
   imports: [ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl],
   template: `
-    <fieldset forFieldset [disabled]="locked()">
+    <fieldset forFieldset class="fieldset" [disabled]="locked()">
       <legend forFieldsetLegend>Shipping address</legend>
 
       <div forField>
@@ -64,16 +58,26 @@ export class DemoFieldset {
 On custom markup (no native `<fieldset>`), the same wiring yields `role="group"` + `aria-labelledby`:
 
 ```html
-<div forFieldset>
+<div forFieldset class="fieldset">
   <span forFieldsetLegend>Shipping address</span>
   <!-- … fields … -->
 </div>
 ```
 
-Style off the reflected state:
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece           | Attribute       | Values           |
+| --------------- | --------------- | ---------------- |
+| `[forFieldset]` | `data-disabled` | present / absent |
+
+`[forFieldsetLegend]` reflects no data-\* attributes (it only carries the generated `id` that the group's `aria-labelledby` resolves to).
 
 ```css
-[forFieldset][data-disabled] {
+.fieldset[data-disabled] {
   opacity: 0.5;
 }
 ```

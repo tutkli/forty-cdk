@@ -6,13 +6,13 @@ Unlike Angular Material's `MatFormField`, there is no rendered chrome, no appear
 
 ## Pieces
 
-| Class                 | Selector                | Role                                                                                             |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
+| Class                 | Selector                | Role                                                                                                           |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `ForField`            | `[forField]`            | Root. Owns the generated ids and reflects `data-invalid` / `data-disabled` / `data-required` / `data-touched`. |
-| `ForLabel`            | `[forLabel]`            | Accessible label. Inside a field it wires `aria-labelledby` (and `for` on a `<label>`); usable standalone. |
-| `ForFieldDescription` | `[forFieldDescription]` | Hint / description. Wires `aria-describedby`.                                                     |
-| `ForFieldError`       | `[forFieldError]`       | Error region (`role="alert"`). Reads the control's Signal Forms errors automatically.            |
-| `ForFieldControl`     | `[forFieldControl]`     | Opt-in marker for a **native** `<input>` / `<textarea>` (forty-cdk controls don't need it).       |
+| `ForLabel`            | `[forLabel]`            | Accessible label. Inside a field it wires `aria-labelledby` (and `for` on a `<label>`); usable standalone.     |
+| `ForFieldDescription` | `[forFieldDescription]` | Hint / description. Wires `aria-describedby`.                                                                  |
+| `ForFieldError`       | `[forFieldError]`       | Error region (`role="alert"`). Reads the control's Signal Forms errors automatically.                          |
+| `ForFieldControl`     | `[forFieldControl]`     | Opt-in marker for a **native** `<input>` / `<textarea>` (forty-cdk controls don't need it).                    |
 
 ## How the control connects
 
@@ -36,20 +36,14 @@ You render them; the field handles the ARIA. The error id is wired into `aria-er
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
-import {
-  ForField,
-  ForLabel,
-  ForFieldDescription,
-  ForFieldError,
-  ForSwitch,
-} from 'forty-cdk';
+import { ForField, ForLabel, ForFieldDescription, ForFieldError, ForSwitch } from 'forty-cdk';
 
 @Component({
   selector: 'demo-field',
   imports: [ForField, ForLabel, ForFieldDescription, ForFieldError, ForSwitch, FormField],
   template: `
-    <div forField>
-      <label forLabel>Notifications</label>
+    <div forField class="field">
+      <label forLabel class="field-label">Notifications</label>
       <button forSwitch [formField]="settings.notify"></button>
       <p forFieldDescription>We'll only email you about security.</p>
       @if (err.shown()) {
@@ -69,7 +63,7 @@ export class DemoField {
 Style off the reflected state:
 
 ```css
-[forField][data-invalid] [forLabel] {
+.field[data-invalid] .field-label {
   color: var(--color-danger);
 }
 ```
@@ -79,3 +73,24 @@ Style off the reflected state:
 Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, clicking the label toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input — matching native `<label for>` behavior consistently.
 
 > Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece        | Attribute       | Values           |
+| ------------ | --------------- | ---------------- |
+| `[forField]` | `data-invalid`  | present / absent |
+| `[forField]` | `data-disabled` | present / absent |
+| `[forField]` | `data-required` | present / absent |
+| `[forField]` | `data-touched`  | present / absent |
+
+The reflected state mirrors the registered control: `data-invalid` while it is invalid, `data-required` while it is required, `data-touched` once it has been touched, and `data-disabled` from the control's own disabled state OR a surrounding `[forFieldset]`'s `disabled`. (`[forFieldControl]` additionally reflects `aria-invalid` on its own host, but that is an ARIA hook, not a styling one.)
+
+```css
+.field[data-invalid] .field-label {
+  color: var(--color-danger);
+}
+```

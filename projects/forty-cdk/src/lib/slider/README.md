@@ -79,19 +79,6 @@ Focus a thumb, then:
 
 `inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
 
-## CSS variables exposed
-
-The directives expose the live position so consumers can paint with pure CSS:
-
-| Element            | Custom property               | Range    | Notes                                                                                                                                                   |
-| ------------------ | ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[forSliderThumb]` | `--for-slider-thumb-position` | `[0, 1]` | Already accounts for `inverted`. Use with `inset-inline-start` (horizontal) or `bottom` (vertical) via `calc(var(--for-slider-thumb-position) * 100%)`. |
-| `[forSliderRange]` | `--for-slider-range-start`    | `[0, 1]` | Lowest fraction (single: pinned to the closer edge; multi: smallest thumb).                                                                             |
-| `[forSliderRange]` | `--for-slider-range-end`      | `[0, 1]` | Highest fraction.                                                                                                                                       |
-| `[forSliderRange]` | `--for-slider-range-size`     | `[0, 1]` | `end - start`. Useful for `width` / `height`.                                                                                                           |
-
-Pair with `data-orientation="horizontal" | "vertical"` on every piece to pick the right axis from CSS.
-
 ## Form integration
 
 `[forSlider]` implements `FormValueControl<readonly number[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
@@ -101,6 +88,56 @@ Pair with `data-orientation="horizontal" | "vertical"` on every piece to pick th
 ```
 
 For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece              | Attribute          | Values                     |
+| ------------------ | ------------------ | -------------------------- |
+| `[forSlider]`      | `data-orientation` | `horizontal` \| `vertical` |
+| `[forSlider]`      | `data-disabled`    | present \| absent          |
+| `[forSlider]`      | `data-readonly`    | present \| absent          |
+| `[forSlider]`      | `data-touched`     | present \| absent          |
+| `[forSlider]`      | `data-dirty`       | present \| absent          |
+| `[forSlider]`      | `data-pending`     | present \| absent          |
+| `[forSlider]`      | `data-invalid`     | present \| absent          |
+| `[forSliderTrack]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forSliderTrack]` | `data-disabled`    | present \| absent          |
+| `[forSliderRange]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forSliderRange]` | `data-disabled`    | present \| absent          |
+| `[forSliderThumb]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forSliderThumb]` | `data-disabled`    | present \| absent          |
+| `[forSliderThumb]` | `data-readonly`    | present \| absent          |
+| `[forSliderThumb]` | `data-index`       | 0-based thumb index        |
+
+### CSS custom properties
+
+| Property                      | Meaning                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `--for-slider-thumb-position` | On `[forSliderThumb]`. Fraction `[0, 1]`, already accounting for `inverted`. The thumb's position along the track. |
+| `--for-slider-range-start`    | On `[forSliderRange]`. Lowest fraction `[0, 1]` (single: pinned to the closer edge; multi: smallest thumb).        |
+| `--for-slider-range-end`      | On `[forSliderRange]`. Highest fraction `[0, 1]`.                                                                  |
+| `--for-slider-range-size`     | On `[forSliderRange]`. `end - start`. Useful for `width` / `height`.                                               |
+
+Pair with `data-orientation` on every piece to pick the right axis from CSS.
+
+```css
+.thumb {
+  inset-inline-start: calc(var(--for-slider-thumb-position) * 100%);
+}
+
+.range {
+  inset-inline-start: calc(var(--for-slider-range-start) * 100%);
+  inline-size: calc(var(--for-slider-range-size) * 100%);
+}
+
+.thumb[data-disabled] {
+  opacity: 0.5;
+}
+```
 
 ## Accessibility notes
 

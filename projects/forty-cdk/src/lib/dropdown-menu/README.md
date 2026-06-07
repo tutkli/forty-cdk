@@ -31,7 +31,7 @@ import {
   ],
   template: `
     <div forDropdownMenu #menu="forDropdownMenu">
-      <button forDropdownMenuTrigger>Options</button>
+      <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
       @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
           <button forMenuItem (select)="cut()">Cut</button>
@@ -69,7 +69,7 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ```html
 <div forDropdownMenu [(open)]="open">
-  <button forDropdownMenuTrigger>Options</button>
+  <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
   @if (open()) {
   <div forMenuContent>…</div>
   }
@@ -126,15 +126,35 @@ Every output below is vetoable — each handler receives a `VetoableEvent` (or `
 
 Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-menu keyboard.
 
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+
+### Data attributes
+
+| Piece                      | Attribute       | Values             |
+| -------------------------- | --------------- | ------------------ |
+| `[forDropdownMenu]`        | `data-state`    | `open` \| `closed` |
+| `[forDropdownMenu]`        | `data-disabled` | present \| absent  |
+| `[forDropdownMenuTrigger]` | `data-state`    | `open` \| `closed` |
+| `[forDropdownMenuTrigger]` | `data-disabled` | present \| absent  |
+
+The menu items, content surface, radio groups, separators, and groups live in the [`menu/`](../menu/README.md) folder — see [menu → Styling](../menu/README.md#styling) for their `data-state` / `data-highlighted` / `data-disabled` attributes and the content-surface CSS custom properties.
+
+> The menu content (`[forMenuContent]`) portals to `document.body`, so a class scoped to your trigger's component cannot reach it. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — documented in full in [Styling floating content](../../../../../docs/styling-floating-content.md).
+
+```css
+.dropdown-menu-trigger .chevron {
+  transition: transform 150ms;
+}
+.dropdown-menu-trigger[data-state='open'] .chevron {
+  transform: rotate(180deg);
+}
+```
+
 ## Behavior notes
 
 - **Mount equals open.** The directive does not toggle `[hidden]` — `@if (open())` controls presence so `animate.enter` / `animate.leave` fire on the natural mount cycle.
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
 - **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item.
 - **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(select)` handler.
-
-## CSS custom properties
-
-The content surface is `[forMenuContent]` (from the [`menu/`](../menu/README.md) folder). It exposes the floating-ui-resolved geometry — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — as custom properties on the content host. See [menu → CSS custom properties](../menu/README.md#css-custom-properties) for the full table.
-
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.

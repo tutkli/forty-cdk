@@ -15,14 +15,14 @@ Headless implementation of the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/AR
 
 ### `ForTabs`
 
-| API              | Type                                | Description                                                                                                                            |
-| ---------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| API              | Type                                | Description                                                                                                                                            |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state — distinct from a tab whose `value` is `''`. |
-| `activationMode` | `input<'automatic' \| 'manual'>`    | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter. |
-| `orientation`    | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`.                                                             |
-| `dir`            | `input<'ltr' \| 'rtl'>`             | Default `'ltr'`. Swaps ArrowLeft / ArrowRight.                                                                                         |
-| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.                                                                                      |
-| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.          |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter.                 |
+| `orientation`    | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`.                                                                             |
+| `dir`            | `input<'ltr' \| 'rtl'>`             | Default `'ltr'`. Swaps ArrowLeft / ArrowRight.                                                                                                         |
+| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.                                                                                                      |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.                          |
 
 ### `ForTabsTrigger`
 
@@ -35,10 +35,10 @@ Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the
 
 ### `ForTabsContent`
 
-| API                  | Type                       | Description                                                                                                                                                                                                                       |
-| -------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `input.required<string>`   | Pairs the panel with the trigger of the same value.                                                                                                                                                                              |
-| `interactiveContent` | `input<boolean \| null>`   | Overrides the automatic focusable-content detection that drives `tabindex`. Default `null` (auto-detect). `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless.    |
+| API                  | Type                     | Description                                                                                                                                                                                                                   |
+| -------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `input.required<string>` | Pairs the panel with the trigger of the same value.                                                                                                                                                                           |
+| `interactiveContent` | `input<boolean \| null>` | Overrides the automatic focusable-content detection that drives `tabindex`. Default `null` (auto-detect). `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless. |
 
 Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"` **only when the panel has no focusable descendants** (APG), `aria-hidden` (when inactive), `inert` (when inactive), `data-state="active" \| "inactive"`.
 
@@ -59,13 +59,13 @@ import { ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent } from 'forty-cdk'
   template: `
     <div forTabs [(value)]="active">
       <div forTabsList aria-label="Settings sections">
-        <button type="button" forTabsTrigger value="profile">Profile</button>
-        <button type="button" forTabsTrigger value="security">Security</button>
-        <button type="button" forTabsTrigger value="billing">Billing</button>
+        <button type="button" forTabsTrigger class="tabs-trigger" value="profile">Profile</button>
+        <button type="button" forTabsTrigger class="tabs-trigger" value="security">Security</button>
+        <button type="button" forTabsTrigger class="tabs-trigger" value="billing">Billing</button>
       </div>
-      <div forTabsContent value="profile">…profile…</div>
-      <div forTabsContent value="security">…security…</div>
-      <div forTabsContent value="billing">…billing…</div>
+      <div forTabsContent class="tabs-content" value="profile">…profile…</div>
+      <div forTabsContent class="tabs-content" value="security">…security…</div>
+      <div forTabsContent class="tabs-content" value="billing">…billing…</div>
     </div>
   `,
 })
@@ -80,6 +80,38 @@ export class DemoSettings {
 <div forTabs activationMode="manual" [(value)]="active">
   <!-- Arrow keys move focus only. Space / Enter activates. -->
 </div>
+```
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+
+### Data attributes
+
+| Piece              | Attribute          | Values                     |
+| ------------------ | ------------------ | -------------------------- |
+| `[forTabs]`        | `data-orientation` | `horizontal` \| `vertical` |
+| `[forTabs]`        | `data-disabled`    | present \| absent          |
+| `[forTabsList]`    | `data-orientation` | `horizontal` \| `vertical` |
+| `[forTabsTrigger]` | `data-state`       | `active` \| `inactive`     |
+| `[forTabsTrigger]` | `data-disabled`    | present \| absent          |
+| `[forTabsTrigger]` | `data-orientation` | `horizontal` \| `vertical` |
+| `[forTabsContent]` | `data-state`       | `active` \| `inactive`     |
+| `[forTabsContent]` | `data-orientation` | `horizontal` \| `vertical` |
+
+```css
+.tabs-trigger[data-state='active'] {
+  border-bottom: 2px solid currentColor;
+}
+
+.tabs-trigger[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tabs-content[data-state='inactive'] {
+  display: none;
+}
 ```
 
 ## Keyboard
