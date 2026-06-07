@@ -35,6 +35,8 @@ export abstract class TextValueControlBase
   readonly #host = inject<ElementRef<HTMLInputElement | HTMLTextAreaElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
 
+  #composing = false;
+
   constructor() {
     super();
 
@@ -57,6 +59,41 @@ export abstract class TextValueControlBase
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
+    // Suppress the intermediate text an IME emits between `compositionstart`
+    // and `compositionend`; the final composed string is flushed once on
+    // `compositionend`. Mirrors the OTP / Combobox guard so all three text
+    // controls behave identically.
+    if (this.#composing) {
+      return;
+    }
     this.value.set((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+  }
+
+  /** Starts an IME composition; suppresses intermediate `input` propagation. */
+  protected onCompositionStart(): void {
+    this.#composing = true;
+  }
+
+  /** Ends an IME composition and flushes the final composed value once. */
+  protected onCompositionEnd(): void {
+    this.#composing = false;
+    if (this.effectiveDisabled() || this.readonly()) {
+      return;
+    }
+    this.value.set(this.#host.nativeElement.value);
+  }
+
+  /**
+   * Marks the control touched and re-syncs the native element to `value()`.
+   * The mirror effect skips writes while focused (to protect the caret), so an
+   * external write made during editing leaves stale text; blur is the moment to
+   * reconcile the visible text with the model.
+   */
+  protected onBlur(): void {
+    this.touched.set(true);
+    const el = this.#host.nativeElement;
+    if (el.value !== this.value()) {
+      el.value = this.value();
+    }
   }
 }

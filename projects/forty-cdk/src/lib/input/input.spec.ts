@@ -169,6 +169,73 @@ describe('ForInput', () => {
     });
   });
 
+  describe('IME composition', () => {
+    it('does not emit an intermediate value while composing', () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.value = 'り';
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      flush();
+
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(input.value).toBe('り');
+    });
+
+    it('flushes the final composed value once on compositionend', () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.value = 'りんご';
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      flush();
+      expect(fixture.componentInstance.text()).toBe('');
+
+      input.dispatchEvent(
+        new CompositionEvent('compositionend', { bubbles: true, data: 'りんご' }),
+      );
+      flush();
+      expect(fixture.componentInstance.text()).toBe('りんご');
+    });
+
+    it('resumes propagating plain input after composition ends', () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '' }));
+      flush();
+
+      typeInto(input, 'abc');
+      flush();
+      expect(fixture.componentInstance.text()).toBe('abc');
+    });
+  });
+
+  describe('blur re-syncs the DOM value', () => {
+    it('reconciles a stale element value to the model on blur', () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, 'typed');
+      flush();
+      expect(fixture.componentInstance.text()).toBe('typed');
+
+      input.value = 'stale-during-focus';
+      input.dispatchEvent(new FocusEvent('blur'));
+      flush();
+
+      expect(input.value).toBe('typed');
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [ForInput],
@@ -323,6 +390,44 @@ describe('ForTextarea', () => {
       fixture.componentInstance.text.set('about me');
       flush();
       expect(textarea.value).toBe('about me');
+    });
+  });
+
+  describe('IME composition parity', () => {
+    it('suppresses intermediate text and flushes on compositionend', () => {
+      const { el, fixture, flush } = renderHost(TextareaHost);
+      const textarea = textareaOf(el);
+
+      textarea.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+      textarea.value = 'かな';
+      textarea.dispatchEvent(
+        new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
+      );
+      flush();
+      expect(fixture.componentInstance.text()).toBe('');
+
+      textarea.dispatchEvent(
+        new CompositionEvent('compositionend', { bubbles: true, data: 'かな' }),
+      );
+      flush();
+      expect(fixture.componentInstance.text()).toBe('かな');
+    });
+  });
+
+  describe('blur re-syncs the DOM value', () => {
+    it('reconciles a stale element value to the model on blur', () => {
+      const { el, fixture, flush } = renderHost(TextareaHost);
+      const textarea = textareaOf(el);
+
+      textarea.focus();
+      typeInto(textarea, 'note');
+      flush();
+
+      textarea.value = 'stale';
+      textarea.dispatchEvent(new FocusEvent('blur'));
+      flush();
+
+      expect(textarea.value).toBe('note');
     });
   });
 });
