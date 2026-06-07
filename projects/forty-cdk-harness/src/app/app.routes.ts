@@ -94,9 +94,9 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/nested.fixture').then((m) => m.NestedFixture),
   },
   {
-    path: 'separator',
+    path: 'pane-resizer',
     loadComponent: () =>
-      import('./fixtures/separator.fixture').then((m) => m.SeparatorFixture),
+      import('./fixtures/pane-resizer.fixture').then((m) => m.PaneResizerFixture),
   },
   {
     path: 'slider',

@@ -188,6 +188,12 @@ Selectors marked with `(element)` use an element selector instead of an attribut
 | `[forNavigationMenuViewport]` | `<div>` |
 | `[forNavigationMenuIndicator]` | `<div>` |
 
+### Pane Resizer
+
+| Selector | Host |
+| --- | --- |
+| `[forPaneResizer]` | `<div>` |
+
 ### Popover
 
 | Selector | Host |

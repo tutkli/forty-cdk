@@ -245,8 +245,9 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
       },
       {
         slug: 'separator',
-        title: 'Separator',
-        description: 'A divider between groups of content, optionally a focusable resizer.',
+        title: 'Separator & Pane Resizer',
+        description:
+          'A static divider between groups of content, plus a focusable pane resizer.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/',
       },
       {

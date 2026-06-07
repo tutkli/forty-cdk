@@ -1,17 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForSeparator } from 'forty-cdk';
+import { ForPaneResizer } from 'forty-cdk';
 
 /**
- * Fixture for the focusable resizer variant of `[forSeparator]`. The static
- * variant has no behaviour and is covered by the Vitest contract layer. The
- * resizer variant uses `setPointerCapture`, reads `clientX` / `clientY` for
- * drag deltas, and inverts the horizontal axis under RTL — none of which jsdom
- * can exercise (pane sizes are all zero and `setPointerCapture` is a no-op).
+ * Fixture for `[forPaneResizer]`. The directive uses `setPointerCapture`, reads
+ * `clientX` / `clientY` for drag deltas, and inverts the horizontal axis under
+ * RTL — none of which jsdom can exercise (pane sizes are all zero and
+ * `setPointerCapture` is a no-op).
  *
  * The fixture lays out two panes separated by a focusable resizer. The left
  * (or top, for horizontal orientation) pane's pixel size is bound to the
- * separator's `[(value)]`, so dragging the resizer visibly resizes the pane.
+ * resizer's `[(value)]`, so dragging the resizer visibly resizes the pane.
  * The right (or bottom) pane uses `flex: 1` so its width is observable via
  * `getBoundingClientRect()` and tracks the inverse of the left pane.
  *
@@ -29,9 +28,9 @@ import { ForSeparator } from 'forty-cdk';
  *  - `?largeStep=N` — PageUp / PageDown step. Default `50`.
  */
 @Component({
-  selector: 'app-separator-fixture',
+  selector: 'app-pane-resizer-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSeparator],
+  imports: [ForPaneResizer],
   styles: [
     `
       :host {
@@ -80,7 +79,7 @@ import { ForSeparator } from 'forty-cdk';
     `,
   ],
   template: `
-    <input data-testid="before" placeholder="before-separator" />
+    <input data-testid="before" placeholder="before-resizer" />
     <div
       data-testid="root"
       [attr.data-orientation]="orientation"
@@ -93,8 +92,7 @@ import { ForSeparator } from 'forty-cdk';
       ></div>
       <div
         data-testid="resizer"
-        forSeparator
-        focusable
+        forPaneResizer
         [orientation]="orientation"
         [(value)]="value"
         [min]="leftMin"
@@ -107,7 +105,7 @@ import { ForSeparator } from 'forty-cdk';
       ></div>
       <div data-testid="right-pane"></div>
     </div>
-    <input data-testid="after" placeholder="after-separator" />
+    <input data-testid="after" placeholder="after-resizer" />
 
     <output data-testid="value">{{ value() }}</output>
     <output data-testid="resize-count">{{ resizeCount() }}</output>
@@ -115,7 +113,7 @@ import { ForSeparator } from 'forty-cdk';
     <output data-testid="last-resize-commit">{{ lastResizeCommitDisplay() }}</output>
   `,
 })
-export class SeparatorFixture {
+export class PaneResizerFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly orientation: 'horizontal' | 'vertical' =

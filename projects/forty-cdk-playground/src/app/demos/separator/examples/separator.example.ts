@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForSeparator } from 'forty-cdk';
+import { ForPaneResizer, ForSeparator } from 'forty-cdk';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';
@@ -7,7 +7,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
 @Component({
   selector: 'app-separator-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSeparator, ControlSwitch],
+  imports: [DemoLayout, ForSeparator, ForPaneResizer, ControlSwitch],
   template: `
     <playground-demo
       title="Divider & resizer"
@@ -34,8 +34,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
             {{ size() }}px
           </div>
           <div
-            forSeparator
-            focusable
+            forPaneResizer
             orientation="vertical"
             class="sep-resizer"
             aria-label="Resize panes"
