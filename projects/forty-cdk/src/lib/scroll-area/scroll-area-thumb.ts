@@ -1,4 +1,12 @@
-import { computed, DestroyRef, Directive, ElementRef, inject, signal } from '@angular/core';
+import {
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  Directive,
+  ElementRef,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 
@@ -21,11 +29,13 @@ const MIN_THUMB_SIZE = 8;
     '[attr.data-orientation]': 'scrollbar.orientation()',
     '[attr.data-state]': 'scrollbar.state()',
     '(pointerdown)': 'onPointerDown($event)',
+    '(lostpointercapture)': 'onLostPointerCapture()',
   },
 })
 export class ForScrollAreaThumb {
   readonly scrollbar = inject(ForScrollAreaScrollbar, { optional: true })!;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #document = inject(DOCUMENT);
 
   readonly #dragging = signal(false);
   #dragStartPointer = 0;
@@ -73,12 +83,25 @@ export class ForScrollAreaThumb {
     if (this.scrollbar.orientation() === 'horizontal') {
       const max = ctx.scrollWidth() - ctx.clientWidth();
       if (max <= 0) return 0;
-      return (ctx.scrollLeft() / max) * (tl - tsz) || 0;
+      const left = this.#normalizeScrollLeft(ctx.scrollLeft(), max);
+      return (left / max) * (tl - tsz) || 0;
     }
     const max = ctx.scrollHeight() - ctx.clientHeight();
     if (max <= 0) return 0;
     return (ctx.scrollTop() / max) * (tl - tsz) || 0;
   });
+
+  /**
+   * Normalise the viewport's `scrollLeft` to a left-edge-origin value in
+   * `[0, max]`. In LTR `scrollLeft` is already left-origin. In RTL the browser
+   * reports `scrollLeft` in the negative model (`0` at rest with the content's
+   * right edge flush, `-max` when scrolled fully left), so a left-origin
+   * position is `scrollLeft + max` — `max` at rest (thumb pinned to the right)
+   * down to `0` when scrolled forward.
+   */
+  #normalizeScrollLeft(scrollLeft: number, max: number): number {
+    return this.scrollbar.ctx.dir() === 'rtl' ? scrollLeft + max : scrollLeft;
+  }
 
   protected widthPx(): number | null {
     return this.scrollbar.orientation() === 'horizontal' ? this.#thumbSize() : null;
@@ -97,15 +120,27 @@ export class ForScrollAreaThumb {
     if (event.button !== 0) return;
     event.preventDefault();
     this.#dragging.set(true);
+    this.scrollbar.setDragging(true);
     this.#host.setPointerCapture(event.pointerId);
     this.#dragStartPointer =
       this.scrollbar.orientation() === 'horizontal' ? event.clientX : event.clientY;
     const ctx = this.scrollbar.ctx;
     this.#dragStartScroll =
       this.scrollbar.orientation() === 'horizontal' ? ctx.scrollLeft() : ctx.scrollTop();
-    this.#host.addEventListener('pointermove', this.#onPointerMove);
-    this.#host.addEventListener('pointerup', this.#onPointerUp);
-    this.#host.addEventListener('pointercancel', this.#onPointerUp);
+    // Listen on the owner document, not the thumb element: pointer capture is
+    // set on the thumb (so the gesture stays bound to this pointer), but the
+    // captured node can be removed mid-drag when the scrollbar self-hides
+    // (`type="hover"` / `"scroll"`). Document-level listeners keep firing after
+    // that removal, so the drag is not silently aborted. `lostpointercapture`
+    // tears the gesture down if capture is otherwise lost.
+    const doc = this.#document;
+    doc.addEventListener('pointermove', this.#onPointerMove);
+    doc.addEventListener('pointerup', this.#onPointerUp);
+    doc.addEventListener('pointercancel', this.#onPointerUp);
+  }
+
+  protected onLostPointerCapture(): void {
+    this.#endDrag();
   }
 
   readonly #onPointerMove = (event: PointerEvent): void => {
@@ -138,8 +173,10 @@ export class ForScrollAreaThumb {
 
   #endDrag(): void {
     this.#dragging.set(false);
-    this.#host.removeEventListener('pointermove', this.#onPointerMove);
-    this.#host.removeEventListener('pointerup', this.#onPointerUp);
-    this.#host.removeEventListener('pointercancel', this.#onPointerUp);
+    this.scrollbar.setDragging(false);
+    const doc = this.#document;
+    doc.removeEventListener('pointermove', this.#onPointerMove);
+    doc.removeEventListener('pointerup', this.#onPointerUp);
+    doc.removeEventListener('pointercancel', this.#onPointerUp);
   }
 }

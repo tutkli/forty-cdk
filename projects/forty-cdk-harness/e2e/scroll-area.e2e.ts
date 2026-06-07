@@ -353,4 +353,98 @@ test.describe('ScrollArea (geometry + drag)', () => {
       expect(scrollTopSettled).toBe(scrollTopAfter);
     });
   });
+
+  // #578 (scroll-area/F1) — RTL horizontal thumb math. In RTL the browser
+  // reports `scrollLeft` in the negative model (0 at rest with the content's
+  // right edge flush, going negative as the content scrolls forward), so the
+  // thumb must start pinned to the RIGHT end of the track and a drag-left must
+  // increase the logical scroll (scrollLeft going more negative). This is pure
+  // geometry + native RTL scroll semantics, so it can only be asserted against
+  // a real browser layout.
+  test.describe('RTL horizontal thumb', () => {
+    test('thumb starts at the right end of the track', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { dir: 'rtl' });
+      await waitForOverflowMeasured(page);
+
+      const trackBox = (await el(page, 'scrollbar-horizontal').boundingBox())!;
+      const thumbBox = (await el(page, 'thumb-horizontal').boundingBox())!;
+
+      // At rest the thumb's right edge is flush with the track's right edge,
+      // i.e. its left edge sits at `track.right - thumb.width`. ±2px slack for
+      // sub-pixel rounding (`Math.floor` thumb size + browser layout).
+      const expectedLeft = trackBox.x + trackBox.width - thumbBox.width;
+      expect(thumbBox.x).toBeGreaterThanOrEqual(expectedLeft - 2);
+      expect(thumbBox.x).toBeLessThanOrEqual(expectedLeft + 2);
+
+      // Sanity: the thumb is near the right, not the left, of the track.
+      expect(thumbBox.x).toBeGreaterThan(trackBox.x + trackBox.width / 2);
+    });
+
+    test('dragging the thumb left increases the logical scroll', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { dir: 'rtl' });
+      await waitForOverflowMeasured(page);
+
+      const viewport = el(page, 'viewport');
+      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollLeft)).toBe(0);
+
+      // Drag the thumb left. In RTL the native scroll model takes scrollLeft
+      // negative as the content scrolls forward, so a leftward drag drives
+      // scrollLeft below 0 — the logical scroll increases.
+      await dragFrom(page, el(page, 'thumb-horizontal'), { dx: -80, dy: 0 });
+
+      const scrollLeft = await viewport.evaluate(
+        (node) => (node as HTMLElement).scrollLeft,
+      );
+      expect(scrollLeft).toBeLessThan(-50);
+    });
+  });
+
+  // #578 (scroll-area/F2) — an in-flight drag must survive the scrollbar
+  // self-hiding. `type="scroll"` fades the track `scrollHideDelay` ms after the
+  // last scroll, and `?hideOnLeave=1` collapses a `data-state="hidden"` track to
+  // `display:none` (a consumer fade rule). The thumb pins the track visible /
+  // painted while dragging, so holding the pointer still past the hide delay
+  // mid-gesture keeps the track up and the drag completes.
+  test.describe('drag survives self-hide', () => {
+    test('the track stays visible mid-drag past the hide delay and the drag completes', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', { type: 'scroll', hideOnLeave: '1' });
+
+      const viewport = el(page, 'viewport');
+      const scrollbar = el(page, 'scrollbar-vertical');
+
+      // Kick a scroll so the track paints and we can measure the thumb.
+      await viewport.evaluate((node) => {
+        (node as HTMLElement).scrollTop = 1;
+      });
+      await expect(scrollbar).toHaveAttribute('data-state', 'visible');
+      await waitForOverflowMeasured(page);
+
+      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const sx = thumbBox.x + thumbBox.width / 2;
+      const sy = thumbBox.y + thumbBox.height / 2;
+
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5);
+      await page.mouse.move(sx, sy + 60);
+
+      // Hold the pointer still past the 600 ms scroll-hide delay. Without the
+      // dragging override the `scrolling` window would expire and the consumer
+      // `display:none` rule would collapse the track mid-gesture; the drag
+      // override keeps it visible.
+      await page.waitForTimeout(800);
+      await expect(scrollbar).toHaveAttribute('data-state', 'visible');
+      await expect(scrollbar).toBeVisible();
+
+      await page.mouse.up();
+
+      const scrollTop = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
+      expect(scrollTop).toBeGreaterThan(50);
+
+      // After release the gesture ends, so the track is free to fade again.
+      await expect(scrollbar).toHaveAttribute('data-state', 'hidden');
+    });
+  });
 });
