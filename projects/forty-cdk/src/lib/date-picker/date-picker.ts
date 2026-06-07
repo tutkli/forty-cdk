@@ -380,6 +380,9 @@ export class ForDatePicker<D>
         return;
       }
       const sub = calendar.value.subscribe((date) => {
+        if (this.readonly() || this.disabled()) {
+          return;
+        }
         const selected = date as D | null;
         // The calendar emits the picked day at midnight (its cells are built
         // with `createDate`). For a date-time picker, graft the previously
@@ -390,15 +393,17 @@ export class ForDatePicker<D>
           const time = this.#time();
           const base = this.value() ?? selected;
           this.value.set(
-            time.setTime(
-              selected,
-              time.getHours(base),
-              time.getMinutes(base),
-              time.getSeconds(base),
+            this.#clampToBounds(
+              time.setTime(
+                selected,
+                time.getHours(base),
+                time.getMinutes(base),
+                time.getSeconds(base),
+              ),
             ),
           );
         } else {
-          this.value.set(selected);
+          this.value.set(selected === null ? null : this.#clampToBounds(selected));
         }
         this.touched.set(true);
         // A date-time picker stays open after a day is picked so the time can
@@ -419,7 +424,11 @@ export class ForDatePicker<D>
         return;
       }
       const sub = timeField.value.subscribe((value) => {
-        this.value.set(value as D | null);
+        if (this.readonly() || this.disabled()) {
+          return;
+        }
+        const next = value as D | null;
+        this.value.set(next === null ? null : this.#clampToBounds(next));
         this.touched.set(true);
       });
       onCleanup(() => sub.unsubscribe());
@@ -429,6 +438,18 @@ export class ForDatePicker<D>
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
     return assertTimeCapable(this.adapter, 'ForDatePicker');
+  }
+
+  #clampToBounds(date: D): D {
+    const min = this.minDate();
+    if (min !== null && this.adapter.compare(date, min) < 0) {
+      return min;
+    }
+    const max = this.maxDate();
+    if (max !== null && this.adapter.compare(date, max) > 0) {
+      return max;
+    }
+    return date;
   }
 
   registerTrigger(el: HTMLElement): void {
