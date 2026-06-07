@@ -44,7 +44,9 @@ import { TextValueControlBase } from './text-value-control-base';
     '[attr.name]': 'name() || null',
     '[attr.data-empty]': 'value() === "" ? "" : null',
     '(input)': 'onInput($event)',
-    '(blur)': 'touched.set(true)',
+    '(compositionstart)': 'onCompositionStart()',
+    '(compositionend)': 'onCompositionEnd()',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForInput extends TextValueControlBase implements FormValueControl<string> {}
