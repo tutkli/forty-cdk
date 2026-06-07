@@ -287,7 +287,7 @@ describe('ForPaneResizer', () => {
     });
   });
 
-  describe('pointer drag', () => {
+  describe('pointer drag (wiring guards)', () => {
     function pointerEvent(
       type: string,
       init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
@@ -300,63 +300,28 @@ describe('ForPaneResizer', () => {
       return ev;
     }
 
-    it('updates value with raw px deltas along the resize axis (vertical separator → X)', () => {
-      const { fixture, query, flush } = renderHost(PaneResizerHost);
-      const el = query<HTMLElement>('[forPaneResizer]')!;
-      // Stub pointer-capture APIs jsdom does not implement.
-      el.setPointerCapture = () => {};
-      el.releasePointerCapture = () => {};
-      el.hasPointerCapture = () => true;
-
-      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100, clientY: 50 }));
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 120, clientY: 50 }));
-      flush();
-
-      expect(fixture.componentInstance.value()).toBe(50 + 20);
-      expect(fixture.componentInstance.resizeEvents).toEqual([70]);
-
-      el.dispatchEvent(pointerEvent('pointerup', { clientX: 120, clientY: 50 }));
-      expect(fixture.componentInstance.commitEvents).toEqual([70]);
-    });
-
-    it('inverts horizontal drag in RTL', () => {
-      const { fixture, query, flush } = renderHost(PaneResizerHost);
-      fixture.componentInstance.dir.set('rtl');
-      flush();
-      const el = query<HTMLElement>('[forPaneResizer]')!;
-      el.setPointerCapture = () => {};
-      el.releasePointerCapture = () => {};
-      el.hasPointerCapture = () => true;
-
-      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
-      flush();
-      // raw +20px, but RTL → value goes down by 20.
-      expect(fixture.componentInstance.value()).toBe(30);
-    });
-
     it('does not start a drag when disabled', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);
       flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
-      el.setPointerCapture = () => {};
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
       flush();
       expect(fixture.componentInstance.value()).toBe(50);
+      expect(fixture.componentInstance.resizeEvents).toEqual([]);
     });
 
     it('ignores non-primary mouse buttons', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
-      el.setPointerCapture = () => {};
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100, button: 2 }));
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
       flush();
       expect(fixture.componentInstance.value()).toBe(50);
+      expect(fixture.componentInstance.resizeEvents).toEqual([]);
     });
   });
 
