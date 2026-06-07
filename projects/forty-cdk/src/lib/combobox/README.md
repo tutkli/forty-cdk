@@ -16,7 +16,7 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.   |
 | `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
 | `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                       |
-| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
+| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`. |
 | `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).          |
 | `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.       |
 | `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).             |
@@ -26,8 +26,6 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
 | `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                          |
 | `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                        |
-
-For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across all rows, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
 
 ## Filtering is the consumer's job
 

@@ -70,7 +70,7 @@ import { Icon } from '../../../ui/icon';
                     [value]="opt.value"
                     [disabled]="opt.disabled ?? false"
                   >
-                    <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
+                    <span forSelectIndicator class="pg-select-indicator">
                       <app-icon name="check" />
                     </span>
                     {{ opt.label }}
@@ -90,7 +90,7 @@ import { Icon } from '../../../ui/icon';
                     [value]="opt.value"
                     [disabled]="opt.disabled ?? false"
                   >
-                    <span forSelectIndicator [forceMount]="true" class="pg-select-indicator">
+                    <span forSelectIndicator class="pg-select-indicator">
                       <app-icon name="check" />
                     </span>
                     {{ opt.label }}

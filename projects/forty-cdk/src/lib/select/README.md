@@ -15,12 +15,10 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 | `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                             |
 | `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
 | `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<T>` (defaults to `string`).                                                                         |
-| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Hides itself when the parent option is unselected. Mirrors the option's `data-state`. `[forceMount]` keeps it mounted. |
+| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`. |
 | `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
 | `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                          |
 | `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                 |
-
-For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across all rows, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
 
 ## Single mode (default)
 

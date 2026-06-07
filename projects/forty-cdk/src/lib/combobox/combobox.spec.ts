@@ -2124,9 +2124,7 @@ describe('ForComboboxIndicator', () => {
               Apple
             </div>
             <div data-test-id="banana" forComboboxOption value="banana" label="Banana">
-              <span data-test-id="banana-ind" forComboboxIndicator [forceMount]="forceMount()"
-                >✓</span
-              >
+              <span data-test-id="banana-ind" forComboboxIndicator class="consumer-flex">✓</span>
               Banana
             </div>
           </div>
@@ -2137,7 +2135,6 @@ describe('ForComboboxIndicator', () => {
   class IndicatorHost {
     readonly open = signal(true);
     readonly value = signal<readonly string[]>([]);
-    readonly forceMount = signal(false);
   }
 
   function indicator(testId: string): HTMLElement {
@@ -2162,13 +2159,16 @@ describe('ForComboboxIndicator', () => {
     expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
-  it('keeps the indicator mounted when forceMount=true', async () => {
+  it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {
     const r = renderHost(IndicatorHost);
-    r.instance.forceMount.set(true);
     await flush(r.fixture);
 
-    expect(indicator('banana-ind').hasAttribute('hidden')).toBe(false);
-    expect(indicator('banana-ind').getAttribute('data-state')).toBe('unchecked');
+    expect(indicator('banana-ind').style.display).toBe('none');
+
+    r.instance.value.set(['banana']);
+    await flush(r.fixture);
+
+    expect(indicator('banana-ind').style.display).toBe('');
   });
 
   it('marks the indicator aria-hidden so screen readers ignore the decoration', async () => {
