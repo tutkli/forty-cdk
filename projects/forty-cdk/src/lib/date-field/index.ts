@@ -9,9 +9,11 @@ export {
   type ForDateFieldSegmentHandle,
 } from './date-field-context';
 export {
+  DEFAULT_DATE_FIELD_SEGMENT_LABELS,
   FOR_DATE_FIELD_DEFAULTS,
   provideForDateFieldDefaults,
   type ForDateFieldDefaults,
+  type ForDateFieldSegmentLabels,
 } from './date-field-defaults';
 export {
   type DateSegmentType,

@@ -1,8 +1,12 @@
-import { Directive, input } from '@angular/core';
+import { computed, Directive, inject, input } from '@angular/core';
 
 import { ForDateTimeSegmentBase } from '../_internal/datetime/segment-directive';
 import type { DateTimeSegmentType } from './build-segments';
 import { injectDateFieldContext } from './date-field-context';
+import {
+  DEFAULT_DATE_FIELD_SEGMENT_LABELS,
+  FOR_DATE_FIELD_DEFAULTS,
+} from './date-field-defaults';
 
 /**
  * One editable spinbutton segment of a `[forDateField]` — the day, month, or
@@ -30,12 +34,26 @@ import { injectDateFieldContext } from './date-field-context';
 })
 export class ForDateFieldSegment extends ForDateTimeSegmentBase {
   protected readonly ctx = injectDateFieldContext('ForDateFieldSegment');
+  readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
 
   /** Which date or time part this segment edits. */
   readonly segment = input.required<DateTimeSegmentType>();
 
-  /** Accessible name for this segment. Falls back to the segment type when unset. */
+  /**
+   * Accessible name for this segment. Falls back to the scope's localized
+   * default label for the part (via `provideForDateFieldDefaults`), which in
+   * turn defaults to the part name — and `'AM/PM'` for the `dayPeriod` segment.
+   */
   readonly ariaLabel = input<string | null>(null);
+
+  protected override readonly resolvedAriaLabel = computed(() => {
+    const type = this.segment();
+    return (
+      this.ariaLabel() ??
+      this.#defaults.segmentLabels[type] ??
+      DEFAULT_DATE_FIELD_SEGMENT_LABELS[type]
+    );
+  });
 
   constructor() {
     super();

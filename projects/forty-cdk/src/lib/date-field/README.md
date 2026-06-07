@@ -115,9 +115,17 @@ On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it
 ```ts
 import { provideForDateFieldDefaults } from 'forty-cdk';
 
-// app config or a component's providers (stub today; present for forward-compat)
-providers: [provideForDateFieldDefaults()];
+// app config or a component's providers — localize segment labels and the
+// empty-segment announcement for every nested [forDateField].
+providers: [
+  provideForDateFieldDefaults({
+    emptySegmentText: 'Vacío',
+    segmentLabels: { day: 'día', month: 'mes', year: 'año', dayPeriod: 'AM/PM' },
+  }),
+];
 ```
+
+`segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
 ## Accessibility notes
 

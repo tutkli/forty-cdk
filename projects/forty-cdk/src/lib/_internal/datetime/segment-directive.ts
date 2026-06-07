@@ -66,7 +66,7 @@ export interface SegmentEditorContext {
     '[attr.aria-valuemax]': 'ctx.segmentMax(segment())',
     '[attr.aria-valuenow]': 'valueNow()',
     '[attr.aria-valuetext]': 'ctx.segmentValueText(segment())',
-    '[attr.aria-label]': 'ariaLabel() || segment()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
@@ -88,6 +88,15 @@ export abstract class ForDateTimeSegmentBase {
   abstract readonly ariaLabel: Signal<string | null>;
 
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * The accessible name bound to `aria-label`. Defaults to the explicit
+   * `ariaLabel` input, falling back to the raw segment type; the concrete
+   * subclasses override this to source localized, injector-scoped defaults.
+   */
+  protected readonly resolvedAriaLabel: Signal<string> = computed(
+    () => this.ariaLabel() ?? this.segment(),
+  );
 
   protected readonly valueNow = computed(() => this.ctx.segmentValue(this.segment()));
 
