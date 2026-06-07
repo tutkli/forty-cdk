@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture } from './_helpers';
 
 /** Move the mouse to the centre of `target` in `steps` intermediate hops. */
 async function hoverTo(page: Page, target: Locator, steps = 8): Promise<void> {
@@ -130,6 +130,144 @@ test.describe('NavigationMenu hover-across-triggers', () => {
 
     // Leave the whole nav (top-left body region) — the item must close.
     await page.mouse.move(2, 2, { steps: 8 });
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+});
+
+test.describe('NavigationMenu keyboard / focus', () => {
+  test('focusing a trigger by Tab does not open its panel', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    // Tab from the input before the nav onto the first trigger. Per the APG
+    // disclosure-navigation pattern, plain focus must NOT open the panel —
+    // this is the false-confidence path jsdom can't reproduce (it never
+    // re-fires focus), so it can only be caught in a real browser.
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-products'));
+    await expect(el(page, 'active')).toHaveText('none');
+    await expect(el(page, 'trigger-products')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('Tabbing across the trigger row never auto-opens a panel', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-products'));
+    await expect(el(page, 'active')).toHaveText('none');
+
+    // The roving-tabindex exposes one tab stop on the trigger row, so the next
+    // Tab leaves the nav entirely (onto the trailing input) — still no panel.
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+
+  test('ArrowDown opens the focused trigger (horizontal orientation)', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'trigger-products').focus();
+    await page.keyboard.press('ArrowDown');
+
+    await expect(el(page, 'active')).toHaveText('products');
+    await expect(el(page, 'content-products')).toBeVisible();
+    await expect(el(page, 'trigger-products')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('ArrowRight / ArrowLeft rove across triggers and loop at the ends', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'trigger-products').focus();
+
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-solutions'));
+
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-company'));
+
+    // End of the row — loop wraps back to the first trigger.
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-products'));
+
+    // And ArrowLeft loops backwards to the last trigger.
+    await page.keyboard.press('ArrowLeft');
+    await expectFocused(el(page, 'trigger-company'));
+  });
+
+  test('arrow roving skips a disabled trigger', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { disabledSolutions: '1' });
+
+    await el(page, 'trigger-products').focus();
+
+    // `solutions` is disabled — ArrowRight must land on `company` directly.
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-company'));
+
+    // ArrowLeft back skips the disabled trigger again, returning to `products`.
+    await page.keyboard.press('ArrowLeft');
+    await expectFocused(el(page, 'trigger-products'));
+  });
+
+  test('Escape from inside an open panel closes it and it stays closed', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    // Open via keyboard, then move focus into the panel (the common case that
+    // triggered the F1 re-open bug: return-focus re-firing the trigger focus).
+    await el(page, 'trigger-products').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'content-products')).toBeVisible();
+
+    await el(page, 'link-products-1').focus();
+    await expectFocused(el(page, 'link-products-1'));
+
+    await page.keyboard.press('Escape');
+
+    // The panel closes and focus returns to the trigger — and crucially it
+    // must STAY closed (no synchronous re-open from the return-focus).
+    await expect(el(page, 'content-products')).toHaveCount(0);
+    await expectFocused(el(page, 'trigger-products'));
+    await expect(el(page, 'trigger-products')).toHaveAttribute('aria-expanded', 'false');
+    await expect(el(page, 'active')).toHaveText('none');
+
+    // Give well past any potential delayed open; it must remain closed.
+    await page.waitForTimeout(300);
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+
+  test('Escape on the trigger itself closes the open panel and it stays closed', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'trigger-products').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'content-products')).toBeVisible();
+
+    // Focus is still on the trigger here; Escape closes and the trigger keeps
+    // focus, which must not re-open the panel.
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'content-products')).toHaveCount(0);
+    await expectFocused(el(page, 'trigger-products'));
+    await page.waitForTimeout(300);
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+
+  test('Tab from inside an open panel closes it once focus leaves the nav', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'trigger-products').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'content-products')).toBeVisible();
+
+    // Tab through the single link, then once more to leave the nav entirely.
+    await el(page, 'link-products-2').focus();
+    await page.keyboard.press('Tab');
+
+    // Focus is now on the trailing input outside the nav; the open panel
+    // closes per APG (focusout with relatedTarget outside the nav).
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'content-products')).toHaveCount(0);
     await expect(el(page, 'active')).toHaveText('none');
   });
 });
