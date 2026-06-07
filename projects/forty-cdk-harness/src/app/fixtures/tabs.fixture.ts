@@ -13,9 +13,12 @@ import {
  * Home/End, manual vs automatic activation, Tab-into-panel).
  *
  * Mounts four triggers (`a`, `b`, `c`, `d`) so disabled-skip can be exercised
- * on a middle index without losing wrap-around coverage. The active panel
- * embeds a focusable `<button>` so the Tab-into-panel spec can assert focus
- * via `expectFocused` on a real focusable child.
+ * on a middle index without losing wrap-around coverage. Panels `a`–`c` embed
+ * a focusable `<button>`, so per the WAI-ARIA Tabs APG they are NOT themselves
+ * tab stops — Tab out of the tablist lands directly on the panel's focusable
+ * child. Panel `d` is text-only, so it carries `tabindex="0"` and is reachable
+ * by Tab itself; this lets the Tab-into-panel spec assert both branches of the
+ * conditional-tabindex rule.
  *
  * Query params:
  *  - `?activation=manual` (default `auto` / `automatic`) — switches the
@@ -88,9 +91,7 @@ import {
       <section data-testid="content-c" forTabsContent value="c">
         <button data-testid="panel-button-c" type="button">Inside C</button>
       </section>
-      <section data-testid="content-d" forTabsContent value="d">
-        <button data-testid="panel-button-d" type="button">Inside D</button>
-      </section>
+      <section data-testid="content-d" forTabsContent value="d">Inside D (text only)</section>
     </div>
     <input data-testid="after" placeholder="after-tabs" />
   `,

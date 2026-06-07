@@ -44,7 +44,7 @@ const TABS_IMPORTS = [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent] as c
   `,
 })
 class TabsHost {
-  readonly active = signal('');
+  readonly active = signal<string | null>(null);
   readonly mode = signal<'automatic' | 'manual'>('automatic');
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
@@ -139,6 +139,155 @@ describe('ForTabs', () => {
         expect(contentOf(el, v).getAttribute('aria-hidden')).toBe('true');
         expect(contentOf(el, v).hasAttribute('inert')).toBe(true);
         expect(contentOf(el, v).getAttribute('data-state')).toBe('inactive');
+      }
+    });
+  });
+
+  describe('conditional tabpanel tabindex (APG)', () => {
+    @Component({
+      imports: [...TABS_IMPORTS],
+      template: `
+        <div forTabs [(value)]="active">
+          <div forTabsList>
+            <button type="button" forTabsTrigger value="empty" data-test-id="empty">E</button>
+            <button type="button" forTabsTrigger value="rich" data-test-id="rich">R</button>
+          </div>
+          <section forTabsContent value="empty" data-test-content="empty">Just text</section>
+          <section forTabsContent value="rich" data-test-content="rich">
+            @if (showButton()) {
+              <button type="button">Inside</button>
+            }
+          </section>
+        </div>
+      `,
+    })
+    class MixedHost {
+      readonly active = signal<string | null>('empty');
+      readonly showButton = signal(true);
+    }
+
+    it('a panel with no focusable descendants is a tab stop (tabindex=0)', async () => {
+      const { el, flush } = renderHost(MixedHost);
+      await flush();
+      expect(contentOf(el, 'empty').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('a panel with focusable descendants is not itself a tab stop', async () => {
+      const { el, flush } = renderHost(MixedHost);
+      await flush();
+      expect(contentOf(el, 'rich').hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('reacts when a panel gains / loses focusable content after first render', async () => {
+      const { el, fixture, flush } = renderHost(MixedHost);
+      await flush();
+      expect(contentOf(el, 'rich').hasAttribute('tabindex')).toBe(false);
+
+      fixture.componentInstance.showButton.set(false);
+      await flush();
+      expect(contentOf(el, 'rich').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.showButton.set(true);
+      await flush();
+      expect(contentOf(el, 'rich').hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('[interactiveContent]=true forces no tab stop even with no focusable content', async () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs value="a">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+            </div>
+            <section forTabsContent value="a" data-test-content="a" [interactiveContent]="true">
+              Plain text
+            </section>
+          </div>
+        `,
+      })
+      class ForcedHost {}
+
+      const { el, flush } = renderHost(ForcedHost);
+      await flush();
+      expect(contentOf(el, 'a').hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('[interactiveContent]=false forces a tab stop even with focusable content', async () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs value="a">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+            </div>
+            <section forTabsContent value="a" data-test-content="a" [interactiveContent]="false">
+              <button type="button">Inside</button>
+            </section>
+          </div>
+        `,
+      })
+      class ForcedHost {}
+
+      const { el, flush } = renderHost(ForcedHost);
+      await flush();
+      expect(contentOf(el, 'a').getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('value contract (string | null)', () => {
+    it('treats null as the unset state — no trigger selected, all panels hidden', () => {
+      const { el } = renderHost(TabsHost);
+      for (const v of ['a', 'b', 'c']) {
+        expect(triggerOf(el, v).getAttribute('aria-selected')).toBe('false');
+        expect(contentOf(el, v).getAttribute('aria-hidden')).toBe('true');
+      }
+    });
+
+    it('a tab with value="" is selectable and distinct from the unset state', async () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs [(value)]="active">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="" data-test-id="empty">Empty</button>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+            </div>
+            <section forTabsContent value="" data-test-content="empty">Empty panel</section>
+            <section forTabsContent value="a" data-test-content="a">A panel</section>
+          </div>
+        `,
+      })
+      class EmptyValueHost {
+        readonly active = signal<string | null>(null);
+      }
+
+      const { el, fixture, flush } = renderHost(EmptyValueHost);
+
+      // Unset (null): the empty-string tab is NOT selected.
+      expect(triggerOf(el, 'empty').getAttribute('aria-selected')).toBe('false');
+      expect(contentOf(el, 'empty').getAttribute('aria-hidden')).toBe('true');
+
+      // Selecting the empty-string tab activates it — '' is a legal value.
+      triggerOf(el, 'empty').click();
+      await flush();
+      expect(fixture.componentInstance.active()).toBe('');
+      expect(triggerOf(el, 'empty').getAttribute('aria-selected')).toBe('true');
+      expect(contentOf(el, 'empty').hasAttribute('aria-hidden')).toBe(false);
+      expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('selecting then clearing back to null returns to the unset state', async () => {
+      const { el, fixture, flush } = renderHost(TabsHost);
+      fixture.componentInstance.active.set('b');
+      await flush();
+      expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
+
+      fixture.componentInstance.active.set(null);
+      await flush();
+      for (const v of ['a', 'b', 'c']) {
+        expect(triggerOf(el, v).getAttribute('aria-selected')).toBe('false');
+        expect(contentOf(el, v).getAttribute('aria-hidden')).toBe('true');
       }
     });
   });
@@ -371,7 +520,7 @@ describe('ForTabs', () => {
 
       b.click();
       flush();
-      expect(fixture.componentInstance.active()).toBe('');
+      expect(fixture.componentInstance.active()).toBeNull();
     });
 
     it('root disabled cascades to all triggers and blocks selection', () => {
@@ -382,7 +531,7 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'a').hasAttribute('disabled')).toBe(true);
       triggerOf(el, 'a').click();
       flush();
-      expect(fixture.componentInstance.active()).toBe('');
+      expect(fixture.componentInstance.active()).toBeNull();
     });
   });
 
@@ -440,7 +589,7 @@ describe('ForTabs', () => {
         `,
       })
       class Host {
-        readonly emitted: string[] = [];
+        readonly emitted: (string | null)[] = [];
       }
 
       const { fixture, el, flush } = renderHost(Host);
@@ -465,8 +614,8 @@ describe('ForTabs', () => {
         `,
       })
       class Host {
-        readonly active = signal('');
-        readonly emitted: string[] = [];
+        readonly active = signal<string | null>(null);
+        readonly emitted: (string | null)[] = [];
       }
 
       const { fixture, flush } = renderHost(Host);
