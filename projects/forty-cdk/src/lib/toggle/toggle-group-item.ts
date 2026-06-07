@@ -69,7 +69,7 @@ export class ForToggleGroupItem {
       return -1;
     }
     const owner = this.#rovingHost ?? this.group;
-    if (owner.roving.active() !== null) {
+    if (owner.roving.hasActive()) {
       return owner.roving.tabindexFor(this.#host.nativeElement);
     }
     return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;

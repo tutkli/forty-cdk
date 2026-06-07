@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   inject,
   input,
   model,
@@ -168,6 +169,22 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
+  constructor() {
+    effect(() => {
+      const active = this.roving.active();
+      if (active === null) {
+        return;
+      }
+      const visible = this.#visibleEntries();
+      const entry = visible.find((e) => e.handle.host === active);
+      if (entry && !entry.handle.disabled() && active.isConnected) {
+        return;
+      }
+      const fallback = visible.find((e) => !e.handle.disabled());
+      this.roving.setActive(fallback?.handle.host ?? null);
+    });
+  }
+
   isExpanded(value: string): boolean {
     return this.expanded().includes(value);
   }
@@ -182,6 +199,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (open && !has) {
       this.expanded.set([...current, value]);
     } else if (!open && has) {
+      this.#relocateActiveOnCollapse(value);
       this.expanded.set(current.filter((v) => v !== value));
     }
   }
@@ -201,6 +219,22 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       this.value.set([value]);
     }
     this.#anchorValue.set(value);
+  }
+
+  #relocateActiveOnCollapse(value: string): void {
+    const active = this.roving.active();
+    if (active === null) {
+      return;
+    }
+    const visible = this.#visibleEntries();
+    const collapsing = visible.find((e) => e.handle.value() === value);
+    if (!collapsing) {
+      return;
+    }
+    const collapsingHost = collapsing.handle.host;
+    if (collapsingHost !== active && collapsingHost.contains(active)) {
+      this.roving.focusActive(collapsingHost);
+    }
   }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
@@ -401,6 +435,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   unregisterItem(handle: ForTreeItemHandle): void {
     this.#items.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 
   indexOfHost(el: HTMLElement): number {

@@ -7,6 +7,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
@@ -84,6 +85,10 @@ export class ForTabs implements ForTabsContext {
     firstEnabledHost(this.#triggers.items()),
   );
 
+  constructor() {
+    reconcileRovingActive(this.roving, this.#triggers.items);
+  }
+
   isSelected(v: string): boolean {
     return this.value() === v;
   }
@@ -127,6 +132,7 @@ export class ForTabs implements ForTabsContext {
 
   unregisterTrigger(handle: ForTabsTriggerHandle): void {
     this.#triggers.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 
   registerContent(handle: ForTabsContentHandle): void {
@@ -157,5 +163,13 @@ export class ForTabs implements ForTabsContext {
 
   isFirstEnabledTrigger(el: HTMLElement): boolean {
     return this.#firstEnabledTriggerHost() === el;
+  }
+
+  hasSelectedTrigger(): boolean {
+    const value = this.value();
+    if (value === null) {
+      return false;
+    }
+    return this.#triggers.items().some((t) => !t.disabled() && t.value() === value);
   }
 }

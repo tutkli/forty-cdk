@@ -88,7 +88,7 @@ export class ForTreeItem implements ForTreeItemContext {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    if (this.#tree.roving.active() !== null) {
+    if (this.#tree.roving.hasActive()) {
       return this.#tree.roving.tabindexFor(this.#host.nativeElement);
     }
     if (this.selected()) {

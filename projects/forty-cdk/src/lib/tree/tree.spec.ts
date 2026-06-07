@@ -452,6 +452,43 @@ describe('ForTree', () => {
       expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('0');
       expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('-1');
     });
+
+    it('collapsing a parent that holds the active descendant moves the tab stop to the parent', async () => {
+      const { el, fixture } = await setup((i) => i.open.set(['documents', 'photos']));
+
+      itemOf(el, 'vacation').focus();
+      await flush(fixture);
+      expect(itemOf(el, 'vacation').getAttribute('tabindex')).toBe('0');
+
+      // Collapse `documents` via its toggle (the widget collapse funnel),
+      // hiding the active `vacation` node.
+      toggleOf(el, 'documents').click();
+      await flush(fixture);
+
+      const tabbable = Array.from(
+        el.querySelectorAll<HTMLElement>('[role="treeitem"]'),
+      ).filter((node) => node.getAttribute('tabindex') === '0');
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]).toBe(itemOf(el, 'documents'));
+    });
+
+    it('disabling the active node re-engages the first-enabled fallback', async () => {
+      const { el, fixture } = await setup();
+
+      itemOf(el, 'readme').focus();
+      await flush(fixture);
+      expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.disabledIds.set(['readme']);
+      await flush(fixture);
+
+      expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('-1');
+      const tabbable = Array.from(
+        el.querySelectorAll<HTMLElement>('[role="treeitem"]'),
+      ).filter((node) => node.getAttribute('tabindex') === '0');
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]).toBe(itemOf(el, 'documents'));
+    });
   });
 
   describe('zoneless reactivity', () => {

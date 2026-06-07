@@ -59,6 +59,8 @@ import {
   ],
   template: `
     <input data-testid="before" placeholder="before-toolbar" />
+    <button data-testid="remove-active" type="button" (click)="removeBtn1()">remove</button>
+    <button data-testid="disable-active" type="button" (click)="disableBtn1()">disable</button>
     <div
       data-testid="toolbar"
       forToolbar
@@ -66,7 +68,15 @@ import {
       [dir]="dir"
       aria-label="Formatting"
     >
-      <button data-testid="btn-1" forToolbarButton [disabled]="isDisabled(0)">B1</button>
+      @if (!btn1Removed()) {
+        <button
+          data-testid="btn-1"
+          forToolbarButton
+          [disabled]="isDisabled(0) || btn1Disabled()"
+        >
+          B1
+        </button>
+      }
       <button
         data-testid="toggle"
         forToolbarButton
@@ -122,7 +132,18 @@ export class ToolbarFixture {
   protected readonly togglePressed = signal(false);
   protected readonly formatting = signal<readonly string[]>([]);
 
+  protected readonly btn1Removed = signal(false);
+  protected readonly btn1Disabled = signal(false);
+
   protected isDisabled(childIndex: number): boolean {
     return this.disabledIndex() === childIndex;
+  }
+
+  protected removeBtn1(): void {
+    this.btn1Removed.set(true);
+  }
+
+  protected disableBtn1(): void {
+    this.btn1Disabled.set(true);
   }
 }

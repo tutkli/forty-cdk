@@ -76,7 +76,7 @@ export class ForListboxOption<T = string> {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    if (this.#group.roving.active() !== null) {
+    if (this.#group.roving.hasActive()) {
       return this.#group.roving.tabindexFor(this.#host.nativeElement);
     }
     return this.#group.isFirstFocusableOption(this.#host.nativeElement) ? 0 : -1;

@@ -43,7 +43,7 @@ export class ForToolbarLink {
     if (this.disabled() || !this.toolbar) {
       return this.disabled() ? -1 : 0;
     }
-    if (this.toolbar.roving.active() !== null) {
+    if (this.toolbar.roving.hasActive()) {
       return this.toolbar.roving.tabindexFor(this.#host.nativeElement);
     }
     return this.toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;

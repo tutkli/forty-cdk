@@ -214,6 +214,67 @@ describe('ForToolbar', () => {
     });
   });
 
+  describe('roving self-heal (active item removed / disabled)', () => {
+    @Component({
+      imports: [ForToolbar, ForToolbarButton],
+      template: `
+        <div forToolbar>
+          @for (item of items(); track item.id) {
+            <button forToolbarButton [disabled]="item.disabled" [attr.data-id]="item.id">
+              {{ item.id }}
+            </button>
+          }
+        </div>
+      `,
+    })
+    class DynamicToolbarHost {
+      readonly items = signal([
+        { id: 'one', disabled: false },
+        { id: 'two', disabled: false },
+        { id: 'three', disabled: false },
+      ]);
+    }
+
+    const btn = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLButtonElement>(`button[data-id="${id}"]`)!;
+    const zeros = (host: HTMLElement) =>
+      Array.from(host.querySelectorAll<HTMLButtonElement>('button'))
+        .filter((b) => b.getAttribute('tabindex') === '0')
+        .map((b) => b.getAttribute('data-id'));
+
+    it('removing the focused item re-engages the first-enabled fallback', async () => {
+      const { el, fixture, flush } = renderHost(DynamicToolbarHost);
+      btn(el, 'one').focus();
+      flush();
+      expect(btn(el, 'one').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.items.set([
+        { id: 'two', disabled: false },
+        { id: 'three', disabled: false },
+      ]);
+      await flush();
+
+      expect(zeros(el)).toEqual(['two']);
+    });
+
+    it('disabling the focused item re-engages the first-enabled fallback', async () => {
+      const { el, fixture, flush } = renderHost(DynamicToolbarHost);
+      btn(el, 'one').focus();
+      flush();
+      expect(btn(el, 'one').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.items.set([
+        { id: 'one', disabled: true },
+        { id: 'two', disabled: false },
+        { id: 'three', disabled: false },
+      ]);
+      await flush();
+
+      expect(btn(el, 'one').getAttribute('tabindex')).toBe('-1');
+      expect(zeros(el)).toEqual(['two']);
+    });
+  });
+
   describe('toggle-group composition', () => {
     it('toggle items participate in the toolbar roving', () => {
       const { queryAll, flush } = renderHost(ToolbarWithGroupHost);

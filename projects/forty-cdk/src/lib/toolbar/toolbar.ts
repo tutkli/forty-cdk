@@ -8,6 +8,7 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
+import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
@@ -98,6 +99,10 @@ export class ForToolbar implements ForToolbarContext {
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
+  constructor() {
+    reconcileRovingActive(this.roving, this.#items.items);
+  }
+
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {
       return;
@@ -127,5 +132,6 @@ export class ForToolbar implements ForToolbarContext {
 
   unregisterItem(handle: ForToolbarItemHandle): void {
     this.#items.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 }

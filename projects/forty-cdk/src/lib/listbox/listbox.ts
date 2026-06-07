@@ -19,6 +19,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import {
   defaultItemToFormValue,
@@ -202,6 +203,7 @@ export class ForListbox<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.disabled,
     });
+    reconcileRovingActive(this.roving, this.#options.items);
   }
 
   isSelected(v: T): boolean {
@@ -400,6 +402,7 @@ export class ForListbox<T = string>
 
   unregisterOption(handle: ForListboxOptionHandle<T>): void {
     this.#options.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 
   protected onFocusOut(event: FocusEvent): void {

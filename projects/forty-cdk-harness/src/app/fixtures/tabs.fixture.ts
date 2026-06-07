@@ -7,6 +7,12 @@ import {
   ForTabsTrigger,
 } from 'forty-cdk';
 
+interface Tab {
+  value: string;
+  disabled: boolean;
+  rich: boolean;
+}
+
 /**
  * Tabs harness fixture — exercises the WAI-ARIA tablist keyboard sequence on
  * real browsers (Tab into roving stop, ArrowLeft/Right with disabled-skip,
@@ -37,6 +43,8 @@ import {
   imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   template: `
     <input data-testid="before" placeholder="before-tabs" />
+    <button data-testid="remove-active" type="button" (click)="removeA()">remove</button>
+    <button data-testid="disable-active" type="button" (click)="disableA()">disable</button>
     <div
       forTabs
       [(value)]="active"
@@ -45,53 +53,29 @@ import {
       [dir]="dir"
     >
       <div forTabsList aria-label="Settings sections">
-        <button
-          data-testid="trigger-a"
-          type="button"
-          forTabsTrigger
-          value="a"
-          [disabled]="disabledValue === 'a'"
-        >
-          A
-        </button>
-        <button
-          data-testid="trigger-b"
-          type="button"
-          forTabsTrigger
-          value="b"
-          [disabled]="disabledValue === 'b'"
-        >
-          B
-        </button>
-        <button
-          data-testid="trigger-c"
-          type="button"
-          forTabsTrigger
-          value="c"
-          [disabled]="disabledValue === 'c'"
-        >
-          C
-        </button>
-        <button
-          data-testid="trigger-d"
-          type="button"
-          forTabsTrigger
-          value="d"
-          [disabled]="disabledValue === 'd'"
-        >
-          D
-        </button>
+        @for (tab of tabs(); track tab.value) {
+          <button
+            [attr.data-testid]="'trigger-' + tab.value"
+            type="button"
+            forTabsTrigger
+            [value]="tab.value"
+            [disabled]="tab.disabled"
+          >
+            {{ tab.value }}
+          </button>
+        }
       </div>
-      <section data-testid="content-a" forTabsContent value="a">
-        <button data-testid="panel-button-a" type="button">Inside A</button>
-      </section>
-      <section data-testid="content-b" forTabsContent value="b">
-        <button data-testid="panel-button-b" type="button">Inside B</button>
-      </section>
-      <section data-testid="content-c" forTabsContent value="c">
-        <button data-testid="panel-button-c" type="button">Inside C</button>
-      </section>
-      <section data-testid="content-d" forTabsContent value="d">Inside D (text only)</section>
+      @for (tab of tabs(); track tab.value) {
+        <section [attr.data-testid]="'content-' + tab.value" forTabsContent [value]="tab.value">
+          @if (tab.rich) {
+            <button [attr.data-testid]="'panel-button-' + tab.value" type="button">
+              Inside {{ tab.value }}
+            </button>
+          } @else {
+            Inside {{ tab.value }} (text only)
+          }
+        </section>
+      }
     </div>
     <input data-testid="after" placeholder="after-tabs" />
   `,
@@ -115,5 +99,22 @@ export class TabsFixture {
   // owns the tab stop at that trigger. The `data-state="active"` /
   // `aria-selected="true"` start state lets the activation specs compare
   // against "before navigation".
-  protected readonly active = signal('a');
+  protected readonly active = signal<string | null>('a');
+
+  protected readonly tabs = signal<readonly Tab[]>([
+    { value: 'a', disabled: this.disabledValue === 'a', rich: true },
+    { value: 'b', disabled: this.disabledValue === 'b', rich: true },
+    { value: 'c', disabled: this.disabledValue === 'c', rich: true },
+    { value: 'd', disabled: this.disabledValue === 'd', rich: false },
+  ]);
+
+  protected removeA(): void {
+    this.tabs.update((list) => list.filter((t) => t.value !== 'a'));
+  }
+
+  protected disableA(): void {
+    this.tabs.update((list) =>
+      list.map((t) => (t.value === 'a' ? { ...t, disabled: true } : t)),
+    );
+  }
 }

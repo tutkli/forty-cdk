@@ -117,7 +117,7 @@ export abstract class ForDateTimeSegmentBase {
     if (this.ctx.disabled()) {
       return -1;
     }
-    if (this.ctx.roving.active() !== null) {
+    if (this.ctx.roving.hasActive()) {
       return this.ctx.roving.tabindexFor(this.host.nativeElement);
     }
     return this.ctx.isFirstSegmentType(this.segment()) ? 0 : -1;

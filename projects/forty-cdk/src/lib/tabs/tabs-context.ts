@@ -48,6 +48,14 @@ export interface ForTabsContext {
   contentIdFor(value: string): string | null;
   /** True when `el` is the first enabled trigger in registration order. */
   isFirstEnabledTrigger(el: HTMLElement): boolean;
+  /**
+   * True when some registered, enabled trigger matches the current `value`.
+   * Distinguishes "another trigger owns the tab stop" from "the selected
+   * value points at a removed / disabled trigger" so the per-trigger
+   * tabindex fallback can re-engage the first-enabled entry point instead of
+   * stranding the tablist. Reactive.
+   */
+  hasSelectedTrigger(): boolean;
 }
 
 export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CONTEXT');
