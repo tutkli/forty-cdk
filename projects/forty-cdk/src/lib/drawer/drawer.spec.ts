@@ -1,6 +1,8 @@
 import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
+import { ForDrawerStack, type DrawerStackHandle } from '../_internal/drawer-stack/drawer-stack';
 import type {
   VetoableEvent,
   VetoableNativeEvent,
@@ -888,6 +890,101 @@ describe('ForDrawer (declarative)', () => {
         true,
       );
     });
+
+    describe('runtime snapPoints rebind', () => {
+      // The cross-dimension monotonicity check is geometry (jsdom returns a
+      // zero rect, so the live-dimension branch defers) and lives in
+      // drawer.e2e.ts. What is asserted here is the dimension-independent
+      // wiring: a runtime rebind re-runs the shape / fadeFromIndex-range
+      // validation rather than trusting the cache from the previous array.
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              [snapPoints]="snaps()"
+              [fadeFromIndex]="fadeFromIndex()"
+              (close)="open.set(false)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class RebindHost {
+        readonly open = signal(false);
+        readonly snaps = signal<ReadonlyArray<ForDrawerSnapPoint>>([0.25, 0.5, 1]);
+        readonly fadeFromIndex = signal<number | undefined>(undefined);
+      }
+
+      function mountRebindHost(): { fixture: ReturnType<typeof TestBed.createComponent<RebindHost>>; captured: unknown[] } {
+        const captured: unknown[] = [];
+        class CapturingHandler implements ErrorHandler {
+          handleError(err: unknown): void {
+            captured.push(err);
+          }
+        }
+        TestBed.configureTestingModule({
+          providers: [
+            provideZonelessChangeDetection(),
+            { provide: ErrorHandler, useClass: CapturingHandler },
+          ],
+        });
+        const fixture = TestBed.createComponent(RebindHost);
+        fixture.detectChanges();
+        return { fixture, captured };
+      }
+
+      it('re-validates the shape when a non-monotonic array is bound at runtime', async () => {
+        const { fixture, captured } = mountRebindHost();
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+        // The initial monotonic array mounts cleanly.
+        expect(captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message))).toBe(
+          false,
+        );
+
+        // Swap in a non-monotonic array at runtime — the rebind effect must
+        // re-run the shape check rather than trusting the previous validation.
+        fixture.componentInstance.snaps.set([0.5, 0.25, 1]);
+        await flush(fixture);
+
+        expect(captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message))).toBe(
+          true,
+        );
+      });
+
+      it('re-validates the fadeFromIndex range when snapPoints shrinks at runtime', async () => {
+        const { fixture, captured } = mountRebindHost();
+        fixture.componentInstance.fadeFromIndex.set(2);
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+        // fadeFromIndex 2 is valid for the 3-element initial array.
+        expect(captured.some((e) => e instanceof Error && /fadeFromIndex/.test(e.message))).toBe(
+          false,
+        );
+
+        // Shrink the array so index 2 is now out of range — the rebind effect
+        // must catch it.
+        fixture.componentInstance.snaps.set([0.25, 0.5]);
+        await flush(fixture);
+
+        expect(captured.some((e) => e instanceof Error && /fadeFromIndex/.test(e.message))).toBe(
+          true,
+        );
+      });
+
+      it('accepts a still-valid array swapped in at runtime without error', async () => {
+        const { fixture, captured } = mountRebindHost();
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+
+        fixture.componentInstance.snaps.set([0.1, 0.4, 0.8, 1]);
+        await flush(fixture);
+
+        expect(captured.filter((e) => e instanceof Error)).toEqual([]);
+      });
+    });
   });
 
   describe('used outside [forDrawer]', () => {
@@ -1524,5 +1621,235 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
       expect(drawer.hasAttribute('data-scale-background')).toBe(false);
     });
+  });
+});
+
+describe('ForDrawer teardown order', () => {
+  afterEachOverlayCleanup();
+
+  afterEach(() => {
+    document.body.style.backgroundColor = '';
+  });
+
+  // Pins the deliberate teardown sequence inside the single
+  // `DestroyRef.onDestroy` hook (swipe → scale → drawer-stack pop) so the
+  // ordering can't silently regress to depending on hook-registration order.
+  // The swipe cleanup leaves no DI-observable trace, so the assertion pins
+  // the two coordinator-backed steps (scale before stack), which is the pair
+  // whose order matters for the DrawerStack out-of-order guard.
+  @Component({
+    imports: [ForDrawer, ForDrawerWrapper],
+    template: `
+      <div forDrawerWrapper id="shell"></div>
+      @if (open()) {
+        <div forDrawer [scaleBackground]="true" (close)="open.set(false)" ariaLabel="t"></div>
+      }
+    `,
+  })
+  class TeardownHost {
+    readonly open = signal(false);
+  }
+
+  it('tears down scale before the drawer-stack pop in one destroy hook', async () => {
+    const order: string[] = [];
+
+    class RecordingScaleCoordinator extends ForDrawerScaleCoordinator {
+      override registerDrawer(
+        config: Parameters<ForDrawerScaleCoordinator['registerDrawer']>[0],
+      ): () => void {
+        const cleanup = super.registerDrawer(config);
+        return () => {
+          order.push('scale');
+          cleanup();
+        };
+      }
+    }
+
+    class RecordingDrawerStack extends ForDrawerStack {
+      override push(node: Parameters<ForDrawerStack['push']>[0]): DrawerStackHandle {
+        const handle = super.push(node);
+        return {
+          depth: handle.depth,
+          cleanup: () => {
+            order.push('stack');
+            handle.cleanup();
+          },
+        };
+      }
+    }
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: ForDrawerScaleCoordinator, useClass: RecordingScaleCoordinator },
+        { provide: ForDrawerStack, useClass: RecordingDrawerStack },
+      ],
+    });
+    const fixture = TestBed.createComponent(TeardownHost);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(true);
+    await flush(fixture);
+
+    expect(order).toEqual([]);
+
+    fixture.componentInstance.open.set(false);
+    await flush(fixture);
+
+    expect(order).toEqual(['scale', 'stack']);
+  });
+
+  it('re-opens cleanly after close (drawer-stack pop ran, no stale-stack throw)', async () => {
+    const r = renderHost(TeardownHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    expect(document.querySelector('[forDrawer]')).not.toBeNull();
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+    expect(document.querySelector('[forDrawer]')).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+
+    // A second open/close cycle would throw the DrawerStack out-of-order
+    // error if the previous pop had been skipped.
+    expect(() => r.instance.open.set(true)).not.toThrow();
+    await flush(r.fixture);
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toContain('scale(0.95)');
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+    expect(shell.style.transform).toBe('');
+  });
+});
+
+describe('ForDrawer runtime prefers-reduced-motion flip', () => {
+  afterEachOverlayCleanup();
+
+  interface FakeMql {
+    matches: boolean;
+    media: string;
+    listeners: Array<(event: { matches: boolean }) => void>;
+    addEventListener(type: 'change', l: (event: { matches: boolean }) => void): void;
+    removeEventListener(type: 'change', l: (event: { matches: boolean }) => void): void;
+    dispatch(matches: boolean): void;
+  }
+
+  function makeMql(query: string, matches: boolean): FakeMql {
+    return {
+      matches,
+      media: query,
+      listeners: [],
+      addEventListener(_type, l) {
+        this.listeners.push(l);
+      },
+      removeEventListener(_type, l) {
+        this.listeners = this.listeners.filter((x) => x !== l);
+      },
+      dispatch(next) {
+        this.matches = next;
+        for (const l of this.listeners) {
+          l({ matches: next });
+        }
+      },
+    };
+  }
+
+  let restore: () => void = () => {};
+  let mql: FakeMql;
+
+  beforeEach(() => {
+    mql = makeMql('(prefers-reduced-motion: reduce)', false);
+    const target = window as unknown as { matchMedia?: (query: string) => MediaQueryList };
+    const had = 'matchMedia' in target;
+    const original = target.matchMedia;
+    Object.defineProperty(target, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: (query: string) => {
+        mql.media = query;
+        return mql as unknown as MediaQueryList;
+      },
+    });
+    restore = () => {
+      if (had) {
+        Object.defineProperty(target, 'matchMedia', {
+          configurable: true,
+          writable: true,
+          value: original,
+        });
+      } else {
+        delete target.matchMedia;
+      }
+    };
+  });
+
+  afterEach(() => {
+    restore();
+  });
+
+  function dispatchPointer(
+    el: HTMLElement,
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    clientX: number,
+    clientY: number,
+  ): void {
+    el.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX,
+        clientY,
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+      }),
+    );
+  }
+
+  it('disarms the swipe gesture when reduced-motion flips on at runtime', async () => {
+    const r = renderHost(DrawerHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    // Baseline: swipe is armed (motion not reduced), so a drag flips dragging.
+    dispatchPointer(drawer, 'pointerdown', 0, 0);
+    dispatchPointer(drawer, 'pointermove', 0, 20);
+    await flush(r.fixture);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
+    dispatchPointer(drawer, 'pointerup', 0, 20);
+    await flush(r.fixture);
+
+    // Flip reduced-motion on at runtime — the gesture must disarm.
+    mql.dispatch(true);
+    await flush(r.fixture);
+
+    dispatchPointer(drawer, 'pointerdown', 0, 0);
+    dispatchPointer(drawer, 'pointermove', 0, 20);
+    await flush(r.fixture);
+    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('arms the swipe gesture when reduced-motion flips off at runtime', async () => {
+    mql.matches = true;
+    const r = renderHost(DrawerHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    // Baseline: motion reduced at mount, so no swipe listener is armed.
+    dispatchPointer(drawer, 'pointerdown', 0, 0);
+    dispatchPointer(drawer, 'pointermove', 0, 20);
+    await flush(r.fixture);
+    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+    // Flip reduced-motion off at runtime — the gesture must arm.
+    mql.dispatch(false);
+    await flush(r.fixture);
+
+    dispatchPointer(drawer, 'pointerdown', 0, 0);
+    dispatchPointer(drawer, 'pointermove', 0, 20);
+    await flush(r.fixture);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
   });
 });

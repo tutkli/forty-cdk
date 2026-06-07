@@ -166,9 +166,12 @@ export interface ModalShellHandle {
  *      didn't veto, focuses the first focusable descendant (or host when
  *      `initialFocus = 'container'`).
  *
- * 5. Destroy ordering (LIFO with respect to the order side-effects were
- *    activated):
- *    - `dismissable.deactivate()` first (registered first in
+ * 5. Destroy ordering. All steps below run inside ONE
+ *    `DestroyRef.onDestroy` hook, so they execute as plain sequential
+ *    statements — the sequence is fixed by the code, not by Angular's
+ *    (FIFO) hook-registration order. Within the hook the side-effects are
+ *    torn down in the inverse order they were activated:
+ *    - `dismissable.deactivate()` first (it was activated first in the setup
  *      `afterNextRender`).
  *    - `(autoFocusOnClose)` veto fires BEFORE either modal/non-modal
  *      teardown so it runs on every close path regardless of mode.
@@ -219,9 +222,14 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   // 2. Portal — moves the host to `document.body` after first render and
-  //    cleans up on destroy. The portal's destroy hook runs after ours
-  //    (LIFO), so by the time it removes the element from the DOM the
-  //    focus-trap return-focus has already happened.
+  //    cleans up on destroy. `DestroyRef.onDestroy` callbacks fire in
+  //    registration order (FIFO), and the portal registers its hook here,
+  //    before the shell's own destroy hook below — so on teardown the portal
+  //    removes the host from the DOM FIRST, then the shell runs return-focus.
+  //    The ordering is harmless either way: return-focus targets the
+  //    previously-focused element (the trigger, captured synchronously above),
+  //    which lives OUTSIDE the portaled host, so removing the host first never
+  //    affects it.
   injectPortal();
 
   // Captured at mount time so the destroy path can mirror the same mode the

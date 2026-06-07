@@ -6,6 +6,7 @@ import {
   Directive,
   effect,
   ElementRef,
+  ErrorHandler,
   inject,
   input,
   model,
@@ -341,6 +342,7 @@ export class ForDrawer implements ForDrawerContext {
   });
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #errorHandler = inject(ErrorHandler);
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #scaleCoordinator = inject(ForDrawerScaleCoordinator);
   readonly #drawerStack = inject(ForDrawerStack);
@@ -386,10 +388,13 @@ export class ForDrawer implements ForDrawerContext {
 
   // Cleanup refs for drawer-specific side effects (the modal-shell owns its
   // own portal / dismissable / focus-trap / scroll-lock / inert-siblings
-  // teardown). These three live here because they are layered ON TOP of the
-  // shell: drawer-stack push must run BEFORE the shell's afterNextRender so
+  // teardown). These live here because they are layered around the shell on
+  // SETUP: drawer-stack push must run BEFORE the shell's afterNextRender so
   // descendants see consistent topology, and swipe / scale must run AFTER so
-  // the gesture / coordinator compose on top of a fully-wired surface.
+  // the gesture / coordinator compose on top of a fully-wired surface. On
+  // TEARDOWN they are all torn down from a single `DestroyRef.onDestroy`
+  // (see the constructor) so the sequence is explicit rather than inferred
+  // from registration order relative to the shell's own hook.
   #swipeCleanup: (() => void) | null = null;
   #scaleCleanup: (() => void) | null = null;
   #stackCleanup: (() => void) | null = null;
@@ -411,11 +416,30 @@ export class ForDrawer implements ForDrawerContext {
   // an upward drag can expand the surface.
   #dragMinOffset = 0;
 
-  // Snap positions cache, keyed by the dimension they were resolved against.
-  // First-measurement validation populates this; `#onSwipeStart` refreshes it
-  // when the surface has resized between gestures. Always pre-validated, so
-  // `#onSwipeRelease` can read it without re-running monotonicity checks.
-  #snapPositionsCache: { dimension: number; positions: number[] } | null = null;
+  // Snap positions cache, keyed by BOTH the dimension they were resolved
+  // against AND the `snapPoints` array identity. First-measurement validation
+  // populates this; `#onSwipeStart` refreshes it when the surface has resized
+  // between gestures, and a runtime `[snapPoints]` rebind (same dimension, new
+  // array reference) is a cache miss so positions are recomputed and
+  // re-validated. Always pre-validated, so `#onSwipeRelease` can read it
+  // without re-running monotonicity checks.
+  #snapPositionsCache: {
+    dimension: number;
+    snapPoints: ReadonlyArray<ForDrawerSnapPoint>;
+    positions: number[];
+  } | null = null;
+
+  // Flipped true once the mount-time `afterNextRender` has validated the
+  // initial snap config. Gates the runtime-rebind effect so its first
+  // (pre-render) run is a no-op and only genuine post-mount changes
+  // re-validate.
+  #snapConfigMounted = false;
+
+  // Signal flipped true in the post-shell `afterNextRender`. Gates the swipe
+  // gate effect so the gesture arms on a host already wired by the shell;
+  // being a signal, flipping it re-runs the effect for the first real
+  // attach.
+  readonly #swipeReady = signal(false);
 
   constructor() {
     // ---- Drag-translate side effect. Publishes the drag delta as the
@@ -427,17 +451,6 @@ export class ForDrawer implements ForDrawerContext {
     // land in one style recalc and transition together.
     effect(() => {
       this.#host.nativeElement.style.setProperty('--for-drawer-translate', this.dragTranslate());
-    });
-
-    // ---- Destroy hook A (registered FIRST → runs LAST, after the shell's
-    // own destroy block). Pops from the drawer stack so by the time it runs
-    // every nested child has already cleaned up via Angular's
-    // descendants-before-ancestors order. The DrawerStack `cleanup` throws
-    // if a descendant is still registered, surfacing consumer template bugs
-    // (e.g. parent @if flipping while the child sits in a separate branch).
-    inject(DestroyRef).onDestroy(() => {
-      this.#stackCleanup?.();
-      this.#stackCleanup = null;
     });
 
     // ---- Pre-shell setup. Runs in its own afterNextRender registered
@@ -472,34 +485,61 @@ export class ForDrawer implements ForDrawerContext {
         throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
       }
 
-      // 3. Snap-point validation. Two-phase scheme:
-      //    a. Shape check — per-point sanity + strict-increase for inputs
-      //       whose ordering is dimension-independent (pure-fraction or
-      //       pure-px). Always runs.
-      //    b. Live-dimension check — strict-increase against the resolved
-      //       pixel positions. Catches mixed `'NNpx'` + fraction arrays
-      //       whose ordering depends on the surface size. Runs once here
-      //       (first measurement), again on `#onSwipeStart` if the surface
-      //       has resized; never on `#onSwipeRelease`, which only reads
-      //       already-validated positions out of `#snapPositionsCache`.
+      // 3. Snap-point validation (shape + fadeFromIndex range + first
+      //    live-dimension measurement) and mount-time `activeSnapPoint`
+      //    default. Subsequent runtime `[snapPoints]` rebinds are handled by
+      //    the effect below, which re-runs the same validation and
+      //    invalidates the position cache.
       const points = this.snapPoints();
+      if (points && points.length > 0 && this.activeSnapPoint() === null) {
+        this.activeSnapPoint.set(points[0]!);
+      }
+      this.#validateSnapPointConfig(points);
+      // Try first measurement. In real browsers `getBoundingClientRect`
+      // returns the laid-out dimension here (we're inside `afterNextRender`,
+      // post-layout). In jsdom layout doesn't run, so dimension is 0 — defer
+      // to `#onSwipeStart`'s rect read, which is also pre-gesture.
       if (points && points.length > 0) {
-        validateSnapPointsShape(points);
-        const idx = this.fadeFromIndex();
-        if (idx !== undefined && (idx < 0 || idx >= points.length)) {
-          throw new Error(
-            `[forty-cdk/drawer] fadeFromIndex (${idx}) is out of range for snapPoints (length ${points.length}).`,
-          );
-        }
-        if (this.activeSnapPoint() === null) {
-          this.activeSnapPoint.set(points[0]!);
-        }
-        // Try first measurement. In real browsers `getBoundingClientRect`
-        // returns the laid-out dimension here (we're inside
-        // `afterNextRender`, post-layout). In jsdom layout doesn't run, so
-        // dimension is 0 — defer to `#onSwipeStart`'s rect read, which is
-        // also pre-gesture.
         this.#refreshSnapPositions(points);
+      }
+      this.#snapConfigMounted = true;
+    });
+
+    // ---- Runtime `[snapPoints]` / `[fadeFromIndex]` rebind. The mount-time
+    // `afterNextRender` validates the INITIAL config once; this effect
+    // re-validates whenever the consumer swaps the array (or fadeFromIndex)
+    // at runtime. Without it a new array that is non-monotonic — or a
+    // fadeFromIndex that no longer fits — would slip through, and the
+    // position cache (keyed on array identity) would lazily recompute on the
+    // next gesture against the new array but never re-run the shape /
+    // range checks. Guarded by `#snapConfigMounted` so the effect's first
+    // run (which fires before `afterNextRender`) doesn't duplicate the
+    // mount-time validation or race the layout measurement. Validation +
+    // cache invalidation are genuine side effects (route an error / clear a
+    // field), not reactive-state propagation, so an `effect` is the right
+    // tool here. Validation failures are funnelled through the injected
+    // `ErrorHandler` so they reach the consumer's handler exactly like the
+    // mount-time `afterNextRender` throw, instead of tearing down the effect.
+    effect(() => {
+      const points = this.snapPoints();
+      // Track fadeFromIndex too so a runtime range violation is caught.
+      this.fadeFromIndex();
+      if (!this.#snapConfigMounted) {
+        return;
+      }
+      // A new array reference invalidates the position cache so the next
+      // gesture (and `#refreshSnapPositions`) resolves against fresh
+      // geometry instead of the previous array's cached positions.
+      if (this.#snapPositionsCache && this.#snapPositionsCache.snapPoints !== points) {
+        this.#snapPositionsCache = null;
+      }
+      try {
+        this.#validateSnapPointConfig(points);
+        if (points && points.length > 0) {
+          this.#refreshSnapPositions(points);
+        }
+      } catch (error) {
+        this.#errorHandler.handleError(error);
       }
     });
 
@@ -542,12 +582,6 @@ export class ForDrawer implements ForDrawerContext {
     // attached to body via the shell's portal, and the scale coordinator
     // composes on top of a fully-wired surface.
     afterNextRender(() => {
-      // Wire swipe-to-dismiss only when allowed AND the user hasn't asked
-      // for reduced motion (drag animations are vestibular-hostile).
-      if (this.swipeToDismiss() && !this.#prefersReducedMotion()) {
-        this.#swipeCleanup = this.#attachSwipe();
-      }
-
       // Register with the scale coordinator last so the wrapper transition
       // composes after every other side effect has stabilised. The
       // coordinator itself enforces the reduced-motion + wrapper-presence
@@ -561,17 +595,66 @@ export class ForDrawer implements ForDrawerContext {
           scaleBackgroundColor: this.#defaults.scaleBackgroundColor ?? 'black',
         });
       }
+
+      // Arm the swipe gate now that the surface is fully wired. The effect
+      // below owns the actual attach/detach; flipping this signal just
+      // unblocks it (and re-runs it) after first render.
+      this.#swipeReady.set(true);
     });
 
-    // ---- Destroy hook B (registered LAST → runs FIRST, before the
-    // shell's own destroy). Tears down the gesture / coordinator handles
-    // we registered in the post-shell afterNextRender so the shell's
-    // dismissable + focus-trap teardown runs over a fully quiesced surface.
+    // ---- Swipe-to-dismiss gate. Arms the pointer listeners only when
+    // `swipeToDismiss` is on AND the user hasn't asked for reduced motion
+    // (drag animations are vestibular-hostile). Both inputs are read
+    // reactively so a runtime flip of either — a `[swipeToDismiss]` rebind or
+    // a live `prefers-reduced-motion` change — arms or disarms the gesture,
+    // mirroring how `ForDrawerScaleCoordinator` already reacts to the
+    // preference. Attaching/detaching listeners is a DOM side effect, so an
+    // `effect` is the right tool; `#swipeReady` gates the pre-render run so
+    // the gesture arms on a host already attached via the shell's portal.
+    effect(() => {
+      const shouldArm = this.swipeToDismiss() && !this.#prefersReducedMotion();
+      if (!this.#swipeReady()) {
+        return;
+      }
+      if (shouldArm && this.#swipeCleanup === null) {
+        this.#swipeCleanup = this.#attachSwipe();
+      } else if (!shouldArm && this.#swipeCleanup !== null) {
+        this.#swipeCleanup();
+        this.#swipeCleanup = null;
+      }
+    });
+
+    // ---- Drawer-owned teardown, in one hook. `DestroyRef.onDestroy`
+    // callbacks fire in REGISTRATION order (FIFO), so the previous design's
+    // two hooks straddling `injectModalShell`'s own hook were ordering the
+    // drawer's cleanup steps purely by the accident of registration order —
+    // and the inline comments described that order inverted (claiming LIFO).
+    // None of the three steps actually depends on running before or after the
+    // shell's dismissable / focus-trap / scroll-lock teardown: the swipe and
+    // scale handles are self-contained (remove listeners, pop the scale
+    // stack), and the drawer-stack pop only requires that descendant *drawers*
+    // are already popped — which Angular guarantees by destroying child
+    // components before their parents, independent of this directive's own
+    // hook ordering. Collapsing into a single hook makes the sequence
+    // explicit and immune to a future reorder of the `injectModalShell` call.
+    //
+    // Order within the hook:
+    //   1. Swipe gesture cleanup — detach pointer listeners / release capture.
+    //   2. Scale coordinator cleanup — pop this drawer's scale config.
+    //   3. Drawer-stack pop — last, so any sibling reads of the stack during
+    //      (1)/(2) still see this node. `ForDrawerStack.cleanup` throws if a
+    //      descendant is still registered, surfacing consumer template bugs
+    //      (e.g. a parent `@if` flipping while the child sits in a separate
+    //      branch). The portal's own destroy hook (registered inside
+    //      `injectModalShell`) still removes the host from the DOM after this
+    //      runs, so return-focus is unaffected.
     inject(DestroyRef).onDestroy(() => {
-      this.#scaleCleanup?.();
-      this.#scaleCleanup = null;
       this.#swipeCleanup?.();
       this.#swipeCleanup = null;
+      this.#scaleCleanup?.();
+      this.#scaleCleanup = null;
+      this.#stackCleanup?.();
+      this.#stackCleanup = null;
     });
   }
 
@@ -676,8 +759,11 @@ export class ForDrawer implements ForDrawerContext {
     const points = this.snapPoints();
     if (points && points.length > 0) {
       this.#refreshSnapPositions(points);
+      const cached = this.#snapPositionsCache;
       const positions =
-        this.#snapPositionsCache?.positions ?? computeSnapPositions(points, this.#dimensionAtStart);
+        cached && cached.snapPoints === points
+          ? cached.positions
+          : computeSnapPositions(points, this.#dimensionAtStart);
       const activePos = this.#activeSnapPositionPx(points, positions);
       const highestPos = positions[positions.length - 1] ?? activePos;
       this.#dragMinOffset = activePos - highestPos;
@@ -689,15 +775,39 @@ export class ForDrawer implements ForDrawerContext {
   }
 
   /**
+   * Dimension-independent snap-point validation: the per-point shape /
+   * strict-increase check (`validateSnapPointsShape`) plus the
+   * `fadeFromIndex` range check. Throws with a `[forty-cdk/drawer]`-prefixed
+   * message on the first failure. A `null` / empty array is a valid "no snap
+   * points" config and skips both checks. Shared by the mount-time
+   * `afterNextRender` and the runtime-rebind effect so the two paths stay in
+   * lockstep.
+   */
+  #validateSnapPointConfig(points: ReadonlyArray<ForDrawerSnapPoint> | undefined): void {
+    if (!points || points.length === 0) {
+      return;
+    }
+    validateSnapPointsShape(points);
+    const idx = this.fadeFromIndex();
+    if (idx !== undefined && (idx < 0 || idx >= points.length)) {
+      throw new Error(
+        `[forty-cdk/drawer] fadeFromIndex (${idx}) is out of range for snapPoints (length ${points.length}).`,
+      );
+    }
+  }
+
+  /**
    * Resolve and validate snap positions against the host's current
-   * dimension. No-op if the cached positions already match. Throws (with
-   * the offending-point error message) when the live dimension flips a
-   * mixed `'NNpx'` + fraction array out of monotonic order.
+   * dimension. No-op if the cached positions already match BOTH the live
+   * dimension and the current `snapPoints` array. Throws (with the
+   * offending-point error message) when the live dimension flips a mixed
+   * `'NNpx'` + fraction array out of monotonic order.
    *
-   * Called from `afterNextRender` (first measurement) and from
-   * `#onSwipeStart` (resize between gestures). Never from
-   * `#onSwipeRelease` — by the time release fires, the cache is already
-   * populated for this gesture's dimension.
+   * Called from `afterNextRender` (first measurement), from `#onSwipeStart`
+   * (resize between gestures, or a runtime `[snapPoints]` rebind), and from
+   * the runtime-rebind effect. Never from `#onSwipeRelease` — by the time
+   * release fires, the cache is already populated for this gesture's
+   * dimension and array.
    */
   #refreshSnapPositions(points: ReadonlyArray<ForDrawerSnapPoint>): void {
     const rect = this.#host.nativeElement.getBoundingClientRect();
@@ -708,12 +818,12 @@ export class ForDrawer implements ForDrawerContext {
       return;
     }
     const cached = this.#snapPositionsCache;
-    if (cached && cached.dimension === dim) {
+    if (cached && cached.dimension === dim && cached.snapPoints === points) {
       return;
     }
     const positions = computeSnapPositions(points, dim);
     validateSnapPositions(points, positions, dim);
-    this.#snapPositionsCache = { dimension: dim, positions };
+    this.#snapPositionsCache = { dimension: dim, snapPoints: points, positions };
   }
 
   #onSwipeMove(detail: SwipeEventDetail): void {
@@ -787,7 +897,9 @@ export class ForDrawer implements ForDrawerContext {
       // we get here.
       const cached = this.#snapPositionsCache;
       const snapPositions =
-        cached && cached.dimension === dim ? cached.positions : computeSnapPositions(points, dim);
+        cached && cached.dimension === dim && cached.snapPoints === points
+          ? cached.positions
+          : computeSnapPositions(points, dim);
       const position = this.#activeSnapPositionPx(points, snapPositions) - offset;
       const resolved = resolveSnapTarget<ForDrawerSnapPoint>({
         snapPoints: points,
