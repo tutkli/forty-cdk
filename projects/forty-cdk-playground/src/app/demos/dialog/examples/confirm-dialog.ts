@@ -20,8 +20,8 @@ export type ConfirmResult = 'confirm' | 'cancel';
   imports: [ForDialogBackdrop, ForDialogTitle, ForDialogDescription, ForDialogClose],
   template: `
     <div forDialogBackdrop class="pg-backdrop"></div>
-    <h2 forDialogTitle>{{ data.title }}</h2>
-    <p forDialogDescription>{{ data.message }}</p>
+    <h2 forDialogTitle>{{ data?.title }}</h2>
+    <p forDialogDescription>{{ data?.message }}</p>
     <div class="pg-dialog-actions">
       <button class="pg-btn" forDialogClose [closeWith]="cancel">Cancel</button>
       <button class="pg-btn pg-btn--danger" forDialogClose [closeWith]="confirm">Delete</button>

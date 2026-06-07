@@ -15,7 +15,7 @@ interface ConfirmData {
 
 @Component({
   template: `
-    <p id="message">{{ data.message }}</p>
+    <p id="message">{{ data?.message }}</p>
     <button id="ok" (click)="ok()">OK</button>
     <button id="cancel" (click)="cancel()">Cancel</button>
   `,
@@ -42,6 +42,13 @@ class FocusableLessDialog {}
 })
 class TokenInjectingDialog {
   readonly tokenValue = inject(FOR_DIALOG_DATA, { optional: true }) as string | null;
+}
+
+@Component({
+  template: `<p id="typed-null">{{ data === null ? 'null' : 'value' }}</p>`,
+})
+class TypedDataDialog {
+  readonly data: ConfirmData | null = injectDialogData<ConfirmData>();
 }
 
 function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
@@ -103,6 +110,13 @@ describe('ForDialogManager (programmatic)', () => {
       // FOR_DIALOG_DATA is provided as null when no `data` was configured;
       // {{ null }} renders as empty string in the template.
       expect(document.querySelector('p')!.textContent).toBe('token check: ');
+    });
+
+    it('injectDialogData() resolves to null (typed T | null) when no data is configured', () => {
+      const { dialogs } = setup();
+      dialogs.open(TypedDataDialog);
+
+      expect(document.querySelector('#typed-null')!.textContent).toBe('null');
     });
 
     it('honors the hostTag option', () => {

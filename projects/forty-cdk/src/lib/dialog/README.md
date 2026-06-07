@@ -101,7 +101,7 @@ import { ForDialogManager, ForDialogRef, injectDialogData } from 'forty-cdk';
 
 @Component({
   template: `
-    <p>{{ data.message }}</p>
+    <p>{{ data?.message }}</p>
     <button (click)="ref.close('cancel')">Cancel</button>
     <button (click)="ref.close('confirm')">Confirm</button>
   `,
@@ -130,6 +130,8 @@ export class DemoHost {
   }
 }
 ```
+
+`injectDialogData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload.
 
 **Styling the programmatic overlay root.** Declaratively you write the surface yourself (`<div forDialog class="my-dialog">`), so the class lands on the same element that carries `data-state` / `role`. The manager creates that host for you and it is class-less, so pass `class` / `classList` to style it:
 
@@ -211,7 +213,7 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 | `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                 |
 | `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<R \| undefined>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
 | `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                       |
-| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`.                                                                               |
+| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` — `null` when `open()` got no `data`.                      |
 
 ### `ForDialogOpenConfig`
 
