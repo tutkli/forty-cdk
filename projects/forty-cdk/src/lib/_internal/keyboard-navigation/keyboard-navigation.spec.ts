@@ -187,9 +187,20 @@ describe('moveGridIndex', () => {
     expect(moveGridIndex(0, 9, 'next', { cols, isDisabled })).toBe(3);
   });
 
-  it('returns null when target row cell is disabled (no skip across rows)', () => {
+  it('next-row skips a disabled cell to the next enabled cell in the column', () => {
     const isDisabled = (i: number) => i === 3;
     expect(moveGridIndex(0, 9, 'next-row', { cols, isDisabled })).toBe(6);
+  });
+
+  it('next-row returns null when every cell below in the column is disabled', () => {
+    const isDisabled = (i: number) => i === 3 || i === 6;
+    expect(moveGridIndex(0, 9, 'next-row', { cols, isDisabled })).toBe(null);
+  });
+
+  it('next / prev treat the grid as a flat list, wrapping at the global ends with loop', () => {
+    expect(moveGridIndex(2, 9, 'next', { cols })).toBe(3);
+    expect(moveGridIndex(3, 9, 'prev', { cols })).toBe(2);
+    expect(moveGridIndex(0, 9, 'prev', { cols, loop: true })).toBe(8);
   });
 
   it('handles cols = 1 like a vertical list', () => {

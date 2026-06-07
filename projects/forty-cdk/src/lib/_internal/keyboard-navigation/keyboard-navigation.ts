@@ -150,11 +150,15 @@ export interface MoveGridIndexOptions extends MoveIndexOptions {
 /**
  * Computes the resulting index for a 2D grid navigation action.
  *
- * - `next` / `prev`: linear forward / backward — wraps within the row when
- *   `loop=true`, then to next / previous row.
- * - `next-row` / `prev-row`: jumps one row vertically. The last row may be
- *   incomplete; if the column doesn't exist there, falls back to the last
- *   filled cell of that row.
+ * - `next` / `prev`: treats the grid as a flat list — steps forward / backward
+ *   by one cell and, when `loop=true`, wraps at the global ends (last cell
+ *   back to the first, and vice versa), skipping disabled cells.
+ * - `next-row` / `prev-row`: moves to the cell in the same column one row down /
+ *   up. If that cell is disabled, keeps moving in the same direction one row at
+ *   a time until an enabled cell is found, so navigation never lands on a
+ *   disabled cell. The last row may be incomplete; if the column doesn't exist
+ *   there, falls back to the last filled cell of that row. When `loop=true` the
+ *   row index wraps top-to-bottom; otherwise the search stops at the grid edge.
  * - `first` / `last`: first / last enabled cell overall.
  * - `first-in-row` / `last-in-row`: row extremes.
  *
