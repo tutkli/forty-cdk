@@ -106,7 +106,7 @@ class SomeComponent {
 `show()` returns a `ForToastRef`:
 
 - `ref.dismiss(reason?, result?)` — close imperatively.
-- `ref.update(patch)` — mutate config in place (text, duration, variant).
+- `ref.update(patch)` — mutate config in place (text, duration, variant). `id` and `region` are fixed at `show()` and ignored here — `id` is the toast's identity, and `region` decides which viewport renders it, so changing it would silently remount the toast (resetting its timer and announcement). Dismiss and re-`show()` to move a toast between regions.
 - `ref.closed` — `Promise<{ reason, result }>` resolved on first dismiss.
 - `ref.isClosed()` — reactive boolean.
 - `ref.config()` — reactive config snapshot.
@@ -211,7 +211,7 @@ While the gesture is live the host carries:
 
 | Attribute / variable                | Values                                   | Purpose                                                                         |
 | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". |
+| `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". `"cancel"` is parked (with the released movement vars) so your CSS can spring the toast back, then cleared on the next `pointerdown`. |
 | `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
 | `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
 | `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
@@ -234,6 +234,8 @@ The directive does NOT animate anything — the consumer's CSS transitions / `an
 }
 ```
 
+After a cancel the host keeps `data-swipe="cancel"` and the released movement vars so the transition above can run on its own timeline. The directive then clears that parked state — `data-swipe` removed, movement vars zeroed — on the next `pointerdown`, so a stale `cancel` never bleeds into the next gesture or lingers after a CSS-less consumer. A re-armed swipe overwrites it anyway.
+
 Outputs:
 
 - `(swipeStart)` — armed; emitted once with `{ direction, delta, originalEvent }`.
@@ -248,7 +250,10 @@ Outputs:
 - Timer starts on mount and fires `(close)` with reason `'auto'` after `duration` ms.
 - Hovering or focusing inside the toast pauses the timer; leaving / blurring resumes with the remaining time.
 - The timer also pauses while `document.visibilityState !== 'visible'` (tab backgrounded, window hidden) and resumes when the page becomes visible again, so toasts don't silently expire while the user is not looking. The `visibilitychange` listener is shared across all live toasts (refcounted) — one document-level handler regardless of stack depth.
+- A hover/focus/visibility pause captures the **remaining** time and resumes with it. A `ref.update()` that re-renders the toast while it is paused does not reset that captured time — resume always continues the countdown, never restarts it at the full duration.
 - `duration: 0` keeps the toast sticky — only manual / action / programmatic close ends it.
+
+> **`maxVisible` parks overflow, it does not expire it.** A toast pushed out of the visible window by `[maxVisible]` is unmounted, so its auto-dismiss timer is not running while it waits. When a newer toast is dismissed it re-enters the window and its `duration` countdown restarts from full (a fresh `[forToast]` mounts). If you need overflow toasts to clear on a deadline, dismiss them explicitly (`ForToastRef.dismiss()` / `dismissAll()` / the action / close button) rather than relying on the timer.
 
 ## Styling
 
@@ -327,7 +332,7 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 
 ## Accessibility notes
 
-- `aria-atomic="true"` on the toast ensures the entire toast is re-announced if any text changes (live updates).
+- `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces, the screen reader reads the **whole** toast rather than only the changed node. It does **not** by itself guarantee a re-announcement on a `ref.update()` text change, and it is irrelevant on the silenced (`altText`) path where `aria-live` is `off`. Re-announcement on update is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
 - `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
 - The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut and matches Radix.
@@ -337,3 +342,19 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
   ```html
   <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>
   ```
+
+### Live updates and announcements
+
+A toast announces on two paths, picked automatically:
+
+- **Host `aria-live` (default).** With no `altText` anywhere in the toast, the host carries `aria-live="polite"` (or `assertive` for `error`). The screen reader reads the toast when it mounts and, thanks to `aria-atomic`, re-reads the whole toast when the host region's text changes.
+- **`LiveAnnouncer` (silenced path).** As soon as any `[forToastAction]` carries a non-empty `altText`, the host `aria-live` is set to `off` and the toast composes its message (`title. description. altText`) from the **rendered title / description / altText** and pushes it through the shared off-screen `LiveAnnouncer`.
+
+Both paths are reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the silenced path, so the directive owns the re-announce.
+
+```ts
+const ref = this.toasts.show({ title: 'Saving…', duration: 0 });
+// Re-announced automatically when the text changes:
+await api.save();
+ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
+```

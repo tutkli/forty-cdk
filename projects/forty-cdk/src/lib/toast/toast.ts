@@ -1,5 +1,4 @@
 import {
-  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -30,6 +29,7 @@ import {
   type ForToastCloseReason,
   type ForToastContext,
   type ForToastSwipeDirection,
+  type ForToastTextHandle,
   type ForToastVariant,
 } from './toast-context';
 
@@ -77,6 +77,7 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
     '[attr.data-swipe-direction]': 'swipeActiveDirection()',
     '[style.--for-toast-swipe-movement-x.px]': 'swipeMovementX()',
     '[style.--for-toast-swipe-movement-y.px]': 'swipeMovementY()',
+    '(pointerdown)': 'onPointerDown()',
     '(pointerenter)': 'onPause("hover")',
     '(pointerleave)': 'onResume("hover")',
     '(focusin)': 'onPause("focus")',
@@ -96,10 +97,17 @@ export class ForToast implements ForToastContext {
   readonly duration = input(5000, { transform: numberAttribute });
 
   /**
-   * Whether Escape and the close button can dismiss the toast. Defaults to
-   * `true`. Set `false` for a sticky / forced-action toast — the consumer
-   * must dismiss programmatically (e.g. via the `(close)` output after the
-   * action button has been clicked).
+   * Whether the user can dismiss the toast through an ambient gesture —
+   * Escape, the close button, the auto-dismiss timer, and swipe. Defaults to
+   * `true`.
+   *
+   * Set `false` for a sticky / forced-action toast: every ambient gesture is
+   * suppressed, no auto-dismiss timer is scheduled, and a `[forToastClose]`
+   * button (if present) becomes inert. The **action button stays live and is
+   * the sanctioned dismissal path** — `[forToastAction]` still emits `(close)`
+   * with reason `'action'` so a forced-action toast (e.g. "Update available —
+   * Reload") can be dismissed by the only control the user is meant to use.
+   * Programmatic close via `ForToastRef.dismiss()` is also always honored.
    */
   readonly closable = input(true, { transform: booleanAttribute });
 
@@ -165,11 +173,11 @@ export class ForToast implements ForToastContext {
     return raw;
   });
 
-  readonly #labelIds = signal<readonly string[]>([]);
-  readonly #descIds = signal<readonly string[]>([]);
+  readonly #labels = signal<readonly ForToastTextHandle[]>([]);
+  readonly #descriptions = signal<readonly ForToastTextHandle[]>([]);
   readonly #actions = signal<readonly ForToastActionHandle[]>([]);
-  readonly labelledBy = computed(() => this.#labelIds().join(' ') || null);
-  readonly describedBy = computed(() => this.#descIds().join(' ') || null);
+  readonly labelledBy = computed(() => this.#labels().map((h) => h.id).join(' ') || null);
+  readonly describedBy = computed(() => this.#descriptions().map((h) => h.id).join(' ') || null);
 
   /**
    * `true` when at least one registered `[forToastAction]` carries a
@@ -179,6 +187,26 @@ export class ForToast implements ForToastContext {
   readonly #hasActionAltText = computed(() =>
     this.#actions().some((a) => a.altText().trim() !== ''),
   );
+
+  /**
+   * The synthesized announcement, composed reactively from the registered
+   * title / description text and action `altText` signals (never re-read from
+   * the DOM). Recomputes when any of those change — late-bound `altText` or a
+   * `ref.update()` text change flows through here, so the announcement effect
+   * re-fires on the edge instead of only once on first render.
+   */
+  readonly #announcement = computed(() => {
+    const titles = this.#labels()
+      .map((h) => h.text().trim())
+      .filter(Boolean);
+    const descriptions = this.#descriptions()
+      .map((h) => h.text().trim())
+      .filter(Boolean);
+    const altTexts = this.#actions()
+      .map((a) => a.altText().trim())
+      .filter(Boolean);
+    return [...titles, ...descriptions, ...altTexts].join('. ');
+  });
 
   protected readonly computedRole = computed(() =>
     this.variant() === 'error' ? 'alert' : 'status',
@@ -195,35 +223,58 @@ export class ForToast implements ForToastContext {
   #timerHandle: ReturnType<typeof setTimeout> | null = null;
   #timerEndsAt = 0;
   #remainingMs = 0;
+  // True once the auto-dismiss countdown has begun, so `#remainingMs` holds a
+  // meaningful value. While paused this guards the duration effect from
+  // clobbering a captured remaining time on an unrelated re-run (e.g. an
+  // `update()` that re-renders the toast); see `#updatePaused`.
+  #timerStarted = false;
 
   constructor() {
-    // Start (or reset) the auto-dismiss timer whenever `duration` changes.
-    // Pause / resume are handled imperatively in `#updatePaused`, so we read
-    // `#paused()` via `untracked()` here — otherwise the effect would re-run
-    // on hover and clobber the in-flight remaining-ms capture.
+    // Start (or reset) the auto-dismiss timer whenever `duration` /
+    // `closable` changes. Pause / resume are handled imperatively in
+    // `#updatePaused`, so we read `#paused()` via `untracked()` here —
+    // otherwise the effect would re-run on hover and clobber the in-flight
+    // remaining-ms capture. While paused with a countdown already in flight we
+    // bail out entirely so the captured remaining time survives a re-render;
+    // resume reschedules with that captured value rather than the full
+    // duration.
     effect(() => {
       const ms = this.duration();
+      const closable = this.closable();
+      const paused = untracked(() => this.#paused());
+      if (paused && this.#timerStarted) {
+        return;
+      }
       this.#cancelTimer();
       this.#remainingMs = ms;
-      if (ms > 0 && this.closable() && !untracked(() => this.#paused())) {
+      this.#timerStarted = ms > 0 && closable;
+      if (this.#timerStarted && !paused) {
         this.#scheduleTimer();
       }
     });
     this.#destroyRef.onDestroy(() => this.#cancelTimer());
 
-    // After the first render every child directive (title / description /
-    // action) has registered, so we can compose the synthesized announcement
-    // and push it through LiveAnnouncer. Only fires when at least one action
-    // carries `altText` — otherwise the host's `aria-live` already does the
-    // job and we'd cause a duplicate readout.
-    afterNextRender(() => {
+    // Route the synthesized announcement through LiveAnnouncer reactively, so
+    // a late-bound `altText` and `ref.update()` text changes are announced —
+    // not only the value present on first render. Only active when at least
+    // one action carries `altText` (the host's silenced `aria-live` path);
+    // otherwise the host's own `aria-live` reads the toast and a manual
+    // announce would duplicate it. A guard against re-announcing identical
+    // text keeps an unrelated re-render from re-reading the same message.
+    // Pure side effect (an imperative `LiveAnnouncer` write), so `effect()` is
+    // the correct primitive here.
+    let lastAnnounced: string | null = null;
+    effect(() => {
       if (!this.#hasActionAltText()) {
+        lastAnnounced = null;
         return;
       }
-      const message = this.#composeAnnouncement();
-      if (message) {
-        this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
+      const message = this.#announcement();
+      if (!message || message === lastAnnounced) {
+        return;
       }
+      lastAnnounced = message;
+      this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
     });
 
     // Pause the auto-dismiss timer while the page is backgrounded so the
@@ -264,7 +315,9 @@ export class ForToast implements ForToastContext {
       onSwipeCancel: (detail) => {
         this.#swipeState.set('cancel');
         // Movement vars stay at the released delta so the consumer's CSS
-        // transition can spring them back to zero on its own timeline.
+        // transition can spring them back to zero on its own timeline. The
+        // parked `data-swipe="cancel"` is cleared on the next `pointerdown`
+        // (see `onPointerDown`) so it never lingers into an unrelated gesture.
         this.swipeCancel.emit(detail);
       },
       onSwipeEnd: (detail) => {
@@ -278,20 +331,20 @@ export class ForToast implements ForToastContext {
     this.#destroyRef.onDestroy(detachSwipe);
   }
 
-  registerLabel(id: string): void {
-    this.#labelIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
+  registerLabel(handle: ForToastTextHandle): void {
+    this.#labels.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
   }
 
-  unregisterLabel(id: string): void {
-    this.#labelIds.update((arr) => arr.filter((x) => x !== id));
+  unregisterLabel(handle: ForToastTextHandle): void {
+    this.#labels.update((arr) => arr.filter((h) => h !== handle));
   }
 
-  registerDescription(id: string): void {
-    this.#descIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
+  registerDescription(handle: ForToastTextHandle): void {
+    this.#descriptions.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
   }
 
-  unregisterDescription(id: string): void {
-    this.#descIds.update((arr) => arr.filter((x) => x !== id));
+  unregisterDescription(handle: ForToastTextHandle): void {
+    this.#descriptions.update((arr) => arr.filter((h) => h !== handle));
   }
 
   registerAction(handle: ForToastActionHandle): void {
@@ -308,6 +361,28 @@ export class ForToast implements ForToastContext {
     }
     this.#cancelTimer();
     this.close.emit(reason);
+  }
+
+  /**
+   * Clear a parked swipe-cancel state at the start of the next pointer
+   * interaction. After a cancel the host keeps `data-swipe="cancel"` and the
+   * released movement vars so the consumer's CSS can spring the toast back; a
+   * fresh `pointerdown` is the terminal reset that returns the host to a clean
+   * slate (no stale `data-swipe`, zeroed movement vars) before a new gesture
+   * arms. A re-armed swipe overwrites the state anyway, so this only matters
+   * for the parked-after-cancel window.
+   */
+  protected onPointerDown(): void {
+    if (this.#swipeState() === 'cancel') {
+      this.#resetSwipeState();
+    }
+  }
+
+  #resetSwipeState(): void {
+    this.#swipeState.set(null);
+    this.#swipeActiveDirection.set(null);
+    this.#swipeMovementX.set(0);
+    this.#swipeMovementY.set(0);
   }
 
   protected onPause(reason: 'hover' | 'focus'): void {
@@ -378,14 +453,4 @@ export class ForToast implements ForToastContext {
     }
   }
 
-  #composeAnnouncement(): string {
-    const root = this.#host.nativeElement.ownerDocument;
-    const lookup = (id: string): string => (root.getElementById(id)?.textContent ?? '').trim();
-    const titles = this.#labelIds().map(lookup).filter(Boolean);
-    const descriptions = this.#descIds().map(lookup).filter(Boolean);
-    const altTexts = this.#actions()
-      .map((a) => a.altText().trim())
-      .filter(Boolean);
-    return [...titles, ...descriptions, ...altTexts].join('. ');
-  }
 }

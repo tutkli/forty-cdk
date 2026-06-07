@@ -134,6 +134,20 @@ export interface ForToastActionHandle {
 }
 
 /**
+ * Reactive text source a `[forToastTitle]` / `[forToastDescription]` registers
+ * with its parent `[forToast]` so the announcement is composed from a tracked
+ * signal rather than a one-shot DOM read. The signal re-emits when the rendered
+ * text changes (e.g. through `ref.update()`), which is what drives the toast to
+ * re-announce.
+ */
+export interface ForToastTextHandle {
+  /** Generated id host-bound for `aria-labelledby` / `aria-describedby`. */
+  readonly id: string;
+  /** Current rendered text content of the piece, reactive across re-renders. */
+  readonly text: Signal<string>;
+}
+
+/**
  * Coordination contract owned by `ForToast`. Title / description register
  * generated ids so the toast can wire `aria-labelledby` / `aria-describedby`
  * reactively. Action and close buttons request close via `requestClose`.
@@ -145,10 +159,10 @@ export interface ForToastContext {
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 
-  registerLabel(id: string): void;
-  unregisterLabel(id: string): void;
-  registerDescription(id: string): void;
-  unregisterDescription(id: string): void;
+  registerLabel(handle: ForToastTextHandle): void;
+  unregisterLabel(handle: ForToastTextHandle): void;
+  registerDescription(handle: ForToastTextHandle): void;
+  unregisterDescription(handle: ForToastTextHandle): void;
 
   /**
    * Register an action so the toast can include its `altText` in the

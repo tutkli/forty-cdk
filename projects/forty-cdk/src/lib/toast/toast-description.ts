@@ -1,7 +1,8 @@
-import { Directive } from '@angular/core';
+import { afterEveryRender, Directive, ElementRef, inject, signal } from '@angular/core';
 
-import { registerA11yDescription } from '../_internal/collection/register-handle';
-import { injectToastContext } from './toast-context';
+import { registerHandle } from '../_internal/collection/register-handle';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { injectToastContext, type ForToastTextHandle } from './toast-context';
 
 /**
  * Supplementary description for the toast. Registers its generated id
@@ -11,12 +12,27 @@ import { injectToastContext } from './toast-context';
   selector: '[forToastDescription]',
   exportAs: 'forToastDescription',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForToastDescription {
-  protected readonly id = registerA11yDescription(
-    injectToastContext('ForToastDescription'),
-    'for-toast-description',
-  );
+  readonly #ctx = injectToastContext('ForToastDescription');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly id = inject(IdGenerator).next('for-toast-description');
+  readonly #text = signal('');
+
+  constructor() {
+    const handle: ForToastTextHandle = { id: this.id, text: this.#text.asReadonly() };
+    registerHandle(
+      handle,
+      (h) => this.#ctx.registerDescription(h),
+      (h) => this.#ctx.unregisterDescription(h),
+    );
+    afterEveryRender(() => {
+      const next = (this.#host.nativeElement.textContent ?? '').trim();
+      if (next !== this.#text()) {
+        this.#text.set(next);
+      }
+    });
+  }
 }

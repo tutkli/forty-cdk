@@ -358,6 +358,37 @@ describe('ForToast (declarative)', () => {
       r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
     });
+
+    it('a re-render while paused does not reset the captured remaining time', () => {
+      // F3: the duration effect must not clobber #remainingMs while paused.
+      // Pause at 2_000ms in (3_000ms remaining), then trigger an unrelated
+      // effect re-run by changing `duration` while still paused; on resume the
+      // toast must continue from the captured 3_000ms, not restart at full.
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+
+      vi.advanceTimersByTime(2_000);
+      r.flush();
+      t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      r.flush();
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      // Re-render the toast (change an input that re-runs the duration effect)
+      // while paused. The captured 3_000ms must survive.
+      r.instance.duration.set(10_000);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+
+      t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      r.flush();
+      vi.advanceTimersByTime(2_999);
+      r.flush();
+      expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
+    });
   });
 
   describe('document visibility pause', () => {
@@ -646,6 +677,31 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual([]);
     });
 
+    it('clears the parked data-swipe="cancel" and movement vars on the next pointerdown', () => {
+      // F10: after a cancel the host keeps data-swipe="cancel" + the released
+      // movement vars (for the consumer's CSS spring-back), but the next
+      // pointerdown is the terminal reset so a stale cancel never lingers.
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.instance.swipeThreshold.set(80);
+      r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 30, clientY: 0 });
+      pointer(t, 'pointerup', { clientX: 30, clientY: 0 });
+      r.flush();
+      expect(t.getAttribute('data-swipe')).toBe('cancel');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('30px');
+
+      // Next pointer interaction neutralizes the parked cancel state.
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      r.flush();
+      expect(t.hasAttribute('data-swipe')).toBe(false);
+      expect(t.getAttribute('data-swipe-direction')).toBeNull();
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('0px');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-y')).toBe('0px');
+    });
+
     it('accepts an array of allowed directions', () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set(['right', 'down']);
@@ -733,8 +789,7 @@ describe('ForToast (declarative)', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(AltTextHost);
       // Set altText BEFORE first change detection so the action mounts with
-      // the value already in place — `afterNextRender` then sees a non-empty
-      // alt text on its first (and only) firing.
+      // the value already in place.
       fixture.componentInstance.altText.set('Undo (Cmd+Z)');
       fixture.detectChanges();
       await Promise.resolve();
@@ -744,6 +799,45 @@ describe('ForToast (declarative)', () => {
 
       const region = getLiveAnnouncerRegion('polite');
       expect(region!.textContent).toBe('Saved. Your changes are live.. Undo (Cmd+Z)');
+    });
+
+    it('announces a late-bound altText set after first render (F1)', async () => {
+      // The reactive announcement effect fires on the edge altText becomes
+      // non-empty, not only on first render. Mount with no altText, then set
+      // it — the silenced path must engage and the announcement must land.
+      const r = renderHost(AltTextHost);
+      await r.flush();
+      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('polite');
+      expect(getLiveAnnouncerRegion('polite')).toBeNull();
+
+      r.instance.altText.set('Undo (Cmd+Z)');
+      await r.flush();
+      await Promise.resolve();
+
+      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('off');
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
+        'Saved. Your changes are live.. Undo (Cmd+Z)',
+      );
+    });
+
+    it('re-announces when the title changes while on the silenced path (F2)', async () => {
+      // A text change (the declarative analogue of ref.update()) re-composes
+      // and re-announces through LiveAnnouncer — aria-atomic does nothing on
+      // the silenced path, so the directive drives the re-announce.
+      const r = renderHost(AltTextHost);
+      r.instance.altText.set('Undo (Cmd+Z)');
+      await r.flush();
+      await Promise.resolve();
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
+        'Saved. Your changes are live.. Undo (Cmd+Z)',
+      );
+
+      r.instance.title.set('Saved to cloud');
+      await r.flush();
+      await Promise.resolve();
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
+        'Saved to cloud. Your changes are live.. Undo (Cmd+Z)',
+      );
     });
 
     it('routes error variant announcements through the assertive region', async () => {
@@ -793,6 +887,10 @@ describe('ForToastManager (programmatic)', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    // The re-announce specs route through LiveAnnouncer, which keeps its
+    // off-screen regions in document.body across tests by design — detach them
+    // so the next spec doesn't match a stale region.
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
   it('show() pushes a toast and renders it through the viewport', () => {
@@ -860,6 +958,44 @@ describe('ForToastManager (programmatic)', () => {
     const t = r.el.querySelector('[forToast]')!;
     expect(t.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
     expect(t.getAttribute('data-variant')).toBe('success');
+  });
+
+  it('ref.update() ignores id and region (immutable after show) (F5)', () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ id: 'job', title: 'Saving…' });
+    r.flush();
+    // Attempt to mutate the identity / routing fields — both must be ignored.
+    ref.update({
+      id: 'other',
+      region: 'somewhere-else',
+      title: 'Saved',
+    } as Parameters<typeof ref.update>[0]);
+    r.flush();
+    expect(ref.config().id).toBe('job');
+    expect(ref.config().region).toBe('default');
+    expect(ref.config().title).toBe('Saved');
+    // Still dismissable by its original id (the map never drifted).
+    r.instance.toasts.dismiss('job');
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('ref.update() re-announces on the silenced path when text changes (F2)', async () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({
+      template: r.instance.wiredTpl(),
+      data: { label: 'Saving…', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' },
+    });
+    await r.flush();
+    await Promise.resolve();
+    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
+      'Saving…. Hang tight. Undo (Cmd+Z)',
+    );
+
+    ref.update({ data: { label: 'Saved', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' } });
+    await r.flush();
+    await Promise.resolve();
+    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Hang tight. Undo (Cmd+Z)');
   });
 
   it('show() with same id updates the existing toast', () => {
