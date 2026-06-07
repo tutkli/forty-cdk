@@ -37,6 +37,8 @@ The host gets `data-state="open" \| "closed"` and `data-disabled` for CSS hooks.
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `aria-disabled` (when collapse is disallowed), `disabled` (real, when item is disabled), `data-state`. Toggles on click. Handles `ArrowDown` / `ArrowUp` / `Home` / `End` for navigation between triggers.
 
+`aria-controls` is emitted only while the item is expanded — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (item.expanded())` mount pattern.
+
 Wrap it in a heading element (`<h2>`–`<h6>`) — APG requires that for landmark navigation. Use a real `<button type="button">` so Enter / Space activation comes for free.
 
 ### `ForAccordionContent`

@@ -86,14 +86,34 @@ describe('ForTabs', () => {
       }
     });
 
-    it('wires aria-controls / aria-labelledby per matching value', () => {
+    it('labels each content by its matching trigger', () => {
       const { el } = renderHost(TabsHost);
       for (const v of ['a', 'b', 'c']) {
         const t = triggerOf(el, v);
         const c = contentOf(el, v);
-        expect(t.getAttribute('aria-controls')).toBe(c.id);
         expect(c.getAttribute('aria-labelledby')).toBe(t.id);
       }
+    });
+
+    it('gates aria-controls to the selected tab, mirroring the overlay triggers', () => {
+      const { el, instance, fixture } = renderHost(TabsHost);
+
+      for (const v of ['a', 'b', 'c']) {
+        expect(triggerOf(el, v).hasAttribute('aria-controls')).toBe(false);
+      }
+
+      instance.active.set('b');
+      fixture.detectChanges();
+
+      expect(triggerOf(el, 'a').hasAttribute('aria-controls')).toBe(false);
+      expect(triggerOf(el, 'b').getAttribute('aria-controls')).toBe(contentOf(el, 'b').id);
+      expect(triggerOf(el, 'c').hasAttribute('aria-controls')).toBe(false);
+
+      instance.active.set('c');
+      fixture.detectChanges();
+
+      expect(triggerOf(el, 'b').hasAttribute('aria-controls')).toBe(false);
+      expect(triggerOf(el, 'c').getAttribute('aria-controls')).toBe(contentOf(el, 'c').id);
     });
 
     // Issue #102 reproduction. Previously, `triggerIdFor` / `contentIdFor`
@@ -110,7 +130,12 @@ describe('ForTabs', () => {
     //    deterministically too, not just the initial set.
     it('resolves trigger↔content pairing deterministically, including late inserts', () => {
       const { el, instance, fixture } = renderHost(TabsHost);
+      // `aria-labelledby` is emitted unconditionally and proves the
+      // content→trigger lookup settled; selecting each value in turn exposes
+      // the gated `aria-controls` so the trigger→content lookup is also pinned.
       for (const v of ['a', 'b', 'c']) {
+        instance.active.set(v);
+        fixture.detectChanges();
         const t = triggerOf(el, v);
         const c = contentOf(el, v);
         expect(t.getAttribute('aria-controls')).not.toBeNull();
@@ -124,6 +149,7 @@ describe('ForTabs', () => {
       // emitted at least once. The deferred-registration model has to
       // settle the new pair within the same CD cycle that mounts them.
       instance.tabs.update((arr) => [...arr, { value: 'd', label: 'D', disabled: false }]);
+      instance.active.set('d');
       fixture.detectChanges();
 
       const lateTrigger = triggerOf(el, 'd');

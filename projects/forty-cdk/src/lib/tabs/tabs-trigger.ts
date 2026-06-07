@@ -20,6 +20,10 @@ import { injectTabsContext } from './tabs-context';
  * Tabindex follows APG: the user-focused trigger owns `tabindex=0` (tracked
  * by `RovingTabindex`); before any interaction, the selected trigger (or
  * first enabled, when nothing is selected) is the tab entry.
+ *
+ * `aria-controls` is emitted only while the tab is selected — mirroring the
+ * overlay triggers' open-only gating — so the reference never dangles at an
+ * unmounted panel under the `@if (selected())` mount pattern.
  */
 @Directive({
   selector: '[forTabsTrigger]',
@@ -29,7 +33,7 @@ import { injectTabsContext } from './tabs-context';
     type: 'button',
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
-    '[attr.aria-controls]': 'controlsId()',
+    '[attr.aria-controls]': 'selected() ? controlsId() : null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',

@@ -25,7 +25,7 @@ const ACCORDION_IMPORTS = [
               {{ id }}
             </button>
           </h3>
-          <section forAccordionContent>Panel {{ id }}</section>
+          <section forAccordionContent [attr.data-test-content-id]="id">Panel {{ id }}</section>
         </div>
       }
     </div>
@@ -42,21 +42,18 @@ class AccordionHost {
 const triggerOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
-const contentOf = (host: HTMLElement, id: string) => {
-  const trigger = triggerOf(host, id);
-  return host.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!);
-};
+const contentOf = (host: HTMLElement, id: string) =>
+  host.querySelector<HTMLElement>(`[data-test-content-id="${id}"]`);
 
 describe('ForAccordion', () => {
   describe('render & wiring', () => {
-    it('links each trigger to its content via aria-controls / aria-labelledby', () => {
+    it('labels each content by its trigger and marks it a region', () => {
       const { el } = renderHost(AccordionHost);
 
       for (const id of ['a', 'b', 'c']) {
         const trigger = triggerOf(el, id);
         const content = contentOf(el, id)!;
 
-        expect(trigger.getAttribute('aria-controls')).toBe(content.id);
         expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
         expect(content.getAttribute('role')).toBe('region');
       }
@@ -71,6 +68,23 @@ describe('ForAccordion', () => {
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
         expect(content.getAttribute('data-state')).toBe('closed');
       }
+    });
+
+    it('gates aria-controls to the expanded panel, mirroring the overlay triggers', () => {
+      const { el, flush } = renderHost(AccordionHost);
+
+      const trigger = triggerOf(el, 'a');
+      const content = contentOf(el, 'a')!;
+
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+
+      trigger.click();
+      flush();
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+
+      triggerOf(el, 'b').click();
+      flush();
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
 

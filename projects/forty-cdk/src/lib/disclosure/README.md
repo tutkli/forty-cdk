@@ -26,6 +26,8 @@ The host element gets `data-state="open" \| "closed"` for CSS hooks.
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click.
 
+`aria-controls` is emitted only while open — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
+
 Use a native `<button type="button">` so Enter / Space activation come for free. Other elements lose keyboard accessibility — that is on you.
 
 ### `ForDisclosureContent`
