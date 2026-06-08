@@ -189,11 +189,14 @@ export class ForListbox<T = string>
   });
 
   /**
-   * Anchor index for APG range-selection actions (Shift+Space). Set on every
-   * unmodified activation (click / Space / Enter); not affected by Shift+Arrow,
-   * which APG defines as per-option toggle. Cleared when no option matches.
+   * Anchor value for APG range-selection actions (Shift+Space). Stored as the
+   * option's *value* (resolved to its current index at range time via
+   * {@link isItemEqualToValue}) rather than a DOM index, so reordering or
+   * removing options before the anchor can't silently shift the range to the
+   * wrong span. Set on every unmodified activation (click / Space / Enter); not
+   * affected by Shift+Arrow, which APG defines as per-option toggle.
    */
-  readonly #anchorIndex = signal<number | null>(null);
+  readonly #anchorValue = signal<T | null>(null);
 
   constructor() {
     super();
@@ -220,7 +223,7 @@ export class ForListbox<T = string>
       // Single-mode: idempotent select (no deselect on click of selected).
       this.value.set([v]);
     }
-    this.#setAnchorByValue(v);
+    this.#anchorValue.set(v);
   }
 
   extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
@@ -261,11 +264,13 @@ export class ForListbox<T = string>
     if (currentIndex < 0) {
       return;
     }
-    const anchor = this.#anchorIndex();
-    const start = anchor === null || anchor >= options.length ? currentIndex : anchor;
+    const anchorValue = this.#anchorValue();
+    const equals = this.isItemEqualToValue();
+    const anchorIndex =
+      anchorValue === null ? -1 : options.findIndex((o) => equals(o.value(), anchorValue));
+    const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
-    const equals = this.isItemEqualToValue();
     const next = [...this.value()];
     for (let i = lo; i <= hi; i++) {
       const opt = options[i];
@@ -434,11 +439,5 @@ export class ForListbox<T = string>
       return;
     }
     this.touched.set(true);
-  }
-
-  #setAnchorByValue(v: T): void {
-    const equals = this.isItemEqualToValue();
-    const idx = this.#options.items().findIndex((o) => equals(o.value(), v));
-    this.#anchorIndex.set(idx >= 0 ? idx : null);
   }
 }

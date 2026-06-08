@@ -169,7 +169,7 @@ export class ForSliderThumb {
       case 'PageDown':
       case 'Home':
       case 'End':
-        this.ctx.commitInteraction();
+        this.ctx.commitInteraction(this.index());
         return;
       default:
         return;

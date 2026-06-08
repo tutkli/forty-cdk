@@ -109,6 +109,14 @@ export class ForNavigationMenuContent {
     // order. The re-parent is a DOM side effect on the imperative viewport
     // handle (no signal writes), and it waits for `#mounted` so it never runs
     // before `afterNextRender` has attached the panel under the viewport.
+    //
+    // Note: the trigger collection is backed by a `MutationObserver`, and this
+    // very `appendChild` re-parent mutates the observed subtree, so the
+    // collection can re-notify and re-run this effect a second time. That extra
+    // pass is EXPECTED and harmless — `insertPanel` / `#reorder` are idempotent
+    // (a node already in its target slot is left untouched), so the re-run is a
+    // no-op. Do not "fix" the idempotency away to suppress it: the convergence
+    // it guarantees is what makes the registration race self-heal.
     effect(() => {
       if (!this.#mounted()) return;
       this.#reparent();

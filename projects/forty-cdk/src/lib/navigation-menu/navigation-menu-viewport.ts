@@ -53,6 +53,20 @@ import {
  * `--for-navigation-menu-viewport-*` variables therefore reflect the
  * entering panel as soon as it becomes active.
  *
+ * **Avoid a measurement feedback loop.** The exposed
+ * `--for-navigation-menu-viewport-width` / `-height` are measured from the
+ * *active content panel*, never from the viewport host's own box — but the
+ * ResizeObserver does also observe the host (so a surrounding column resize is
+ * picked up). Do **not** drive the host's own measured dimension from these
+ * variables (e.g. `width: var(--for-navigation-menu-viewport-width)` applied to
+ * the viewport host) and then nest the measured panel such that the host's box
+ * constrains the panel's: that would let a measure-tick's CSS output feed back
+ * into the next observation. Drive `width` / `height` from the variables on a
+ * wrapper or transition them on the host without coupling them back to the
+ * measured child's size. The measure-tick read path itself is safe — the
+ * observer only bumps a counter, and the geometry is read in a `computed`, not
+ * written from the same notification.
+ *
  * @example
  * ```html
  * <nav forNavigationMenu [(value)]="open">

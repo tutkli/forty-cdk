@@ -378,7 +378,10 @@ export class ForDatePicker<D>
 
     // Eager validation: a date-time picker needs a time-capable adapter. Fail
     // loudly as soon as the granularity input settles, rather than on first
-    // selection deep in a subscription.
+    // selection deep in a subscription. The throw is raised during change
+    // detection (inside this `effect`) and propagates through Angular's error
+    // handling, so a day-only adapter misconfiguration is surfaced — never
+    // silently swallowed.
     effect(() => {
       if (this.granularity() !== 'day') {
         this.#time();

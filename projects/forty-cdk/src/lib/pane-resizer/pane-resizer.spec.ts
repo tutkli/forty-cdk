@@ -131,6 +131,21 @@ describe('ForPaneResizer', () => {
       expect(fixture.componentInstance.value()).toBe(50);
     });
 
+    it('rounds a fractional step to clean values without float noise (#590 F5)', () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      fixture.componentInstance.value.set(0);
+      fixture.componentInstance.step.set(0.1);
+      flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      press(el, 'ArrowRight');
+      press(el, 'ArrowRight');
+      press(el, 'ArrowRight');
+      flush();
+      // 0 + 0.1 * 3 would be 0.30000000000000004 without precision rounding.
+      expect(fixture.componentInstance.value()).toBe(0.3);
+    });
+
     it('PageUp/PageDown apply largeStep', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
@@ -322,6 +337,28 @@ describe('ForPaneResizer', () => {
       flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
+    });
+
+    it('does not mutate the value on a stray sub-dead-zone pointermove (#590 F6)', () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      // Pointer capture is mis-modeled in jsdom; stub the wiring (this is not a
+      // geometry assertion — the clientX deltas below are explicit, not measured).
+      el.setPointerCapture = () => {};
+      el.hasPointerCapture = () => false;
+      el.releasePointerCapture = () => {};
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      // 2px move — under the 3px dead-zone — must not arm the drag.
+      el.dispatchEvent(pointerEvent('pointermove', { clientX: 102 }));
+      flush();
+      expect(fixture.componentInstance.resizeEvents).toEqual([]);
+      expect(fixture.componentInstance.value()).toBe(50);
+
+      // A move past the dead-zone arms and applies the delta.
+      el.dispatchEvent(pointerEvent('pointermove', { clientX: 110 }));
+      flush();
+      expect(fixture.componentInstance.resizeEvents.length).toBeGreaterThan(0);
     });
   });
 

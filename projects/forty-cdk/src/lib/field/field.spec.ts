@@ -206,6 +206,44 @@ describe('ForField', () => {
       q(el, 'label').click();
       expect(document.activeElement).toBe(q(el, 'control'));
     });
+
+    @Component({
+      imports: [ForField, ForLabel, ForSwitch],
+      template: `
+        <div forField>
+          <span forLabel data-test-id="label">
+            <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+            Notify
+          </span>
+        </div>
+      `,
+    })
+    class WrappingLabelHost {
+      readonly checked = signal(false);
+    }
+
+    it('does not double-toggle when the control is nested inside the label host (#590 F5)', async () => {
+      const { el, flush } = renderHost(WrappingLabelHost);
+      const control = q(el, 'control');
+      expect(control.getAttribute('aria-checked')).toBe('false');
+
+      // Clicking the control activates it natively once; the label must not
+      // forward the same click and toggle it back.
+      control.click();
+      await flush();
+      expect(control.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('still forwards a click that lands on the label text, not the control (#590 F5)', async () => {
+      const { el, flush } = renderHost(WrappingLabelHost);
+      const control = q(el, 'control');
+      expect(control.getAttribute('aria-checked')).toBe('false');
+
+      // A click whose target is the label (outside the control) still forwards.
+      q(el, 'label').click();
+      await flush();
+      expect(control.getAttribute('aria-checked')).toBe('true');
+    });
   });
 
   describe('standalone label (no field)', () => {

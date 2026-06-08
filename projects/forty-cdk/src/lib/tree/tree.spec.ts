@@ -379,6 +379,20 @@ describe('ForTree', () => {
       await flush(fixture);
       expect(fixture.componentInstance.picked()).toEqual(['downloads']);
     });
+
+    it('Shift+Arrow establishes the anchor so a following Shift+Space ranges from the extend origin (#590 F2)', async () => {
+      const { el, fixture } = await setup((i) => i.isMulti.set(true));
+      // Extend from documents → downloads with no prior click anchor.
+      pressKey(itemOf(el, 'documents'), 'ArrowDown', { shiftKey: true });
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual(['downloads']);
+
+      // Shift+Space at readme must span documents..readme (the extend origin),
+      // not just readme from a stale/absent anchor.
+      pressKey(itemOf(el, 'readme'), ' ', { shiftKey: true });
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual(['downloads', 'documents', 'readme']);
+    });
   });
 
   describe('aria-multiselectable / orientation / dir reflection', () => {

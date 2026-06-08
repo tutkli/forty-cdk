@@ -332,6 +332,26 @@ describe('ForNavigationMenu', () => {
       flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
+
+    it('cancels a pending hover-open when the pointer leaves the same closed trigger (#590 F5)', () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      // Hover a closed trigger (schedules an open) then leave it before the
+      // delay elapses, without entering a sibling.
+      triggers[0]!.dispatchEvent(pointer('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(100);
+      flush();
+      triggers[0]!.dispatchEvent(pointer('pointerleave'));
+      flush();
+
+      // The pending open is cancelled — the menu must not open after the pointer left.
+      vi.advanceTimersByTime(1000);
+      flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
   });
 
   describe('keyboard', () => {

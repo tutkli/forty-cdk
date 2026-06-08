@@ -3,6 +3,7 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
+import { provideInternationalizedDateAdapter } from '../calendar/internationalized-date-adapter';
 import {
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateTimeAdapter,
@@ -500,6 +501,29 @@ describe('ForDateField', () => {
       pressKey(dseg(r, 'dayPeriod'), 'p');
       await flush(r.fixture);
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
+    });
+
+    it('surfaces the time-capable-adapter requirement (not swallowed) under a day-only adapter (#590 F2)', () => {
+      @Component({
+        imports: [ForDateField, ForDateFieldSegment],
+        providers: [...provideInternationalizedDateAdapter()],
+        template: `
+          <div forDateField granularity="minute" #field="forDateField">
+            @for (seg of field.segments(); track seg.id) {
+              @if (!seg.isLiteral) {
+                <span forDateFieldSegment [segment]="seg.type!"></span>
+              }
+            }
+          </div>
+        `,
+      })
+      class DayOnlyHost {}
+
+      // The eager-validation effect raises during change detection — the throw
+      // is observed (propagated out of the initial render), never swallowed.
+      expect(() => renderHost(DayOnlyHost)).toThrow(
+        /\[forty-cdk\/date-adapter\] ForDateField requires a time-capable DateAdapter/,
+      );
     });
   });
 

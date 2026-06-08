@@ -13,6 +13,26 @@ import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 
 /**
+ * Round `value` to the decimal precision a `step` carries so repeated
+ * `value ± step` keyboard arithmetic with a fractional step (e.g. `0.1`) can't
+ * accumulate float noise that defeats the `next === value()` change guard.
+ * Applied only to step-derived deltas — never to `min` / `max`, which the
+ * consumer supplies at their own precision.
+ */
+function roundToStepPrecision(value: number, step: number): number {
+  const stepText = String(step);
+  const dot = stepText.indexOf('.');
+  if (dot < 0) {
+    return value;
+  }
+  const factor = 10 ** (stepText.length - dot - 1);
+  return Math.round(value * factor) / factor;
+}
+
+/** Pointer travel (px) required before a drag starts mutating the value. */
+const DRAG_DEAD_ZONE_PX = 3;
+
+/**
  * Headless implementation of the
  * [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/):
  * the focusable divider between two resizable panes. Carries `role="separator"`
@@ -24,6 +44,10 @@ import { injectTextDirection } from '../_internal/text-direction/text-direction'
  * It is essentially a 1-D slider wearing a separator role; the static
  * `[forSeparator]` divider stays a separate, thinner primitive so a visual-only
  * separator never pulls the drag / keyboard-resize code in.
+ *
+ * Pointer drag arms only after the pointer travels past a small dead-zone (a
+ * few px), so a plain click that fires a stray sub-threshold `pointermove`
+ * never mutates the value — `(resize)` won't fire on a jittery click.
  *
  * @example
  * ```html
@@ -164,6 +188,12 @@ export class ForPaneResizer {
   #dragging = false;
   #dragStartValue = 0;
   #dragStartCoord = 0;
+  /**
+   * Whether the pointer has moved past the dead-zone since pressing. A plain
+   * click that fires a stray sub-threshold `pointermove` must not mutate the
+   * value, so the first applied delta is gated on crossing `DRAG_DEAD_ZONE_PX`.
+   */
+  #dragArmed = false;
 
   /** True between the first kbd-driven mutation and the next `keyup`. */
   #pendingKeyboardCommit = false;
@@ -188,25 +218,25 @@ export class ForPaneResizer {
     switch (event.key) {
       case 'ArrowLeft':
         if (axis !== 'horizontal') return;
-        next = this.#clamp(this.value() + (ltr ? -this.step() : this.step()));
+        next = this.#stepClamp(this.value() + (ltr ? -this.step() : this.step()), this.step());
         break;
       case 'ArrowRight':
         if (axis !== 'horizontal') return;
-        next = this.#clamp(this.value() + (ltr ? this.step() : -this.step()));
+        next = this.#stepClamp(this.value() + (ltr ? this.step() : -this.step()), this.step());
         break;
       case 'ArrowUp':
         if (axis !== 'vertical') return;
-        next = this.#clamp(this.value() - this.step());
+        next = this.#stepClamp(this.value() - this.step(), this.step());
         break;
       case 'ArrowDown':
         if (axis !== 'vertical') return;
-        next = this.#clamp(this.value() + this.step());
+        next = this.#stepClamp(this.value() + this.step(), this.step());
         break;
       case 'PageUp':
-        next = this.#clamp(this.value() - this.largeStep());
+        next = this.#stepClamp(this.value() - this.largeStep(), this.largeStep());
         break;
       case 'PageDown':
-        next = this.#clamp(this.value() + this.largeStep());
+        next = this.#stepClamp(this.value() + this.largeStep(), this.largeStep());
         break;
       case 'Home':
         next = this.min();
@@ -250,6 +280,7 @@ export class ForPaneResizer {
     }
     event.preventDefault();
     this.#dragging = true;
+    this.#dragArmed = false;
     this.#dragStartValue = this.value();
     this.#dragStartCoord = this.orientation() === 'vertical' ? event.clientX : event.clientY;
     this.#host.setPointerCapture(event.pointerId);
@@ -266,6 +297,14 @@ export class ForPaneResizer {
     const ltr = this.dir() !== 'rtl';
     const raw = orient === 'vertical' ? event.clientX : event.clientY;
     let delta = raw - this.#dragStartCoord;
+    // Dead-zone: swallow sub-threshold travel so a plain click with a stray
+    // pointermove doesn't mutate the value. Once armed, every move applies.
+    if (!this.#dragArmed) {
+      if (Math.abs(delta) < DRAG_DEAD_ZONE_PX) {
+        return;
+      }
+      this.#dragArmed = true;
+    }
     if (orient === 'vertical' && !ltr) {
       // RTL inverts the horizontal drag axis so the visible end of the start
       // pane still tracks the pointer.
@@ -322,5 +361,10 @@ export class ForPaneResizer {
 
   #clamp(n: number): number {
     return Math.max(this.min(), Math.min(this.max(), n));
+  }
+
+  /** Clamp a step-derived value, rounding to the step's precision first. */
+  #stepClamp(n: number, step: number): number {
+    return this.#clamp(roundToStepPrecision(n, step));
   }
 }

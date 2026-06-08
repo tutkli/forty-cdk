@@ -300,7 +300,10 @@ export class ForDateField<D>
     });
 
     // Eager validation: a date-time field needs a time-capable adapter. Fail
-    // loudly as soon as the granularity input settles.
+    // loudly as soon as the granularity input settles. The throw is raised
+    // during change detection (inside this `effect`) and propagates through
+    // Angular's error handling, so a day-only adapter misconfiguration is
+    // surfaced — never silently swallowed.
     effect(() => {
       if (this.granularity() !== 'day') {
         this.#time();

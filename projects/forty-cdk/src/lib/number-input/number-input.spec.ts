@@ -236,6 +236,20 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(9);
     });
 
+    it('parses a space-grouped integer typed with ASCII spaces in an NBSP-grouping locale (#590 F5)', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      // fr-FR groups with a narrow no-break space (U+202F); a user typing plain
+      // ASCII spaces must still parse against it.
+      fixture.componentInstance.locale.set('fr-FR');
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1 234 567');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1234567);
+    });
+
     it('does not clamp while typing (clamps on commit)', () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(10);
