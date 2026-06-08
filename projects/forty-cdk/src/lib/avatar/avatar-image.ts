@@ -62,10 +62,16 @@ export class ForAvatarImage {
     }
 
     // Re-emit upstream whenever the parent's status changes due to our writes.
+    // De-dupe on the (request, status) pair rather than status alone: a new
+    // `src` opens a fresh request token, so an identical status (e.g. a second
+    // image that also `loaded`) still re-reports for the new request, while a
+    // repeated status within the same request is suppressed.
     let last: ForAvatarStatus | null = null;
+    let lastReportedToken = -1;
     const emit = (status: ForAvatarStatus): void => {
-      if (last === status) return;
+      if (last === status && lastReportedToken === this.#requestToken) return;
       last = status;
+      lastReportedToken = this.#requestToken;
       parent.reportStatus(status);
       this.loadStatusChanged.emit(status);
     };
@@ -77,15 +83,30 @@ export class ForAvatarImage {
   }
 
   protected onLoad(): void {
+    // Ignore a `load` that fires for a request the host has already moved past
+    // (the native event can arrive after `src` was reassigned).
+    if (!this.#isCurrentRequest()) return;
     this.#emit('loaded');
   }
 
   protected onError(): void {
+    if (!this.#isCurrentRequest()) return;
     this.#emit('error');
+  }
+
+  /**
+   * True when the `src` the host currently carries is the one the latest
+   * `#syncFromAttr` observed, so a native load/error event belongs to the
+   * in-flight request rather than a superseded one.
+   */
+  #isCurrentRequest(): boolean {
+    return this.#host.getAttribute('src') === this.#requestSrc;
   }
 
   #syncFromAttr(): void {
     const src = this.#host.getAttribute('src');
+    this.#requestToken++;
+    this.#requestSrc = src;
     if (!src) {
       this.#emit('idle');
       return;
@@ -131,4 +152,9 @@ export class ForAvatarImage {
 
   // Initialized in constructor.
   #emit!: (status: ForAvatarStatus) => void;
+
+  /** Monotonic id bumped on every `src` change so stale events are ignored. */
+  #requestToken = 0;
+  /** The `src` the latest `#syncFromAttr` observed, used to match native events. */
+  #requestSrc: string | null = null;
 }

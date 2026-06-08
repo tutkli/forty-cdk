@@ -163,6 +163,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #motion = signal<ReadonlyMap<string, ForNavigationMenuMotion>>(new Map());
 
   #openTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The value a pending hover-open is queued for (so a same-trigger leave can cancel it). */
+  #pendingOpenValue: string | null = null;
   #closeTimer: ReturnType<typeof setTimeout> | null = null;
   #skipDelayTimer: ReturnType<typeof setTimeout> | null = null;
   #skipDelayActive = false;
@@ -230,20 +232,31 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       this.open(value);
       return;
     }
+    this.#pendingOpenValue = value;
     this.#openTimer = setTimeout(() => {
       this.#openTimer = null;
+      this.#pendingOpenValue = null;
       this.open(value);
     }, delay);
   }
 
-  scheduleClose(reason: NavigationMenuScheduleReason): void {
+  scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void {
     if (reason === 'click' || reason === 'keyboard') {
       this.#clearOpenTimer();
       this.#clearCloseTimer();
       this.close();
       return;
     }
-    if (this.#openTimer !== null) return;
+    if (this.#openTimer !== null) {
+      // A hover-open is queued. If it is for the trigger we are leaving, cancel
+      // it so a quick hover-then-leave on a closed trigger doesn't open after
+      // the pointer is gone. If it is for a sibling (hover-across), leave it so
+      // that pending open takes over.
+      if (value !== undefined && this.#pendingOpenValue === value) {
+        this.#clearOpenTimer();
+      }
+      return;
+    }
     this.#clearCloseTimer();
     if (this.value() === '') return;
     const delay = Math.max(0, this.closeDelay());
@@ -475,6 +488,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       clearTimeout(this.#openTimer);
       this.#openTimer = null;
     }
+    this.#pendingOpenValue = null;
   }
 
   #clearCloseTimer(): void {

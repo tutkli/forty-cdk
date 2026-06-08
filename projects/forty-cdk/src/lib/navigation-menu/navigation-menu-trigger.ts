@@ -82,7 +82,7 @@ export class ForNavigationMenuTrigger {
 
   protected onPointerLeave(): void {
     if (this.disabled()) return;
-    this.menu.scheduleClose('hover');
+    this.menu.scheduleClose('hover', this.value());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

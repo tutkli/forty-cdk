@@ -72,7 +72,12 @@ export interface ForNavigationMenuContext {
    * implementation skip delays for keyboard-driven changes.
    */
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void;
-  scheduleClose(reason: NavigationMenuScheduleReason): void;
+  /**
+   * Schedule a hover close. Pass the leaving trigger's `value` so a quick
+   * hover-then-leave on a still-closed trigger cancels its own pending open;
+   * a pending open for a sibling (hover-across) is left to take over.
+   */
+  scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void;
   cancelPending(): void;
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;

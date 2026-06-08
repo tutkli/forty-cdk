@@ -793,6 +793,28 @@ describe('ForListbox', () => {
           'blueberry',
         ]);
       });
+
+      it('survives a reorder/insert of preceding options (#590 F4 — identity anchor)', () => {
+        const { el, fixture, flush } = setupMulti();
+        // Click banana → anchor = banana (DOM index 2 at this point).
+        optOf(el, 'banana').click();
+        flush();
+
+        // Insert a new option before everything: banana's DOM index shifts to 3.
+        fixture.componentInstance.options.update((opts) => [
+          { value: 'almond', label: 'Almond', disabled: false },
+          ...opts,
+        ]);
+        flush();
+
+        // Shift+Space at cherry must still span banana..cherry by identity
+        // (banana, blueberry, cherry are contiguous). The stale-index span
+        // would instead start at index 2 (now blueberry) and miss banana.
+        optOf(el, 'cherry').focus();
+        pressKey(optOf(el, 'cherry'), ' ', { shiftKey: true });
+        flush();
+        expect(fixture.componentInstance.picked()).toEqual(['banana', 'blueberry', 'cherry']);
+      });
     });
   });
 

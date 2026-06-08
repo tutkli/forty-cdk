@@ -253,6 +253,20 @@ describe('ForSlider', () => {
       // 23 + 10 = 33 → snap to 30
       expect(fixture.componentInstance.picked()).toEqual([30]);
     });
+
+    it('rounds a fractional step to clean values without float noise (#590 F5)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.picked.set([0]);
+      flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      // 0 + 0.1 * 3 would be 0.30000000000000004 without precision rounding.
+      expect(fixture.componentInstance.picked()).toEqual([0.3]);
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('0.3');
+    });
   });
 
   describe('keyboard (RTL)', () => {
@@ -484,6 +498,29 @@ describe('ForSlider', () => {
       fixture.componentInstance.picked.set([42]);
       flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
+    });
+
+    it('does not let a keyup on a different thumb steal another thumb pending commit (#590 F4)', () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([30, 70]);
+      flush();
+      fixture.componentInstance.valueCommits.length = 0;
+
+      // Thumb 0 arms a pending commit (keydown moved it) but is not released.
+      keyDown(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+
+      // A navigation keyup on thumb 1 (which did not arm anything) must not
+      // commit thumb 0's pending change.
+      keyUp(thumb(el, 1), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+
+      // Thumb 0's own keyup commits exactly once with the final value.
+      keyUp(thumb(el, 0), 'ArrowRight');
+      flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[31, 70]]);
     });
   });
 

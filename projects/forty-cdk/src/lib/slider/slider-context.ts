@@ -82,10 +82,12 @@ export interface ForSliderContext {
   /**
    * Trailing-edge hook for value-changing interactions. Emits `(valueCommit)`
    * with the final value array if the running interaction has mutated the
-   * value, then resets the internal flag. No-op otherwise. Pointer drags
-   * call this on pointerup; thumbs call it on keyup of a navigation key.
+   * value, then resets the internal flag. No-op otherwise. Pointer drags call
+   * this on pointerup with no argument. Thumbs call it on keyup of a navigation
+   * key, passing their own `thumbIndex` so only the thumb that armed the
+   * pending commit can commit it (a keyup on a different thumb is a no-op).
    */
-  commitInteraction(): void;
+  commitInteraction(thumbIndex?: number): void;
 
   // registry
   registerThumb(handle: ForSliderThumbHandle): void;

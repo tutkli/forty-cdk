@@ -347,6 +347,13 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (!target) {
       return;
     }
+    // Establish the range anchor at the origin of the shift-extend run so a
+    // following Shift+Space ranges from where the user started extending, not
+    // from a stale (or absent) anchor. A pre-existing anchor (e.g. from a prior
+    // click) is left in place, matching the listbox range contract.
+    if (this.#anchorValue() === null && currentIndex >= 0) {
+      this.#anchorValue.set(items[currentIndex]!.value());
+    }
     this.roving.focusActive(target.host);
     const value = target.value();
     const current = this.value();

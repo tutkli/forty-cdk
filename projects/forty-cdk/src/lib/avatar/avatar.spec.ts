@@ -147,6 +147,51 @@ describe('ForAvatar', () => {
       expect(root.getAttribute('data-status')).toBe('error');
     });
 
+    it('re-reports the lifecycle for a new cached src even when it resolves to the same status (#590 F2)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      // Both images are cached + complete with a positive naturalWidth, so each
+      // src settles straight to `loaded` with no intervening `loading`. The
+      // status-only de-dupe would swallow the second `loaded`; the per-request
+      // token must let it through.
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 48 });
+
+      fixture.componentInstance.src.set('https://example.test/first.png');
+      flush();
+      await Promise.resolve();
+      flush();
+      expect(fixture.componentInstance.emitted).toContain('loaded');
+      fixture.componentInstance.emitted.length = 0;
+
+      fixture.componentInstance.src.set('https://example.test/second.png');
+      flush();
+      await Promise.resolve();
+      flush();
+      expect(fixture.componentInstance.emitted).toEqual(['loaded']);
+    });
+
+    it('ignores a stale load event whose src no longer matches the in-flight request (#590 F2)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+
+      fixture.componentInstance.src.set('https://example.test/me.png');
+      flush();
+      await Promise.resolve();
+      flush();
+      fixture.componentInstance.emitted.length = 0;
+
+      // Simulate a stale request: the resource the host now points at differs
+      // from the one the directive last observed. A late `load`/`error` for the
+      // superseded resource must not be forwarded. Assert synchronously, before
+      // the MutationObserver microtask processes the attribute change and opens
+      // a fresh request.
+      img.setAttribute('src', 'https://example.test/superseded.png');
+      img.dispatchEvent(new Event('load'));
+      img.dispatchEvent(new Event('error'));
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+
     it('throws a prefixed error when [forAvatarImage] is used without [forAvatar]', () => {
       @Component({
         imports: [ForAvatarImage],

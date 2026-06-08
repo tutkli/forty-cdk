@@ -3,7 +3,6 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  effect,
   inject,
   Injector,
   input,
@@ -188,17 +187,23 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     this.adapter.format(this.visibleMonth(), { month: 'long', year: 'numeric' }),
   );
 
-  constructor() {
-    let lastLabel: string | null = null;
-    effect(() => {
-      const label = this.visibleMonthLabel();
-      const previous = lastLabel;
-      lastLabel = label;
-      if (previous !== null && previous !== label) {
-        this.#announcer.announce(label, 'polite');
-      }
-    });
-  }
+  /**
+   * Day-of-month the user is conceptually navigating with. Paging across months
+   * re-derives the focused date from it (clamped to the target month's length)
+   * so the original day restores when landing on a longer month, instead of
+   * cumulatively drifting back through a chain of short months. It is re-synced
+   * to the focused date's day whenever the focus moved for a non-paging reason
+   * (explicit day move, selection, external `value` write), tracked via
+   * {@link #pagedFocus}.
+   */
+  #intendedDay = this.adapter.getDate(this.value() ?? this.#today);
+
+  /**
+   * The focused date the last paging operation produced. Lets paging detect a
+   * focus that moved for any other reason (and therefore reset
+   * {@link #intendedDay} to the new day) without an `effect`.
+   */
+  #pagedFocus: D | null = null;
 
   readonly #matrix = computed(() =>
     buildMonthMatrix(this.adapter, this.visibleMonth(), this.#resolvedFirstDayOfWeek()),
@@ -294,6 +299,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled() || this.readonly() || this.isUnavailable(date)) {
       return;
     }
+    this.#setFocusedDay(date);
     this.value.set(this.#withPreservedTime(date));
     this.#focusDate(date);
   }
@@ -302,7 +308,14 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled()) {
       return;
     }
-    this.focusedDate.set(this.#clampToBounds(this.adapter.addMonths(this.focusedDate(), delta)));
+    const previousMonth = this.visibleMonth();
+    this.#syncIntendedDay();
+    const next = this.#clampToBounds(
+      this.#applyIntendedDay(this.adapter.addMonths(this.focusedDate(), delta)),
+    );
+    this.focusedDate.set(next);
+    this.#pagedFocus = next;
+    this.#announceMonthChange(previousMonth);
   }
 
   handleCellKeydown(event: KeyboardEvent, fromDate: D): void {
@@ -319,10 +332,20 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return;
     }
     event.preventDefault();
+    const previousMonth = this.visibleMonth();
     const isPaging = event.key === 'PageUp' || event.key === 'PageDown';
-    const next = isPaging ? this.#clampToBounds(target) : target;
+    let next: D;
+    if (isPaging) {
+      this.#syncIntendedDay();
+      next = this.#clampToBounds(this.#applyIntendedDay(target));
+      this.#pagedFocus = next;
+    } else {
+      next = target;
+      this.#setFocusedDay(next);
+    }
     this.focusedDate.set(next);
     this.#focusDate(next);
+    this.#announceMonthChange(previousMonth);
   }
 
   /**
@@ -367,6 +390,51 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
         return event.shiftKey ? adapter.addYears(fromDate, 1) : adapter.addMonths(fromDate, 1);
       default:
         return null;
+    }
+  }
+
+  /** Record `date` as the focus origin for a non-paging move and reset the intended day. */
+  #setFocusedDay(date: D): void {
+    this.#intendedDay = this.adapter.getDate(date);
+    this.#pagedFocus = null;
+  }
+
+  /**
+   * Re-sync {@link #intendedDay} to the focused date's actual day unless the
+   * focus is still where the last paging operation left it. Anything that moved
+   * the focus for another reason (explicit day move, selection, an external
+   * `value` write driving the `focusedDate` linkedSignal) resets the intended
+   * day so a fresh paging run starts from the day the user can see.
+   */
+  #syncIntendedDay(): void {
+    const focused = this.focusedDate();
+    if (this.#pagedFocus === null || !this.adapter.isSameDay(this.#pagedFocus, focused)) {
+      this.#intendedDay = this.adapter.getDate(focused);
+    }
+  }
+
+  /**
+   * Re-derive `date` so its day-of-month matches the user's intended day,
+   * clamped to the target month's length. Restores e.g. the 31st when a paging
+   * chain lands back on a 31-day month, instead of carrying forward the day a
+   * shorter intermediate month clamped it to.
+   */
+  #applyIntendedDay(date: D): D {
+    const adapter = this.adapter;
+    const daysInMonth = adapter.getDaysInMonth(date);
+    const day = this.#intendedDay < daysInMonth ? this.#intendedDay : daysInMonth;
+    return adapter.createDate(adapter.getYear(date), adapter.getMonth(date), day);
+  }
+
+  /**
+   * Announce the visible month politely when a navigation action actually
+   * crossed a month boundary. Driven from the navigation paths (paging,
+   * month-crossing keyboard moves) rather than a global label-tracking effect,
+   * so external `value` writes that don't move the user never announce.
+   */
+  #announceMonthChange(previousMonth: D): void {
+    if (!this.adapter.isSameDay(previousMonth, this.visibleMonth())) {
+      this.#announcer.announce(this.visibleMonthLabel(), 'polite');
     }
   }
 

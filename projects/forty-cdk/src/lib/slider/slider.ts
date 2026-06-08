@@ -27,6 +27,24 @@ import {
 import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
 
 /**
+ * Round `value` to the number of decimal places `step` carries, so float
+ * arithmetic noise (e.g. `0.1 * 3 === 0.30000000000000004`) can't masquerade
+ * as a change in the `next === current[index]` equality guard nor leak into
+ * `aria-valuenow`. Integer steps round to integers; a `0.1` step rounds to one
+ * decimal, and so on.
+ */
+function roundToStepPrecision(value: number, step: number): number {
+  const stepText = String(step);
+  const dot = stepText.indexOf('.');
+  if (dot < 0) {
+    return Math.round(value);
+  }
+  const decimals = stepText.length - dot - 1;
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+/**
  * Headless implementation of the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
  * (single thumb) and [Slider (Multi-Thumb)](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multi-thumb/)
  * (range / N thumbs). Implements `FormValueControl<readonly number[]>` from
@@ -94,6 +112,12 @@ export class ForSlider
    * `FormUiControl.max`. Falls back to `100` internally.
    */
   readonly max = input<number | undefined>(100);
+  /**
+   * Increment values snap to. Fractional steps (e.g. `0.1`) are supported: the
+   * snapped value is rounded to the step's decimal precision so float noise
+   * (`0.1 * 3`) can't spuriously emit `valueCommit` or leak into
+   * `aria-valuenow`.
+   */
   readonly step = input<number>(1);
   /**
    * Step used for PageUp / PageDown. Defaults to 10× `step`. The default is
@@ -148,6 +172,7 @@ export class ForSlider
   readonly #destroyRef = inject(DestroyRef);
   readonly #activeDragCleanups = new Set<() => void>();
   #interactionMutated = false;
+  #armedThumb: number | null = null;
 
   readonly fractions = computed(() => {
     const min = this.minValue();
@@ -224,6 +249,7 @@ export class ForSlider
     updated[index] = next;
     this.value.set(updated);
     this.#interactionMutated = true;
+    this.#armedThumb = index;
   }
 
   bumpAt(index: number, key: SliderArrowKey, large: boolean): void {
@@ -357,14 +383,22 @@ export class ForSlider
 
   /**
    * Emit `valueCommit` if the running interaction mutated the value at least
-   * once, and clear the flag. Pointer drags call this on pointerup; thumbs
-   * call it on keyup of a navigation key.
+   * once, and clear the flag. Pointer drags call this on pointerup with no
+   * argument (the drag's own pointerup is already scoped to one thumb). Thumbs
+   * call it on keyup of a navigation key, passing their own `thumbIndex` so a
+   * keyup on a thumb that did not arm the pending commit (e.g. a second thumb
+   * focused and released without moving) cannot mis-attribute or steal another
+   * thumb's pending commit — only the thumb that armed it commits.
    */
-  commitInteraction(): void {
+  commitInteraction(thumbIndex?: number): void {
     if (!this.#interactionMutated) {
       return;
     }
+    if (thumbIndex !== undefined && this.#armedThumb !== thumbIndex) {
+      return;
+    }
     this.#interactionMutated = false;
+    this.#armedThumb = null;
     this.valueCommit.emit(this.value());
   }
 
@@ -405,7 +439,8 @@ export class ForSlider
     const max = this.maxValue();
     const step = this.step();
     const gap = this.minStepsBetweenThumbs() * step;
-    const snapped = step > 0 ? Math.round((raw - min) / step) * step + min : raw;
+    const snapped =
+      step > 0 ? roundToStepPrecision(Math.round((raw - min) / step) * step + min, step) : raw;
     let lo = min;
     let hi = max;
     if (index > 0) {

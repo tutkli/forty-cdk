@@ -401,6 +401,37 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
       expect(focusedCell(r)).toBe(cell(r, JUN_15));
     });
+
+    it('restores the intended day-of-month when paging back onto a longer month (#590 F4)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(new Date(2026, 0, 31));
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 0, 31)));
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 1, 28)));
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 2, 31)));
+    });
+
+    it('resets the intended day after an external value write between paging (#590 F4)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(new Date(2026, 0, 31));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 1, 28)));
+
+      r.instance.value.set(new Date(2026, 0, 10));
+      await flush(r.fixture);
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 1, 10)));
+    });
   });
 
   describe('focusActiveCell', () => {
@@ -532,6 +563,20 @@ describe('ForCalendar', () => {
       const heading = r.query('[data-testid="heading"]')!;
       expect(liveRegion()?.textContent).toBe(heading.textContent?.trim());
       expect(liveRegion()?.textContent).toContain('2026');
+    });
+
+    it('does not announce when the visible month changes from an external value write (#590 F3)', async () => {
+      const r = renderHost(CalendarHost);
+      const liveRegion = () =>
+        Array.from(document.body.querySelectorAll('[aria-live="polite"]')).find(
+          (el) => !el.closest('[forCalendar]'),
+        );
+
+      r.instance.value.set(new Date(2026, 8, 15));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('2026');
+      expect(liveRegion()?.textContent ?? '').toBe('');
     });
 
     it('disables prev / next at the min / max bounds', async () => {
