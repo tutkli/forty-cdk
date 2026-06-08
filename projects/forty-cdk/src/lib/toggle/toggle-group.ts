@@ -57,10 +57,10 @@ import {
  * enabled item in DOM order. Arrow keys move focus (no
  * selection-on-focus — toggles always require an explicit click).
  *
- * `ForToggle` (the standalone single-button toggle) is intentionally NOT
- * a form-control: it is the APG button pattern, not a form value. Use
- * `ForToggleGroup` (in single or multiple mode) when you need form
- * integration.
+ * `ForToggle` (the standalone single-button toggle) is also a form
+ * control, but a `FormCheckboxControl` carrying a single boolean value.
+ * Use `ForToggleGroup` (in single or multiple mode) when you need a set
+ * of pressed values as the form value.
  */
 @Directive({
   selector: '[forToggleGroup]',

@@ -408,11 +408,13 @@ export class ForDatePicker<D>
           return;
         }
         const selected = date as D | null;
-        // The calendar emits the picked day at midnight (its cells are built
-        // with `createDate`). For a date-time picker, graft the previously
-        // entered time-of-day back onto it; reading `value()` here is safe
-        // because the projected calendar is one-way bound (`[value]`), so its
-        // own write didn't clobber the picker's value.
+        // The projected calendar already preserves the time-of-day when it is
+        // one-way bound (`[value]`) to a timed value — `selectDate` re-grafts
+        // the current time via `#withPreservedTime`. This graft is a defensive
+        // fallback for a date-time picker whose calendar value was null or
+        // midnight (e.g. the very first selection): re-apply the previously
+        // entered time-of-day. Reading `value()` here is safe because the
+        // one-way binding means the calendar's own write didn't clobber it.
         if (selected !== null && this.granularity() !== 'day') {
           const time = this.#time();
           const base = this.value() ?? selected;

@@ -157,7 +157,7 @@ The mode is read once when the surface mounts (it is structurally different per 
 
 Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into a **date-time picker**: project a [`ForTimeField`](../time-field/README.md) beside the calendar and the value gains a time component. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
 
-Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: a calendar selection emits the picked day at midnight, and the picker grafts the previously entered time back on (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
+Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: when one-way bound to a timed value the calendar preserves the time-of-day on its own selection, and the picker re-grafts the previously entered time as a defensive fallback for the case where the calendar value was null or midnight (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
 
 ```html
 <div
