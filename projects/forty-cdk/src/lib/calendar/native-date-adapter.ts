@@ -21,9 +21,11 @@ function clampDay(year: number, month: number, day: number): Date {
  * `minDate`/`maxDate` clamps identically on both.
  *
  * This is the fallback adapter. Prefer `provideInternationalizedDateAdapter()`
- * for correct internationalised calendars (or
+ * for correct date-math and locale-aware formatting (or
  * `provideInternationalizedDateTimeAdapter()` for a time-capable one); reach
- * for this one when adding a date library to the bundle is not worthwhile.
+ * for this one when adding a date library to the bundle is not worthwhile. Both
+ * `Date` and the `@internationalized/date` adapters operate on the Gregorian
+ * calendar today; non-Gregorian calendar systems are deferred to #354.
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {

@@ -22,7 +22,7 @@ bootstrapApplication(App, {
 });
 ```
 
-`@internationalized/date` is the immutable, calendar-aware date primitive React Aria and Ark UI build on; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly. A `Temporal.PlainDate` adapter is a planned non-breaking addition once the Temporal API is broadly available across browsers — the `DateAdapter<D>` seam means adopting it later is a drop-in, not a migration.
+`@internationalized/date` is the immutable date primitive React Aria and Ark UI build on; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly. Both `@internationalized/date` adapters operate on the **Gregorian** calendar today — `createDate` always builds a Gregorian date, so the grid stays Gregorian regardless of the runtime locale. True non-Gregorian calendar systems are deferred to the planned `Temporal.PlainDate` adapter ([#354](https://github.com/tutkli/forty-cdk/issues/354)), a non-breaking addition once the Temporal API is broadly available across browsers — the `DateAdapter<D>` seam means adopting it later is a drop-in, not a migration.
 
 ## Pieces
 

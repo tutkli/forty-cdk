@@ -10,12 +10,15 @@ import {
 import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
 
 /**
- * Time-capable {@link DateAdapter} over `@internationalized/date`'s immutable,
- * calendar-aware `CalendarDateTime`. It mirrors {@link
- * InternationalizedDateAdapter} for all day operations but adds a wall-clock
- * time component (hour / minute / second), so it backs `ForTimeField` and the
- * time granularity of the date primitives. Use it when you want the
- * `@internationalized/date` types *and* a time.
+ * Time-capable {@link DateAdapter} over `@internationalized/date`'s immutable
+ * `CalendarDateTime`. It mirrors {@link InternationalizedDateAdapter} for all
+ * day operations but adds a wall-clock time component (hour / minute / second),
+ * so it backs `ForTimeField` and the time granularity of the date primitives.
+ * Use it when you want the `@internationalized/date` types *and* a time.
+ *
+ * **Gregorian only.** Like {@link InternationalizedDateAdapter}, `createDate`
+ * builds a Gregorian `CalendarDateTime`; non-Gregorian calendar systems are
+ * deferred to the planned Temporal adapter track (#354).
  *
  * `@internationalized/date` is an **optional peer dependency** — install it
  * only when you use an internationalized adapter. A consumer relying solely on

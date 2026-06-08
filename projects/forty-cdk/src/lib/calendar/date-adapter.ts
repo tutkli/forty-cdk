@@ -8,14 +8,16 @@ import { inject, InjectionToken } from '@angular/core';
  * The library ships two adapters behind {@link FOR_DATE_ADAPTER}:
  *
  * - `provideInternationalizedDateAdapter()` — over `@internationalized/date`'s
- *   immutable, calendar-aware `CalendarDate`. Recommended for correct
- *   internationalised calendars; `@internationalized/date` is an optional
- *   peer dependency.
+ *   immutable `CalendarDate`. Recommended for correct date-math and locale-aware
+ *   formatting; `@internationalized/date` is an optional peer dependency. Both
+ *   `@internationalized/date` adapters operate on the **Gregorian** calendar
+ *   today — non-Gregorian calendar systems are deferred to the Temporal adapter
+ *   track (#354).
  * - `provideNativeDateAdapter()` — over the built-in `Date`. Zero-dependency
  *   fallback.
  *
  * A `Temporal.PlainDate` adapter is a planned non-breaking addition once the
- * Temporal API is broadly available across browsers.
+ * Temporal API is broadly available across browsers (#354).
  *
  * Implementations must be pure with respect to their date type: every
  * operation returns a value and never mutates its inputs. The `D` produced by
