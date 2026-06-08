@@ -233,10 +233,11 @@ test.describe('Slider (coincident thumbs)', () => {
     const trackBox = await el(page, 'track').boundingBox();
     expect(trackBox).not.toBeNull();
 
-    // Press just below the coincident value (~78%): the tie-break grabs the
-    // LOWER thumb (index 0) so it can move toward min, then drag leftward.
+    // Press bare track below the coincident value (~70%, left of the 20px-wide
+    // thumbs centred at 80%) so the track's direction-aware tie-break runs and
+    // grabs the LOWER thumb (index 0); then drag leftward toward min.
     await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.78,
+      trackBox!.x + trackBox!.width * 0.7,
       trackBox!.y + trackBox!.height / 2,
     );
     await page.mouse.down();
