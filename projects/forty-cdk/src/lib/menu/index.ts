@@ -11,19 +11,13 @@ export { ForMenuSub } from './menu-sub';
 export { ForMenuSubTrigger } from './menu-sub-trigger';
 export {
   FOR_MENU_CONTEXT,
-  injectMenuContext,
   type ForMenuCloseReason,
   type ForMenuContext,
   type ForMenuItemHandle,
 } from './menu-context';
 export {
   FOR_MENU_RADIO_GROUP_CONTEXT,
-  injectMenuRadioGroupContext,
   type ForMenuRadioGroupContext,
 } from './menu-radio-group-context';
-export {
-  FOR_MENU_GROUP_CONTEXT,
-  injectMenuGroupContext,
-  type ForMenuGroupContext,
-} from './menu-group-context';
+export { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
 export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from './menu-defaults';

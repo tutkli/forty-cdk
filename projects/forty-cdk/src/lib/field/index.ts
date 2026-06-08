@@ -5,7 +5,6 @@ export { ForFieldError } from './field-error';
 export { ForFieldControl } from './field-control';
 export {
   FOR_FIELD_CONTEXT,
-  injectFieldContext,
   injectFieldWiring,
   type ForFieldContext,
   type FieldControlHandle,

@@ -9,7 +9,6 @@ export {
 } from './tooltip-defaults';
 export {
   FOR_TOOLTIP_CONTEXT,
-  injectTooltipContext,
   type ForTooltipContext,
   type TooltipScheduleReason,
 } from './tooltip-context';

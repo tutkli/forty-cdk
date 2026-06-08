@@ -9,7 +9,6 @@ export { ForSelectGroupLabel } from './select-group-label';
 export { ForSelectSeparator } from './select-separator';
 export {
   FOR_SELECT_CONTEXT,
-  injectSelectContext,
   type ForSelectCloseReason,
   type ForSelectContext,
   type ForSelectInitialFocus,

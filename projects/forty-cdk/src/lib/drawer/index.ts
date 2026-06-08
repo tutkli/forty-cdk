@@ -8,7 +8,6 @@ export { ForDrawerClose } from './drawer-close';
 export { ForDrawerWrapper } from './drawer-wrapper';
 export {
   FOR_DRAWER_CONTEXT,
-  injectDrawerContext,
   type ForDrawerCloseReason,
   type ForDrawerContext,
   type ForDrawerDragEvent,
