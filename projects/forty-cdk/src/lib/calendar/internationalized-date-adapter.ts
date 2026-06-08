@@ -4,11 +4,15 @@ import { CalendarDate, getLocalTimeZone, isSameDay, today } from '@international
 import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
 
 /**
- * {@link DateAdapter} over `@internationalized/date`'s immutable,
- * calendar-aware `CalendarDate`. This is the recommended adapter: it is the
- * same date primitive React Aria and Ark UI build on, it works in every
- * browser today with no polyfill, and its reference-equality-on-mutation
- * makes it signal-friendly.
+ * {@link DateAdapter} over `@internationalized/date`'s immutable `CalendarDate`.
+ * This is the recommended adapter: it is the same date primitive React Aria and
+ * Ark UI build on, it works in every browser today with no polyfill, and its
+ * reference-equality-on-mutation makes it signal-friendly.
+ *
+ * **Gregorian only.** `createDate` always builds a Gregorian `CalendarDate`, so
+ * the calendar grid is Gregorian regardless of the runtime locale. True
+ * non-Gregorian calendar systems are deferred to the planned Temporal adapter
+ * track (#354).
  *
  * `@internationalized/date` is an **optional peer dependency** — install it
  * only when you use this adapter. A consumer that relies solely on
