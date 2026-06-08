@@ -14,6 +14,7 @@ import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
 import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
+import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
@@ -74,11 +75,16 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   /**
    * Side the menu is anchored to. Defaults to `'bottom'`. Pair with
    * `align` for the full positioning API.
+   *
+   * One of the floating-ui positioning inputs shared verbatim across the
+   * three menu roots — their non-seed defaults come from the single
+   * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
+   * guards the three roots against drift.
    */
-  readonly side = input<FloatingSide | undefined>('bottom');
+  readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
 
   /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>('start');
+  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
 
   /**
    * Gap (px) between trigger and menu along the main axis. Default `4`.
@@ -88,10 +94,14 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
+  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+  });
 
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+  readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
+    transform: booleanAttribute,
+  });
 
   /**
    * Padding (px) applied uniformly to flip / shift / size. Default `8`.
@@ -103,14 +113,23 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
+  readonly arrowPadding = input(MENU_POSITIONING_DEFAULTS.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
+  readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
 
   /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+  readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
+    transform: booleanAttribute,
+  });
 
+  /**
+   * When `true` (default), arrow-key navigation wraps from the last enabled
+   * item back to the first (and vice versa). When `false`, navigation stops
+   * at the ends.
+   */
   readonly loop = input(true, { transform: booleanAttribute });
 
   /**
@@ -141,9 +160,32 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   /** Manual `aria-label` on `[forMenuContent]`. Use when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
+  /**
+   * Fires when Escape is pressed while the menu is open, just before it
+   * closes. Call `preventDefault()` on the emitted veto to keep the menu
+   * open and suppress the Escape-driven close.
+   */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /**
+   * Fires on a pointer-down outside the menu (and outside the exempt
+   * trigger), just before it closes. Call `preventDefault()` on the veto to
+   * keep the menu open.
+   */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /**
+   * Fires when focus moves outside the menu, just before it closes. Call
+   * `preventDefault()` on the veto to keep the menu open.
+   */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /**
+   * Composite outside-interaction channel: fires for either a
+   * pointer-down-outside or a focus-outside, just before the menu closes.
+   * Call `preventDefault()` on the veto to keep the menu open regardless of
+   * which interaction triggered it.
+   */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**

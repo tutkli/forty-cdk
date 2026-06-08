@@ -7,11 +7,14 @@ import { createDefaults } from '../_internal/defaults/defaults';
  * scope. Configure with `provideForMenuDefaults` at the app root or in any
  * component's `providers`.
  *
- * Today these tune the pointer-driven submenu interaction: hovering a
+ * They tune the pointer-driven submenu interaction — hovering a
  * `[forMenuSubTrigger]` opens its submenu after `subMenuOpenDelay`, and
  * leaving it (without travelling into the submenu through the pointer-grace
- * "safe triangle") closes it after `subMenuCloseDelay`. Click / Enter /
- * Space / ArrowRight semantics are unaffected by these values.
+ * "safe triangle") closes it after `subMenuCloseDelay` — and the submenu's
+ * floating-ui placement offsets (`sideOffset` / `collisionPadding`), so the
+ * submenu reads them from a provider like `[forDropdownMenu]` /
+ * `[forContextMenu]` do instead of hardcoding them. Click / Enter / Space /
+ * ArrowRight semantics are unaffected by these values.
  */
 export interface ForMenuDefaults {
   /**
@@ -34,12 +37,26 @@ export interface ForMenuDefaults {
    * `300`.
    */
   subMenuPointerGraceDuration: number;
+  /**
+   * Distance (px) between the sub-trigger and the submenu content along the
+   * resolved `side` axis. Mirrors Radix's `sideOffset`. Default `0` — a
+   * submenu sits flush against its parent item.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) added to the viewport edges for collision-aware positioning
+   * of the submenu. Higher values keep the submenu further from the edge when
+   * `flip` / `shift` runs. Default `8`.
+   */
+  collisionPadding: number;
 }
 
 const FALLBACK: ForMenuDefaults = {
   subMenuOpenDelay: 100,
   subMenuCloseDelay: 100,
   subMenuPointerGraceDuration: 300,
+  sideOffset: 0,
+  collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForMenuDefaults>('FOR_MENU_DEFAULTS', FALLBACK);

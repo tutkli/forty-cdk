@@ -9,7 +9,6 @@ import {
   numberAttribute,
   signal,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -18,15 +17,10 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import {
-  FOR_MENU_CONTEXT,
-  type ForMenuCloseReason,
-  type ForMenuContext,
-  type ForMenuItemHandle,
-} from '../menu/menu-context';
+import { FOR_MENU_CONTEXT } from '../menu/menu-context';
+import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,
   type ForMenubarContext,
@@ -157,7 +151,14 @@ export class ForMenubar implements ForMenubarContext {
    * every internal close path (Escape, item activation, outside dismiss).
    */
   readonly #lastValue = signal<string>('');
-  readonly #lastTriggerHost = computed<HTMLElement | null>(() => {
+
+  /**
+   * The most-recently-active trigger host. Persists past close so the
+   * multiplexed `[forMenuContent]` destroy hook can still target the trigger
+   * (by then `value()` is already `''`). Consumed by {@link MenubarMenuContext}
+   * as its return-focus `trigger`.
+   */
+  readonly lastTriggerHost = computed<HTMLElement | null>(() => {
     const v = this.value() || this.#lastValue();
     if (v === '') {
       return null;
@@ -179,127 +180,22 @@ export class ForMenubar implements ForMenubarContext {
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.#clearCloseTimer();
-      this.#detachContentPointer();
+      this.detachContentPointer();
     });
   }
 
   // -- Multiplexed ForMenuContext for the currently-active menu -------------
 
   /**
-   * The bar's menu-item navigation reuses the shared `MenuItemList` (the
-   * same item-collection / typeahead / navigate / focus mechanics that back
-   * `MenuOverlay`), so the per-active-trigger multiplexing below only has to
-   * cover the parts the single-owner overlay can't — open / anchor / ids /
-   * close derived from `activeTrigger`.
-   */
-  readonly #menuItemList = createMenuItemList<ForMenuItemHandle>(() => this.loop());
-  readonly #menuContentEl = signal<HTMLElement | null>(null);
-  readonly #menuInitialFocus = signal<'first' | 'last'>('first');
-  readonly #menuLastCloseReason = signal<ForMenuCloseReason | null>(null);
-
-  /**
    * Single `ForMenuContext` provided to descendant `[forMenuContent]` and
-   * items. Its open / anchor / side / ids fields are derived from
-   * `activeTrigger`, so the same context shape transparently covers
-   * whichever trigger's menu is mounted.
+   * items, implemented by the dedicated {@link MenubarMenuContext} class. Its
+   * open / anchor / side / ids fields are derived from `activeTrigger`, so the
+   * same context shape transparently covers whichever trigger's menu is
+   * mounted. The bar's menu-item navigation reuses the shared `MenuItemList`
+   * (the same mechanics that back `MenuOverlay`), so the multiplexing only
+   * covers the parts the single-owner overlay can't.
    */
-  readonly menuCtx: ForMenuContext = {
-    open: computed(() => this.value() !== ''),
-    disabled: this.disabled,
-    dismissible: this.dismissible,
-    returnFocus: signal(true),
-    dir: this.dir,
-    side: computed(() => this.activeTrigger()?.side()),
-    align: computed(() => this.activeTrigger()?.align()),
-    sideOffset: computed(() => this.activeTrigger()?.sideOffset() ?? 4),
-    alignOffset: computed(() => this.activeTrigger()?.alignOffset() ?? 0),
-    avoidCollisions: computed(() => this.activeTrigger()?.avoidCollisions() ?? true),
-    collisionPadding: computed(() => this.activeTrigger()?.collisionPadding() ?? 8),
-    arrowPadding: computed(() => this.activeTrigger()?.arrowPadding() ?? 0),
-    sticky: computed(() => this.activeTrigger()?.sticky() ?? 'partial'),
-    hideWhenDetached: computed(() => this.activeTrigger()?.hideWhenDetached() ?? false),
-    loop: this.loop,
-    initialFocus: this.#menuInitialFocus.asReadonly(),
-    setInitialFocus: (target) => this.#menuInitialFocus.set(target),
-    lastCloseReason: this.#menuLastCloseReason.asReadonly(),
-    triggerId: computed(() => this.activeTrigger()?.triggerId() ?? ''),
-    contentId: computed(() => this.activeTrigger()?.contentId() ?? ''),
-    ariaLabel: computed(() => this.activeTrigger()?.ariaLabel() ?? null),
-    anchor: computed<ReferenceElement | null>(() => this.activeTrigger()?.host ?? null),
-    trigger: this.#lastTriggerHost,
-    registerTrigger: () => {
-      // Triggers register with the menubar itself (registerTrigger below),
-      // not with the multiplexed menu context.
-    },
-    unregisterTrigger: () => {},
-    content: this.#menuContentEl.asReadonly(),
-    registerContent: (el) => {
-      this.#menuContentEl.set(el);
-      this.#attachContentPointer(el);
-    },
-    unregisterContent: (el) => {
-      if (this.#menuContentEl() === el) {
-        this.#menuContentEl.set(null);
-      }
-      this.#detachContentPointer();
-    },
-    parentMenu: null,
-    menubar: this,
-    /**
-     * Exempt every menubar trigger element so clicking another trigger
-     * doesn't fire `pointerDownOutside` (the trigger's own click handler
-     * routes the close + open).
-     */
-    dismissableExemptions: computed(() => this.#triggerCollection.items().map((t) => t.host)),
-    registerItem: (h) => this.#menuItemList.registerItem(h),
-    unregisterItem: (h) => this.#menuItemList.unregisterItem(h),
-    navigate: (current, action) => this.#menuItemList.navigate(current, action),
-    handleTypeahead: (event) => this.#menuItemList.handleTypeahead(event),
-    focusFirstEnabledItem: () => this.#menuItemList.focusFirstEnabledItem(),
-    focusLastEnabledItem: () => this.#menuItemList.focusLastEnabledItem(),
-    toggle: () => {
-      // Without a specific trigger value, toggle from the menubar context
-      // can only close. Triggers themselves drive the open path.
-      if (this.value() !== '') {
-        this.closeOpen();
-      }
-    },
-    openMenu: () => {
-      // Open requires a trigger value — see openTrigger.
-    },
-    closeMenu: (reason: ForMenuCloseReason) => {
-      this.#menuLastCloseReason.set(reason);
-      this.closeOpen();
-    },
-    emitEscapeKeyDown: (event) => {
-      if (!event.defaultPrevented && this.dismissible()) {
-        event.stopPropagation();
-        this.#menuLastCloseReason.set('escape');
-        this.closeOpen();
-      }
-    },
-    // The menubar has no per-trigger `(pointerDownOutside)` / `(focusOutside)`
-    // / `(interactOutside)` outputs, so these emit forwarders are no-ops; the
-    // shell-owned veto reuse simply has nowhere to surface. The implicit close
-    // runs through `requestClose` below.
-    emitPointerDownOutside: () => {},
-    emitFocusOutside: () => {},
-    emitInteractOutside: () => {},
-    requestClose: (reason) => {
-      if (this.value() === '') {
-        return;
-      }
-      this.#menuLastCloseReason.set(reason);
-      this.closeOpen();
-    },
-    // Menubar doesn't expose `(autoFocusOnOpen)` / `(autoFocusOnClose)` as
-    // public outputs — bar-level menus default to APG-prescribed focus
-    // movement and the multiplexed context has no per-trigger output to
-    // route through. No-op stubs so [forMenuContent] can call them
-    // unconditionally regardless of which root provided the context.
-    emitAutoFocusOnOpen: () => false,
-    emitAutoFocusOnClose: () => false,
-  };
+  readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this);
 
   // -- ForMenubarContext ----------------------------------------------------
 
@@ -363,8 +259,7 @@ export class ForMenubar implements ForMenubarContext {
     if (!handle || handle.disabled()) {
       return;
     }
-    this.#menuInitialFocus.set(initialFocus);
-    this.#menuLastCloseReason.set(null);
+    this.menuCtx.prepareOpen(initialFocus);
     this.#lastValue.set(value);
     if (this.value() !== value) {
       this.value.set(value);
@@ -468,12 +363,18 @@ export class ForMenubar implements ForMenubarContext {
     if (this.value() === '') {
       return;
     }
-    this.#menuLastCloseReason.set('pointerDownOutside');
+    this.menuCtx.setLastCloseReason('pointerDownOutside');
     this.closeOpen();
   }
 
-  #attachContentPointer(el: HTMLElement): void {
-    this.#detachContentPointer();
+  /**
+   * Attach the bar's hover-keepalive listeners to the mounted multiplexed
+   * content element so travelling from a trigger into its portaled menu keeps
+   * the open chain alive. Called by {@link MenubarMenuContext} on content
+   * registration.
+   */
+  attachContentPointer(el: HTMLElement): void {
+    this.detachContentPointer();
     const onEnter = (event: PointerEvent): void => {
       if (event.pointerType !== '' && event.pointerType !== 'mouse') {
         return;
@@ -494,7 +395,8 @@ export class ForMenubar implements ForMenubarContext {
     };
   }
 
-  #detachContentPointer(): void {
+  /** Detach the bar's hover-keepalive listeners. Called by {@link MenubarMenuContext}. */
+  detachContentPointer(): void {
     this.#detachContentPointerFn?.();
     this.#detachContentPointerFn = null;
   }
