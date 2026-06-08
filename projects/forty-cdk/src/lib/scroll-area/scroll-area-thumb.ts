@@ -35,6 +35,8 @@ function injectRequiredScrollbar(): ForScrollAreaScrollbar {
     '[style.position]': '"absolute"',
     '[style.width.px]': 'widthPx()',
     '[style.height.px]': 'heightPx()',
+    '[style.left.px]': 'leftPx()',
+    '[style.top.px]': 'topPx()',
     '[style.transform]': 'transformValue()',
     '[attr.data-orientation]': 'scrollbar.orientation()',
     '[attr.data-state]': 'scrollbar.state()',
@@ -113,6 +115,12 @@ export class ForScrollAreaThumb {
   }
   protected heightPx(): number | null {
     return this.scrollbar.orientation() === 'vertical' ? this.#thumbSize() : null;
+  }
+  protected leftPx(): number | null {
+    return this.scrollbar.orientation() === 'horizontal' ? 0 : null;
+  }
+  protected topPx(): number | null {
+    return this.scrollbar.orientation() === 'vertical' ? 0 : null;
   }
   protected transformValue(): string {
     if (this.scrollbar.orientation() === 'horizontal') {
