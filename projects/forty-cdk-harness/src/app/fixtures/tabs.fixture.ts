@@ -66,7 +66,12 @@ interface Tab {
         }
       </div>
       @for (tab of tabs(); track tab.value) {
-        <section [attr.data-testid]="'content-' + tab.value" forTabsContent [value]="tab.value">
+        <section
+          [attr.data-testid]="'content-' + tab.value"
+          forTabsContent
+          [value]="tab.value"
+          [hidden]="active() !== tab.value"
+        >
           @if (tab.rich) {
             <button [attr.data-testid]="'panel-button-' + tab.value" type="button">
               Inside {{ tab.value }}

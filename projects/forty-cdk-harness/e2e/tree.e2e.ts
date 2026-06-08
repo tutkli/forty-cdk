@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
 
 test.describe('Tree', () => {
   test('roving entry: exactly one treeitem is tabbable and Tab lands on it', async ({ page }) => {
@@ -8,8 +8,7 @@ test.describe('Tree', () => {
     expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
 
     await el(page, 'before').focus();
-    await page.keyboard.press('Tab');
-    await expectFocused(el(page, 'item-documents'));
+    await rovingFirst(page, 'item-documents');
   });
 
   test('Tab exits the tree to the next focusable element', async ({ page }) => {
@@ -149,11 +148,13 @@ test.describe('Tree', () => {
     await el(page, 'item-alpha').focus();
     await expectFocused(el(page, 'item-alpha'));
 
-    await page.keyboard.press('ArrowLeft'); // alpha → projects (parent)
+    await page.keyboard.press('ArrowLeft'); // alpha (leaf) → projects (parent)
     await expectFocused(el(page, 'item-projects'));
-    await page.keyboard.press('ArrowLeft'); // projects → documents (parent)
+    await page.keyboard.press('ArrowLeft'); // projects (open) → collapses, focus stays
+    await expect(el(page, 'item-projects')).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('ArrowLeft'); // projects (closed) → documents (parent)
     await expectFocused(el(page, 'item-documents'));
-    await page.keyboard.press('ArrowLeft'); // collapse documents
+    await page.keyboard.press('ArrowLeft'); // documents (open) → collapses
     await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
 
     // The tab stop is the still-visible collapsed parent, and there is
@@ -162,8 +163,7 @@ test.describe('Tree', () => {
     await expect(el(page, 'item-documents')).toHaveAttribute('tabindex', '0');
 
     await el(page, 'before').focus();
-    await page.keyboard.press('Tab');
-    await expectFocused(el(page, 'item-documents'));
+    await rovingFirst(page, 'item-documents');
   });
 
   test('disabling the active node keeps the tree keyboard-reachable (self-heal)', async ({
