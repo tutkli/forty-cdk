@@ -12,6 +12,8 @@ export type {
   VetoableNativeEvent,
 } from './lib/_internal/vetoable-event/vetoable-event';
 
+export { FOR_ID_SALT, provideForIdSalt } from './lib/_internal/id-generator/id-generator';
+
 export * from './lib/disclosure';
 export * from './lib/accordion';
 export * from './lib/field';
