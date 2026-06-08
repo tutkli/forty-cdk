@@ -16,6 +16,12 @@ export interface ForMeterContext {
   readonly max: Signal<number>;
   /** `0..100`. */
   readonly percentage: Signal<number>;
+  /**
+   * {@link percentage} rounded to two decimals for the `data-percentage`
+   * reflection. Owned by the root so the indicator mirrors it instead of
+   * re-implementing the rounding.
+   */
+  readonly percentageAttr: Signal<number>;
   readonly quality: Signal<ForMeterQuality>;
 }
 

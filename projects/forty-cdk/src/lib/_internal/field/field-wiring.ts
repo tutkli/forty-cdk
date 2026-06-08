@@ -98,8 +98,6 @@ export interface ForFieldContext {
   registerDescription(): () => void;
   /** Mark an error region present; returns an unregister callback. */
   registerError(): () => void;
-  /** Move focus to the registered control's focusable element. */
-  focusControl(): void;
   /**
    * Forward a click to the registered control's focusable element, then focus
    * it — the same outcome a native `<label for>` produces through the browser's

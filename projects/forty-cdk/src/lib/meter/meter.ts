@@ -132,7 +132,5 @@ export class ForMeter implements ForMeterContext {
     return label(this.clampedValue(), min, max);
   });
 
-  protected percentageAttr(): number {
-    return Math.round(this.percentage() * 100) / 100;
-  }
+  readonly percentageAttr = computed<number>(() => Math.round(this.percentage() * 100) / 100);
 }

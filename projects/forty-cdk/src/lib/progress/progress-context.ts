@@ -13,6 +13,12 @@ export interface ForProgressContext {
   readonly max: Signal<number>;
   /** `null` when indeterminate; otherwise `0..100`. */
   readonly percentage: Signal<number | null>;
+  /**
+   * {@link percentage} rounded to two decimals for the `data-percentage`
+   * reflection, or `null` when indeterminate. Owned by the root so the
+   * indicator mirrors it instead of re-implementing the rounding.
+   */
+  readonly percentageAttr: Signal<number | null>;
   /** Logical state, mirrored on `data-state`. */
   readonly state: Signal<ForProgressState>;
 }

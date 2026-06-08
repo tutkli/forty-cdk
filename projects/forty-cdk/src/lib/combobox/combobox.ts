@@ -43,7 +43,8 @@ import {
   type ForComboboxContext,
   type ForComboboxOptionHandle,
 } from './combobox-context';
-import { OptionLabelCache, VirtualizedNavigator } from './combobox-snapshot';
+import { OptionLabelCache } from './combobox-label-cache';
+import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -302,7 +303,7 @@ export class ForCombobox<T = string>
    * imperative moves that own their own scroll — arrow / Home / End
    * navigation, pointer-move hover, multi-mode activation, and the virtualized
    * pending-nav resolution (`navigate` / `seedFromIndexedSnapshot` /
-   * `tryResolvePending` in `combobox-snapshot.ts`).
+   * `tryResolvePending` in `combobox-virtualized-navigator.ts`).
    *
    * The reset/seed rule, in order:
    * - On a `query` change the previously-active option may have been filtered
@@ -356,7 +357,7 @@ export class ForCombobox<T = string>
   /**
    * Always-on label cache — keeps `{ id, value, label }` tuples across
    * close/open and scroll-out-of-view to drive inline autocomplete matching
-   * and the `selected` label fallback. See `combobox-snapshot.ts`.
+   * and the `selected` label fallback. See `combobox-label-cache.ts`.
    */
   readonly #labelCache = new OptionLabelCache<T>({
     items: this.#items.items,
@@ -456,7 +457,7 @@ export class ForCombobox<T = string>
     //    live in the linkedSignal. `seedFromIndexedSnapshot` then seeds the
     //    topmost / bottommost *rendered* enabled option (ordered by absolute
     //    `posInSet`) deliberately passively — it only moves the pointer, never
-    //    the consumer's scroll position (see `combobox-snapshot.ts`).
+    //    the consumer's scroll position (see `combobox-virtualized-navigator.ts`).
     // 3. Non-virtualized: scrolls the auto-highlight-seeded option into view so
     //    a seed that lands below the fold is visible, for parity with
     //    `navigate()`. The seed itself comes from the linkedSignal; this is its

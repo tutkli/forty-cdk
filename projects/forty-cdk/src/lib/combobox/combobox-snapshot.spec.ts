@@ -3,12 +3,8 @@ import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup } from '../../test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
-import {
-  type IndexedSnapshotEntry,
-  OptionLabelCache,
-  type SnapshotEntry,
-  VirtualizedNavigator,
-} from './combobox-snapshot';
+import { OptionLabelCache, type SnapshotEntry } from './combobox-label-cache';
+import { type IndexedSnapshotEntry, VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 interface FakeOption {
   readonly handle: ForComboboxOptionHandle<string>;

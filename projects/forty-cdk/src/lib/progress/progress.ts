@@ -121,12 +121,12 @@ export class ForProgress implements ForProgressContext {
     return null;
   });
 
-  readonly #announcer = inject(LiveAnnouncer);
-
-  protected percentageAttr(): number | null {
+  readonly percentageAttr = computed<number | null>(() => {
     const p = this.percentage();
     return p === null ? null : Math.round(p * 100) / 100;
-  }
+  });
+
+  readonly #announcer = inject(LiveAnnouncer);
 
   constructor() {
     let lastState: ForProgressState | null = null;
