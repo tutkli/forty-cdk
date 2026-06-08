@@ -97,7 +97,8 @@ export class ForSlider
    * Two-way bindable. Selected values, one per thumb. Single-thumb sliders
    * keep one entry, range sliders two, multi-thumb N. Values must be sorted
    * ascending for multi-thumb; thumb-by-thumb clamping keeps the order
-   * during interaction. Defaults to `[min]`.
+   * during interaction. Defaults to `[0]`; set an explicit `[(value)]`
+   * when `min` is non-zero.
    */
   readonly value = model<readonly number[]>([0]);
 
