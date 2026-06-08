@@ -141,7 +141,7 @@ test.describe('Toolbar', () => {
       await page.locator('[data-testid="toolbar"] [tabindex="0"]').count(),
     ).toBe(1);
     // Re-entry from the control lands on the next enabled item (toggle).
-    await el(page, 'remove-active').focus();
+    await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'toggle'));
   });

@@ -112,7 +112,7 @@ test.describe('Tabs (roving self-heal)', () => {
 
     expect(await page.locator('[role="tab"][tabindex="0"]').count()).toBe(1);
     // Re-entry from the control lands on the first surviving enabled trigger.
-    await el(page, 'remove-active').focus();
+    await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'trigger-b'));
   });

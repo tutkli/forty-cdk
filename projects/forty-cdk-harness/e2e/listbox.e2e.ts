@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, gotoFixture, rovingFirst } from './_helpers';
 
 test.describe('Listbox', () => {
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {
     await gotoFixture(page, 'listbox');
     await el(page, 'before').focus();
-    await page.keyboard.press('Tab');
     // Roving-tabindex: the listbox itself owns the tab stop; the first option is focused.
-    await expect(el(page, 'opt-apple')).toBeFocused();
+    await rovingFirst(page, 'opt-apple');
   });
 
   test('ArrowDown skips a disabled option', async ({ page }) => {
@@ -56,7 +55,7 @@ test.describe('Listbox', () => {
     // Exactly one option remains tabbable, and Tab from the control re-enters
     // the listbox at the next enabled option (banana is disabled → cherry).
     expect(await page.locator('[role="option"][tabindex="0"]').count()).toBe(1);
-    await el(page, 'remove-active').focus();
+    await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
