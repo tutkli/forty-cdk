@@ -51,7 +51,12 @@ export interface ForMenuDefaults {
   collisionPadding: number;
 }
 
-const FALLBACK: ForMenuDefaults = {
+/**
+ * Library fallback for menu defaults, read at the root injector when no
+ * consumer has called `provideForMenuDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_MENU_FALLBACK_DEFAULTS: ForMenuDefaults = {
   subMenuOpenDelay: 100,
   subMenuCloseDelay: 100,
   subMenuPointerGraceDuration: 300,
@@ -59,7 +64,10 @@ const FALLBACK: ForMenuDefaults = {
   collisionPadding: 8,
 };
 
-const { token, provideDefaults } = createDefaults<ForMenuDefaults>('FOR_MENU_DEFAULTS', FALLBACK);
+const { token, provideDefaults } = createDefaults<ForMenuDefaults>(
+  'FOR_MENU_DEFAULTS',
+  FOR_MENU_FALLBACK_DEFAULTS,
+);
 
 /** Token holding the resolved menu defaults for the current scope. */
 export const FOR_MENU_DEFAULTS = token;

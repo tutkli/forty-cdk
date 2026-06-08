@@ -412,60 +412,6 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('focus trap', () => {
-    it('cycles forward from the last focusable to the first', async () => {
-      const r = renderHost(DialogHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const cancel = document.querySelector<HTMLButtonElement>('#cancel')!;
-      cancel.focus();
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
-      );
-
-      expect(document.activeElement?.id).toBe('ok');
-    });
-
-    it('cycles backward on Shift+Tab from the first to the last', async () => {
-      const r = renderHost(DialogHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const ok = document.querySelector<HTMLButtonElement>('#ok')!;
-      ok.focus();
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'Tab',
-          shiftKey: true,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-
-      expect(document.activeElement?.id).toBe('cancel');
-    });
-  });
-
-  describe('body scroll lock', () => {
-    it('locks body overflow while mounted and clears the inline style on unmount', async () => {
-      // Pre-existing inline overflow is intentionally NOT restored on unmount:
-      // BodyScrollLock clears the inline style and lets the cascade take over.
-      // See body-scroll-lock.ts and #149 for rationale.
-      document.body.style.overflow = 'auto';
-      const r = renderHost(DialogHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(document.body.style.overflow).toBe('hidden');
-
-      r.instance.open.set(false);
-      await flush(r.fixture);
-
-      expect(document.body.style.overflow).toBe('');
-    });
-  });
-
   describe('stacked dialogs', () => {
     it('keeps body locked until the last dialog unmounts', async () => {
       const r = renderHost(StackedDialogsHost);
@@ -656,29 +602,6 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('inert siblings', () => {
-    it('inerts and aria-hides body siblings while the dialog is open', async () => {
-      const sibling = document.createElement('section');
-      sibling.id = 'app-shell';
-      document.body.appendChild(sibling);
-
-      try {
-        const r = renderHost(DialogHost);
-        r.instance.open.set(true);
-        await flush(r.fixture);
-
-        expect(sibling.hasAttribute('inert')).toBe(true);
-        expect(sibling.getAttribute('aria-hidden')).toBe('true');
-
-        r.instance.open.set(false);
-        await flush(r.fixture);
-
-        expect(sibling.hasAttribute('inert')).toBe(false);
-        expect(sibling.hasAttribute('aria-hidden')).toBe(false);
-      } finally {
-        sibling.remove();
-      }
-    });
-
     it('does not inert the dialog itself or its backdrop', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);

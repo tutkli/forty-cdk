@@ -13,13 +13,18 @@ export interface ForSliderDefaults {
   largeStep: number;
 }
 
-const FALLBACK: ForSliderDefaults = {
+/**
+ * Library fallback for slider defaults, read at the root injector when no
+ * consumer has called `provideForSliderDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_SLIDER_FALLBACK_DEFAULTS: ForSliderDefaults = {
   largeStep: 10,
 };
 
 const { token, provideDefaults } = createDefaults<ForSliderDefaults>(
   'FOR_SLIDER_DEFAULTS',
-  FALLBACK,
+  FOR_SLIDER_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved slider defaults for the current scope. */

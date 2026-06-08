@@ -24,14 +24,19 @@ export interface ForTabsDefaults {
   loop: boolean;
 }
 
-const FALLBACK: ForTabsDefaults = {
+/**
+ * Library fallback for tabs defaults, read at the root injector when no
+ * consumer has called `provideForTabsDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TABS_FALLBACK_DEFAULTS: ForTabsDefaults = {
   activationMode: 'automatic',
   loop: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForTabsDefaults>(
   'FOR_TABS_DEFAULTS',
-  FALLBACK,
+  FOR_TABS_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved tabs defaults for the current scope. */

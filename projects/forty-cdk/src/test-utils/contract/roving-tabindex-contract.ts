@@ -133,10 +133,11 @@ export function assertRovingTabindexContract(
     it(`${forward} advances focus to the next enabled item`, async () => {
       const r = await setup.mount();
       const enabledIdx = enabled(r);
-      if (enabledIdx.length < 2) {
-        // Nothing to advance to — skip silently.
-        return;
-      }
+      // The required `mount` factory must yield at least two enabled items —
+      // otherwise there is nothing to advance to and the assertion below would
+      // never run. Surface a misconfigured mount as a failure, not a green
+      // no-op.
+      expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
       const a = enabledIdx[0]!;
       const b = enabledIdx[1]!;
       r.items[a]!.focus();
@@ -162,7 +163,9 @@ export function assertRovingTabindexContract(
       it(`${forward} skips disabled items mid-list during arrow navigation`, async () => {
         const r = await setup.mountWithDisabledMiddle!();
         const enabledIdx = enabled(r);
-        if (enabledIdx.length < 2) return;
+        // The consumer opted into this variant, so a sub-2-item mount is a
+        // misconfiguration — fail rather than skip silently.
+        expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
         const a = enabledIdx[0]!;
         const b = enabledIdx[1]!;
         // a → b should jump over any disabled items between them.
@@ -178,7 +181,9 @@ export function assertRovingTabindexContract(
       it('RTL inverts ArrowLeft / ArrowRight (ArrowLeft becomes the forward direction)', async () => {
         const r = await setup.mountRtl!();
         const enabledIdx = enabled(r);
-        if (enabledIdx.length < 2) return;
+        // The consumer opted into this variant, so a sub-2-item mount is a
+        // misconfiguration — fail rather than skip silently.
+        expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
         const a = enabledIdx[0]!;
         const b = enabledIdx[1]!;
         r.items[a]!.focus();

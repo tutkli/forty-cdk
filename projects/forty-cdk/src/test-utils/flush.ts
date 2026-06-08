@@ -42,21 +42,52 @@ export function nextMacrotask(): Promise<void> {
 }
 
 /**
+ * Upper bound on the number of macrotask hops {@link flushPositioning} will
+ * pump before giving up. It is a safety cap, NOT a calibrated hop count: the
+ * loop breaks early the moment the positioned DOM signal appears, so the exact
+ * value only matters when no overlay ever resolves a position (e.g. the
+ * overlay stayed closed). Raise it only if a future dependency genuinely needs
+ * more hops to settle — the early-break makes over-provisioning free.
+ */
+const MAX_POSITIONING_HOPS = 8;
+
+/**
+ * Has any portaled overlay resolved its first position yet? Both floating
+ * positioners (`_internal/floating/floating.ts` and `item-aligned.ts`) reveal
+ * a resolved surface the same way: they write a non-empty inline `translate`
+ * and drop the anti-flash `clip-path: inset(50%)` baseline. Polling for an
+ * element carrying a non-empty inline `translate` is therefore a
+ * dependency-agnostic "position settled" signal — it does not depend on the
+ * exact number of microtask / RAF hops `@floating-ui/dom` happens to take.
+ */
+function hasResolvedPosition(): boolean {
+  return Array.from(document.querySelectorAll<HTMLElement>('[style*="translate"]')).some(
+    (el) => el.style.translate !== '',
+  );
+}
+
+/**
  * Drain pattern for primitives that depend on `@floating-ui/dom`'s
- * `computePosition` / `autoUpdate`. computePosition resolves across
- * several microtask hops and autoUpdate's RAF polyfill in jsdom uses
- * `setTimeout`, so a single `flush()` is not enough — loop a few times
- * to let the position settle.
+ * `computePosition` / `autoUpdate`. computePosition resolves across several
+ * microtask hops and autoUpdate's RAF polyfill in jsdom uses `setTimeout`, so
+ * a single `flush()` is not enough.
  *
- * Use this for any spec that asserts on inline `top` / `left` / `width`
- * styles, transforms, or `data-side` reflection on portaled overlays.
+ * Rather than a fixed, empirically-calibrated hop count (fragile — it breaks
+ * silently the day a dependency bump changes the number of hops), this is a
+ * bounded poll-until-stable: it pumps macrotask hops up to
+ * {@link MAX_POSITIONING_HOPS} times but breaks early the moment a portaled
+ * overlay reports a resolved position (see {@link hasResolvedPosition}). The
+ * waiter is self-terminating and resilient to the exact hop count changing.
+ *
+ * Use this for any spec that asserts on inline `translate` / `--for-*` styles,
+ * transforms, or `data-side` reflection on portaled overlays.
  */
 export async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
   await flush(fixture);
-  // 4 hops covers both the "open from cold" path (autoUpdate first frame) and
-  // the "reposition after middleware change" path (extra microtask + RAF
-  // round-trip). Calibrated empirically against floating-ui in jsdom.
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < MAX_POSITIONING_HOPS; i++) {
+    if (hasResolvedPosition()) {
+      break;
+    }
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     fixture.detectChanges();
     await fixture.whenStable();

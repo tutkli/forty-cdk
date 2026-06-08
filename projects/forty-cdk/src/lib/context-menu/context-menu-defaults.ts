@@ -23,14 +23,19 @@ export interface ForContextMenuDefaults {
   collisionPadding: number;
 }
 
-const FALLBACK: ForContextMenuDefaults = {
+/**
+ * Library fallback for context menu defaults, read at the root injector when no
+ * consumer has called `provideForContextMenuDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_CONTEXT_MENU_FALLBACK_DEFAULTS: ForContextMenuDefaults = {
   sideOffset: 0,
   collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForContextMenuDefaults>(
   'FOR_CONTEXT_MENU_DEFAULTS',
-  FALLBACK,
+  FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved context-menu defaults for the current scope. */

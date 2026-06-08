@@ -18,13 +18,18 @@ export interface ForListboxDefaults {
   selectionFollowsFocus: boolean;
 }
 
-const FALLBACK: ForListboxDefaults = {
+/**
+ * Library fallback for listbox defaults, read at the root injector when no
+ * consumer has called `provideForListboxDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_LISTBOX_FALLBACK_DEFAULTS: ForListboxDefaults = {
   selectionFollowsFocus: false,
 };
 
 const { token, provideDefaults } = createDefaults<ForListboxDefaults>(
   'FOR_LISTBOX_DEFAULTS',
-  FALLBACK,
+  FOR_LISTBOX_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved listbox defaults for the current scope. */

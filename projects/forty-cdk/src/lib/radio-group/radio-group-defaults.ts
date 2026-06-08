@@ -16,13 +16,18 @@ export interface ForRadioGroupDefaults {
   loop: boolean;
 }
 
-const FALLBACK: ForRadioGroupDefaults = {
+/**
+ * Library fallback for radio group defaults, read at the root injector when no
+ * consumer has called `provideForRadioGroupDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_RADIO_GROUP_FALLBACK_DEFAULTS: ForRadioGroupDefaults = {
   loop: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForRadioGroupDefaults>(
   'FOR_RADIO_GROUP_DEFAULTS',
-  FALLBACK,
+  FOR_RADIO_GROUP_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved radio-group defaults for the current scope. */

@@ -17,13 +17,18 @@ export interface ForProgressDefaults {
   announceCompletion: boolean;
 }
 
-const FALLBACK: ForProgressDefaults = {
+/**
+ * Library fallback for progress defaults, read at the root injector when no
+ * consumer has called `provideForProgressDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_PROGRESS_FALLBACK_DEFAULTS: ForProgressDefaults = {
   announceCompletion: false,
 };
 
 const { token, provideDefaults } = createDefaults<ForProgressDefaults>(
   'FOR_PROGRESS_DEFAULTS',
-  FALLBACK,
+  FOR_PROGRESS_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved progress defaults for the current scope. */

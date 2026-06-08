@@ -20,7 +20,12 @@ export interface ForNavigationMenuDefaults {
   skipDelayDuration: number;
 }
 
-const FALLBACK: ForNavigationMenuDefaults = {
+/**
+ * Library fallback for navigation menu defaults, read at the root injector when no
+ * consumer has called `provideForNavigationMenuDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS: ForNavigationMenuDefaults = {
   delayDuration: 200,
   closeDelay: 150,
   skipDelayDuration: 300,
@@ -28,7 +33,7 @@ const FALLBACK: ForNavigationMenuDefaults = {
 
 const { token, provideDefaults } = createDefaults<ForNavigationMenuDefaults>(
   'FOR_NAVIGATION_MENU_DEFAULTS',
-  FALLBACK,
+  FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved navigation-menu defaults for the current scope. */

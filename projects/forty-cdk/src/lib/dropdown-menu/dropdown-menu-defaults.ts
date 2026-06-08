@@ -22,14 +22,19 @@ export interface ForDropdownMenuDefaults {
   collisionPadding: number;
 }
 
-const FALLBACK: ForDropdownMenuDefaults = {
+/**
+ * Library fallback for dropdown menu defaults, read at the root injector when no
+ * consumer has called `provideForDropdownMenuDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS: ForDropdownMenuDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForDropdownMenuDefaults>(
   'FOR_DROPDOWN_MENU_DEFAULTS',
-  FALLBACK,
+  FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved dropdown-menu defaults for the current scope. */

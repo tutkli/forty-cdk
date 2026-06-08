@@ -16,13 +16,18 @@ export interface ForToolbarDefaults {
   loop: boolean;
 }
 
-const FALLBACK: ForToolbarDefaults = {
+/**
+ * Library fallback for toolbar defaults, read at the root injector when no
+ * consumer has called `provideForToolbarDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TOOLBAR_FALLBACK_DEFAULTS: ForToolbarDefaults = {
   loop: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForToolbarDefaults>(
   'FOR_TOOLBAR_DEFAULTS',
-  FALLBACK,
+  FOR_TOOLBAR_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved toolbar defaults for the current scope. */
