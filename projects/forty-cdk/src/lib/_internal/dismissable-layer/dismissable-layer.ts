@@ -57,6 +57,21 @@ export interface DismissableLayerActivateOptions {
  *   no-op when `PLATFORM_ID` is not the browser; nothing about this code
  *   path is reachable until an overlay calls `activate()`, which only
  *   happens from `afterNextRender`.
+ *
+ * Listener phases — intentional asymmetry: `pointerdown` and `focusin`
+ * register on the **capture** phase so outside-interaction is detected even
+ * when overlay content stops bubbling propagation, but `keydown` (Escape)
+ * registers on the **bubble** phase by design. The bubble phase is
+ * load-bearing for Escape because the per-overlay `onEscapeKeyDown` handlers
+ * (Dialog, Select, Menu, Popover, …) call `event.stopPropagation()` after they
+ * close — that stops the same keydown from bubbling further up to an *ancestor*
+ * overlay's keydown handler, which is how nested overlays avoid one Escape
+ * closing two layers at once. Moving this listener to capture would fire it
+ * before any of those handlers and defeat the stopPropagation-based
+ * single-layer-per-Escape contract. The trade-off is that overlay content with
+ * its own bubble-phase keydown handler that calls `stopPropagation()` can
+ * swallow Escape before it reaches this listener; that is an accepted,
+ * documented limitation rather than an accidental one.
  */
 @Injectable({ providedIn: 'root' })
 export class DismissableLayerStack {
@@ -138,6 +153,19 @@ export class DismissableLayerStack {
 }
 
 /**
+ * Resolves the effective target of an interaction event for the
+ * outside-detection containment check. Prefers `composedPath()[0]` so a
+ * pointer-down / focus inside a shadow tree reports the real originating node
+ * rather than the shadow host the event was retargeted to. Falls back to
+ * `event.target` in environments without `composedPath`.
+ */
+function resolveEventTarget(event: Event): Node | null {
+  const path = event.composedPath?.();
+  const first = path && path.length > 0 ? path[0] : null;
+  return (first ?? event.target) as Node | null;
+}
+
+/**
  * Coordinates the standard "dismissable surface" interactions used by modal
  * dialogs, popovers, dropdown menus, drawers, and any other transient
  * overlay: Escape, pointer-down outside, focus-outside.
@@ -210,7 +238,7 @@ export class DismissableLayer {
   }
 
   protected handlePointerDown(event: PointerEvent): void {
-    const target = event.target as Node | null;
+    const target = resolveEventTarget(event);
     if (!target || this.#contains(target)) {
       return;
     }
@@ -222,7 +250,7 @@ export class DismissableLayer {
   }
 
   protected handleFocusIn(event: FocusEvent): void {
-    const target = event.target as Node | null;
+    const target = resolveEventTarget(event);
     if (!target || this.#contains(target)) {
       return;
     }

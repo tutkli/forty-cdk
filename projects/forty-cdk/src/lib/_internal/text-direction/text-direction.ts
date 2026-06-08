@@ -42,6 +42,19 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  * The observer callback writing `#revision` is the single, intentional
  * "external imperative source → signal" exception, isolated here.
  *
+ * Recompute granularity (intentional trade-off): a single `dir` mutation
+ * anywhere in the document bumps the one shared `revision`, which invalidates
+ * the ambient `computed` of **every** mounted dir-aware primitive — each then
+ * re-walks its own ancestor chain. This is deliberately coarse: it keeps the
+ * library at one document observer instead of one per primitive, and the
+ * recompute is a cheap synchronous `closest('[dir]')` walk per host. With the
+ * modest number of dir-aware primitives a typical page mounts, the
+ * recompute-all cost is well below the cost of N per-instance observers each
+ * retriggering on every other's reflection. If profiling ever flags it, cache
+ * the ambient per *ancestor* (siblings under the same `[dir]` share a result)
+ * or push the resolved ambient from this callback so a recompute becomes a
+ * signal read rather than a DOM walk.
+ *
  * Internal — not re-exported from `public-api.ts`.
  */
 @Injectable({ providedIn: 'root' })

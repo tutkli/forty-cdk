@@ -1,13 +1,23 @@
 import { computed, type Signal } from '@angular/core';
 
 /**
- * Pure helpers backing the library's array-modeled selection contract
- * (`Select`, `Listbox`, `Combobox`). They encode the single shape consumers
- * learn across every selection primitive: equality-aware membership, an
- * immutable multi-toggle, the default form-value serializer, and the
- * single-mode derived view. No DOM access, no DI, no state — primitives
- * compose them inside their own selection logic, and the shared definition
- * keeps a fix to the contract from drifting across the three copies.
+ * Pure helpers backing the array-modeled selection contract of `Select`,
+ * `Listbox`, and `Combobox` — the form-value selection primitives whose value
+ * is a generic `readonly T[]` with equality-aware membership. They encode the
+ * shape those three share: equality-aware membership, an immutable
+ * multi-toggle, the default form-value serializer, and the single-mode derived
+ * view. No DOM access, no DI, no state — those primitives compose them inside
+ * their own selection logic, and the shared definition keeps a fix from
+ * drifting across the three copies.
+ *
+ * Scope note: these helpers are NOT a universal selection contract. Other
+ * array-backed primitives keep their own selection/expansion logic — `ForTree`
+ * (string-keyed select / expand / extend-by-arrow), `Accordion`, and
+ * `ToggleGroup` all manage their arrays directly rather than routing through
+ * here, because their value semantics (string keys, no equality comparator, no
+ * single-mode `T | null` view) differ. Treat this module as "the
+ * Select/Listbox/Combobox helper set", not "the library's one true selection
+ * source".
  */
 
 /**

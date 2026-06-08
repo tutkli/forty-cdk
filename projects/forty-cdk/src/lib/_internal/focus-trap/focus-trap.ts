@@ -178,6 +178,7 @@ export class FocusTrap {
       return;
     }
     this.#active = true;
+    this.#containerHadTabindex = this.#container.hasAttribute('tabindex');
     this.#returnTo =
       options.returnFocus !== undefined
         ? options.returnFocus
@@ -229,11 +230,8 @@ export class FocusTrap {
   }
 
   #focusContainer(): void {
-    if (!this.#container.hasAttribute('tabindex')) {
+    if (!this.#containerHadTabindex && !this.#container.hasAttribute('tabindex')) {
       this.#container.setAttribute('tabindex', '-1');
-      this.#containerHadTabindex = false;
-    } else {
-      this.#containerHadTabindex = true;
     }
     this.#container.focus();
   }

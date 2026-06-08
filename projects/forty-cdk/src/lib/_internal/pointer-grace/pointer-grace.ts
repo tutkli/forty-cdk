@@ -165,6 +165,16 @@ export function buildSubmenuGracePolygon(
  * Touch / pen moves are ignored — the safe triangle models a hovering mouse;
  * touch interaction opens submenus by tap, never by hover.
  *
+ * Static-polygon assumption: {@link polygon} is captured once at arm time and
+ * never re-measured for the lifetime of this listener. If the submenu content
+ * repositions (a flip, a scroll, a resize) while the grace window is open, the
+ * polygon goes stale and no longer matches the content's live rect. This is an
+ * accepted trade-off: the grace window is short (a single pointer traversal
+ * from trigger to content) and is itself delay-guarded downstream, so a
+ * mid-window reposition is out of scope. Callers that need re-measurement
+ * should re-arm (call the cleanup, then re-attach with a fresh polygon) rather
+ * than expecting this handler to track layout.
+ *
  * @returns A cleanup that removes the listener. Idempotent-safe to store and
  *   call once from a `DestroyRef` hook.
  */

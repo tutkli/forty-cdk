@@ -129,12 +129,14 @@ describe('injectOverlayShell', () => {
     function dispatchPointerOutside(target: Element): void {
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: target, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
       document.dispatchEvent(event);
     }
 
     function dispatchFocusOutside(target: Element): void {
       const event = new FocusEvent('focusin', { bubbles: true });
       Object.defineProperty(event, 'target', { value: target, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
       document.dispatchEvent(event);
     }
 
@@ -593,6 +595,7 @@ describe('injectOverlayShell', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
 
       expect(calls).toEqual([]);

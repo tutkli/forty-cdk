@@ -469,6 +469,7 @@ describe('ForMenubar', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -484,6 +485,7 @@ describe('ForMenubar', () => {
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: edit, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [edit], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -514,6 +516,7 @@ describe('ForMenubar', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 

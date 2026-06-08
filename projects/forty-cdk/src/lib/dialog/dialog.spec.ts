@@ -360,6 +360,7 @@ describe('ForDialog (declarative)', () => {
       const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [backdrop], configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -378,6 +379,7 @@ describe('ForDialog (declarative)', () => {
 
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: child, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [child], configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -393,6 +395,7 @@ describe('ForDialog (declarative)', () => {
       const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [backdrop], configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 

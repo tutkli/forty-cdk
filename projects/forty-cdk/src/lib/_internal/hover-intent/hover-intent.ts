@@ -70,10 +70,10 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
   }
 
   function scheduleOpen(): void {
+    cancelPending();
     if (options.isDisabled()) {
       return;
     }
-    cancelPending();
     if (options.open()) {
       return;
     }
@@ -85,6 +85,9 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
     }
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
+      if (options.isDisabled()) {
+        return;
+      }
       options.open.set(true);
     }, delay);
   }

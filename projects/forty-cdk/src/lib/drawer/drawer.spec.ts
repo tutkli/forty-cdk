@@ -357,6 +357,7 @@ describe('ForDrawer (declarative)', () => {
         button: 0,
       });
       Object.defineProperty(downEvent, 'target', { value: surface, configurable: true });
+      Object.defineProperty(downEvent, 'composedPath', { value: () => [surface], configurable: true });
       surface.dispatchEvent(downEvent);
 
       const moveEvent = new PointerEvent('pointermove', {
@@ -369,6 +370,7 @@ describe('ForDrawer (declarative)', () => {
         button: 0,
       });
       Object.defineProperty(moveEvent, 'target', { value: surface, configurable: true });
+      Object.defineProperty(moveEvent, 'composedPath', { value: () => [surface], configurable: true });
       surface.dispatchEvent(moveEvent);
       await flush(r.fixture);
 
@@ -514,6 +516,7 @@ describe('ForDrawer (declarative)', () => {
       const backdrop = document.querySelector<HTMLElement>('[data-for-drawer-backdrop]')!;
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: backdrop, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [backdrop], configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -531,6 +534,7 @@ describe('ForDrawer (declarative)', () => {
 
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: child, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [child], configurable: true });
       backdrop.dispatchEvent(event);
       await flush(r.fixture);
 

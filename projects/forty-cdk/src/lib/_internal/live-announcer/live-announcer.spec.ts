@@ -3,10 +3,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { LiveAnnouncer } from './live-announcer';
 
-// LiveAnnouncer schedules every text write through `queueMicrotask`, so a
-// single microtask hop is exactly the drain pattern these specs need —
-// `flush(fixture)` would be wrong (there is no fixture / render pipeline
-// involved). Spell the hop inline so future readers see the WHY.
+// LiveAnnouncer schedules every text write through `setTimeout(…, 0)` (a
+// macrotask, not a microtask — see the service JSDoc for the screen-reader
+// rationale). The drain pattern these specs need is therefore a real-timer
+// macrotask hop, not `await Promise.resolve()`. Spell the hop inline so future
+// readers see the WHY.
+const drain = (): Promise<void> => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('LiveAnnouncer', () => {
   beforeEach(() => {
@@ -29,7 +31,7 @@ describe('LiveAnnouncer', () => {
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(0);
 
     announcer.announce('hello');
-    await Promise.resolve();
+    await drain();
 
     const regions = document.querySelectorAll<HTMLElement>('[aria-live="polite"]');
     expect(regions.length).toBe(1);
@@ -38,7 +40,7 @@ describe('LiveAnnouncer', () => {
     expect(regions[0]!.getAttribute('role')).toBe('status');
 
     announcer.announce('there');
-    await Promise.resolve();
+    await drain();
 
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(1);
     expect(regions[0]!.textContent).toBe('there');
@@ -47,7 +49,7 @@ describe('LiveAnnouncer', () => {
   it('creates a separate assertive region with role="alert"', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('boom', 'assertive');
-    await Promise.resolve();
+    await drain();
 
     const polite = document.querySelector('[aria-live="polite"]');
     const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
@@ -60,22 +62,38 @@ describe('LiveAnnouncer', () => {
   it('flushes identical consecutive messages through an empty state', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('repeat');
-    await Promise.resolve();
+    await drain();
     const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
     expect(region.textContent).toBe('repeat');
 
-    // Second call: synchronously clears, then writes the same value via microtask.
+    // Second call: synchronously clears, then writes the same value via a
+    // deferred macrotask.
     announcer.announce('repeat');
     expect(region.textContent).toBe('');
-    await Promise.resolve();
+    await drain();
     expect(region.textContent).toBe('repeat');
+  });
+
+  it('defers the write to a macrotask, not a microtask (screen-reader timing)', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    announcer.announce('deferred');
+    const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+
+    // A microtask drain must NOT flush the write — that is the bug this fix
+    // closes: a microtask hop is too fast for many screen readers on repeats.
+    await Promise.resolve();
+    expect(region.textContent).toBe('');
+
+    // The macrotask drain does flush it.
+    await drain();
+    expect(region.textContent).toBe('deferred');
   });
 
   it('clear() empties all live regions', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('p');
     announcer.announce('a', 'assertive');
-    await Promise.resolve();
+    await drain();
 
     announcer.clear();
 
@@ -91,16 +109,16 @@ describe('LiveAnnouncer', () => {
     expect(region.textContent).toBe('');
 
     announcer.clear();
-    await Promise.resolve();
+    await drain();
 
     expect(region.textContent).toBe('');
   });
 
-  it('a new announce supersedes the pending microtask of the prior one', async () => {
+  it('a new announce supersedes the pending write of the prior one', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('stale');
     announcer.announce('fresh');
-    await Promise.resolve();
+    await drain();
 
     const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
     expect(region.textContent).toBe('fresh');
@@ -121,7 +139,7 @@ describe('LiveAnnouncer', () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('polite message');
     announcer.announce('assertive message', 'assertive');
-    await Promise.resolve();
+    await drain();
     expect(document.querySelectorAll('[aria-live]').length).toBe(2);
 
     // Tearing down the injector runs the service's DestroyRef hook, which
@@ -134,7 +152,7 @@ describe('LiveAnnouncer', () => {
   it('isolates regions across application bootstraps', async () => {
     const first = TestBed.inject(LiveAnnouncer);
     first.announce('first');
-    await Promise.resolve();
+    await drain();
     expect(document.querySelectorAll('[aria-live]').length).toBe(1);
 
     TestBed.resetTestingModule();
@@ -143,14 +161,14 @@ describe('LiveAnnouncer', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const second = TestBed.inject(LiveAnnouncer);
     second.announce('second');
-    await Promise.resolve();
+    await drain();
 
     const regions = document.querySelectorAll<HTMLElement>('[aria-live]');
     expect(regions.length).toBe(1);
     expect(regions[0]!.textContent).toBe('second');
   });
 
-  it('announce() is a no-op on a non-browser platform', async () => {
+  it('announce() and clear() are no-ops on a non-browser platform', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
@@ -159,9 +177,12 @@ describe('LiveAnnouncer', () => {
 
     announcer.announce('should not touch the DOM');
     announcer.announce('nor this one', 'assertive');
-    await Promise.resolve();
+    await drain();
 
     expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+    // clear() is gated on isPlatformBrowser for SSR-safety symmetry with
+    // announce() — it must not throw or touch the DOM on the server.
     expect(() => announcer.clear()).not.toThrow();
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
   });
 });

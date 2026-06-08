@@ -253,6 +253,7 @@ describe('injectModalShell', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
 
       expect(seen.length).toBe(2);
@@ -284,6 +285,7 @@ describe('injectModalShell', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
 
       expect(requestCloseCalls).toEqual([]);
@@ -308,6 +310,7 @@ describe('injectModalShell', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
 
       expect(requestCloseCalls).toEqual([]);
@@ -335,6 +338,7 @@ describe('injectModalShell', () => {
 
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: exemptEl, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [exemptEl], configurable: true });
       document.dispatchEvent(event);
       expect(seen).toEqual([]);
 
@@ -342,6 +346,7 @@ describe('injectModalShell', () => {
       exempt.set([]);
       const event2 = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event2, 'target', { value: exemptEl, configurable: true });
+      Object.defineProperty(event2, 'composedPath', { value: () => [exemptEl], configurable: true });
       document.dispatchEvent(event2);
       expect(seen).toEqual(['pointer']);
       ctx.destroy();

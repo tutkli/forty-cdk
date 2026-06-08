@@ -8,10 +8,14 @@ type Politeness = 'polite' | 'assertive';
  * (`polite` and `assertive`) into `document.body` the first time it is used,
  * then writes / clears messages on demand.
  *
- * Sequential identical announcements are flushed through a microtask so the
- * region is briefly emptied — without that, screen readers ignore repeated
- * text that hasn't actually changed. Each write carries a generation token, so
- * a superseding `announce()` or a `clear()` cancels the prior pending write
+ * Sequential identical announcements are flushed through a deferred write
+ * (`setTimeout(…, 0)`) so the region is briefly emptied — without that, screen
+ * readers ignore repeated text that hasn't actually changed. A macrotask (not a
+ * microtask) is used deliberately: many screen readers (NVDA, VoiceOver) miss
+ * the clear→repopulate cycle on repeat messages when both writes land in the
+ * same microtask drain, because the empty state never reaches the
+ * accessibility tree between them. Each write carries a generation token, so a
+ * superseding `announce()` or a `clear()` cancels the prior pending write
  * before it can paint a stale message.
  *
  * The regions are detached again when the service's injector is destroyed
@@ -63,16 +67,19 @@ export class LiveAnnouncer {
     // Bump the generation so a superseding announce (or a clear) cancels this
     // pending write before it paints.
     const generation = ++this.#generation;
-    queueMicrotask(() => {
+    setTimeout(() => {
       if (generation !== this.#generation) {
         return;
       }
       region.textContent = message;
-    });
+    }, 0);
   }
 
   /** Empty all live regions and cancel any pending announce so it never paints. */
   clear(): void {
+    if (!this.#isBrowser) {
+      return;
+    }
     this.#generation++;
     for (const region of this.#regions.values()) {
       region.textContent = '';

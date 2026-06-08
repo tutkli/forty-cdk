@@ -331,6 +331,7 @@ describe('ForPopover', () => {
       const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [trigger], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -346,6 +347,7 @@ describe('ForPopover', () => {
       const ok = document.querySelector<HTMLElement>('#ok')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: ok, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [ok], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -619,6 +621,7 @@ describe('ForPopover', () => {
       // race when the consumer clicks it to toggle).
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [trigger], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
       expect(r.instance.open()).toBe(true);
@@ -649,6 +652,7 @@ describe('ForPopover', () => {
       const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [trigger], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -663,6 +667,7 @@ describe('ForPopover', () => {
       const anchor = r.query<HTMLElement>('#anchor')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: anchor, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [anchor], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -715,6 +720,7 @@ describe('ForPopover', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);

@@ -280,6 +280,7 @@ describe('ForMenuSub', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -301,6 +302,7 @@ describe('ForMenuSub', () => {
       const paste = document.querySelector<HTMLElement>('#paste')!;
       const pdEvent = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(pdEvent, 'target', { value: paste, configurable: true });
+      Object.defineProperty(pdEvent, 'composedPath', { value: () => [paste], configurable: true });
       document.dispatchEvent(pdEvent);
       await flush(r.fixture);
 

@@ -58,6 +58,54 @@ describe('createDefaults', () => {
     });
   });
 
+  it('keeps a deliberate null override (only undefined means "key omitted")', () => {
+    interface NullableDefaults {
+      handler: (() => void) | null;
+    }
+    const fallbackHandler = (): void => {};
+    const NULLABLE_FALLBACK: NullableDefaults = { handler: fallbackHandler };
+
+    const { token, provideDefaults } = createDefaults<NullableDefaults>(
+      'NULLABLE_DEFAULTS',
+      NULLABLE_FALLBACK,
+    );
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideDefaults({ handler: null })],
+    });
+    const value = TestBed.runInInjectionContext(() => inject(token));
+    expect(value.handler).toBeNull();
+  });
+
+  it('inherits a deliberate null override from the parent scope', () => {
+    interface NullableDefaults {
+      handler: (() => void) | null;
+    }
+    const fallbackHandler = (): void => {};
+    const NULLABLE_FALLBACK: NullableDefaults = { handler: fallbackHandler };
+
+    const { token, provideDefaults } = createDefaults<NullableDefaults>(
+      'NULLABLE_DEFAULTS',
+      NULLABLE_FALLBACK,
+    );
+
+    @Component({
+      template: '',
+      providers: [provideDefaults()],
+    })
+    class Child {
+      readonly value = inject(token);
+    }
+
+    TestBed.configureTestingModule({
+      imports: [Child],
+      providers: [provideZonelessChangeDetection(), provideDefaults({ handler: null })],
+    });
+    const fixture = TestBed.createComponent(Child);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.value.handler).toBeNull();
+  });
+
   it('skips undefined keys in overrides so they fall back to the parent', () => {
     const { token, provideDefaults } = createDefaults<SampleDefaults>('SAMPLE_DEFAULTS', FALLBACK);
 

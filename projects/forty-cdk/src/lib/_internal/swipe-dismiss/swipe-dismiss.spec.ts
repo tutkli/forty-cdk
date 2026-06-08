@@ -387,6 +387,20 @@ describe('resolveSnapTarget', () => {
     expect(r.nextSnapPoint).toBe(null);
   });
 
+  it('throws when called with no snap points (the no-snap case is the caller’s responsibility)', () => {
+    expect(() =>
+      resolveSnapTarget({
+        snapPoints: [] as const,
+        snapPositions: [],
+        activeSnapPoint: null,
+        position: 100,
+        velocity: 0,
+        dimension: 800,
+        closeThreshold: 0.25,
+      }),
+    ).toThrow(/at least one snap point/);
+  });
+
   it('does NOT dismiss when released past the threshold but a higher snap is closer', () => {
     // closestIdx will be index 1 (400) â€” dismiss check only runs when target == 0.
     const r = resolveSnapTarget({
