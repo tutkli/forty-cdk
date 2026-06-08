@@ -208,6 +208,11 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     return this.#itemList.focusLastEnabledItem();
   }
 
+  /**
+   * Toggle the menu open/closed from the trigger. The close branch reuses the
+   * `'programmatic'` close reason by design — there is no distinct `'trigger'`
+   * reason for the user-initiated toggle-close path.
+   */
   toggle(initialFocus: 'first' | 'last' = 'first'): void {
     if (this.#hooks.disabled()) {
       return;
@@ -238,6 +243,10 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.#hooks.escapeKeyDown, event);
     if (!vetoed && this.#hooks.dismissible()) {
+      // Load-bearing, not redundant: the bubble-phase Escape handler stops the
+      // same keydown from reaching an *ancestor* overlay's keydown listener,
+      // which is how nested overlays close one layer per Escape (see the
+      // listener-phase note in `_internal/dismissable-layer/dismissable-layer.ts`).
       event.stopPropagation();
       this.closeMenu('escape');
     }

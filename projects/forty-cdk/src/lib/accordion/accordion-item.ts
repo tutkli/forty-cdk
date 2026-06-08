@@ -41,8 +41,8 @@ export class ForAccordionItem implements ForAccordionItemContext {
   /** When true, the trigger ignores clicks and reflects `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly triggerId = signal(this.#idGen.next('for-accordion-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-accordion-content'));
+  readonly triggerId = signal(this.#idGen.next('for-accordion-trigger')).asReadonly();
+  readonly contentId = signal(this.#idGen.next('for-accordion-content')).asReadonly();
 
   readonly expanded = computed(() => this.parent.isExpanded(this.value()));
 

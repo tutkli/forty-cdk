@@ -19,7 +19,8 @@ import { ForToastClose } from './toast-close';
 import { ForToastDescription } from './toast-description';
 import { ForToastTitle } from './toast-title';
 import { ForToastViewport } from './toast-viewport';
-import { ForToastManager, provideForToastDefaults } from './toast-manager';
+import { provideForToastDefaults } from './toast-defaults';
+import { ForToastManager } from './toast-manager';
 import type { SwipeEventDetail } from '../_internal/swipe-dismiss/swipe-dismiss';
 
 function pointer(

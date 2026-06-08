@@ -1,4 +1,4 @@
-import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
+import { DestroyRef, ElementRef, inject, isDevMode, type Signal } from '@angular/core';
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import {
@@ -70,7 +70,10 @@ export interface OverlayShellDismissConfig {
    * Called with the matching reason when the consumer doesn't veto an outside
    * interaction. The consumer owns the close (and any bookkeeping such as
    * marking the control touched); the shell never touches the directive's
-   * close output directly. Required alongside `dismissible`.
+   * close output directly. Required alongside `dismissible`. The implicit close
+   * fires from the composite `emitInteractOutside` channel only, so a wiring
+   * that provides `requestClose` MUST also wire `emitInteractOutside` — the
+   * shell throws a dev-mode error otherwise.
    */
   readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
   /** Forwards the raw Escape `KeyboardEvent` to the consumer; close is consumer-owned. */
@@ -276,6 +279,17 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       const requestClose = dismissCfg.requestClose;
       const dismissible = dismissCfg.dismissible;
       const options: DismissableLayerActivateOptions = {};
+
+      // The implicit outside-close fires from the composite `onInteractOutside`
+      // handler only (the specific pointer/focus handlers just emit). A wiring
+      // that provides `requestClose` but omits `emitInteractOutside` would emit
+      // its outside outputs yet never close — fail loudly in dev rather than
+      // ship that silent gap.
+      if (isDevMode() && requestClose && !dismissCfg.emitInteractOutside) {
+        throw new Error(
+          '[forty-cdk/overlay-shell] dismiss.requestClose requires dismiss.emitInteractOutside to be wired; the implicit outside-close fires from the composite interactOutside channel.',
+        );
+      }
 
       if (dismissCfg.exemptElements) {
         options.exemptElements = dismissCfg.exemptElements;

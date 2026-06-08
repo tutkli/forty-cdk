@@ -118,10 +118,10 @@ export class ForSelectContent {
             ctx.markTouched();
             ctx.closeMenu(reason);
           },
-          emitEscapeKeyDown: (veto) => ctx.escapeKeyDown.emit(veto),
-          emitPointerDownOutside: (veto) => ctx.pointerDownOutside.emit(veto),
-          emitFocusOutside: (veto) => ctx.focusOutside.emit(veto),
-          emitInteractOutside: (veto) => ctx.interactOutside.emit(veto),
+          emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
+          emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
+          emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
+          emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         },
       });
       return;

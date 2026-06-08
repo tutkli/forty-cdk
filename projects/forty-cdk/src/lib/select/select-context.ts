@@ -1,10 +1,4 @@
-import {
-  inject,
-  InjectionToken,
-  type ModelSignal,
-  type OutputEmitterRef,
-  type Signal,
-} from '@angular/core';
+import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
@@ -188,27 +182,22 @@ export interface ForSelectContext<T = unknown> {
    */
   commitOnTab(value: T): void;
 
-  // --- Shared dismiss pipeline. Escape is consumer-owned (emits
-  //     `(escapeKeyDown)`, stops propagation, marks touched, and closes with
-  //     reason `'escape'`); the outside channels are owned by the shell, which
-  //     builds + reuses one veto across the specific and composite channels,
-  //     hands it to these forwarders to fire the matching output, and calls
-  //     the content's `requestClose` when un-vetoed. Used by both the anchored
-  //     (`injectOverlayShell`) and modal (`injectModalShell`) paths. ---
+  // --- Shared dismiss pipeline. Escape is consumer-owned on the anchored path
+  //     (`emitEscapeKeyDown` emits `(escapeKeyDown)`, stops propagation, marks
+  //     touched, and closes with reason `'escape'`); on the modal path the
+  //     modal-shell builds the veto and owns the close, so it forwards the
+  //     emit-only `forwardEscapeKeyDown`. The outside channels are owned by the
+  //     shell in both paths, which builds + reuses one veto across the specific
+  //     and composite channels and hands it to these forwarders. Both paths
+  //     route the implicit close through the content's `requestClose`. ---
   emitEscapeKeyDown(event: KeyboardEvent): void;
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
   /** Implicit close requested by the shell after an un-vetoed outside interaction. */
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
-
-  // --- Modal (modal-shell) dismiss pipeline: the shell builds the veto and
-  //     requests the close itself, forwarding `.emit` through these output
-  //     refs. The escape ref is also used by the modal path. ---
-  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
-  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
-  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
-  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
+  /** Modal-path Escape forwarder: emit only; the modal shell builds the veto and owns the close. */
+  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before

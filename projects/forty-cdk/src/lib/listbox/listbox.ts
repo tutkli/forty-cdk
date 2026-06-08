@@ -118,11 +118,11 @@ export class ForListbox<T = string>
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
-   * sole selected value when exactly one option is selected, otherwise
-   * `null` (empty selection, or multiple selections in `multiple` mode).
-   * Lets single-select consumers read `selected()` instead of unwrapping
-   * `value()[0]`. The array-backed `value` model remains the source of
-   * truth and the `FormValueControl` contract; this is a derived accessor.
+   * sole value when exactly one is selected (regardless of `multiple`),
+   * otherwise `null` (zero, or 2+ selected). Lets single-select consumers
+   * read `selected()` instead of unwrapping `value()[0]`. The array-backed
+   * `value` model remains the source of truth and the `FormValueControl`
+   * contract; this is a derived accessor.
    */
   readonly selected = singleSelected(this.value);
 
@@ -405,6 +405,18 @@ export class ForListbox<T = string>
       return firstSelected === el;
     }
     return this.#firstEnabledHost() === el;
+  }
+
+  isOptionHighlighted(el: HTMLElement): boolean {
+    return this.roving.active() === el;
+  }
+
+  optionTabindex(el: HTMLElement): -1 | 0 | null {
+    return this.roving.hasActive() ? this.roving.tabindexFor(el) : null;
+  }
+
+  setActiveOption(el: HTMLElement): void {
+    this.roving.setActive(el);
   }
 
   registerOption(handle: ForListboxOptionHandle<T>): void {

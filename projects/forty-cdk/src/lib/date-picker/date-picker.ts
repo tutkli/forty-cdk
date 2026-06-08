@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  isDevMode,
   model,
   numberAttribute,
   output,
@@ -324,6 +325,12 @@ export class ForDatePicker<D>
    * query resolves to the live instance on open and to `undefined` on close.
    * Its `valueChange` is the single signal that a date was selected inside the
    * grid — wired in the constructor.
+   *
+   * Invariant: the projected calendar MUST resolve the same `DateAdapter` as
+   * this picker (the same `FOR_DATE_ADAPTER` scope). Angular's `contentChild`
+   * erases the generic, so the bridge reads `calendar.value` as `D | null` via
+   * a cast; a mismatched adapter would leak a wrong-shaped date through that
+   * seam. A dev-mode assertion in the bridge effect catches it early.
    */
   private readonly calendar = contentChild(ForCalendar, { descendants: true });
 
@@ -332,6 +339,11 @@ export class ForDatePicker<D>
    * (`granularity > 'day'`). Like the calendar, it mounts with the surface; its
    * `valueChange` (a composed date-time, anchored on the picker's current
    * value) is mirrored straight into the picker's value.
+   *
+   * Invariant: the projected time field MUST resolve the same `DateAdapter` as
+   * this picker (see {@link calendar}). The bridge casts its `value` to
+   * `D | null` because `contentChild` erases the generic; a dev-mode assertion
+   * guards the same-adapter contract.
    */
   private readonly timeField = contentChild(ForTimeField, { descendants: true });
 
@@ -383,6 +395,11 @@ export class ForDatePicker<D>
       if (!calendar) {
         return;
       }
+      if (isDevMode() && calendar.adapter !== this.adapter) {
+        throw new Error(
+          '[forty-cdk/date-picker] The projected ForCalendar must use the same DateAdapter as the ForDatePicker.',
+        );
+      }
       const sub = calendar.value.subscribe((date) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
@@ -426,6 +443,11 @@ export class ForDatePicker<D>
       const timeField = this.timeField();
       if (!timeField) {
         return;
+      }
+      if (isDevMode() && timeField.adapter !== this.adapter) {
+        throw new Error(
+          '[forty-cdk/date-picker] The projected ForTimeField must use the same DateAdapter as the ForDatePicker.',
+        );
       }
       const sub = timeField.value.subscribe((value) => {
         if (this.readonly() || this.effectiveDisabled()) {

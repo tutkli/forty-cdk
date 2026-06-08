@@ -399,7 +399,7 @@ describe('ForOtpInput', () => {
       const active = group.querySelectorAll('[data-active]');
       expect(active.length).toBe(1);
       expect(slot(group, 2).getAttribute('data-active')).toBe('');
-      expect(slot(group, 2).getAttribute('data-highlighted')).toBe('');
+      expect(slot(group, 2).getAttribute('data-highlighted')).toBeNull();
       expect(slot(group, 2).querySelector('[data-test-id="caret"]')).not.toBeNull();
     });
 

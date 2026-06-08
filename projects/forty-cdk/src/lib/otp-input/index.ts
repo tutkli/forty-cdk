@@ -7,8 +7,6 @@ export {
   type ForOtpInputDefaults,
 } from './otp-input-defaults';
 export {
-  allowedCharForType,
-  inputModeForType,
   OTP_REGEXP_ONLY_CHARS,
   OTP_REGEXP_ONLY_DIGITS,
   OTP_REGEXP_ONLY_DIGITS_AND_CHARS,

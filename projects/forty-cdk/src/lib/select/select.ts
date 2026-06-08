@@ -135,11 +135,11 @@ export class ForSelect<T = string>
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
-   * sole selected value when exactly one option is selected, otherwise
-   * `null` (empty selection, or multiple selections in `multiple` mode).
-   * Lets single-select consumers read `selected()` instead of unwrapping
-   * `value()[0]`. The array-backed `value` model remains the source of
-   * truth and the `FormValueControl` contract; this is a derived accessor.
+   * sole value when exactly one is selected (regardless of `multiple`),
+   * otherwise `null` (zero, or 2+ selected). Lets single-select consumers
+   * read `selected()` instead of unwrapping `value()[0]`. The array-backed
+   * `value` model remains the source of truth and the `FormValueControl`
+   * contract; this is a derived accessor.
    */
   readonly selected = singleSelected(this.value);
 
@@ -305,6 +305,16 @@ export class ForSelect<T = string>
    */
   readonly #cachedOptions = signal<readonly { value: T; label: string }[]>([]);
 
+  /**
+   * Trimmed display labels of the selected values, in selection order.
+   *
+   * Invariant: when no `[itemToLabel]` is supplied the label is read from the
+   * option host's `textContent` — a non-reactive source inside this `computed`.
+   * A label that changes its rendered text without a value change therefore
+   * self-heals only via the `#cachedOptions` snapshot, which the
+   * `afterEveryRender` hook re-warms each render. Supply `[itemToLabel]` for a
+   * pure signal derivation that observes label changes directly.
+   */
   readonly selectedLabels = computed<readonly string[]>(() => {
     const values = this.value();
     if (values.length === 0) {
@@ -434,6 +444,13 @@ export class ForSelect<T = string>
     return isInArray(this.value(), v, this.isItemEqualToValue());
   }
 
+  #setSingle(v: T): void {
+    if (this.value().length === 1 && this.isSelected(v)) {
+      return;
+    }
+    this.value.set([v]);
+  }
+
   activate(v: T): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
@@ -443,8 +460,9 @@ export class ForSelect<T = string>
       // Multi-select stays open — consumer closes via outside pointer / Escape / Tab.
       return;
     }
-    // Single-mode: idempotent select + close.
-    this.value.set([v]);
+    // Single-mode: idempotent select + close. Skip the redundant set (and its
+    // `valueChange` emission) when the same sole value is already selected.
+    this.#setSingle(v);
     this.closeMenu('select');
   }
 
@@ -470,7 +488,7 @@ export class ForSelect<T = string>
     }
     target.host.focus();
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-      this.value.set([target.value()]);
+      this.#setSingle(target.value());
     }
   }
 
@@ -585,7 +603,7 @@ export class ForSelect<T = string>
       return;
     }
     if (!this.multiple() && !this.readonly()) {
-      this.value.set([value]);
+      this.#setSingle(value);
     }
     // Move focus to the trigger BEFORE the unmount + close so the browser's
     // Tab default action has a stable active element to advance from. The
@@ -619,6 +637,11 @@ export class ForSelect<T = string>
   }
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
     this.interactOutside.emit(veto);
+  }
+
+  /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
+  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
+    this.escapeKeyDown.emit(veto);
   }
 
   /**

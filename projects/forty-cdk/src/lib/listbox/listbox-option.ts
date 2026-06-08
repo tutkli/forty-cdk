@@ -67,7 +67,7 @@ export class ForListboxOption<T = string> {
    * roving-tabindex active item). Reflected as `data-highlighted` so
    * consumers can style it uniformly with the other primitives.
    */
-  readonly highlighted = computed(() => this.#group.roving.active() === this.#host.nativeElement);
+  readonly highlighted = computed(() => this.#group.isOptionHighlighted(this.#host.nativeElement));
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.#group.effectiveDisabled());
 
@@ -75,8 +75,9 @@ export class ForListboxOption<T = string> {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    if (this.#group.roving.hasActive()) {
-      return this.#group.roving.tabindexFor(this.#host.nativeElement);
+    const rovingTabindex = this.#group.optionTabindex(this.#host.nativeElement);
+    if (rovingTabindex !== null) {
+      return rovingTabindex;
     }
     return this.#group.isFirstFocusableOption(this.#host.nativeElement) ? 0 : -1;
   });
@@ -105,7 +106,7 @@ export class ForListboxOption<T = string> {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#group.roving.setActive(this.#host.nativeElement);
+    this.#group.setActiveOption(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

@@ -44,8 +44,8 @@ export class ForDisclosure implements ForDisclosureContext {
   /** When true, click on the trigger is ignored and `data-disabled` is reflected. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly triggerId = signal(this.#idGen.next('for-disclosure-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-disclosure-content'));
+  readonly triggerId = signal(this.#idGen.next('for-disclosure-trigger')).asReadonly();
+  readonly contentId = signal(this.#idGen.next('for-disclosure-content')).asReadonly();
 
   toggle(): void {
     if (this.disabled()) {

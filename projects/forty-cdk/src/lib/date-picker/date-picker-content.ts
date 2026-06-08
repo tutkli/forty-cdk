@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject, signal } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { injectModalShell } from '../_internal/modal-shell/modal-shell';
@@ -57,7 +57,12 @@ export class ForDatePickerContent {
       injectModalShell({
         modal: ctx.modal,
         returnFocus: ctx.returnFocus,
-        initialFocus: signal<'first' | 'container'>('first'),
+        // Land on the calendar's active cell with a first-focusable fallback,
+        // matching the non-modal path below — both modes focus the same cell.
+        initialFocus: {
+          move: () => ctx.focusCalendarCell(),
+          veto: () => ctx.emitAutoFocusOnOpen(),
+        },
         autoFocusOnOpen: () => (event) => {
           if (ctx.emitAutoFocusOnOpen()) {
             event.preventDefault();

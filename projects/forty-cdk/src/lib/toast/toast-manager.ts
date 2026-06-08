@@ -1,14 +1,5 @@
-import {
-  computed,
-  DOCUMENT,
-  inject,
-  Injectable,
-  type Provider,
-  type Signal,
-  signal,
-} from '@angular/core';
+import { computed, DOCUMENT, inject, Injectable, type Signal, signal } from '@angular/core';
 
-import { createDefaults } from '../_internal/defaults/defaults';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   DEFAULT_TOAST_REGION,
@@ -16,6 +7,7 @@ import {
   type ForToastConfig,
   type ForToastInstance,
 } from './toast-context';
+import { FOR_TOAST_DEFAULTS } from './toast-defaults';
 import { ForToastRef } from './toast-ref';
 
 /**
@@ -32,43 +24,6 @@ export interface ForToastViewportRegistration {
   /** Focus the first rendered toast. Returns `true` when focus actually moved. */
   readonly focusFirst: () => boolean;
 }
-
-/**
- * Optional global defaults. Provide via
- * `provideForToastDefaults({ duration: 4000, hotkey: 'F6' })` in your app
- * config to override library defaults. Every key is optional — unspecified
- * keys inherit from the parent scope (or library defaults at the root).
- */
-export interface ForToastDefaults {
-  duration?: number;
-  hotkey?: string;
-  maxVisible?: number;
-}
-
-/** @internal Concrete shape stored against the defaults token. */
-interface ResolvedToastDefaults {
-  duration: number;
-  hotkey: string;
-  maxVisible: number;
-}
-
-const FALLBACK: ResolvedToastDefaults = {
-  duration: 5000,
-  hotkey: 'F6',
-  maxVisible: Infinity,
-};
-
-const { token, provideDefaults } = createDefaults<ResolvedToastDefaults>(
-  'FOR_TOAST_DEFAULTS',
-  FALLBACK,
-);
-
-/**
- * Token holding the resolved toast defaults for the current injector scope.
- * The library always provides a fully-populated value (the fallback at the
- * root, or the merged result of the nearest `provideForToastDefaults`).
- */
-export const FOR_TOAST_DEFAULTS = token;
 
 /** @internal The shape stored in the manager's reactive array. */
 interface ToastEntry<R = unknown, D = unknown> {
@@ -244,13 +199,4 @@ export class ForToastManager {
       },
     };
   }
-}
-
-/**
- * Configures forty-cdk toast defaults for this injector scope. Partial
- * overrides inherit unspecified keys from the parent scope (or library
- * defaults at the root).
- */
-export function provideForToastDefaults(defaults: ForToastDefaults): Provider[] {
-  return provideDefaults(defaults as Partial<ResolvedToastDefaults>);
 }

@@ -1104,10 +1104,45 @@ describe('ForSelect', () => {
       getOption('apple').click();
       await flush(r.fixture);
 
-      // Same value, but `set([apple])` still triggers the change emitter once
-      // (selection already was apple — but it's still an internal write).
-      // Open transitions from true → false once.
+      // Open transitions from true → false once. The value is already the sole
+      // `apple`, so single-mode `activate` skips the redundant `set` — no
+      // duplicate `valueChange` fires for an idempotent re-select.
       expect(openEmits).toBe(1);
+      expect(valueEmits).toBe(0);
+    });
+
+    it('emits valueChange once when single-mode activation changes the value', async () => {
+      let valueEmits = 0;
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value" (valueChange)="onValue($event)">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+                <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly value = signal<readonly string[]>(['apple']);
+        onValue(_: readonly string[]): void {
+          valueEmits++;
+        }
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      // A genuine change (apple → banana) emits exactly once — the guard only
+      // suppresses idempotent re-selects, never real transitions.
+      getOption('banana').click();
+      await flush(r.fixture);
       expect(valueEmits).toBe(1);
     });
   });
