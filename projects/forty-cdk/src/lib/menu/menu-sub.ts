@@ -17,6 +17,7 @@ import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
 import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
+import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
 import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
@@ -118,39 +119,103 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     () => this._sideInput() ?? (this.dir() === 'rtl' ? 'left' : 'right'),
   );
 
-  /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>('start');
+  /**
+   * Gap (px) along the main axis. Defaults to `0` from `provideForMenuDefaults`
+   * — a submenu sits flush against its parent item. Now read from the defaults
+   * provider (like `[forDropdownMenu]` / `[forContextMenu]`) rather than
+   * hardcoded, so it can't drift.
+   */
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
-  /** Gap (px) along the main axis. Default `0`. */
-  readonly sideOffset = input(0, { transform: numberAttribute });
+  /**
+   * Alignment along the chosen `side`. Defaults to `'start'`.
+   *
+   * Shares the single `MENU_POSITIONING_DEFAULTS` source with the two
+   * top-level roots; `menu-positioning-inputs.spec.ts` guards the three roots
+   * against drift.
+   */
+  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
 
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
+  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+  });
 
   /** When `true` (default), `flip` and `shift` keep the submenu inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+  readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
+    transform: booleanAttribute,
+  });
 
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  /**
+   * Padding (px) applied uniformly to flip / shift / size. Defaults to `8`
+   * from `provideForMenuDefaults` for the surrounding scope.
+   */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
+  readonly arrowPadding = input(MENU_POSITIONING_DEFAULTS.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
+  readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
 
   /** When `true`, sets `data-detached=""` while the parent item is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+  readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
+    transform: booleanAttribute,
+  });
 
+  /**
+   * When `true` (default), arrow-key navigation wraps from the last enabled
+   * item back to the first (and vice versa). When `false`, navigation stops
+   * at the ends.
+   */
   readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
+   * When true, the sub-trigger interaction is ignored and any open submenu
+   * stays open until the consumer flips `open`. Layered on top of the parent
+   * menu's own `disabled`.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /** When true (default), Escape, pointer-down outside, and focus outside close the submenu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
+
+  /** When true (default), focus returns to the sub-trigger on close. */
   readonly returnFocus = input(true, { transform: booleanAttribute });
+
+  /** Manual `aria-label` on `[forMenuSubContent]`. Use when the sub-trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
+  /**
+   * Fires when Escape is pressed while the submenu is open, just before it
+   * closes. Call `preventDefault()` on the emitted veto to keep the submenu
+   * open and suppress the Escape-driven close.
+   */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /**
+   * Fires on a pointer-down outside the submenu (and outside its exempt
+   * parent content), just before it closes. Call `preventDefault()` on the
+   * veto to keep the submenu open.
+   */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /**
+   * Fires when focus moves outside the submenu, just before it closes. Call
+   * `preventDefault()` on the veto to keep the submenu open.
+   */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /**
+   * Composite outside-interaction channel: fires for either a
+   * pointer-down-outside or a focus-outside, just before the submenu closes.
+   * Call `preventDefault()` on the veto to keep the submenu open regardless of
+   * which interaction triggered it.
+   */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**

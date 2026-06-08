@@ -7,6 +7,8 @@ const FALLBACK: ForMenuDefaults = {
   subMenuOpenDelay: 100,
   subMenuCloseDelay: 100,
   subMenuPointerGraceDuration: 300,
+  sideOffset: 0,
+  collisionPadding: 8,
 };
 
 describe('provideForMenuDefaults', () => {
@@ -31,6 +33,8 @@ describe('provideForMenuDefaults', () => {
       subMenuOpenDelay: 250,
       subMenuCloseDelay: 100,
       subMenuPointerGraceDuration: 300,
+      sideOffset: 0,
+      collisionPadding: 8,
     });
   });
 
@@ -51,6 +55,8 @@ describe('provideForMenuDefaults', () => {
       subMenuOpenDelay: 50,
       subMenuCloseDelay: 400,
       subMenuPointerGraceDuration: 300,
+      sideOffset: 0,
+      collisionPadding: 8,
     });
   });
 });
