@@ -27,20 +27,15 @@ import { injectProgressContext } from './progress-context';
     '[attr.data-state]': 'context.state()',
     '[attr.data-value]': 'context.clampedValue() ?? null',
     '[attr.data-max]': 'context.max()',
-    '[attr.data-percentage]': 'percentageAttr()',
+    '[attr.data-percentage]': 'context.percentageAttr()',
     '[style.--for-progress-percentage]': 'percentageStyle()',
   },
 })
 export class ForProgressIndicator {
   protected readonly context = injectProgressContext('ForProgressIndicator');
 
-  protected percentageAttr(): number | null {
-    const p = this.context.percentage();
-    return p === null ? null : Math.round(p * 100) / 100;
-  }
-
   protected percentageStyle(): string | null {
-    const p = this.percentageAttr();
+    const p = this.context.percentageAttr();
     return p === null ? null : `${p}%`;
   }
 }

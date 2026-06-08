@@ -15,18 +15,14 @@ import { injectMeterContext } from './meter-context';
     '[attr.data-value]': 'context.clampedValue()',
     '[attr.data-min]': 'context.min()',
     '[attr.data-max]': 'context.max()',
-    '[attr.data-percentage]': 'percentageAttr()',
+    '[attr.data-percentage]': 'context.percentageAttr()',
     '[style.--for-meter-percentage]': 'percentageStyle()',
   },
 })
 export class ForMeterIndicator {
   protected readonly context = injectMeterContext('ForMeterIndicator');
 
-  protected percentageAttr(): number {
-    return Math.round(this.context.percentage() * 100) / 100;
-  }
-
   protected percentageStyle(): string {
-    return `${this.percentageAttr()}%`;
+    return `${this.context.percentageAttr()}%`;
   }
 }

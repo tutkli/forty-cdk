@@ -38,7 +38,6 @@ function makeFieldContext(): ForFieldContext {
     registerLabel: () => () => {},
     registerDescription: () => () => {},
     registerError: () => () => {},
-    focusControl: () => {},
     clickControl: () => {},
   };
 }

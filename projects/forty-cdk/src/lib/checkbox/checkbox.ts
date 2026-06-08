@@ -74,7 +74,12 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
     return this.checked() ? 'true' : 'false';
   });
 
-  protected readonly dataState = computed<'checked' | 'unchecked' | 'indeterminate'>(() => {
+  /**
+   * Logical state reflected on `data-state`: `'checked'`, `'unchecked'`, or
+   * `'indeterminate'`. Exposed so `ForCheckboxIndicator` can mirror it without
+   * re-deriving the same mapping.
+   */
+  readonly dataState = computed<'checked' | 'unchecked' | 'indeterminate'>(() => {
     if (this.indeterminate()) return 'indeterminate';
     return this.checked() ? 'checked' : 'unchecked';
   });

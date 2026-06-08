@@ -1,4 +1,4 @@
-import { computed, Directive, inject } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 
 import { ForCheckbox } from './checkbox';
 
@@ -17,11 +17,11 @@ import { ForCheckbox } from './checkbox';
   selector: '[forCheckboxIndicator]',
   exportAs: 'forCheckboxIndicator',
   host: {
-    '[attr.data-state]': 'state()',
+    '[attr.data-state]': 'parent.dataState()',
   },
 })
 export class ForCheckboxIndicator {
-  readonly #parent: ForCheckbox;
+  protected readonly parent: ForCheckbox;
 
   constructor() {
     const parent = inject(ForCheckbox, { optional: true });
@@ -30,11 +30,6 @@ export class ForCheckboxIndicator {
         '[forty-cdk/checkbox] ForCheckboxIndicator must be used inside a [forCheckbox] element.',
       );
     }
-    this.#parent = parent;
+    this.parent = parent;
   }
-
-  protected readonly state = computed<'checked' | 'unchecked' | 'indeterminate'>(() => {
-    if (this.#parent.indeterminate()) return 'indeterminate';
-    return this.#parent.checked() ? 'checked' : 'unchecked';
-  });
 }

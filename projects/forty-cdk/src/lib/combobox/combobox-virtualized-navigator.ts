@@ -1,18 +1,9 @@
-import { linkedSignal, signal, type Signal } from '@angular/core';
+import { signal, type Signal } from '@angular/core';
 
 import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { foldSnapshotOnTotalCountTransition } from './combobox-snapshot-fold';
 import type { ForComboboxOptionHandle } from './combobox-context';
-
-/**
- * Plain entry in the label cache / position-keyed map. Mirrors what inline
- * autocomplete and the chip / `selected` fallback paths need: a stable id, the
- * underlying value, and the resolved label string.
- */
-export interface SnapshotEntry<T> {
-  readonly id: string;
-  readonly value: T;
-  readonly label: string;
-}
+import type { SnapshotEntry } from './combobox-label-cache';
 
 /**
  * Position-keyed entry. Adds the `disabled` flag so virtualized navigation can
@@ -20,86 +11,6 @@ export interface SnapshotEntry<T> {
  */
 export interface IndexedSnapshotEntry<T> extends SnapshotEntry<T> {
   readonly disabled: boolean;
-}
-
-/**
- * Always-on label cache for `ForCombobox`. Keeps a flat list of
- * `{ id, value, label }` tuples that persists across listbox close / open
- * cycles, driving inline autocomplete and the `selected` label fallback.
- *
- * Persistence: when the consumer's `@if` unmounts the content
- * (`items().length === 0`) the prior cache is carried over so chips outside
- * the listbox area and inline completion after close keep resolving labels.
- * Resets only when the consumer's `totalCount` transitions — a query / source
- * rebuild signal in the virtualized case.
- *
- * The option's `label` is itself a `Signal<string>` so we never peek at
- * `textContent`. Internal helper — not re-exported from `combobox/index.ts`
- * or `public-api.ts`. Constructed once per host directive, on every combobox
- * (virtualized or not).
- */
-export class OptionLabelCache<T> {
-  readonly #items: Signal<readonly ForComboboxOptionHandle<T>[]>;
-  readonly #totalCount: Signal<number | undefined>;
-
-  readonly #cachedOptions: Signal<readonly SnapshotEntry<T>[]>;
-
-  constructor(deps: {
-    readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
-    readonly totalCount: Signal<number | undefined>;
-  }) {
-    this.#items = deps.items;
-    this.#totalCount = deps.totalCount;
-
-    this.#cachedOptions = linkedSignal<
-      { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
-      readonly SnapshotEntry<T>[]
-    >({
-      source: () => ({ total: this.#totalCount(), items: this.#items() }),
-      computation: ({ total, items }, prev) => {
-        // On a `totalCount` transition the `items()` array may still hold the
-        // previous window — signal commits run serially, so the @for re-render
-        // hasn't unregistered the old options yet. Skip folding on this
-        // transition compute and start fresh; the next run (fired when items
-        // catches up) folds the new window into a clean carry-over map.
-        if (prev && prev.source.total !== total) {
-          return [];
-        }
-        if (items.length === 0) {
-          return prev?.value ?? [];
-        }
-        const merged = new Map<string, SnapshotEntry<T>>();
-        for (const entry of prev?.value ?? []) {
-          merged.set(entry.id, entry);
-        }
-        for (const item of items) {
-          const id = item.id();
-          merged.set(id, { id, value: item.value(), label: item.label() });
-        }
-        return [...merged.values()];
-      },
-    });
-  }
-
-  /**
-   * Pull the cache so its `linkedSignal` `prev` slot gets seeded while the
-   * listbox is open. Called from the host's bridge effect — without an eager
-   * pull the lazy cache never runs during the open cycle (no other consumer
-   * pulls it in non-virtualized usage), and persistence across close → re-open
-   * would start from an empty `prev`.
-   */
-  prime(): void {
-    this.#cachedOptions();
-  }
-
-  /**
-   * Snapshot of the registered options as plain `{ id, value, label }` tuples.
-   * Drives inline-autocomplete matching and the label-resolution fallback in
-   * `ForCombobox.selected`.
-   */
-  entries(): readonly SnapshotEntry<T>[] {
-    return this.#cachedOptions();
-  }
 }
 
 /**
@@ -154,7 +65,8 @@ export class VirtualizedNavigator<T> {
    * typically rebuilds the source array, so previously-folded entries no
    * longer point at the same items. On any other reactive trigger (option
    * mount / unmount) the prior map is carried over and the currently-rendered
-   * options are overlaid in place.
+   * options are overlaid in place. The stale-window invariant lives in
+   * `combobox-snapshot-fold.ts`, shared with `OptionLabelCache`.
    */
   readonly #snapshotByPos: Signal<Map<number, IndexedSnapshotEntry<T>>>;
 
@@ -169,17 +81,15 @@ export class VirtualizedNavigator<T> {
   constructor(deps: VirtualizedNavigatorDeps<T>) {
     this.#deps = deps;
 
-    this.#snapshotByPos = linkedSignal<
-      { total: number | undefined; items: readonly ForComboboxOptionHandle<T>[] },
+    this.#snapshotByPos = foldSnapshotOnTotalCountTransition<
+      T,
       Map<number, IndexedSnapshotEntry<T>>
-    >({
-      source: () => ({ total: deps.totalCount(), items: deps.items() }),
-      computation: ({ total, items }, prev) => {
-        // Same `items()`-still-stale handling as `OptionLabelCache` above.
-        if (prev && prev.source.total !== total) {
-          return new Map();
-        }
-        const next = new Map<number, IndexedSnapshotEntry<T>>(prev?.value ?? []);
+    >(
+      deps.items,
+      deps.totalCount,
+      () => new Map(),
+      (prev, items) => {
+        const next = new Map(prev);
         for (const item of items) {
           const pos = item.posInSet?.() ?? null;
           if (pos === null) continue;
@@ -192,7 +102,7 @@ export class VirtualizedNavigator<T> {
         }
         return next;
       },
-    });
+    );
   }
 
   /**

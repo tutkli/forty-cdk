@@ -164,11 +164,6 @@ export class ForField implements ForFieldContext {
     return () => this.#errors.update((n) => n - 1);
   }
 
-  /** Move focus to the control's focusable element (the nominated control or the host). */
-  focusControl(): void {
-    this.#targetEl()?.focus();
-  }
-
   /**
    * Forward a click to the control's focusable element and focus it — matching
    * the activation a native `<label for>` triggers via the browser, so a
