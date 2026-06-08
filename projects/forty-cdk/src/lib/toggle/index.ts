@@ -3,7 +3,6 @@ export { ForToggleGroup } from './toggle-group';
 export { ForToggleGroupItem } from './toggle-group-item';
 export {
   FOR_TOGGLE_GROUP_CONTEXT,
-  injectToggleGroupContext,
   type ForToggleGroupContext,
   type ForToggleGroupItemHandle,
 } from './toggle-group-context';

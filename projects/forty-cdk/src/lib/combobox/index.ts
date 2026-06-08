@@ -14,7 +14,6 @@ export { ForComboboxGroupLabel } from './combobox-group-label';
 export { ForComboboxSeparator } from './combobox-separator';
 export {
   FOR_COMBOBOX_CONTEXT,
-  injectComboboxContext,
   type ForComboboxAutocomplete,
   type ForComboboxChipHandle,
   type ForComboboxCloseReason,

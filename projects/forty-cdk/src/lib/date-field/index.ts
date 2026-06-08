@@ -3,7 +3,6 @@ export { ForDateFieldSegment } from './date-field-segment';
 export { ForDateFieldLiteral } from './date-field-literal';
 export {
   FOR_DATE_FIELD_CONTEXT,
-  injectDateFieldContext,
   type DateFieldSegment,
   type ForDateFieldContext,
   type ForDateFieldSegmentHandle,

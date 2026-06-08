@@ -7,7 +7,6 @@ export { ForCalendarPrevButton } from './calendar-prev-button';
 export { ForCalendarNextButton } from './calendar-next-button';
 export {
   FOR_CALENDAR_CONTEXT,
-  injectCalendarContext,
   type CalendarDateLabelFormatter,
   type ForCalendarContext,
   type ForCalendarCellHandle,

@@ -7,16 +7,9 @@ export {
   FOR_TREE_CONTEXT,
   FOR_TREE_CONTAINER_CONTEXT,
   FOR_TREE_ITEM_CONTEXT,
-  injectTreeContext,
-  injectTreeContainerContext,
-  injectTreeItemContext,
   type ForTreeContext,
   type ForTreeContainerContext,
   type ForTreeItemContext,
   type ForTreeItemHandle,
 } from './tree-context';
-export {
-  FOR_TREE_DEFAULTS,
-  provideForTreeDefaults,
-  type ForTreeDefaults,
-} from './tree-defaults';
+export { FOR_TREE_DEFAULTS, provideForTreeDefaults, type ForTreeDefaults } from './tree-defaults';

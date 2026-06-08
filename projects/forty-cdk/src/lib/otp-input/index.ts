@@ -1,10 +1,6 @@
 export { ForOtpInput } from './otp-input';
 export { ForOtpInputSlot } from './otp-input-slot';
-export {
-  FOR_OTP_INPUT_CONTEXT,
-  injectOtpInputContext,
-  type ForOtpInputContext,
-} from './otp-input-context';
+export { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 export {
   FOR_OTP_INPUT_DEFAULTS,
   provideForOtpInputDefaults,

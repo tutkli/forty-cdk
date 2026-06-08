@@ -370,12 +370,14 @@ const fortyCdkPlugin = {
                 // Ensure there are at least 2 assignments to this name (the
                 // install + the restore). The install we already captured;
                 // any second assignment under an `after*` hook counts.
-                (sourceText.match(
-                  new RegExp(
-                    String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
-                    'g',
-                  ),
-                ) || []).length >= 2;
+                (
+                  sourceText.match(
+                    new RegExp(
+                      String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
+                      'g',
+                    ),
+                  ) || []
+                ).length >= 2;
               if (!hasDelete && !hasAfterHookRestore) {
                 for (const n of nodes) {
                   context.report({ node: n, messageId: 'unrestored', data: { name } });
@@ -470,9 +472,15 @@ const fortyCdkPlugin = {
             // bodies — they own their own pairing contract.
             if (
               node.type === 'CallExpression' &&
-              ['describe', 'it', 'test', 'beforeEach', 'beforeAll', 'afterEach', 'afterAll'].includes(
-                getCalleeName(node.callee) || '',
-              )
+              [
+                'describe',
+                'it',
+                'test',
+                'beforeEach',
+                'beforeAll',
+                'afterEach',
+                'afterAll',
+              ].includes(getCalleeName(node.callee) || '')
             ) {
               // Skip — its hooks are checked when we visit its describe.
               continue;
@@ -493,10 +501,7 @@ const fortyCdkPlugin = {
               : [describeCallbackNode.body];
           const hooks = [];
           for (const stmt of stmts) {
-            if (
-              stmt.type === 'ExpressionStatement' &&
-              stmt.expression.type === 'CallExpression'
-            ) {
+            if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
               const name = getCalleeName(stmt.expression.callee);
               if (
                 name === 'beforeEach' ||
@@ -675,6 +680,76 @@ const fortyCdkPlugin = {
                 messageId: 'missing',
                 data: { name: dirName },
               });
+            }
+          },
+        };
+      },
+    },
+
+    // Enforces CLAUDE.md § "Context injection helpers are internal": a
+    // primitive's `injectXContext(piece)` helper is implementation detail —
+    // it takes a directive-name string purely for error messages and exists
+    // so sibling pieces of the same primitive can read the shared context.
+    // Only the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context
+    // interface are public. This rule forbids any primitive barrel
+    // (`projects/forty-cdk/src/lib/<name>/index.ts`) from re-exporting a
+    // helper named `inject<Anything>Context`, mirroring the
+    // `require-defaults-sibling` shape: an `index.ts`-scoped check over the
+    // file's `export` declarations. Sibling pieces still import the helper
+    // directly from the relative context module (`./<name>-context`); only
+    // the public barrel surface is constrained.
+    //
+    // Decision D8 (tutkli/forty-cdk#584): unexport `injectXContext` from
+    // every barrel; expose only the token + context interface publicly.
+    'no-barrel-inject-context-export': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Primitive barrels must not re-export `injectXContext` helpers — they are internal; expose only the token + context interface (tutkli/forty-cdk#584, D8).',
+        },
+        schema: [],
+        messages: {
+          forbidden:
+            'Do not export the context-injection helper `{{ name }}` from a primitive barrel — it is internal (it takes a directive-name string purely for error messages). Expose only the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context `interface`; sibling pieces import the helper directly from `./<name>-context`. (tutkli/forty-cdk#584, D8.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        // Only constrain primitive barrels: <lib>/<name>/index.ts. _internal
+        // and test-utils are not part of the public surface contract.
+        if (!/\/projects\/forty-cdk\/src\/lib\/[^/]+\/index\.ts$/.test(filename)) {
+          return {};
+        }
+        if (filename.includes('/_internal/') || filename.includes('/test-utils/')) {
+          return {};
+        }
+        const isInjectContextName = (name) =>
+          typeof name === 'string' && /^inject[A-Z]\w*Context$/.test(name);
+        const reportSpecifier = (spec) => {
+          // For `export { injectFooContext }` / `export { x as injectFooContext }`
+          // the *exported* name is what leaks onto the barrel surface.
+          const exported = spec.exported;
+          const exportedName =
+            exported.type === 'Identifier'
+              ? exported.name
+              : exported.type === 'Literal'
+                ? exported.value
+                : null;
+          const localName = spec.local && spec.local.type === 'Identifier' ? spec.local.name : null;
+          const name = isInjectContextName(exportedName)
+            ? exportedName
+            : isInjectContextName(localName)
+              ? localName
+              : null;
+          if (name) {
+            context.report({ node: spec, messageId: 'forbidden', data: { name } });
+          }
+        };
+        return {
+          ExportNamedDeclaration(node) {
+            for (const spec of node.specifiers) {
+              if (spec.type === 'ExportSpecifier') reportSpecifier(spec);
             }
           },
         };
@@ -971,6 +1046,11 @@ module.exports = tseslint.config(
       // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
 
+      // ---- Context-injection helpers are internal (tutkli/forty-cdk#584, D8) ----
+      // Primitive barrels expose only the token + context interface; the
+      // `injectXContext` helper must never be re-exported from `index.ts`.
+      'forty-cdk/no-barrel-inject-context-export': 'error',
+
       // ---- No state propagation inside effect() (CLAUDE.md § "Never
       // propagate state inside `effect()`"). ----
       'forty-cdk/no-effect-state-propagation': 'error',
@@ -1151,10 +1231,7 @@ module.exports = tseslint.config(
   // ---------- HTML templates ----------
   {
     files: ['**/*.html'],
-    extends: [
-      ...angular.configs.templateRecommended,
-      ...angular.configs.templateAccessibility,
-    ],
+    extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
     rules: {
       // Hard-ban `*ngIf` / `*ngFor` / `*ngSwitch` in favour of `@if` / `@for` / `@switch`.
       '@angular-eslint/template/prefer-control-flow': 'error',
