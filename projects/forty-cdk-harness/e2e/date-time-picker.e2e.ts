@@ -41,6 +41,10 @@ test.describe('DateTimePicker (granularity > day)', () => {
     await el(page, 'trigger').click();
 
     await el(page, 'cell-2026-6-20').click();
+    // Let the picker -> time-field date propagation settle before typing, so
+    // the typed hour grafts onto June 20 (not the previously focused day).
+    await expect(el(page, 'value-readout')).toHaveText('2026-06-20 14:30');
+
     await el(page, 'time-hour').focus();
     await page.keyboard.type('09');
     await expect(el(page, 'value-readout')).toHaveText('2026-06-20 09:30');

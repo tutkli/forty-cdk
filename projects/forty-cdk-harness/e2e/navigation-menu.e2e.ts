@@ -157,8 +157,17 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expectFocused(el(page, 'trigger-products'));
     await expect(el(page, 'active')).toHaveText('none');
 
-    // The roving-tabindex exposes one tab stop on the trigger row, so the next
-    // Tab leaves the nav entirely (onto the trailing input) — still no panel.
+    // Disclosure-navigation pattern (APG): each top-level trigger is its own
+    // tab stop. Tabbing across the row visits every trigger, then leaves the
+    // nav onto the trailing input — and never auto-opens a panel.
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-solutions'));
+    await expect(el(page, 'active')).toHaveText('none');
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-company'));
+    await expect(el(page, 'active')).toHaveText('none');
+
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
     await expect(el(page, 'active')).toHaveText('none');
