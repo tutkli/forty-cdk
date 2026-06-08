@@ -85,8 +85,8 @@ describe('ForContextMenu', () => {
       expect(r.instance.open()).toBe(false);
       expect(event.defaultPrevented).toBe(false);
       expect(region.getAttribute('data-disabled')).toBe('');
-      expect(region.getAttribute('aria-disabled')).toBe('true');
-      expect(region.getAttribute('disabled')).toBe('');
+      expect(region.hasAttribute('aria-disabled')).toBe(false);
+      expect(region.hasAttribute('disabled')).toBe(false);
     });
   });
 

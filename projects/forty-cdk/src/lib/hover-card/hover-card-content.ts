@@ -18,6 +18,11 @@ import { injectHoverCardContext } from './hover-card-context';
  * timing), so it dismisses the card no matter where focus lives when the
  * card was hover-opened. Initial-focus and return-focus bundles are
  * omitted because the surface is informational and never steals focus.
+ *
+ * **Intentional ARIA exception.** The content carries no role (only
+ * `data-state` for styling) and the trigger exposes no ARIA linkage — the
+ * card is non-essential supplementary content, mirroring Radix. See
+ * `ForHoverCardTrigger` for the full rationale.
  */
 @Directive({
   selector: '[forHoverCardContent]',

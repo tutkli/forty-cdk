@@ -29,6 +29,13 @@ function injectContextMenu(): ForContextMenu {
  * Tab order) and it wins. The keyboard activators (`Shift+F10`, the
  * `ContextMenu` key) need the trigger — or something inside it — focusable,
  * which the default guarantees.
+ *
+ * When `disabled`, only `data-disabled` is reflected as a styling / state
+ * hook. The trigger is a generic region with no interactive ARIA role, so it
+ * emits neither the native `disabled` attribute (which applies only to form
+ * controls) nor `aria-disabled` (which is meaningful only on an interactive
+ * role); the disabled behaviour is enforced by the in-handler guards, which
+ * let the native browser menu show through instead.
  */
 @Directive({
   selector: '[forContextMenuTrigger]',
@@ -37,8 +44,6 @@ function injectContextMenu(): ForContextMenu {
     tabindex: '-1',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
-    '[attr.disabled]': 'ctx.disabled() ? "" : null',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },

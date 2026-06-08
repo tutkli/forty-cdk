@@ -85,6 +85,17 @@ describe('ForPaneResizer', () => {
       expect(el.getAttribute('aria-controls')).toBe('pane-a pane-b');
     });
 
+    it('emits no aria-valuetext attribute for null or an empty string', () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      expect(el.hasAttribute('aria-valuetext')).toBe(false);
+
+      fixture.componentInstance.valueText.set('');
+      flush();
+      expect(el.hasAttribute('aria-valuetext')).toBe(false);
+    });
+
     it('reflects disabled via tabindex/aria-disabled/data-disabled', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);

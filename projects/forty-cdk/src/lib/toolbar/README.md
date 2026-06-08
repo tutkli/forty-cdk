@@ -15,12 +15,13 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 
 ## Inputs (root)
 
-| API           | Type                                | Description                                          |
-| ------------- | ----------------------------------- | ---------------------------------------------------- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`.            |
-| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight. |
-| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends. Default `true`. |
-| `disabled`    | `input<boolean>`                    | Disables every item.                                 |
+| API           | Type                                | Description                                                                                                  |
+| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ariaLabel`   | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Default `null` (and `''`) emits no attribute. Prefer `aria-labelledby` when a visible label element exists. |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`.                                                                   |
+| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                        |
+| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends. Default `true`.                                                        |
+| `disabled`    | `input<boolean>`                    | Disables every item.                                                                                        |
 
 ## Usage
 
@@ -46,7 +47,7 @@ import {
     ForToggleGroupItem,
   ],
   template: `
-    <div forToolbar class="toolbar" aria-label="Formatting">
+    <div forToolbar class="toolbar" [ariaLabel]="'Formatting'">
       <button forToolbarButton class="toolbar-button" (click)="undo()">Undo</button>
       <button forToolbarButton class="toolbar-button" (click)="redo()">Redo</button>
       <span forToolbarSeparator></span>
@@ -103,7 +104,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Accessibility notes
 
 - **Single Tab stop that follows focus.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Before any interaction the entry point is the first enabled item; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the toolbar restores it (matching APG and the Tabs / Tree primitives). Arrow keys move focus inside, Home / End jump to the first / last enabled item.
-- **Always label the toolbar.** Pass `aria-label` (or `aria-labelledby`) so screen-reader users know what the toolbar acts on. Not optional — APG requires it.
+- **Always label the toolbar.** Pass the reactive `[ariaLabel]` input (or a native `aria-labelledby` pointing at a visible label element) so screen-reader users know what the toolbar acts on. Not optional — APG requires it.
 - **Disabled items stay focusable on `<a forToolbarLink>`.** Native `<a>` has no `disabled` attribute; we expose `aria-disabled="true"` and suppress click. Removing the link from the focus order would deviate from APG; users can still hear "disabled".
 - **Toggle groups don't change roles.** Inside a toolbar, `[forToggleGroup]` keeps `role="group"` (semantically a related set of buttons). The toolbar role lives only on the outer container.
 - **Cross-axis separators.** `[forToolbarSeparator]` defaults to the orientation perpendicular to the toolbar so the line is visible. Override by setting `orientation` explicitly.

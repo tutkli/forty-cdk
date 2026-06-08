@@ -149,6 +149,7 @@ describe('Menu items / content', () => {
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
 
       expect(content.getAttribute('role')).toBe('menu');
+      expect(content.getAttribute('aria-orientation')).toBe('vertical');
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
       expect(content.hasAttribute('aria-label')).toBe(false);
     });

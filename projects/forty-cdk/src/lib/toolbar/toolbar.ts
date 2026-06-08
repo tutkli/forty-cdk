@@ -52,6 +52,7 @@ import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
   exportAs: 'forToolbar',
   host: {
     role: 'toolbar',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
@@ -65,6 +66,14 @@ import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
 })
 export class ForToolbar implements ForToolbarContext {
   readonly #defaults = inject(FOR_TOOLBAR_DEFAULTS);
+
+  /**
+   * Manual `aria-label` for the toolbar. Use this when no visible label element
+   * exists; otherwise prefer pointing `aria-labelledby` at one. A `null`
+   * (default) or empty value emits no attribute. Matches the uniform labelling
+   * input on `ForListbox` / `ForMenubar`.
+   */
+  readonly ariaLabel = input<string | null>(null);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 

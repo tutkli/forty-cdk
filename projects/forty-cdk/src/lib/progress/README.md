@@ -16,7 +16,7 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 | API                  | Type                                      | Description                                                                                 |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.                   |
-| `max`                | `input<number>`                           | Upper bound. Defaults to `100`.                                                             |
+| `max`                | `input<number>`                           | Upper bound. Defaults to `100`. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`). |
 | `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                         |
 | `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition. |
 

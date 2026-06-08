@@ -12,7 +12,13 @@ import { ForToolbarSeparator } from './toolbar-separator';
 @Component({
   imports: [ForToolbar, ForToolbarButton, ForToolbarLink, ForToolbarSeparator],
   template: `
-    <div forToolbar [orientation]="orientation()" [dir]="dir()" [disabled]="disabled()">
+    <div
+      forToolbar
+      [orientation]="orientation()"
+      [dir]="dir()"
+      [disabled]="disabled()"
+      [ariaLabel]="ariaLabel()"
+    >
       <button forToolbarButton>One</button>
       <button forToolbarButton [disabled]="middleDisabled()">Two</button>
       <span forToolbarSeparator></span>
@@ -26,6 +32,7 @@ class ToolbarHost {
   readonly disabled = signal(false);
   readonly middleDisabled = signal(false);
   readonly linkDisabled = signal(false);
+  readonly ariaLabel = signal<string | null>(null);
 }
 
 @Component({
@@ -59,6 +66,21 @@ describe('ForToolbar', () => {
       fixture.componentInstance.orientation.set('vertical');
       flush();
       expect(root.getAttribute('aria-orientation')).toBe('vertical');
+    });
+
+    it('reflects ariaLabel truthy-only as aria-label', () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      const root = query<HTMLElement>('[forToolbar]')!;
+
+      expect(root.hasAttribute('aria-label')).toBe(false);
+
+      fixture.componentInstance.ariaLabel.set('Formatting');
+      flush();
+      expect(root.getAttribute('aria-label')).toBe('Formatting');
+
+      fixture.componentInstance.ariaLabel.set('');
+      flush();
+      expect(root.hasAttribute('aria-label')).toBe(false);
     });
 
     it('reflects dir="rtl" on the host when set', () => {

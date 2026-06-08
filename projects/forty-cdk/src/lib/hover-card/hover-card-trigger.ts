@@ -9,8 +9,17 @@ import { injectHoverCardContext } from './hover-card-context';
  * action (the card adds preview, not meaning).
  *
  * Reflects `data-state` so consumers can style the trigger when its card is
- * open (e.g. an underline that turns solid). No `aria-describedby` is
- * applied — hover-card content is not a description for assistive tech.
+ * open (e.g. an underline that turns solid).
+ *
+ * **Intentional ARIA exception.** The trigger exposes no `aria-controls`,
+ * `aria-expanded`, or `aria-describedby`, and `[forHoverCardContent]` carries
+ * no role. This is deliberate, mirroring Radix: the trigger must already be
+ * self-meaningful (a link or button that conveys the underlying action on its
+ * own — the card adds preview, not meaning), and the card is non-essential
+ * supplementary content that is hover/focus-revealed and not part of the
+ * accessibility relationship. Popover / Tooltip, whose content is meant to be
+ * discovered via the trigger, do wire trigger ARIA — HoverCard intentionally
+ * does not.
  *
  * Escape dismissal is owned by the content's document-level dismissable
  * layer (see `ForHoverCardContent`), so it works from the trigger and from

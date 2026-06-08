@@ -92,11 +92,15 @@ export interface ForFieldContext {
   registerControl(handle: FieldControlHandle): void;
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void;
-  /** Mark a label present; returns an unregister callback. */
+  /**
+   * Mark the label slot present; returns an unregister callback. The field
+   * exposes a single `labelId` (not an id list), so one `[forLabel]` per field
+   * is the supported shape — presence is boolean, not a count.
+   */
   registerLabel(): () => void;
-  /** Mark a description present; returns an unregister callback. */
+  /** Mark the description slot present; returns an unregister callback. Single `[forFieldDescription]` per field (single `descriptionId`). */
   registerDescription(): () => void;
-  /** Mark an error region present; returns an unregister callback. */
+  /** Mark the error slot present; returns an unregister callback. Single `[forFieldError]` per field (single `errorId`). */
   registerError(): () => void;
   /**
    * Forward a click to the registered control's focusable element, then focus

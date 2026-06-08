@@ -22,6 +22,11 @@ import { injectMenuContext } from './menu-context';
  *
  * The lifecycle (positioner + dismissable layer + initial focus + return
  * focus) is owned by the shared `injectOverlayShell` helper.
+ *
+ * Navigation is vertical-only (Up / Down between items, per the APG Menu
+ * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
+ * Horizontal menus are out of scope; a horizontal *bar* of menus is modelled
+ * by `[forMenubar]` instead.
  */
 @Directive({
   // The same directive serves submenu content too — the behavior is identical
@@ -34,6 +39,7 @@ import { injectMenuContext } from './menu-context';
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
     '[attr.aria-label]': 'ctx.ariaLabel() || null',
+    '[attr.aria-orientation]': '"vertical"',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     tabindex: '-1',
   },

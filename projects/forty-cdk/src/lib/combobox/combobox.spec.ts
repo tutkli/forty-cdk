@@ -157,6 +157,7 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-haspopup')).toBe('listbox');
       expect(input.getAttribute('aria-expanded')).toBe('false');
       expect(input.getAttribute('aria-autocomplete')).toBe('list');
+      expect(input.hasAttribute('aria-controls')).toBe(false);
 
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -165,6 +166,19 @@ describe('ForCombobox', () => {
       expect(content.getAttribute('role')).toBe('listbox');
       expect(input.getAttribute('aria-expanded')).toBe('true');
       expect(input.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('drops aria-controls when the listbox closes', async () => {
+      const r = renderHost(ComboboxHost);
+      const input = getInput();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(input.hasAttribute('aria-controls')).toBe(true);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(input.hasAttribute('aria-controls')).toBe(false);
     });
 
     it('options carry role=option + aria-selected + data-state', async () => {

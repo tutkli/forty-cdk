@@ -1258,4 +1258,43 @@ describe('ForDialogTrigger', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
   });
+
+  describe('missing controls dev-mode warning', () => {
+    @Component({
+      imports: [ForDialog, ForDialogTrigger],
+      template: `
+        <button forDialogTrigger [(open)]="open">Open</button>
+        @if (open()) {
+          <div forDialog (close)="open.set(false)" ariaLabel="t"></div>
+        }
+      `,
+    })
+    class NoControlsHost {
+      readonly open = signal(false);
+    }
+
+    it('warns when the trigger opens without [controls]', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(NoControlsHost);
+      await flush(r.fixture);
+      expect(warn).not.toHaveBeenCalled();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/dialog]');
+    });
+
+    it('does not warn when [controls] is provided', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TriggerHost);
+      await flush(r.fixture);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
 });
