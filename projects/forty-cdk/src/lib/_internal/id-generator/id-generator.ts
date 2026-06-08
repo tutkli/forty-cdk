@@ -1,4 +1,41 @@
-import { APP_ID, Injectable, inject } from '@angular/core';
+import { APP_ID, InjectionToken, Injectable, type Provider, inject } from '@angular/core';
+
+/**
+ * Salt mixed into every id produced by {@link IdGenerator}.
+ *
+ * Defaults to `inject(APP_ID)` so the emitted ids are byte-identical to
+ * Angular's application id out of the box — server and client renders of the
+ * same app therefore agree, which is what hydration relies on.
+ *
+ * Override it per app with {@link provideForIdSalt} when running more than one
+ * forty-cdk app on a single page, so each app's ids stay distinct without
+ * having to change the global `APP_ID` (which also drives hydration store,
+ * event replay, and other subsystems).
+ */
+export const FOR_ID_SALT = new InjectionToken<string>('forty-cdk id salt', {
+  providedIn: 'root',
+  factory: () => inject(APP_ID),
+});
+
+/**
+ * Provides a per-app salt for the ids forty-cdk primitives generate, without
+ * touching the global `APP_ID`. Use this when mounting multiple forty-cdk apps
+ * on one page so their `aria-controls` / `aria-labelledby` ids don't collide:
+ *
+ * ```ts
+ * bootstrapApplication(AppA, { providers: [provideForIdSalt('a')] });
+ * bootstrapApplication(AppB, { providers: [provideForIdSalt('b')] });
+ * ```
+ *
+ * The salt must stay deterministic per app instance — a runtime random value
+ * would break SSR hydration because the server and client renders would no
+ * longer agree.
+ *
+ * @param salt A stable, app-unique salt.
+ */
+export function provideForIdSalt(salt: string): Provider {
+  return { provide: FOR_ID_SALT, useValue: salt };
+}
 
 /**
  * Generates unique string IDs scoped to the application instance.
@@ -9,25 +46,27 @@ import { APP_ID, Injectable, inject } from '@angular/core';
  *
  * SSR: the generator is `providedIn: 'root'`, so a fresh instance is
  * created for each Angular application bootstrap (one per SSR request).
- * The IDs are salted with the application's `APP_ID` so the server and the
- * client produce identical strings for the same render order — the property
- * hydration relies on.
+ * The IDs are salted with {@link FOR_ID_SALT} (which defaults to the
+ * application's `APP_ID`) so the server and the client produce identical
+ * strings for the same render order — the property hydration relies on.
  *
- * IMPORTANT — multiple apps on one page require distinct `APP_ID`s. The salt
+ * IMPORTANT — multiple apps on one page need distinct salts. The default salt
  * is `APP_ID`, and Angular's default `APP_ID` is the literal `'ng'`. Two
- * forty-cdk apps mounted side-by-side that both keep the default `APP_ID`
+ * forty-cdk apps mounted side-by-side that both keep the default salt
  * therefore start from the same salt and the same counter, emitting identical
  * id sequences — duplicate DOM ids that mis-resolve `aria-labelledby` /
  * `aria-controls` across apps. A per-instance random nonce is deliberately
  * NOT mixed in: it would diverge the salt but break SSR hydration (the server
  * and client renders would no longer agree). When running more than one
- * forty-cdk app on a single page, give each a distinct `APP_ID` via
- * `{ provide: APP_ID, useValue: '<unique>' }` (or `bootstrapApplication`'s
- * `appId`). This is the standard Angular requirement for co-located apps.
+ * forty-cdk app on a single page, give each a distinct salt via
+ * {@link provideForIdSalt} (the per-app knob that leaves the global `APP_ID`
+ * untouched). Overriding the global `APP_ID` works too, but it also drives
+ * Angular's hydration store and event replay, so `provideForIdSalt` is the
+ * narrower choice.
  */
 @Injectable({ providedIn: 'root' })
 export class IdGenerator {
-  readonly #appId = inject(APP_ID);
+  readonly #salt = inject(FOR_ID_SALT);
   #counter = 0;
 
   /**
@@ -36,6 +75,6 @@ export class IdGenerator {
    * @param prefix Optional prefix for the generated ID. Defaults to `for`.
    */
   next(prefix = 'for'): string {
-    return `${prefix}-${this.#appId}-${++this.#counter}`;
+    return `${prefix}-${this.#salt}-${++this.#counter}`;
   }
 }
