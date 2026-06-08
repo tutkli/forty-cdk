@@ -27,7 +27,7 @@ export {
   FOR_DATE_ADAPTER,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from './date-adapter';
+} from '../_internal/date-adapter/date-adapter';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
 export {
   InternationalizedDateAdapter,

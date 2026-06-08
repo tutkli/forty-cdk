@@ -1,7 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { DateAdapter } from './date-adapter';
 
 /** A weekday column header in the calendar grid. */
 export interface CalendarWeekday {

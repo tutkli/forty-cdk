@@ -13,6 +13,11 @@ import {
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
+import {
+  compareDateOf,
+  type DateAdapter,
+  injectDateAdapter,
+} from '../_internal/date-adapter/date-adapter';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -27,7 +32,6 @@ import {
   type ForCalendarContext,
 } from './calendar-context';
 import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
-import { compareDateOf, type DateAdapter, injectDateAdapter } from './date-adapter';
 
 /**
  * Headless implementation of a single-date calendar grid following the

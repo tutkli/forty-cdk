@@ -8,11 +8,11 @@ import {
   renderHost,
   type RenderResult,
 } from '../../test-utils';
+import { assertTimeCapable, type DateAdapter } from '../_internal/date-adapter/date-adapter';
 import { ForCalendar } from '../calendar/calendar';
 import { ForCalendarCell } from '../calendar/calendar-cell';
 import { ForCalendarGrid } from '../calendar/calendar-grid';
 import { ForCalendarGridHeader } from '../calendar/calendar-grid-header';
-import { assertTimeCapable, type DateAdapter } from '../calendar/date-adapter';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import { ForTimeField } from '../time-field/time-field';
 import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
