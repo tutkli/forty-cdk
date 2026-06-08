@@ -22,14 +22,19 @@ export interface ForSelectDefaults {
   collisionPadding: number;
 }
 
-const FALLBACK: ForSelectDefaults = {
+/**
+ * Library fallback for select defaults, read at the root injector when no
+ * consumer has called `provideForSelectDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_SELECT_FALLBACK_DEFAULTS: ForSelectDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForSelectDefaults>(
   'FOR_SELECT_DEFAULTS',
-  FALLBACK,
+  FOR_SELECT_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved select defaults for the current scope. */

@@ -21,6 +21,10 @@ import { ForDialogTitle } from '../../dialog/dialog-title';
 import { ForDisclosure } from '../../disclosure/disclosure';
 import { ForDisclosureContent } from '../../disclosure/disclosure-content';
 import { ForDisclosureTrigger } from '../../disclosure/disclosure-trigger';
+import { ForPopover } from '../../popover/popover';
+import { ForPopoverContent } from '../../popover/popover-content';
+import { ForPopoverTitle } from '../../popover/popover-title';
+import { ForPopoverTrigger } from '../../popover/popover-trigger';
 import { ForRadio } from '../../radio-group/radio';
 import { ForRadioGroup } from '../../radio-group/radio-group';
 import { ForScrollArea } from '../../scroll-area/scroll-area';
@@ -59,6 +63,16 @@ import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
  * `InertSiblingsStack`) is supposed to no-op when `isPlatformServer`
  * resolves true. Regressions that touch the DOM eagerly or share
  * module-level state between requests get caught here.
+ *
+ * Two of the fixtures mount in their OPEN state so the overlay-open
+ * gating is exercised, not just the initial unmounted render: a
+ * trigger-anchored overlay (`PopoverOpenFixture`, `@floating-ui`
+ * positioner + `injectPortal`) and a free-floating overlay
+ * (`DialogOpenFixture`, modal shell + scroll lock + inert siblings).
+ * Both assert the open render produces no throw AND leaves
+ * `document.body` untouched — `injectPortal` and the shell side effects
+ * run inside `afterNextRender`, which never fires server-side, so the
+ * content stays in the view tree and nothing is appended to `<body>`.
  */
 
 @Component({
@@ -184,6 +198,30 @@ class AvatarFixture {}
 })
 class ScrollAreaFixture {}
 
+@Component({
+  imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, ForPopoverTitle],
+  template: `
+    <div forPopover [open]="true">
+      <button forPopoverTrigger>Open</button>
+      <div forPopoverContent>
+        <h2 forPopoverTitle>Settings</h2>
+        content
+      </div>
+    </div>
+  `,
+})
+class PopoverOpenFixture {}
+
+@Component({
+  imports: [ForDialog, ForDialogTitle],
+  template: `
+    <div forDialog ariaLabel="d">
+      <h2 forDialogTitle>title</h2>
+    </div>
+  `,
+})
+class DialogOpenFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -195,6 +233,8 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DialogFixture,
   AvatarFixture,
   ScrollAreaFixture,
+  PopoverOpenFixture,
+  DialogOpenFixture,
 ];
 
 function configureServer(): void {
@@ -275,6 +315,28 @@ describe('SSR smoke tests', () => {
     expect(stack2).not.toBe(stack1);
     expect(lock2).not.toBe(lock1);
     expect(inert2).not.toBe(inert1);
+  });
+
+  it('opening a trigger-anchored overlay (Popover) does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(PopoverOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forPopoverContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forPopoverContent]')).toBeNull();
+  });
+
+  it('opening a free-floating overlay (Dialog) does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DialogOpenFixture);
+    f.detectChanges();
+    const dialog = f.nativeElement.querySelector('[forDialog]') as HTMLElement;
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(dialog)).toBe(true);
+    expect(dialog.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
   });
 
   it('BodyScrollLock is a no-op on the server', () => {

@@ -58,6 +58,26 @@ export interface DismissableLayerContractSetup {
   ) => DismissableLayerMountResult | Promise<DismissableLayerMountResult>;
 }
 
+// Outside nodes the contract appends to `document.body` to drive
+// pointer-down / focus-outside paths. Tracked in module scope so the
+// contract's own `afterEach` can scrub any survivors, the way
+// `afterEachOverlayCleanup` owns its portal cleanup — individual `it()`
+// blocks don't each have to remember a `try/finally`.
+const outsideNodes: HTMLElement[] = [];
+
+const appendOutsideNode = (): HTMLElement => {
+  const outside = document.createElement('button');
+  document.body.appendChild(outside);
+  outsideNodes.push(outside);
+  return outside;
+};
+
+const removeOutsideNodes = (): void => {
+  for (const node of outsideNodes.splice(0)) {
+    node.remove();
+  }
+};
+
 const dispatchEscape = (): void => {
   document.dispatchEvent(
     new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
@@ -65,8 +85,7 @@ const dispatchEscape = (): void => {
 };
 
 const dispatchPointerOnOutside = (): HTMLElement => {
-  const outside = document.createElement('button');
-  document.body.appendChild(outside);
+  const outside = appendOutsideNode();
   const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'target', { value: outside, configurable: true });
   document.dispatchEvent(event);
@@ -74,8 +93,7 @@ const dispatchPointerOnOutside = (): HTMLElement => {
 };
 
 const dispatchFocusOnOutside = (): HTMLElement => {
-  const outside = document.createElement('button');
-  document.body.appendChild(outside);
+  const outside = appendOutsideNode();
   const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'target', { value: outside, configurable: true });
   document.dispatchEvent(event);
@@ -88,6 +106,13 @@ const dispatchFocusOnOutside = (): HTMLElement => {
  */
 export function assertDismissableLayerContract(setup: DismissableLayerContractSetup): void {
   describe('dismissable-layer contract', () => {
+    // The contract owns its own cleanup: any outside node a test appended to
+    // `document.body` is scrubbed here, so a throwing assertion can never leave
+    // a stray <button> attached for the next spec.
+    afterEach(() => {
+      removeOutsideNodes();
+    });
+
     describe('Escape', () => {
       it('closes the layer when dismissible', async () => {
         const ctx = await setup.mount();
@@ -130,52 +155,36 @@ export function assertDismissableLayerContract(setup: DismissableLayerContractSe
     describe('outside pointerdown', () => {
       it('emits (pointerDownOutside) and (interactOutside), then closes', async () => {
         const ctx = await setup.mount();
-        const outside = dispatchPointerOnOutside();
+        dispatchPointerOnOutside();
         await ctx.flush();
-        try {
-          expect(ctx.pointerOutsideCount()).toBe(1);
-          expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
-          expect(ctx.isOpen()).toBe(false);
-        } finally {
-          outside.remove();
-        }
+        expect(ctx.pointerOutsideCount()).toBe(1);
+        expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
+        expect(ctx.isOpen()).toBe(false);
       });
 
       it('does not close when dismissible=false', async () => {
         const ctx = await setup.mount({ dismissible: false });
-        const outside = dispatchPointerOnOutside();
+        dispatchPointerOnOutside();
         await ctx.flush();
-        try {
-          expect(ctx.isOpen()).toBe(true);
-        } finally {
-          outside.remove();
-        }
+        expect(ctx.isOpen()).toBe(true);
       });
 
       it('keeps the layer open when (pointerDownOutside) calls preventDefault()', async () => {
         const ctx = await setup.mount({ pointerVeto: true });
-        const outside = dispatchPointerOnOutside();
+        dispatchPointerOnOutside();
         await ctx.flush();
-        try {
-          expect(ctx.pointerOutsideCount()).toBe(1);
-          expect(ctx.isOpen()).toBe(true);
-        } finally {
-          outside.remove();
-        }
+        expect(ctx.pointerOutsideCount()).toBe(1);
+        expect(ctx.isOpen()).toBe(true);
       });
     });
 
     describe('outside focus', () => {
       it('emits (focusOutside) and (interactOutside) when focus moves outside', async () => {
         const ctx = await setup.mount();
-        const outside = dispatchFocusOnOutside();
+        dispatchFocusOnOutside();
         await ctx.flush();
-        try {
-          expect(ctx.focusOutsideCount()).toBe(1);
-          expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
-        } finally {
-          outside.remove();
-        }
+        expect(ctx.focusOutsideCount()).toBe(1);
+        expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
       });
     });
   });

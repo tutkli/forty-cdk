@@ -16,13 +16,18 @@ export interface ForToggleDefaults {
   loop: boolean;
 }
 
-const FALLBACK: ForToggleDefaults = {
+/**
+ * Library fallback for toggle defaults, read at the root injector when no
+ * consumer has called `provideForToggleDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TOGGLE_FALLBACK_DEFAULTS: ForToggleDefaults = {
   loop: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForToggleDefaults>(
   'FOR_TOGGLE_DEFAULTS',
-  FALLBACK,
+  FOR_TOGGLE_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved toggle defaults for the current scope. */

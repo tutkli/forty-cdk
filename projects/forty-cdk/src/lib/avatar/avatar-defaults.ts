@@ -18,13 +18,18 @@ export interface ForAvatarDefaults {
   fallbackDelayMs: number;
 }
 
-const FALLBACK: ForAvatarDefaults = {
+/**
+ * Library fallback for avatar defaults, read at the root injector when no
+ * consumer has called `provideForAvatarDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_AVATAR_FALLBACK_DEFAULTS: ForAvatarDefaults = {
   fallbackDelayMs: 0,
 };
 
 const { token, provideDefaults } = createDefaults<ForAvatarDefaults>(
   'FOR_AVATAR_DEFAULTS',
-  FALLBACK,
+  FOR_AVATAR_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved avatar defaults for the current scope. */

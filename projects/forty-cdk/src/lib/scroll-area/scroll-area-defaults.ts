@@ -16,13 +16,18 @@ export interface ForScrollAreaDefaults {
   scrollHideDelay: number;
 }
 
-const FALLBACK: ForScrollAreaDefaults = {
+/**
+ * Library fallback for scroll area defaults, read at the root injector when no
+ * consumer has called `provideForScrollAreaDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_SCROLL_AREA_FALLBACK_DEFAULTS: ForScrollAreaDefaults = {
   scrollHideDelay: 600,
 };
 
 const { token, provideDefaults } = createDefaults<ForScrollAreaDefaults>(
   'FOR_SCROLL_AREA_DEFAULTS',
-  FALLBACK,
+  FOR_SCROLL_AREA_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved scroll-area defaults for the current scope. */

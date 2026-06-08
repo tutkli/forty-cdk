@@ -731,7 +731,6 @@ describe('ForAccordion', () => {
       flush();
 
       const mounted = el.querySelector<HTMLElement>('[data-test-content="a"]')!;
-      expect(mounted).not.toBeNull();
       expect(mounted.hasAttribute('aria-hidden')).toBe(false);
       expect(mounted.hasAttribute('inert')).toBe(false);
 
