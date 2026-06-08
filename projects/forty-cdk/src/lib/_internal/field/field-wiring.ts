@@ -162,6 +162,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
 
   const labelledElement = handle.labelledElement;
   let previousTarget: HTMLElement | null = null;
+  let ownsId = false;
 
   effect(() => {
     // Resolve the wiring target: the nominated focusable element when a
@@ -171,9 +172,8 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
     const target = labelledElement ? labelledElement() : el;
 
     if (previousTarget && previousTarget !== target) {
-      applyAttr(previousTarget, 'aria-labelledby', null);
-      applyAttr(previousTarget, 'aria-describedby', null);
-      applyAttr(previousTarget, 'aria-errormessage', null);
+      clearFieldAttrs(previousTarget, ownsId, field.controlId());
+      ownsId = false;
     }
     previousTarget = target;
 
@@ -183,9 +183,32 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
 
     if (!target.getAttribute('id')) {
       target.setAttribute('id', field.controlId());
+      ownsId = true;
     }
     applyAttr(target, 'aria-labelledby', field.labelledBy());
     applyAttr(target, 'aria-describedby', field.describedBy());
     applyAttr(target, 'aria-errormessage', field.errorMessageId());
   });
+
+  inject(DestroyRef).onDestroy(() => {
+    if (previousTarget) {
+      clearFieldAttrs(previousTarget, ownsId, field.controlId());
+    }
+  });
+}
+
+/**
+ * Removes the field's association attributes (`aria-labelledby` /
+ * `aria-describedby` / `aria-errormessage`) from a previously-targeted element,
+ * plus the field-owned `id` when this helper set it. Symmetric with the
+ * migration-cleanup branch so an arbitrary foreign `labelledElement` is left
+ * clean once the control is destroyed or the target migrates.
+ */
+function clearFieldAttrs(target: HTMLElement, ownsId: boolean, controlId: string): void {
+  applyAttr(target, 'aria-labelledby', null);
+  applyAttr(target, 'aria-describedby', null);
+  applyAttr(target, 'aria-errormessage', null);
+  if (ownsId && target.getAttribute('id') === controlId) {
+    target.removeAttribute('id');
+  }
 }

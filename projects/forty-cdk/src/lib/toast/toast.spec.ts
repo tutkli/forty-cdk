@@ -10,6 +10,7 @@ import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-co
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup } from '../../test-utils/overlay-cleanup';
+import { nextMacrotask } from '../../test-utils/flush';
 import { renderHost } from '../../test-utils/render';
 import { withReducedMotion } from '../../test-utils/reduced-motion';
 import { ForToast } from './toast';
@@ -192,10 +193,11 @@ const $ = (host: HTMLElement, id: string) =>
 const toastsIn = (host: HTMLElement, id: string): HTMLElement[] =>
   Array.from($(host, id)!.querySelectorAll<HTMLElement>('[forToast]'));
 
-// LiveAnnouncer schedules every text write through `queueMicrotask`, so the
-// altText announcement specs below need a single microtask hop after the
-// first render — not the canonical `flush(fixture)` render drain. Spell the
-// hop inline (`await Promise.resolve()`) so the WHY is obvious at the call.
+// LiveAnnouncer schedules every text write through `setTimeout(…, 0)` (a
+// macrotask — see the LiveAnnouncer JSDoc for the screen-reader rationale), so
+// the altText announcement specs below need a macrotask hop after the render
+// before the region is populated. `await r.flush()` already includes one; specs
+// that drive change detection directly use `await nextMacrotask()`.
 
 function getLiveAnnouncerRegion(politeness: 'polite' | 'assertive'): HTMLElement | null {
   // The toast directive itself binds aria-live to its host. LiveAnnouncer
@@ -792,7 +794,7 @@ describe('ForToast (declarative)', () => {
       // the value already in place.
       fixture.componentInstance.altText.set('Undo (Cmd+Z)');
       fixture.detectChanges();
-      await Promise.resolve();
+      await nextMacrotask();
 
       const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
       expect(t.getAttribute('aria-live')).toBe('off');
@@ -849,7 +851,7 @@ describe('ForToast (declarative)', () => {
       fixture.componentInstance.description.set('Network unreachable.');
       fixture.componentInstance.altText.set('Retry (Cmd+R)');
       fixture.detectChanges();
-      await Promise.resolve();
+      await nextMacrotask();
 
       const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
       expect(t.getAttribute('aria-live')).toBe('off');

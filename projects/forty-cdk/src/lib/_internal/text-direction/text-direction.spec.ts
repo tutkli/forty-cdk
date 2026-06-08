@@ -164,6 +164,33 @@ describe('injectTextDirection', () => {
         expect(host.getAttribute('dir')).toBe('rtl');
       }
     });
+
+    it('goes stale on reparent into a different-dir subtree until a dir mutation fires (documented limitation)', async () => {
+      const { fixture, host } = render();
+      const ltrBox = fixture.nativeElement.querySelector('div') as HTMLElement;
+
+      const rtlBox = document.createElement('div');
+      rtlBox.setAttribute('dir', 'rtl');
+      ltrBox.parentElement!.appendChild(rtlBox);
+
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('ltr');
+
+      // Move the probe host under the rtl subtree without touching any `dir`
+      // attribute. The shared observer only watches `dir` mutations, not
+      // childList, so the ambient does NOT recompute and stays stale at ltr.
+      rtlBox.appendChild(host);
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('ltr');
+
+      // Any subsequent `dir` mutation in the document forces the recompute,
+      // and the host now resolves rtl from its new ancestor.
+      document.documentElement.setAttribute('dir', 'ltr');
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('rtl');
+
+      rtlBox.remove();
+    });
   });
 
   describe('server platform', () => {

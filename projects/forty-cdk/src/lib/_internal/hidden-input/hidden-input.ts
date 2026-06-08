@@ -52,10 +52,18 @@ export interface HiddenInputConfig<T = string> {
  * `DestroyRef`: the inputs are removed when the directive is destroyed.
  *
  * Browser-only: on the server this is a no-op — no `<input>` is created or
- * serialized. The inputs are mounted on the client only, after hydration,
- * so the server-rendered markup (the host primitive alone) and the hydrated
- * DOM agree and there is no hydration mismatch or duplicated/double-submitted
- * field for native-form consumers.
+ * serialized. The hidden inputs are **client-only** siblings: they are net-new
+ * nodes the server never rendered, so they are not part of the hydrated tree
+ * and a full (non-incremental) hydration sees the same server markup (the host
+ * primitive alone) with no mismatch and no duplicated / double-submitted field.
+ *
+ * Caveat: the initial mount runs inside the directive's first `effect()` pass,
+ * which can fire before hydration finishes settling under incremental
+ * hydration. That is harmless today because the inputs are always net-new
+ * (never claimed from the server DOM), but it means the "after hydration"
+ * guarantee is "not part of the hydrated tree", not "strictly sequenced after
+ * the hydration pass". If incremental hydration ever needs the stricter
+ * ordering, move the initial mount into `afterNextRender`.
  */
 export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): void {
   if (!isPlatformBrowser(inject(PLATFORM_ID))) {

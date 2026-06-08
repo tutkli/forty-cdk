@@ -353,15 +353,23 @@ const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
  * Snap points are passed by the caller already converted to pixel positions
  * (`snapPositions`); the algorithm does not know whether they came from a
  * fraction, percentage string, or pixel string.
+ *
+ * Contract: callers must guard `snapPoints.length > 0` before calling this —
+ * the no-snap-points dismissal is owned entirely by the caller (the Drawer
+ * computes it directly from its drag offset and `closeThreshold`), so the
+ * helper does not duplicate that branch with a second, inconsistent threshold
+ * formula. Passing an empty `snapPoints` throws.
  */
 export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapResolution<S> {
   const { snapPoints, snapPositions, activeSnapPoint, position, velocity, dimension } = opts;
-  if (snapPoints.length === 0) {
-    return { willClose: position < dimension * (1 - opts.closeThreshold), nextSnapPoint: null };
-  }
   if (snapPositions.length !== snapPoints.length) {
     throw new Error(
       '[forty-cdk/swipe-dismiss] resolveSnapTarget: snapPoints and snapPositions must have the same length.',
+    );
+  }
+  if (snapPoints.length === 0) {
+    throw new Error(
+      '[forty-cdk/swipe-dismiss] resolveSnapTarget: requires at least one snap point; callers must guard snapPoints.length > 0 (the no-snap-points dismissal is the caller’s responsibility).',
     );
   }
 

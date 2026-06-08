@@ -112,6 +112,44 @@ describe('createHoverIntent', () => {
       expect(coordinator.startSkipDelayCalls).toBe(0);
     });
 
+    it('does not open when isDisabled flips true before the armed timer fires', () => {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const disabled = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => disabled(),
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+      });
+
+      scheduler.scheduleOpen();
+      disabled.set(true);
+      vi.advanceTimersByTime(700);
+      expect(open()).toBe(false);
+    });
+
+    it('clears a pending open timer when a later scheduleOpen runs while disabled', () => {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const disabled = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => disabled(),
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+      });
+
+      scheduler.scheduleOpen();
+      disabled.set(true);
+      scheduler.scheduleOpen();
+      disabled.set(false);
+      vi.advanceTimersByTime(5_000);
+      expect(open()).toBe(false);
+    });
+
     it('clamps a negative open delay to 0 (opens instantly)', () => {
       vi.useFakeTimers();
       const open = signal(false);

@@ -256,6 +256,7 @@ describe('ForContextMenu', () => {
       const region = r.query<HTMLElement>('#region')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: region, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [region], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -271,6 +272,7 @@ describe('ForContextMenu', () => {
       document.body.appendChild(outside);
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 
@@ -286,6 +288,7 @@ describe('ForContextMenu', () => {
       const cut = document.querySelector<HTMLElement>('#cut')!;
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: cut, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [cut], configurable: true });
       document.dispatchEvent(event);
       await flush(r.fixture);
 

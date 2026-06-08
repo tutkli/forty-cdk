@@ -143,6 +143,29 @@ describe('FocusTrap', () => {
     expect(container.getAttribute('tabindex')).toBe('-1');
   });
 
+  it('preserves a pre-existing container tabindex when initial focus lands on a descendant', () => {
+    container.setAttribute('tabindex', '-1');
+    trap = new FocusTrap(container, stack);
+    trap.activate();
+    expect(document.activeElement?.id).toBe('b1');
+
+    trap.deactivate();
+    expect(container.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('does not leak a temporary container tabindex on repeated Tab in an empty trap', () => {
+    container.setAttribute('tabindex', '-1');
+    container.innerHTML = '';
+    trap = new FocusTrap(container, stack);
+    trap.activate();
+
+    document.dispatchEvent(tab());
+    document.dispatchEvent(tab());
+
+    trap.deactivate();
+    expect(container.getAttribute('tabindex')).toBe('-1');
+  });
+
   it('skips disabled and hidden focusables', () => {
     container.innerHTML = `
       <button id="b1" disabled>disabled</button>

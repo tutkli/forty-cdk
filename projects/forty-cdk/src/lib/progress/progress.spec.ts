@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import { nextMacrotask } from '../../test-utils/flush';
 import { ForProgress } from './progress';
 import { ForProgressIndicator } from './progress-indicator';
 
@@ -27,8 +28,9 @@ class ProgressHost {
 }
 
 // LiveAnnouncer (driven by [announceCompletion]) schedules every text write
-// through `queueMicrotask`, so the announcement specs need a single microtask
-// hop after `flush()` — not the canonical `flush(fixture)` render drain.
+// through `setTimeout(…, 0)` (a macrotask — see the LiveAnnouncer JSDoc for the
+// screen-reader rationale), so the announcement specs need a macrotask hop
+// (`nextMacrotask()`) after `flush()` rather than a microtask drain.
 
 describe('ForProgress', () => {
   describe('determinate', () => {
@@ -180,7 +182,7 @@ describe('ForProgress', () => {
       fixture.componentInstance.announce.set(true);
       fixture.componentInstance.value.set(50);
       flush();
-      await Promise.resolve();
+      await nextMacrotask();
 
       // Initial transition (null → loading) should not announce.
       let region = document.querySelector<HTMLElement>('[aria-live="polite"]');
@@ -188,7 +190,7 @@ describe('ForProgress', () => {
 
       fixture.componentInstance.value.set(100);
       flush();
-      await Promise.resolve();
+      await nextMacrotask();
 
       region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region!.textContent).toBe('Complete');
@@ -200,11 +202,11 @@ describe('ForProgress', () => {
       fixture.componentInstance.getLabel.set((v, m) => `Done: ${v}/${m}`);
       fixture.componentInstance.value.set(50);
       flush();
-      await Promise.resolve();
+      await nextMacrotask();
 
       fixture.componentInstance.value.set(100);
       flush();
-      await Promise.resolve();
+      await nextMacrotask();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region!.textContent).toBe('Done: 100/100');
@@ -216,7 +218,7 @@ describe('ForProgress', () => {
       flush();
       fixture.componentInstance.value.set(100);
       flush();
-      await Promise.resolve();
+      await nextMacrotask();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region?.textContent ?? '').toBe('');

@@ -12,9 +12,12 @@ import { InjectionToken, Optional, type Provider, SkipSelf } from '@angular/core
  * - Reads the parent value of the same token via
  *   `[[new SkipSelf(), new Optional(), TOKEN]]` so each call inherits
  *   ancestor scopes.
- * - Per key, picks `overrides[k] ?? parent[k] ?? fallback[k]`. The parent's
- *   already-merged value beats the library fallback, which means a
- *   component-level `provideFor<X>Defaults({ a: 1 })` overlaid on an
+ * - Per key, the value present-and-not-`undefined` in `overrides` wins, else
+ *   the parent's value (when not `undefined`), else the library `fallback`.
+ *   Only `undefined` is treated as "key omitted" — a deliberate `null` (or any
+ *   other defined value) in `overrides` or `parent` is a real override and is
+ *   kept. The parent's already-merged value beats the library fallback, which
+ *   means a component-level `provideFor<X>Defaults({ a: 1 })` overlaid on an
  *   app-level `provideFor<X>Defaults({ a: 0, b: 2 })` resolves to
  *   `{ a: 1, b: 2 }` — partial overrides only touch the keys they list.
  * - Returns a `Provider[]` so callers can spread additional providers

@@ -7,12 +7,24 @@ import { DismissableLayer, DismissableLayerStack } from './dismissable-layer';
 function pointerDown(target: Node): PointerEvent {
   const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'target', { value: target, configurable: true });
+  // A real dispatched event's `composedPath()` starts at the originating node;
+  // the synthetic event above only overrides `target`, so mirror it on the path
+  // too (the layer reads `composedPath()[0]` first for shadow-DOM correctness).
+  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
+  return event;
+}
+
+function pointerDownComposed(retargeted: Node, path: readonly Node[]): PointerEvent {
+  const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'target', { value: retargeted, configurable: true });
+  Object.defineProperty(event, 'composedPath', { value: () => [...path], configurable: true });
   return event;
 }
 
 function focusIn(target: Node): FocusEvent {
   const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'target', { value: target, configurable: true });
+  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
   return event;
 }
 
@@ -143,6 +155,35 @@ describe('DismissableLayer', () => {
       document.dispatchEvent(pointerDown(outside));
 
       expect(calls).toEqual(['pointer']);
+    });
+
+    it('uses composedPath()[0] over a retargeted target so a shadow-DOM pointer inside the host counts as inside', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        onPointerDownOutside: () => calls.push('pointer'),
+        onDismiss: () => calls.push('dismiss'),
+      });
+
+      const inside = host.querySelector('#inside')!;
+      // `target` is retargeted to `outside` (as a shadow host would be), but the
+      // real originating node in the composed path is inside the layer host.
+      document.dispatchEvent(pointerDownComposed(outside, [inside, host]));
+
+      expect(calls).toEqual([]);
+    });
+
+    it('falls back to event.target when composedPath is empty', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        onPointerDownOutside: () => calls.push('pointer'),
+        onDismiss: () => calls.push('dismiss'),
+      });
+
+      document.dispatchEvent(pointerDownComposed(outside, []));
+
+      expect(calls).toEqual(['pointer', 'dismiss']);
     });
   });
 
