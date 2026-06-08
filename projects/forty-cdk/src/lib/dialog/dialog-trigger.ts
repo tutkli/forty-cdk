@@ -1,4 +1,13 @@
-import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
+import {
+  booleanAttribute,
+  Directive,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  isDevMode,
+  model,
+} from '@angular/core';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
@@ -46,7 +55,9 @@ export class ForDialogTrigger {
    * Id of the controlled dialog box. Mirrored to `aria-controls` while the
    * dialog is open. The consumer is responsible for setting the same `id` on
    * `[forDialog]`. Has no effect on focus or behavior — purely the
-   * accessibility relationship between trigger and box.
+   * accessibility relationship between trigger and box. Leaving it unset when
+   * the dialog opens drops `aria-controls` silently; a dev-mode warning fires
+   * so the missing linkage is visible during development.
    */
   readonly controls = input<string | null>(null);
 
@@ -59,6 +70,18 @@ export class ForDialogTrigger {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    if (isDevMode()) {
+      effect(() => {
+        if (this.open() && this.controls() === null) {
+          console.warn(
+            '[forty-cdk/dialog] [forDialogTrigger] is open but has no [controls] — aria-controls is omitted. Set [controls] to the id on [forDialog] so assistive tech links the trigger to its dialog.',
+          );
+        }
+      });
+    }
+  }
 
   protected onClick(): void {
     if (this.disabled()) {

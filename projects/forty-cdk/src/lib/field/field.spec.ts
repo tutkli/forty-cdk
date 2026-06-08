@@ -48,6 +48,42 @@ describe('ForField', () => {
     });
   });
 
+  describe('single-instance-per-slot presence', () => {
+    @Component({
+      imports: [ForField, ForLabel, ForFieldDescription, ForSwitch],
+      template: `
+        <div forField data-test-id="field">
+          @if (showLabel()) {
+            <label forLabel data-test-id="label">Notify</label>
+          }
+          <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+          @if (showDesc()) {
+            <p forFieldDescription data-test-id="desc">Security only.</p>
+          }
+        </div>
+      `,
+    })
+    class Host {
+      readonly checked = signal(false);
+      readonly showLabel = signal(true);
+      readonly showDesc = signal(true);
+    }
+
+    it('drops aria-labelledby / aria-describedby once the single label / description slot unmounts', () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+      expect(control.hasAttribute('aria-labelledby')).toBe(true);
+      expect(control.hasAttribute('aria-describedby')).toBe(true);
+
+      fixture.componentInstance.showLabel.set(false);
+      fixture.componentInstance.showDesc.set(false);
+      flush();
+
+      expect(control.hasAttribute('aria-labelledby')).toBe(false);
+      expect(control.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
   describe('state reflection', () => {
     @Component({
       imports: [ForField, ForFieldError, ForSwitch],

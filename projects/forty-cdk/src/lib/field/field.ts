@@ -53,9 +53,9 @@ export class ForField implements ForFieldContext {
 
   readonly #controlId = signal(this.#idGen.next('for-field-control'));
   readonly #control = signal<FieldControlHandle | null>(null);
-  readonly #labels = signal(0);
-  readonly #descriptions = signal(0);
-  readonly #errors = signal(0);
+  readonly #hasLabel = signal(false);
+  readonly #hasDescription = signal(false);
+  readonly #hasError = signal(false);
 
   /**
    * The element the field actually targets for `id` / `aria-*` association and
@@ -102,7 +102,7 @@ export class ForField implements ForFieldContext {
   readonly touched = computed(() => this.#control()?.touched?.() ?? false);
 
   /** Resolved `aria-labelledby` for the control (label id, or null). */
-  readonly labelledBy = computed(() => (this.#labels() > 0 ? this.labelId() : null));
+  readonly labelledBy = computed(() => (this.#hasLabel() ? this.labelId() : null));
 
   /**
    * Resolved `aria-describedby`: the description id always, plus the error id
@@ -112,10 +112,10 @@ export class ForField implements ForFieldContext {
    */
   readonly describedBy = computed(() => {
     const ids: string[] = [];
-    if (this.#descriptions() > 0) {
+    if (this.#hasDescription()) {
       ids.push(this.descriptionId());
     }
-    if (this.#errors() > 0 && this.invalid()) {
+    if (this.#hasError() && this.invalid()) {
       ids.push(this.errorId());
     }
     return ids.length > 0 ? ids.join(' ') : null;
@@ -123,7 +123,7 @@ export class ForField implements ForFieldContext {
 
   /** Resolved `aria-errormessage`: the error id when present and invalid, else null. */
   readonly errorMessageId = computed(() =>
-    this.#errors() > 0 && this.invalid() ? this.errorId() : null,
+    this.#hasError() && this.invalid() ? this.errorId() : null,
   );
 
   /** Register the control whose state the field reflects. */
@@ -146,22 +146,28 @@ export class ForField implements ForFieldContext {
     }
   }
 
-  /** Mark a label present; returns an unregister callback. */
+  /**
+   * Mark the label slot present; returns an unregister callback. The field
+   * targets a single label per slot — its `labelId` / `descriptionId` /
+   * `errorId` are single ids, not id lists — so one `[forLabel]`,
+   * `[forFieldDescription]`, and `[forFieldError]` per field is the supported
+   * shape. Presence is a boolean, not a count.
+   */
   registerLabel(): () => void {
-    this.#labels.update((n) => n + 1);
-    return () => this.#labels.update((n) => n - 1);
+    this.#hasLabel.set(true);
+    return () => this.#hasLabel.set(false);
   }
 
-  /** Mark a description present; returns an unregister callback. */
+  /** Mark the description slot present; returns an unregister callback. See {@link registerLabel} for the single-instance-per-slot contract. */
   registerDescription(): () => void {
-    this.#descriptions.update((n) => n + 1);
-    return () => this.#descriptions.update((n) => n - 1);
+    this.#hasDescription.set(true);
+    return () => this.#hasDescription.set(false);
   }
 
-  /** Mark an error region present; returns an unregister callback. */
+  /** Mark the error slot present; returns an unregister callback. See {@link registerLabel} for the single-instance-per-slot contract. */
   registerError(): () => void {
-    this.#errors.update((n) => n + 1);
-    return () => this.#errors.update((n) => n - 1);
+    this.#hasError.set(true);
+    return () => this.#hasError.set(false);
   }
 
   /**

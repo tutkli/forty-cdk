@@ -190,15 +190,21 @@ export class ForNumberInput
     return formatter ? formatter.format(current) : null;
   });
 
-  /** Derived keyboard mode: `decimal` when fractional values are possible, else `numeric`. */
+  /**
+   * Derived keyboard mode: `decimal` when fractional values are possible, else
+   * `numeric`. Reads the formatter's *resolved* options so currency / percent
+   * styles (which imply fraction digits the consumer never spelled out, e.g. 2
+   * for most currencies) report their effective `maximumFractionDigits` rather
+   * than the raw, un-resolved options object where those keys are absent.
+   */
   readonly inputmode = computed<'numeric' | 'decimal'>(() => {
-    const options = this.formatOptions();
+    const resolved = this.#formatter()?.resolvedOptions();
     const fractional =
       !Number.isInteger(this.step()) ||
       !this.#isWholeBound(this.min()) ||
       !this.#isWholeBound(this.max()) ||
-      (options?.maximumFractionDigits ?? 0) > 0 ||
-      (options?.minimumFractionDigits ?? 0) > 0;
+      (resolved?.maximumFractionDigits ?? 0) > 0 ||
+      (resolved?.minimumFractionDigits ?? 0) > 0;
     return fractional ? 'decimal' : 'numeric';
   });
 

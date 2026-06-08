@@ -75,7 +75,7 @@ const DRAG_DEAD_ZONE_PX = 3;
     '[attr.aria-valuenow]': 'value()',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'max()',
-    '[attr.aria-valuetext]': 'valueText()',
+    '[attr.aria-valuetext]': 'valueText() || null',
     '[attr.aria-controls]': 'controls()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',

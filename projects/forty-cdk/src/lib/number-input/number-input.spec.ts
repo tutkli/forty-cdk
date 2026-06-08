@@ -88,6 +88,30 @@ describe('ForNumberInput', () => {
       flush();
       expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
     });
+
+    it('uses decimal inputmode for currency formats that imply fraction digits', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
+      flush();
+      expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
+    });
+
+    it('uses decimal inputmode for percent formats with resolved fraction digits', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.formatOptions.set({ style: 'percent', maximumFractionDigits: 2 });
+      flush();
+      expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
+    });
+
+    it('keeps numeric inputmode for a whole-number currency format', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.formatOptions.set({
+        style: 'currency',
+        currency: 'JPY',
+      });
+      flush();
+      expect(inputOf(el).getAttribute('inputmode')).toBe('numeric');
+    });
   });
 
   assertFormControlContract(

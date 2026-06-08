@@ -62,6 +62,22 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-state')).toBe('loading');
     });
 
+    it('clamps a non-positive max to a positive aria-valuemax so the ARIA range stays valid', () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(0);
+      fixture.componentInstance.max.set(0);
+      flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.getAttribute('aria-valuemin')).toBe('0');
+      expect(el.getAttribute('aria-valuemax')).toBe('1');
+      expect(el.getAttribute('data-max')).toBe('1');
+
+      fixture.componentInstance.max.set(-10);
+      flush();
+      expect(el.getAttribute('aria-valuemax')).toBe('1');
+    });
+
     it('reflects data-percentage / data-min / data-max on the root, matching meter', () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(25);

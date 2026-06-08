@@ -29,11 +29,16 @@ import {
 } from './toggle-group-context';
 
 /**
- * Headless implementation of a [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/)
- * of toggle buttons. Owns the selected-values set, navigation policy, and
- * the registry of `[forToggleGroupItem]` children. Implements
+ * Headless group of toggle buttons: a `role="group"` container whose items
+ * each carry `aria-pressed`, modelled on the
+ * [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)
+ * (toggle-button variant) — mirroring Radix's ToggleGroup. Owns the
+ * selected-values set, navigation policy, and the registry of
+ * `[forToggleGroupItem]` children. Implements
  * `FormValueControl<readonly string[]>` from `@angular/forms/signals` for
- * `[formField]` auto-wiring.
+ * `[formField]` auto-wiring. (The Toolbar pattern applies only when a group is
+ * nested inside `[forToolbar]`; see the composition note on
+ * `ForToggleGroupItem`.)
  *
  * Two selection modes:
  * - multiple (`multiple=true`): clicking an item flips its presence in

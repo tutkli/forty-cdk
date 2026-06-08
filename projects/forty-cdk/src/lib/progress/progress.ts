@@ -38,13 +38,13 @@ import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
   host: {
     role: 'progressbar',
     '[attr.aria-valuemin]': '0',
-    '[attr.aria-valuemax]': 'max()',
+    '[attr.aria-valuemax]': 'effectiveMax()',
     '[attr.aria-valuenow]': 'clampedValue() ?? null',
     '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.data-state]': 'state()',
     '[attr.data-value]': 'clampedValue() ?? null',
     '[attr.data-min]': '0',
-    '[attr.data-max]': 'max()',
+    '[attr.data-max]': 'effectiveMax()',
     '[attr.data-percentage]': 'percentageAttr()',
   },
   providers: [{ provide: FOR_PROGRESS_CONTEXT, useExisting: ForProgress }],
@@ -61,6 +61,15 @@ export class ForProgress implements ForProgressContext {
 
   /** Maximum value. Defaults to `100` (so a raw value reads as a percentage). */
   readonly max = input<number>(100);
+
+  /**
+   * `max` clamped to a strictly positive value. `progressbar` requires
+   * `aria-valuemax` to exceed `aria-valuemin` (which is fixed at `0` here), so a
+   * non-positive `max` would reflect invalid ARIA. Mirrors the way `ForMeter`
+   * keeps `max >= min`; here the floor is `1` so the reflected range is always
+   * valid and the percentage math has a non-zero denominator.
+   */
+  readonly effectiveMax = computed<number>(() => Math.max(this.max(), 1));
 
   /**
    * Optional override for `aria-valuetext`. Useful for non-percentage
@@ -85,7 +94,7 @@ export class ForProgress implements ForProgressContext {
     if (v === null) {
       return null;
     }
-    const max = this.max();
+    const max = this.effectiveMax();
     if (v <= 0) return 0;
     if (v >= max) return max;
     return v;
@@ -96,17 +105,13 @@ export class ForProgress implements ForProgressContext {
     if (v === null) {
       return null;
     }
-    const max = this.max();
-    if (max <= 0) {
-      return 0;
-    }
-    return (v / max) * 100;
+    return (v / this.effectiveMax()) * 100;
   });
 
   readonly state = computed<ForProgressState>(() => {
     const v = this.clampedValue();
     if (v === null) return 'indeterminate';
-    return v === this.max() ? 'complete' : 'loading';
+    return v === this.effectiveMax() ? 'complete' : 'loading';
   });
 
   readonly ariaValueText = computed<string | null>(() => {

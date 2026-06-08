@@ -422,12 +422,13 @@ export class ForDateField<D>
     if (month === null) {
       return null;
     }
-    // Month name follows the field's `locale` input (the adapter's `format`
-    // is fixed to the runtime locale); a reference date maps the number to a
-    // localized long name without involving the adapter's date type.
-    return new Intl.DateTimeFormat(this.locale() ?? undefined, { month: 'long' }).format(
-      new Date(RESOLVER_YEAR, month - 1, 1),
-    );
+    // Route the month name through the adapter's `format` so it tracks the
+    // adapter's calendar system rather than assuming Gregorian month numbering.
+    // A probe date built with `createDate` maps the 1-12 number to a localized
+    // long name without involving the entered value.
+    return this.adapter.format(this.adapter.createDate(RESOLVER_YEAR, month, 1), {
+      month: 'long',
+    });
   }
 
   /** Base value for stepping an empty segment: date parts from today, time parts from their minimum. */

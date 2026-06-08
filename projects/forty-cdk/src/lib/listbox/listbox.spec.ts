@@ -238,6 +238,60 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('host fallback tabindex', () => {
+    it('host carries no tabindex while an option qualifies as the roving entry', () => {
+      const { el } = renderHost(ListboxHost);
+      expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('host becomes tabindex=0 when every option is disabled', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: true },
+        { value: 'banana', label: 'Banana', disabled: true },
+      ]);
+      flush();
+      expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
+      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
+      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('host becomes tabindex=0 when there are no options', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([]);
+      flush();
+      expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
+    });
+
+    it('a disabled listbox is never tabbable, even with all options disabled', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: true },
+        { value: 'banana', label: 'Banana', disabled: true },
+      ]);
+      flush();
+      expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('host drops its fallback tabindex once an enabled option appears', () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: true },
+      ]);
+      flush();
+      expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: true },
+        { value: 'banana', label: 'Banana', disabled: false },
+      ]);
+      flush();
+      expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
+      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
+    });
+  });
+
   describe('single-mode click semantics', () => {
     it('selects on click and replaces previous selection', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);

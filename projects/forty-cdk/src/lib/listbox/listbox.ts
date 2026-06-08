@@ -74,6 +74,7 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
+    '[attr.tabindex]': 'hostTabindex()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
@@ -186,6 +187,22 @@ export class ForListbox<T = string>
       }
     }
     return null;
+  });
+
+  /**
+   * Tabindex for the listbox host. The roving entry point normally lives on an
+   * option (`tabindex="0"`), so the host stays out of the tab order (`null`).
+   * When no option qualifies as that entry point — an empty listbox or one whose
+   * options are all disabled — the host itself becomes the single Tab stop
+   * (`tabindex="0"`) so the (non-disabled) listbox is still reachable and can be
+   * announced by assistive tech. A disabled listbox is never tabbable.
+   */
+  protected readonly hostTabindex = computed<'0' | null>(() => {
+    if (this.effectiveDisabled()) {
+      return null;
+    }
+    const hasRovingEntry = this.#firstSelectedHost() !== null || this.#firstEnabledHost() !== null;
+    return hasRovingEntry ? null : '0';
   });
 
   /**

@@ -16,6 +16,8 @@ import { ForDateFieldSegment } from './date-field-segment';
 
 const adapter = new NativeDateAdapter();
 
+const marchLongName = adapter.format(adapter.createDate(2001, 3, 1), { month: 'long' });
+
 type Placeholders = Partial<Record<'day' | 'month' | 'year', string>>;
 
 @Component({
@@ -166,7 +168,7 @@ describe('ForDateField', () => {
 
       await type(r, 'month', '03');
       expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('3');
-      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe('March');
+      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe(marchLongName);
     });
 
     it('announces an empty state on every empty numeric segment', async () => {
@@ -181,7 +183,7 @@ describe('ForDateField', () => {
       expect(seg(r, 'day').getAttribute('aria-valuetext')).toBeNull();
 
       await type(r, 'month', '03');
-      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe('March');
+      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe(marchLongName);
     });
 
     it('rehydrates segments from an external value write', async () => {
