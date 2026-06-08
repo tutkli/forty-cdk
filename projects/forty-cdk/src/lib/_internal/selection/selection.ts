@@ -57,11 +57,11 @@ export function defaultItemToFormValue<T>(item: T): string {
 
 /**
  * Builds the read-only single-select convenience view derived from an
- * array-backed value signal. Returns the sole element when the array has
- * exactly one entry, otherwise `null` (empty selection, or multiple
- * selections in `multiple` mode). A pure `computed()` — the array model
- * stays the source of truth. Backs `ForSelect.selected` / `ForListbox.selected`
- * and `ForCombobox.selectedItem`.
+ * array-backed value signal. Returns the sole element when exactly one is
+ * selected (regardless of `multiple`), otherwise `null` (zero, or 2+
+ * selected). A pure `computed()` — the array model stays the source of truth.
+ * Backs `ForSelect.selected` / `ForListbox.selected` and
+ * `ForCombobox.selectedItem`.
  */
 export function singleSelected<T>(value: Signal<readonly T[]>): Signal<T | null> {
   return computed<T | null>(() => {

@@ -239,8 +239,12 @@ export class ForDialogManager {
       closeSub.unsubscribe();
       userRef.destroy();
       this.#appRef.detachView(shellRef.hostView);
+      // The portal owns host removal: `shellRef.destroy()` fires ForDialog's
+      // `DestroyRef`, whose `injectPortal()` hook removes `hostEl` from the
+      // body. The modal-shell's return-focus runs in the same teardown after
+      // the host is detached, so focus returns to a tree without the (inert)
+      // dialog still attached. No second `hostEl.remove()` here — one owner.
       shellRef.destroy();
-      hostEl.remove();
       this.#count.update((n) => Math.max(0, n - 1));
     };
 

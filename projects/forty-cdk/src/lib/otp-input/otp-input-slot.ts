@@ -7,7 +7,7 @@ import { injectOtpInputContext } from './otp-input-context';
  * single real input, mirroring Spartan `BrnInputOtpSlot`. Apply one per index
  * inside the `[forOtpInput]` wrapper, passing the 0-based `index`. It renders
  * nothing structural: it exposes the slot's character and active state, and
- * reflects boolean `data-active` / `data-highlighted` / `data-empty` for CSS.
+ * reflects boolean `data-active` / `data-empty` for CSS.
  *
  * The slot has no click handler by design — the real input overlays the slots
  * (the consumer styles it to fill the group), so pointer events land on the
@@ -26,7 +26,6 @@ import { injectOtpInputContext } from './otp-input-context';
   exportAs: 'forOtpInputSlot',
   host: {
     '[attr.data-active]': 'active() ? "" : null',
-    '[attr.data-highlighted]': 'active() ? "" : null',
     '[attr.data-empty]': 'char() === null ? "" : null',
   },
 })

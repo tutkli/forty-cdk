@@ -22,7 +22,10 @@ export interface MenuSiblingNavigator {
 
 /**
  * Why a menu requested close. Mirrors Radix's `onCloseAutoFocus` reasons
- * but without the focus-routing decision baked in.
+ * but without the focus-routing decision baked in. `'programmatic'` also
+ * covers the user-initiated trigger toggle-close (clicking an open menu's
+ * trigger): the toggle path reuses this reason by design rather than
+ * exposing a distinct `'trigger'` reason.
  */
 export type ForMenuCloseReason =
   | 'escape'

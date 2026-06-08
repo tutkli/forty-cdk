@@ -4,12 +4,12 @@ export { ForToastTitle } from './toast-title';
 export { ForToastDescription } from './toast-description';
 export { ForToastAction } from './toast-action';
 export { ForToastClose } from './toast-close';
+export { ForToastManager } from './toast-manager';
 export {
-  ForToastManager,
   FOR_TOAST_DEFAULTS,
   provideForToastDefaults,
   type ForToastDefaults,
-} from './toast-manager';
+} from './toast-defaults';
 export { ForToastRef } from './toast-ref';
 export {
   DEFAULT_TOAST_REGION,

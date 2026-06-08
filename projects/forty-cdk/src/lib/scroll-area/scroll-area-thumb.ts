@@ -12,6 +12,16 @@ import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 
 const MIN_THUMB_SIZE = 8;
 
+function injectRequiredScrollbar(): ForScrollAreaScrollbar {
+  const scrollbar = inject(ForScrollAreaScrollbar, { optional: true });
+  if (!scrollbar) {
+    throw new Error(
+      '[forty-cdk/scroll-area] ForScrollAreaThumb must be used inside a [forScrollAreaScrollbar] element.',
+    );
+  }
+  return scrollbar;
+}
+
 /**
  * The draggable thumb inside a `[forScrollAreaScrollbar]`. Sizes itself
  * proportionally to viewport / content and translates along the track
@@ -33,7 +43,7 @@ const MIN_THUMB_SIZE = 8;
   },
 })
 export class ForScrollAreaThumb {
-  readonly scrollbar = inject(ForScrollAreaScrollbar, { optional: true })!;
+  readonly scrollbar = injectRequiredScrollbar();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
 
@@ -42,11 +52,6 @@ export class ForScrollAreaThumb {
   #dragStartScroll = 0;
 
   constructor() {
-    if (!this.scrollbar) {
-      throw new Error(
-        '[forty-cdk/scroll-area] ForScrollAreaThumb must be used inside a [forScrollAreaScrollbar] element.',
-      );
-    }
     inject(DestroyRef).onDestroy(() => this.#endDrag());
   }
 

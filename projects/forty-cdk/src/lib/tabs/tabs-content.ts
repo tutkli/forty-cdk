@@ -62,7 +62,7 @@ export class ForTabsContent {
     transform: (value: unknown) => (value == null ? null : booleanAttribute(value)),
   });
 
-  readonly id = signal(this.#idGen.next('for-tabs-content'));
+  readonly id = signal(this.#idGen.next('for-tabs-content')).asReadonly();
 
   readonly #hasFocusableContent = injectHasFocusableContent();
 

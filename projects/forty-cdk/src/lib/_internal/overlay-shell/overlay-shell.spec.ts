@@ -164,7 +164,6 @@ describe('injectOverlayShell', () => {
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
           dismissible: signal(true),
-          requestClose: () => calls.push('close'),
           emitEscapeKeyDown: (event) => calls.push(`escape:${event.type}`),
         },
       }));
@@ -186,7 +185,6 @@ describe('injectOverlayShell', () => {
         positioner: { kind: 'floating', reference: ref, open, portal: false },
         dismiss: {
           dismissible: signal(true),
-          requestClose: () => calls.push('close'),
           // Escape intentionally omitted.
           emitPointerDownOutside: () => calls.push('pointer'),
         },
@@ -549,6 +547,7 @@ describe('injectOverlayShell', () => {
           // call this. The shell's order (dismissable.deactivate registers
           // before the positioner's portal) guarantees that doesn't happen.
           emitFocusOutside: () => calls.push('focus-outside'),
+          emitInteractOutside: () => {},
         },
       }));
       await flush(ctx.fixture);
@@ -579,6 +578,7 @@ describe('injectOverlayShell', () => {
           requestClose: () => calls.push('close'),
           emitEscapeKeyDown: () => calls.push('escape'),
           emitPointerDownOutside: () => calls.push('pointer'),
+          emitInteractOutside: () => calls.push('interact'),
         },
       }));
 
@@ -622,6 +622,7 @@ describe('injectOverlayShell', () => {
           dismissible: signal(true),
           requestClose: () => {},
           emitEscapeKeyDown: () => calls.push('escape'),
+          emitInteractOutside: () => {},
         },
         initialFocus: { move: 'first' },
         returnFocus: {

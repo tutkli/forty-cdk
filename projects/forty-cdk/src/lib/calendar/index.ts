@@ -21,7 +21,6 @@ export {
 } from './calendar-defaults';
 export {
   assertTimeCapable,
-  compareDateOf,
   type DateAdapter,
   FOR_DATE_ADAPTER,
   injectDateAdapter,
@@ -36,4 +35,3 @@ export {
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateTimeAdapter,
 } from './internationalized-date-time-adapter';
-export { buildMonthMatrix } from './build-month-matrix';

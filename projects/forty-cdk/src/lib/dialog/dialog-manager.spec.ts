@@ -191,6 +191,21 @@ describe('ForDialogManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
 
+    it('detaches the host before focus returns to the trigger on close', async () => {
+      const { dialogs, trigger } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      const host = document.querySelector('[role="dialog"]')!;
+
+      ref.close();
+      await ref.closed;
+
+      // Single owner (the portal) detaches the host; the invariant is that by
+      // the time return-focus has landed on the trigger the dialog host is no
+      // longer in the document.
+      expect(host.isConnected).toBe(false);
+      expect(document.activeElement).toBe(trigger);
+    });
+
     it('is idempotent: a second close is a no-op', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open<ConfirmDialog, string>(ConfirmDialog, {

@@ -52,7 +52,7 @@ export class ForTabsTrigger {
   readonly value = input.required<string>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly id = signal(this.#idGen.next('for-tabs-trigger'));
+  readonly id = signal(this.#idGen.next('for-tabs-trigger')).asReadonly();
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());

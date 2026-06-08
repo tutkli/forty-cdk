@@ -51,7 +51,7 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 | `active()`       | `Signal<boolean>`        | Whether this slot is the active caret position.                  |
 | `hasFakeCaret()` | `Signal<boolean>`        | Whether to render a fake caret here (active + empty + focused).  |
 
-The slot host reflects boolean `data-active` / `data-highlighted` (current caret slot) and `data-empty` (no character) for CSS.
+The slot host reflects boolean `data-active` (current caret slot) and `data-empty` (no character) for CSS.
 
 ## Exported pattern constants
 
@@ -170,7 +170,6 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forOtpInput]`     | `data-complete`    | present / absent |
 | `[forOtpInput]`     | `data-disabled`    | present / absent |
 | `[forOtpInputSlot]` | `data-active`      | present / absent |
-| `[forOtpInputSlot]` | `data-highlighted` | present / absent |
 | `[forOtpInputSlot]` | `data-empty`       | present / absent |
 
 The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.

@@ -1,7 +1,9 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import type {
+  ListNavigationAction,
+  WritingDirection,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 
 export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
@@ -35,7 +37,6 @@ export interface ForListboxContext<T = unknown> {
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly selectionFollowsFocus: Signal<boolean>;
-  readonly roving: RovingTabindex;
 
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
   readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
@@ -50,8 +51,9 @@ export interface ForListboxContext<T = unknown> {
   /**
    * Multi-mode only. Move focus to the next/prev enabled option AND toggle its
    * selected state — APG "Shift+ArrowDown / Shift+ArrowUp toggles selection
-   * while moving focus". No-op in single mode, on disabled / readonly, or when
-   * no enabled neighbor exists.
+   * while moving focus". No-op in single mode, on disabled, or when no enabled
+   * neighbor exists. On `readonly` the focus still moves (matching
+   * {@link navigate}); only the selection mutation is blocked.
    */
   extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void;
   /**
@@ -84,6 +86,16 @@ export interface ForListboxContext<T = unknown> {
    * in DOM order. Guarantees a single `tabindex="0"` before roving takes over.
    */
   isFirstFocusableOption(el: HTMLElement): boolean;
+  /** `true` when `el` is the roving-tabindex active option (reflected as `data-highlighted`). */
+  isOptionHighlighted(el: HTMLElement): boolean;
+  /**
+   * Roving-tabindex value for `el`: `0` for the active option once roving has
+   * taken over, `-1` otherwise. Returns `null` before any option is active so
+   * the caller can fall back to {@link isFirstFocusableOption}.
+   */
+  optionTabindex(el: HTMLElement): -1 | 0 | null;
+  /** Mark `el` as the roving-tabindex active option (called on option focus). */
+  setActiveOption(el: HTMLElement): void;
 
   registerOption(handle: ForListboxOptionHandle<T>): void;
   unregisterOption(handle: ForListboxOptionHandle<T>): void;

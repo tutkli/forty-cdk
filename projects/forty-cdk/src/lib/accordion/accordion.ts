@@ -76,6 +76,14 @@ export class ForAccordion implements ForAccordionContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
+   * When true (default), arrow navigation between triggers wraps at the ends —
+   * moving past the last trigger focuses the first and vice versa. Set `false`
+   * to stop at the boundaries. Mirrors the `loop` input on `ForTabs` and
+   * `ForListbox`.
+   */
+  readonly loop = input(true, { transform: booleanAttribute });
+
+  /**
    * Two-way bindable. List of currently expanded item values. In single
    * mode the array has 0 or 1 element. The `model()` change emitter
    * (`(valueChange)`) fires only on internal toggles, never on consumer
@@ -120,7 +128,7 @@ export class ForAccordion implements ForAccordionContext {
       return;
     }
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
-      loop: true,
+      loop: this.loop(),
       isDisabled: (i) => triggers[i]?.disabled() ?? false,
     });
     if (next !== null) {

@@ -218,8 +218,24 @@ export interface ForComboboxContext<T = unknown> {
   markTouched(): void;
 }
 
+/**
+ * `ForCombobox<T>`'s generic does NOT flow to this token: an `InjectionToken`
+ * is a single runtime instance, so it is published at `ForComboboxContext<unknown>`.
+ * `injectComboboxContext<T>()` re-applies `T` with an `as unknown as` cast, and
+ * each piece (input, option, chip) relies on consumer discipline — the
+ * `[forComboboxOption][value]` and the root `[(value)]` must be the same `T`.
+ * There is no clean fix without abandoning the token pattern; the contract is
+ * the consumer's to honor. Object identity is reconciled at runtime via
+ * `isItemEqualToValue`, which bounds the practical blast radius of a mismatch.
+ */
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
+/**
+ * Resolve the surrounding combobox context, re-applying the caller's `T`. The
+ * cast through `unknown` is unavoidable (see {@link FOR_COMBOBOX_CONTEXT}): the
+ * token can't carry the per-instance generic, so `T` correctness is a
+ * consumer-honored contract, not a compiler-enforced one.
+ */
 export function injectComboboxContext<T = unknown>(piece: string): ForComboboxContext<T> {
   const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
