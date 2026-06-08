@@ -14,6 +14,11 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import {
+  assertTimeCapable,
+  type DateAdapter,
+  injectDateAdapter,
+} from '../_internal/date-adapter/date-adapter';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
@@ -27,7 +32,6 @@ import {
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { ForCalendar } from '../calendar/calendar';
-import { assertTimeCapable, type DateAdapter, injectDateAdapter } from '../calendar/date-adapter';
 import { ForTimeField } from '../time-field/time-field';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';

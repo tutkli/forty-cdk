@@ -1,6 +1,11 @@
 import { computed, Directive, ElementRef, inject, input, linkedSignal, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import {
+  assertTimeCapable,
+  injectDateAdapter,
+  type TimeCapableDateAdapter,
+} from '../_internal/date-adapter/date-adapter';
 import { dayPeriodNames, resolveHourCycle } from '../_internal/datetime/hour-cycle';
 import {
   type FieldSpec,
@@ -13,11 +18,6 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import {
-  assertTimeCapable,
-  injectDateAdapter,
-  type TimeCapableDateAdapter,
-} from '../calendar/date-adapter';
 import {
   buildTimeSegments,
   type TimeGranularity,
@@ -51,7 +51,7 @@ interface TimeParts {
  * `_internal/datetime` {@link SegmentEditor}; the root supplies only the
  * time-specific bits (segment bounds, the midnight seed, and the
  * sentinel-anchored setTime/clamp compose). All time math goes through the
- * pluggable {@link import('../calendar/date-adapter').DateAdapter} shared with
+ * pluggable {@link import('../_internal/date-adapter/date-adapter').DateAdapter} shared with
  * `ForCalendar`, which **must be time-capable** — `provideNativeDateAdapter()`
  * or `provideInternationalizedDateTimeAdapter()` (the day-only
  * `provideInternationalizedDateAdapter()` throws).

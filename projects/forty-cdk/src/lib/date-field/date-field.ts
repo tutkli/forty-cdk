@@ -1,6 +1,12 @@
 import { computed, Directive, effect, ElementRef, inject, input, linkedSignal, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import {
+  assertTimeCapable,
+  type DateAdapter,
+  injectDateAdapter,
+  type TimeCapableDateAdapter,
+} from '../_internal/date-adapter/date-adapter';
 import { dayPeriodNames, resolveHourCycle } from '../_internal/datetime/hour-cycle';
 import {
   type FieldSpec,
@@ -13,12 +19,6 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import {
-  assertTimeCapable,
-  type DateAdapter,
-  injectDateAdapter,
-  type TimeCapableDateAdapter,
-} from '../calendar/date-adapter';
 import {
   buildDateTimeSegments,
   type DateTimeSegmentType,

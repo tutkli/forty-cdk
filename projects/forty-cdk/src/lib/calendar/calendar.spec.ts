@@ -1,9 +1,9 @@
 import { Component, signal, viewChild } from '@angular/core';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
+import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
-import { compareDateOf, type DateAdapter } from './date-adapter';
 import { ForCalendar } from './calendar';
 import { ForCalendarCell } from './calendar-cell';
 import { ForCalendarGrid } from './calendar-grid';
