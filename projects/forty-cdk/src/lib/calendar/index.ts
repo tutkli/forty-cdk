@@ -27,11 +27,3 @@ export {
   type TimeCapableDateAdapter,
 } from '../_internal/date-adapter/date-adapter';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
-export {
-  InternationalizedDateAdapter,
-  provideInternationalizedDateAdapter,
-} from './internationalized-date-adapter';
-export {
-  InternationalizedDateTimeAdapter,
-  provideInternationalizedDateTimeAdapter,
-} from './internationalized-date-time-adapter';

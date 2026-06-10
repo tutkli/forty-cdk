@@ -14,12 +14,10 @@ import { ForCalendarPrevButton } from './calendar-prev-button';
 import type { CalendarDateLabelFormatter } from './calendar-context';
 import {
   InternationalizedDateAdapter,
-  provideInternationalizedDateAdapter,
-} from './internationalized-date-adapter';
-import {
   InternationalizedDateTimeAdapter,
+  provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
-} from './internationalized-date-time-adapter';
+} from 'forty-cdk/internationalized-date';
 import { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
 
 const adapter = new NativeDateAdapter();

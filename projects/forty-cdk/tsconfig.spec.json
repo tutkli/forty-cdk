@@ -4,7 +4,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/spec",
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "paths": {
+      "forty-cdk": ["./src/public-api.ts"],
+      "forty-cdk/internationalized-date": ["./internationalized-date/src/public-api.ts"]
+    }
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts", "src/test-utils/**/*.ts"]
 }

@@ -12,8 +12,8 @@ import {
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
-  provideInternationalizedDateAdapter,
 } from 'forty-cdk';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

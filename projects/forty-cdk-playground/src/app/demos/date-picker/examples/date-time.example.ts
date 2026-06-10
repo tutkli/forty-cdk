@@ -15,8 +15,8 @@ import {
   ForTimeField,
   ForTimeFieldLiteral,
   ForTimeFieldSegment,
-  provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk';
+import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

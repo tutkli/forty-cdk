@@ -3,5 +3,6 @@
   "dest": "../../dist/forty-cdk",
   "lib": {
     "entryFile": "src/public-api.ts"
-  }
+  },
+  "allowedNonPeerDependencies": ["@floating-ui/dom"]
 }

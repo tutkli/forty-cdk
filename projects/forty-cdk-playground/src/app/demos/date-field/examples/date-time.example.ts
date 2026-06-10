@@ -5,8 +5,8 @@ import {
   ForDateField,
   ForDateFieldLiteral,
   ForDateFieldSegment,
-  provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk';
+import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

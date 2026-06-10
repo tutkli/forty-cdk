@@ -19,21 +19,25 @@ Required:
 
 - `@angular/common` `^22.0.0`
 - `@angular/core` `^22.0.0`
-- `@floating-ui/dom` `^1.6.0` — positioned overlays (`Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, etc.) import floating-ui statically. Because the library ships from a single entry point, every consumer's bundle resolves it regardless of which primitives they actually use; flagging it optional would silently break installs that skip it. If per-primitive secondary entry points are introduced later (currently deferred — see `CLAUDE.md`), this peer can become honestly optional for non-overlay consumers.
 
-Optional — install only if you use the matching primitives:
+Optional — install only if you use the matching entry point / primitives:
 
 | Peer                       | Needed by                                                                                                                                                                                                                                                                                           |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@angular/forms` `^22.0.0` | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, plus future `Select` / `Slider` / `Combobox`). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. Consumers using only non-form primitives can skip it. |
+| `@angular/forms` `^22.0.0` | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, `Select`, `Slider`, `Combobox`, …). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. The contract is type-only, so the published bundle never references the package — consumers using only non-form primitives can skip it. |
+| `@internationalized/date` `^3.0.0` | The `forty-cdk/internationalized-date` entry point (`InternationalizedDateAdapter`, `InternationalizedDateTimeAdapter`). The date/time primitives themselves only depend on the abstract `DateAdapter` contract from the main entry point — install this peer only when you import that entry point. |
 
 `@angular/forms/signals` is stable as of Angular 22, so the peer follows the standard major range (`^22.0.0`).
+
+### Regular dependencies
+
+`@floating-ui/dom` is a regular dependency, installed automatically with the package. Positioned overlays (`Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, etc.) import it statically from the main entry point, so every consumer's build must be able to resolve it — but it is internal-only (no floating-ui value crosses the public API) and tree-shakes out of your bundle when you don't use any positioned primitive.
 
 ## Primitives
 
 Each primitive lives under [`src/lib/<primitive>/`](src/lib) with its own `README.md` and a minimal styleless usage example.
 
-The library ships a single entry point (`forty-cdk`); standalone directives plus `"sideEffects": false` let tree-shakers drop primitives you don't import.
+The library ships one main entry point (`forty-cdk`) plus a single secondary entry point, `forty-cdk/internationalized-date`, which holds the `@internationalized/date` adapters so that optional peer stays truly optional. Standalone directives plus `"sideEffects": false` let tree-shakers drop primitives you don't import.
 
 ## Directive → host element matrix
 
