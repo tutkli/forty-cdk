@@ -354,7 +354,7 @@ export class ForTimeField<D>
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (!next || !this.#host.nativeElement.contains(next)) {
-      this.touched.set(true);
+      this.markTouched();
     }
   }
 

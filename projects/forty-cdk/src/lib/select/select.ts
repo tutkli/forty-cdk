@@ -618,7 +618,7 @@ export class ForSelect<T = string>
     const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
     if (!vetoed && this.dismissible()) {
       event.stopPropagation();
-      this.touched.set(true);
+      this.markTouched();
       this.closeMenu('escape');
     }
   }
@@ -650,7 +650,7 @@ export class ForSelect<T = string>
    * closes with the channel's reason.
    */
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.touched.set(true);
+    this.markTouched();
     this.closeMenu(reason);
   }
 
@@ -662,7 +662,7 @@ export class ForSelect<T = string>
     return emitVetoableEvent(this.autoFocusOnClose);
   }
 
-  markTouched(): void {
-    this.touched.set(true);
+  override markTouched(): void {
+    super.markTouched();
   }
 }

@@ -90,7 +90,7 @@ export abstract class TextValueControlBase
    * reconcile the visible text with the model.
    */
   protected onBlur(): void {
-    this.touched.set(true);
+    this.markTouched();
     const el = this.#host.nativeElement;
     if (el.value !== this.value()) {
       el.value = this.value();

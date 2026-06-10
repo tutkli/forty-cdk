@@ -766,8 +766,8 @@ export class ForCombobox<T = string>
     this.closeMenu(reason);
   }
 
-  markTouched(): void {
-    this.touched.set(true);
+  override markTouched(): void {
+    super.markTouched();
   }
 
   protected onFocusOut(event: FocusEvent): void {

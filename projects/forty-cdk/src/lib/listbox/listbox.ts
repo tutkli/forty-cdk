@@ -455,6 +455,6 @@ export class ForListbox<T = string>
     if (next && this.#host.nativeElement.contains(next)) {
       return;
     }
-    this.touched.set(true);
+    this.markTouched();
   }
 }

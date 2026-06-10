@@ -431,7 +431,7 @@ export class ForDatePicker<D>
         } else {
           this.value.set(selected === null ? null : this.#clampToBounds(selected));
         }
-        this.touched.set(true);
+        this.markTouched();
         // A date-time picker stays open after a day is picked so the time can
         // still be edited; only a pure day picker honours `closeOnSelect`.
         if (this.closeOnSelect() && this.granularity() === 'day') {
@@ -460,7 +460,7 @@ export class ForDatePicker<D>
         }
         const next = value as D | null;
         this.value.set(next === null ? null : this.#clampToBounds(next));
-        this.touched.set(true);
+        this.markTouched();
       });
       onCleanup(() => sub.unsubscribe());
     });
@@ -509,12 +509,12 @@ export class ForDatePicker<D>
   }
 
   close(): void {
-    this.touched.set(true);
+    this.markTouched();
     this.open.set(false);
   }
 
-  markTouched(): void {
-    this.touched.set(true);
+  override markTouched(): void {
+    super.markTouched();
   }
 
   focusCalendarCell(): boolean {
