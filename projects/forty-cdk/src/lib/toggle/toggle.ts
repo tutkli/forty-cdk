@@ -42,7 +42,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
-    '(blur)': 'touched.set(true)',
+    '(blur)': 'markTouched()',
   },
 })
 export class ForToggle extends FormUiControlBase implements FormCheckboxControl {

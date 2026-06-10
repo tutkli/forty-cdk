@@ -87,7 +87,7 @@ function roundToStepPrecision(value: number, step: number): number {
 })
 export class ForSlider
   extends FormUiControlBase
-  implements FormValueControl<readonly number[]>, ForSliderContext
+  implements Omit<FormValueControl<readonly number[]>, 'min' | 'max'>, ForSliderContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
@@ -103,16 +103,29 @@ export class ForSlider
   readonly value = model<readonly number[]>([0]);
 
   /**
-   * Minimum value. Typed `number | undefined` to satisfy
-   * `FormUiControl.min` (signal forms passes `undefined` when no min
-   * validator is bound). Falls back to `0` internally.
+   * Minimum value. Falls back to `0` internally. A slider's bounds are scalar
+   * by the ARIA slider pattern, but since Signal Forms v22 `FormUiControl.min`
+   * is typed `NonNullable<TValue>` — an array for this control — so `min` and
+   * `max` are excluded from the `FormValueControl` `implements` clause, and
+   * the transform widens the write type to satisfy the `[formField]` template
+   * type-check (which pushes `readonly number[] | undefined`). The form never
+   * produces a `min`/`max` state for an array-valued field at runtime (the
+   * `min()`/`max()` validators only apply to numeric fields), so non-number
+   * writes normalize to `undefined`.
    */
-  readonly min = input<number | undefined>(0);
+  readonly min = input(0 as number | undefined, {
+    transform: (value: number | readonly number[] | undefined): number | undefined =>
+      typeof value === 'number' ? value : undefined,
+  });
   /**
-   * Maximum value. Typed `number | undefined` to satisfy
-   * `FormUiControl.max`. Falls back to `100` internally.
+   * Maximum value. Falls back to `100` internally. Excluded from the
+   * `FormValueControl` `implements` clause and write-type-widened — see
+   * {@link min}.
    */
-  readonly max = input<number | undefined>(100);
+  readonly max = input(100 as number | undefined, {
+    transform: (value: number | readonly number[] | undefined): number | undefined =>
+      typeof value === 'number' ? value : undefined,
+  });
   /**
    * Increment values snap to. Fractional steps (e.g. `0.1`) are supported: the
    * snapped value is rounded to the step's decimal precision so float noise
@@ -376,9 +389,9 @@ export class ForSlider
     return this.#trackEl();
   }
 
-  markTouched(): void {
+  override markTouched(): void {
     if (!this.touched()) {
-      this.touched.set(true);
+      super.markTouched();
     }
   }
 

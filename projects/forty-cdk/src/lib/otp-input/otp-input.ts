@@ -170,8 +170,19 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   /** Validation errors surfaced by Signal Forms. */
   readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
 
-  /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
+  /**
+   * Set to true on blur. Two-way bindable for standalone consumers; under
+   * `[formField]` the directive pushes the field's touched state down through
+   * this input.
+   */
   readonly touched = model<boolean>(false);
+
+  /**
+   * Emitted on blur alongside the `touched` flip. `[formField]` listens to
+   * this output to mark the field touched — since Signal Forms v22 the
+   * `touched` input is write-only from the form's perspective.
+   */
+  readonly touch = output<void>();
 
   /** Fires when every slot is filled (by typing or paste). */
   readonly valueComplete = output<string>();
@@ -289,6 +300,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       el.addEventListener('blur', () => {
         this.#focused.set(false);
         this.touched.set(true);
+        this.touch.emit();
       });
       el.addEventListener('click', () => this.#syncSelection());
       el.addEventListener('keyup', () => this.#syncSelection());

@@ -31,9 +31,11 @@ If you genuinely need to write a signal from an `effect` (rare — usually integ
 
 Both extend **`FormUiControl`** — expose its relevant optional members (`disabled`, `readonly`, `required`, `invalid`, `errors`, `touched`, `name`, `pending`, `min`/`max`/`pattern` where meaningful) as the prescribed `input` / `model` signals so field state flows in and out without consumer glue. Skip the members that don't apply to the control's shape (e.g. `min`/`max`/`pattern` on a Switch).
 
+The stable contract reports touch interactions through the **`touch: OutputRef<void>` output** — `[formField]` listens to it and calls `markAsTouched()`; the `touched` input is write-only from the form's perspective (the form pushes field state down, it never reads the signal back). `FormUiControlBase.markTouched()` owns flipping the `touched` model (standalone `data-touched` reflection) and emitting `touch` together — primitives call it from every touch-producing interaction and never write `touched` directly.
+
 The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an _optional_ peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
 
-`@angular/forms/signals` is `@experimental` in Angular 21. Pin to the matching minor (`^21.x`) and revisit on each Angular bump.
+`@angular/forms/signals` is stable as of Angular 22; the peer follows the standard major range (`^22.0.0`).
 
 ## Naming — accessible labelling & programmatic services
 

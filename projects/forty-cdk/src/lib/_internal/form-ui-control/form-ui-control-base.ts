@@ -7,6 +7,7 @@ import {
   inject,
   input,
   model,
+  output,
 } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
@@ -17,8 +18,8 @@ import { injectFieldWiring } from '../field/field-wiring';
  * Abstract base for primitives that implement `FormValueControl<T>` or
  * `FormCheckboxControl` from `@angular/forms/signals`. Owns the universal
  * `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` /
- * `name` / `errors` inputs plus the `touched` model so each form-control
- * primitive doesn't redeclare them.
+ * `name` / `errors` inputs plus the `touched` model and `touch` output so each
+ * form-control primitive doesn't redeclare them.
  *
  * Subclasses keep ownership of their value signal — `value: model<T>()` for
  * `FormValueControl<T>` or `checked: model<boolean>()` for
@@ -72,8 +73,21 @@ export abstract class FormUiControlBase {
   /** Validation errors surfaced by Signal Forms. */
   readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
 
-  /** Set to true on blur. Two-way bindable so Signal Forms can read it. */
+  /**
+   * Set to true on blur (via {@link markTouched}). Two-way bindable for
+   * standalone consumers; under `[formField]` the directive pushes the field's
+   * touched state down through this input, so the form stays the source of
+   * truth (e.g. a form reset clears it).
+   */
   readonly touched = model<boolean>(false);
+
+  /**
+   * Emitted alongside every internal `touched` flip (blur, dismiss,
+   * selection-commit). `[formField]` listens to this output to mark the field
+   * touched — since Signal Forms v22 the `touched` input is write-only from the
+   * form's perspective and never read back.
+   */
+  readonly touch = output<void>();
 
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
@@ -116,6 +130,17 @@ export abstract class FormUiControlBase {
    */
   protected fieldLabelledElementId(): string | null {
     return null;
+  }
+
+  /**
+   * Marks the control touched: flips the {@link touched} model (standalone
+   * reflection) and emits {@link touch} (Signal Forms integration). Subclasses
+   * call this from every touch-producing interaction instead of writing
+   * `touched` directly, so both channels always fire together.
+   */
+  protected markTouched(): void {
+    this.touched.set(true);
+    this.touch.emit();
   }
 
   constructor() {

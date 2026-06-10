@@ -110,7 +110,7 @@ function localeSeparators(locale: string | undefined): { group: string; decimal:
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(input)': 'onInput($event)',
     '(keydown)': 'onKeyDown($event)',
-    '(blur)': 'commit(); touched.set(true)',
+    '(blur)': 'commit(); markTouched()',
   },
 })
 export class ForNumberInput
