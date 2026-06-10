@@ -332,10 +332,12 @@ Build artifacts land in `dist/forty-cdk` (consumed locally via the `forty-cdk` p
 Tests run on Vitest via the Angular CLI builder `@angular/build:unit-test`:
 
 ```bash
-pnpm test                                       # all specs, single pass
-pnpm exec ng test --watch                       # watch mode
-pnpm exec ng test -- src/lib/accordion/accordion.spec.ts  # single file
-pnpm exec ng test -- -t "opens on Enter"        # single test by name
+pnpm test                                              # all specs, single pass
+pnpm exec ng test forty-cdk --watch                    # watch mode
+pnpm exec ng test forty-cdk --include "projects/forty-cdk/src/lib/accordion/accordion.spec.ts"  # single file
+pnpm exec ng test forty-cdk --filter "Enter and Space select"  # tests by name (regex)
 ```
+
+The `-- <path>` / `-- -t "<name>"` passthrough forms do **not** work on this setup (pnpm mangles the quoted `--`, so `ng` rejects it) — use the builder's own `--include` (repeatable) and `--filter` (regex) flags instead.
 
 Every primitive's test suite includes a case running under `provideZonelessChangeDetection()` to keep reactivity working without Zone.js.
