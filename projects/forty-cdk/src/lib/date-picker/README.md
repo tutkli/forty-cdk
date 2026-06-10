@@ -10,7 +10,7 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 
 | Provider                                | Date type `D`                              | Dependency                                                 |
 | --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
-| `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
+| `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
 
 ## Pieces

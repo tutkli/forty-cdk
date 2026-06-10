@@ -10,12 +10,12 @@ All date math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`,
 
 | Provider                                | Date type `D`                              | Dependency                                                 |
 | --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
-| `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
+| `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideInternationalizedDateAdapter } from 'forty-cdk';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 bootstrapApplication(App, {
   providers: [provideInternationalizedDateAdapter()],

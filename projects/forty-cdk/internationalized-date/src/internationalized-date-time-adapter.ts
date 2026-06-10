@@ -7,7 +7,7 @@ import {
   today,
 } from '@internationalized/date';
 
-import { type DateAdapter, FOR_DATE_ADAPTER } from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk';
 
 /**
  * Time-capable {@link DateAdapter} over `@internationalized/date`'s immutable
@@ -20,10 +20,11 @@ import { type DateAdapter, FOR_DATE_ADAPTER } from '../_internal/date-adapter/da
  * builds a Gregorian `CalendarDateTime`; non-Gregorian calendar systems are
  * deferred to the planned Temporal adapter track (#354).
  *
- * `@internationalized/date` is an **optional peer dependency** — install it
- * only when you use an internationalized adapter. A consumer relying solely on
- * `provideNativeDateAdapter()` never imports this file, so the package is
- * tree-shaken out of their bundle.
+ * Ships in the `forty-cdk/internationalized-date` secondary entry point so the
+ * main `forty-cdk` bundle never references `@internationalized/date` — the
+ * package is an **optional peer dependency**, required only by consumers who
+ * import this entry point. A consumer relying solely on
+ * `provideNativeDateAdapter()` never resolves it at all.
  *
  * `compare` orders by the full date-time (day *and* time); `compareDate`
  * ignores the time and orders by calendar day, so the calendar grid stays

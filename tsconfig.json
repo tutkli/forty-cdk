@@ -5,7 +5,11 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "forty-cdk": ["./dist/forty-cdk"]
+      "forty-cdk": ["./dist/forty-cdk", "./projects/forty-cdk/src/public-api.ts"],
+      "forty-cdk/internationalized-date": [
+        "./dist/forty-cdk/internationalized-date",
+        "./projects/forty-cdk/internationalized-date/src/public-api.ts"
+      ]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

@@ -10,14 +10,14 @@ All time math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`,
 
 | Provider                                    | Date-time type `D`                             | Dependency                                                 |
 | ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
-| `provideInternationalizedDateTimeAdapter()` | `CalendarDateTime` (`@internationalized/date`) | **Recommended.** `@internationalized/date` (optional peer) |
+| `provideInternationalizedDateTimeAdapter()` | `CalendarDateTime` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`                | `Date`                                         | None (zero-dependency fallback)                            |
 
 > The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeField` throws a descriptive error if it is the active adapter.
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideInternationalizedDateTimeAdapter } from 'forty-cdk';
+import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 bootstrapApplication(App, {
   providers: [provideInternationalizedDateTimeAdapter()],

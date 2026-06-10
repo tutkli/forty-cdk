@@ -3,11 +3,11 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
-import { provideInternationalizedDateAdapter } from '../calendar/internationalized-date-adapter';
 import {
   InternationalizedDateTimeAdapter,
+  provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
-} from '../calendar/internationalized-date-time-adapter';
+} from 'forty-cdk/internationalized-date';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import { ForDateField } from './date-field';
 import { provideForDateFieldDefaults } from './date-field-defaults';
