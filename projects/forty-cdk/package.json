@@ -1,6 +1,32 @@
 {
   "name": "forty-cdk",
   "version": "0.0.1",
+  "description": "Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.",
+  "keywords": [
+    "angular",
+    "headless",
+    "unstyled",
+    "ui",
+    "components",
+    "primitives",
+    "accessibility",
+    "a11y",
+    "wai-aria",
+    "aria",
+    "signals",
+    "zoneless"
+  ],
+  "homepage": "https://github.com/tutkli/forty-cdk#readme",
+  "bugs": {
+    "url": "https://github.com/tutkli/forty-cdk/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tutkli/forty-cdk.git",
+    "directory": "projects/forty-cdk"
+  },
+  "license": "MIT",
+  "author": "tutkli (https://github.com/tutkli)",
   "peerDependencies": {
     "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
