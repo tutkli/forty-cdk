@@ -50,6 +50,23 @@ class PopoverHost {
 @Component({
   imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
   template: `
+    <div forPopover [(open)]="open" [disabled]="rootDisabled()" ariaLabel="t">
+      <button forPopoverTrigger [disabled]="triggerDisabled()">Open</button>
+      @if (open()) {
+        <div forPopoverContent></div>
+      }
+    </div>
+  `,
+})
+class TriggerDisabledHost {
+  readonly open = signal(false);
+  readonly rootDisabled = signal(false);
+  readonly triggerDisabled = signal(false);
+}
+
+@Component({
+  imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+  template: `
     <div forPopover [(open)]="open" ariaLabel="Quick action">
       <button forPopoverTrigger>Open</button>
       @if (open()) {
@@ -230,6 +247,64 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('data-disabled')).toBe('');
       expect(trigger.getAttribute('aria-disabled')).toBe('true');
       expect(trigger.getAttribute('disabled')).toBe('');
+    });
+
+    it('does not toggle when only the trigger is disabled', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      const root = r.query<HTMLElement>('[forPopover]')!;
+      expect(root.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+    });
+
+    it('reflects the root disabled on the trigger via the effective state', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+    });
+
+    it('stays disabled while either source is set and re-enables once both clear', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.rootDisabled.set(true);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      r.instance.rootDisabled.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('disabled')).toBe('');
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      r.instance.triggerDisabled.set(false);
+      await flush(r.fixture);
+      expect(trigger.hasAttribute('disabled')).toBe(false);
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+      expect(trigger.hasAttribute('data-disabled')).toBe(false);
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
     });
 
     it('honors consumer writes via [(open)] without re-emitting (openChange)', async () => {

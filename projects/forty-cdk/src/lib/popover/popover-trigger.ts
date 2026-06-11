@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { injectPopoverContext } from './popover-context';
@@ -12,6 +12,10 @@ import { injectPopoverContext } from './popover-context';
  * state on click. The trigger is exempt from the dismissable layer's
  * outside-pointer / outside-focus checks so its own click never
  * spuriously closes the popover.
+ *
+ * Disabling: the trigger merges its own `disabled` input OR the root's
+ * `disabled` into `effectiveDisabled`, which drives the native `disabled`
+ * attribute, `aria-disabled`, `data-disabled`, and the click guard.
  */
 @Directive({
   selector: '[forPopoverTrigger]',
@@ -23,15 +27,21 @@ import { injectPopoverContext } from './popover-context';
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
-    '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
-    '[attr.disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
+    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
   },
 })
 export class ForPopoverTrigger {
   protected readonly ctx = injectPopoverContext('ForPopoverTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /** Disables this trigger only, in addition to the root's `disabled`. */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
+  readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   constructor() {
     registerHandle(
@@ -42,6 +52,9 @@ export class ForPopoverTrigger {
   }
 
   protected onClick(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
     this.ctx.toggle();
   }
 }
