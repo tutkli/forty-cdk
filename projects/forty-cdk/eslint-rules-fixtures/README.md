@@ -3,8 +3,9 @@
 Each `*.fixture.ts` file in this directory intentionally violates exactly one
 `forty-cdk/*` rule defined in [`eslint.config.js`](../../../eslint.config.js)
 (the five test-isolation rules in the `@forty-cdk-test-isolation-rules` block,
-plus `no-effect-state-propagation`). They are documentation-as-code: by linting
-them with the rule *enabled* you can verify it fires.
+plus `no-effect-state-propagation` and `require-host-directive-sibling`). They
+are documentation-as-code: by linting them with the rule _enabled_ you can
+verify it fires.
 
 The fixtures are deliberately:
 
@@ -31,6 +32,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `scoped-fake-timers.fixture.ts` — 1 warning (Rule 4 is `warn`, not `error`).
 - `no-directive-internal-signal-read.fixture.ts` — 1 error.
 - `no-effect-state-propagation.fixture.ts` — 2 errors (the `.set` and `.update` read-and-write forms).
+- `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).
 
 The default `pnpm lint` ignores this directory (configured at the top of
 `eslint.config.js`) so CI doesn't pick up these intentional violations.

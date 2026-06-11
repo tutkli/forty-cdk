@@ -33,6 +33,8 @@ Both extend **`FormUiControl`** — expose its relevant optional members (`disab
 
 The stable contract reports touch interactions through the **`touch: OutputRef<void>` output** — `[formField]` listens to it and calls `markAsTouched()`; the `touched` input is write-only from the form's perspective (the form pushes field state down, it never reads the signal back). `FormUiControlBase.markTouched()` owns flipping the `touched` model (standalone `data-touched` reflection) and emitting `touch` together — primitives call it from every touch-producing interaction and never write `touched` directly.
 
+Every concrete form-value control also ships a `<name>-host-directive.ts` sibling exposing the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples (re-exported from the primitive barrel) so wrapper components re-expose the full surface via `hostDirectives` without hand-maintaining the list — see `docs/wrapping-form-primitives.md`. The sibling's presence (and the barrel re-export) is enforced by the `forty-cdk/require-host-directive-sibling` ESLint rule in `eslint.config.js`; abstract bases like `TextValueControlBase` are exempt, the concrete subclasses own the contract.
+
 The legacy `ControlValueAccessor` / `NG_VALUE_ACCESSOR` pattern is banned. Add `@angular/forms` as an _optional_ peer (`peerDependenciesMeta.optional`) so consumers using only non-form primitives don't pull it in.
 
 `@angular/forms/signals` is stable as of Angular 22; the peer follows the standard major range (`^22.0.0`).
