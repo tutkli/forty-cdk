@@ -6,6 +6,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import type { MenuSiblingNavigator } from '../menu/menu-context';
 
 /**
@@ -85,8 +86,12 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
    * Open the trigger identified by `value`, focus its first or last item.
    * Called by the trigger itself (Enter/Space/click/ArrowDown/ArrowUp).
+   * `modality` (default `'keyboard'`) records how the open was activated: a
+   * `'pointer'` open (click, hover-after-open) keeps the programmatic
+   * initial focus from reflecting `data-highlighted`, while a `'keyboard'`
+   * open highlights the focused item.
    */
-  openTrigger(value: string, initialFocus: 'first' | 'last'): void;
+  openTrigger(value: string, initialFocus: 'first' | 'last', modality?: MenuActivationModality): void;
 
   /** Close the currently-open menu, if any. Returns focus to the trigger. */
   closeOpen(): void;

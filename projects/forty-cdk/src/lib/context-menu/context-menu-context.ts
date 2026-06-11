@@ -1,5 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
+
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing
  * `[forContextMenu]` root. It exposes exactly the slice of the root the
@@ -44,9 +46,13 @@ export interface ForContextMenuContext {
 
   /**
    * Opens the menu and sends focus to its first or last enabled item
-   * (default `'first'`). Honours `disabled`.
+   * (default `'first'`). Honours `disabled`. `modality` (default
+   * `'keyboard'`) records how the open was activated: a `'pointer'` open
+   * (right-click / long-press) keeps the programmatic initial focus from
+   * reflecting `data-highlighted`, while a `'keyboard'` open (`Shift+F10`,
+   * the `ContextMenu` key) highlights the focused item.
    */
-  openMenu(initialFocus?: 'first' | 'last'): void;
+  openMenu(initialFocus?: 'first' | 'last', modality?: MenuActivationModality): void;
 }
 
 /**

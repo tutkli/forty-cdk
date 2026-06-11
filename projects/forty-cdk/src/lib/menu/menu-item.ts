@@ -63,8 +63,14 @@ export class ForMenuItem {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   readonly #highlighted = signal(false);
-  /** True while this item has DOM focus. Reflected as `data-highlighted`. */
+  /**
+   * True while this item has DOM focus, except for the programmatic initial
+   * focus of a pointer-driven open (the move lands without a highlight until
+   * keyboard navigation). Reflected as `data-highlighted`.
+   */
   readonly highlighted = this.#highlighted.asReadonly();
+
+  #suppressNextFocusHighlight = false;
 
   /**
    * Fires on click / Enter / Space activation. Call `preventDefault()`
@@ -77,6 +83,9 @@ export class ForMenuItem {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
       textValue: this.textValue,
+      suppressHighlightOnNextFocus: () => {
+        this.#suppressNextFocusHighlight = true;
+      },
     };
     registerHandle(
       handle,
@@ -95,10 +104,15 @@ export class ForMenuItem {
   }
 
   protected onFocus(): void {
+    if (this.#suppressNextFocusHighlight) {
+      this.#suppressNextFocusHighlight = false;
+      return;
+    }
     this.#highlighted.set(true);
   }
 
   protected onBlur(): void {
+    this.#suppressNextFocusHighlight = false;
     this.#highlighted.set(false);
   }
 

@@ -135,6 +135,59 @@ class TypeaheadOverrideHost {
   readonly alignment = signal('left');
 }
 
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button id="bold" forMenuCheckboxItem [(checked)]="bold">Bold</button>
+          <button id="plain" forMenuItem>Plain</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class CheckboxFirstHost {
+  readonly open = signal(false);
+  readonly bold = signal(false);
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
+          <div forMenuRadioGroup [(value)]="alignment">
+            <button id="left" forMenuRadioItem value="left">Left</button>
+          </div>
+          <button id="plain" forMenuItem>Plain</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class RadioFirstHost {
+  readonly open = signal(false);
+  readonly alignment = signal('left');
+}
+
 
 describe('Menu items / content', () => {
   afterEachOverlayCleanup();
@@ -623,6 +676,37 @@ describe('Menu items / content', () => {
 
       expect(copy.getAttribute('data-highlighted')).toBe('');
       expect(cut.hasAttribute('data-highlighted')).toBe(false);
+    });
+  });
+
+  describe('pointer-open highlight suppression across item flavours', () => {
+    function pointerClick(el: HTMLElement): void {
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      el.click();
+    }
+
+    it('a pointer open whose first item is a checkbox item reflects no data-highlighted', async () => {
+      const r = renderHost(CheckboxFirstHost);
+      pointerClick(r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('bold');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+
+      pressKey(document.querySelector('#bold')!, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.querySelector('#plain')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('a pointer open whose first item is a radio item reflects no data-highlighted', async () => {
+      const r = renderHost(RadioFirstHost);
+      pointerClick(r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('left');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
     });
   });
 

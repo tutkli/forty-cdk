@@ -32,6 +32,15 @@ export type MenuOverlayCloseReason =
 export type MenuOverlayItemHandle = MenuItemHandle;
 
 /**
+ * How a menu open was activated. `'keyboard'` (the default) highlights the
+ * initially focused item per the APG menu-button pattern; `'pointer'` keeps
+ * the programmatic initial focus from reflecting `data-highlighted` so a
+ * mouse-opened menu doesn't read as "preselected". The DOM focus move itself
+ * is identical in both modalities.
+ */
+export type MenuActivationModality = 'pointer' | 'keyboard';
+
+/**
  * Wiring the directive forwards into the helper. Inputs / outputs / models
  * stay declared on the directive (Angular needs them as fields for template
  * binding); the helper reads them through these references so the close
@@ -128,6 +137,8 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   /** Where focus should land when the menu mounts. Set by triggers before flipping `open`. */
   readonly initialFocus = this.#initialFocus.asReadonly();
 
+  #highlightInitialFocus = true;
+
   readonly #lastCloseReason = signal<MenuOverlayCloseReason | null>(null);
 
   /**
@@ -200,12 +211,28 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     this.#itemList.handleTypeahead(event);
   }
 
+  /**
+   * Focuses the first enabled item. When the most recent `openMenu` was
+   * pointer-activated, this one move suppresses the item's focus-driven
+   * `data-highlighted` (one-shot — later calls highlight normally).
+   */
   focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem();
+    return this.#itemList.focusFirstEnabledItem(this.#consumeHighlightInitialFocus());
   }
 
+  /**
+   * Focuses the last enabled item. When the most recent `openMenu` was
+   * pointer-activated, this one move suppresses the item's focus-driven
+   * `data-highlighted` (one-shot — later calls highlight normally).
+   */
   focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem();
+    return this.#itemList.focusLastEnabledItem(this.#consumeHighlightInitialFocus());
+  }
+
+  #consumeHighlightInitialFocus(): boolean {
+    const highlight = this.#highlightInitialFocus;
+    this.#highlightInitialFocus = true;
+    return highlight;
   }
 
   /**
@@ -213,22 +240,34 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * `'programmatic'` close reason by design — there is no distinct `'trigger'`
    * reason for the user-initiated toggle-close path.
    */
-  toggle(initialFocus: 'first' | 'last' = 'first'): void {
+  toggle(
+    initialFocus: 'first' | 'last' = 'first',
+    modality: MenuActivationModality = 'keyboard',
+  ): void {
     if (this.#hooks.disabled()) {
       return;
     }
     if (this.#hooks.open()) {
       this.closeMenu('programmatic');
     } else {
-      this.openMenu(initialFocus);
+      this.openMenu(initialFocus, modality);
     }
   }
 
-  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
+  /**
+   * Opens the menu, recording where the initial focus should land and how
+   * the open was activated. A `'pointer'` modality keeps that one initial
+   * focus move from reflecting `data-highlighted` on the focused item.
+   */
+  openMenu(
+    initialFocus: 'first' | 'last' = 'first',
+    modality: MenuActivationModality = 'keyboard',
+  ): void {
     if (this.#hooks.disabled()) {
       return;
     }
     this.#initialFocus.set(initialFocus);
+    this.#highlightInitialFocus = modality === 'keyboard';
     this.#lastCloseReason.set(null);
     this.#hooks.open.set(true);
     this.#hooks.onOpen?.(initialFocus);

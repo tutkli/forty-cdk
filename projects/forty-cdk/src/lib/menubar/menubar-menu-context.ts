@@ -2,6 +2,7 @@ import { computed, type ModelSignal, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import type { ListNavigationAction } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type {
   ForMenuCloseReason,
@@ -64,6 +65,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #itemList = createMenuItemList<ForMenuItemHandle>(() => this.#host.loop());
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly #initialFocus = signal<'first' | 'last'>('first');
+  #highlightInitialFocus = true;
   readonly #lastCloseReason = signal<ForMenuCloseReason | null>(null);
 
   readonly open = computed(() => this.#host.value() !== '');
@@ -117,10 +119,13 @@ export class MenubarMenuContext implements ForMenuContext {
 
   /**
    * Read by the bar's `openTrigger` so the next open seeds the resolved
-   * initial-focus target and clears the prior close reason.
+   * initial-focus target and clears the prior close reason. A `'pointer'`
+   * `modality` keeps the upcoming programmatic initial focus from reflecting
+   * `data-highlighted` on the focused item.
    */
-  prepareOpen(initialFocus: 'first' | 'last'): void {
+  prepareOpen(initialFocus: 'first' | 'last', modality: MenuActivationModality = 'keyboard'): void {
     this.#initialFocus.set(initialFocus);
+    this.#highlightInitialFocus = modality === 'keyboard';
     this.#lastCloseReason.set(null);
   }
 
@@ -159,10 +164,16 @@ export class MenubarMenuContext implements ForMenuContext {
     this.#itemList.handleTypeahead(event);
   }
   focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem();
+    return this.#itemList.focusFirstEnabledItem(this.#consumeHighlightInitialFocus());
   }
   focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem();
+    return this.#itemList.focusLastEnabledItem(this.#consumeHighlightInitialFocus());
+  }
+
+  #consumeHighlightInitialFocus(): boolean {
+    const highlight = this.#highlightInitialFocus;
+    this.#highlightInitialFocus = true;
+    return highlight;
   }
 
   toggle(): void {

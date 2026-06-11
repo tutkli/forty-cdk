@@ -15,6 +15,14 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
 export interface MenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
   readonly textValue?: Signal<string>;
+  /**
+   * Tells the item that the next focus it receives is a programmatic move
+   * that must not reflect `data-highlighted` (the initial focus of a
+   * pointer-driven open). One-shot: the item consumes the suppression on its
+   * next `focus` event. Optional — items that don't reflect a highlight
+   * (e.g. `[forMenuSubTrigger]`) simply omit it.
+   */
+  suppressHighlightOnNextFocus?(): void;
 }
 
 /**
@@ -112,25 +120,42 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     }
   }
 
-  focusFirstEnabledItem(): boolean {
+  /**
+   * Focuses the first enabled item. Pass `highlight: false` when the move is
+   * the programmatic initial focus of a pointer-driven open, so the item
+   * receives DOM focus without reflecting `data-highlighted`.
+   */
+  focusFirstEnabledItem(highlight = true): boolean {
     const target = this.#items.items().find((i) => !i.disabled());
     if (!target) {
       return false;
     }
-    target.host.focus();
+    this.#focusItem(target, highlight);
     return true;
   }
 
-  focusLastEnabledItem(): boolean {
+  /**
+   * Focuses the last enabled item. Pass `highlight: false` when the move is
+   * the programmatic initial focus of a pointer-driven open, so the item
+   * receives DOM focus without reflecting `data-highlighted`.
+   */
+  focusLastEnabledItem(highlight = true): boolean {
     const items = this.#items.items();
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (item && !item.disabled()) {
-        item.host.focus();
+        this.#focusItem(item, highlight);
         return true;
       }
     }
     return false;
+  }
+
+  #focusItem(item: H, highlight: boolean): void {
+    if (!highlight) {
+      item.suppressHighlightOnNextFocus?.();
+    }
+    item.host.focus();
   }
 }
 
