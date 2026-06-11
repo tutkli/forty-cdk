@@ -50,13 +50,7 @@ import {
 @Component({
   selector: 'app-toolbar-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ForToolbar,
-    ForToolbarButton,
-    ForToolbarSeparator,
-    ForToggleGroup,
-    ForToggleGroupItem,
-  ],
+  imports: [ForToolbar, ForToolbarButton, ForToolbarSeparator, ForToggleGroup, ForToggleGroupItem],
   template: `
     <input data-testid="before" placeholder="before-toolbar" />
     <button data-testid="remove-active" type="button" (click)="removeBtn1()">remove</button>
@@ -69,11 +63,7 @@ import {
       aria-label="Formatting"
     >
       @if (!btn1Removed()) {
-        <button
-          data-testid="btn-1"
-          forToolbarButton
-          [disabled]="isDisabled(0) || btn1Disabled()"
-        >
+        <button data-testid="btn-1" forToolbarButton [disabled]="isDisabled(0) || btn1Disabled()">
           B1
         </button>
       }
@@ -89,12 +79,7 @@ import {
       <span data-testid="sep" forToolbarSeparator></span>
       <button data-testid="btn-disabled" forToolbarButton [disabled]="isDisabled(3)">D</button>
       <div forToggleGroup multiple [(value)]="formatting">
-        <button
-          data-testid="tg-bold"
-          forToggleGroupItem
-          value="bold"
-          [disabled]="isDisabled(4)"
-        >
+        <button data-testid="tg-bold" forToggleGroupItem value="bold" [disabled]="isDisabled(4)">
           Bold
         </button>
         <button

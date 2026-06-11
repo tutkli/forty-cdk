@@ -41,13 +41,7 @@ const SEPARATOR_AFTER = new Set<number>([2]);
 @Component({
   selector: 'app-menu-base-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ForDropdownMenu,
-    ForDropdownMenuTrigger,
-    ForMenuContent,
-    ForMenuItem,
-    ForMenuSeparator,
-  ],
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
     <div forDropdownMenu [(open)]="open" ariaLabel="Test menu">
@@ -55,11 +49,7 @@ const SEPARATOR_AFTER = new Set<number>([2]);
       @if (open()) {
         <div forMenuContent data-testid="menu">
           @for (item of items(); track item.id; let i = $index) {
-            <button
-              [attr.data-testid]="'item-' + item.id"
-              forMenuItem
-              [disabled]="item.disabled"
-            >
+            <button [attr.data-testid]="'item-' + item.id" forMenuItem [disabled]="item.disabled">
               {{ item.label }}
             </button>
             @if (separatorAfter(i)) {

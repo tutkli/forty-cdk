@@ -176,8 +176,18 @@ export class ForToast implements ForToastContext {
   readonly #labels = signal<readonly ForToastTextHandle[]>([]);
   readonly #descriptions = signal<readonly ForToastTextHandle[]>([]);
   readonly #actions = signal<readonly ForToastActionHandle[]>([]);
-  readonly labelledBy = computed(() => this.#labels().map((h) => h.id).join(' ') || null);
-  readonly describedBy = computed(() => this.#descriptions().map((h) => h.id).join(' ') || null);
+  readonly labelledBy = computed(
+    () =>
+      this.#labels()
+        .map((h) => h.id)
+        .join(' ') || null,
+  );
+  readonly describedBy = computed(
+    () =>
+      this.#descriptions()
+        .map((h) => h.id)
+        .join(' ') || null,
+  );
 
   /**
    * `true` when at least one registered `[forToastAction]` carries a
@@ -452,5 +462,4 @@ export class ForToast implements ForToastContext {
       this.#timerHandle = null;
     }
   }
-
 }

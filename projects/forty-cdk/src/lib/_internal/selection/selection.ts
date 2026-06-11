@@ -24,7 +24,11 @@ import { computed, type Signal } from '@angular/core';
  * Returns `true` when `current` contains an element equal to `v` under the
  * supplied `equals` comparator. Backs each primitive's `isSelected(v)`.
  */
-export function isInArray<T>(current: readonly T[], v: T, equals: (a: T, b: T) => boolean): boolean {
+export function isInArray<T>(
+  current: readonly T[],
+  v: T,
+  equals: (a: T, b: T) => boolean,
+): boolean {
   return current.some((x) => equals(x, v));
 }
 
@@ -40,9 +44,7 @@ export function toggleInArray<T>(
   v: T,
   equals: (a: T, b: T) => boolean,
 ): T[] {
-  return current.some((x) => equals(x, v))
-    ? current.filter((x) => !equals(x, v))
-    : [...current, v];
+  return current.some((x) => equals(x, v)) ? current.filter((x) => !equals(x, v)) : [...current, v];
 }
 
 /**

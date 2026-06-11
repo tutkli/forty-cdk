@@ -78,41 +78,44 @@ describe('ForToggle', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(ToggleHost);
-    const result: FormControlMountResult = {
-      control: r.query<HTMLButtonElement>('[forToggle]')!,
-      flush: r.flush,
-      setFlag: (flag, value) => {
-        const inst = r.instance;
-        switch (flag) {
-          case 'disabled':
-            inst.disabled.set(value);
-            return;
-          case 'readonly':
-            inst.isReadonly.set(value);
-            return;
-          case 'required':
-            inst.isRequired.set(value);
-            return;
-          case 'invalid':
-            inst.isInvalid.set(value);
-            return;
-          case 'pending':
-            inst.isPending.set(value);
-            return;
-          case 'touched':
-            inst.isTouched.set(value);
-            return;
-          case 'dirty':
-            inst.isDirty.set(value);
-            return;
-        }
-      },
-      setName: (name) => r.instance.fieldName.set(name),
-    };
-    return result;
-  }, { customRoleStaysFocusable: true });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(ToggleHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forToggle]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          const inst = r.instance;
+          switch (flag) {
+            case 'disabled':
+              inst.disabled.set(value);
+              return;
+            case 'readonly':
+              inst.isReadonly.set(value);
+              return;
+            case 'required':
+              inst.isRequired.set(value);
+              return;
+            case 'invalid':
+              inst.isInvalid.set(value);
+              return;
+            case 'pending':
+              inst.isPending.set(value);
+              return;
+            case 'touched':
+              inst.isTouched.set(value);
+              return;
+            case 'dirty':
+              inst.isDirty.set(value);
+              return;
+          }
+        },
+        setName: (name) => r.instance.fieldName.set(name),
+      };
+      return result;
+    },
+    { customRoleStaysFocusable: true },
+  );
 
   describe('click', () => {
     it('toggles checked on click', () => {

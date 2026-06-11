@@ -78,9 +78,7 @@ class AmbientDirection {
 
     const win = this.#doc.defaultView;
     if (win && typeof win.MutationObserver === 'function') {
-      const observer = new win.MutationObserver(() =>
-        this.#revision.update((v) => v + 1),
-      );
+      const observer = new win.MutationObserver(() => this.#revision.update((v) => v + 1));
       observer.observe(this.#doc.documentElement, {
         attributes: true,
         attributeFilter: ['dir'],

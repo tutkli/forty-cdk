@@ -96,8 +96,6 @@ export class RovingTabindex {
 
 function isStale(el: HTMLElement): boolean {
   return (
-    !el.isConnected ||
-    el.hasAttribute('disabled') ||
-    el.getAttribute('aria-disabled') === 'true'
+    !el.isConnected || el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true'
   );
 }

@@ -33,8 +33,8 @@ type SwipeChoice = 'right' | 'left' | 'up' | 'down' | 'right-down';
           </div>
           <p class="pg-hint">
             Press and drag a toast toward the configured direction. The card follows your pointer;
-            let go past {{ threshold() }} px to dismiss, or short of it to spring back. Toasts render
-            in the single shared viewport above.
+            let go past {{ threshold() }} px to dismiss, or short of it to spring back. Toasts
+            render in the single shared viewport above.
           </p>
         </div>
       </div>

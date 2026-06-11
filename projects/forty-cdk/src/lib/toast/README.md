@@ -209,12 +209,12 @@ Optional, opt-in. Set `[swipeDirection]` on a declarative toast (or via `swipeDi
 
 While the gesture is live the host carries:
 
-| Attribute / variable                | Values                                   | Purpose                                                                         |
-| ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- |
+| Attribute / variable                | Values                                   | Purpose                                                                                                                                                                                                               |
+| ----------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". `"cancel"` is parked (with the released movement vars) so your CSS can spring the toast back, then cleared on the next `pointerdown`. |
-| `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                 |
-| `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.    |
-| `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.      |
+| `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                                                                                                                                                       |
+| `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.                                                                                                                                          |
+| `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.                                                                                                                                            |
 
 The directive does NOT animate anything — the consumer's CSS transitions / `animate.leave` drive the visual feedback:
 

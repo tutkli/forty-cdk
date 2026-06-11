@@ -23,9 +23,20 @@ import { DemoLayout } from '../../../ui/demo-layout';
         <div class="tg-block">
           <span class="tg-caption">Group (multiple)</span>
           <div forToggleGroup class="tg-group" [(value)]="format" multiple aria-label="Text format">
-            <button forToggleGroupItem class="tg-btn tg-icon" value="bold" aria-label="Bold">B</button>
-            <button forToggleGroupItem class="tg-btn tg-icon" value="italic" aria-label="Italic">I</button>
-            <button forToggleGroupItem class="tg-btn tg-icon" value="underline" aria-label="Underline">U</button>
+            <button forToggleGroupItem class="tg-btn tg-icon" value="bold" aria-label="Bold">
+              B
+            </button>
+            <button forToggleGroupItem class="tg-btn tg-icon" value="italic" aria-label="Italic">
+              I
+            </button>
+            <button
+              forToggleGroupItem
+              class="tg-btn tg-icon"
+              value="underline"
+              aria-label="Underline"
+            >
+              U
+            </button>
           </div>
         </div>
       </div>

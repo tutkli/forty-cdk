@@ -9,8 +9,7 @@ describe('VisibilityPause', () => {
   let removeSpy: ReturnType<typeof vi.spyOn>;
 
   function visibilityListenerCalls(spy: ReturnType<typeof vi.spyOn>): number {
-    return spy.mock.calls.filter((args: unknown[]) => args[0] === 'visibilitychange')
-      .length;
+    return spy.mock.calls.filter((args: unknown[]) => args[0] === 'visibilitychange').length;
   }
 
   function setVisibility(state: 'visible' | 'hidden'): void {
@@ -161,10 +160,7 @@ describe('VisibilityPause', () => {
       addSpy.mockClear();
       removeSpy.mockClear();
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: PLATFORM_ID, useValue: 'server' },
-        ],
+        providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
       });
       pause = TestBed.inject(VisibilityPause);
     });

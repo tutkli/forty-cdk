@@ -56,8 +56,7 @@ class RadioGroupHost {
 const radioOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
-const groupOf = (host: HTMLElement) =>
-  host.querySelector<HTMLElement>('[forRadioGroup]')!;
+const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forRadioGroup]')!;
 
 describe('ForRadioGroup', () => {
   describe('static accessibility', () => {
@@ -494,10 +493,12 @@ describe('ForRadioGroup', () => {
       const { el } = renderHost(IndicatorHost);
       const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
       expect(Array.from(inds).some((n) => n.hasAttribute('hidden'))).toBe(false);
-      expect(Array.from(inds).every((n) => n.getAttribute('data-state') === 'unchecked')).toBe(true);
+      expect(Array.from(inds).every((n) => n.getAttribute('data-state') === 'unchecked')).toBe(
+        true,
+      );
     });
 
-    it('reflects data-state on the selected radio\'s indicator without a hidden attribute', () => {
+    it("reflects data-state on the selected radio's indicator without a hidden attribute", () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.color.set('blue');
       flush();

@@ -1,9 +1,6 @@
 import { signal, type WritableSignal } from '@angular/core';
 
-import {
-  createHoverIntent,
-  type HoverIntentCoordinator,
-} from './hover-intent';
+import { createHoverIntent, type HoverIntentCoordinator } from './hover-intent';
 
 function createStubCoordinator(skip = false): HoverIntentCoordinator & {
   skipDelayValue: WritableSignal<boolean>;

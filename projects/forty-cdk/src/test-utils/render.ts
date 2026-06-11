@@ -38,8 +38,7 @@ export function renderHost<T>(host: Type<T>): RenderResult<T> {
     fixture,
     instance: fixture.componentInstance,
     el: root,
-    query: <E extends Element = HTMLElement>(selector: string) =>
-      root.querySelector<E>(selector),
+    query: <E extends Element = HTMLElement>(selector: string) => root.querySelector<E>(selector),
     queryAll: <E extends Element = HTMLElement>(selector: string) =>
       Array.from(root.querySelectorAll<E>(selector)),
     flush: () => flush(fixture),

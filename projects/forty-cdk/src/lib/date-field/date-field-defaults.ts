@@ -38,9 +38,7 @@ export interface ForDateFieldDefaults {
  * the segment's explicit `ariaLabel` nor a `provideForDateFieldDefaults`
  * override supplies one for that part.
  */
-export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<
-  Record<DateTimeSegmentType, string>
-> = {
+export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<Record<DateTimeSegmentType, string>> = {
   day: 'day',
   month: 'month',
   year: 'year',

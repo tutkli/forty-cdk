@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {
-  ForSlider,
-  ForSliderRange,
-  ForSliderThumb,
-  ForSliderTrack,
-} from 'forty-cdk';
+import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk';
 
 /**
  * Fixture for the pointer / drag math that Vitest can't cover (jsdom returns
@@ -135,15 +130,11 @@ export class SliderFixture {
       : 'horizontal';
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
-  protected readonly disabled =
-    this.#route.snapshot.queryParamMap.get('disabled') === '1';
+  protected readonly disabled = this.#route.snapshot.queryParamMap.get('disabled') === '1';
 
-  protected readonly min =
-    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('min')) ?? 0;
-  protected readonly max =
-    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('max')) ?? 100;
-  protected readonly step =
-    parseFiniteNumber(this.#route.snapshot.queryParamMap.get('step')) ?? 1;
+  protected readonly min = parseFiniteNumber(this.#route.snapshot.queryParamMap.get('min')) ?? 0;
+  protected readonly max = parseFiniteNumber(this.#route.snapshot.queryParamMap.get('max')) ?? 100;
+  protected readonly step = parseFiniteNumber(this.#route.snapshot.queryParamMap.get('step')) ?? 1;
 
   protected readonly value = signal<readonly number[]>(
     parseInitial(this.#route.snapshot.queryParamMap.get('initial')) ?? [50],

@@ -46,10 +46,7 @@ function setup(platformId: unknown = 'browser'): {
   flush: () => Promise<void>;
 } {
   TestBed.configureTestingModule({
-    providers: [
-      provideZonelessChangeDetection(),
-      { provide: PLATFORM_ID, useValue: platformId },
-    ],
+    providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: platformId }],
   });
   const fixture = TestBed.createComponent(Host);
   fixture.detectChanges();

@@ -82,7 +82,12 @@ const CITIES: readonly City[] = [
           @if (open()) {
             <div forComboboxContent class="pg-combobox-content" animate.enter="pg-pop-in">
               @for (city of filtered(); track city.id) {
-                <div forComboboxOption [value]="city" [label]="city.name" class="pg-combobox-option">
+                <div
+                  forComboboxOption
+                  [value]="city"
+                  [label]="city.name"
+                  class="pg-combobox-option"
+                >
                   <span forComboboxIndicator class="pg-combobox-indicator">
                     <app-icon name="check" />
                   </span>

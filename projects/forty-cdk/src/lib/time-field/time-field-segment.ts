@@ -3,10 +3,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 import { ForDateTimeSegmentBase } from '../_internal/datetime/segment-directive';
 import type { TimeSegmentType } from './build-time-segments';
 import { injectTimeFieldContext } from './time-field-context';
-import {
-  DEFAULT_TIME_FIELD_SEGMENT_LABELS,
-  FOR_TIME_FIELD_DEFAULTS,
-} from './time-field-defaults';
+import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 
 /**
  * One editable spinbutton segment of a `[forTimeField]` — the hour, minute,

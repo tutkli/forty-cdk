@@ -215,9 +215,7 @@ export function moveGridIndex(
         const candidateRowEnd = Math.min(candidateRowStart + cols, count);
         // Try the same column; if missing in last partial row, fall back to row's last cell.
         const target =
-          candidateRowStart + col < candidateRowEnd
-            ? candidateRowStart + col
-            : candidateRowEnd - 1;
+          candidateRowStart + col < candidateRowEnd ? candidateRowStart + col : candidateRowEnd - 1;
         if (target === current) {
           return null;
         }

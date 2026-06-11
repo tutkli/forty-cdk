@@ -30,7 +30,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
         <div forScrollAreaViewport class="ga-viewport">
           <div forScrollAreaContent class="ga-content">
             @for (row of rows; track row) {
-              <p class="ga-row"><b>Row {{ row }}</b> — scroll me on either axis.</p>
+              <p class="ga-row">
+                <b>Row {{ row }}</b> — scroll me on either axis.
+              </p>
             }
           </div>
         </div>

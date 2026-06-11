@@ -50,24 +50,21 @@ test.describe('Tooltip', () => {
     // library-side decision tracked separately. Parked with
     // `test.fixme` so the audit row stays honest and the open
     // question is discoverable from the spec file.
-    test.fixme(
-      '@mobile a simple tap does NOT open the tooltip',
-      async ({ page }, testInfo) => {
-        test.skip(
-          !isMobileProject(testInfo),
-          'locator.tap() requires hasTouch:true; desktop projects have hover/focus coverage above',
-        );
-        await gotoFixture(page, 'tooltip');
-        await el(page, 'trigger').tap();
-        // Will fail today: tap focuses the <button>, which fires
-        // `(focus)` → `scheduleOpen('focus')` → tooltip opens. Once
-        // the library filters touch-driven focus (or the trigger
-        // exposes an opt-out for touch contexts) this assertion can
-        // re-enable.
-        await page.waitForTimeout(100);
-        await expect(el(page, 'tooltip')).toHaveCount(0);
-      },
-    );
+    test.fixme('@mobile a simple tap does NOT open the tooltip', async ({ page }, testInfo) => {
+      test.skip(
+        !isMobileProject(testInfo),
+        'locator.tap() requires hasTouch:true; desktop projects have hover/focus coverage above',
+      );
+      await gotoFixture(page, 'tooltip');
+      await el(page, 'trigger').tap();
+      // Will fail today: tap focuses the <button>, which fires
+      // `(focus)` → `scheduleOpen('focus')` → tooltip opens. Once
+      // the library filters touch-driven focus (or the trigger
+      // exposes an opt-out for touch contexts) this assertion can
+      // re-enable.
+      await page.waitForTimeout(100);
+      await expect(el(page, 'tooltip')).toHaveCount(0);
+    });
 
     test('@mobile keyboard focus on the trigger opens the tooltip', async ({ page }) => {
       await gotoFixture(page, 'tooltip');

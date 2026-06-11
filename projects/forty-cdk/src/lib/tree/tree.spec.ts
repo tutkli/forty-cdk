@@ -1,9 +1,4 @@
-import {
-  Component,
-  provideZonelessChangeDetection,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../test-utils';
@@ -163,7 +158,9 @@ describe('ForTree', () => {
         <ul forTree>
           @for (id of ids(); track id) {
             <li forTreeItem [value]="id" [attr.data-test-id]="id">
-              <div forTreeItemLabel><span>{{ id }}</span></div>
+              <div forTreeItemLabel>
+                <span>{{ id }}</span>
+              </div>
             </li>
           }
         </ul>
@@ -454,9 +451,9 @@ describe('ForTree', () => {
   describe('roving tabindex entry point', () => {
     it('makes exactly one treeitem tabbable (the first enabled node)', async () => {
       const { el } = await setup();
-      const tabbable = Array.from(
-        el.querySelectorAll<HTMLElement>('[role="treeitem"]'),
-      ).filter((node) => node.getAttribute('tabindex') === '0');
+      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+        (node) => node.getAttribute('tabindex') === '0',
+      );
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
@@ -479,9 +476,9 @@ describe('ForTree', () => {
       toggleOf(el, 'documents').click();
       await flush(fixture);
 
-      const tabbable = Array.from(
-        el.querySelectorAll<HTMLElement>('[role="treeitem"]'),
-      ).filter((node) => node.getAttribute('tabindex') === '0');
+      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+        (node) => node.getAttribute('tabindex') === '0',
+      );
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
@@ -497,9 +494,9 @@ describe('ForTree', () => {
       await flush(fixture);
 
       expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('-1');
-      const tabbable = Array.from(
-        el.querySelectorAll<HTMLElement>('[role="treeitem"]'),
-      ).filter((node) => node.getAttribute('tabindex') === '0');
+      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+        (node) => node.getAttribute('tabindex') === '0',
+      );
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });

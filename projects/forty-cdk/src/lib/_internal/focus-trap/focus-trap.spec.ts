@@ -1,7 +1,12 @@
 import { FocusTrap, FocusTrapStack } from './focus-trap';
 
 function tab(shift = false): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true });
+  return new KeyboardEvent('keydown', {
+    key: 'Tab',
+    shiftKey: shift,
+    bubbles: true,
+    cancelable: true,
+  });
 }
 
 describe('FocusTrap', () => {

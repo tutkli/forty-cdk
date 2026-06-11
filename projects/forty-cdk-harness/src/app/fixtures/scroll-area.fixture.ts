@@ -187,8 +187,7 @@ export class ScrollAreaFixture {
    * that hides the track on `type="hover"` leave. The drag-survives-self-hide
    * spec uses it to prove an in-flight drag keeps the track painted.
    */
-  protected readonly hideOnLeave =
-    this.#route.snapshot.queryParamMap.get('hideOnLeave') === '1';
+  protected readonly hideOnLeave = this.#route.snapshot.queryParamMap.get('hideOnLeave') === '1';
 
   /**
    * Expected ratios surfaced as `<output>` so a spec can read them as plain

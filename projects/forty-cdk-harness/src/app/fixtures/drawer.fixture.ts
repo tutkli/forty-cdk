@@ -231,7 +231,9 @@ export class DrawerFixture {
   protected onRelease(event: ForDrawerReleaseEvent): void {
     this.releaseCount.update((n) => n + 1);
     this.lastReleaseWillClose.set(String(event.willClose));
-    this.lastReleaseNextSnap.set(event.nextSnapPoint == null ? 'null' : String(event.nextSnapPoint));
+    this.lastReleaseNextSnap.set(
+      event.nextSnapPoint == null ? 'null' : String(event.nextSnapPoint),
+    );
   }
 }
 

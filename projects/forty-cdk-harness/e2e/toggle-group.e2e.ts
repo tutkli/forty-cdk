@@ -42,9 +42,7 @@ test.describe('ToggleGroup', () => {
     await expectFocused(el(page, 'tg-center'));
   });
 
-  test('re-entry restores the last focused item even at the end of the group', async ({
-    page,
-  }) => {
+  test('re-entry restores the last focused item even at the end of the group', async ({ page }) => {
     await gotoFixture(page, 'toggle-group');
 
     await el(page, 'before').focus();

@@ -97,7 +97,9 @@ import {
           <div forMenuContent data-testid="dd-menu" class="menu">
             <button data-testid="dd-item-1" forMenuItem class="item">Item one</button>
             <div forMenuSub [(open)]="ddSubOpen" [sideOffset]="8">
-              <button data-testid="dd-sub-trigger" forMenuSubTrigger class="item">More tools</button>
+              <button data-testid="dd-sub-trigger" forMenuSubTrigger class="item">
+                More tools
+              </button>
               @if (ddSubOpen()) {
                 <div forMenuSubContent data-testid="dd-sub-menu" class="menu">
                   <button data-testid="dd-sub-item-1" forMenuItem class="item">Save page</button>
@@ -174,7 +176,9 @@ import {
         <div forMenuContent data-testid="edge-menu" class="menu">
           <button data-testid="edge-item-1" forMenuItem class="item">Item one</button>
           <div forMenuSub [(open)]="edgeSubOpen" side="right" [sideOffset]="8">
-            <button data-testid="edge-sub-trigger" forMenuSubTrigger class="item">More tools</button>
+            <button data-testid="edge-sub-trigger" forMenuSubTrigger class="item">
+              More tools
+            </button>
             @if (edgeSubOpen()) {
               <div forMenuSubContent data-testid="edge-sub-menu" class="menu">
                 <button data-testid="edge-sub-item-1" forMenuItem class="item">Save page</button>

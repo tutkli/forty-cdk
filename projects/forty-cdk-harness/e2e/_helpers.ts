@@ -29,11 +29,7 @@ export async function gotoFixture(
 }
 
 /** Press Tab `n` times. Pass `'Shift+Tab'` for backwards navigation. */
-export async function tabN(
-  page: Page,
-  n: number,
-  key: 'Tab' | 'Shift+Tab' = 'Tab',
-): Promise<void> {
+export async function tabN(page: Page, n: number, key: 'Tab' | 'Shift+Tab' = 'Tab'): Promise<void> {
   for (let i = 0; i < n; i++) await page.keyboard.press(key);
 }
 
@@ -54,9 +50,7 @@ export async function clickOutside(page: Page): Promise<void> {
  * is dormant and always returns `false` for the desktop projects.
  */
 export function isMobileProject(testInfo: TestInfo): boolean {
-  return (
-    testInfo.project.name === 'Mobile Chrome' || testInfo.project.name === 'Mobile Safari'
-  );
+  return testInfo.project.name === 'Mobile Chrome' || testInfo.project.name === 'Mobile Safari';
 }
 
 /**
@@ -297,11 +291,7 @@ export async function longPress(locator: Locator, ms = 600): Promise<void> {
  * roving-tabindex specs that need a deterministic "land on the first
  * focusable item in this primitive" step.
  */
-export async function rovingFirst(
-  page: Page,
-  testid: string,
-  maxAttempts = 20,
-): Promise<void> {
+export async function rovingFirst(page: Page, testid: string, maxAttempts = 20): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     await page.keyboard.press('Tab');
     const current = await page.evaluate(
@@ -381,8 +371,7 @@ export async function imeUpdate(
 /** Commit the composition: fire `compositionend` carrying the final `data`. */
 export async function imeEnd(input: Locator, data: string): Promise<void> {
   await input.evaluate(
-    (el, data) =>
-      el.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data })),
+    (el, data) => el.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data })),
     data,
   );
 }

@@ -365,9 +365,9 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
   }
 
   #editableSpec(type: SegmentType): EditableSpec {
-    return this.#host.specs().find(
-      (spec): spec is EditableSpec => spec.kind === 'editable' && spec.type === type,
-    )!;
+    return this.#host
+      .specs()
+      .find((spec): spec is EditableSpec => spec.kind === 'editable' && spec.type === type)!;
   }
 
   /**

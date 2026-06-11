@@ -320,8 +320,7 @@ describe('ForDatePicker', () => {
     }
 
     type GR = RenderResult<GuardHost>;
-    const touched = (r: GR) =>
-      r.query('[forDatePicker]')!.hasAttribute('data-touched');
+    const touched = (r: GR) => r.query('[forDatePicker]')!.hasAttribute('data-touched');
 
     it('a readonly picker ignores a grid selection (no value/touched change)', async () => {
       const r = renderHost(GuardHost);
@@ -477,14 +476,23 @@ describe('ForDatePicker', () => {
                   </tbody>
                 </table>
               </div>
-              <div forTimeField [value]="picker.value()" [hourCycle]="24" [locale]="'en-US'" #tf="forTimeField">
+              <div
+                forTimeField
+                [value]="picker.value()"
+                [hourCycle]="24"
+                [locale]="'en-US'"
+                #tf="forTimeField"
+              >
                 @for (seg of tf.segments(); track seg.id) {
                   @if (seg.isLiteral) {
                     <span forTimeFieldLiteral>{{ seg.text }}</span>
                   } @else {
-                    <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="'time-' + seg.type">{{
-                      seg.text
-                    }}</span>
+                    <span
+                      forTimeFieldSegment
+                      [segment]="seg.type!"
+                      [attr.data-testid]="'time-' + seg.type"
+                      >{{ seg.text }}</span
+                    >
                   }
                 }
               </div>

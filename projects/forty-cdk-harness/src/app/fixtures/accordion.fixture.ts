@@ -38,11 +38,7 @@ import {
       @for (id of items; track id; let i = $index) {
         <div forAccordionItem [value]="id" [disabled]="disabled.has(i + 1)">
           <h3>
-            <button
-              type="button"
-              forAccordionTrigger
-              [attr.data-testid]="'trigger-' + id"
-            >
+            <button type="button" forAccordionTrigger [attr.data-testid]="'trigger-' + id">
               {{ id }}
             </button>
           </h3>

@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import {
-  type CalendarDate,
-  getDayOfWeek,
-  getLocalTimeZone,
-  today,
-} from '@internationalized/date';
+import { type CalendarDate, getDayOfWeek, getLocalTimeZone, today } from '@internationalized/date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';
@@ -41,7 +36,9 @@ import { CalendarView } from './calendar-view';
           Dates before today and any weekend are unavailable — they show aria-disabled and block
           selection, but the arrow keys still pass over them.
         </p>
-        <p class="pg-state">selected: <b>{{ selectedLabel() }}</b></p>
+        <p class="pg-state">
+          selected: <b>{{ selectedLabel() }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

@@ -2,11 +2,7 @@ import { computed, Directive, inject, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
-import {
-  FOR_FIELD_CONTEXT,
-  type FieldControlHandle,
-  type ForFieldContext,
-} from './field-context';
+import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
 
 /**
  * Headless form-field container that wires accessible labelling, description,

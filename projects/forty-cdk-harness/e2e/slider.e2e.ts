@@ -114,15 +114,10 @@ test.describe('Slider (pointer drag)', () => {
     // coalescing).
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.6,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
-    const countAfterRelease = Number(
-      await el(page, 'value-change-count').textContent(),
-    );
+    const countAfterRelease = Number(await el(page, 'value-change-count').textContent());
     expect(countAfterRelease).toBeGreaterThan(0);
 
     // Several no-button moves — the directive's window-level pointermove
@@ -141,10 +136,7 @@ test.describe('Slider (pointer drag)', () => {
 
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.75,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.75, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -159,18 +151,12 @@ test.describe('Slider (track click)', () => {
     expect(trackBox).not.toBeNull();
 
     // Click at 30% — closer to the lower (20) thumb than to the upper (80).
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.3,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.3, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     // A nudge to confirm the drag continued (not just pointerdown). Short
     // wait between move and up because WebKit otherwise reads the previous
     // (pointerdown) position as the final value.
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.4,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.4, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -184,10 +170,7 @@ test.describe('Slider (track click)', () => {
     await gotoFixture(page, 'slider', { disabled: '1' });
     const trackBox = await el(page, 'track').boundingBox();
     expect(trackBox).not.toBeNull();
-    await page.mouse.click(
-      trackBox!.x + trackBox!.width * 0.3,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.click(trackBox!.x + trackBox!.width * 0.3, trackBox!.y + trackBox!.height / 2);
 
     await expect(el(page, 'last-value')).toHaveText('50');
   });
@@ -204,20 +187,11 @@ test.describe('Slider (coincident thumbs)', () => {
     // Press just above the coincident value (~82%): the direction-aware
     // tie-break grabs the UPPER thumb (index 1) so it can lift off toward
     // max, then drag rightward to ~95%.
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.82,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.82, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.9,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.9, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.95,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.95, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -236,20 +210,11 @@ test.describe('Slider (coincident thumbs)', () => {
     // Press bare track below the coincident value (~70%, left of the 20px-wide
     // thumbs centred at 80%) so the track's direction-aware tie-break runs and
     // grabs the LOWER thumb (index 0); then drag leftward toward min.
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.7,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.7,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.6,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -270,10 +235,7 @@ test.describe('Slider (coincident thumbs)', () => {
     // move, crossing below 80 would hand control to the lower thumb and the
     // upper value would never end up pinned at the lower neighbour. Instead it
     // must stay the upper thumb, which clamps to its lower neighbour (80).
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.82,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.82, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x - 500, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
@@ -288,7 +250,9 @@ test.describe('Slider (coincident thumbs)', () => {
 });
 
 test.describe('Slider (RTL)', () => {
-  test('RTL flips horizontal mapping: dragging to the visual-right edge → min', async ({ page }) => {
+  test('RTL flips horizontal mapping: dragging to the visual-right edge → min', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'slider', { dir: 'rtl' });
     const trackBox = await el(page, 'track').boundingBox();
     expect(trackBox).not.toBeNull();
@@ -297,10 +261,7 @@ test.describe('Slider (RTL)', () => {
     // RTL the flip inverts the mapping, so the same drag clamps to min (0).
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width + 500,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width + 500, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('0');
@@ -314,10 +275,7 @@ test.describe('Slider (RTL)', () => {
     expect(trackBox).not.toBeNull();
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width + 500,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width + 500, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('100');
@@ -344,10 +302,7 @@ test.describe('Slider (vertical)', () => {
     // Same press, dragging below the bottom → clamps to min (0).
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width / 2,
-      trackBox!.y + trackBox!.height + 500,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height + 500);
     await page.waitForTimeout(20);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('0');
@@ -364,15 +319,9 @@ test.describe('Slider (valueCommit on drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     // Several intermediate moves — should NOT fire commit yet.
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.6,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.7,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await expect(el(page, 'value-commit-count')).toHaveText('0');
     // Release — single commit.
@@ -391,10 +340,7 @@ test.describe('Slider (valueCommit on drag)', () => {
     const thumbBox = await centerThumb.boundingBox();
     expect(thumbBox).not.toBeNull();
 
-    await page.mouse.move(
-      thumbBox!.x + thumbBox!.width / 2,
-      thumbBox!.y + thumbBox!.height / 2,
-    );
+    await page.mouse.move(thumbBox!.x + thumbBox!.width / 2, thumbBox!.y + thumbBox!.height / 2);
     await page.mouse.down();
     await page.mouse.up();
 
@@ -409,10 +355,7 @@ test.describe('Slider (valueCommit on drag)', () => {
 
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.6,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -435,9 +378,7 @@ test.describe('Slider (valueCommit on drag)', () => {
  * the slider's `onKeyDown` would never run.
  */
 test.describe('Slider (keyboard)', () => {
-  test('ArrowRight / ArrowLeft increment / decrement by step (LTR default)', async ({
-    page,
-  }) => {
+  test('ArrowRight / ArrowLeft increment / decrement by step (LTR default)', async ({ page }) => {
     // step defaults to 1, initial value is 50.
     await gotoFixture(page, 'slider');
     await el(page, 'thumb-0').focus();
@@ -561,9 +502,7 @@ test.describe('Slider (step granularity)', () => {
     expect([50, 60]).toContain(v);
   });
 
-  test('larger drag past one step lands on the next multiple, never between', async ({
-    page,
-  }) => {
+  test('larger drag past one step lands on the next multiple, never between', async ({ page }) => {
     await gotoFixture(page, 'slider', { step: '10' });
     const trackBox = await el(page, 'track').boundingBox();
     expect(trackBox).not.toBeNull();
@@ -573,15 +512,9 @@ test.describe('Slider (step granularity)', () => {
     // either 70 or 80 — never 72/73/74/76/etc.
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.6,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
-    await page.mouse.move(
-      trackBox!.x + trackBox!.width * 0.75,
-      trackBox!.y + trackBox!.height / 2,
-    );
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.75, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(20);
     await page.mouse.up();
 
@@ -608,9 +541,7 @@ test.describe('Slider (step granularity)', () => {
 // events via `dispatchEvent`) on the mobile projects, while falling
 // back to the mouse branch on desktop projects as a regression guard.
 test.describe('Slider (@mobile touch drag)', () => {
-  test('@mobile touch drag of the thumb updates aria-valuenow', async ({
-    page,
-  }, testInfo) => {
+  test('@mobile touch drag of the thumb updates aria-valuenow', async ({ page }, testInfo) => {
     await gotoFixture(page, 'slider');
     // Initial value [50]; touch drag 50 px right on a 200 px track maps
     // to roughly +25 value (allowing for the 5 px arming step and

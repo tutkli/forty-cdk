@@ -8,8 +8,7 @@ export const routes: Routes = [
   },
   {
     path: 'accordion',
-    loadComponent: () =>
-      import('./fixtures/accordion.fixture').then((m) => m.AccordionFixture),
+    loadComponent: () => import('./fixtures/accordion.fixture').then((m) => m.AccordionFixture),
   },
   {
     path: 'drawer',
@@ -17,8 +16,7 @@ export const routes: Routes = [
   },
   {
     path: 'disclosure',
-    loadComponent: () =>
-      import('./fixtures/disclosure.fixture').then((m) => m.DisclosureFixture),
+    loadComponent: () => import('./fixtures/disclosure.fixture').then((m) => m.DisclosureFixture),
   },
   {
     path: 'popover',
@@ -26,8 +24,7 @@ export const routes: Routes = [
   },
   {
     path: 'radio-group',
-    loadComponent: () =>
-      import('./fixtures/radio-group.fixture').then((m) => m.RadioGroupFixture),
+    loadComponent: () => import('./fixtures/radio-group.fixture').then((m) => m.RadioGroupFixture),
   },
   {
     path: 'menu',
@@ -104,8 +101,7 @@ export const routes: Routes = [
   },
   {
     path: 'scroll-area',
-    loadComponent: () =>
-      import('./fixtures/scroll-area.fixture').then((m) => m.ScrollAreaFixture),
+    loadComponent: () => import('./fixtures/scroll-area.fixture').then((m) => m.ScrollAreaFixture),
   },
   {
     path: 'tabs',
@@ -125,18 +121,15 @@ export const routes: Routes = [
   },
   {
     path: 'date-field',
-    loadComponent: () =>
-      import('./fixtures/date-field.fixture').then((m) => m.DateFieldFixture),
+    loadComponent: () => import('./fixtures/date-field.fixture').then((m) => m.DateFieldFixture),
   },
   {
     path: 'date-picker',
-    loadComponent: () =>
-      import('./fixtures/date-picker.fixture').then((m) => m.DatePickerFixture),
+    loadComponent: () => import('./fixtures/date-picker.fixture').then((m) => m.DatePickerFixture),
   },
   {
     path: 'time-field',
-    loadComponent: () =>
-      import('./fixtures/time-field.fixture').then((m) => m.TimeFieldFixture),
+    loadComponent: () => import('./fixtures/time-field.fixture').then((m) => m.TimeFieldFixture),
   },
   {
     path: 'date-time-picker',

@@ -1,10 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { form, FormField, min as minRule, required } from '@angular/forms/signals';
 
-import {
-  assertFormControlContract,
-  type FormControlMountResult,
-} from '../../test-utils/contract';
+import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { pressKey } from '../../test-utils/keyboard';
 import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';

@@ -18,9 +18,7 @@ test.describe('Tree', () => {
     await expectFocused(el(page, 'after'));
   });
 
-  test('ArrowDown / ArrowUp / Home / End move across visible nodes (no wrap)', async ({
-    page,
-  }) => {
+  test('ArrowDown / ArrowUp / Home / End move across visible nodes (no wrap)', async ({ page }) => {
     await gotoFixture(page, 'tree');
     await el(page, 'item-documents').focus();
 

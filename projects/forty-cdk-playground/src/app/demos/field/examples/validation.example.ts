@@ -21,7 +21,12 @@ interface Signup {
     >
       <div demo>
         <div forField #field="forField" class="field">
-          <button forCheckbox class="cb-row" [formField]="signupForm.terms" aria-label="Accept the terms of service">
+          <button
+            forCheckbox
+            class="cb-row"
+            [formField]="signupForm.terms"
+            aria-label="Accept the terms of service"
+          >
             <span class="cb">
               <app-icon class="cb-icon" name="check" [strokeWidth]="2.5" />
             </span>

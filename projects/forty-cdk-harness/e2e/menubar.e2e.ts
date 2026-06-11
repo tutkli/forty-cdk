@@ -110,7 +110,7 @@ test.describe('Menubar', () => {
     await expect(el(page, 'trigger-file')).not.toBeFocused();
   });
 
-  test('ArrowRight inside a menu closes it and opens the next trigger\'s menu', async ({ page }) => {
+  test("ArrowRight inside a menu closes it and opens the next trigger's menu", async ({ page }) => {
     await gotoFixture(page, 'menubar');
     await el(page, 'trigger-file').focus();
     await page.keyboard.press('ArrowDown');
@@ -142,9 +142,7 @@ test.describe('Menubar', () => {
     await expectFocused(el(page, 'after'));
   });
 
-  test('hovering a sibling trigger switches the open menu (hover-after-open)', async ({
-    page,
-  }) => {
+  test('hovering a sibling trigger switches the open menu (hover-after-open)', async ({ page }) => {
     await gotoFixture(page, 'menubar');
 
     // First open is intentional — open File via the keyboard.

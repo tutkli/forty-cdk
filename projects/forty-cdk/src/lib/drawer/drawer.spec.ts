@@ -357,7 +357,10 @@ describe('ForDrawer (declarative)', () => {
         button: 0,
       });
       Object.defineProperty(downEvent, 'target', { value: surface, configurable: true });
-      Object.defineProperty(downEvent, 'composedPath', { value: () => [surface], configurable: true });
+      Object.defineProperty(downEvent, 'composedPath', {
+        value: () => [surface],
+        configurable: true,
+      });
       surface.dispatchEvent(downEvent);
 
       const moveEvent = new PointerEvent('pointermove', {
@@ -370,7 +373,10 @@ describe('ForDrawer (declarative)', () => {
         button: 0,
       });
       Object.defineProperty(moveEvent, 'target', { value: surface, configurable: true });
-      Object.defineProperty(moveEvent, 'composedPath', { value: () => [surface], configurable: true });
+      Object.defineProperty(moveEvent, 'composedPath', {
+        value: () => [surface],
+        configurable: true,
+      });
       surface.dispatchEvent(moveEvent);
       await flush(r.fixture);
 
@@ -921,7 +927,10 @@ describe('ForDrawer (declarative)', () => {
         readonly fadeFromIndex = signal<number | undefined>(undefined);
       }
 
-      function mountRebindHost(): { fixture: ReturnType<typeof TestBed.createComponent<RebindHost>>; captured: unknown[] } {
+      function mountRebindHost(): {
+        fixture: ReturnType<typeof TestBed.createComponent<RebindHost>>;
+        captured: unknown[];
+      } {
         const captured: unknown[] = [];
         class CapturingHandler implements ErrorHandler {
           handleError(err: unknown): void {
@@ -944,18 +953,18 @@ describe('ForDrawer (declarative)', () => {
         fixture.componentInstance.open.set(true);
         await flush(fixture);
         // The initial monotonic array mounts cleanly.
-        expect(captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message))).toBe(
-          false,
-        );
+        expect(
+          captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message)),
+        ).toBe(false);
 
         // Swap in a non-monotonic array at runtime — the rebind effect must
         // re-run the shape check rather than trusting the previous validation.
         fixture.componentInstance.snaps.set([0.5, 0.25, 1]);
         await flush(fixture);
 
-        expect(captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message))).toBe(
-          true,
-        );
+        expect(
+          captured.some((e) => e instanceof Error && /strictly increasing/.test(e.message)),
+        ).toBe(true);
       });
 
       it('re-validates the fadeFromIndex range when snapPoints shrinks at runtime', async () => {

@@ -1,10 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
-import {
-  assertFormControlContract,
-  type FormControlMountResult,
-} from '../../test-utils/contract';
+import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';
 import { ForField } from '../field/field';

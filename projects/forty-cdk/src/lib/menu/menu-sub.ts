@@ -413,12 +413,15 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       this.#disarmPointerGrace();
       this.scheduleCloseByPointer();
     });
-    this.#graceTimer = setTimeout(() => {
-      this.#graceTimer = null;
-      this.#detachGrace?.();
-      this.#detachGrace = null;
-      this.scheduleCloseByPointer();
-    }, Math.max(0, this.#defaults.subMenuPointerGraceDuration));
+    this.#graceTimer = setTimeout(
+      () => {
+        this.#graceTimer = null;
+        this.#detachGrace?.();
+        this.#detachGrace = null;
+        this.scheduleCloseByPointer();
+      },
+      Math.max(0, this.#defaults.subMenuPointerGraceDuration),
+    );
   }
 
   #disarmPointerGrace(): void {

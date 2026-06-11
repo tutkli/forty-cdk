@@ -13,10 +13,7 @@ export interface ForInputDefaults {}
 
 const FALLBACK: ForInputDefaults = {};
 
-const { token, provideDefaults } = createDefaults<ForInputDefaults>(
-  'FOR_INPUT_DEFAULTS',
-  FALLBACK,
-);
+const { token, provideDefaults } = createDefaults<ForInputDefaults>('FOR_INPUT_DEFAULTS', FALLBACK);
 
 /** Token holding the resolved text-input defaults for the current scope. */
 export const FOR_INPUT_DEFAULTS = token;

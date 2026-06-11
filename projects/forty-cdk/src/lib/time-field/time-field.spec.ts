@@ -346,7 +346,13 @@ describe('ForTimeField', () => {
       imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
       providers: [...provideNativeDateAdapter()],
       template: `
-        <div forTimeField [hourCycle]="12" [granularity]="'second'" [locale]="'en-US'" #field="forTimeField">
+        <div
+          forTimeField
+          [hourCycle]="12"
+          [granularity]="'second'"
+          [locale]="'en-US'"
+          #field="forTimeField"
+        >
           @for (seg of field.segments(); track seg.id) {
             @if (seg.isLiteral) {
               <span forTimeFieldLiteral>{{ seg.text }}</span>
@@ -376,7 +382,13 @@ describe('ForTimeField', () => {
         }),
       ],
       template: `
-        <div forTimeField [hourCycle]="12" [granularity]="'second'" [locale]="'en-US'" #field="forTimeField">
+        <div
+          forTimeField
+          [hourCycle]="12"
+          [granularity]="'second'"
+          [locale]="'en-US'"
+          #field="forTimeField"
+        >
           @for (seg of field.segments(); track seg.id) {
             @if (seg.isLiteral) {
               <span forTimeFieldLiteral>{{ seg.text }}</span>
@@ -391,8 +403,7 @@ describe('ForTimeField', () => {
     })
     class LocalizedHost {}
 
-    const lseg = (el: HTMLElement, type: string) =>
-      el.querySelector(`[data-testid="${type}"]`)!;
+    const lseg = (el: HTMLElement, type: string) => el.querySelector(`[data-testid="${type}"]`)!;
 
     it('labels an unlabelled AM/PM segment "AM/PM", never the raw "dayPeriod" token', () => {
       const r = renderHost(LabelsHost);

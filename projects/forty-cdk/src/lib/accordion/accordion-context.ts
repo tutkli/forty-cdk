@@ -64,9 +64,7 @@ export const FOR_ACCORDION_ITEM_CONTEXT = new InjectionToken<ForAccordionItemCon
 export function injectAccordionContext(piece: string): ForAccordionContext {
   const ctx = inject(FOR_ACCORDION_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`,
-    );
+    throw new Error(`[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`);
   }
   return ctx;
 }

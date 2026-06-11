@@ -15,13 +15,13 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 
 ## Inputs (root)
 
-| API           | Type                                | Description                                                                                                  |
-| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| API           | Type                                | Description                                                                                                                                                      |
+| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ariaLabel`   | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Default `null` (and `''`) emits no attribute. Prefer `aria-labelledby` when a visible label element exists. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`.                                                                   |
-| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                        |
-| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends. Default `true`.                                                        |
-| `disabled`    | `input<boolean>`                    | Disables every item.                                                                                        |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction. Default `'horizontal'`.                                                                                                                        |
+| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                                                                             |
+| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends. Default `true`.                                                                                                             |
+| `disabled`    | `input<boolean>`                    | Disables every item.                                                                                                                                             |
 
 ## Usage
 

@@ -134,7 +134,12 @@ describe('ForNavigationMenu', () => {
 
     it('emits no aria-label when ariaLabel is unset (default null)', () => {
       @Component({
-        imports: [ForNavigationMenu, ForNavigationMenuList, ForNavigationMenuItem, ForNavigationMenuTrigger],
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+        ],
         template: `
           <nav forNavigationMenu>
             <ul forNavigationMenuList>

@@ -286,9 +286,7 @@ describe('ForFieldset', () => {
 
       const fixture = TestBed.createComponent(Host);
       fixture.detectChanges();
-      const group = (fixture.nativeElement as HTMLElement).querySelector(
-        '[data-test-id="group"]',
-      )!;
+      const group = (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="group"]')!;
       expect(group.hasAttribute('data-disabled')).toBe(false);
 
       fixture.componentInstance.disabled.set(true);

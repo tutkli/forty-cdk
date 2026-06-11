@@ -68,11 +68,7 @@ import { queryFlag } from './_query-flag';
         <div forDatePickerContent data-testid="content">
           <div forCalendar [(value)]="value" [dir]="dir">
             <header>
-              <button
-                forCalendarPrevButton
-                [ariaLabel]="'Previous month'"
-                data-testid="prev"
-              >
+              <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">
                 ‹
               </button>
               <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">

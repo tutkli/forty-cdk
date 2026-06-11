@@ -13,10 +13,7 @@ export interface ForMeterDefaults {}
 
 const FALLBACK: ForMeterDefaults = {};
 
-const { token, provideDefaults } = createDefaults<ForMeterDefaults>(
-  'FOR_METER_DEFAULTS',
-  FALLBACK,
-);
+const { token, provideDefaults } = createDefaults<ForMeterDefaults>('FOR_METER_DEFAULTS', FALLBACK);
 
 /** Token holding the resolved meter defaults for the current scope. */
 export const FOR_METER_DEFAULTS = token;

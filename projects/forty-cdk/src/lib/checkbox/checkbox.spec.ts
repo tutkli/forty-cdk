@@ -2,10 +2,7 @@ import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import { renderHost } from '../../test-utils/render';
-import {
-  assertFormControlContract,
-  type FormControlMountResult,
-} from '../../test-utils/contract';
+import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { ForCheckbox } from './checkbox';
 import { ForCheckboxIndicator } from './checkbox-indicator';
 
@@ -54,41 +51,44 @@ describe('ForCheckbox', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(CheckboxHost);
-    const result: FormControlMountResult = {
-      control: checkboxOf(r.el),
-      flush: r.flush,
-      setFlag: (flag, value) => {
-        const inst = r.fixture.componentInstance;
-        switch (flag) {
-          case 'disabled':
-            inst.isDisabled.set(value);
-            return;
-          case 'readonly':
-            inst.isReadonly.set(value);
-            return;
-          case 'required':
-            inst.isRequired.set(value);
-            return;
-          case 'invalid':
-            inst.isInvalid.set(value);
-            return;
-          case 'pending':
-            inst.isPending.set(value);
-            return;
-          case 'touched':
-            inst.isTouched.set(value);
-            return;
-          case 'dirty':
-            inst.isDirty.set(value);
-            return;
-        }
-      },
-      setName: (name) => r.fixture.componentInstance.fieldName.set(name),
-    };
-    return result;
-  }, { customRoleStaysFocusable: true });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(CheckboxHost);
+      const result: FormControlMountResult = {
+        control: checkboxOf(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          const inst = r.fixture.componentInstance;
+          switch (flag) {
+            case 'disabled':
+              inst.isDisabled.set(value);
+              return;
+            case 'readonly':
+              inst.isReadonly.set(value);
+              return;
+            case 'required':
+              inst.isRequired.set(value);
+              return;
+            case 'invalid':
+              inst.isInvalid.set(value);
+              return;
+            case 'pending':
+              inst.isPending.set(value);
+              return;
+            case 'touched':
+              inst.isTouched.set(value);
+              return;
+            case 'dirty':
+              inst.isDirty.set(value);
+              return;
+          }
+        },
+        setName: (name) => r.fixture.componentInstance.fieldName.set(name),
+      };
+      return result;
+    },
+    { customRoleStaysFocusable: true },
+  );
 
   describe('click', () => {
     it('toggles aria-checked between true/false', () => {
@@ -294,9 +294,7 @@ describe('ForCheckbox', () => {
   describe('Signal Forms integration via [formField]', () => {
     @Component({
       imports: [ForCheckbox, FormField],
-      template: `
-        <button forCheckbox [formField]="checkout.acceptTerms"></button>
-      `,
+      template: ` <button forCheckbox [formField]="checkout.acceptTerms"></button> `,
     })
     class SignalFormsHost {
       readonly model = signal({ acceptTerms: false });

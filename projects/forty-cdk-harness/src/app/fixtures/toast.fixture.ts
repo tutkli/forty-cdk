@@ -10,11 +10,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {
-  ForToastManager,
-  ForToastViewport,
-  type ForToastSwipeDirection,
-} from 'forty-cdk';
+import { ForToastManager, ForToastViewport, type ForToastSwipeDirection } from 'forty-cdk';
 
 /**
  * Fixture for the swipe-dismiss / auto-dismiss / stacking behavior on
@@ -148,9 +144,7 @@ export class ToastFixture {
   readonly #route = inject(ActivatedRoute);
   protected readonly manager = inject(ForToastManager);
 
-  protected readonly side: ToastSide = parseSide(
-    this.#route.snapshot.queryParamMap.get('side'),
-  );
+  protected readonly side: ToastSide = parseSide(this.#route.snapshot.queryParamMap.get('side'));
 
   protected readonly duration: number = parseDuration(
     this.#route.snapshot.queryParamMap.get('duration'),

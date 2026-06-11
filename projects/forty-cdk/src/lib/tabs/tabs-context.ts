@@ -1,6 +1,9 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { ListNavigationAction, WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type {
+  ListNavigationAction,
+  WritingDirection,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 
 export type TabsActivationMode = 'automatic' | 'manual';
@@ -63,9 +66,7 @@ export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CON
 export function injectTabsContext(piece: string): ForTabsContext {
   const ctx = inject(FOR_TABS_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`,
-    );
+    throw new Error(`[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`);
   }
   return ctx;
 }

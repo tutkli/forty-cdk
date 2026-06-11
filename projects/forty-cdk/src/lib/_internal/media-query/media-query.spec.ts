@@ -118,10 +118,7 @@ describe('injectMediaQuery', () => {
 
   it('returns signal(false) on the server platform', () => {
     TestBed.configureTestingModule({
-      providers: [
-        provideZonelessChangeDetection(),
-        { provide: PLATFORM_ID, useValue: 'server' },
-      ],
+      providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
     });
     const fixture = TestBed.createComponent(Host);
     expect(fixture.componentInstance.value()).toBe(false);

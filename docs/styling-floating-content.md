@@ -13,7 +13,7 @@ The positioner (floating-ui) writes an inline `transform: translate(…)` direct
 
 ```html
 @if (open()) {
-  <div forPopoverContent class="my-popover" animate.enter="pop-in">…</div>
+<div forPopoverContent class="my-popover" animate.enter="pop-in">…</div>
 }
 ```
 
@@ -71,18 +71,18 @@ Typical usage: `-4px` to `-6px` so the arrow visually straddles the content bord
 
 All floating content directives set these properties on the **content host element** while `open` is `true`. They are cleared on close.
 
-| Custom property                  | Direction | Meaning                                                                                             |
-| -------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | out       | Width (px) of the trigger / anchor element.                                                         |
-| `--for-anchor-height`            | out       | Height (px) of the trigger / anchor element.                                                        |
-| `--for-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-available-width)`.                 |
-| `--for-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-available-height)`.                 |
-| `--for-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here.   |
+| Custom property                  | Direction | Meaning                                                                                           |
+| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | out       | Width (px) of the trigger / anchor element.                                                       |
+| `--for-anchor-height`            | out       | Height (px) of the trigger / anchor element.                                                      |
+| `--for-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-available-width)`.               |
+| `--for-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-available-height)`.               |
+| `--for-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here. |
 
 Arrow elements additionally consume:
 
-| Custom property      | Direction | Meaning                                                                                                   |
-| -------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| Custom property      | Direction | Meaning                                                                                                                   |
+| -------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `--for-arrow-offset` | in        | Consumer-set. How far the arrow protrudes past the content edge. Negative values push out, `0px` is flush. Default `0px`. |
 
 ---
@@ -113,7 +113,7 @@ Arrow elements additionally consume:
 
 ```html
 @if (open()) {
-  <div forPopoverContent class="my-floating-content" animate.enter="for-pop-in">…</div>
+<div forPopoverContent class="my-floating-content" animate.enter="for-pop-in">…</div>
 }
 ```
 
@@ -134,18 +134,26 @@ The arrow is a rotated square (CSS "diamond" trick). `data-side` on the arrow el
 }
 
 /* Rotate to point at the trigger based on the resolved side. */
-.my-arrow[data-side='bottom'] { transform: rotate(45deg); }
-.my-arrow[data-side='top']    { transform: rotate(225deg); }
-.my-arrow[data-side='left']   { transform: rotate(135deg); }
-.my-arrow[data-side='right']  { transform: rotate(-45deg); }
+.my-arrow[data-side='bottom'] {
+  transform: rotate(45deg);
+}
+.my-arrow[data-side='top'] {
+  transform: rotate(225deg);
+}
+.my-arrow[data-side='left'] {
+  transform: rotate(135deg);
+}
+.my-arrow[data-side='right'] {
+  transform: rotate(-45deg);
+}
 ```
 
 ```html
 @if (open()) {
-  <div forPopoverContent class="my-popover">
-    …
-    <span forPopoverArrow class="my-arrow"></span>
-  </div>
+<div forPopoverContent class="my-popover">
+  …
+  <span forPopoverArrow class="my-arrow"></span>
+</div>
 }
 ```
 

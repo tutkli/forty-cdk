@@ -69,7 +69,9 @@ import {
         <div forDatePickerContent data-testid="content">
           <div forCalendar [value]="picker.value()">
             <header>
-              <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
+              <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">
+                ‹
+              </button>
               <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
                 {{ heading.label() }}
               </h2>
@@ -98,14 +100,23 @@ import {
             </table>
           </div>
 
-          <div forTimeField [value]="picker.value()" [hourCycle]="24" [locale]="'en-US'" #field="forTimeField">
+          <div
+            forTimeField
+            [value]="picker.value()"
+            [hourCycle]="24"
+            [locale]="'en-US'"
+            #field="forTimeField"
+          >
             @for (seg of field.segments(); track seg.id) {
               @if (seg.isLiteral) {
                 <span forTimeFieldLiteral>{{ seg.text }}</span>
               } @else {
-                <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="'time-' + seg.type">{{
-                  seg.text
-                }}</span>
+                <span
+                  forTimeFieldSegment
+                  [segment]="seg.type!"
+                  [attr.data-testid]="'time-' + seg.type"
+                  >{{ seg.text }}</span
+                >
               }
             }
           </div>
