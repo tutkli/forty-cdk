@@ -18,11 +18,22 @@ import { el, gotoFixture } from './_helpers';
  * the window with no manual wait.
  */
 test.describe('Menu (base)', () => {
-  test('opening the menu highlights the first enabled item', async ({ page }) => {
+  test('pointer open focuses the first enabled item without highlighting it', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'menu-base', { disabled: '2,5' });
     await el(page, 'trigger').click();
     await expect(el(page, 'menu')).toBeVisible();
     // banana(2) / cucumber(5) are disabled; apple(0) is the first enabled.
+    await expect(el(page, 'item-apple')).toBeFocused();
+    await expect(el(page, 'item-apple')).not.toHaveAttribute('data-highlighted');
+  });
+
+  test('keyboard open highlights the first enabled item', async ({ page }) => {
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'menu')).toBeVisible();
     await expect(el(page, 'item-apple')).toBeFocused();
     await expect(el(page, 'item-apple')).toHaveAttribute('data-highlighted', '');
   });
