@@ -102,15 +102,20 @@ export class MtxListbox {}
 
 ### Exposing only part of the surface
 
-The tuples are plain readonly string arrays, so a wrapper that wants to own some inputs can
-filter before spreading:
+Because `hostDirectives` is resolved statically, the compiler cannot evaluate computed
+expressions over the tuples — `.filter(...)`, `.map(...)`, and friends fail with `NG1010:
+Value could not be determined statically`. A wrapper that wants to withhold some inputs
+lists its subset literally instead of spreading:
 
 ```ts
-inputs: [...FOR_INPUT_HOST_DIRECTIVE_INPUTS.filter((name) => name !== 'name')],
+inputs: ['value', 'disabled', 'touched'],
 ```
 
-The filtered name is then no longer bindable from the outside; the wrapper binds the
-underlying directive itself (e.g. via `host` or by injecting it).
+The withheld names are then no longer bindable from the outside; the wrapper binds the
+underlying directive itself (e.g. via `host` or by injecting it). Note that a hand-written
+subset opts out of the anti-drift guarantee — future API additions won't flow through
+automatically — so prefer spreading the full tuple unless hiding a member is a hard
+requirement.
 
 ## Pattern 2 — subclassing
 
