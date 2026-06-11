@@ -403,3 +403,7 @@ Focus stays on the `<input>` the whole time the listbox is open, so options neve
 - `[forComboboxGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
 - `[forComboboxEmpty]` carries `role="status"` + `aria-live="polite"` so the empty-state message is announced when filtering removes all matches.
 - The input element is exempt from the listbox's outside-pointer dismissal layer, so a click on the input while the listbox is open routes through `(click)` (toggle / focus open) instead of double-firing as an outside dismissal.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

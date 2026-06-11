@@ -13,3 +13,7 @@ export {
   provideForSliderDefaults,
   type ForSliderDefaults,
 } from './slider-defaults';
+export {
+  FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
+  FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS,
+} from './slider-host-directive';

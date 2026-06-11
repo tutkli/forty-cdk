@@ -235,3 +235,7 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
 - **`data-highlighted=""`** is reflected on the option that is the current roving-tabindex active item — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

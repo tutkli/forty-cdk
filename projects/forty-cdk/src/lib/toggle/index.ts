@@ -11,3 +11,11 @@ export {
   provideForToggleDefaults,
   type ForToggleDefaults,
 } from './toggle-defaults';
+export {
+  FOR_TOGGLE_HOST_DIRECTIVE_INPUTS,
+  FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS,
+} from './toggle-host-directive';
+export {
+  FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS,
+  FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS,
+} from './toggle-group-host-directive';

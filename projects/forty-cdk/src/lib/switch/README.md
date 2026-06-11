@@ -110,3 +110,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
 - **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SWITCH_HOST_DIRECTIVE_INPUTS` / `FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

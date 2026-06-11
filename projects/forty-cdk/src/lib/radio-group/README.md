@@ -123,3 +123,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
 - **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
 - **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

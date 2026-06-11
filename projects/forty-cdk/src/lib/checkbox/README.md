@@ -140,3 +140,7 @@ forty-cdk ships no styles. Add your own class to each piece — the for* selecto
 - **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
 - **Keyboard**: APG only mandates Space. The directive sits on a `<button>` so Enter also activates — this is a documented superset, not a violation.
 - **Activation of an indeterminate checkbox** clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS` / `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

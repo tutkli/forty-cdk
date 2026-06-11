@@ -13,3 +13,7 @@ export {
   provideForNumberInputDefaults,
   type ForNumberInputDefaults,
 } from './number-input-defaults';
+export {
+  FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS,
+  FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS,
+} from './number-input-host-directive';

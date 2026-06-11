@@ -25,3 +25,7 @@ export {
   provideForComboboxDefaults,
   type ForComboboxDefaults,
 } from './combobox-defaults';
+export {
+  FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
+} from './combobox-host-directive';

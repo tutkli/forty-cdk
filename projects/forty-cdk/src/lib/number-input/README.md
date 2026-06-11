@@ -164,3 +164,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
 - **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

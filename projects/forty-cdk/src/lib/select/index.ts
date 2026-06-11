@@ -19,3 +19,7 @@ export {
   provideForSelectDefaults,
   type ForSelectDefaults,
 } from './select-defaults';
+export {
+  FOR_SELECT_HOST_DIRECTIVE_INPUTS,
+  FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+} from './select-host-directive';

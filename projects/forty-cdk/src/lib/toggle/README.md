@@ -218,3 +218,7 @@ export class DemoFormats {
 When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission.
 
 Choose between the two form-control shapes by the value you need: `ForToggle` (`FormCheckboxControl`, a single `boolean`) for one independent on/off button, `ForToggleGroup` (`FormValueControl<readonly string[]>`) for a set of related toggles whose selection is a list.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS` and `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

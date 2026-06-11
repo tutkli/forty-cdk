@@ -151,3 +151,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
 - **Literals are `aria-hidden`** and never focusable — assistive tech reads only the spinbutton segments.
 - **Boolean `data-*`** on each segment — `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly` — present when true, absent when false.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

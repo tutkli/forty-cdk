@@ -9,3 +9,7 @@ export {
   provideForListboxDefaults,
   type ForListboxDefaults,
 } from './listbox-defaults';
+export {
+  FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
+} from './listbox-host-directive';

@@ -8,3 +8,7 @@ export {
   provideForDatePickerDefaults,
   type ForDatePickerDefaults,
 } from './date-picker-defaults';
+export {
+  FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
+  FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
+} from './date-picker-host-directive';

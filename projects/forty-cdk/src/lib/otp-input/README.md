@@ -191,3 +191,7 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
 - **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** The directive runs fine on a plain `[(value)]` binding; the only `@angular/forms/signals` reference is a type import, erased at build.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).

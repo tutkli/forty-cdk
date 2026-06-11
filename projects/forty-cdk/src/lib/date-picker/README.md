@@ -243,3 +243,7 @@ Inside the surface, the projected `ForCalendar` owns the full grid keyboard map 
 - **Form-control ARIA** (`aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus.
 - **Focus management**: focus enters the surface on open (the calendar's roving cell in non-modal mode) and returns to the trigger on close, both vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)`.
 - **Dismissal**: Escape (`(escapeKeyDown)`) and outside-pointer (`(pointerDownOutside)` / `(interactOutside)`) close the surface, each vetoable.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
