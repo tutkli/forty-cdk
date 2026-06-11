@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import {
   flush,
@@ -654,6 +655,180 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('positioning defaults from provideForTooltipDefaults', () => {
+    it('positions on the scope side when the instance sets no side', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ side: 'bottom' })],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.dataset['side']).toBe('bottom');
+      expect(content.dataset['placement']).toBe('bottom');
+    });
+
+    it('lets an instance-level side win over the scope default', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ side: 'bottom' })],
+        template: `
+          <div forTooltip [(open)]="open" side="left">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.dataset['side']).toBe('left');
+    });
+
+    it('aligns on the scope align when the instance sets no align', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ align: 'start' })],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.dataset['align']).toBe('start');
+      expect(content.dataset['placement']).toBe('top-start');
+    });
+
+    it('lets an instance-level align win over the scope default', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ align: 'start' })],
+        template: `
+          <div forTooltip [(open)]="open" align="end">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.dataset['align']).toBe('end');
+    });
+
+    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <div forTooltip>
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.sideOffset()).toBe(12);
+      expect(tooltip.collisionPadding()).toBe(16);
+    });
+
+    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <div forTooltip [sideOffset]="20" [collisionPadding]="24">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.sideOffset()).toBe(20);
+      expect(tooltip.collisionPadding()).toBe(24);
+    });
+
+    it('keeps the library fallbacks (top / center / 8 / 8) when nothing is configured', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.side()).toBe('top');
+      expect(tooltip.align()).toBe('center');
+      expect(tooltip.sideOffset()).toBe(8);
+      expect(tooltip.collisionPadding()).toBe(8);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.dataset['side']).toBe('top');
+      expect(content.dataset['align']).toBe('center');
+      expect(content.dataset['placement']).toBe('top');
     });
   });
 

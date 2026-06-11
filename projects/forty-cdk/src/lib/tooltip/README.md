@@ -19,20 +19,53 @@ Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI
 
 ### `ForTooltip`
 
-| API           | Type                   | Description                                                                    |
-| ------------- | ---------------------- | ------------------------------------------------------------------------------ |
-| `open`        | `model<boolean>`       | Two-way bindable visibility.                                                   |
-| `side`        | `input<FloatingSide>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Default `'top'`.    |
-| `align`       | `input<FloatingAlign>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Default `'center'`. |
-| `sideOffset`  | `input<number>`        | Gap (px) between trigger and content along the main axis. Default `8`.         |
-| `alignOffset` | `input<number>`        | Gap (px) along the cross axis. Default `0`.                                    |
-| `openDelay`   | `input<number>`        | ms before showing after hover/focus enters. Default `700`.                     |
-| `closeDelay`  | `input<number>`        | ms before hiding after hover/focus leaves. Escape ignores this. Default `300`. |
-| `disabled`    | `input<boolean>`       | When `true`, all interaction is ignored.                                       |
+| API                | Type                                | Description                                                                                                            |
+| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>`                    | Two-way bindable visibility.                                                                                           |
+| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).        |
+| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).     |
+| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).             |
+| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis. Default `0`.                                                                            |
+| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`). |
+| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).                         |
+| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).     |
+| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.                                                                               |
 
 ### `ForTooltipTrigger`, `ForTooltipContent`, `ForTooltipArrow`
 
 No inputs of their own — they coordinate via the `ForTooltip` context.
+
+## Scoped defaults
+
+`provideForTooltipDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer tooltips inside the scope share a skip-delay window; tooltips in other scopes don't.
+
+| Key                 | Library fallback | Meaning                                                                      |
+| ------------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `openDelay`         | `700`            | ms before showing after hover/focus enters.                                  |
+| `closeDelay`        | `300`            | ms before hiding after hover/focus leaves.                                   |
+| `skipDelayDuration` | `300`            | Window (ms) after a peer closes during which the next open is instant.       |
+| `side`              | `'top'`          | Anchor side for tooltips that don't set `side` themselves.                   |
+| `align`             | `'center'`       | Alignment along `side` for tooltips that don't set `align` themselves.       |
+| `sideOffset`        | `8`              | Main-axis gap (px) for tooltips that don't set `sideOffset` themselves.      |
+| `collisionPadding`  | `8`              | Collision-middleware padding (px) for tooltips that don't set it themselves. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { provideForTooltipDefaults } from 'forty-cdk';
+
+// Material-style bottom tooltips app-wide
+bootstrapApplication(App, {
+  providers: [provideForTooltipDefaults({ side: 'bottom', sideOffset: 4 })],
+});
+
+// component-level override layers on top, per key
+@Component({
+  providers: [provideForTooltipDefaults({ openDelay: 200 })],
+  ...
+})
+class Toolbar {}
+```
 
 ## Stand-alone usage
 

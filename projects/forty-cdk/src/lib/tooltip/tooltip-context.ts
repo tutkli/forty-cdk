@@ -13,8 +13,8 @@ export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
 export interface ForTooltipContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  readonly side: Signal<FloatingSide | undefined>;
-  readonly align: Signal<FloatingAlign | undefined>;
+  readonly side: Signal<FloatingSide>;
+  readonly align: Signal<FloatingAlign>;
   readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
@@ -40,16 +40,12 @@ export interface ForTooltipContext {
   cancelPending(): void;
 }
 
-export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>(
-  'FOR_TOOLTIP_CONTEXT',
-);
+export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TOOLTIP_CONTEXT');
 
 export function injectTooltipContext(piece: string): ForTooltipContext {
   const ctx = inject(FOR_TOOLTIP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/tooltip] ${piece} must be used inside a [forTooltip] element.`,
-    );
+    throw new Error(`[forty-cdk/tooltip] ${piece} must be used inside a [forTooltip] element.`);
   }
   return ctx;
 }

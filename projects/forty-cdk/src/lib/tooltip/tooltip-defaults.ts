@@ -1,6 +1,7 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
 import { createDefaults } from '../_internal/defaults/defaults';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { SkipDelayCoordinator } from '../_internal/hover-intent/skip-delay-coordinator';
 
 /**
@@ -20,17 +21,48 @@ export interface ForTooltipDefaults {
    * sluggish on cursor movement between targets.
    */
   skipDelayDuration: number;
+  /**
+   * Side the tooltip is anchored to for tooltips that don't override
+   * `side` locally. Library fallback `'top'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for tooltips that don't override
+   * `align` locally. Library fallback `'center'`.
+   */
+  align: FloatingAlign;
+  /**
+   * Gap (px) between trigger and content along the main axis for tooltips
+   * that don't override `sideOffset` locally. Mirrors Radix's `sideOffset`.
+   * Library fallback `8`.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares for tooltips that don't override `collisionPadding`
+   * locally. Library fallback `8`.
+   */
+  collisionPadding: number;
 }
 
-const FALLBACK: ForTooltipDefaults = {
+/**
+ * Library fallback for tooltip defaults, read at the root injector when no
+ * consumer has called `provideForTooltipDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TOOLTIP_FALLBACK_DEFAULTS: ForTooltipDefaults = {
   openDelay: 700,
   closeDelay: 300,
   skipDelayDuration: 300,
+  side: 'top',
+  align: 'center',
+  sideOffset: 8,
+  collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(
   'FOR_TOOLTIP_DEFAULTS',
-  FALLBACK,
+  FOR_TOOLTIP_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved tooltip defaults for the current scope. */
