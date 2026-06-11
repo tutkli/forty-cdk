@@ -168,7 +168,16 @@ export class ForTooltip implements ForTooltipContext {
   /** When true, all hover / focus interaction is ignored and any open tooltip is forced closed. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly triggerId = signal(this.#idGen.next('for-tooltip-trigger'));
+  readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
+
+  /**
+   * Id of the trigger element. A consumer-set `id` on the trigger host is
+   * adopted at registration and preserved; the generated
+   * `for-tooltip-trigger-*` id is only assigned when the host has none.
+   */
+  readonly triggerId = signal(this.#generatedTriggerId);
+
+  /** Generated id of the content element, wired to the trigger's `aria-describedby` while open. */
   readonly contentId = signal(this.#idGen.next('for-tooltip-content'));
 
   readonly #triggerEl = signal<HTMLElement | null>(null);
@@ -208,7 +217,13 @@ export class ForTooltip implements ForTooltipContext {
     inject(DestroyRef).onDestroy(() => this.cancelPending());
   }
 
+  /**
+   * Registers the trigger host element. Adopts a pre-existing consumer-set
+   * `id` as the trigger id so external references (anchors, `aria-labelledby`,
+   * label `for`) keep resolving; falls back to the generated id otherwise.
+   */
   registerTrigger(el: HTMLElement): void {
+    this.triggerId.set(el.getAttribute('id') || this.#generatedTriggerId);
     this.#triggerEl.set(el);
   }
 

@@ -111,6 +111,48 @@ describe('ForTooltip', () => {
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
     });
 
+    it('assigns the generated trigger id when the host has none', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      expect(trigger.id).toMatch(/^for-tooltip-trigger-/);
+    });
+
+    it('preserves a consumer-set id on the trigger', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="isOpen">
+            <button type="button" id="save-action" forTooltipTrigger>Save</button>
+            <div forTooltipContent>Save changes</div>
+          </div>
+        `,
+      })
+      class ConsumerIdHost {
+        readonly isOpen = signal(false);
+      }
+
+      const r = renderHost(ConsumerIdHost);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      expect(trigger.id).toBe('save-action');
+
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(trigger.id).toBe('save-action');
+      expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
+
+      r.instance.isOpen.set(false);
+      await flush(r.fixture);
+
+      expect(trigger.id).toBe('save-action');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+
     it('produces unique ids across instances', async () => {
       const r = renderHost(TwoTooltipHost);
       await flush(r.fixture);
