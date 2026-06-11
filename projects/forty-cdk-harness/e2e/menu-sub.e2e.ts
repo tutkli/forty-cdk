@@ -120,6 +120,7 @@ test.describe('Submenu pointer hover — DropdownMenu', () => {
     await page.keyboard.press('ArrowRight');
     await expect(el(page, 'dd-sub-menu')).toBeVisible();
     await expectFocused(el(page, 'dd-sub-item-1'));
+    await expect(el(page, 'dd-sub-item-1')).toHaveAttribute('data-highlighted', '');
   });
 });
 

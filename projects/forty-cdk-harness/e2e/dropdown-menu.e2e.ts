@@ -2,17 +2,38 @@ import { expect, test } from '@playwright/test';
 import { clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('DropdownMenu', () => {
-  test('opens on trigger click and highlights the first enabled item', async ({ page }) => {
+  test('opens on trigger click and focuses the first enabled item without highlighting it', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'menu');
     await el(page, 'trigger').click();
     await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+    await expect(el(page, 'item-1')).not.toHaveAttribute('data-highlighted');
+  });
+
+  test('opens on Enter and highlights the first enabled item', async ({ page }) => {
+    await gotoFixture(page, 'menu');
+    await el(page, 'trigger').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+    await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
+  });
+
+  test('opens on ArrowDown and highlights the first enabled item', async ({ page }) => {
+    await gotoFixture(page, 'menu');
+    await el(page, 'trigger').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
     await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
   });
 
   test('ArrowDown skips a `disabled` item', async ({ page }) => {
     await gotoFixture(page, 'menu');
     await el(page, 'trigger').click();
-    await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'item-1')).toBeFocused();
 
     // item-2 is disabled — ArrowDown should land on item-3 directly.
     await page.keyboard.press('ArrowDown');

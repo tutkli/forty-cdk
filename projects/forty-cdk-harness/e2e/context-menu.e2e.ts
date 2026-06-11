@@ -25,17 +25,31 @@ async function anchorSize(
 }
 
 test.describe('ContextMenu', () => {
-  test('opens on right-click and highlights the first enabled item', async ({ page }) => {
+  test('opens on right-click and focuses the first enabled item without highlighting it', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'context-menu');
     await el(page, 'region').click({ button: 'right' });
     await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+    await expect(el(page, 'item-1')).not.toHaveAttribute('data-highlighted');
+  });
+
+  test('Shift+F10 opens at the focused trigger and highlights the first enabled item', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'context-menu');
+    await el(page, 'region').focus();
+    await page.keyboard.press('Shift+F10');
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
     await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
   });
 
   test('ArrowDown skips a `disabled` item', async ({ page }) => {
     await gotoFixture(page, 'context-menu');
     await el(page, 'region').click({ button: 'right' });
-    await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'item-1')).toBeFocused();
 
     await page.keyboard.press('ArrowDown');
     await expect(el(page, 'item-3')).toHaveAttribute('data-highlighted', '');
@@ -212,7 +226,8 @@ test.describe('ContextMenu', () => {
       await region.dispatchEvent('contextmenu', { clientX: cx, clientY: cy });
 
       await expect(el(page, 'menu')).toBeVisible();
-      await expect(el(page, 'item-1')).toHaveAttribute('data-highlighted', '');
+      await expect(el(page, 'item-1')).toBeFocused();
+      await expect(el(page, 'item-1')).not.toHaveAttribute('data-highlighted');
 
       // The directive's `setVirtualAnchor(clientX, clientY)` records a
       // 0×0 virtual rect at the touch coords, so the floating-ui

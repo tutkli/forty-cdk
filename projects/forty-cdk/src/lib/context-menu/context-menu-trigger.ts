@@ -23,6 +23,15 @@ import {
  * the menu next to whatever they're working on. The native context menu is
  * suppressed via `event.preventDefault()`.
  *
+ * Modality is detected by whether a `pointerdown` preceded the `contextmenu`
+ * event: a genuine right-click / long-press always has one, while the
+ * `contextmenu` some browsers synthesize for `Shift+F10` / the `ContextMenu`
+ * key does not. A pointer activation anchors at the cursor and skips
+ * `data-highlighted` on the initially focused item; a keyboard activation
+ * anchors at the focused element's rect and highlights it. The synthesized
+ * `contextmenu` that trails an already-handled keydown is swallowed so it
+ * cannot demote the rect anchor to a 0x0 point at the keyboard coordinates.
+ *
  * Apply on any element. A default `tabindex="-1"` is host-bound so the
  * trigger can receive programmatic focus and return-focus works out of the
  * box on close — no consumer setup required. The default is overridable:
@@ -53,6 +62,7 @@ import {
     tabindex: '-1',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '(pointerdown)': 'onPointerDown()',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },
@@ -60,6 +70,7 @@ import {
 export class ForContextMenuTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+  #pointerActivation = false;
 
   /**
    * Optional explicit reference to the `[forContextMenu]` root, named after
@@ -93,17 +104,31 @@ export class ForContextMenuTrigger {
     });
   }
 
+  protected onPointerDown(): void {
+    this.#pointerActivation = true;
+  }
+
   protected onContextMenu(event: MouseEvent): void {
+    const pointerActivation = this.#pointerActivation;
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       // Let the native browser menu show.
       return;
     }
     event.preventDefault();
-    this.ctx().setVirtualAnchor(event.clientX, event.clientY);
-    this.ctx().openMenu('first', 'pointer');
+    if (pointerActivation) {
+      this.ctx().setVirtualAnchor(event.clientX, event.clientY);
+      this.ctx().openMenu('first', 'pointer');
+      return;
+    }
+    if (this.ctx().open()) {
+      return;
+    }
+    this.#openFromFocusedRect();
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;
     }
@@ -114,6 +139,10 @@ export class ForContextMenuTrigger {
     }
     // Stop the browser from opening its own context menu on top of ours.
     event.preventDefault();
+    this.#openFromFocusedRect();
+  }
+
+  #openFromFocusedRect(): void {
     const trigger = this.#host.nativeElement;
     const focused = this.#document.activeElement as HTMLElement | null;
     // Anchor at the focused element when it lives inside the trigger; fall

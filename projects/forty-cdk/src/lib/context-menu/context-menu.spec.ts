@@ -36,6 +36,9 @@ class ContextMenuHost {
 }
 
 function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
+  el.dispatchEvent(
+    new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: x, clientY: y }),
+  );
   const event = new MouseEvent('contextmenu', {
     bubbles: true,
     cancelable: true,
@@ -98,6 +101,41 @@ describe('ForContextMenu', () => {
       pressKey(region, 'ContextMenu');
       await flush(r.fixture);
 
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('swallows the browser-synthesized contextmenu that trails a keyboard open', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      const synthesized = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 0,
+      });
+      region.dispatchEvent(synthesized);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(synthesized.defaultPrevented).toBe(true);
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('treats a contextmenu without a preceding pointerdown as a keyboard activation', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      region.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
       expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
     });
 

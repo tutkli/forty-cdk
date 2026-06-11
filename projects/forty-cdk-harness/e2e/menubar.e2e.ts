@@ -32,7 +32,7 @@ test.describe('Menubar', () => {
     await expectFocused(el(page, 'trigger-view'));
   });
 
-  test('ArrowDown on a trigger opens the menu and focuses the first enabled item', async ({
+  test('ArrowDown on a trigger opens the menu and highlights the first enabled item', async ({
     page,
   }) => {
     await gotoFixture(page, 'menubar');
@@ -42,7 +42,19 @@ test.describe('Menubar', () => {
     await expect(el(page, 'menu-file')).toBeVisible();
     // `item-file-2` is disabled by default; the first enabled item is `item-file-1`.
     await expectFocused(el(page, 'item-file-1'));
+    await expect(el(page, 'item-file-1')).toHaveAttribute('data-highlighted', '');
     await expect(el(page, 'trigger-file')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('clicking a trigger opens the menu and focuses the first enabled item without highlighting it', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+    await el(page, 'trigger-file').click();
+
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+    await expect(el(page, 'item-file-1')).not.toHaveAttribute('data-highlighted');
   });
 
   test('ArrowDown inside the menu skips disabled items', async ({ page }) => {
