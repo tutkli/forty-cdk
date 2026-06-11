@@ -19,19 +19,19 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ## Inputs / models (`ForOtpInput`)
 
-| API                                                                    | Type                                                 | Description                                                                             |
-| ---------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `value`                                                                | `model<string>`                                      | Two-way bindable code. Rendered length is clamped to `length`.                          |
-| `length`                                                               | `input.required<number>`                             | Number of characters / slots.                                                           |
-| `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Defaults to `'numeric'`. Ignored when `allowedPattern` is set. |
-| `allowedPattern`                                                       | `input<RegExp \| null>`                              | Custom allowed-character RegExp (tested per character); overrides `type`.               |
-| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.                         |
-| `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill. Defaults to `true`.             |
-| `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).                  |
+| API                                                                    | Type                                                 | Description                                                                                                                         |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                                | `model<string>`                                      | Two-way bindable code. Rendered length is clamped to `length`.                                                                      |
+| `length`                                                               | `input.required<number>`                             | Number of characters / slots.                                                                                                       |
+| `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Defaults to `'numeric'`. Ignored when `allowedPattern` is set.                                             |
+| `allowedPattern`                                                       | `input<RegExp \| null>`                              | Custom allowed-character RegExp (tested per character); overrides `type`.                                                           |
+| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.                                                                     |
+| `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill. Defaults to `true`.                                                         |
+| `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).                                                              |
 | `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).                            |
-| `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.                        |
-| `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.                                                                  |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).                                                                        |
+| `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.                                                                    |
+| `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.                                                                                                              |
 
 | Output          | Type                        | Fires                                                                        |
 | --------------- | --------------------------- | ---------------------------------------------------------------------------- |
@@ -165,12 +165,12 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Data attributes
 
-| Piece               | Attribute          | Values           |
-| ------------------- | ------------------ | ---------------- |
-| `[forOtpInput]`     | `data-complete`    | present / absent |
-| `[forOtpInput]`     | `data-disabled`    | present / absent |
-| `[forOtpInputSlot]` | `data-active`      | present / absent |
-| `[forOtpInputSlot]` | `data-empty`       | present / absent |
+| Piece               | Attribute       | Values           |
+| ------------------- | --------------- | ---------------- |
+| `[forOtpInput]`     | `data-complete` | present / absent |
+| `[forOtpInput]`     | `data-disabled` | present / absent |
+| `[forOtpInputSlot]` | `data-active`   | present / absent |
+| `[forOtpInputSlot]` | `data-empty`    | present / absent |
 
 The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
 

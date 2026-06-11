@@ -178,7 +178,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   /** First day of the visible month, derived from {@link focusedDate}. */
   readonly visibleMonth = computed(() => {
     const focused = this.focusedDate();
-    return this.adapter.createDate(this.adapter.getYear(focused), this.adapter.getMonth(focused), 1);
+    return this.adapter.createDate(
+      this.adapter.getYear(focused),
+      this.adapter.getMonth(focused),
+      1,
+    );
   });
 
   readonly headingId = signal(this.#idGen.next('for-calendar-heading')).asReadonly();

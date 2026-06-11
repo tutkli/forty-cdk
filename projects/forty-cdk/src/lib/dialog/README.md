@@ -213,7 +213,7 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 | `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                 |
 | `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<R \| undefined>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
 | `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                       |
-| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` — `null` when `open()` got no `data`.                      |
+| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` — `null` when `open()` got no `data`.                     |
 
 ### `ForDialogOpenConfig`
 

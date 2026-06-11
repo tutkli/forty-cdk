@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {
-  ForTabs,
-  ForTabsContent,
-  ForTabsList,
-  ForTabsTrigger,
-} from 'forty-cdk';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk';
 
 interface Tab {
   value: string;
@@ -118,8 +113,6 @@ export class TabsFixture {
   }
 
   protected disableA(): void {
-    this.tabs.update((list) =>
-      list.map((t) => (t.value === 'a' ? { ...t, disabled: true } : t)),
-    );
+    this.tabs.update((list) => list.map((t) => (t.value === 'a' ? { ...t, disabled: true } : t)));
   }
 }

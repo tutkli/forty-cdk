@@ -33,12 +33,7 @@ const FRUITS: readonly FruitItem[] = [
       @if (open()) {
         <div forComboboxContent>
           @for (it of filtered(); track it.id) {
-            <div
-              [attr.data-test-id]="it.id"
-              forComboboxOption
-              [value]="it.id"
-              [label]="it.label"
-            >
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
               {{ it.label }}
             </div>
           }
@@ -64,12 +59,7 @@ function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
 }
 
-function fireInput(
-  input: HTMLInputElement,
-  value: string,
-  caret: number,
-  inputType: string,
-): void {
+function fireInput(input: HTMLInputElement, value: string, caret: number, inputType: string): void {
   input.value = value;
   input.setSelectionRange(caret, caret);
   input.dispatchEvent(new InputEvent('input', { inputType }));

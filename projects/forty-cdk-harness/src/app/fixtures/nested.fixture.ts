@@ -27,9 +27,7 @@ import {
     ForPopoverContent,
   ],
   template: `
-    <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">
-      Open dialog
-    </button>
+    <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">Open dialog</button>
 
     @if (dialogOpen()) {
       <div forDialog data-testid="dialog" ariaLabel="Outer dialog" (close)="dialogOpen.set(false)">

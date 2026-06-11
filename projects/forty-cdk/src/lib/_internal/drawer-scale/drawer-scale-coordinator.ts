@@ -1,13 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import {
-  computed,
-  DOCUMENT,
-  effect,
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-} from '@angular/core';
+import { computed, DOCUMENT, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
 import { type ForDrawerSide } from '../drawer-stack/drawer-side';
 import { ForDrawerStack } from '../drawer-stack/drawer-stack';
@@ -108,11 +100,7 @@ export class ForDrawerScaleCoordinator {
    * `"idle"`.
    */
   readonly active = computed<boolean>(() => {
-    return (
-      this.#wrapperEl() !== null &&
-      this.#stack().length > 0 &&
-      !this.#prefersReducedMotion()
-    );
+    return this.#wrapperEl() !== null && this.#stack().length > 0 && !this.#prefersReducedMotion();
   });
 
   readonly #activeConfig = computed<ForDrawerScaleConfig | null>(() => {

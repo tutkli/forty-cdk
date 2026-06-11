@@ -42,13 +42,7 @@ function pointer(
 }
 
 @Component({
-  imports: [
-    ForToastViewport,
-    ForToastTitle,
-    ForToastDescription,
-    ForToastAction,
-    ForToastClose,
-  ],
+  imports: [ForToastViewport, ForToastTitle, ForToastDescription, ForToastAction, ForToastClose],
   template: `
     <button #opener type="button" data-test-id="opener">Opener</button>
     <for-toast-viewport [maxVisible]="maxVisible()" [hotkey]="hotkey()" />
@@ -991,9 +985,7 @@ describe('ForToastManager (programmatic)', () => {
     });
     await r.flush();
     await Promise.resolve();
-    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
-      'Saving…. Hang tight. Undo (Cmd+Z)',
-    );
+    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saving…. Hang tight. Undo (Cmd+Z)');
 
     ref.update({ data: { label: 'Saved', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' } });
     await r.flush();

@@ -137,9 +137,7 @@ test.describe('Toolbar', () => {
     await el(page, 'btn-1').focus();
     await el(page, 'remove-active').click();
 
-    expect(
-      await page.locator('[data-testid="toolbar"] [tabindex="0"]').count(),
-    ).toBe(1);
+    expect(await page.locator('[data-testid="toolbar"] [tabindex="0"]').count()).toBe(1);
     // Re-entry from the control lands on the next enabled item (toggle).
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
@@ -153,9 +151,7 @@ test.describe('Toolbar', () => {
     await el(page, 'btn-1').focus();
     await el(page, 'disable-active').click();
 
-    expect(
-      await page.locator('[data-testid="toolbar"] [tabindex="0"]').count(),
-    ).toBe(1);
+    expect(await page.locator('[data-testid="toolbar"] [tabindex="0"]').count()).toBe(1);
     await expect(el(page, 'btn-1')).toHaveAttribute('tabindex', '-1');
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');

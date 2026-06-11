@@ -1,7 +1,10 @@
 import { booleanAttribute, computed, Directive, input, output, signal } from '@angular/core';
 
 import { injectModalShell } from '../_internal/modal-shell/modal-shell';
-import { type VetoableEvent, type VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import {
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,

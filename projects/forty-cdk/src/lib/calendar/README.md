@@ -8,10 +8,10 @@ Headless single-date calendar grid following the [WAI-ARIA Grid pattern](https:/
 
 All date math goes through a `DateAdapter<D>`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers:
 
-| Provider                                | Date type `D`                              | Dependency                                                 |
-| --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| Provider                                | Date type `D`                              | Dependency                                                                                                |
+| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
+| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                                                                           |
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
@@ -38,17 +38,17 @@ bootstrapApplication(App, {
 
 ## Inputs / models — `ForCalendar`
 
-| API                 | Type                            | Description                                                                                                                  |
-| ------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`              | Two-way bindable selected date, or `null`. `(valueChange)` fires only on internal selection. Default `null`.                 |
-| `min`               | `input<D \| null>`              | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                          |
-| `max`               | `input<D \| null>`              | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                            |
-| `isDateUnavailable` | `input<(date: D) => boolean>`   | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                           |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date). Default: localized full date, outside-month days suffixed.  |
-| `disabled`          | `input<boolean>`                | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                 |
-| `readonly`          | `input<boolean>`                | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                         |
-| `firstDayOfWeek`    | `input<number \| null>`         | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).      |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>` | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows. |
+| API                 | Type                                   | Description                                                                                                                  |
+| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. `(valueChange)` fires only on internal selection. Default `null`.                 |
+| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                          |
+| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                            |
+| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                           |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date). Default: localized full date, outside-month days suffixed.      |
+| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                 |
+| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                         |
+| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).      |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows. |
 
 ## Usage
 

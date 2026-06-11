@@ -13,10 +13,7 @@ export interface ForFieldDefaults {}
 
 const FALLBACK: ForFieldDefaults = {};
 
-const { token, provideDefaults } = createDefaults<ForFieldDefaults>(
-  'FOR_FIELD_DEFAULTS',
-  FALLBACK,
-);
+const { token, provideDefaults } = createDefaults<ForFieldDefaults>('FOR_FIELD_DEFAULTS', FALLBACK);
 
 /** Token holding the resolved field defaults for the current scope. */
 export const FOR_FIELD_DEFAULTS = token;

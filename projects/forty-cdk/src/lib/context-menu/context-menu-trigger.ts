@@ -9,10 +9,7 @@ import {
   input,
 } from '@angular/core';
 
-import {
-  type ForContextMenuContext,
-  injectContextMenuContext,
-} from './context-menu-context';
+import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
 
 /**
  * Region that opens its parent `[forContextMenu]` on the `contextmenu` event

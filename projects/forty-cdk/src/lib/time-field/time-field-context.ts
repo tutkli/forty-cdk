@@ -1,9 +1,6 @@
 import { inject, InjectionToken } from '@angular/core';
 
-import type {
-  FieldSegment,
-  SegmentHandle,
-} from '../_internal/datetime/segment-editor';
+import type { FieldSegment, SegmentHandle } from '../_internal/datetime/segment-editor';
 import type { SegmentEditorContext } from '../_internal/datetime/segment-directive';
 import type { TimeSegmentType } from '../_internal/datetime/segment-types';
 

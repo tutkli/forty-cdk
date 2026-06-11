@@ -7,8 +7,10 @@ import { renderHost, type RenderResult } from './render';
  * The result of {@link mountOverlay} — extends {@link RenderResult} with the
  * portaled `content` element queried after the overlay opened.
  */
-export interface MountOverlayResult<T, C extends HTMLElement = HTMLElement>
-  extends RenderResult<T> {
+export interface MountOverlayResult<
+  T,
+  C extends HTMLElement = HTMLElement,
+> extends RenderResult<T> {
   /** The portaled content element, queried from `document` after open + flush. */
   content: C;
 }

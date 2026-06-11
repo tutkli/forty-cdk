@@ -52,16 +52,12 @@ export interface RovingTabindexContractSetup {
    * Mount with at least one item disabled in the middle of the list, so
    * the contract can verify that arrow navigation skips it.
    */
-  mountWithDisabledMiddle?: () =>
-    | RovingTabindexMountResult
-    | Promise<RovingTabindexMountResult>;
+  mountWithDisabledMiddle?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
   /**
    * Mount with the FIRST item disabled, so the contract can verify the
    * entry-point computation (first-enabled item gets `tabindex=0`).
    */
-  mountWithDisabledFirst?: () =>
-    | RovingTabindexMountResult
-    | Promise<RovingTabindexMountResult>;
+  mountWithDisabledFirst?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
   /**
    * Mount with `dir="rtl"`. The contract verifies that `ArrowLeft`
    * advances focus (the "logical forward" direction in RTL).
@@ -81,9 +77,7 @@ export interface RovingTabindexContractOptions {
 }
 
 const dispatchKey = (target: EventTarget, key: string): void => {
-  target.dispatchEvent(
-    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
-  );
+  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 };
 
 const enabled = (r: RovingTabindexMountResult): readonly number[] =>

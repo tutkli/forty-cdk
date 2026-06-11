@@ -91,7 +91,11 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * initial focus from reflecting `data-highlighted`, while a `'keyboard'`
    * open highlights the focused item.
    */
-  openTrigger(value: string, initialFocus: 'first' | 'last', modality?: MenuActivationModality): void;
+  openTrigger(
+    value: string,
+    initialFocus: 'first' | 'last',
+    modality?: MenuActivationModality,
+  ): void;
 
   /** Close the currently-open menu, if any. Returns focus to the trigger. */
   closeOpen(): void;

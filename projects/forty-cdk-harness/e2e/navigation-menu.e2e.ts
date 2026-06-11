@@ -38,17 +38,17 @@ test.describe('NavigationMenu viewport', () => {
       .toBe('0px');
 
     await page.locator('[data-testid="trigger-products"]').click();
-    await expect.poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width')).toBe(
-      '320px',
-    );
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
+      .toBe('320px');
     await expect
       .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-height'))
       .toBe('240px');
 
     await page.locator('[data-testid="trigger-solutions"]').click();
-    await expect.poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width')).toBe(
-      '480px',
-    );
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
+      .toBe('480px');
     await expect
       .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-height'))
       .toBe('120px');
@@ -57,9 +57,9 @@ test.describe('NavigationMenu viewport', () => {
   test('ResizeObserver picks up live layout mutations on the active content', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
     await page.locator('[data-testid="trigger-products"]').click();
-    await expect.poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width')).toBe(
-      '320px',
-    );
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
+      .toBe('320px');
 
     // Mutate the live width of the active panel; the directive's RO must
     // re-fire and republish the new dimension into the CSS variable without
@@ -69,9 +69,9 @@ test.describe('NavigationMenu viewport', () => {
       if (panel) panel.style.width = '555px';
     });
 
-    await expect.poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width')).toBe(
-      '555px',
-    );
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
+      .toBe('555px');
   });
 
   test('renders the active content size on first read even when ResizeObserver is unavailable', async ({

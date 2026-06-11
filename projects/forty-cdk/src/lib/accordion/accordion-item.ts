@@ -1,11 +1,4 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, inject, input, signal } from '@angular/core';
 
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
@@ -27,9 +20,7 @@ import {
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-orientation]': 'parent.orientation()',
   },
-  providers: [
-    { provide: FOR_ACCORDION_ITEM_CONTEXT, useExisting: ForAccordionItem },
-  ],
+  providers: [{ provide: FOR_ACCORDION_ITEM_CONTEXT, useExisting: ForAccordionItem }],
 })
 export class ForAccordionItem implements ForAccordionItemContext {
   protected readonly parent = injectAccordionContext('ForAccordionItem');

@@ -266,9 +266,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     if (dismissCfg !== undefined) {
       let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
       dismissable.activate({
-        ...(dismissCfg.exemptElements
-          ? { exemptElements: dismissCfg.exemptElements }
-          : {}),
+        ...(dismissCfg.exemptElements ? { exemptElements: dismissCfg.exemptElements } : {}),
         onEscapeKeyDown: (event) => {
           const veto = createVetoableNativeEvent(event);
           dismissCfg.emitEscapeKeyDown(veto);

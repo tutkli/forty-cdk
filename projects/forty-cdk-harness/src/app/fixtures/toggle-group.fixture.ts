@@ -35,11 +35,7 @@ import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
       aria-label="Formatting"
     >
       @for (item of items; track item.value) {
-        <button
-          forToggleGroupItem
-          [value]="item.value"
-          [attr.data-testid]="'tg-' + item.value"
-        >
+        <button forToggleGroupItem [value]="item.value" [attr.data-testid]="'tg-' + item.value">
           {{ item.label }}
         </button>
       }

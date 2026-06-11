@@ -477,7 +477,12 @@ export class ForCombobox<T = string>
         if (navigator.tryResolvePending()) {
           return;
         }
-        if (autoHighlight && open && untracked(() => this.#activeId()) === null && items.length > 0) {
+        if (
+          autoHighlight &&
+          open &&
+          untracked(() => this.#activeId()) === null &&
+          items.length > 0
+        ) {
           navigator.seedFromIndexedSnapshot(this.#initialFocus() === 'last' ? 'last' : 'first');
         }
         return;

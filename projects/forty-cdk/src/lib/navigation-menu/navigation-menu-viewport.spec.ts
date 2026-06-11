@@ -547,9 +547,7 @@ describe('ForNavigationMenuViewport', () => {
       flush();
 
       // The previous active panel is no longer observed.
-      expect(
-        FakeResizeObserver.instances.some((ro) => ro.observed.includes(products)),
-      ).toBe(false);
+      expect(FakeResizeObserver.instances.some((ro) => ro.observed.includes(products))).toBe(false);
 
       const solutions = query<HTMLElement>('[data-id="solutions"]')!;
       const observingSolutions = FakeResizeObserver.instances.some((ro) =>
@@ -568,8 +566,7 @@ describe('ForNavigationMenuViewport', () => {
       host.mountProducts.set(true);
       flush();
       const products = query<HTMLElement>('[data-id="products"]')!;
-      const observed = (): Element[] =>
-        FakeResizeObserver.instances.flatMap((ro) => ro.observed);
+      const observed = (): Element[] => FakeResizeObserver.instances.flatMap((ro) => ro.observed);
       expect(observed()).toContain(products);
 
       // B enters; A is kept mounted (animate.leave shape). Only the active

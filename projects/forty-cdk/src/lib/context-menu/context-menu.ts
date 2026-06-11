@@ -16,12 +16,12 @@ import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
 import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
 import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
-import {
-  FOR_CONTEXT_MENU_CONTEXT,
-  type ForContextMenuContext,
-} from './context-menu-context';
+import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
 import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
 
 /**

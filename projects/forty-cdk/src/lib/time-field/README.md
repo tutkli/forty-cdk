@@ -8,10 +8,10 @@ Headless, segmented, spin-editable **time-of-day** input — the time counterpar
 
 All time math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`, so the library hard-depends on **no** date library. The time field needs the adapter's optional time accessors, so provide a **time-capable** adapter:
 
-| Provider                                    | Date-time type `D`                             | Dependency                                                 |
-| ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| Provider                                    | Date-time type `D`                             | Dependency                                                                                                |
+| ------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `provideInternationalizedDateTimeAdapter()` | `CalendarDateTime` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`                | `Date`                                         | None (zero-dependency fallback)                            |
+| `provideNativeDateAdapter()`                | `Date`                                         | None (zero-dependency fallback)                                                                           |
 
 > The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeField` throws a descriptive error if it is the active adapter.
 

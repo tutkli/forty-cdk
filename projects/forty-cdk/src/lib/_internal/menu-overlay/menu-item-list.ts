@@ -1,10 +1,7 @@
 import { type Signal } from '@angular/core';
 
 import { Collection, type CollectionHandle } from '../collection/collection';
-import {
-  type ListNavigationAction,
-  moveIndex,
-} from '../keyboard-navigation/keyboard-navigation';
+import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
 
 /**

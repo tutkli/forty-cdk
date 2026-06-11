@@ -257,7 +257,11 @@ export class ForDrawerManager {
       'swipeToDismiss',
       config.swipeToDismiss ?? this.#defaults.swipeToDismiss,
     );
-    setIfDefined(shellRef, 'closeThreshold', config.closeThreshold ?? this.#defaults.closeThreshold);
+    setIfDefined(
+      shellRef,
+      'closeThreshold',
+      config.closeThreshold ?? this.#defaults.closeThreshold,
+    );
     setIfDefined(shellRef, 'handleOnly', config.handleOnly ?? this.#defaults.handleOnly);
     setIfDefined(
       shellRef,

@@ -7,11 +7,7 @@ import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';
 import { ForDrawerDescription } from './drawer-description';
 import { ForDrawerHandle } from './drawer-handle';
-import {
-  ForDrawerManager,
-  FOR_DRAWER_DATA,
-  injectDrawerData,
-} from './drawer-manager';
+import { ForDrawerManager, FOR_DRAWER_DATA, injectDrawerData } from './drawer-manager';
 import { ForDrawerRef } from './drawer-ref';
 import { ForDrawerTitle } from './drawer-title';
 import { provideForDrawerDefaults } from './drawer-defaults';
@@ -486,9 +482,7 @@ describe('ForDrawerManager (programmatic)', () => {
       drawers.open(ProgrammaticChild);
 
       const parent = document.querySelector<HTMLElement>('#parent')!;
-      const programmatic = document.querySelector<HTMLElement>(
-        '[role="dialog"]:not(#parent)',
-      )!;
+      const programmatic = document.querySelector<HTMLElement>('[role="dialog"]:not(#parent)')!;
 
       // Both registered against the stack so depth attribute is present on each.
       expect(parent.getAttribute('data-depth')).toBe('0');

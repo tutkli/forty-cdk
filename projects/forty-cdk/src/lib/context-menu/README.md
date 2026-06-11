@@ -68,7 +68,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 <div forContextMenu #root="forContextMenu">
   <ng-container *ngTemplateOutlet="chip; context: { root }" />
   @if (root.open()) {
-    <div forMenuContent>…</div>
+  <div forMenuContent>…</div>
   }
 </div>
 

@@ -43,7 +43,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
               <button forMenuItem class="pg-menu-item" (select)="onAction('New project')">
                 New project
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Import…')">Import…</button>
+              <button forMenuItem class="pg-menu-item" (select)="onAction('Import…')">
+                Import…
+              </button>
               <hr forMenuSeparator class="pg-menu-separator" />
               <button forMenuItem class="pg-menu-item" (select)="onAction('Settings')">
                 Settings

@@ -63,8 +63,9 @@ const ORG: readonly TreeNodeData[] = [
           expanded and value are orthogonal — collapse all and the selection is preserved.
         </p>
         <p class="pg-state">
-selected: <b>{{ value().length ? value()[0] : '—' }}</b>
-open nodes: <b>{{ expanded().length }}</b></p>
+          selected: <b>{{ value().length ? value()[0] : '—' }}</b> open nodes:
+          <b>{{ expanded().length }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

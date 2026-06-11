@@ -315,9 +315,7 @@ describe('ForField', () => {
 
       const fixture = TestBed.createComponent(Host);
       fixture.detectChanges();
-      const field = (fixture.nativeElement as HTMLElement).querySelector(
-        '[data-test-id="field"]',
-      )!;
+      const field = (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="field"]')!;
       expect(field.hasAttribute('data-invalid')).toBe(false);
 
       fixture.componentInstance.invalid.set(true);

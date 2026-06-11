@@ -1,6 +1,9 @@
 import { Directive, model } from '@angular/core';
 
-import { FOR_MENU_RADIO_GROUP_CONTEXT, type ForMenuRadioGroupContext } from './menu-radio-group-context';
+import {
+  FOR_MENU_RADIO_GROUP_CONTEXT,
+  type ForMenuRadioGroupContext,
+} from './menu-radio-group-context';
 
 /**
  * Container for a set of `[forMenuRadioItem]` elements. Acts as a

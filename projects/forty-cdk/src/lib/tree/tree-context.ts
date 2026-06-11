@@ -168,9 +168,7 @@ export function injectTreeContainerContext(piece: string): ForTreeContainerConte
 export function injectTreeItemContext(piece: string): ForTreeItemContext {
   const ctx = inject(FOR_TREE_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/tree] ${piece} must be used inside a [forTreeItem] element.`,
-    );
+    throw new Error(`[forty-cdk/tree] ${piece} must be used inside a [forTreeItem] element.`);
   }
   return ctx;
 }

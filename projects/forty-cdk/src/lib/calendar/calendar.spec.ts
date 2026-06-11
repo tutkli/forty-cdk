@@ -149,11 +149,7 @@ class TodayHost {
           @for (week of grid.weeks(); track week.key) {
             <tr>
               @for (cell of week.days; track cell.key) {
-                <td
-                  forCalendarCell
-                  [date]="cell.date"
-                  [attr.data-testid]="'cell-' + cell.key"
-                ></td>
+                <td forCalendarCell [date]="cell.date" [attr.data-testid]="'cell-' + cell.key"></td>
               }
             </tr>
           }
@@ -178,11 +174,7 @@ class DateTimeCalendarHost {
           @for (week of grid.weeks(); track week.key) {
             <tr>
               @for (cell of week.days; track cell.key) {
-                <td
-                  forCalendarCell
-                  [date]="cell.date"
-                  [attr.data-testid]="'cell-' + cell.key"
-                ></td>
+                <td forCalendarCell [date]="cell.date" [attr.data-testid]="'cell-' + cell.key"></td>
               }
             </tr>
           }
@@ -196,9 +188,9 @@ class DayOnlyCalendarHost {
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
-const cell = (r: RenderResult<unknown>, date: Date) => r.query(`[data-testid="cell-${keyOf(date)}"]`)!;
-const tabbableCells = (r: RenderResult<unknown>) =>
-  r.queryAll('[role="gridcell"][tabindex="0"]');
+const cell = (r: RenderResult<unknown>, date: Date) =>
+  r.query(`[data-testid="cell-${keyOf(date)}"]`)!;
+const tabbableCells = (r: RenderResult<unknown>) => r.queryAll('[role="gridcell"][tabindex="0"]');
 const focusedCell = (r: RenderResult<unknown>) => tabbableCells(r)[0]!;
 
 const JUN_15 = new Date(2026, 5, 15);
@@ -721,10 +713,18 @@ describe('ForCalendar', () => {
       const native: DateAdapter<Date> = new NativeDateAdapter();
       expect(native.compareDate).toBeUndefined();
 
-      const sameDay = compareDateOf(native, new Date(2026, 5, 20, 0, 0), new Date(2026, 5, 20, 23, 0));
+      const sameDay = compareDateOf(
+        native,
+        new Date(2026, 5, 20, 0, 0),
+        new Date(2026, 5, 20, 23, 0),
+      );
       expect(sameDay).toBe(0);
 
-      const earlierDay = compareDateOf(native, new Date(2026, 5, 19, 23, 0), new Date(2026, 5, 20, 0, 0));
+      const earlierDay = compareDateOf(
+        native,
+        new Date(2026, 5, 19, 23, 0),
+        new Date(2026, 5, 20, 0, 0),
+      );
       expect(earlierDay).toBeLessThan(0);
     });
   });

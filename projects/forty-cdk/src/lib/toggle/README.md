@@ -28,7 +28,7 @@ export class DemoToggle {
 | API        | Default | Description                                                                                                                                           |
 | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `checked`  | `false` | Two-way bindable on/off state. Required by `FormCheckboxControl`; what `[formField]` binds. The host reflects it via `aria-pressed` and `data-state`. |
-| `disabled` | `false` | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) — no native `disabled`.                    |
+| `disabled` | `false` | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) — no native `disabled`.                   |
 | `readonly` | `false` | When `true`, click is ignored but the host stays focusable. Reflected as `aria-readonly`.                                                             |
 | `required` | `false` | Reflected as `aria-required`.                                                                                                                         |
 | `invalid`  | `false` | Reflected as `aria-invalid` and `data-invalid`.                                                                                                       |

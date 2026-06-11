@@ -20,7 +20,12 @@ interface Checkout {
     >
       <div demo class="rg-form">
         <span id="rgf-label" class="rg-label">Shipping method</span>
-        <div forRadioGroup class="rg" [formField]="checkoutForm.shipping" aria-labelledby="rgf-label">
+        <div
+          forRadioGroup
+          class="rg"
+          [formField]="checkoutForm.shipping"
+          aria-labelledby="rgf-label"
+        >
           @for (opt of options; track opt.value) {
             <button type="button" forRadio class="rg-option" [value]="opt.value">
               <span class="rg-dot"></span>

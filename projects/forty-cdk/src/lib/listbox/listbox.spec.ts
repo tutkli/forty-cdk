@@ -276,9 +276,7 @@ describe('ForListbox', () => {
 
     it('host drops its fallback tabindex once an enabled option appears', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
-      fixture.componentInstance.options.set([
-        { value: 'apple', label: 'Apple', disabled: true },
-      ]);
+      fixture.componentInstance.options.set([{ value: 'apple', label: 'Apple', disabled: true }]);
       flush();
       expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
 
@@ -656,11 +654,7 @@ describe('ForListbox', () => {
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
-        expect(fixture.componentInstance.picked()).toEqual([
-          'cherry',
-          'apple',
-          'apricot',
-        ]);
+        expect(fixture.componentInstance.picked()).toEqual(['cherry', 'apple', 'apricot']);
       });
 
       it('skips disabled options in the range', () => {
@@ -687,7 +681,6 @@ describe('ForListbox', () => {
         flush();
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
       });
-
     });
 
     describe('Ctrl/Cmd+A', () => {
@@ -722,7 +715,13 @@ describe('ForListbox', () => {
       });
 
       it('clears the selection when every enabled option is already selected (toggle)', () => {
-        const { el, fixture, flush } = setupMulti(['apple', 'apricot', 'banana', 'blueberry', 'cherry']);
+        const { el, fixture, flush } = setupMulti([
+          'apple',
+          'apricot',
+          'banana',
+          'blueberry',
+          'cherry',
+        ]);
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
         flush();
@@ -759,11 +758,7 @@ describe('ForListbox', () => {
         pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'cherry'));
-        expect(fixture.componentInstance.picked()).toEqual([
-          'banana',
-          'blueberry',
-          'cherry',
-        ]);
+        expect(fixture.componentInstance.picked()).toEqual(['banana', 'blueberry', 'cherry']);
       });
 
       it('Ctrl+Shift+Home selects from current to the first enabled option and focuses it', () => {
@@ -772,11 +767,7 @@ describe('ForListbox', () => {
         pressKey(optOf(el, 'banana'), 'Home', { ctrlKey: true, shiftKey: true });
         flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
-        expect(fixture.componentInstance.picked()).toEqual([
-          'apple',
-          'apricot',
-          'banana',
-        ]);
+        expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
       });
 
       it('preserves selection outside the range', () => {
@@ -784,11 +775,7 @@ describe('ForListbox', () => {
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), 'Home', { ctrlKey: true, shiftKey: true });
         flush();
-        expect(fixture.componentInstance.picked()).toEqual([
-          'cherry',
-          'apple',
-          'apricot',
-        ]);
+        expect(fixture.componentInstance.picked()).toEqual(['cherry', 'apple', 'apricot']);
       });
 
       it('skips disabled options when picking the focus edge', () => {
@@ -824,10 +811,7 @@ describe('ForListbox', () => {
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
         flush();
-        expect(fixture.componentInstance.picked()).toEqual([
-          'banana',
-          'apricot',
-        ]);
+        expect(fixture.componentInstance.picked()).toEqual(['banana', 'apricot']);
       });
 
       it('moves to the most recent click', () => {
@@ -1170,7 +1154,9 @@ describe('ForListbox', () => {
 
     it('produces unique label ids across groups', () => {
       const { el } = renderHost(GroupHost);
-      const ids = Array.from(el.querySelectorAll<HTMLElement>('[forListboxGroupLabel]')).map((n) => n.id);
+      const ids = Array.from(el.querySelectorAll<HTMLElement>('[forListboxGroupLabel]')).map(
+        (n) => n.id,
+      );
       expect(ids[0]).not.toBe(ids[1]);
       expect(new Set(ids).size).toBe(ids.length);
     });
@@ -1621,9 +1607,7 @@ describe('ForListbox', () => {
       template: `
         <ul forListbox multiple [formField]="prefs.priorities">
           <li>
-            <button type="button" forListboxOption value="speed" data-test-id="speed">
-              Speed
-            </button>
+            <button type="button" forListboxOption value="speed" data-test-id="speed">Speed</button>
           </li>
           <li>
             <button type="button" forListboxOption value="quality" data-test-id="quality">
@@ -1631,9 +1615,7 @@ describe('ForListbox', () => {
             </button>
           </li>
           <li>
-            <button type="button" forListboxOption value="cost" data-test-id="cost">
-              Cost
-            </button>
+            <button type="button" forListboxOption value="cost" data-test-id="cost">Cost</button>
           </li>
         </ul>
       `,

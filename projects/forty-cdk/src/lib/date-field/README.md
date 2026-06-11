@@ -8,10 +8,10 @@ Headless, segmented, spin-editable date input — the keyboard-first counterpart
 
 All date math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers:
 
-| Provider                                | Date type `D`                              | Dependency                                                 |
-| --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| Provider                                | Date type `D`                              | Dependency                                                                                                |
+| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
+| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                                                                           |
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';

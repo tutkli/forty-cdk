@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import {
-  ForContextMenu,
-  ForContextMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
-} from 'forty-cdk';
+import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } from 'forty-cdk';
 
 @Component({
   selector: 'app-context-menu-fixture',
@@ -24,11 +19,7 @@ import {
              descendant" e2e cases. Sits inside the trigger with its own
              explicit dimensions so the anchor rect (60x24) is comfortably
              distinct from the trigger's (240x80). -->
-        <button
-          data-testid="inner-btn"
-          type="button"
-          style="width: 60px; height: 24px;"
-        >
+        <button data-testid="inner-btn" type="button" style="width: 60px; height: 24px;">
           Inner
         </button>
       </div>

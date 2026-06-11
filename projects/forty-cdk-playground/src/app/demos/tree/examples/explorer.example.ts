@@ -55,8 +55,9 @@ import { type TreeNodeData, TreeNode } from './tree-node';
           toggles all. Press * to expand every sibling at the current level.
         </p>
         <p class="pg-state">
-selected: <b>{{ value().join(', ') || '—' }}</b>
-expanded: <b>{{ expanded().join(', ') || '—' }}</b></p>
+          selected: <b>{{ value().join(', ') || '—' }}</b> expanded:
+          <b>{{ expanded().join(', ') || '—' }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

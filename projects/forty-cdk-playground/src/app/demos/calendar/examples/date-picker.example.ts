@@ -34,7 +34,9 @@ import { CalendarView } from './calendar-view';
           <button type="button" class="pg-btn" (click)="clear()">Clear</button>
         </div>
 
-        <p class="pg-state">selected: <b>{{ selectedLabel() }}</b></p>
+        <p class="pg-state">
+          selected: <b>{{ selectedLabel() }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

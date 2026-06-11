@@ -1,4 +1,10 @@
-import { inject, type ModelSignal, type OutputEmitterRef, type Signal, signal } from '@angular/core';
+import {
+  inject,
+  type ModelSignal,
+  type OutputEmitterRef,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import { IdGenerator } from '../id-generator/id-generator';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';

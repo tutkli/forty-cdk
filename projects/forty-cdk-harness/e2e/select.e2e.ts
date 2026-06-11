@@ -111,7 +111,9 @@ test.describe('Select', () => {
       await page.keyboard.press('Enter');
       await expect(el(page, 'content')).toBeVisible();
 
-      await expect.poll(async () => page.evaluate(() => document.body.style.overflow)).toBe('hidden');
+      await expect
+        .poll(async () => page.evaluate(() => document.body.style.overflow))
+        .toBe('hidden');
 
       await page.keyboard.press('Escape');
       await expect(el(page, 'content')).toHaveCount(0);
@@ -161,14 +163,10 @@ test.describe('Select', () => {
         .toBeGreaterThan(0);
 
       const anchorWidth = await content.evaluate((c) =>
-        Number.parseFloat(
-          (c as HTMLElement).style.getPropertyValue('--for-anchor-width') || '0',
-        ),
+        Number.parseFloat((c as HTMLElement).style.getPropertyValue('--for-anchor-width') || '0'),
       );
       const anchorHeight = await content.evaluate((c) =>
-        Number.parseFloat(
-          (c as HTMLElement).style.getPropertyValue('--for-anchor-height') || '0',
-        ),
+        Number.parseFloat((c as HTMLElement).style.getPropertyValue('--for-anchor-height') || '0'),
       );
       expect(Math.abs(anchorWidth - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(anchorHeight - triggerBox!.height)).toBeLessThanOrEqual(1);
@@ -184,8 +182,8 @@ test.describe('Select', () => {
         .poll(async () =>
           content.evaluate((c) =>
             Number.parseFloat(
-              (c as HTMLElement).style
-                .getPropertyValue('--for-select-content-available-height') || '0',
+              (c as HTMLElement).style.getPropertyValue('--for-select-content-available-height') ||
+                '0',
             ),
           ),
         )

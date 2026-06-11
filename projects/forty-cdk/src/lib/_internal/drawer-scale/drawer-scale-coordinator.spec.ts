@@ -9,10 +9,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { type DrawerStackNode, ForDrawerStack } from '../drawer-stack/drawer-stack';
 import { flush, withReducedMotion } from '../../../test-utils';
-import {
-  ForDrawerScaleCoordinator,
-  type ForDrawerScaleConfig,
-} from './drawer-scale-coordinator';
+import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
 
 const DEFAULT_CONFIG: ForDrawerScaleConfig = {
   setBackgroundColorOnScale: true,

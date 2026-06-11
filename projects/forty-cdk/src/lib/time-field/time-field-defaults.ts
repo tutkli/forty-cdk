@@ -38,9 +38,7 @@ export interface ForTimeFieldDefaults {
  * the segment's explicit `ariaLabel` nor a `provideForTimeFieldDefaults`
  * override supplies one for that part.
  */
-export const DEFAULT_TIME_FIELD_SEGMENT_LABELS: Readonly<
-  Record<TimeSegmentType, string>
-> = {
+export const DEFAULT_TIME_FIELD_SEGMENT_LABELS: Readonly<Record<TimeSegmentType, string>> = {
   hour: 'hour',
   minute: 'minute',
   second: 'second',

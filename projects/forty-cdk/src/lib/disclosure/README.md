@@ -24,8 +24,8 @@ The host element gets `data-state="open" \| "closed"` for CSS hooks.
 
 ### `ForDisclosureTrigger`
 
-| API        | Type             | Description                                                         |
-| ---------- | ---------------- | ------------------------------------------------------------------- |
+| API        | Type             | Description                                                        |
+| ---------- | ---------------- | ------------------------------------------------------------------ |
 | `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. |
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (`disabled`, `aria-disabled`, `data-disabled`) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.

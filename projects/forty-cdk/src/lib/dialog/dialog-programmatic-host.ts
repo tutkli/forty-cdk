@@ -38,13 +38,7 @@ import { ForDialog } from './dialog';
         'autoFocusOnOpen',
         'autoFocusOnClose',
       ],
-      outputs: [
-        'close',
-        'escapeKeyDown',
-        'pointerDownOutside',
-        'focusOutside',
-        'interactOutside',
-      ],
+      outputs: ['close', 'escapeKeyDown', 'pointerDownOutside', 'focusOutside', 'interactOutside'],
     },
   ],
 })

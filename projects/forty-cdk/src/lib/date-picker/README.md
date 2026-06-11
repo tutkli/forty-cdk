@@ -8,10 +8,10 @@ Headless date picker following the [WAI-ARIA Date Picker Dialog pattern](https:/
 
 All date math and formatting go through a `DateAdapter<D>`, shared with `ForCalendar`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers:
 
-| Provider                                | Date type `D`                              | Dependency                                                 |
-| --------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
+| Provider                                | Date type `D`                              | Dependency                                                                                                |
+| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
-| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                            |
+| `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                                                                           |
 
 ## Pieces
 

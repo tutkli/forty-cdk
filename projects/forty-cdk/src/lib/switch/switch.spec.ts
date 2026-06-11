@@ -9,10 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
-import {
-  assertFormControlContract,
-  type FormControlMountResult,
-} from '../../test-utils/contract';
+import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { ForSwitch } from './switch';
 
 @Component({
@@ -66,41 +63,44 @@ describe('ForSwitch', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(SwitchHost);
-    const result: FormControlMountResult = {
-      control: switchOf(r.el),
-      flush: r.flush,
-      setFlag: (flag, value) => {
-        const inst = r.fixture.componentInstance;
-        switch (flag) {
-          case 'disabled':
-            inst.isDisabled.set(value);
-            return;
-          case 'readonly':
-            inst.isReadonly.set(value);
-            return;
-          case 'required':
-            inst.isRequired.set(value);
-            return;
-          case 'invalid':
-            inst.isInvalid.set(value);
-            return;
-          case 'pending':
-            inst.isPending.set(value);
-            return;
-          case 'touched':
-            inst.isTouched.set(value);
-            return;
-          case 'dirty':
-            inst.isDirty.set(value);
-            return;
-        }
-      },
-      setName: (name) => r.fixture.componentInstance.fieldName.set(name),
-    };
-    return result;
-  }, { customRoleStaysFocusable: true });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(SwitchHost);
+      const result: FormControlMountResult = {
+        control: switchOf(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          const inst = r.fixture.componentInstance;
+          switch (flag) {
+            case 'disabled':
+              inst.isDisabled.set(value);
+              return;
+            case 'readonly':
+              inst.isReadonly.set(value);
+              return;
+            case 'required':
+              inst.isRequired.set(value);
+              return;
+            case 'invalid':
+              inst.isInvalid.set(value);
+              return;
+            case 'pending':
+              inst.isPending.set(value);
+              return;
+            case 'touched':
+              inst.isTouched.set(value);
+              return;
+            case 'dirty':
+              inst.isDirty.set(value);
+              return;
+          }
+        },
+        setName: (name) => r.fixture.componentInstance.fieldName.set(name),
+      };
+      return result;
+    },
+    { customRoleStaysFocusable: true },
+  );
 
   describe('click', () => {
     it('toggles aria-checked / data-state and emits the model', () => {

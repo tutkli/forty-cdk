@@ -13,10 +13,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import {
-  FOR_NUMBER_INPUT_GROUP,
-  type ForNumberInputContext,
-} from './number-input-context';
+import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
 
 /** Escapes a string for safe interpolation into a `RegExp` source. */

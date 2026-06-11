@@ -101,16 +101,12 @@ export interface ForListboxContext<T = unknown> {
   unregisterOption(handle: ForListboxOptionHandle<T>): void;
 }
 
-export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>(
-  'FOR_LISTBOX_CONTEXT',
-);
+export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>('FOR_LISTBOX_CONTEXT');
 
 export function injectListboxContext<T = unknown>(piece: string): ForListboxContext<T> {
   const ctx = inject(FOR_LISTBOX_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/listbox] ${piece} must be used inside a [forListbox] element.`,
-    );
+    throw new Error(`[forty-cdk/listbox] ${piece} must be used inside a [forListbox] element.`);
   }
   return ctx as unknown as ForListboxContext<T>;
 }

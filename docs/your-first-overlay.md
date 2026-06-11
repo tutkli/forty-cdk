@@ -58,11 +58,11 @@ At this point the popover has no open/close wiring. The content is always mounte
   <button forPopoverTrigger>Settings</button>
 
   @if (popover.open()) {
-    <div forPopoverContent>
-      <h2 forPopoverTitle>Display settings</h2>
-      <p forPopoverDescription>Adjust the theme and density.</p>
-      <button forPopoverClose>Close</button>
-    </div>
+  <div forPopoverContent>
+    <h2 forPopoverTitle>Display settings</h2>
+    <p forPopoverDescription>Adjust the theme and density.</p>
+    <button forPopoverClose>Close</button>
+  </div>
   }
 </div>
 ```
@@ -84,7 +84,7 @@ readonly open = signal(false);
   <button forPopoverTrigger>Settings</button>
 
   @if (open()) {
-    <div forPopoverContent>…</div>
+  <div forPopoverContent>…</div>
   }
 </div>
 ```
@@ -120,11 +120,11 @@ Then add the class to the content element:
 
 ```html
 @if (popover.open()) {
-  <div forPopoverContent class="my-popover">
-    <h2 forPopoverTitle>Display settings</h2>
-    <p forPopoverDescription>Adjust the theme and density.</p>
-    <button forPopoverClose>Close</button>
-  </div>
+<div forPopoverContent class="my-popover">
+  <h2 forPopoverTitle>Display settings</h2>
+  <p forPopoverDescription>Adjust the theme and density.</p>
+  <button forPopoverClose>Close</button>
+</div>
 }
 ```
 
@@ -171,11 +171,11 @@ Apply the animation in the template with `animate.enter`:
 
 ```html
 @if (popover.open()) {
-  <div forPopoverContent class="my-popover" animate.enter="popover-in">
-    <h2 forPopoverTitle>Display settings</h2>
-    <p forPopoverDescription>Adjust the theme and density.</p>
-    <button forPopoverClose>Close</button>
-  </div>
+<div forPopoverContent class="my-popover" animate.enter="popover-in">
+  <h2 forPopoverTitle>Display settings</h2>
+  <p forPopoverDescription>Adjust the theme and density.</p>
+  <button forPopoverClose>Close</button>
+</div>
 }
 ```
 
@@ -236,7 +236,7 @@ The root directive wraps both the trigger and the content and owns its open stat
 <div forPopover #p="forPopover">
   <button forPopoverTrigger>Open</button>
   @if (p.open()) {
-    <div forPopoverContent>…</div>
+  <div forPopoverContent>…</div>
   }
 </div>
 ```
@@ -251,11 +251,11 @@ Dialog is structurally different: the trigger and the dialog surface can live an
 
 <!-- surface anywhere in the template — id must match controls above -->
 @if (open()) {
-  <div forDialog id="my-dialog" (close)="open.set(false)">
-    <h2 forDialogTitle>Are you sure?</h2>
-    <button forDialogClose>Cancel</button>
-    <button (click)="confirm()">Confirm</button>
-  </div>
+<div forDialog id="my-dialog" (close)="open.set(false)">
+  <h2 forDialogTitle>Are you sure?</h2>
+  <button forDialogClose>Cancel</button>
+  <button (click)="confirm()">Confirm</button>
+</div>
 }
 ```
 

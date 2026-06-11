@@ -1,10 +1,7 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import {
-  type ForCalendarCellHandle,
-  injectCalendarContext,
-} from './calendar-context';
+import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
  * A single day cell (`role="gridcell"`). Apply on the `<td>` for each day in

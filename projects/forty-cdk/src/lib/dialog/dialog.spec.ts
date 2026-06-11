@@ -778,12 +778,7 @@ describe('ForDialog (declarative)', () => {
         template: `
           <input #q id="search" type="search" />
           @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              [autoFocusOnOpen]="vetoOpen"
-              ariaLabel="t"
-            >
+            <div forDialog (close)="open.set(false)" [autoFocusOnOpen]="vetoOpen" ariaLabel="t">
               <button id="inside">inside</button>
             </div>
           }
@@ -930,12 +925,7 @@ describe('ForDialog (declarative)', () => {
         template: `
           <button id="trigger" (click)="open.set(true)">open</button>
           @if (open()) {
-            <div
-              forDialog
-              (close)="open.set(false)"
-              [autoFocusOnClose]="onClose"
-              ariaLabel="t"
-            >
+            <div forDialog (close)="open.set(false)" [autoFocusOnClose]="onClose" ariaLabel="t">
               <button id="inside">inside</button>
             </div>
           }

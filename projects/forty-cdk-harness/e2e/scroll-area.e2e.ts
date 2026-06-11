@@ -24,10 +24,12 @@ async function waitForOverflowMeasured(page: Page): Promise<void> {
   // tick. Wait for the synthetic thumb to render at a non-zero height before
   // a spec measures it — without this, the very first `boundingBox()` call
   // can land in the window between mount and the first measurement.
-  await expect.poll(async () => {
-    const box = await el(page, 'thumb-vertical').boundingBox();
-    return box?.height ?? 0;
-  }).toBeGreaterThan(0);
+  await expect
+    .poll(async () => {
+      const box = await el(page, 'thumb-vertical').boundingBox();
+      return box?.height ?? 0;
+    })
+    .toBeGreaterThan(0);
 }
 
 test.describe('ScrollArea (geometry + drag)', () => {
@@ -95,10 +97,12 @@ test.describe('ScrollArea (geometry + drag)', () => {
     // Wait for the thumb's transform to update — the scroll handler calls
     // reportScroll synchronously but Angular's host binding flushes on the
     // next change-detection tick.
-    await expect.poll(async () => {
-      const box = await el(page, 'thumb-vertical').boundingBox();
-      return box?.y ?? 0;
-    }).toBeGreaterThan(thumbBoxBefore!.y + 10);
+    await expect
+      .poll(async () => {
+        const box = await el(page, 'thumb-vertical').boundingBox();
+        return box?.y ?? 0;
+      })
+      .toBeGreaterThan(thumbBoxBefore!.y + 10);
 
     const thumbBoxAfter = await el(page, 'thumb-vertical').boundingBox();
     const usable = trackBox!.height - thumbBoxAfter!.height;
@@ -154,7 +158,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
   // Content-fits self-hide (and its `auto` vs `always` divergence) is covered
   // by the "type=\"auto\" vs type=\"always\" divergence" describe block below.
 
-  test("corner stays hidden when only one axis overflows even though a consumer display rule sets display: flex", async ({
+  test('corner stays hidden when only one axis overflows even though a consumer display rule sets display: flex', async ({
     page,
   }) => {
     // Only the vertical axis overflows → fewer than two scrollbars, so the
@@ -335,9 +339,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await page.mouse.move(sx, sy + 60);
       await page.mouse.up();
 
-      const scrollTopAfter = await viewport.evaluate(
-        (node) => (node as HTMLElement).scrollTop,
-      );
+      const scrollTopAfter = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
       // Same lower bound as the desktop drag case — the synthetic thumb
       // drag math doesn't depend on pointer type, just `clientY`.
       expect(scrollTopAfter).toBeGreaterThan(50);
@@ -347,9 +349,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
       // momentum. Wait a short settle window and assert scrollTop did
       // not continue to climb past the drag endpoint.
       await page.waitForTimeout(300);
-      const scrollTopSettled = await viewport.evaluate(
-        (node) => (node as HTMLElement).scrollTop,
-      );
+      const scrollTopSettled = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
       expect(scrollTopSettled).toBe(scrollTopAfter);
     });
   });
@@ -392,9 +392,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
       // scrollLeft below 0 — the logical scroll increases.
       await dragFrom(page, el(page, 'thumb-horizontal'), { dx: -80, dy: 0 });
 
-      const scrollLeft = await viewport.evaluate(
-        (node) => (node as HTMLElement).scrollLeft,
-      );
+      const scrollLeft = await viewport.evaluate((node) => (node as HTMLElement).scrollLeft);
       expect(scrollLeft).toBeLessThan(-50);
     });
   });

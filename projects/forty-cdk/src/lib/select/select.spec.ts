@@ -77,7 +77,6 @@ class SelectHost {
   readonly cherryDisabled = signal(false);
 }
 
-
 /**
  * The option directive owns `[id]` (auto-generated) so literal `id="x"`
  * attributes get replaced. Tests query options by an opt-in `data-test-id`
@@ -1277,12 +1276,7 @@ describe('ForSelect', () => {
       @Component({
         imports: [...BASE_IMPORTS, ForSelectValue],
         template: `
-          <div
-            forSelect
-            [(value)]="value"
-            [isItemEqualToValue]="byId"
-            [itemToFormValue]="toId"
-          >
+          <div forSelect [(value)]="value" [isItemEqualToValue]="byId" [itemToFormValue]="toId">
             <button forSelectTrigger>
               <span forSelectValue placeholder="Pick a city"></span>
             </button>

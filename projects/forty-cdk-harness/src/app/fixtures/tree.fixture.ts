@@ -1,11 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import {
-  ForTree,
-  ForTreeGroup,
-  ForTreeItem,
-  ForTreeItemLabel,
-  ForTreeItemToggle,
-} from 'forty-cdk';
+import { ForTree, ForTreeGroup, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
 
 import { queryFlag } from './_query-flag';
 

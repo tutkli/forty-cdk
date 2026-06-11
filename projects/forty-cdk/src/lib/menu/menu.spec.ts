@@ -188,7 +188,6 @@ class RadioFirstHost {
   readonly alignment = signal('left');
 }
 
-
 describe('Menu items / content', () => {
   afterEachOverlayCleanup();
 

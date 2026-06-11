@@ -81,9 +81,7 @@ export class ForTabs implements ForTabsContext {
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
   readonly #contents = new Collection<ForTabsContentHandle>();
 
-  readonly #firstEnabledTriggerHost = computed(() =>
-    firstEnabledHost(this.#triggers.items()),
-  );
+  readonly #firstEnabledTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
   constructor() {
     reconcileRovingActive(this.roving, this.#triggers.items);

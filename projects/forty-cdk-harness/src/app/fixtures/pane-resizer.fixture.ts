@@ -124,14 +124,8 @@ export class PaneResizerFixture {
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
 
-  protected readonly leftMin = parseNumber(
-    this.#route.snapshot.queryParamMap.get('leftMin'),
-    100,
-  );
-  protected readonly leftMax = parseNumber(
-    this.#route.snapshot.queryParamMap.get('leftMax'),
-    400,
-  );
+  protected readonly leftMin = parseNumber(this.#route.snapshot.queryParamMap.get('leftMin'), 100);
+  protected readonly leftMax = parseNumber(this.#route.snapshot.queryParamMap.get('leftMax'), 400);
   protected readonly step = parseNumber(this.#route.snapshot.queryParamMap.get('step'), 10);
   protected readonly largeStep = parseNumber(
     this.#route.snapshot.queryParamMap.get('largeStep'),

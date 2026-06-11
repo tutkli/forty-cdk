@@ -81,14 +81,18 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly collisionPadding = computed(() => this.#host.activeTrigger()?.collisionPadding() ?? 8);
   readonly arrowPadding = computed(() => this.#host.activeTrigger()?.arrowPadding() ?? 0);
   readonly sticky = computed(() => this.#host.activeTrigger()?.sticky() ?? 'partial');
-  readonly hideWhenDetached = computed(() => this.#host.activeTrigger()?.hideWhenDetached() ?? false);
+  readonly hideWhenDetached = computed(
+    () => this.#host.activeTrigger()?.hideWhenDetached() ?? false,
+  );
   readonly loop: Signal<boolean>;
   readonly initialFocus = this.#initialFocus.asReadonly();
   readonly lastCloseReason = this.#lastCloseReason.asReadonly();
   readonly triggerId = computed(() => this.#host.activeTrigger()?.triggerId() ?? '');
   readonly contentId = computed(() => this.#host.activeTrigger()?.contentId() ?? '');
   readonly ariaLabel = computed(() => this.#host.activeTrigger()?.ariaLabel() ?? null);
-  readonly anchor = computed<ReferenceElement | null>(() => this.#host.activeTrigger()?.host ?? null);
+  readonly anchor = computed<ReferenceElement | null>(
+    () => this.#host.activeTrigger()?.host ?? null,
+  );
   readonly trigger: Signal<HTMLElement | null>;
   readonly content = this.#contentEl.asReadonly();
   readonly parentMenu = null;

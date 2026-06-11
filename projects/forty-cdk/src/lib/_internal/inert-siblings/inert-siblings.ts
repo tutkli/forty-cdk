@@ -81,7 +81,12 @@ export class InertSiblingsStack {
    */
   activate(owner: HTMLElement): InertSiblingsHandle {
     if (!this.#isBrowser) {
-      return { deactivate: () => {}, get isActive(): boolean { return false; } };
+      return {
+        deactivate: () => {},
+        get isActive(): boolean {
+          return false;
+        },
+      };
     }
     // Always revert before mutating the stack so the recompute below
     // starts from a clean DOM state — otherwise a sibling inerted by the
@@ -146,7 +151,7 @@ export class InertSiblingsStack {
     if (child.hasAttribute(PEER_ATTRIBUTE)) {
       return;
     }
-    if (this.#appliedSnapshot.some(entry => entry.el === child)) {
+    if (this.#appliedSnapshot.some((entry) => entry.el === child)) {
       return;
     }
 
@@ -173,7 +178,7 @@ export class InertSiblingsStack {
     if (this.#observer || !win || typeof win.MutationObserver !== 'function') {
       return;
     }
-    this.#observer = new win.MutationObserver(records => {
+    this.#observer = new win.MutationObserver((records) => {
       const protectedRoot = this.#currentProtectedRoot();
       if (!protectedRoot) {
         return;
@@ -217,4 +222,3 @@ export class InertSiblingsStack {
     return cur && cur.parentElement === body ? cur : null;
   }
 }
-

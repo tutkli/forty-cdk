@@ -1,11 +1,6 @@
 import { signal } from '@angular/core';
 
-import {
-  defaultItemToFormValue,
-  isInArray,
-  singleSelected,
-  toggleInArray,
-} from './selection';
+import { defaultItemToFormValue, isInArray, singleSelected, toggleInArray } from './selection';
 
 const strictEquals = <T>(a: T, b: T) => a === b;
 

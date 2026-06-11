@@ -1,12 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import {
-  DOCUMENT,
-  DestroyRef,
-  PLATFORM_ID,
-  inject,
-  signal,
-  type Signal,
-} from '@angular/core';
+import { DOCUMENT, DestroyRef, PLATFORM_ID, inject, signal, type Signal } from '@angular/core';
 
 /**
  * Reflects the result of `MediaQueryList.matches` for `query` as a signal,

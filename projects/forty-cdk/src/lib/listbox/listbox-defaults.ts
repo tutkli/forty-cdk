@@ -40,8 +40,6 @@ export const FOR_LISTBOX_DEFAULTS = token;
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
  */
-export function provideForListboxDefaults(
-  defaults: Partial<ForListboxDefaults> = {},
-): Provider[] {
+export function provideForListboxDefaults(defaults: Partial<ForListboxDefaults> = {}): Provider[] {
   return provideDefaults(defaults);
 }

@@ -9,9 +9,7 @@ test.describe('Accordion', () => {
     await expectFocused(el(page, 'trigger-a'));
   });
 
-  test('ArrowDown moves focus to the next enabled trigger, skipping disabled', async ({
-    page,
-  }) => {
+  test('ArrowDown moves focus to the next enabled trigger, skipping disabled', async ({ page }) => {
     // Disable items 2 (b) and 4 (d) so ArrowDown from a must jump to c and
     // ArrowDown from c must jump to e.
     await gotoFixture(page, 'accordion', { disabled: '2,4' });

@@ -67,9 +67,7 @@ test.describe('DropdownMenu', () => {
     await expect(el(page, 'menu').locator('*:focus')).toHaveCount(0);
   });
 
-  test('Tab closes the menu and advances focus to the next tabbable element', async ({
-    page,
-  }) => {
+  test('Tab closes the menu and advances focus to the next tabbable element', async ({ page }) => {
     await gotoFixture(page, 'menu');
     await el(page, 'trigger').click();
     await expect(el(page, 'menu')).toBeVisible();

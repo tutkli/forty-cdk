@@ -97,7 +97,7 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ## Inputs (`ForPopoverTrigger`)
 
-| API        | Default | Description                                                                                                                                                      |
+| API        | Default | Description                                                                                                                                                       |
 | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `false` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard. |
 

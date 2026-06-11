@@ -211,9 +211,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.multiple()) {
       const current = this.value();
       this.value.set(
-        current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value],
+        current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
       );
     } else {
       this.value.set([value]);

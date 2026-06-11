@@ -115,9 +115,7 @@ test.describe('ContextMenu', () => {
       // `--for-anchor-width/-height` verbatim on the menu host. Allowing a
       // 1px slack absorbs sub-pixel rounding differences between Chromium
       // and WebKit; the key contract is "non-zero and matches the trigger".
-      await expect
-        .poll(async () => (await anchorSize(page)).width)
-        .toBeGreaterThan(0);
+      await expect.poll(async () => (await anchorSize(page)).width).toBeGreaterThan(0);
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
@@ -134,9 +132,7 @@ test.describe('ContextMenu', () => {
       await page.keyboard.press('ContextMenu');
       await expect(el(page, 'menu')).toBeVisible();
 
-      await expect
-        .poll(async () => (await anchorSize(page)).width)
-        .toBeGreaterThan(0);
+      await expect.poll(async () => (await anchorSize(page)).width).toBeGreaterThan(0);
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
@@ -161,9 +157,7 @@ test.describe('ContextMenu', () => {
       await page.keyboard.press('Shift+F10');
       await expect(el(page, 'menu')).toBeVisible();
 
-      await expect
-        .poll(async () => (await anchorSize(page)).width)
-        .toBeGreaterThan(0);
+      await expect.poll(async () => (await anchorSize(page)).width).toBeGreaterThan(0);
       const size = await anchorSize(page);
       // The descendant's rect, not the trigger's, drives the anchor — both
       // dimensions must match the inner button (within sub-pixel slack).
@@ -188,9 +182,7 @@ test.describe('ContextMenu', () => {
       await region.dispatchEvent('keydown', { key: 'F10', shiftKey: true });
       await expect(el(page, 'menu')).toBeVisible();
 
-      await expect
-        .poll(async () => (await anchorSize(page)).width)
-        .toBeGreaterThan(0);
+      await expect.poll(async () => (await anchorSize(page)).width).toBeGreaterThan(0);
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);

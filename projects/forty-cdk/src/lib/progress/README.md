@@ -13,12 +13,12 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 ## Inputs / models
 
-| API                  | Type                                      | Description                                                                                 |
-| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.                   |
+| API                  | Type                                      | Description                                                                                                                              |
+| -------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.                                                                |
 | `max`                | `input<number>`                           | Upper bound. Defaults to `100`. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`). |
-| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                         |
-| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition. |
+| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                                                                      |
+| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.                                              |
 
 The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, `data-min`, `data-max`, and `data-percentage` (absent while indeterminate), matching the meter root so the root can be styled from `data-percentage` directly. The indicator reflects the same `data-percentage` plus the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
 
