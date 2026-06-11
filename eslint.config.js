@@ -686,6 +686,119 @@ const fortyCdkPlugin = {
       },
     },
 
+    // Enforces CLAUDE.md § "Form primitives use Signal Forms": every concrete
+    // class under projects/forty-cdk/src/lib/** implementing `FormValueControl`
+    // or `FormCheckboxControl` must ship a sibling `<name>-host-directive.ts`
+    // (the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples from
+    // tutkli/forty-cdk#645 / PR #652), re-exported from the primitive barrel.
+    // Mirrors `require-defaults-sibling`, with two deliberate differences:
+    //   - It keys on the *file* declaring the class, not the folder root —
+    //     one folder may ship several form controls (`input/` has `input.ts`
+    //     + `textarea.ts`, `toggle/` has `toggle.ts` + `toggle-group.ts`).
+    //   - Abstract classes are skipped: `TextValueControlBase` implements
+    //     `FormValueControl<string>` as shared wiring, and the concrete
+    //     subclasses own the sibling contract.
+    // The `eslint-rules-fixtures` directory is deliberately kept in scope so
+    // `pnpm lint:rule-fixtures` proves the rule fires (the sibling never
+    // exists there). Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-host-directive-sibling.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#663
+    'require-host-directive-sibling': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Each form-value primitive (`implements FormValueControl` / `FormCheckboxControl`) must expose a sibling `<name>-host-directive.ts` re-exported from its barrel (tutkli/forty-cdk#645).',
+        },
+        schema: [],
+        messages: {
+          missingSibling:
+            'Class `{{ className }}` implements `{{ contract }}` but the sibling `{{ sibling }}` file is missing. Every form-value primitive ships the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples so wrapper components re-expose the full surface without hand-maintaining the list (tutkli/forty-cdk#645, docs/wrapping-form-primitives.md).',
+          missingBarrelExport:
+            'The sibling `{{ sibling }}` exists but the primitive barrel (`index.ts`) does not re-export it. Add the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` re-export so consumers can reach the tuples (tutkli/forty-cdk#645).',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const inLib = filename.includes('/projects/forty-cdk/src/lib/');
+        const inFixtures = filename.includes('/projects/forty-cdk/eslint-rules-fixtures/');
+        if (!inLib && !inFixtures) return {};
+        if (
+          filename.endsWith('.spec.ts') ||
+          filename.includes('/_internal/') ||
+          filename.includes('/test-utils/')
+        ) {
+          return {};
+        }
+        const CONTRACTS = new Set(['FormValueControl', 'FormCheckboxControl']);
+        // Resolves the contract name from one `implements` entry. Handles the
+        // direct form (`implements FormValueControl<T>`) and wrapped type
+        // references (`implements Omit<FormValueControl<T>, 'min' | 'max'>`,
+        // the ForSlider shape) by scanning the entry's type arguments for a
+        // reference to either contract.
+        function contractOf(entry) {
+          if (entry.expression.type === 'Identifier' && CONTRACTS.has(entry.expression.name)) {
+            return entry.expression.name;
+          }
+          const stack = [entry.typeArguments];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
+            }
+            if (!node.type) continue;
+            if (
+              node.type === 'TSTypeReference' &&
+              node.typeName.type === 'Identifier' &&
+              CONTRACTS.has(node.typeName.name)
+            ) {
+              return node.typeName.name;
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return null;
+        }
+        return {
+          ClassDeclaration(node) {
+            if (node.abstract || !node.id) return;
+            let contract = null;
+            for (const entry of node.implements ?? []) {
+              contract = contractOf(entry);
+              if (contract) break;
+            }
+            if (!contract) return;
+            const dir = path.dirname(filename);
+            const base = path.basename(filename, '.ts');
+            const sibling = `${base}-host-directive.ts`;
+            if (!fs.existsSync(path.join(dir, sibling))) {
+              context.report({
+                node: node.id,
+                messageId: 'missingSibling',
+                data: { className: node.id.name, contract, sibling },
+              });
+              return;
+            }
+            const barrel = path.join(dir, 'index.ts');
+            if (
+              fs.existsSync(barrel) &&
+              !fs.readFileSync(barrel, 'utf8').includes(`./${base}-host-directive`)
+            ) {
+              context.report({
+                node: node.id,
+                messageId: 'missingBarrelExport',
+                data: { sibling },
+              });
+            }
+          },
+        };
+      },
+    },
+
     // Enforces CLAUDE.md § "Context injection helpers are internal": a
     // primitive's `injectXContext(piece)` helper is implementation detail —
     // it takes a directive-name string purely for error messages and exists
@@ -1045,6 +1158,9 @@ module.exports = tseslint.config(
 
       // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
+
+      // ---- Host-directive tuples for form primitives (tutkli/forty-cdk#645, #663) ----
+      'forty-cdk/require-host-directive-sibling': 'error',
 
       // ---- Context-injection helpers are internal (tutkli/forty-cdk#584, D8) ----
       // Primitive barrels expose only the token + context interface; the
