@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import {
@@ -7,9 +7,11 @@ import {
   pressKey,
   renderHost,
 } from '../../test-utils';
+import { FOR_MENU_CONTEXT } from '../menu/menu-context';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForContextMenu } from './context-menu';
+import { FOR_CONTEXT_MENU_CONTEXT } from './context-menu-context';
 import { ForContextMenuTrigger } from './context-menu-trigger';
 
 const IMPORTS = [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem];
@@ -349,6 +351,73 @@ describe('ForContextMenu', () => {
         providers: [provideZonelessChangeDetection()],
       });
       expect(() => TestBed.createComponent(Orphan)).toThrow();
+    });
+  });
+
+  describe('subclassed root', () => {
+    @Directive({
+      selector: '[testContextMenu]',
+      providers: [
+        { provide: FOR_MENU_CONTEXT, useExisting: TestContextMenu },
+        { provide: FOR_CONTEXT_MENU_CONTEXT, useExisting: TestContextMenu },
+      ],
+    })
+    class TestContextMenu extends ForContextMenu {}
+
+    @Component({
+      imports: [TestContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+      template: `
+        <div testContextMenu [(open)]="open">
+          <div id="region" forContextMenuTrigger>Right-click here</div>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+              <button id="copy" forMenuItem>Copy</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassedHost {
+      readonly open = signal(false);
+    }
+
+    it('a root re-providing only tokens gets a working trigger', async () => {
+      const r = renderHost(SubclassedHost);
+      const region = r.query<HTMLElement>('#region')!;
+
+      const event = rightClick(region, 100, 200);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+      expect(region.getAttribute('data-state')).toBe('open');
+    });
+
+    it('content and items resolve the re-provided menu context', async () => {
+      const r = renderHost(SubclassedHost);
+      rightClick(r.query<HTMLElement>('#region')!, 50, 50);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('role')).toBe('menu');
+      expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('open state stays reactive without zone.js in a subclassed root', async () => {
+      const r = renderHost(SubclassedHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[forMenuContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.querySelector('[forMenuContent]')).toBeNull();
+      expect(region.getAttribute('data-state')).toBe('closed');
     });
   });
 

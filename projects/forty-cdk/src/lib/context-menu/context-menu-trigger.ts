@@ -1,17 +1,7 @@
 import { Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { ForContextMenu } from './context-menu';
-
-function injectContextMenu(): ForContextMenu {
-  const ctx = inject(ForContextMenu, { optional: true });
-  if (!ctx) {
-    throw new Error(
-      '[forty-cdk/context-menu] ForContextMenuTrigger must be used inside a [forContextMenu] element.',
-    );
-  }
-  return ctx;
-}
+import { injectContextMenuContext } from './context-menu-context';
 
 /**
  * Region that opens its parent `[forContextMenu]` on the `contextmenu` event
@@ -49,7 +39,7 @@ function injectContextMenu(): ForContextMenu {
   },
 })
 export class ForContextMenuTrigger {
-  protected readonly ctx = injectContextMenu();
+  protected readonly ctx = injectContextMenuContext();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
 
