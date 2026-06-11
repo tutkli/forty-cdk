@@ -1,4 +1,9 @@
-import { type InjectionToken, type Provider, inject, provideZonelessChangeDetection } from '@angular/core';
+import {
+  type InjectionToken,
+  type Provider,
+  inject,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import {
@@ -71,6 +76,11 @@ import {
   FOR_TOOLBAR_FALLBACK_DEFAULTS,
   provideForToolbarDefaults,
 } from '../../toolbar/toolbar-defaults';
+import {
+  FOR_TOOLTIP_DEFAULTS,
+  FOR_TOOLTIP_FALLBACK_DEFAULTS,
+  provideForTooltipDefaults,
+} from '../../tooltip/tooltip-defaults';
 
 interface DefaultsCase<D extends object> {
   /** Name of the primitive's provider, used as the test suite label. */
@@ -187,6 +197,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
     provide: provideForDropdownMenuDefaults,
     override: { sideOffset: 16 },
+  }),
+  defaultsCase({
+    name: 'provideForTooltipDefaults',
+    token: FOR_TOOLTIP_DEFAULTS,
+    fallback: FOR_TOOLTIP_FALLBACK_DEFAULTS,
+    provide: provideForTooltipDefaults,
+    override: { side: 'bottom' },
   }),
 ];
 

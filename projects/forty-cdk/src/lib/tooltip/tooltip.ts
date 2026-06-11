@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   DestroyRef,
   Directive,
   effect,
@@ -22,7 +23,7 @@ import {
   type ForTooltipContext,
   type TooltipScheduleReason,
 } from './tooltip-context';
-import { TooltipCoordinator } from './tooltip-defaults';
+import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from './tooltip-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).
@@ -46,6 +47,7 @@ import { TooltipCoordinator } from './tooltip-defaults';
 })
 export class ForTooltip implements ForTooltipContext {
   readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_TOOLTIP_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the tooltip is currently shown. The `model()`
@@ -57,19 +59,51 @@ export class ForTooltip implements ForTooltipContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Side the tooltip is anchored to. Defaults to `'top'`. Pair with
-   * `align` for the full positioning API.
+   * Per-tooltip override for the side the tooltip is anchored to. Pair with
+   * `align` for the full positioning API. When `undefined` (default), falls
+   * back to `ForTooltipDefaults.side` from the surrounding
+   * `provideForTooltipDefaults` scope (`'top'` unless configured).
+   *
+   * The input is aliased to `side`; consumers bind `[side]="..."` and read
+   * the effective value via the public `side` computed below.
    */
-  readonly side = input<FloatingSide | undefined>('top');
+  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
 
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
+  /** Effective anchor side: the `side` input when set, else the scope default. */
+  readonly side = computed<FloatingSide>(() => this._sideInput() ?? this.#defaults.side);
 
   /**
-   * Gap (px) between trigger and content along the main axis.
-   * Default `8`. Mirrors Radix's `sideOffset`.
+   * Per-tooltip override for the alignment along the chosen `side`. When
+   * `undefined` (default), falls back to `ForTooltipDefaults.align` from the
+   * surrounding `provideForTooltipDefaults` scope (`'center'` unless
+   * configured).
+   *
+   * The input is aliased to `align`; consumers bind `[align]="..."` and read
+   * the effective value via the public `align` computed below.
    */
-  readonly sideOffset = input(8, { transform: numberAttribute });
+  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
+
+  /** Effective alignment: the `align` input when set, else the scope default. */
+  readonly align = computed<FloatingAlign>(() => this._alignInput() ?? this.#defaults.align);
+
+  /**
+   * Per-tooltip override for the gap (px) between trigger and content along
+   * the main axis. Mirrors Radix's `sideOffset`. When `undefined` (default),
+   * falls back to `ForTooltipDefaults.sideOffset` from the surrounding
+   * `provideForTooltipDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `sideOffset`; consumers bind `[sideOffset]="..."`
+   * and read the effective value via the public `sideOffset` computed below.
+   */
+  readonly _sideOffsetInput = input(undefined, {
+    alias: 'sideOffset',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective main-axis gap (px): the `sideOffset` input when set, else the scope default. */
+  readonly sideOffset = computed<number>(
+    () => this._sideOffsetInput() ?? this.#defaults.sideOffset,
+  );
 
   /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -81,10 +115,24 @@ export class ForTooltip implements ForTooltipContext {
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
   /**
-   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
-   * middlewares. Default `8`.
+   * Per-tooltip override for the padding (px) applied uniformly to the
+   * `flip`, `shift`, and `size` middlewares. When `undefined` (default),
+   * falls back to `ForTooltipDefaults.collisionPadding` from the surrounding
+   * `provideForTooltipDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `collisionPadding`; consumers bind
+   * `[collisionPadding]="..."` and read the effective value via the public
+   * `collisionPadding` computed below.
    */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  readonly _collisionPaddingInput = input(undefined, {
+    alias: 'collisionPadding',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective collision padding (px): the `collisionPadding` input when set, else the scope default. */
+  readonly collisionPadding = computed<number>(
+    () => this._collisionPaddingInput() ?? this.#defaults.collisionPadding,
+  );
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });
