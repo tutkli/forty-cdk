@@ -133,6 +133,21 @@ describe('ForOtpInput', () => {
       expect(group.getAttribute('aria-label')).toBe('Verification code');
     });
 
+    it('reflects ariaLabel as aria-label on the injected input when standalone', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.ariaLabel.set('Verification code');
+      await flush();
+      expect(input.getAttribute('aria-label')).toBe('Verification code');
+    });
+
+    it('emits no aria-label on the injected input while ariaLabel is unset', async () => {
+      const { input, instance, flush } = await mountOtp();
+      expect(input.hasAttribute('aria-label')).toBe(false);
+      instance.ariaLabel.set('');
+      await flush();
+      expect(input.hasAttribute('aria-label')).toBe(false);
+    });
+
     it('reflects data-complete on the group when every slot is filled', async () => {
       const { group, input, instance, flush } = await mountOtp();
       expect(group.hasAttribute('data-complete')).toBe(false);
@@ -540,7 +555,13 @@ describe('ForOtpInput', () => {
       template: `
         <div forField>
           <label forLabel data-test-id="label">One-time code</label>
-          <div forOtpInput [(value)]="code" [length]="6" #otp="forOtpInput">
+          <div
+            forOtpInput
+            [(value)]="code"
+            [length]="6"
+            [ariaLabel]="ariaLabel()"
+            #otp="forOtpInput"
+          >
             @for (i of otp.slots(); track i) {
               <div forOtpInputSlot [index]="i"></div>
             }
@@ -551,6 +572,30 @@ describe('ForOtpInput', () => {
     })
     class FieldHost {
       readonly code = signal('');
+      readonly ariaLabel = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [ForField, ForOtpInput, ForOtpInputSlot],
+      template: `
+        <div forField>
+          <div
+            forOtpInput
+            [(value)]="code"
+            [length]="6"
+            [ariaLabel]="ariaLabel()"
+            #otp="forOtpInput"
+          >
+            @for (i of otp.slots(); track i) {
+              <div forOtpInputSlot [index]="i"></div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class LabellessFieldHost {
+      readonly code = signal('');
+      readonly ariaLabel = signal<string | null>(null);
     }
 
     it('wires id / aria-labelledby / aria-describedby onto the real input', async () => {
@@ -564,6 +609,27 @@ describe('ForOtpInput', () => {
       expect(label.getAttribute('for')).toBe(input.id);
       expect(input.getAttribute('aria-labelledby')).toBe(label.id);
       expect(input.getAttribute('aria-describedby')).toBe(desc.id);
+    });
+
+    it('keeps the field aria-labelledby and emits no aria-label when both apply', async () => {
+      const r = renderHost(FieldHost);
+      r.fixture.componentInstance.ariaLabel.set('Verification code');
+      await flush(r.fixture);
+      const input = r.el.querySelector('input')!;
+      const label = r.el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+
+      expect(input.getAttribute('aria-labelledby')).toBe(label.id);
+      expect(input.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('falls back to aria-label on the input inside a field without a label', async () => {
+      const r = renderHost(LabellessFieldHost);
+      r.fixture.componentInstance.ariaLabel.set('Verification code');
+      await flush(r.fixture);
+      const input = r.el.querySelector('input')!;
+
+      expect(input.hasAttribute('aria-labelledby')).toBe(false);
+      expect(input.getAttribute('aria-label')).toBe('Verification code');
     });
   });
 
