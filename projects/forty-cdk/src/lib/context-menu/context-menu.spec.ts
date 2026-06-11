@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -414,7 +415,95 @@ describe('ForContextMenu', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });
-      expect(() => TestBed.createComponent(Orphan)).toThrow();
+      const fixture = TestBed.createComponent(Orphan);
+      expect(() => fixture.detectChanges()).toThrow(/\[forty-cdk\/context-menu\]/);
+    });
+
+    it('mentions the declaration-site rule and the explicit-reference escape hatch', () => {
+      @Component({
+        imports: [ForContextMenuTrigger],
+        template: `<div forContextMenuTrigger>orphan</div>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forContextMenuTrigger\]="root"/);
+      expect(message).toMatch(/#root="forContextMenu"/);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [...IMPORTS, NgTemplateOutlet],
+      template: `
+        <ng-template #chip let-root="root">
+          <div id="region" [forContextMenuTrigger]="root">Right-click here</div>
+        </ng-template>
+
+        <div forContextMenu [(open)]="open" #root="forContextMenu">
+          <ng-container [ngTemplateOutlet]="chip" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+              <button id="copy" forMenuItem>Copy</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on right-click when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const region = r.query<HTMLElement>('#region')!;
+
+      const event = rightClick(region, 100, 200);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+      expect(region.getAttribute('data-state')).toBe('open');
+    });
+
+    it('opens on Shift+F10 and focuses the first item', async () => {
+      const r = renderHost(StampedHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      const ev = pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(ev.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const region = r.query<HTMLElement>('#region')!;
+
+      rightClick(region, 10, 10);
+      await flush(r.fixture);
+      expect(document.querySelector('[forMenuContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(document.querySelector('[forMenuContent]')).toBeNull();
+      expect(region.getAttribute('data-state')).toBe('closed');
     });
   });
 
