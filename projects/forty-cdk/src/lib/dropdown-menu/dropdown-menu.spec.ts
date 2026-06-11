@@ -30,7 +30,6 @@ class DropdownHost {
   readonly dismissible = signal(true);
 }
 
-
 describe('ForDropdownMenu', () => {
   afterEachOverlayCleanup();
 
@@ -175,6 +174,139 @@ describe('ForDropdownMenu', () => {
       expect(trigger.getAttribute('data-disabled')).toBe('');
       expect(trigger.getAttribute('aria-disabled')).toBe('true');
       expect(trigger.getAttribute('disabled')).toBe('');
+    });
+  });
+
+  describe('trigger disabled hygiene', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open" [disabled]="rootDisabled()">
+          <button forDropdownMenuTrigger [disabled]="triggerDisabled()">Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="a" forMenuItem>A</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class TriggerDisabledHost {
+      readonly open = signal(false);
+      readonly rootDisabled = signal(false);
+      readonly triggerDisabled = signal(false);
+    }
+
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open" [disabled]="rootDisabled()">
+          <button forDropdownMenuTrigger disabled>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="a" forMenuItem>A</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StaticDisabledHost {
+      readonly open = signal(false);
+      readonly rootDisabled = signal(false);
+    }
+
+    it('disables via the trigger-only input while the root stays enabled', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+    });
+
+    it('removes the disabled attribute it set once the trigger is re-enabled', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      r.instance.triggerDisabled.set(false);
+      await flush(r.fixture);
+
+      expect(trigger.hasAttribute('disabled')).toBe(false);
+      expect(trigger.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('keeps reflecting root-only disabling on the effective state', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      r.instance.rootDisabled.set(false);
+      await flush(r.fixture);
+      expect(trigger.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('preserves a consumer-set static disabled while the context is enabled', async () => {
+      const r = renderHost(StaticDisabledHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+
+      expect(trigger.hasAttribute('disabled')).toBe(true);
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('never removes a consumer-set static disabled across a root disabled cycle', async () => {
+      const r = renderHost(StaticDisabledHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+      expect(trigger.hasAttribute('disabled')).toBe(true);
+
+      r.instance.rootDisabled.set(false);
+      await flush(r.fixture);
+      expect(trigger.hasAttribute('disabled')).toBe(true);
+    });
+
+    it('preserves a consumer-set disabled attribute that bypasses the input', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.setAttribute('disabled', '');
+
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+      r.instance.rootDisabled.set(false);
+      await flush(r.fixture);
+
+      expect(trigger.hasAttribute('disabled')).toBe(true);
     });
   });
 
