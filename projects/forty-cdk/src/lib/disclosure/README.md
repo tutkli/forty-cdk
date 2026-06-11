@@ -24,7 +24,11 @@ The host element gets `data-state="open" \| "closed"` for CSS hooks.
 
 ### `ForDisclosureTrigger`
 
-Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click.
+| API        | Type             | Description                                                         |
+| ---------- | ---------------- | ------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. |
+
+Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (`disabled`, `aria-disabled`, `data-disabled`) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
 
 `aria-controls` is emitted only while open — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
 
@@ -107,4 +111,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 - The library does not auto-add `role="button"` or keyboard handlers when the trigger is not a `<button>`. Always use a real button.
 - The directive does not apply the native `hidden` attribute to the content. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you — drive them off `[data-state]`.
-- Disabled state sets the native `disabled` attribute on the trigger (effective on `<button>` elements). Click is also ignored at the directive level as a defensive measure.
+- Disabled state sets the native `disabled` attribute on the trigger (effective on `<button>` elements). Click is also ignored at the directive level as a defensive measure. The trigger can be disabled from the root (`[forDisclosure] [disabled]`) or per trigger (`[forDisclosureTrigger] [disabled]`); either source disables it.

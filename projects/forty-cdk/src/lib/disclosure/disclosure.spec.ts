@@ -210,6 +210,87 @@ describe('ForDisclosure', () => {
     });
   });
 
+  describe('per-trigger disabled', () => {
+    @Component({
+      imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+      template: `
+        <div forDisclosure [(open)]="isOpen" [disabled]="rootDisabled()">
+          <button type="button" forDisclosureTrigger [disabled]="triggerDisabled()">Toggle</button>
+          <section forDisclosureContent>Panel</section>
+        </div>
+      `,
+    })
+    class TriggerDisabledHost {
+      readonly isOpen = signal(false);
+      readonly rootDisabled = signal(false);
+      readonly triggerDisabled = signal(false);
+    }
+
+    it('ignores click when only the trigger is disabled and reflects the effective state', () => {
+      const { fixture, query, flush } = renderHost(TriggerDisabledHost);
+      fixture.componentInstance.triggerDisabled.set(true);
+      flush();
+
+      const trigger = query<HTMLButtonElement>('button')!;
+      const root = query<HTMLElement>('[forDisclosure]')!;
+
+      expect(root.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      trigger.click();
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('reflects root-only disabling on the trigger via the effective state', () => {
+      const { fixture, query, flush } = renderHost(TriggerDisabledHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      flush();
+
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      trigger.click();
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('stays disabled while either source is set and re-enables once both clear', () => {
+      const { fixture, query, flush } = renderHost(TriggerDisabledHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      fixture.componentInstance.triggerDisabled.set(true);
+      flush();
+
+      const trigger = query<HTMLButtonElement>('button')!;
+      expect(trigger.getAttribute('disabled')).toBe('');
+
+      fixture.componentInstance.rootDisabled.set(false);
+      flush();
+      expect(trigger.getAttribute('disabled')).toBe('');
+      trigger.click();
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+
+      fixture.componentInstance.triggerDisabled.set(false);
+      flush();
+      expect(trigger.hasAttribute('disabled')).toBe(false);
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+      expect(trigger.hasAttribute('data-disabled')).toBe(false);
+
+      trigger.click();
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+  });
+
   describe('used outside [forDisclosure]', () => {
     it('throws a prefixed error from ForDisclosureTrigger', () => {
       @Component({
