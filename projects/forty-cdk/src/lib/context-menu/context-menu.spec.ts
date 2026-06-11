@@ -1,12 +1,7 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pressKey,
-  renderHost,
-} from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { FOR_MENU_CONTEXT } from '../menu/menu-context';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
@@ -89,6 +84,75 @@ describe('ForContextMenu', () => {
       expect(region.getAttribute('data-disabled')).toBe('');
       expect(region.hasAttribute('aria-disabled')).toBe(false);
       expect(region.hasAttribute('disabled')).toBe(false);
+    });
+  });
+
+  describe('trigger-only disabled', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forContextMenu [(open)]="open" [disabled]="rootDisabled()">
+          <div id="region" forContextMenuTrigger [disabled]="triggerDisabled()">Right-click</div>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class TriggerDisabledHost {
+      readonly open = signal(false);
+      readonly rootDisabled = signal(false);
+      readonly triggerDisabled = signal(false);
+    }
+
+    it('gates pointer and keyboard activation while the root stays enabled', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+
+      const region = r.query<HTMLElement>('#region')!;
+      const event = rightClick(region, 0, 0);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+
+      region.focus();
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('reflects only data-disabled from the effective state', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+
+      const region = r.query<HTMLElement>('#region')!;
+      expect(region.getAttribute('data-disabled')).toBe('');
+      expect(region.hasAttribute('aria-disabled')).toBe(false);
+      expect(region.hasAttribute('disabled')).toBe(false);
+
+      r.instance.triggerDisabled.set(false);
+      await flush(r.fixture);
+      expect(region.hasAttribute('data-disabled')).toBe(false);
+
+      rightClick(region, 10, 10);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('keeps root-only disabling effective on the trigger', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 0, 0);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      expect(region.getAttribute('data-disabled')).toBe('');
     });
   });
 

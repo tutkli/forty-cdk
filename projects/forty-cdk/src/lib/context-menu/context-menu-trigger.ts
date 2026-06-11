@@ -1,4 +1,12 @@
-import { Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { injectContextMenuContext } from './context-menu-context';
@@ -20,12 +28,13 @@ import { injectContextMenuContext } from './context-menu-context';
  * `ContextMenu` key) need the trigger — or something inside it — focusable,
  * which the default guarantees.
  *
- * When `disabled`, only `data-disabled` is reflected as a styling / state
- * hook. The trigger is a generic region with no interactive ARIA role, so it
- * emits neither the native `disabled` attribute (which applies only to form
- * controls) nor `aria-disabled` (which is meaningful only on an interactive
- * role); the disabled behaviour is enforced by the in-handler guards, which
- * let the native browser menu show through instead.
+ * Disabling merges the trigger's own `disabled` input OR the root's
+ * `disabled`. When disabled, only `data-disabled` is reflected as a styling /
+ * state hook. The trigger is a generic region with no interactive ARIA role,
+ * so it emits neither the native `disabled` attribute (which applies only to
+ * form controls) nor `aria-disabled` (which is meaningful only on an
+ * interactive role); the disabled behaviour is enforced by the in-handler
+ * guards, which let the native browser menu show through instead.
  */
 @Directive({
   selector: '[forContextMenuTrigger]',
@@ -33,7 +42,7 @@ import { injectContextMenuContext } from './context-menu-context';
   host: {
     tabindex: '-1',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },
@@ -42,6 +51,12 @@ export class ForContextMenuTrigger {
   protected readonly ctx = injectContextMenuContext();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+
+  /** Disables this trigger only, in addition to the root's `disabled`. */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
+  readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   constructor() {
     registerHandle(
@@ -52,7 +67,7 @@ export class ForContextMenuTrigger {
   }
 
   protected onContextMenu(event: MouseEvent): void {
-    if (this.ctx.disabled()) {
+    if (this.effectiveDisabled()) {
       // Let the native browser menu show.
       return;
     }
@@ -62,7 +77,7 @@ export class ForContextMenuTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const isShiftF10 = event.key === 'F10' && event.shiftKey;
