@@ -12,3 +12,7 @@ export {
   OTP_REGEXP_ONLY_DIGITS_AND_CHARS,
   type OtpInputType,
 } from './otp-patterns';
+export {
+  FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS,
+  FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS,
+} from './otp-input-host-directive';

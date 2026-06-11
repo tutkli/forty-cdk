@@ -5,3 +5,7 @@ export {
   provideForCheckboxDefaults,
   type ForCheckboxDefaults,
 } from './checkbox-defaults';
+export {
+  FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS,
+} from './checkbox-host-directive';

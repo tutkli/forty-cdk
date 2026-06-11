@@ -19,3 +19,7 @@ export {
   type DateTimeSegmentType,
   type FieldGranularity,
 } from './build-segments';
+export {
+  FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
+  FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+} from './date-field-host-directive';
