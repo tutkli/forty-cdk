@@ -130,7 +130,12 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   /** Rewrite pasted text before it fills the slots (e.g. strip separators). */
   readonly pasteTransformer = input<((pasted: string) => string) | null>(null);
 
-  /** Accessible name for the group. Emits `aria-label` only when truthy. */
+  /**
+   * Accessible name for the group, also reflected as `aria-label` on the
+   * injected real `<input>` whenever no field-provided `aria-labelledby`
+   * applies (standalone usage, or a `[forField]` without a label). Emits
+   * `aria-label` only when truthy; a field label always wins on the input.
+   */
   readonly ariaLabel = input<string | null>(null);
 
   /**
@@ -232,6 +237,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       setAttr(el, 'name', this.name() || null);
       el.toggleAttribute('disabled', this.effectiveDisabled());
       el.toggleAttribute('readonly', this.readonly());
+      setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.ariaLabel() || null);
       setAttr(el, 'aria-disabled', this.effectiveDisabled() ? 'true' : null);
       setAttr(el, 'aria-readonly', this.readonly() ? 'true' : null);
       setAttr(el, 'aria-required', this.required() ? 'true' : null);

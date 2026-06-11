@@ -28,7 +28,7 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 | `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.                         |
 | `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill. Defaults to `true`.             |
 | `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).                  |
-| `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group. Emits `aria-label` only when truthy.                     |
+| `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy. |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).                            |
 | `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.                        |
 | `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.                                                                  |
@@ -185,7 +185,7 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 
 ## Accessibility notes
 
-- **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control. Screen readers announce the group name on entry and treat the code as one ordinary text field.
+- **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control, and it reflects the same `ariaLabel` as its own `aria-label` whenever no field-provided `aria-labelledby` applies (a `[forField]` label always wins). Screen readers announce the group name on entry and treat the code as one ordinary, named text field.
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `valueInvalid`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
