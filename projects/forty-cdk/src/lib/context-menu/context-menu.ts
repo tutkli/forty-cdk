@@ -18,6 +18,10 @@ import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positi
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import type { VetoableEvent, VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
+import {
+  FOR_CONTEXT_MENU_CONTEXT,
+  type ForContextMenuContext,
+} from './context-menu-context';
 import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
 
 /**
@@ -57,9 +61,15 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu }],
+  providers: [
+    { provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu },
+    { provide: FOR_CONTEXT_MENU_CONTEXT, useExisting: ForContextMenu },
+  ],
 })
-export class ForContextMenu extends MenuOverlayHost implements ForMenuContext {
+export class ForContextMenu
+  extends MenuOverlayHost
+  implements ForMenuContext, ForContextMenuContext
+{
   readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
 
   readonly open = model<boolean>(false);
