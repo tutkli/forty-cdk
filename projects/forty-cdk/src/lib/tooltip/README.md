@@ -152,6 +152,31 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 }
 ```
 
+## Gating empty content (wrapper authors)
+
+Tooltip content is template-provided and mounts via the consumer's own markup, so the tooltip cannot know the content would be empty before opening — it would happily open an empty bubble on hover/focus. The supported gate is the existing `disabled` input: drive it from whatever signal feeds the content. This is the recipe for design-system wrappers that take the tooltip text as a string input:
+
+```ts
+import { Component, input } from '@angular/core';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+
+@Component({
+  selector: 'my-tooltip-button',
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <span forTooltip [disabled]="!message()">
+      <button type="button" forTooltipTrigger><ng-content /></button>
+      <div forTooltipContent class="my-tooltip">{{ message() }}</div>
+    </span>
+  `,
+})
+export class MyTooltipButton {
+  readonly message = input('');
+}
+```
+
+While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes — no empty bubble, no stale `aria-describedby`.
+
 ## Keyboard
 
 - **Tab** to the trigger → opens the tooltip after `openDelay`.
@@ -175,6 +200,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 ## Accessibility notes
 
 - The trigger receives `aria-describedby="<content-id>"` only while the tooltip is open, matching APG.
+- A consumer-set `id` on the trigger element is preserved (and used as the trigger id internally); the generated `for-tooltip-trigger-*` id is only assigned when the element has none. Anchors, `aria-labelledby` references, and `<label for>` associations keep working.
 - The content carries `role="tooltip"` and a stable id wired to the trigger.
 - The optional arrow is `aria-hidden="true"` — it's purely decorative.
 - The tooltip never steals focus.
