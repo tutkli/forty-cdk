@@ -3,13 +3,16 @@ import {
   computed,
   Directive,
   DOCUMENT,
+  effect,
   ElementRef,
   inject,
   input,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { injectContextMenuContext } from './context-menu-context';
+import {
+  type ForContextMenuContext,
+  injectContextMenuContext,
+} from './context-menu-context';
 
 /**
  * Region that opens its parent `[forContextMenu]` on the `contextmenu` event
@@ -28,6 +31,13 @@ import { injectContextMenuContext } from './context-menu-context';
  * `ContextMenu` key) need the trigger — or something inside it — focusable,
  * which the default guarantees.
  *
+ * The root is normally resolved via DI from the enclosing `[forContextMenu]`.
+ * When the trigger is declared inside an `ng-template` stamped into the root
+ * (e.g. via `ngTemplateOutlet`), DI resolves at the template's declaration
+ * site and misses the root — pass it explicitly through the selector input,
+ * `routerLink`-style: `[forContextMenuTrigger]="root"` with
+ * `#root="forContextMenu"`.
+ *
  * Disabling merges the trigger's own `disabled` input OR the root's
  * `disabled`. When disabled, only `data-disabled` is reflected as a styling /
  * state hook. The trigger is a generic region with no interactive ARIA role,
@@ -41,29 +51,46 @@ import { injectContextMenuContext } from './context-menu-context';
   exportAs: 'forContextMenuTrigger',
   host: {
     tabindex: '-1',
-    '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForContextMenuTrigger {
-  protected readonly ctx = injectContextMenuContext();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+
+  /**
+   * Optional explicit reference to the `[forContextMenu]` root, named after
+   * the selector `routerLink`-style. The bare valueless attribute keeps
+   * resolving the enclosing root via DI; pass the root explicitly
+   * (`[forContextMenuTrigger]="root"`, with `#root="forContextMenu"`) when
+   * the trigger is declared in an `ng-template` stamped inside the root —
+   * DI resolves at the template's declaration site, so the enclosing root
+   * is invisible there. The empty string (what the valueless attribute
+   * yields) is treated as unset.
+   */
+  readonly forContextMenuTrigger = input<ForContextMenuContext | ''>('');
+
+  protected readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
-  readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
+  readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
   constructor() {
-    registerHandle(
-      this.#host.nativeElement,
-      (el) => this.ctx.registerTrigger(el),
-      (el) => this.ctx.unregisterTrigger(el),
-    );
+    const el = this.#host.nativeElement;
+    // Registration is an imperative call into the resolved root's registry,
+    // not state derivation — the effect only re-registers the element when
+    // the resolved root changes (explicit reference swapped at runtime).
+    effect((onCleanup) => {
+      const ctx = this.ctx();
+      ctx.registerTrigger(el);
+      onCleanup(() => ctx.unregisterTrigger(el));
+    });
   }
 
   protected onContextMenu(event: MouseEvent): void {
@@ -72,8 +99,8 @@ export class ForContextMenuTrigger {
       return;
     }
     event.preventDefault();
-    this.ctx.setVirtualAnchor(event.clientX, event.clientY);
-    this.ctx.openMenu('first');
+    this.ctx().setVirtualAnchor(event.clientX, event.clientY);
+    this.ctx().openMenu('first');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -92,7 +119,7 @@ export class ForContextMenuTrigger {
     // Anchor at the focused element when it lives inside the trigger; fall
     // back to the trigger itself otherwise (e.g. focus is on the trigger).
     const anchorEl = focused && trigger.contains(focused) ? focused : trigger;
-    this.ctx.setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
-    this.ctx.openMenu('first');
+    this.ctx().setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
+    this.ctx().openMenu('first');
   }
 }

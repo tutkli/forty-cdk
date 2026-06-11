@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing
@@ -58,12 +58,31 @@ export const FOR_CONTEXT_MENU_CONTEXT = new InjectionToken<ForContextMenuContext
   'FOR_CONTEXT_MENU_CONTEXT',
 );
 
-export function injectContextMenuContext(): ForContextMenuContext {
-  const ctx = inject(FOR_CONTEXT_MENU_CONTEXT, { optional: true });
-  if (!ctx) {
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forContextMenuTrigger]` input carries one, the injected
+ * `FOR_CONTEXT_MENU_CONTEXT` otherwise. The orphan error only fires when
+ * neither resolves, on first read of the returned signal. Must be called in
+ * an injection context.
+ */
+export function injectContextMenuContext(
+  explicitRoot: Signal<ForContextMenuContext | ''>,
+): Signal<ForContextMenuContext> {
+  const injected = inject(FOR_CONTEXT_MENU_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected;
+    }
     throw new Error(
-      '[forty-cdk/context-menu] ForContextMenuTrigger must be used inside a [forContextMenu] element.',
+      '[forty-cdk/context-menu] ForContextMenuTrigger could not resolve its [forContextMenu] root: ' +
+        'no FOR_CONTEXT_MENU_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forContextMenuTrigger]="root" with #root="forContextMenu".',
     );
-  }
-  return ctx;
+  });
 }
