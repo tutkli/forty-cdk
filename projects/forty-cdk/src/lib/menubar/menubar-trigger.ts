@@ -13,6 +13,7 @@ import { registerHandle } from '../_internal/collection/register-handle';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { injectMenubarContext } from './menubar-context';
 
 /**
@@ -40,6 +41,11 @@ import { injectMenubarContext } from './menubar-context';
  * While some other trigger's menu is open, hovering this trigger opens it
  * immediately (no delay) — Radix-style "first open is intentional, subsequent
  * are hover". Keyboard focus alone never opens a menu.
+ *
+ * Pointer-driven opens (click — detected by the `pointerdown` preceding it —
+ * and hover-after-open) move focus to the menu's first item without
+ * highlighting it; keyboard activation (Enter / Space / ArrowDown / ArrowUp)
+ * highlights the focused item.
  */
 @Directive({
   selector: '[forMenubarTrigger]',
@@ -56,6 +62,7 @@ import { injectMenubarContext } from './menubar-context';
     '[attr.data-state]': 'isOpen() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'menubar.orientation()',
+    '(pointerdown)': 'onPointerDown()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
@@ -66,6 +73,7 @@ export class ForMenubarTrigger {
   protected readonly menubar = injectMenubarContext('ForMenubarTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
+  #pointerActivation = false;
 
   /** Identifies this trigger in the menubar's `value` model. */
   readonly value = input.required<string>();
@@ -131,18 +139,25 @@ export class ForMenubarTrigger {
     );
   }
 
+  protected onPointerDown(): void {
+    this.#pointerActivation = true;
+  }
+
   protected onClick(): void {
+    const modality: MenuActivationModality = this.#pointerActivation ? 'pointer' : 'keyboard';
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;
     }
     if (this.isOpen()) {
       this.menubar.closeOpen();
     } else {
-      this.menubar.openTrigger(this.value(), 'first');
+      this.menubar.openTrigger(this.value(), 'first', modality);
     }
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;
     }

@@ -17,6 +17,7 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import { FOR_MENU_CONTEXT } from '../menu/menu-context';
@@ -251,7 +252,11 @@ export class ForMenubar implements ForMenubarContext {
     items[next]?.host.focus();
   }
 
-  openTrigger(value: string, initialFocus: 'first' | 'last'): void {
+  openTrigger(
+    value: string,
+    initialFocus: 'first' | 'last',
+    modality: MenuActivationModality = 'keyboard',
+  ): void {
     if (this.disabled()) {
       return;
     }
@@ -259,7 +264,7 @@ export class ForMenubar implements ForMenubarContext {
     if (!handle || handle.disabled()) {
       return;
     }
-    this.menuCtx.prepareOpen(initialFocus);
+    this.menuCtx.prepareOpen(initialFocus, modality);
     this.#lastValue.set(value);
     if (this.value() !== value) {
       this.value.set(value);
@@ -314,7 +319,7 @@ export class ForMenubar implements ForMenubarContext {
     if (this.value() === '' || this.value() === value) {
       return;
     }
-    this.openTrigger(value, 'first');
+    this.openTrigger(value, 'first', 'pointer');
   }
 
   /**

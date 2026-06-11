@@ -177,6 +177,92 @@ describe('ForDropdownMenu', () => {
     });
   });
 
+  describe('open modality and data-highlighted', () => {
+    function pointerClick(el: HTMLElement): void {
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      el.click();
+    }
+
+    it('pointer click opens and focuses the first item without highlighting it', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pointerClick(trigger);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+    });
+
+    it('keyboard-style activation (click without a preceding pointerdown) highlights the first item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(document.querySelector('#a')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('ArrowDown open highlights the first item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(document.querySelector('#a')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('ArrowUp open highlights the last item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(document.querySelector('#c')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('a keydown after a stale pointerdown reads the open as keyboard', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(document.querySelector('#a')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('arrow navigation after a pointer open highlights the focused item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pointerClick(trigger);
+      await flush(r.fixture);
+
+      const a = document.querySelector<HTMLElement>('#a')!;
+      pressKey(a, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(document.querySelector('#b')!.getAttribute('data-highlighted')).toBe('');
+      expect(a.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('a pointer reopen still suppresses after a keyboard open consumed its highlight', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.querySelector('#a')!.getAttribute('data-highlighted')).toBe('');
+
+      pressKey(document.querySelector('#a')!, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      pointerClick(trigger);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+    });
+  });
+
   describe('trigger disabled hygiene', () => {
     @Component({
       imports: IMPORTS,

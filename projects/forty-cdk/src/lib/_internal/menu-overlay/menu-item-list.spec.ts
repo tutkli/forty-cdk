@@ -215,5 +215,39 @@ describe('MenuItemList', () => {
       expect(list.focusFirstEnabledItem()).toBe(false);
       expect(list.focusLastEnabledItem()).toBe(false);
     });
+
+    it('asks the target to suppress its next focus highlight when highlight is false', () => {
+      const list = build();
+      const suppressA = vi.fn();
+      const suppressB = vi.fn();
+      list.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppressA });
+      list.registerItem({ ...makeItem('b'), suppressHighlightOnNextFocus: suppressB });
+
+      expect(list.focusFirstEnabledItem(false)).toBe(true);
+      expect(suppressA).toHaveBeenCalledTimes(1);
+      expect(suppressB).not.toHaveBeenCalled();
+      expect(document.activeElement?.id).toBe('a');
+
+      expect(list.focusLastEnabledItem(false)).toBe(true);
+      expect(suppressB).toHaveBeenCalledTimes(1);
+      expect(document.activeElement?.id).toBe('b');
+    });
+
+    it('does not suppress when highlight is omitted or true', () => {
+      const list = build();
+      const suppress = vi.fn();
+      list.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      expect(list.focusFirstEnabledItem()).toBe(true);
+      expect(list.focusLastEnabledItem(true)).toBe(true);
+      expect(suppress).not.toHaveBeenCalled();
+    });
+
+    it('tolerates handles without the optional suppression hook', () => {
+      const list = build();
+      list.registerItem(makeItem('a'));
+      expect(list.focusFirstEnabledItem(false)).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+    });
   });
 });

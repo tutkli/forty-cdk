@@ -279,6 +279,68 @@ describe('MenuOverlay', () => {
     });
   });
 
+  describe('activation modality', () => {
+    it('suppresses the initial-focus highlight exactly once after a pointer open', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.openMenu('first', 'pointer');
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+    });
+
+    it('suppresses the last-item focus highlight after a pointer open with initialFocus last', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem(makeItem('a'));
+      overlay.registerItem({ ...makeItem('b'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.openMenu('last', 'pointer');
+      expect(overlay.focusLastEnabledItem()).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+    });
+
+    it('keyboard (default) opens never suppress the highlight', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.openMenu('first');
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+
+      overlay.closeMenu('programmatic');
+      overlay.openMenu('first', 'keyboard');
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+      expect(suppress).not.toHaveBeenCalled();
+    });
+
+    it('a keyboard open resets a prior unconsumed pointer suppression', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.openMenu('first', 'pointer');
+      overlay.closeMenu('programmatic');
+      overlay.openMenu('first', 'keyboard');
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+      expect(suppress).not.toHaveBeenCalled();
+    });
+
+    it('toggle forwards the modality on its open branch', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.toggle('first', 'pointer');
+      expect(overlay.focusFirstEnabledItem()).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('open / close / toggle', () => {
     it('open / close write through the open hook', () => {
       const { overlay, hooks } = build();

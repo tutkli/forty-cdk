@@ -2,7 +2,12 @@ import { type Signal } from '@angular/core';
 
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
-import type { MenuOverlay, MenuOverlayCloseReason, MenuOverlayItemHandle } from './menu-overlay';
+import type {
+  MenuActivationModality,
+  MenuOverlay,
+  MenuOverlayCloseReason,
+  MenuOverlayItemHandle,
+} from './menu-overlay';
 
 /**
  * Abstract base that forwards the `MenuOverlay` coordination slice every menu
@@ -94,12 +99,18 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     return this._overlay.focusLastEnabledItem();
   }
 
-  toggle(initialFocus: 'first' | 'last' = 'first'): void {
-    this._overlay.toggle(initialFocus);
+  toggle(
+    initialFocus: 'first' | 'last' = 'first',
+    modality: MenuActivationModality = 'keyboard',
+  ): void {
+    this._overlay.toggle(initialFocus, modality);
   }
 
-  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
-    this._overlay.openMenu(initialFocus);
+  openMenu(
+    initialFocus: 'first' | 'last' = 'first',
+    modality: MenuActivationModality = 'keyboard',
+  ): void {
+    this._overlay.openMenu(initialFocus, modality);
   }
 
   closeMenu(reason: MenuOverlayCloseReason): void {

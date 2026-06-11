@@ -119,7 +119,7 @@ describe('ForMenuSub', () => {
   // (`subOpen` flips) and, where an item carries it, the host-bound
   // `data-highlighted` reaction that marks the selected item. See testing.md §E2E.
   describe('opening', () => {
-    it('clicking the SubTrigger opens the submenu and highlights its first item', async () => {
+    it('keyboard-style click (no preceding pointerdown) opens the submenu and highlights its first item', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -129,6 +129,21 @@ describe('ForMenuSub', () => {
 
       expect(r.instance.subOpen()).toBe(true);
       expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('pointer click opens the submenu without highlighting its first item', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLButtonElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      more.click();
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('[forMenuSubContent] [data-highlighted]')).toBeNull();
     });
 
     it('ArrowRight on the SubTrigger opens the submenu', async () => {

@@ -100,7 +100,7 @@ export class ForContextMenuTrigger {
     }
     event.preventDefault();
     this.ctx().setVirtualAnchor(event.clientX, event.clientY);
-    this.ctx().openMenu('first');
+    this.ctx().openMenu('first', 'pointer');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

@@ -71,6 +71,36 @@ describe('ForContextMenu', () => {
       expect(document.activeElement?.id).toBe('cut');
     });
 
+    it('does not highlight the focused first item on a pointer (contextmenu) open', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 50, 50);
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('cut');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+    });
+
+    it('highlights the first item on a keyboard open (Shift+F10)', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('highlights the first item on a keyboard open (ContextMenu key)', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
     it('lets the native menu show when disabled', async () => {
       const r = renderHost(ContextMenuHost);
       r.instance.disabled.set(true);

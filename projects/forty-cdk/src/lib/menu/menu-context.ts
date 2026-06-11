@@ -3,6 +3,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import type {
   ListNavigationAction,
   WritingDirection,
@@ -48,6 +49,14 @@ export type ForMenuCloseReason =
 export interface ForMenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
   readonly textValue?: Signal<string>;
+  /**
+   * Tells the item that the next focus it receives is a programmatic move
+   * that must not reflect `data-highlighted` (the initial focus of a
+   * pointer-driven open). One-shot: the item consumes the suppression on its
+   * next `focus` event. Optional — items that don't reflect a highlight
+   * (e.g. `[forMenuSubTrigger]`) simply omit it.
+   */
+  suppressHighlightOnNextFocus?(): void;
 }
 
 /**
@@ -144,9 +153,16 @@ export interface ForMenuContext {
   focusFirstEnabledItem(): boolean;
   focusLastEnabledItem(): boolean;
 
-  /** Trigger entry points — toggle/open honour `disabled`. */
-  toggle(initialFocus?: 'first' | 'last'): void;
-  openMenu(initialFocus?: 'first' | 'last'): void;
+  /**
+   * Trigger entry points — toggle/open honour `disabled`. `modality`
+   * (default `'keyboard'`) records how the open was activated: a `'pointer'`
+   * open keeps the programmatic initial focus from reflecting
+   * `data-highlighted` on the focused item, while a `'keyboard'` open
+   * highlights it per the APG menu-button pattern. The DOM focus move itself
+   * is identical in both modalities.
+   */
+  toggle(initialFocus?: 'first' | 'last', modality?: MenuActivationModality): void;
+  openMenu(initialFocus?: 'first' | 'last', modality?: MenuActivationModality): void;
   closeMenu(reason: ForMenuCloseReason): void;
 
   /**
@@ -208,6 +224,8 @@ export interface ForMenuContext {
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
 }
+
+export type { MenuActivationModality };
 
 export const FOR_MENU_CONTEXT = new InjectionToken<ForMenuContext>('FOR_MENU_CONTEXT');
 

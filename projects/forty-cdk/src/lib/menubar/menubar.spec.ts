@@ -228,13 +228,23 @@ describe('ForMenubar', () => {
   // focus among triggers, and the items' `data-highlighted` reaction. See
   // testing.md rule #6 and §E2E.
   describe('trigger interaction', () => {
-    it('opens on click and highlights the first item', async () => {
+    it('opens on keyboard-style click (no preceding pointerdown) and highlights the first item', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.click();
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
       expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('opens on pointer click without highlighting the first item', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      file.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      file.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
     });
 
     it('toggles closed on a second click of the same trigger', async () => {
@@ -409,6 +419,20 @@ describe('ForMenubar', () => {
       view.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       await flush(r.fixture);
       expect(r.instance.open()).toBe('view');
+    });
+
+    it('hover-switch opens the sibling without highlighting its first item', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+
+      const view = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
+      view.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('view');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
     });
 
     it('does NOT auto-open on pointerenter while no menu is open', async () => {

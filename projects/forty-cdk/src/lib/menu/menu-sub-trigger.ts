@@ -2,6 +2,7 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { injectMenuContext } from './menu-context';
 import { handleMenuTabOut } from './menu-tab-out';
 
@@ -33,6 +34,10 @@ import { handleMenuTabOut } from './menu-tab-out';
  *
  * Touch / pen never hover, so submenus open by tap (the native click) on those
  * pointer types — the hover listeners are gated to `pointerType === 'mouse'`.
+ *
+ * Pointer-driven opens (click / tap, detected by the `pointerdown` preceding
+ * the click) move focus to the submenu's first item without highlighting it;
+ * keyboard activation (Enter / Space / the open arrow) highlights it.
  */
 @Directive({
   selector: '[forMenuSubTrigger]',
@@ -48,6 +53,7 @@ import { handleMenuTabOut } from './menu-tab-out';
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'submenu.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '(pointerdown)': 'onPointerDown()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(pointerenter)': 'onPointerEnter($event)',
@@ -57,6 +63,7 @@ import { handleMenuTabOut } from './menu-tab-out';
 export class ForMenuSubTrigger {
   protected readonly submenu = injectMenuContext('ForMenuSubTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  #pointerActivation = false;
 
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly effectiveDisabled = computed(() => this.disabled() || this.submenu.disabled());
@@ -84,11 +91,17 @@ export class ForMenuSubTrigger {
     );
   }
 
+  protected onPointerDown(): void {
+    this.#pointerActivation = true;
+  }
+
   protected onClick(): void {
+    const modality: MenuActivationModality = this.#pointerActivation ? 'pointer' : 'keyboard';
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;
     }
-    this.submenu.toggle('first');
+    this.submenu.toggle('first', modality);
   }
 
   protected onPointerEnter(event: PointerEvent): void {
@@ -110,6 +123,7 @@ export class ForMenuSubTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
+    this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;
     }
