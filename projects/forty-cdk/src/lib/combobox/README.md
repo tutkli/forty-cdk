@@ -10,22 +10,23 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 
 ## Pieces
 
-| Class                   | Selector                  | Role                                                                                                                             |
-| ----------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.              |
-| `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.   |
-| `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
-| `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                       |
-| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`. |
-| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).         |
-| `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.       |
-| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).             |
-| `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                             |
-| `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                       |
-| `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                                 |
-| `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
-| `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                          |
-| `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                        |
+| Class                   | Selector                  | Role                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.                                                                                                             |
+| `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.                                                                                                  |
+| `ForComboboxAnchor`     | `[forComboboxAnchor]`     | Optional. Positions the listbox against this element instead of the input — wrap a decorated field box (or the chip cluster) so the panel matches the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
+| `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                                                                                                                           |
+| `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                                                                                                                      |
+| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`.                                                                                                |
+| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).                                                                                                        |
+| `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.                                                                                                      |
+| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).                                                                                                            |
+| `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                                                                                                                            |
+| `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                                                                                                                      |
+| `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                                                                                                                                |
+| `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                                                                                        |
+| `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                                                                                                                         |
+| `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                                                                                                                       |
 
 ## Filtering is the consumer's job
 
@@ -68,6 +69,29 @@ Static and `@for`-rendered options share the same registry, navigation order (DO
 ## Mount/visibility convention
 
 `[forComboboxContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events when it wants to be unmounted. No `[hidden]`. The visible input lives outside the overlay; only the listbox surface portals.
+
+## Anchoring to a field box
+
+By default the listbox is positioned against `[forComboboxInput]`. When the input lives inside a decorated field box — padding, a prefix icon, a clear button, or the multi-mode chip cluster — anchoring to the bare `<input>` makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forComboboxAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:
+
+```html
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
+  <div forComboboxAnchor class="field-box">
+    <icon name="search" />
+    <input forComboboxInput placeholder="Search a fruit…" />
+    <button class="clear" (click)="combobox.clear()">×</button>
+  </div>
+  @if (combobox.open()) {
+  <div forComboboxContent style="width: var(--for-anchor-width)">
+    @for (it of filtered; track it.id) {
+    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+    }
+  </div>
+  }
+</div>
+```
+
+`[forComboboxAnchor]` changes **only** positioning. The input keeps `aria-controls` / `aria-expanded` / `aria-activedescendant`, all keyboard interaction, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the input, so existing markup is unaffected. At most one `[forComboboxAnchor]` per `[forCombobox]` — a second one throws `[forty-cdk/combobox]`. In multi mode, wrap `[forComboboxChips]` (which already wraps the chips + input) to anchor against the full chip cluster.
 
 ## Self-hiding pieces
 

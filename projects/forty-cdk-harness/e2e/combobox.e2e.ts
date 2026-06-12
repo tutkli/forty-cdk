@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import {
   el,
   gotoFixture,
@@ -89,6 +89,43 @@ test.describe('Combobox', () => {
       // is appended and selected ([prefixLen, end]).
       expect(await inputValue(input)).toBe('apple');
       expect(await selectionRange(input)).toEqual([2, 5]);
+    });
+  });
+
+  // #673 — `[forComboboxAnchor]` swaps the floating-ui reference to a decorated
+  // field box wider than the inner `<input>`. The size middleware reads the
+  // reference's `getBoundingClientRect()`, which jsdom returns as 0 — so the
+  // "panel sizes to the anchor, not the input" contract is only observable in a
+  // real browser. Vitest covers the wiring (registration, fallback, throws).
+  test.describe('anchor (field box positioning)', () => {
+    const anchorWidth = (page: Page) =>
+      el(page, 'content').evaluate((c) =>
+        Number.parseFloat((c as HTMLElement).style.getPropertyValue('--for-anchor-width') || '0'),
+      );
+
+    test('sizes the listbox against the [forComboboxAnchor] box, not the inner input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { anchor: '1', open: '1' });
+      const boxRect = await el(page, 'anchor').boundingBox();
+      expect(boxRect).not.toBeNull();
+      await expect(el(page, 'content')).toBeVisible();
+
+      await expect.poll(() => anchorWidth(page)).toBeGreaterThan(0);
+      // The field box is 320px; the bare input is far narrower. The positioner
+      // must size to the box (1px slack for cross-browser sub-pixel rounding).
+      expect(Math.abs((await anchorWidth(page)) - boxRect!.width)).toBeLessThanOrEqual(1);
+      expect(await anchorWidth(page)).toBeGreaterThan(200);
+    });
+
+    test('falls back to the input width when no anchor is registered', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { open: '1' });
+      const inputRect = await el(page, 'combo-input').boundingBox();
+      expect(inputRect).not.toBeNull();
+      await expect(el(page, 'content')).toBeVisible();
+
+      await expect.poll(() => anchorWidth(page)).toBeGreaterThan(0);
+      expect(Math.abs((await anchorWidth(page)) - inputRect!.width)).toBeLessThanOrEqual(1);
     });
   });
 });

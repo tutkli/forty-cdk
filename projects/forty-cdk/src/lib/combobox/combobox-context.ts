@@ -109,10 +109,26 @@ export interface ForComboboxContext<T = unknown> {
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
 
+  /**
+   * Element floating-ui anchors the listbox against. Prefers an optional
+   * `[forComboboxAnchor]` when registered, otherwise falls back to the input.
+   * Decoupled from `input` so the input keeps driving `aria-controls`,
+   * `aria-activedescendant`, keyboard interaction, and its outside-pointer
+   * exemption regardless of where the listbox paints.
+   */
   readonly anchor: Signal<ReferenceElement | null>;
   readonly input: Signal<HTMLInputElement | null>;
   registerInput(el: HTMLInputElement): void;
   unregisterInput(el: HTMLInputElement): void;
+
+  /**
+   * Register / unregister an optional `[forComboboxAnchor]` positioning
+   * element. At most one anchor per root; a second registration throws.
+   * Reference-based unregister, so an anchor torn down inside `@if` restores
+   * the input fallback cleanly.
+   */
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
 
   readonly content: Signal<HTMLElement | null>;
   registerContent(el: HTMLElement): void;

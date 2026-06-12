@@ -116,11 +116,27 @@ export interface ForSelectContext<T = unknown> {
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
   readonly itemToFormValue: Signal<(item: T) => string>;
 
-  /** The button trigger — passed to floating-ui as anchor and exempt from outside-pointer checks. */
+  /**
+   * Element floating-ui anchors the listbox against. Prefers an optional
+   * `[forSelectAnchor]` when registered, otherwise falls back to the trigger.
+   * Decoupled from `trigger` so the trigger keeps driving `aria-controls`,
+   * the click toggle, focus return, and its outside-pointer exemption
+   * regardless of where the listbox paints.
+   */
   readonly anchor: Signal<ReferenceElement | null>;
+  /** The button trigger — exempt from outside-pointer checks and the focus-return target. */
   readonly trigger: Signal<HTMLElement | null>;
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+
+  /**
+   * Register / unregister an optional `[forSelectAnchor]` positioning element.
+   * At most one anchor per root; a second registration throws. Reference-based
+   * unregister, so an anchor torn down inside `@if` restores the trigger
+   * fallback cleanly.
+   */
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
 
   /** The mounted `[forSelectContent]` element. */
   readonly content: Signal<HTMLElement | null>;

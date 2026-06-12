@@ -284,7 +284,18 @@ export class ForCombobox<T = string>
 
   readonly #inputEl = signal<HTMLInputElement | null>(null);
   readonly input = this.#inputEl.asReadonly();
-  readonly anchor = computed<ReferenceElement | null>(() => this.#inputEl());
+
+  readonly #anchorEl = signal<HTMLElement | null>(null);
+
+  /**
+   * Element floating-ui anchors the listbox against. Prefers an optional
+   * `[forComboboxAnchor]` when registered, otherwise falls back to the input
+   * so existing comboboxes without an anchor keep their behavior. Decoupled
+   * from `input` so the input keeps driving `aria-controls`,
+   * `aria-activedescendant`, keyboard interaction, and its dismissal exemption
+   * regardless of where the listbox paints.
+   */
+  readonly anchor = computed<ReferenceElement | null>(() => this.#anchorEl() ?? this.#inputEl());
 
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
@@ -507,6 +518,21 @@ export class ForCombobox<T = string>
   unregisterInput(el: HTMLInputElement): void {
     if (this.#inputEl() === el) {
       this.#inputEl.set(null);
+    }
+  }
+
+  registerAnchor(el: HTMLElement): void {
+    const current = this.#anchorEl();
+    if (current !== null && current !== el) {
+      throw new Error(
+        '[forty-cdk/combobox] Multiple [forComboboxAnchor] inside the same [forCombobox]; only one is allowed.',
+      );
+    }
+    this.#anchorEl.set(el);
+  }
+  unregisterAnchor(el: HTMLElement): void {
+    if (this.#anchorEl() === el) {
+      this.#anchorEl.set(null);
     }
   }
 

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { clickOutside, el, expectFocused, gotoFixture } from './_helpers';
 
 test.describe('Select', () => {
@@ -273,6 +273,47 @@ test.describe('Select', () => {
       await expect
         .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
         .toMatch(/^-?\d+px -?\d+px$/);
+    });
+  });
+
+  // #673 — `[forSelectAnchor]` swaps the floating-ui reference to a decorated
+  // field box wider than the inner trigger. The size middleware reads the
+  // reference's `getBoundingClientRect()`, which jsdom returns as 0 — so the
+  // "panel sizes to the anchor, not the trigger" contract is only observable in
+  // a real browser. Vitest covers the wiring (registration, fallback, throws).
+  test.describe('anchor (field box positioning)', () => {
+    const anchorWidth = (page: Page) =>
+      el(page, 'content').evaluate((c) =>
+        Number.parseFloat((c as HTMLElement).style.getPropertyValue('--for-anchor-width') || '0'),
+      );
+
+    test('sizes the listbox against the [forSelectAnchor] box, not the inner trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { anchor: '1' });
+      const boxRect = await el(page, 'anchor').boundingBox();
+      expect(boxRect).not.toBeNull();
+
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+
+      await expect.poll(() => anchorWidth(page)).toBeGreaterThan(0);
+      // The field box is 280px; the inner trigger flexes narrower. The
+      // positioner must size to the box (1px slack for sub-pixel rounding).
+      expect(Math.abs((await anchorWidth(page)) - boxRect!.width)).toBeLessThanOrEqual(1);
+      expect(await anchorWidth(page)).toBeGreaterThan(200);
+    });
+
+    test('falls back to the trigger width when no anchor is registered', async ({ page }) => {
+      await gotoFixture(page, 'select');
+      const triggerRect = await el(page, 'trigger').boundingBox();
+      expect(triggerRect).not.toBeNull();
+
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+
+      await expect.poll(() => anchorWidth(page)).toBeGreaterThan(0);
+      expect(Math.abs((await anchorWidth(page)) - triggerRect!.width)).toBeLessThanOrEqual(1);
     });
   });
 });
