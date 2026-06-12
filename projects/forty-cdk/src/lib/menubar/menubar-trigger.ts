@@ -11,6 +11,7 @@ import {
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { hostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
@@ -100,7 +101,7 @@ export class ForMenubarTrigger {
   /** Manual `aria-label` on `[forMenuContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
-  readonly triggerId = signal(this.#idGen.next('for-menubar-trigger'));
+  readonly triggerId = hostId('for-menubar-trigger');
   readonly contentId = signal(this.#idGen.next('for-menubar-content'));
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menubar.disabled());

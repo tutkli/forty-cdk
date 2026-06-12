@@ -17,6 +17,7 @@ import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
@@ -427,6 +428,7 @@ export class ForSelect<T = string>
   }
 
   registerTrigger(el: HTMLElement): void {
+    adoptHostId(el, this.triggerId);
     this.#triggerEl.set(el);
   }
   unregisterTrigger(el: HTMLElement): void {
@@ -451,6 +453,7 @@ export class ForSelect<T = string>
   }
 
   registerContent(el: HTMLElement): void {
+    adoptHostId(el, this.contentId);
     this.#contentEl.set(el);
   }
   unregisterContent(el: HTMLElement): void {

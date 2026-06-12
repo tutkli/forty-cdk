@@ -1,8 +1,8 @@
-import { computed, Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
+import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   injectNavigationMenuContext,
@@ -41,9 +41,8 @@ export class ForNavigationMenuTrigger {
   protected readonly menu = injectNavigationMenuContext('ForNavigationMenuTrigger');
   readonly #item = injectNavigationMenuItemContext('ForNavigationMenuTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
-  readonly id = signal(this.#idGen.next('for-navigation-menu-trigger'));
+  readonly id = hostId('for-navigation-menu-trigger');
   protected readonly value: Signal<string> = this.#item.value;
   protected readonly disabled: Signal<boolean> = this.#item.disabled;
 

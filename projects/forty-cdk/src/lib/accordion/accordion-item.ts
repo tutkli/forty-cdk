@@ -1,5 +1,6 @@
 import { booleanAttribute, computed, Directive, inject, input, signal } from '@angular/core';
 
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_ACCORDION_ITEM_CONTEXT,
@@ -32,10 +33,27 @@ export class ForAccordionItem implements ForAccordionItemContext {
   /** When true, the trigger ignores clicks and reflects `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly triggerId = signal(this.#idGen.next('for-accordion-trigger')).asReadonly();
-  readonly contentId = signal(this.#idGen.next('for-accordion-content')).asReadonly();
+  readonly #triggerId = signal(this.#idGen.next('for-accordion-trigger'));
+  readonly #contentId = signal(this.#idGen.next('for-accordion-content'));
+
+  readonly triggerId = this.#triggerId.asReadonly();
+  readonly contentId = this.#contentId.asReadonly();
 
   readonly expanded = computed(() => this.parent.isExpanded(this.value()));
+
+  /**
+   * Adopts a consumer-set static `id` on the `[forAccordionTrigger]` host into
+   * `triggerId` (preserving anchors / external `aria-labelledby` references /
+   * label `for`) instead of letting the `[id]` host binding clobber it.
+   */
+  adoptTriggerId(el: HTMLElement): void {
+    adoptHostId(el, this.#triggerId);
+  }
+
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void {
+    adoptHostId(el, this.#contentId);
+  }
 
   toggle(): void {
     if (this.disabled()) {

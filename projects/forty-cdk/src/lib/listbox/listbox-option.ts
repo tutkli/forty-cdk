@@ -6,11 +6,10 @@ import {
   inject,
   InjectionToken,
   input,
-  signal,
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectListboxContext } from './listbox-context';
 
@@ -58,7 +57,6 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
 export class ForListboxOption<T = string> {
   readonly #group = injectListboxContext<T>('ForListboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
   /**
    * Stable identifier serialized into `[(value)]` and the hidden input.
@@ -70,7 +68,7 @@ export class ForListboxOption<T = string> {
   readonly value = input.required<T>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly id = signal(this.#idGen.next('for-listbox-option'));
+  readonly id = hostId('for-listbox-option');
 
   readonly selected = computed(() => this.#group.isSelected(this.value()));
 

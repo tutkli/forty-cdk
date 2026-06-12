@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectSelectContext } from './select-context';
 
@@ -72,7 +72,6 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
 export class ForSelectOption<T = string> {
   readonly #ctx = injectSelectContext<T>('ForSelectOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
   /**
    * Stable identifier serialized into `[(value)]` and the hidden input.
@@ -84,7 +83,7 @@ export class ForSelectOption<T = string> {
   readonly value = input.required<T>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly id = signal(this.#idGen.next('for-select-option'));
+  readonly id = hostId('for-select-option');
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());

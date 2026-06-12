@@ -51,6 +51,7 @@ export class ForAccordionTrigger {
   });
 
   constructor() {
+    this.item.adoptTriggerId(this.#host.nativeElement);
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.item.disabled,

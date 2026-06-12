@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
@@ -32,4 +32,8 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
 export class ForAccordionContent {
   protected readonly parent = injectAccordionContext('ForAccordionContent');
   protected readonly item = injectAccordionItemContext('ForAccordionContent');
+
+  constructor() {
+    this.item.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+  }
 }

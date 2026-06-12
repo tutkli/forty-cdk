@@ -1,4 +1,4 @@
-import { booleanAttribute, computed, Directive, input } from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectDisclosureContext } from './disclosure-context';
@@ -40,6 +40,7 @@ export class ForDisclosureTrigger {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   constructor() {
+    this.ctx.adoptTriggerId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
     reflectDisabled(this.effectiveDisabled);
   }
 

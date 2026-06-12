@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,
@@ -61,10 +61,9 @@ import {
 export class ForNavigationMenuContent {
   protected readonly menu = injectNavigationMenuContext('ForNavigationMenuContent');
   readonly #item = injectNavigationMenuItemContext('ForNavigationMenuContent');
-  readonly #idGen = inject(IdGenerator);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  readonly id = signal(this.#idGen.next('for-navigation-menu-content'));
+  readonly id = hostId('for-navigation-menu-content');
   protected readonly value: Signal<string> = this.#item.value;
   protected readonly triggerId = computed(() => this.menu.triggerIdFor(this.value()));
   protected readonly motion = computed(() => this.menu.motionFor(this.value()));

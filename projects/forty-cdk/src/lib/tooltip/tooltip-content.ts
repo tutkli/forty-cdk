@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectTooltipContext } from './tooltip-context';
@@ -35,6 +35,7 @@ export class ForTooltipContent {
   protected readonly ctx = injectTooltipContext('ForTooltipContent');
 
   constructor() {
+    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
     injectOverlayShell({
       positioner: {
         kind: 'floating',

@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { injectCalendarContext } from './calendar-context';
 
@@ -24,4 +24,8 @@ export class ForCalendarHeading {
 
   /** The visible month's accessible label, e.g. `"June 2026"`. */
   readonly label = this.ctx.visibleMonthLabel;
+
+  constructor() {
+    this.ctx.adoptHeadingId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+  }
 }

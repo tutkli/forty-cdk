@@ -17,6 +17,7 @@ import {
   createHoverIntent,
   type HoverIntentScheduler,
 } from '../_internal/hover-intent/hover-intent';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -223,7 +224,7 @@ export class ForTooltip implements ForTooltipContext {
    * label `for`) keep resolving; falls back to the generated id otherwise.
    */
   registerTrigger(el: HTMLElement): void {
-    this.triggerId.set(el.getAttribute('id') || this.#generatedTriggerId);
+    adoptHostId(el, this.triggerId);
     this.#triggerEl.set(el);
   }
 
@@ -231,6 +232,11 @@ export class ForTooltip implements ForTooltipContext {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
     }
+  }
+
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void {
+    adoptHostId(el, this.contentId);
   }
 
   registerArrow(el: HTMLElement): void {

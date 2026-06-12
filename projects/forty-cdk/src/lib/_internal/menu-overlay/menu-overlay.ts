@@ -4,8 +4,10 @@ import {
   type OutputEmitterRef,
   type Signal,
   signal,
+  type WritableSignal,
 } from '@angular/core';
 
+import { adoptHostId } from '../host-id/host-id';
 import { IdGenerator } from '../id-generator/id-generator';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import {
@@ -132,6 +134,9 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
 
+  readonly #triggerId: WritableSignal<string>;
+  readonly #contentId: WritableSignal<string>;
+
   /** Unique id for the trigger element. Stable across the menu's lifetime. */
   readonly triggerId: Signal<string>;
 
@@ -168,8 +173,10 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
-    this.triggerId = signal(this.#idGen.next(`${idPrefix}-trigger`));
-    this.contentId = signal(this.#idGen.next(`${idPrefix}-content`));
+    this.#triggerId = signal(this.#idGen.next(`${idPrefix}-trigger`));
+    this.#contentId = signal(this.#idGen.next(`${idPrefix}-content`));
+    this.triggerId = this.#triggerId.asReadonly();
+    this.contentId = this.#contentId.asReadonly();
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
@@ -177,6 +184,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   registerTrigger(el: HTMLElement): void {
+    adoptHostId(el, this.#triggerId);
     this.#triggerEl.set(el);
   }
 
@@ -187,6 +195,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   registerContent(el: HTMLElement): void {
+    adoptHostId(el, this.#contentId);
     this.#contentEl.set(el);
   }
 

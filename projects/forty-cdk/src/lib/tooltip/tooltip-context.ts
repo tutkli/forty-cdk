@@ -24,13 +24,15 @@ export interface ForTooltipContext {
   readonly hideWhenDetached: Signal<boolean>;
   /** Trigger element id — a consumer-set host `id` is adopted, else a generated one. */
   readonly triggerId: Signal<string>;
-  /** Generated content element id, referenced by the trigger's `aria-describedby` while open. */
+  /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */
   readonly contentId: Signal<string>;
   readonly trigger: Signal<HTMLElement | null>;
   readonly arrow: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
   unregisterArrow(el: HTMLElement): void;
 

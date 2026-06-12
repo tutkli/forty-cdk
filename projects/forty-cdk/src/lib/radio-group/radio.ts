@@ -6,11 +6,10 @@ import {
   inject,
   InjectionToken,
   input,
-  signal,
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectRadioGroupContext } from './radio-group-context';
 
@@ -53,7 +52,6 @@ export class ForRadio {
   /** Parent group's context — public so siblings like `ForRadioIndicator` can read it. */
   readonly group = injectRadioGroupContext('ForRadio');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
   /** Unique identifier for this radio's value. Required. */
   readonly value = input.required<string>();
@@ -61,7 +59,7 @@ export class ForRadio {
   /** When true, this radio is disabled (independent of the group's disabled). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly id = signal(this.#idGen.next('for-radio'));
+  readonly id = hostId('for-radio');
 
   readonly checked = computed(() => this.group.isSelected(this.value()));
 

@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectPopoverContext } from './popover-context';
@@ -42,6 +42,7 @@ export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');
 
   constructor() {
+    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
     injectOverlayShell({
       positioner: {
         kind: 'floating',

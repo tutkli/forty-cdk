@@ -6,11 +6,10 @@ import {
   inject,
   InjectionToken,
   input,
-  signal,
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -71,7 +70,6 @@ export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_CO
 export class ForComboboxOption<T = string> {
   readonly #ctx = injectComboboxContext<T>('ForComboboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
   /**
    * Stable identifier serialized into `[(value)]` and the hidden input.
@@ -102,7 +100,7 @@ export class ForComboboxOption<T = string> {
    */
   readonly posInSet = input<number | null>(null);
 
-  readonly id = signal(this.#idGen.next('for-combobox-option'));
+  readonly id = hostId('for-combobox-option');
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   /** True when this option is the current activedescendant. Reflected as `data-highlighted`. */

@@ -130,6 +130,8 @@ export interface ForCalendarContext<D> {
 
   registerCell(handle: ForCalendarCellHandle<D>): void;
   unregisterCell(handle: ForCalendarCellHandle<D>): void;
+  /** Adopts a consumer-set static `id` on the heading host into `headingId`. */
+  adoptHeadingId(el: HTMLElement): void;
 }
 
 /** Injection token for {@link ForCalendarContext}, provided by `ForCalendar`. */
