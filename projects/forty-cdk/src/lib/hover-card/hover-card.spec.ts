@@ -1,8 +1,15 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
-import { afterEachOverlayCleanup, pressKey, renderHost, withReducedMotion } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flushPositioning,
+  pressKey,
+  renderHost,
+  withReducedMotion,
+} from '../../test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
@@ -637,6 +644,186 @@ describe('ForHoverCard', () => {
       vi.advanceTimersByTime(1);
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+  });
+
+  describe('positioning defaults from provideForHoverCardDefaults', () => {
+    it('positions on the scope side when the instance sets no side', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ side: 'bottom' })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open">
+            <a forHoverCardTrigger href="/x">T</a>
+            @if (card.open()) {
+              <div forHoverCardContent>C</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(content.dataset['side']).toBe('bottom');
+      expect(content.dataset['placement']).toBe('bottom');
+    });
+
+    it('lets an instance-level side win over the scope default', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ side: 'bottom' })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open" side="left">
+            <a forHoverCardTrigger href="/x">T</a>
+            @if (card.open()) {
+              <div forHoverCardContent>C</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(content.dataset['side']).toBe('left');
+    });
+
+    it('aligns on the scope align when the instance sets no align', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ align: 'start' })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open">
+            <a forHoverCardTrigger href="/x">T</a>
+            @if (card.open()) {
+              <div forHoverCardContent>C</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(content.dataset['align']).toBe('start');
+      expect(content.dataset['placement']).toBe('top-start');
+    });
+
+    it('lets an instance-level align win over the scope default', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ align: 'start' })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open" align="end">
+            <a forHoverCardTrigger href="/x">T</a>
+            @if (card.open()) {
+              <div forHoverCardContent>C</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(content.dataset['align']).toBe('end');
+    });
+
+    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger],
+        providers: [provideForHoverCardDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <span forHoverCard>
+            <a forHoverCardTrigger href="/x">T</a>
+          </span>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await r.flush();
+
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+      expect(card.sideOffset()).toBe(12);
+      expect(card.collisionPadding()).toBe(16);
+    });
+
+    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger],
+        providers: [provideForHoverCardDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <span forHoverCard [sideOffset]="20" [collisionPadding]="24">
+            <a forHoverCardTrigger href="/x">T</a>
+          </span>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await r.flush();
+
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+      expect(card.sideOffset()).toBe(20);
+      expect(card.collisionPadding()).toBe(24);
+    });
+
+    it('keeps the library fallbacks (top / center / 8 / 8) when nothing is configured', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open">
+            <a forHoverCardTrigger href="/x">T</a>
+            @if (card.open()) {
+              <div forHoverCardContent>C</div>
+            }
+          </span>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+      expect(card.side()).toBe('top');
+      expect(card.align()).toBe('center');
+      expect(card.sideOffset()).toBe(8);
+      expect(card.collisionPadding()).toBe(8);
+
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(content.dataset['side']).toBe('top');
     });
   });
 

@@ -1,6 +1,7 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
 import { createDefaults } from '../_internal/defaults/defaults';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { SkipDelayCoordinator } from '../_internal/hover-intent/skip-delay-coordinator';
 
 /**
@@ -19,17 +20,48 @@ export interface ForHoverCardDefaults {
    * so cursor movement doesn't feel sluggish.
    */
   skipDelayDuration: number;
+  /**
+   * Side the card is anchored to for cards that don't override `side`
+   * locally. Library fallback `'top'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for cards that don't override `align`
+   * locally. Library fallback `'center'`.
+   */
+  align: FloatingAlign;
+  /**
+   * Gap (px) between trigger and card along the main axis for cards that
+   * don't override `sideOffset` locally. Mirrors Radix's `sideOffset`.
+   * Library fallback `8`.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares for cards that don't override `collisionPadding` locally.
+   * Library fallback `8`.
+   */
+  collisionPadding: number;
 }
 
-const FALLBACK: ForHoverCardDefaults = {
+/**
+ * Library fallback for hover-card defaults, read at the root injector when no
+ * consumer has called `provideForHoverCardDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_HOVER_CARD_FALLBACK_DEFAULTS: ForHoverCardDefaults = {
   openDelay: 700,
   closeDelay: 300,
   skipDelayDuration: 300,
+  side: 'top',
+  align: 'center',
+  sideOffset: 8,
+  collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForHoverCardDefaults>(
   'FOR_HOVER_CARD_DEFAULTS',
-  FALLBACK,
+  FOR_HOVER_CARD_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved hover-card defaults for the current scope. */

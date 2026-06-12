@@ -1,17 +1,25 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
 import { ForPopoverClose } from './popover-close';
 import { ForPopoverContent } from './popover-content';
+import { provideForPopoverDefaults } from './popover-defaults';
 import { ForPopoverDescription } from './popover-description';
 import { ForPopoverTitle } from './popover-title';
 import { ForPopoverTrigger } from './popover-trigger';
@@ -800,6 +808,186 @@ describe('ForPopover', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
       outside.remove();
+    });
+  });
+
+  describe('positioning defaults from provideForPopoverDefaults', () => {
+    it('positions on the scope side when the instance sets no side', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        providers: [provideForPopoverDefaults({ side: 'top' })],
+        template: `
+          <div forPopover [(open)]="open" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(content.dataset['side']).toBe('top');
+      expect(content.dataset['placement']).toBe('top');
+    });
+
+    it('lets an instance-level side win over the scope default', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        providers: [provideForPopoverDefaults({ side: 'top' })],
+        template: `
+          <div forPopover [(open)]="open" side="left" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(content.dataset['side']).toBe('left');
+    });
+
+    it('aligns on the scope align when the instance sets no align', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        providers: [provideForPopoverDefaults({ align: 'start' })],
+        template: `
+          <div forPopover [(open)]="open" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(content.dataset['align']).toBe('start');
+      expect(content.dataset['placement']).toBe('bottom-start');
+    });
+
+    it('lets an instance-level align win over the scope default', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        providers: [provideForPopoverDefaults({ align: 'start' })],
+        template: `
+          <div forPopover [(open)]="open" align="end" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(content.dataset['align']).toBe('end');
+    });
+
+    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger],
+        providers: [provideForPopoverDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <div forPopover ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const popover = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+      expect(popover.sideOffset()).toBe(12);
+      expect(popover.collisionPadding()).toBe(16);
+    });
+
+    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger],
+        providers: [provideForPopoverDefaults({ sideOffset: 12, collisionPadding: 16 })],
+        template: `
+          <div forPopover [sideOffset]="20" [collisionPadding]="24" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const popover = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+      expect(popover.sideOffset()).toBe(20);
+      expect(popover.collisionPadding()).toBe(24);
+    });
+
+    it('keeps the library fallbacks (bottom / center / 8 / 8) when nothing is configured', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <div forPopover [(open)]="open" ariaLabel="t">
+            <button forPopoverTrigger>Open</button>
+            @if (open()) {
+              <div forPopoverContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const popover = r.fixture.debugElement
+        .query(By.directive(ForPopover))
+        .injector.get(ForPopover);
+      expect(popover.side()).toBe('bottom');
+      expect(popover.align()).toBe('center');
+      expect(popover.sideOffset()).toBe(8);
+      expect(popover.collisionPadding()).toBe(8);
+
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(content.dataset['side']).toBe('bottom');
     });
   });
 });

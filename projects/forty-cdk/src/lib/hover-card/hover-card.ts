@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   DestroyRef,
   Directive,
   effect,
@@ -26,7 +27,7 @@ import {
   type ForHoverCardContext,
   type HoverCardScheduleReason,
 } from './hover-card-context';
-import { HoverCardCoordinator } from './hover-card-defaults';
+import { FOR_HOVER_CARD_DEFAULTS, HoverCardCoordinator } from './hover-card-defaults';
 
 /**
  * Headless hover-preview card. Use it to surface rich, interactive previews
@@ -65,6 +66,8 @@ import { HoverCardCoordinator } from './hover-card-defaults';
   providers: [{ provide: FOR_HOVER_CARD_CONTEXT, useExisting: ForHoverCard }],
 })
 export class ForHoverCard implements ForHoverCardContext {
+  readonly #defaults = inject(FOR_HOVER_CARD_DEFAULTS);
+
   /**
    * Two-way bindable. Whether the card is currently shown. The `model()`
    * change emitter (`(openChange)`) fires only on internal transitions
@@ -74,19 +77,51 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Side the card is anchored to. Defaults to `'top'`. Pair with `align`
-   * for the full positioning API.
+   * Per-card override for the side the card is anchored to. Pair with
+   * `align` for the full positioning API. When `undefined` (default), falls
+   * back to `ForHoverCardDefaults.side` from the surrounding
+   * `provideForHoverCardDefaults` scope (`'top'` unless configured).
+   *
+   * The input is aliased to `side`; consumers bind `[side]="..."` and read
+   * the effective value via the public `side` computed below.
    */
-  readonly side = input<FloatingSide | undefined>('top');
+  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
 
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
+  /** Effective anchor side: the `side` input when set, else the scope default. */
+  readonly side = computed<FloatingSide>(() => this._sideInput() ?? this.#defaults.side);
 
   /**
-   * Gap (px) between trigger and card along the main axis. Default `8`.
-   * Mirrors Radix's `sideOffset`.
+   * Per-card override for the alignment along the chosen `side`. When
+   * `undefined` (default), falls back to `ForHoverCardDefaults.align` from the
+   * surrounding `provideForHoverCardDefaults` scope (`'center'` unless
+   * configured).
+   *
+   * The input is aliased to `align`; consumers bind `[align]="..."` and read
+   * the effective value via the public `align` computed below.
    */
-  readonly sideOffset = input(8, { transform: numberAttribute });
+  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
+
+  /** Effective alignment: the `align` input when set, else the scope default. */
+  readonly align = computed<FloatingAlign>(() => this._alignInput() ?? this.#defaults.align);
+
+  /**
+   * Per-card override for the gap (px) between trigger and card along the
+   * main axis. Mirrors Radix's `sideOffset`. When `undefined` (default),
+   * falls back to `ForHoverCardDefaults.sideOffset` from the surrounding
+   * `provideForHoverCardDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `sideOffset`; consumers bind `[sideOffset]="..."`
+   * and read the effective value via the public `sideOffset` computed below.
+   */
+  readonly _sideOffsetInput = input(undefined, {
+    alias: 'sideOffset',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective main-axis gap (px): the `sideOffset` input when set, else the scope default. */
+  readonly sideOffset = computed<number>(
+    () => this._sideOffsetInput() ?? this.#defaults.sideOffset,
+  );
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -94,8 +129,25 @@ export class ForHoverCard implements ForHoverCardContext {
   /** When `true` (default), `flip` and `shift` keep the card inside the viewport. */
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  /**
+   * Per-card override for the padding (px) applied uniformly to the `flip`,
+   * `shift`, and `size` middlewares. When `undefined` (default), falls back
+   * to `ForHoverCardDefaults.collisionPadding` from the surrounding
+   * `provideForHoverCardDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `collisionPadding`; consumers bind
+   * `[collisionPadding]="..."` and read the effective value via the public
+   * `collisionPadding` computed below.
+   */
+  readonly _collisionPaddingInput = input(undefined, {
+    alias: 'collisionPadding',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective collision padding (px): the `collisionPadding` input when set, else the scope default. */
+  readonly collisionPadding = computed<number>(
+    () => this._collisionPaddingInput() ?? this.#defaults.collisionPadding,
+  );
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });
