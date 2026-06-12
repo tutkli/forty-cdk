@@ -7,6 +7,7 @@ import {
 } from '../dismissable-layer/dismissable-layer';
 import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
+import { InertSiblingsStack, MODAL_PEER_ATTRIBUTE } from '../inert-siblings/inert-siblings';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
 import {
   createVetoableNativeEvent,
@@ -231,6 +232,7 @@ export interface OverlayShellConfig {
 export function injectOverlayShell(config: OverlayShellConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
+  const inertStack = inject(InertSiblingsStack);
 
   // 1. Dismissable layer. Created BEFORE the positioner so its
   //    `DestroyRef.onDestroy` (dismissable.deactivate) registers first and
@@ -267,6 +269,26 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   //    a dead topmost entry that would swallow every later Escape /
   //    pointer-down-outside.
   afterNextRenderCancellable(() => {
+    // Modal-peer marking (#676). When this overlay is anchored to an element
+    // inside an active modal's protected root — i.e. it was opened from inside
+    // a Dialog / Drawer (a Select in a form, a context menu on dialog content)
+    // — stamp the freshly portaled host so the inert-siblings pass / observer
+    // skips it. Without this the body-level inert sweep swallows forty's own
+    // overlay, leaving it painted (z-index) but `inert` + `aria-hidden`: clicks
+    // fall through to the controls behind it and the surface reads as hidden to
+    // assistive tech (#676). `ownsAnchor` returns false when no modal is active,
+    // so an overlay with no surrounding modal is never pre-marked (a modal
+    // opened later inerts it like any background sibling), and false when the
+    // anchor sits in an inerted background subtree, so a toast / background
+    // overlay stays isolated (#388 semantics). The positioner's portal ran in
+    // an earlier hook of this same render batch, so the host is already in
+    // `body`; the attribute is set before the observer's microtask runs, so the
+    // host is flagged by the time the observer inspects it.
+    const anchor = resolveModalAnchor(config);
+    if (anchor && inertStack.ownsAnchor(anchor)) {
+      el.setAttribute(MODAL_PEER_ATTRIBUTE, '');
+    }
+
     if (layer && dismissCfg) {
       // Pointer-down-outside and focus-outside both fire on the same physical
       // interaction as the composite `interactOutside`, and the dismissable
@@ -373,4 +395,27 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       rfCfg.target()?.focus();
     });
   }
+}
+
+/**
+ * Resolve the real DOM element an overlay is anchored to, for the modal-peer
+ * ownership check (#676). Most overlays anchor to a real element (the trigger
+ * button / input), exposed directly via the positioner `reference`.
+ * Pointer-positioned overlays (ContextMenu) anchor to a floating-ui
+ * `VirtualElement`: we read its `contextElement` when present, then fall back
+ * to the return-focus target — the logical trigger the overlay was opened
+ * from, which for ContextMenu is the registered right-click region. Returns
+ * `null` when no backing element can be found (the overlay is then never
+ * marked, falling back to the pre-#676 behaviour for that surface).
+ */
+function resolveModalAnchor(config: OverlayShellConfig): Element | null {
+  const ref = config.positioner.reference();
+  if (ref instanceof Element) {
+    return ref;
+  }
+  const contextElement = ref?.contextElement;
+  if (contextElement instanceof Element) {
+    return contextElement;
+  }
+  return config.returnFocus?.target() ?? null;
 }

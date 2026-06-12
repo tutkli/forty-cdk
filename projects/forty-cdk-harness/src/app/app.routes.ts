@@ -94,6 +94,13 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/nested.fixture').then((m) => m.NestedFixture),
   },
   {
+    path: 'overlay-inside-dialog',
+    loadComponent: () =>
+      import('./fixtures/overlay-inside-dialog.fixture').then(
+        (m) => m.OverlayInsideDialogFixture,
+      ),
+  },
+  {
     path: 'pane-resizer',
     loadComponent: () =>
       import('./fixtures/pane-resizer.fixture').then((m) => m.PaneResizerFixture),
