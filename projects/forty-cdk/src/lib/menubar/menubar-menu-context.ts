@@ -167,6 +167,9 @@ export class MenubarMenuContext implements ForMenuContext {
   handleTypeahead(event: KeyboardEvent): void {
     this.#itemList.handleTypeahead(event);
   }
+  clearItemHighlights(): void {
+    this.#itemList.clearHighlights();
+  }
   focusFirstEnabledItem(): boolean {
     return this.#itemList.focusFirstEnabledItem(this.#consumeHighlightInitialFocus());
   }

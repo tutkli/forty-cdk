@@ -20,6 +20,13 @@ export interface MenuItemHandle extends CollectionHandle {
    * (e.g. `[forMenuSubTrigger]`) simply omit it.
    */
   suppressHighlightOnNextFocus?(): void;
+  /**
+   * Drops the item's `data-highlighted` without moving DOM focus. Called when
+   * the pointer leaves the menu surface so the hovered item stops reading as
+   * the active candidate while keyboard navigation stays anchored on it.
+   * Optional — items that don't reflect a highlight omit it.
+   */
+  clearHighlight?(): void;
 }
 
 /**
@@ -153,6 +160,17 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
       item.suppressHighlightOnNextFocus?.();
     }
     item.host.focus();
+  }
+
+  /**
+   * Drops `data-highlighted` from every registered item without touching DOM
+   * focus. Used when the pointer leaves the menu surface so no item keeps
+   * reading as the active candidate.
+   */
+  clearHighlights(): void {
+    for (const item of this.#items.items()) {
+      item.clearHighlight?.();
+    }
   }
 }
 

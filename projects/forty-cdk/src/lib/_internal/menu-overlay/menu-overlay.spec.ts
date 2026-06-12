@@ -245,6 +245,25 @@ describe('MenuOverlay', () => {
     });
   });
 
+  describe('clearItemHighlights', () => {
+    it('delegates clearHighlight to every registered item without moving focus', () => {
+      const { overlay } = build();
+      const clearA = vi.fn();
+      const clearB = vi.fn();
+      const a = makeItem('a');
+      const b = makeItem('b');
+      overlay.registerItem({ ...a, clearHighlight: clearA });
+      overlay.registerItem({ ...b, clearHighlight: clearB });
+
+      a.host.focus();
+      overlay.clearItemHighlights();
+
+      expect(clearA).toHaveBeenCalledTimes(1);
+      expect(clearB).toHaveBeenCalledTimes(1);
+      expect(document.activeElement?.id).toBe('a');
+    });
+  });
+
   describe('focusFirst/LastEnabledItem', () => {
     it('focuses first enabled item', () => {
       const { overlay } = build();

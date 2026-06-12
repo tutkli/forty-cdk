@@ -57,6 +57,14 @@ export interface ForMenuItemHandle extends CollectionHandle {
    * (e.g. `[forMenuSubTrigger]`) simply omit it.
    */
   suppressHighlightOnNextFocus?(): void;
+  /**
+   * Drops the item's `data-highlighted` without moving DOM focus. The menu
+   * surface calls this on `pointerleave` so the hover highlight stops once the
+   * pointer leaves, while keyboard navigation stays anchored on the item.
+   * Optional — items that don't reflect a highlight (e.g.
+   * `[forMenuSubTrigger]`) simply omit it.
+   */
+  clearHighlight?(): void;
 }
 
 /**
@@ -149,6 +157,12 @@ export interface ForMenuContext {
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void;
   /** Prefix-match against item text content and focus the first match. */
   handleTypeahead(event: KeyboardEvent): void;
+  /**
+   * Clear `data-highlighted` from every item without moving focus. Called by
+   * `[forMenuContent]` on `pointerleave` so the hover highlight follows the
+   * pointer off the surface (Radix-style hover-follows-pointer).
+   */
+  clearItemHighlights(): void;
   /** Returns `true` if focus moved; `false` when no enabled items exist. */
   focusFirstEnabledItem(): boolean;
   focusLastEnabledItem(): boolean;

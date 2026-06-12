@@ -56,6 +56,7 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
+    '(pointermove)': 'onPointerMove($event)',
   },
 })
 export class ForMenuRadioItem {
@@ -80,9 +81,12 @@ export class ForMenuRadioItem {
 
   readonly #highlighted = signal(false);
   /**
-   * True while this item has DOM focus, except for the programmatic initial
-   * focus of a pointer-driven open (the move lands without a highlight until
-   * keyboard navigation). Reflected as `data-highlighted`.
+   * True while this item is the active keyboard candidate or hovered by the
+   * pointer. Set on keyboard-driven focus and on `pointermove` (hover follows
+   * the pointer), cleared on `blur` and when the pointer leaves the surface.
+   * The programmatic initial focus of a pointer-driven open lands without a
+   * highlight until the pointer moves onto the item or keyboard navigation
+   * begins. Reflected as `data-highlighted`.
    */
   readonly highlighted = this.#highlighted.asReadonly();
 
@@ -101,6 +105,9 @@ export class ForMenuRadioItem {
       textValue: this.textValue,
       suppressHighlightOnNextFocus: () => {
         this.#suppressNextFocusHighlight = true;
+      },
+      clearHighlight: () => {
+        this.#highlighted.set(false);
       },
     };
     registerHandle(
@@ -131,6 +138,20 @@ export class ForMenuRadioItem {
   protected onBlur(): void {
     this.#suppressNextFocusHighlight = false;
     this.#highlighted.set(false);
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      return;
+    }
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    const host = this.#host.nativeElement;
+    if (host.ownerDocument.activeElement !== host) {
+      host.focus({ preventScroll: true });
+    }
+    this.#highlighted.set(true);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
