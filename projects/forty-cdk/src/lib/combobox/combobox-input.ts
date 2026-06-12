@@ -19,7 +19,10 @@ import { injectComboboxContext } from './combobox-context';
  * - **ArrowDown / ArrowUp** — open + move activedescendant.
  * - **Home / End** (when open) — first / last enabled option.
  * - **Enter** (when open) — activate the activedescendant; no-op otherwise.
- * - **Escape** (when open) — close (focus stays in input).
+ * - **Escape** (when open) — close (focus stays in input). On the
+ *   open→closed transition the input value is re-synced to `query()` even
+ *   while focused, so a consumer restoring the committed label from an
+ *   `(openChange)` handler renders without reaching for the DOM.
  * - **Tab** (when open) — close and let Tab flow to the next focusable.
  * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
  *   complete the rest of the first match in the input as selected text.
@@ -80,10 +83,26 @@ export class ForComboboxInput {
     // activation copied the label into query via commitOnSelect). When the
     // input is focused the user is mid-edit; clobbering input.value would
     // jump the caret and break inline autocomplete state.
+    //
+    // The open→closed transition is the documented exception: the edit
+    // session is over (Escape closes but keeps focus in the input, per APG),
+    // so a consumer restoring the committed label — `query.set(label)` from an
+    // `(openChange)` handler — must reach the DOM even while focused. The
+    // caret-protection rationale no longer applies and a caret jump to the end
+    // of the restored text is the expected outcome. `wasOpen` tracks the prior
+    // open state to detect the edge; it's a plain transition latch, not derived
+    // signal state.
+    let wasOpen = this.ctx.open();
     effect(() => {
       const q = this.ctx.query();
+      const closing = wasOpen && !this.ctx.open();
+      wasOpen = this.ctx.open();
+
       const el = this.#host.nativeElement;
-      if (doc.activeElement !== el && el.value !== q) {
+      if (el.value === q) {
+        return;
+      }
+      if (doc.activeElement !== el || closing) {
         el.value = q;
       }
     });
