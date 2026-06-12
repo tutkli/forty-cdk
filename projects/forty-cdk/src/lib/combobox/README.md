@@ -50,6 +50,21 @@ it.label.toLowerCase().includes(q));
 
 `[(query)]` (the typed text) and `[(value)]` (the committed selection / form state) are the consumer's. Open state is separate: `[forCombobox]` owns it as a `model<boolean>`, and since the directive is `exportAs: 'forCombobox'` you can read it straight off a template reference variable — `#combobox="forCombobox"` — and gate `[forComboboxContent]` on `combobox.open()`. Focus / query / arrow keys flip it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` (as the multi / object / virtualization examples below do) only when the component class needs to read or drive open state itself.
 
+### Static options alongside the `@for`
+
+A sentinel option (an "Add new…" action, a "No results" row, a pinned default) can be rendered **statically** above or below the `@for` list — it does not need to be folded into the filtered collection:
+
+```html
+<div forComboboxContent>
+  <div forComboboxOption [value]="addSentinel" [label]="'Add new…'">Add new…</div>
+  @for (it of filtered; track it.id) {
+  <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+  }
+</div>
+```
+
+Static and `@for`-rendered options share the same registry, navigation order (DOM order), filtering, and label cache.
+
 ## Mount/visibility convention
 
 `[forComboboxContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events when it wants to be unmounted. No `[hidden]`. The visible input lives outside the overlay; only the listbox surface portals.
