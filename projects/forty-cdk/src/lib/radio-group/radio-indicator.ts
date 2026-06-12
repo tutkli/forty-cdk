@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { ForRadio } from './radio';
+import { FOR_RADIO, type ForRadio } from './radio';
 
 /**
  * Optional indicator slot inside a `ForRadio`. Apply on the element the
@@ -23,7 +23,7 @@ export class ForRadioIndicator {
   protected readonly parent: ForRadio;
 
   constructor() {
-    const parent = inject(ForRadio, { optional: true });
+    const parent = inject(FOR_RADIO, { optional: true });
     if (!parent) {
       throw new Error(
         '[forty-cdk/radio-group] ForRadioIndicator must be used inside a [forRadio] element.',

@@ -1,5 +1,5 @@
 export { ForListbox } from './listbox';
-export { ForListboxOption } from './listbox-option';
+export { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 export { ForListboxOptionIndicator } from './listbox-option-indicator';
 export { ForListboxGroup } from './listbox-group';
 export { ForListboxGroupLabel } from './listbox-group-label';

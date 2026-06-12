@@ -1,17 +1,17 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
-import { ForMenuCheckboxItem } from './menu-checkbox-item';
+import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
 import { ForMenuContent } from './menu-content';
 import { ForMenuGroup } from './menu-group';
 import { ForMenuGroupLabel } from './menu-group-label';
 import { ForMenuItem } from './menu-item';
 import { ForMenuItemIndicator } from './menu-item-indicator';
 import { ForMenuRadioGroup } from './menu-radio-group';
-import { ForMenuRadioItem } from './menu-radio-item';
+import { FOR_MENU_RADIO_ITEM, ForMenuRadioItem } from './menu-radio-item';
 import { ForMenuSeparator } from './menu-separator';
 
 @Component({
@@ -1023,6 +1023,87 @@ describe('ForMenuItemIndicator', () => {
     expect(() => TestBed.createComponent(Orphan)).toThrow(
       /\[forty-cdk\/menu\] ForMenuItemIndicator must be used inside a \[forMenuCheckboxItem\] or \[forMenuRadioItem\] element\./,
     );
+  });
+
+  it('resolves a subclassed checkbox item via the re-provided FOR_MENU_CHECKBOX_ITEM token', async () => {
+    @Directive({
+      selector: '[testMenuCheckboxItem]',
+      providers: [{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: TestMenuCheckboxItem }],
+    })
+    class TestMenuCheckboxItem extends ForMenuCheckboxItem {}
+
+    @Component({
+      imports: [
+        ForDropdownMenu,
+        ForDropdownMenuTrigger,
+        ForMenuContent,
+        TestMenuCheckboxItem,
+        ForMenuItemIndicator,
+      ],
+      template: `
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger>Format</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="bold" testMenuCheckboxItem [(checked)]="bold">
+                <span data-test-id="bold-ind" forMenuItemIndicator>✓</span>
+                Bold
+              </button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly open = signal(true);
+      readonly bold = signal(true);
+    }
+
+    const r = renderHost(SubclassHost);
+    await flush(r.fixture);
+    expect(indicator('bold-ind').getAttribute('data-state')).toBe('checked');
+  });
+
+  it('resolves a subclassed radio item via the re-provided FOR_MENU_RADIO_ITEM token', async () => {
+    @Directive({
+      selector: '[testMenuRadioItem]',
+      providers: [{ provide: FOR_MENU_RADIO_ITEM, useExisting: TestMenuRadioItem }],
+    })
+    class TestMenuRadioItem extends ForMenuRadioItem {}
+
+    @Component({
+      imports: [
+        ForDropdownMenu,
+        ForDropdownMenuTrigger,
+        ForMenuContent,
+        ForMenuRadioGroup,
+        TestMenuRadioItem,
+        ForMenuItemIndicator,
+      ],
+      template: `
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger>Align</button>
+          @if (open()) {
+            <div forMenuContent>
+              <div forMenuRadioGroup [(value)]="alignment">
+                <button id="left" testMenuRadioItem value="left">
+                  <span data-test-id="left-ind" forMenuItemIndicator>•</span>
+                  Left
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly open = signal(true);
+      readonly alignment = signal('left');
+    }
+
+    const r = renderHost(SubclassHost);
+    await flush(r.fixture);
+    expect(indicator('left-ind').getAttribute('data-state')).toBe('checked');
   });
 
   describe('zoneless reactivity', () => {

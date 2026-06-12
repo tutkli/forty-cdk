@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  InjectionToken,
   input,
   model,
   output,
@@ -22,6 +23,18 @@ import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 
 /**
+ * Injection key the `[forMenuItemIndicator]` uses to resolve a parent
+ * checkbox item, decoupled from the concrete `ForMenuCheckboxItem` class.
+ * `ForMenuCheckboxItem` provides itself under this token, so a design system
+ * wrapping the item by subclassing re-points it at the subclass with a single
+ * provider (`{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: MtxMenuCheckboxItem }`)
+ * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
+  'FOR_MENU_CHECKBOX_ITEM',
+);
+
+/**
  * Tri-state-free checkbox item. Click and Enter toggle `checked`, emit
  * `(select)`, and close the menu — `event.preventDefault()` on the emitted
  * event keeps the menu open. Per APG, **Space** toggles `checked` and
@@ -31,6 +44,7 @@ import { handleMenuTabOut } from './menu-tab-out';
 @Directive({
   selector: '[forMenuCheckboxItem]',
   exportAs: 'forMenuCheckboxItem',
+  providers: [{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: ForMenuCheckboxItem }],
   host: {
     role: 'menuitemcheckbox',
     type: 'button',

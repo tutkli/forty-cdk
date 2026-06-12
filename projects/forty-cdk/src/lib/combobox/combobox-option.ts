@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  InjectionToken,
   input,
   signal,
 } from '@angular/core';
@@ -11,6 +12,16 @@ import {
 import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { injectComboboxContext } from './combobox-context';
+
+/**
+ * Injection key the `[forComboboxIndicator]` uses to resolve its parent
+ * option, decoupled from the concrete `ForComboboxOption` class.
+ * `ForComboboxOption` provides itself under this token, so a design system
+ * wrapping the option by subclassing re-points it at the subclass with a
+ * single provider (`{ provide: FOR_COMBOBOX_OPTION, useExisting: MtxComboboxOption }`)
+ * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_COMBOBOX_OPTION');
 
 /**
  * One option inside a `[forComboboxContent]`. Apply on whatever element
@@ -42,6 +53,7 @@ import { injectComboboxContext } from './combobox-context';
 @Directive({
   selector: '[forComboboxOption]',
   exportAs: 'forComboboxOption',
+  providers: [{ provide: FOR_COMBOBOX_OPTION, useExisting: ForComboboxOption }],
   host: {
     role: 'option',
     '[id]': 'id()',

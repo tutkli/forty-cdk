@@ -1,9 +1,9 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../test-utils';
-import { ForRadio } from './radio';
+import { FOR_RADIO, ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
 import { ForRadioIndicator } from './radio-indicator';
 
@@ -521,6 +521,32 @@ describe('ForRadioGroup', () => {
       expect(() => renderHost(Orphan)).toThrow(
         /\[forty-cdk\/radio-group\] ForRadioIndicator must be used inside a \[forRadio\] element\./,
       );
+    });
+
+    it('resolves a subclassed radio via the re-provided FOR_RADIO token', () => {
+      @Directive({
+        selector: '[testRadio]',
+        providers: [{ provide: FOR_RADIO, useExisting: TestRadio }],
+      })
+      class TestRadio extends ForRadio {}
+
+      @Component({
+        imports: [ForRadioGroup, TestRadio, ForRadioIndicator],
+        template: `
+          <div forRadioGroup [(value)]="color">
+            <button type="button" testRadio value="red" data-test-id="red">
+              <span forRadioIndicator data-ind="red"></span>
+            </button>
+          </div>
+        `,
+      })
+      class SubclassHost {
+        readonly color = signal('red');
+      }
+
+      const { el } = renderHost(SubclassHost);
+      const ind = el.querySelector<HTMLElement>('[data-ind="red"]')!;
+      expect(ind.getAttribute('data-state')).toBe('checked');
     });
   });
 

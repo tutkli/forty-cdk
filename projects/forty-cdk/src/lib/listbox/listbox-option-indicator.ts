@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { ForListboxOption } from './listbox-option';
+import { FOR_LISTBOX_OPTION, type ForListboxOption } from './listbox-option';
 
 /**
  * Optional indicator slot inside a `ForListboxOption`. Apply on the
@@ -24,7 +24,7 @@ export class ForListboxOptionIndicator {
   protected readonly parent: ForListboxOption;
 
   constructor() {
-    const parent = inject(ForListboxOption, { optional: true });
+    const parent = inject(FOR_LISTBOX_OPTION, { optional: true });
     if (!parent) {
       throw new Error(
         '[forty-cdk/listbox] ForListboxOptionIndicator must be used inside a [forListboxOption] element.',

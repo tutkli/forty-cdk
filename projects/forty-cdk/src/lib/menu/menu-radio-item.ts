@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  InjectionToken,
   input,
   output,
   signal,
@@ -22,6 +23,16 @@ import { handleMenuTabOut } from './menu-tab-out';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 
 /**
+ * Injection key the `[forMenuItemIndicator]` uses to resolve a parent radio
+ * item, decoupled from the concrete `ForMenuRadioItem` class.
+ * `ForMenuRadioItem` provides itself under this token, so a design system
+ * wrapping the item by subclassing re-points it at the subclass with a single
+ * provider (`{ provide: FOR_MENU_RADIO_ITEM, useExisting: MtxMenuRadioItem }`)
+ * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MENU_RADIO_ITEM');
+
+/**
  * One radio option inside `[forMenuRadioGroup]`. Click and Enter set the
  * group's `value` to this item's `value`, emit `(select)`, and close the
  * menu — call `event.preventDefault()` on the emitted event to keep the
@@ -31,6 +42,7 @@ import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 @Directive({
   selector: '[forMenuRadioItem]',
   exportAs: 'forMenuRadioItem',
+  providers: [{ provide: FOR_MENU_RADIO_ITEM, useExisting: ForMenuRadioItem }],
   host: {
     role: 'menuitemradio',
     type: 'button',

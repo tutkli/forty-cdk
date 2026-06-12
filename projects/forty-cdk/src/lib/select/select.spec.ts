@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import {
@@ -18,7 +18,7 @@ import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
 import { ForSelectGroupLabel } from './select-group-label';
 import { ForSelectIndicator } from './select-indicator';
-import { ForSelectOption } from './select-option';
+import { FOR_SELECT_OPTION, ForSelectOption } from './select-option';
 import { ForSelectSeparator } from './select-separator';
 import { ForSelectTrigger } from './select-trigger';
 import { ForSelectValue } from './select-value';
@@ -1807,6 +1807,45 @@ describe('ForSelectIndicator', () => {
     expect(() => TestBed.createComponent(Orphan)).toThrow(
       /\[forty-cdk\/select\] ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
     );
+  });
+
+  it('resolves a subclassed option via the re-provided FOR_SELECT_OPTION token', async () => {
+    @Directive({
+      selector: '[testSelectOption]',
+      providers: [{ provide: FOR_SELECT_OPTION, useExisting: TestSelectOption }],
+    })
+    class TestSelectOption extends ForSelectOption {}
+
+    @Component({
+      imports: [
+        ForSelect,
+        ForSelectTrigger,
+        ForSelectContent,
+        TestSelectOption,
+        ForSelectIndicator,
+      ],
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          <button forSelectTrigger>Open</button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" testSelectOption value="apple">
+                <span data-test-id="apple-ind" forSelectIndicator>✓</span>
+                Apple
+              </button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>(['apple']);
+    }
+
+    const r = renderHost(SubclassHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
   describe('zoneless reactivity', () => {

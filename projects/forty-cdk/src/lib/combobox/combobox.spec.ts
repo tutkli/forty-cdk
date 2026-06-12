@@ -1,4 +1,10 @@
-import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  Directive,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import type {
@@ -29,7 +35,7 @@ import { ForComboboxGroupLabel } from './combobox-group-label';
 import { ForComboboxIndicator } from './combobox-indicator';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxList } from './combobox-list';
-import { ForComboboxOption } from './combobox-option';
+import { FOR_COMBOBOX_OPTION, ForComboboxOption } from './combobox-option';
 import { ForComboboxTrigger } from './combobox-trigger';
 import { ForComboboxSeparator } from './combobox-separator';
 import { ForComboboxStatus } from './combobox-status';
@@ -2826,6 +2832,45 @@ describe('ForComboboxIndicator', () => {
     expect(() => TestBed.createComponent(Orphan)).toThrow(
       /\[forty-cdk\/combobox\] ForComboboxIndicator must be used inside a \[forComboboxOption\] element\./,
     );
+  });
+
+  it('resolves a subclassed option via the re-provided FOR_COMBOBOX_OPTION token', async () => {
+    @Directive({
+      selector: '[testComboboxOption]',
+      providers: [{ provide: FOR_COMBOBOX_OPTION, useExisting: TestComboboxOption }],
+    })
+    class TestComboboxOption extends ForComboboxOption {}
+
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxContent,
+        TestComboboxOption,
+        ForComboboxIndicator,
+      ],
+      template: `
+        <div forCombobox [(open)]="open" [(value)]="value">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              <div data-test-id="apple" testComboboxOption value="apple" label="Apple">
+                <span data-test-id="apple-ind" forComboboxIndicator>✓</span>
+                Apple
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>(['apple']);
+    }
+
+    const r = renderHost(SubclassHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
   describe('zoneless reactivity', () => {

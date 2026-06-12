@@ -1,8 +1,8 @@
 export { ForMenuContent } from './menu-content';
 export { ForMenuItem } from './menu-item';
-export { ForMenuCheckboxItem } from './menu-checkbox-item';
+export { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
 export { ForMenuRadioGroup } from './menu-radio-group';
-export { ForMenuRadioItem } from './menu-radio-item';
+export { FOR_MENU_RADIO_ITEM, ForMenuRadioItem } from './menu-radio-item';
 export { ForMenuItemIndicator } from './menu-item-indicator';
 export { ForMenuSeparator } from './menu-separator';
 export { ForMenuGroup } from './menu-group';
