@@ -1,6 +1,7 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -36,7 +37,6 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
-    '[attr.disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
@@ -53,6 +53,7 @@ export class ForComboboxTrigger {
       (el) => this.ctx.registerTrigger(el),
       (el) => this.ctx.unregisterTrigger(el),
     );
+    reflectDisabled(this.ctx.effectiveDisabled);
   }
 
   protected onClick(): void {

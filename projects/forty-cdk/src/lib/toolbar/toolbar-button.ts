@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
 
@@ -15,7 +16,6 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
   host: {
     type: 'button',
     '[attr.tabindex]': 'tabindex()',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'toolbar?.orientation()',
     '(focus)': 'onFocus()',
@@ -65,6 +65,7 @@ export class ForToolbarButton {
       (h) => toolbar.registerItem(h),
       (h) => toolbar.unregisterItem(h),
     );
+    reflectDisabled(this.effectiveDisabled);
   }
 
   protected onFocus(): void {

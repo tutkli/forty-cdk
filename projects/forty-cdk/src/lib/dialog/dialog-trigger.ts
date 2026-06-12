@@ -9,6 +9,8 @@ import {
   model,
 } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
  * preferably a `<button>` — so keyboard users can reach it.
@@ -38,7 +40,6 @@ import {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
-    '[attr.disabled]': 'disabled() ? "" : null',
     '(click)': 'onClick()',
   },
 })
@@ -72,6 +73,7 @@ export class ForDialogTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
+    reflectDisabled(this.disabled);
     if (isDevMode()) {
       effect(() => {
         if (this.open() && this.controls() === null) {

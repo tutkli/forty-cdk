@@ -1,6 +1,7 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
@@ -26,7 +27,6 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
     '[attr.aria-expanded]': 'item.expanded() ? "true" : "false"',
     '[attr.aria-controls]': 'item.expanded() ? item.contentId() : null',
     '[attr.aria-disabled]': 'ariaDisabled() ? "true" : null',
-    '[attr.disabled]': 'item.disabled() ? "" : null',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
     '[attr.data-orientation]': 'parent.orientation()',
     '(click)': 'item.toggle()',
@@ -60,6 +60,7 @@ export class ForAccordionTrigger {
       (h) => this.parent.registerTrigger(h),
       (h) => this.parent.unregisterTrigger(h),
     );
+    reflectDisabled(this.item.disabled);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

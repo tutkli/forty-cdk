@@ -1,5 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -17,7 +18,6 @@ import { injectCalendarContext } from './calendar-context';
   host: {
     type: 'button',
     '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.disabled]': 'disabled() ? "" : null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '(click)': 'ctx.pageMonths(1)',
@@ -32,4 +32,8 @@ export class ForCalendarNextButton {
   protected readonly disabled = computed(
     () => this.ctx.disabled() || this.ctx.isNextMonthDisabled(),
   );
+
+  constructor() {
+    reflectDisabled(this.disabled);
+  }
 }

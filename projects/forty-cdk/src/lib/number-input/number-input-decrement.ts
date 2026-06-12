@@ -1,5 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectNumberInputGroup } from './number-input-context';
 
 /**
@@ -25,7 +26,6 @@ import { injectNumberInputGroup } from './number-input-context';
     type: 'button',
     tabindex: '-1',
     '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.disabled]': 'isDisabled() ? "" : null',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'step()',
   },
@@ -40,6 +40,10 @@ export class ForNumberInputDecrement {
     const field = this.group.field();
     return !field || field.effectiveDisabled() || field.readonly() || field.atMin();
   });
+
+  constructor() {
+    reflectDisabled(this.isDisabled);
+  }
 
   protected step(): void {
     this.group.field()?.decrement();

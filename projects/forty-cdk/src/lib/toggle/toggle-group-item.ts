@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
 import { injectToggleGroupContext } from './toggle-group-context';
@@ -30,7 +31,6 @@ import { injectToggleGroupContext } from './toggle-group-context';
     type: 'button',
     '[attr.aria-pressed]': 'pressed() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'pressed() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -100,6 +100,8 @@ export class ForToggleGroupItem {
         (h) => rovingHost.unregisterItem(h),
       );
     }
+
+    reflectDisabled(this.effectiveDisabled);
   }
 
   protected onClick(): void {

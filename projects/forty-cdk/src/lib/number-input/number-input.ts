@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
@@ -100,7 +101,6 @@ function localeSeparators(locale: string | undefined): { group: string; decimal:
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.readonly]': 'readonly() ? "" : null',
     '[attr.data-empty]': 'value() === null ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -221,6 +221,7 @@ export class ForNumberInput
 
   constructor() {
     super();
+    reflectDisabled(this.effectiveDisabled);
     injectHiddenInput({
       name: this.name,
       values: computed(() => {

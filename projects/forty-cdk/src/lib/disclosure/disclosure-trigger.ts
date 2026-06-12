@@ -1,5 +1,6 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**
@@ -24,7 +25,6 @@ import { injectDisclosureContext } from './disclosure-context';
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
@@ -38,6 +38,10 @@ export class ForDisclosureTrigger {
 
   /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
+
+  constructor() {
+    reflectDisabled(this.effectiveDisabled);
+  }
 
   protected onClick(): void {
     if (this.effectiveDisabled()) {
