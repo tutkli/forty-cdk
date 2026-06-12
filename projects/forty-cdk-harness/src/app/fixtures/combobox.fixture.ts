@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ForCombobox,
+  ForComboboxAnchor,
   type ForComboboxAutocomplete,
   ForComboboxContent,
   ForComboboxInput,
@@ -15,7 +16,30 @@ type Fruit = (typeof ALL_FRUITS)[number];
 @Component({
   selector: 'app-combobox-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  imports: [
+    ForCombobox,
+    ForComboboxAnchor,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+  ],
+  styles: [
+    `
+      /* The decorated field box is deliberately wider than the inner input so
+         anchor-vs-input positioning is distinguishable by width. */
+      [forComboboxAnchor] {
+        display: inline-flex;
+        align-items: center;
+        width: 320px;
+        padding: 0 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+      }
+      [forComboboxAnchor] [forComboboxInput] {
+        flex: 1;
+      }
+    `,
+  ],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
     <div
@@ -26,7 +50,14 @@ type Fruit = (typeof ALL_FRUITS)[number];
       [autocompleteMode]="autocompleteMode"
       ariaLabel="Fruit search"
     >
-      <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+      @if (anchor) {
+        <div data-testid="anchor" forComboboxAnchor>
+          <span aria-hidden="true">🔎</span>
+          <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+        </div>
+      } @else {
+        <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+      }
       @if (open()) {
         <div forComboboxContent data-testid="content">
           @for (opt of filtered(); track opt) {
@@ -56,6 +87,10 @@ export class ComboboxFixture {
   protected readonly autocompleteMode: ForComboboxAutocomplete = queryFlag('inline')
     ? 'both'
     : 'list';
+  // `?anchor=1` wraps the input in a wider `[forComboboxAnchor]` field box so
+  // e2e specs can assert the listbox is positioned / sized against the box
+  // (`--for-anchor-width` ≈ 320px) rather than the inner input.
+  protected readonly anchor = queryFlag('anchor');
 
   protected readonly filtered = computed(() => {
     const q = this.query().toLowerCase();

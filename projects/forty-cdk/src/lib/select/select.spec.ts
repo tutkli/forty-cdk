@@ -13,6 +13,7 @@ import { ForFieldDescription } from '../field/field-description';
 import { ForFieldError } from '../field/field-error';
 import { ForLabel } from '../field/label';
 import { ForSelect } from './select';
+import { ForSelectAnchor } from './select-anchor';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
 import { ForSelectGroupLabel } from './select-group-label';
@@ -1569,6 +1570,159 @@ describe('ForSelect', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/select\] ForSelectGroupLabel must be used inside a \[forSelectGroup\] element\./,
+      );
+    });
+
+    it('throws when [forSelectAnchor] is used outside [forSelect]', () => {
+      @Component({
+        imports: [ForSelectAnchor],
+        template: `<div forSelectAnchor></div>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(Orphan)).toThrow(
+        /\[forty-cdk\/select\] ForSelectAnchor must be used inside a \[forSelect\] element\./,
+      );
+    });
+  });
+
+  describe('anchor (separate positioning element)', () => {
+    @Component({
+      imports: [ForSelect, ForSelectAnchor, ForSelectTrigger, ForSelectContent, ForSelectOption],
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          @if (showAnchor()) {
+            <div data-testid="anchor" forSelectAnchor>
+              <button forSelectTrigger>Open</button>
+            </div>
+          } @else {
+            <button forSelectTrigger>Open</button>
+          }
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+              <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly showAnchor = signal(true);
+    }
+
+    it('mounts the listbox with [forSelectAnchor] registered alongside the trigger', async () => {
+      // The DOM-observable contract for "anchor is wired": the anchor box and
+      // the trigger coexist and the listbox opens and paints. Which element
+      // drives floating-ui positioning is a geometry concern asserted in the
+      // Playwright suite (jsdom returns zeros for getBoundingClientRect).
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(r.query<HTMLButtonElement>('[forSelectTrigger]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forSelectContent]')).not.toBeNull();
+    });
+
+    it('lets the trigger keep driving aria-controls and the toggle even with an anchor', async () => {
+      const r = renderHost(AnchorHost);
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+
+      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('keeps the trigger exempt from outside dismissal even when an anchor wraps it', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: trigger, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [trigger], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('restores the trigger fallback after the anchor is torn down inside @if', async () => {
+      // The anchor lives inside `@if`; tearing it down must not throw and the
+      // select must keep opening / dismissing from the trigger.
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).toBeNull();
+
+      // Re-opening still works with the trigger as the (restored) fallback.
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      trigger.click();
+      await flushPositioning(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content).not.toBeNull();
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('reacts to anchor registration without zone.js', async () => {
+      // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
+      // anchor on and off stays reactive (no throw, listbox keeps painting).
+      const r = renderHost(AnchorHost);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forSelectContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forSelectContent]')).not.toBeNull();
+    });
+
+    it('throws when two [forSelectAnchor] are registered inside the same [forSelect]', () => {
+      // `@if` defers directive construction to the change-detection pass so the
+      // duplicate-registration throw surfaces from `detectChanges()`.
+      @Component({
+        imports: [ForSelect, ForSelectAnchor, ForSelectTrigger],
+        template: `
+          @if (show()) {
+            <div forSelect>
+              <div forSelectAnchor></div>
+              <div forSelectAnchor></div>
+              <button forSelectTrigger>Open</button>
+            </div>
+          }
+        `,
+      })
+      class TwoAnchorsHost {
+        readonly show = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoAnchorsHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/select\] Multiple \[forSelectAnchor\]/,
       );
     });
   });

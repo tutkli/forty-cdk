@@ -8,17 +8,18 @@ Headless select primitive — a button trigger that opens a portaled listbox of 
 
 ## Pieces
 
-| Class                 | Selector                | Role                                                                                                                             |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                                   |
-| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`.                  |
-| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                             |
-| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                            |
-| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<T>` (defaults to `string`).                                                                         |
-| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`. |
-| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                         |
-| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                          |
-| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                 |
+| Class                 | Selector                | Role                                                                                                                                                                                                        |
+| --------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                                                                                                              |
+| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`.                                                                                             |
+| `ForSelectAnchor`     | `[forSelectAnchor]`     | Optional. Positions the listbox against this element instead of the trigger — wrap a decorated field box so the panel matches the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
+| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                                                                                                        |
+| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                                                                                                       |
+| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<T>` (defaults to `string`).                                                                                                                                                    |
+| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`.                                                                            |
+| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                                                                    |
+| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                                                                                                     |
+| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                                                                                            |
 
 ## Single mode (default)
 
@@ -72,6 +73,30 @@ When the listbox mounts, focus lands per the trigger's hint:
 - **ArrowUp** → focuses the currently-selected option, or the last enabled option when no selection exists.
 
 Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected')`.
+
+## Anchoring to a field box
+
+By default the listbox is positioned against `[forSelectTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forSelectAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:
+
+```html
+<div forSelect #select="forSelect" [(value)]="value">
+  <div forSelectAnchor class="field-box">
+    <icon name="search" />
+    <button forSelectTrigger>
+      <span forSelectValue placeholder="Pick a fruit"></span>
+    </button>
+    <button class="clear" (click)="value.set([])">×</button>
+  </div>
+  @if (select.open()) {
+  <div forSelectContent style="width: var(--for-anchor-width)">
+    <button forSelectOption value="apple">Apple</button>
+    <button forSelectOption value="banana">Banana</button>
+  </div>
+  }
+</div>
+```
+
+`[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. At most one `[forSelectAnchor]` per `[forSelect]` — a second one throws `[forty-cdk/select]`.
 
 ## Styling
 

@@ -1,4 +1,5 @@
 export { ForSelect } from './select';
+export { ForSelectAnchor } from './select-anchor';
 export { ForSelectTrigger } from './select-trigger';
 export { ForSelectValue } from './select-value';
 export { ForSelectContent } from './select-content';

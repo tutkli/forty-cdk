@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute } from '@angular/router';
 import {
   ForSelect,
+  ForSelectAnchor,
   ForSelectContent,
   ForSelectOption,
   ForSelectTrigger,
@@ -13,7 +14,14 @@ import { queryFlag } from './_query-flag';
 @Component({
   selector: 'app-select-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption],
+  imports: [
+    ForSelect,
+    ForSelectAnchor,
+    ForSelectTrigger,
+    ForSelectValue,
+    ForSelectContent,
+    ForSelectOption,
+  ],
   styles: [
     `
       [forSelectContent] {
@@ -28,6 +36,16 @@ import { queryFlag } from './_query-flag';
         padding: 6px 8px;
         height: 32px;
         box-sizing: border-box;
+      }
+      /* The decorated field box is deliberately wider than the inner trigger
+         so anchor-vs-trigger positioning is distinguishable by width. */
+      [forSelectAnchor] {
+        display: inline-flex;
+        align-items: center;
+        width: 280px;
+        padding: 0 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
       }
     `,
   ],
@@ -50,9 +68,18 @@ import { queryFlag } from './_query-flag';
       (autoFocusOnOpen)="onAutoOpen($event)"
       (autoFocusOnClose)="onAutoClose($event)"
     >
-      <button data-testid="trigger" forSelectTrigger style="width: 160px; height: 32px;">
-        <span forSelectValue></span>
-      </button>
+      @if (anchor) {
+        <div data-testid="anchor" forSelectAnchor>
+          <span aria-hidden="true">🔎</span>
+          <button data-testid="trigger" forSelectTrigger style="flex: 1; height: 32px;">
+            <span forSelectValue></span>
+          </button>
+        </div>
+      } @else {
+        <button data-testid="trigger" forSelectTrigger style="width: 160px; height: 32px;">
+          <span forSelectValue></span>
+        </button>
+      }
       @if (open()) {
         <div forSelectContent data-testid="content">
           <button data-testid="opt-apple" forSelectOption value="apple">Apple</button>
@@ -93,6 +120,11 @@ export class SelectFixture {
   // positioner can center a selected option over the trigger without hitting
   // the top viewport-padding clamp.
   protected readonly spacer = queryFlag('spacer');
+
+  // `?anchor=1` wraps the trigger in a wider `[forSelectAnchor]` field box so
+  // e2e specs can assert the listbox is positioned / sized against the box
+  // (`--for-anchor-width` ≈ 280px) rather than the inner trigger (160px).
+  protected readonly anchor = queryFlag('anchor');
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');

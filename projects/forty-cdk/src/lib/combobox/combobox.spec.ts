@@ -14,6 +14,7 @@ import { ForFieldDescription } from '../field/field-description';
 import { ForFieldError } from '../field/field-error';
 import { ForLabel } from '../field/label';
 import { ForCombobox } from './combobox';
+import { ForComboboxAnchor } from './combobox-anchor';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
 import { ForComboboxChips } from './combobox-chips';
@@ -1773,6 +1774,172 @@ describe('ForCombobox', () => {
         /\[forty-cdk\/combobox\] ForComboboxGroupLabel must be used inside a \[forComboboxGroup\] element\./,
       );
     });
+
+    it('throws when [forComboboxAnchor] is used outside [forCombobox]', () => {
+      @Component({
+        imports: [ForComboboxAnchor],
+        template: `<div forComboboxAnchor></div>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(Orphan)).toThrow(
+        /\[forty-cdk\/combobox\] ForComboboxAnchor must be used inside a \[forCombobox\] element\./,
+      );
+    });
+  });
+
+  describe('anchor (separate positioning element)', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxAnchor,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxOption,
+      ],
+      template: `
+        <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
+          @if (showAnchor()) {
+            <div data-testid="anchor" forComboboxAnchor>
+              <input forComboboxInput />
+            </div>
+          } @else {
+            <input forComboboxInput />
+          }
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of FRUITS; track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(false);
+      readonly showAnchor = signal(true);
+      readonly FRUITS = FRUITS;
+    }
+
+    it('mounts the listbox with [forComboboxAnchor] registered alongside the input', async () => {
+      // DOM-observable contract for "anchor is wired": the anchor box and the
+      // input coexist and the listbox opens and paints. Which element drives
+      // floating-ui positioning is a geometry concern asserted in Playwright
+      // (jsdom returns zeros for getBoundingClientRect).
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(getInput()).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forComboboxContent]')).not.toBeNull();
+    });
+
+    it('lets the input keep driving aria-controls / aria-expanded even with an anchor', async () => {
+      const r = renderHost(AnchorHost);
+      const input = getInput();
+
+      expect(input.getAttribute('aria-haspopup')).toBe('listbox');
+      expect(input.getAttribute('aria-expanded')).toBe('false');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(input.getAttribute('aria-expanded')).toBe('true');
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      expect(input.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('keeps the input exempt from outside dismissal even when an anchor wraps it', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: input, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [input], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('restores the input fallback after the anchor is torn down inside @if', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).toBeNull();
+
+      // Re-opening still works with the input as the (restored) fallback.
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      const input = getInput();
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      expect(content).not.toBeNull();
+      expect(input.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('reacts to anchor registration without zone.js', async () => {
+      // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
+      // anchor on and off stays reactive (no throw, listbox keeps painting).
+      const r = renderHost(AnchorHost);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forComboboxContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forComboboxContent]')).not.toBeNull();
+    });
+
+    it('throws when two [forComboboxAnchor] are registered inside the same [forCombobox]', () => {
+      // `@if` defers directive construction to the change-detection pass so the
+      // duplicate-registration throw surfaces from `detectChanges()`.
+      @Component({
+        imports: [ForCombobox, ForComboboxAnchor, ForComboboxInput],
+        template: `
+          @if (show()) {
+            <div forCombobox>
+              <div forComboboxAnchor></div>
+              <div forComboboxAnchor></div>
+              <input forComboboxInput />
+            </div>
+          }
+        `,
+      })
+      class TwoAnchorsHost {
+        readonly show = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoAnchorsHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/combobox\] Multiple \[forComboboxAnchor\]/,
+      );
+    });
   });
 });
 
@@ -1792,12 +1959,7 @@ describe('ForCombobox static option (issue #674)', () => {
         <input forComboboxInput />
         @if (open()) {
           <div forComboboxContent>
-            <div
-              data-test-id="add"
-              forComboboxOption
-              [value]="sentinel"
-              [label]="sentinelLabel"
-            >
+            <div data-test-id="add" forComboboxOption [value]="sentinel" [label]="sentinelLabel">
               {{ sentinelLabel }}
             </div>
             @for (it of filtered(); track it.id) {
@@ -1814,7 +1976,9 @@ describe('ForCombobox static option (issue #674)', () => {
           </div>
         }
       </div>
-      <output data-testid="sel">{{ cb.selected().length ? cb.selected()[0].label : 'none' }}</output>
+      <output data-testid="sel">{{
+        cb.selected().length ? cb.selected()[0].label : 'none'
+      }}</output>
     `,
   })
   class StaticOptionHost {
