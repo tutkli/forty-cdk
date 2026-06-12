@@ -217,6 +217,91 @@ describe('ForDrawerManager (programmatic)', () => {
     });
   });
 
+  describe('per-channel dismiss hooks (#678)', () => {
+    // The whole suite runs under `provideZonelessChangeDetection()` (see
+    // `setup()`), so this block doubles as the zoneless coverage for the hooks.
+    it('interactOutside veto keeps a dismissible drawer open on outside pointer-down while Escape still closes', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        interactOutside: (event) => event.preventDefault(),
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+
+      expect(ref.isClosed()).toBe(false);
+
+      pressKey(document, 'Escape');
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+
+      outside.remove();
+    });
+
+    it('pointerDownOutside veto suppresses the outside-click close', () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        pointerDownOutside: (event) => event.preventDefault(),
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+
+      expect(ref.isClosed()).toBe(false);
+
+      outside.remove();
+      ref.close();
+    });
+
+    it('escapeKeyDown veto suppresses the Escape close', () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        escapeKeyDown: (event) => event.preventDefault(),
+      });
+
+      pressKey(document, 'Escape');
+      expect(ref.isClosed()).toBe(false);
+
+      ref.close();
+    });
+
+    it('passes the originating DOM events to the callbacks (parity with the declarative outputs)', () => {
+      const { drawers } = setup();
+      let pointerEvent: Event | undefined;
+      let interactEvent: Event | undefined;
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        pointerDownOutside: (event) => {
+          pointerEvent = event.event;
+          event.preventDefault();
+        },
+        interactOutside: (event) => {
+          interactEvent = event.event;
+        },
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      const pointerDown = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      outside.dispatchEvent(pointerDown);
+
+      expect(pointerEvent).toBe(pointerDown);
+      expect(interactEvent).toBe(pointerDown);
+      expect(ref.isClosed()).toBe(false);
+
+      outside.remove();
+      ref.close();
+    });
+  });
+
   describe('body scroll lock', () => {
     it('locks while modal drawer is open and clears on close', async () => {
       document.body.style.overflow = 'auto';

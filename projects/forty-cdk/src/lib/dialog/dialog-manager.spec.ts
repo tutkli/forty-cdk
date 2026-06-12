@@ -465,6 +465,107 @@ describe('ForDialogManager (programmatic)', () => {
     });
   });
 
+  // ---- New coverage for #678 — per-channel dismiss hooks on the manager ----
+
+  describe('per-channel dismiss hooks (#678)', () => {
+    // The whole suite runs under `provideZonelessChangeDetection()` (see
+    // `setup()`), so this block doubles as the zoneless coverage for the hooks.
+    it('interactOutside veto keeps a dismissible dialog open on outside pointer-down while Escape still closes', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        interactOutside: (event) => event.preventDefault(),
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+
+      // Vetoed: the outside interaction does not dismiss.
+      expect(ref.isClosed()).toBe(false);
+
+      // Escape is a separate channel with its own veto — still closes.
+      pressKey(document, 'Escape');
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+
+      outside.remove();
+    });
+
+    it('pointerDownOutside veto suppresses the outside-click close', () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        pointerDownOutside: (event) => event.preventDefault(),
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+
+      expect(ref.isClosed()).toBe(false);
+
+      outside.remove();
+      ref.close();
+    });
+
+    it('escapeKeyDown veto suppresses the Escape close', () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        escapeKeyDown: (event) => event.preventDefault(),
+      });
+
+      pressKey(document, 'Escape');
+      expect(ref.isClosed()).toBe(false);
+
+      ref.close();
+    });
+
+    it('passes the originating DOM events to the callbacks (parity with the declarative outputs)', () => {
+      const { dialogs } = setup();
+      let escapeEvent: Event | undefined;
+      let pointerEvent: Event | undefined;
+      let interactEvent: Event | undefined;
+      const ref = dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        escapeKeyDown: (event) => {
+          escapeEvent = event.event;
+          event.preventDefault();
+        },
+        pointerDownOutside: (event) => {
+          pointerEvent = event.event;
+          event.preventDefault();
+        },
+        interactOutside: (event) => {
+          interactEvent = event.event;
+        },
+      });
+
+      const outside = document.createElement('div');
+      outside.id = 'outside';
+      document.body.appendChild(outside);
+      const pointerDown = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      outside.dispatchEvent(pointerDown);
+
+      // The pointer channel and the composite channel share the same physical
+      // interaction, so both receive the exact DOM event the layer observed.
+      expect(pointerEvent).toBe(pointerDown);
+      expect(interactEvent).toBe(pointerDown);
+
+      pressKey(document, 'Escape');
+      expect(escapeEvent).toBeInstanceOf(KeyboardEvent);
+
+      // All channels vetoed → still open.
+      expect(ref.isClosed()).toBe(false);
+
+      outside.remove();
+      ref.close();
+    });
+  });
+
   // ---- New coverage for #206 — manager runs `[forDialog]` for real ----
 
   describe('child pieces work inside the opened component', () => {

@@ -182,6 +182,22 @@ this.#drawers.open(ConfirmDrawer, {
 
 `onActiveSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
 
+### Per-channel dismissal (Escape-only drawers)
+
+`dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable on both APIs, so you can keep some live and suppress others (e.g. a non-modal floater that closes on Escape but stays put on an outside click). Programmatically the channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
+
+```ts
+this.#drawers.open(ConfirmDrawer, {
+  data,
+  modal: false,
+  // dismissible: true (the default) keeps Escape live.
+  interactOutside: (event) => event.preventDefault(), // ignore outside interaction
+  // escapeKeyDown / pointerDownOutside / focusOutside are available too.
+});
+```
+
+Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(interactOutside)="$event.preventDefault()"` suppresses the outside-click close while Escape (its own channel) still closes; veto `(escapeKeyDown)` instead to suppress Escape. Each callback's / output's `event.event` carries the originating DOM event. The callbacks behave identically to the outputs — same events, same veto semantics — and are torn down with the drawer.
+
 ## ForDrawer inputs / models
 
 | Name                        | Type                                        | Default    | Notes                                                                                                                                                                                      |

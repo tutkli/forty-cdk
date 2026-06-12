@@ -13,7 +13,10 @@ import {
 } from '@angular/core';
 
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
-import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
+import {
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { ForDialog } from './dialog';
 import { ForDialogProgrammaticHost } from './dialog-programmatic-host';
 import { ForDialogRef } from './dialog-ref';
@@ -101,6 +104,42 @@ export interface ForDialogOpenConfig<D = unknown> {
    * on unmount. Call `event.preventDefault()` to skip the return-focus.
    */
   autoFocusOnClose?: (event: VetoableEvent) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(escapeKeyDown)`
+   * output. Fires when Escape is pressed while this dialog is the topmost
+   * dismissable layer. Call `event.preventDefault()` on the veto to suppress
+   * the implicit close while keeping the other dismiss channels live — the
+   * programmatic equivalent of `(escapeKeyDown)="$event.preventDefault()"`.
+   * The original `KeyboardEvent` is on `.event`.
+   */
+  escapeKeyDown?: (event: VetoableNativeEvent<KeyboardEvent>) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(pointerDownOutside)`
+   * output. Fires when a pointer goes down outside the dialog. Call
+   * `event.preventDefault()` on the veto to suppress the implicit close. The
+   * native `PointerEvent` is on `.event`.
+   */
+  pointerDownOutside?: (event: VetoableNativeEvent<PointerEvent>) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(focusOutside)`
+   * output. Fires when focus moves outside the dialog. Call
+   * `event.preventDefault()` on the veto to suppress the implicit close. The
+   * native `FocusEvent` is on `.event`.
+   */
+  focusOutside?: (event: VetoableNativeEvent<FocusEvent>) => void;
+
+  /**
+   * Composite dismiss hook mirroring the declarative `(interactOutside)`
+   * output. Fires alongside `pointerDownOutside` / `focusOutside` and shares
+   * their veto state — `event.preventDefault()` on either suppresses the
+   * implicit close. Use this to keep a programmatic floater open on outside
+   * interaction while leaving Escape live (set `dismissible: true` and veto
+   * here). The native `PointerEvent | FocusEvent` is on `.event`.
+   */
+  interactOutside?: (event: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
 }
 
 /**
@@ -208,9 +247,35 @@ export class ForDialogManager {
     // Bridge `(close)` → ForDialogRef.close(value). The directive captures
     // the optional `value` argument from `requestClose(reason, value)` in a
     // signal we read back here.
-    const closeSub = dialogInstance.close.subscribe(() => {
-      ref.close(dialogInstance.lastCloseValue() as R);
-    });
+    const subs = [
+      dialogInstance.close.subscribe(() => {
+        ref.close(dialogInstance.lastCloseValue() as R);
+      }),
+    ];
+
+    // Forward the four vetoable dismiss channels the directive emits. The
+    // shell builds one `VetoableNativeEvent` per physical interaction, emits
+    // it through the directive output (synchronously, so the consumer's
+    // callback runs before the shell reads `defaultPrevented`), and only then
+    // decides whether to `requestClose`. A `preventDefault()` inside the
+    // callback therefore vetoes the implicit close exactly as the declarative
+    // `(escapeKeyDown)` / `(interactOutside)` outputs do — this lets a
+    // programmatic floater stay open on outside click (veto `interactOutside`)
+    // while Escape still closes it. Each subscription is torn down with the
+    // shell.
+    const { escapeKeyDown, pointerDownOutside, focusOutside, interactOutside } = config;
+    if (escapeKeyDown) {
+      subs.push(dialogInstance.escapeKeyDown.subscribe(escapeKeyDown));
+    }
+    if (pointerDownOutside) {
+      subs.push(dialogInstance.pointerDownOutside.subscribe(pointerDownOutside));
+    }
+    if (focusOutside) {
+      subs.push(dialogInstance.focusOutside.subscribe(focusOutside));
+    }
+    if (interactOutside) {
+      subs.push(dialogInstance.interactOutside.subscribe(interactOutside));
+    }
 
     // The directive's own `afterNextRender` lifecycle wires the focus trap,
     // scroll lock, dismissable layer, inert siblings, and return-focus
@@ -236,7 +301,9 @@ export class ForDialogManager {
       // The user component's view destroys ahead of the shell because Angular
       // tears down child views first, so `[forDialogClose]`, `[forDialogTitle]`,
       // etc. all unregister cleanly.
-      closeSub.unsubscribe();
+      for (const sub of subs) {
+        sub.unsubscribe();
+      }
       userRef.destroy();
       this.#appRef.detachView(shellRef.hostView);
       // The portal owns host removal: `shellRef.destroy()` fires ForDialog's

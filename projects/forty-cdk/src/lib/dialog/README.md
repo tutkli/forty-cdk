@@ -175,6 +175,35 @@ The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `
 | `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside the dialog.                                                                                                               |
 | `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite: fires alongside both of the above (and shares their veto state).                                                                   |
 
+### Per-channel dismissal (Escape-only dialogs)
+
+`dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable, so you can keep some live and suppress others. The canonical case is a **floater** (an update banner, a devtools panel) that should close on Escape but stay put when the user clicks elsewhere. Floaters are usually non-modal (`[modal]="false"`), so the rest of the page stays interactive.
+
+**Declarative** — veto the outside channel, leave Escape alone:
+
+```html
+@if (open()) {
+<div forDialog [modal]="false" (interactOutside)="$event.preventDefault()" (close)="open.set(false)">
+  …
+</div>
+}
+```
+
+`(interactOutside)` fires for both pointer-down-outside and focus-outside and shares their veto, so one handler covers every outside interaction. Escape keeps closing because its channel was never vetoed — to suppress Escape instead, veto `(escapeKeyDown)`.
+
+**Programmatic** — the same four channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
+
+```ts
+this.dialogs.open(FloaterComponent, {
+  modal: false,
+  // dismissible: true is the default — Escape stays live.
+  interactOutside: (event) => event.preventDefault(), // ignore outside interaction
+  // escapeKeyDown / pointerDownOutside / focusOutside are available too.
+});
+```
+
+Keep `dismissible: true` (the default) so Escape still closes, and veto only the channels you want to keep open. `event.event` carries the originating DOM event for inspection.
+
 ### Inputs — focus callbacks
 
 The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action. This shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(close)` output. See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs while trigger-anchored overlays (Popover, DropdownMenu, ContextMenu, Menu sub, Select) use output-shape.
@@ -232,6 +261,12 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 | `providers`        | `[]`      | Extra providers for the opened component's injector.                                                    |
 | `autoFocusOnOpen`  | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move. |
 | `autoFocusOnClose` | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.         |
+| `escapeKeyDown`    | —         | Callback. `VetoableNativeEvent<KeyboardEvent>`; `preventDefault()` suppresses the Escape close.          |
+| `pointerDownOutside` | —       | Callback. `VetoableNativeEvent<PointerEvent>`; `preventDefault()` suppresses the outside-pointer close.  |
+| `focusOutside`     | —         | Callback. `VetoableNativeEvent<FocusEvent>`; `preventDefault()` suppresses the outside-focus close.      |
+| `interactOutside`  | —         | Callback. Composite `VetoableNativeEvent<PointerEvent \| FocusEvent>`; shares the veto of the two above. |
+
+The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` outputs exactly — same events, same veto semantics. See [Per-channel dismissal](#per-channel-dismissal-escape-only-dialogs).
 
 ## Styling
 
