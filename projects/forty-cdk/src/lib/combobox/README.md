@@ -136,6 +136,21 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
 
 **Picking which anatomy.** Use the editable anatomy for type-to-filter text fields and tag inputs (the input is always visible). Use the picker anatomy for select-like pickers where the closed state shows a chosen value and search is an in-panel affordance. Everything else — filtering being the consumer's job, `[(value)]` / `[(query)]` / object values / multi mode / virtualization — works identically in both.
 
+**Triggers stamped from outside-declared templates.** Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forComboboxTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forCombobox"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forCombobox #root="forCombobox" [(value)]="value" [(query)]="query">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forComboboxContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forComboboxTrigger]="root">{{ selectedLabel() }}</button>
+</ng-template>
+```
+
 ## Self-hiding pieces
 
 `[forComboboxClear]` (nothing to clear) and `[forComboboxEmpty]` (options exist) hide themselves with an inline `display: none` in addition to the `hidden` attribute that removes them from the accessibility tree. Because the inline style beats any author selector rule, you can give these pieces a custom `display` (e.g. `display: inline-flex` for an icon) without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the piece is hidden, and your `display` applies once it shows.

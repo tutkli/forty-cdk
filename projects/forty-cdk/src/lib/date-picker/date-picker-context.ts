@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
@@ -135,8 +135,40 @@ export function injectDatePickerContext(piece: string): ForDatePickerContext {
   const ctx = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/date-picker] ${piece} must be used inside a [forDatePicker] element.`,
+      `[forty-cdk/date-picker] ${piece} must be used inside a [forDatePicker] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forDatePicker] root.',
     );
   }
   return ctx;
+}
+
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forDatePickerTrigger]` input carries one, the injected
+ * `FOR_DATE_PICKER_CONTEXT` otherwise. The orphan error only fires when neither
+ * resolves, on first read of the returned signal. Must be called in an
+ * injection context.
+ */
+export function injectDatePickerTriggerContext(
+  explicitRoot: Signal<ForDatePickerContext | ''>,
+): Signal<ForDatePickerContext> {
+  const injected = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected;
+    }
+    throw new Error(
+      '[forty-cdk/date-picker] ForDatePickerTrigger could not resolve its [forDatePicker] root: ' +
+        'no FOR_DATE_PICKER_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forDatePickerTrigger]="root" with #root="forDatePicker".',
+    );
+  });
 }

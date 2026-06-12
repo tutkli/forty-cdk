@@ -147,6 +147,25 @@ Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date s
 
 The library is styleless: presence in the DOM is the consumer's job (`@if (open())`), and `animate.enter` / `animate.leave` drive transitions. Style the `data-state="open" | "closed"` hooks (root + trigger + content) and `[data-disabled]` yourself.
 
+## Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDatePickerTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDatePicker"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forDatePicker #root="forDatePicker" [(value)]="date">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forDatePickerContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forDatePickerTrigger]="root">
+    <span forDatePickerValue>Pick a date</span>
+  </button>
+</ng-template>
+```
+
 ## Modal vs non-modal
 
 By default the surface is a **non-modal popover**: anchored to the trigger, no background inert, no scroll lock — matching React Aria / Ark UI. Set `[modal]="true"` to route through the modal shell instead: focus is trapped inside the dialog, the background is inert, and body scroll is locked (a centered dialog you position with CSS, not trigger-anchored). Either way the surface is `role="dialog"` and `aria-haspopup="dialog"`-anchored; modal mode adds `aria-modal="true"`.

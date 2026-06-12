@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
@@ -325,4 +325,32 @@ export function injectComboboxContext<T = unknown>(piece: string): ForComboboxCo
     );
   }
   return ctx as unknown as ForComboboxContext<T>;
+}
+
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forComboboxTrigger]` input carries one, the injected `FOR_COMBOBOX_CONTEXT`
+ * otherwise. The orphan error only fires when neither resolves, on first read
+ * of the returned signal. Must be called in an injection context.
+ */
+export function injectComboboxTriggerContext<T = unknown>(
+  explicitRoot: Signal<ForComboboxContext<T> | ''>,
+): Signal<ForComboboxContext<T>> {
+  const injected = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected as unknown as ForComboboxContext<T>;
+    }
+    throw new Error(
+      '[forty-cdk/combobox] ForComboboxTrigger could not resolve its [forCombobox] root: ' +
+        'no FOR_COMBOBOX_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forComboboxTrigger]="root" with #root="forCombobox".',
+    );
+  });
 }

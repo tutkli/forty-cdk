@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../_internal/collection/collection';
@@ -241,4 +241,32 @@ export function injectSelectContext<T = unknown>(piece: string): ForSelectContex
     );
   }
   return ctx as unknown as ForSelectContext<T>;
+}
+
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forSelectTrigger]` input carries one, the injected `FOR_SELECT_CONTEXT`
+ * otherwise. The orphan error only fires when neither resolves, on first read
+ * of the returned signal. Must be called in an injection context.
+ */
+export function injectSelectTriggerContext<T = unknown>(
+  explicitRoot: Signal<ForSelectContext<T> | ''>,
+): Signal<ForSelectContext<T>> {
+  const injected = inject(FOR_SELECT_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected as unknown as ForSelectContext<T>;
+    }
+    throw new Error(
+      '[forty-cdk/select] ForSelectTrigger could not resolve its [forSelect] root: ' +
+        'no FOR_SELECT_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forSelectTrigger]="root" with #root="forSelect".',
+    );
+  });
 }

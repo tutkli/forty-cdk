@@ -1,4 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import {
@@ -168,6 +170,104 @@ describe('ForDatePicker', () => {
       expect(root.getAttribute('data-state')).toBe('open');
       expect(trigger(r).getAttribute('data-state')).toBe('open');
       expect(content()!.getAttribute('data-state')).toBe('open');
+    });
+  });
+
+  describe('orphan errors', () => {
+    it('throws from ForDatePickerTrigger on first change detection', () => {
+      @Component({
+        imports: [ForDatePickerTrigger],
+        template: `<button forDatePickerTrigger></button>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/date-picker\] ForDatePickerTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forDatePickerTrigger\]="root"/);
+      expect(message).toMatch(/#root="forDatePicker"/);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForCalendar,
+        ForCalendarGrid,
+        ForCalendarCell,
+        NgTemplateOutlet,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forDatePickerTrigger]="root">Pick</button>
+        </ng-template>
+
+        <div forDatePicker [(value)]="value" [(open)]="open" #root="forDatePicker">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar [(value)]="value">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date">{{ c.label }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('opens on click when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const t = r.query<HTMLButtonElement>('button')!;
+
+      t.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(t.getAttribute('data-state')).toBe('open');
+      expect(t.getAttribute('aria-expanded')).toBe('true');
+      expect(document.querySelector('[forDatePickerContent]')).not.toBeNull();
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const t = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(t.getAttribute('data-state')).toBe('open');
+      expect(t.getAttribute('aria-controls')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(t.getAttribute('data-state')).toBe('closed');
+      expect(t.hasAttribute('aria-controls')).toBe(false);
     });
   });
 
