@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 
@@ -48,8 +48,40 @@ export function injectHoverCardContext(piece: string): ForHoverCardContext {
   const ctx = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/hover-card] ${piece} must be used inside a [forHoverCard] element.`,
+      `[forty-cdk/hover-card] ${piece} must be used inside a [forHoverCard] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forHoverCard] root.',
     );
   }
   return ctx;
+}
+
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forHoverCardTrigger]` input carries one, the injected
+ * `FOR_HOVER_CARD_CONTEXT` otherwise. The orphan error only fires when neither
+ * resolves, on first read of the returned signal. Must be called in an
+ * injection context.
+ */
+export function injectHoverCardTriggerContext(
+  explicitRoot: Signal<ForHoverCardContext | ''>,
+): Signal<ForHoverCardContext> {
+  const injected = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected;
+    }
+    throw new Error(
+      '[forty-cdk/hover-card] ForHoverCardTrigger could not resolve its [forHoverCard] root: ' +
+        'no FOR_HOVER_CARD_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forHoverCardTrigger]="root" with #root="forHoverCard".',
+    );
+  });
 }

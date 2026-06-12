@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -577,13 +578,27 @@ describe('ForPopover', () => {
       expect(() => TestBed.createComponent(host as never)).toThrow(regex);
     }
 
-    it('throws from ForPopoverTrigger', () => {
+    it('throws from ForPopoverTrigger on first change detection', () => {
       @Component({
         imports: [ForPopoverTrigger],
         template: `<button forPopoverTrigger></button>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverTrigger/);
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/popover\] ForPopoverTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forPopoverTrigger\]="root"/);
+      expect(message).toMatch(/#root="forPopover"/);
     });
 
     it('throws from ForPopoverContent', () => {
@@ -988,6 +1003,55 @@ describe('ForPopover', () => {
 
       const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
       expect(content.dataset['side']).toBe('bottom');
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forPopoverTrigger]="root">Open</button>
+        </ng-template>
+
+        <div forPopover [(open)]="open" #root="forPopover">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forPopoverContent>Body</div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on click when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(document.querySelector('[forPopoverContent]')).not.toBeNull();
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-controls')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
 });

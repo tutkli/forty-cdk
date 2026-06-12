@@ -1,7 +1,6 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { injectHoverCardContext } from './hover-card-context';
+import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover-card-context';
 
 /**
  * Element that activates the hover-card on hover or focus. Apply on a link,
@@ -24,12 +23,18 @@ import { injectHoverCardContext } from './hover-card-context';
  * Escape dismissal is owned by the content's document-level dismissable
  * layer (see `ForHoverCardContent`), so it works from the trigger and from
  * unrelated focus alike — the trigger carries no Escape listener of its own.
+ *
+ * The root is normally resolved via DI from the enclosing `[forHoverCard]`.
+ * When the trigger is declared inside an `ng-template` stamped into the root
+ * (e.g. via `ngTemplateOutlet`), DI resolves at the template's declaration
+ * site and misses the root — pass it explicitly through the selector input,
+ * `routerLink`-style: `[forHoverCardTrigger]="root"` with `#root="forHoverCard"`.
  */
 @Directive({
   selector: '[forHoverCardTrigger]',
   exportAs: 'forHoverCardTrigger',
   host: {
-    '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
     '(focus)': 'onFocus()',
@@ -37,23 +42,40 @@ import { injectHoverCardContext } from './hover-card-context';
   },
 })
 export class ForHoverCardTrigger {
-  protected readonly ctx = injectHoverCardContext('ForHoverCardTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * Optional explicit reference to the `[forHoverCard]` root, named after the
+   * selector `routerLink`-style. The bare valueless attribute keeps resolving
+   * the enclosing root via DI; pass the root explicitly
+   * (`[forHoverCardTrigger]="root"`, with `#root="forHoverCard"`) when the
+   * trigger is declared in an `ng-template` stamped inside the root — DI
+   * resolves at the template's declaration site, so the enclosing root is
+   * invisible there. The empty string (what the valueless attribute yields)
+   * is treated as unset.
+   */
+  readonly forHoverCardTrigger = input<ForHoverCardContext | ''>('');
+
+  protected readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
 
   #hovered = false;
   #focused = false;
 
   constructor() {
-    registerHandle(
-      this.#host.nativeElement,
-      (el) => this.ctx.registerTrigger(el),
-      (el) => this.ctx.unregisterTrigger(el),
-    );
+    const el = this.#host.nativeElement;
+    // Registration is an imperative call into the resolved root's registry,
+    // not state derivation — the effect only re-registers the element when the
+    // resolved root changes (explicit reference swapped at runtime).
+    effect((onCleanup) => {
+      const ctx = this.ctx();
+      ctx.registerTrigger(el);
+      onCleanup(() => ctx.unregisterTrigger(el));
+    });
   }
 
   protected onPointerEnter(): void {
     this.#hovered = true;
-    this.ctx.scheduleOpen('hover-trigger');
+    this.ctx().scheduleOpen('hover-trigger');
   }
 
   protected onPointerLeave(): void {
@@ -63,7 +85,7 @@ export class ForHoverCardTrigger {
 
   protected onFocus(): void {
     this.#focused = true;
-    this.ctx.scheduleOpen('focus');
+    this.ctx().scheduleOpen('focus');
   }
 
   protected onBlur(): void {
@@ -75,6 +97,6 @@ export class ForHoverCardTrigger {
     if (this.#hovered || this.#focused) {
       return;
     }
-    this.ctx.scheduleClose(reason);
+    this.ctx().scheduleClose(reason);
   }
 }

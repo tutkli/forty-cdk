@@ -233,7 +233,12 @@ export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELE
 export function injectSelectContext<T = unknown>(piece: string): ForSelectContext<T> {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/select] ${piece} must be used inside a [forSelect] element.`);
+    throw new Error(
+      `[forty-cdk/select] ${piece} must be used inside a [forSelect] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forSelect] root.',
+    );
   }
   return ctx as unknown as ForSelectContext<T>;
 }

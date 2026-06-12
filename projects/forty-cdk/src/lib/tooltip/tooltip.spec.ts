@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -427,7 +428,7 @@ describe('ForTooltip', () => {
   });
 
   describe('used outside [forTooltip]', () => {
-    it('throws a prefixed error from ForTooltipTrigger', () => {
+    it('throws a prefixed error from ForTooltipTrigger on first change detection', () => {
       @Component({
         imports: [ForTooltipTrigger],
         template: `<button type="button" forTooltipTrigger></button>`,
@@ -438,9 +439,19 @@ describe('ForTooltip', () => {
         providers: [provideZonelessChangeDetection()],
       });
 
-      expect(() => TestBed.createComponent(OrphanTrigger)).toThrow(
-        /\[forty-cdk\/tooltip\] ForTooltipTrigger must be used inside a \[forTooltip\] element\./,
-      );
+      const fixture = TestBed.createComponent(OrphanTrigger);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/tooltip\] ForTooltipTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forTooltipTrigger\]="root"/);
+      expect(message).toMatch(/#root="forTooltip"/);
     });
 
     it('throws a prefixed error from ForTooltipContent', () => {
@@ -924,6 +935,55 @@ describe('ForTooltip', () => {
       r.instance.isOpen.set(false);
       await flush(r.fixture);
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forTooltipTrigger]="root">Hover me</button>
+        </ng-template>
+
+        <div forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0" #root="forTooltip">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          <div forTooltipContent>Hint</div>
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on pointerenter when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
     });
   });
 });

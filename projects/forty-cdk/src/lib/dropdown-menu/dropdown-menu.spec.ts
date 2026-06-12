@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -593,6 +594,110 @@ describe('ForDropdownMenu', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  describe('orphan errors', () => {
+    it('throws when [forDropdownMenuTrigger] is used without [forDropdownMenu]', () => {
+      @Component({
+        imports: [ForDropdownMenuTrigger],
+        template: `<button forDropdownMenuTrigger>orphan</button>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(Orphan);
+      expect(() => fixture.detectChanges()).toThrow(/\[forty-cdk\/dropdown-menu\]/);
+    });
+
+    it('mentions the declaration-site rule and the explicit-reference escape hatch', () => {
+      @Component({
+        imports: [ForDropdownMenuTrigger],
+        template: `<button forDropdownMenuTrigger>orphan</button>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forDropdownMenuTrigger\]="root"/);
+      expect(message).toMatch(/#root="forDropdownMenu"/);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [...IMPORTS, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button [forDropdownMenuTrigger]="root">Options</button>
+        </ng-template>
+
+        <div forDropdownMenu [(open)]="open" #root="forDropdownMenu">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forMenuContent>
+              <button id="a" forMenuItem>A</button>
+              <button id="b" forMenuItem>B</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on click and focuses the first item when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(document.activeElement?.id).toBe('a');
+    });
+
+    it('opens on ArrowUp focusing the last item through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.focus();
+
+      pressKey(trigger, 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('b');
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(document.querySelector('[forMenuContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(document.querySelector('[forMenuContent]')).toBeNull();
     });
   });
 });

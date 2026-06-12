@@ -107,6 +107,21 @@ import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } fro
 export class DemoSave {}
 ```
 
+## Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forTooltipTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forTooltip"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<span forTooltip #root="forTooltip">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  <div forTooltipContent>Save changes</div>
+</span>
+
+<ng-template #trig let-root="root">
+  <button type="button" [forTooltipTrigger]="root" aria-label="Save">💾</button>
+</ng-template>
+```
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

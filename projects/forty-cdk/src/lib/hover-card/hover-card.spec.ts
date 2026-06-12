@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -509,7 +510,7 @@ describe('ForHoverCard', () => {
   });
 
   describe('orphan pieces', () => {
-    it('throws when [forHoverCardTrigger] is used outside [forHoverCard]', () => {
+    it('throws when [forHoverCardTrigger] is used outside [forHoverCard] on first change detection', () => {
       @Component({
         imports: [ForHoverCardTrigger],
         template: `<a forHoverCardTrigger href="/x">x</a>`,
@@ -520,9 +521,19 @@ describe('ForHoverCard', () => {
         providers: [provideZonelessChangeDetection()],
       });
 
-      expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/hover-card\] ForHoverCardTrigger must be used inside a \[forHoverCard\] element\./,
-      );
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/hover-card\] ForHoverCardTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forHoverCardTrigger\]="root"/);
+      expect(message).toMatch(/#root="forHoverCard"/);
     });
   });
 
@@ -848,6 +859,68 @@ describe('ForHoverCard', () => {
       flush();
 
       expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <a id="trigger" [forHoverCardTrigger]="root" href="/x">Trigger</a>
+        </ng-template>
+
+        <span forHoverCard [(open)]="open" [openDelay]="0" [closeDelay]="0" #root="forHoverCard">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (root.open()) {
+            <div forHoverCardContent>Content</div>
+          }
+        </span>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const { instance, query, flush } = renderHost(StampedHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('#trigger')!;
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      instance.open.set(true);
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(document.querySelector('[forHoverCardContent]')).not.toBeNull();
+
+      instance.open.set(false);
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(document.querySelector('[forHoverCardContent]')).toBeNull();
+    });
+
+    describe('hover activation', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('opens on pointerenter when the root is passed explicitly', () => {
+        const { fixture, query, flush } = renderHost(StampedHost);
+        flush();
+        const trigger = query<HTMLAnchorElement>('#trigger')!;
+
+        trigger.dispatchEvent(pointerEvent('pointerenter'));
+        flush();
+        vi.advanceTimersByTime(0);
+        flush();
+
+        expect(fixture.componentInstance.open()).toBe(true);
+        expect(trigger.getAttribute('data-state')).toBe('open');
+      });
     });
   });
 });
