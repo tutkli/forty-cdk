@@ -1,7 +1,10 @@
 import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -25,7 +28,9 @@ import { ForComboboxGroup } from './combobox-group';
 import { ForComboboxGroupLabel } from './combobox-group-label';
 import { ForComboboxIndicator } from './combobox-indicator';
 import { ForComboboxInput } from './combobox-input';
+import { ForComboboxList } from './combobox-list';
 import { ForComboboxOption } from './combobox-option';
+import { ForComboboxTrigger } from './combobox-trigger';
 import { ForComboboxSeparator } from './combobox-separator';
 import { ForComboboxStatus } from './combobox-status';
 
@@ -1939,6 +1944,276 @@ describe('ForCombobox', () => {
       expect(() => fixture.detectChanges()).toThrow(
         /\[forty-cdk\/combobox\] Multiple \[forComboboxAnchor\]/,
       );
+    });
+  });
+});
+
+describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
+  @Component({
+    imports: [
+      ForCombobox,
+      ForComboboxTrigger,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxList,
+      ForComboboxOption,
+    ],
+    template: `
+      <input data-test-id="before" />
+      <div
+        forCombobox
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        [multiple]="multiple()"
+        [returnFocus]="returnFocus()"
+        [disabled]="disabled()"
+        (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
+        (autoFocusOnClose)="onAutoFocusOnClose($event)"
+      >
+        <button forComboboxTrigger data-test-id="trigger">{{ triggerLabel() }}</button>
+        @if (open()) {
+          <div forComboboxContent data-test-id="content">
+            <input forComboboxInput data-test-id="picker-input" />
+            <div forComboboxList data-test-id="list">
+              @for (it of filtered(); track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                  [disabled]="!!it.disabled"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class PickerHost {
+    readonly query = signal('');
+    readonly value = signal<readonly string[]>([]);
+    readonly open = signal(false);
+    readonly multiple = signal(false);
+    readonly returnFocus = signal(true);
+    readonly disabled = signal(false);
+
+    readonly vetoOpen = signal(false);
+    readonly vetoClose = signal(false);
+    autoFocusOnOpenCount = 0;
+    autoFocusOnCloseCount = 0;
+
+    readonly triggerLabel = computed(() => this.value()[0] ?? 'Pick a fruit');
+
+    readonly filtered = computed<readonly FruitItem[]>(() => {
+      const q = this.query().toLowerCase();
+      if (!q) return FRUITS;
+      return FRUITS.filter((it) => it.label.toLowerCase().includes(q));
+    });
+
+    onAutoFocusOnOpen(event: VetoableEvent): void {
+      this.autoFocusOnOpenCount++;
+      if (this.vetoOpen()) {
+        event.preventDefault();
+      }
+    }
+
+    onAutoFocusOnClose(event: VetoableEvent): void {
+      this.autoFocusOnCloseCount++;
+      if (this.vetoClose()) {
+        event.preventDefault();
+      }
+    }
+  }
+
+  function getTrigger(): HTMLButtonElement {
+    return document.querySelector<HTMLButtonElement>('[forComboboxTrigger]')!;
+  }
+  function getContent(): HTMLElement {
+    return document.querySelector<HTMLElement>('[forComboboxContent]')!;
+  }
+  function getList(): HTMLElement {
+    return document.querySelector<HTMLElement>('[forComboboxList]')!;
+  }
+  function getPickerInput(): HTMLInputElement {
+    return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
+  }
+
+  afterEachOverlayCleanup();
+
+  describe('role split', () => {
+    it('the list carries role=listbox; content becomes a neutral popup surface', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = getContent();
+      const list = getList();
+      expect(list.getAttribute('role')).toBe('listbox');
+      expect(list.getAttribute('tabindex')).toBe('-1');
+      // Content drops the listbox semantics it owns in the editable anatomy.
+      expect(content.hasAttribute('role')).toBe(false);
+      expect(content.hasAttribute('tabindex')).toBe(false);
+      // The popup surface owns no options; the list does.
+      expect(content.querySelector('[forComboboxList] [forComboboxOption]')).not.toBeNull();
+    });
+
+    it('content keeps data-state in the picker anatomy', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(getContent().getAttribute('data-state')).toBe('open');
+    });
+
+    it("the input's aria-controls points at the list, not the popup surface", async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      const list = getList();
+      const content = getContent();
+      expect(input.getAttribute('aria-controls')).toBe(list.id);
+      expect(input.getAttribute('aria-controls')).not.toBe(content.id);
+    });
+
+    it('the labelled role + aria-multiselectable move to the list in multi mode', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.multiple.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const list = getList();
+      const content = getContent();
+      expect(list.getAttribute('aria-multiselectable')).toBe('true');
+      expect(list.getAttribute('aria-labelledby')).toBe(getPickerInput().id);
+      // None of the labelled-role attributes leak onto the popup surface.
+      expect(content.hasAttribute('aria-multiselectable')).toBe(false);
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+    });
+  });
+
+  describe('trigger', () => {
+    it('wires aria-haspopup + aria-expanded + aria-controls + data-state', async () => {
+      const r = renderHost(PickerHost);
+      const trigger = getTrigger();
+      expect(trigger.getAttribute('type')).toBe('button');
+      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(trigger.getAttribute('aria-controls')).toBe(getContent().id);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+
+    it('click toggles the popup open and closed', async () => {
+      const r = renderHost(PickerHost);
+      const trigger = getTrigger();
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('ArrowDown / ArrowUp open the popup', async () => {
+      const r = renderHost(PickerHost);
+      const trigger = getTrigger();
+
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      pressKey(trigger, 'ArrowUp');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('reflects native disabled and is inert when disabled', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      const trigger = getTrigger();
+      expect(trigger.hasAttribute('disabled')).toBe(true);
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('focus hooks (wiring — focus moves are E2E)', () => {
+    it('fires (autoFocusOnOpen) on open and (autoFocusOnClose) on close', async () => {
+      const r = renderHost(PickerHost);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+    });
+
+    it('honors a vetoed open without throwing', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.vetoOpen.set(true);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      // The veto is observed (output fired); the suppressed focus move itself
+      // is asserted in the Playwright suite where activeElement is faithful.
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('selection', () => {
+    it('single-mode activation commits the label and closes', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('banana').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['banana']);
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.query()).toBe('Banana');
+    });
+  });
+
+  describe('zoneless', () => {
+    it('trigger → open → list role + focus hooks stay reactive without zone.js', async () => {
+      const r = renderHost(PickerHost);
+      const trigger = getTrigger();
+
+      trigger.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      expect(getList().getAttribute('role')).toBe('listbox');
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
     });
   });
 });

@@ -6,6 +6,11 @@ Headless combobox with editable input + portaled listbox popup. Implements the [
 
 Supports both single (default) and multi-select. Multi mode renders the selected values as chips next to the input (Base UI / Material Autocomplete style).
 
+Two anatomies share the same core:
+
+- **Editable** _(default)_ — the input is the visible field, the floating anchor, and the keyboard owner; `[forComboboxContent]` is the listbox. This is the APG editable combobox.
+- **Picker** — a `[forComboboxTrigger]` `<button>` keeps showing the committed selection while the search input lives **inside** the panel (shadcn / cmdk / Base UI "combobox with trigger"). Add a `[forComboboxList]` so the popup can hold an input without violating ARIA owned-elements. See [Picker anatomy](#picker-anatomy-trigger--input-inside-the-panel).
+
 `[forCombobox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forComboboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## Pieces
@@ -14,8 +19,10 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 | ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.                                                                                                             |
 | `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.                                                                                                  |
+| `ForComboboxTrigger`    | `[forComboboxTrigger]`    | _(picker anatomy)_ A `<button>` that opens the panel and keeps showing the committed selection while the input lives inside. Becomes the default anchor; focus hands off to the input. See [Picker anatomy](#picker-anatomy-trigger--input-inside-the-panel). |
 | `ForComboboxAnchor`     | `[forComboboxAnchor]`     | Optional. Positions the listbox against this element instead of the input — wrap a decorated field box (or the chip cluster) so the panel matches the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
-| `ForComboboxContent`    | `[forComboboxContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                                                                                                                           |
+| `ForComboboxContent`    | `[forComboboxContent]`    | The floating surface. Portaled, positioned by floating-ui, dismissable layer attached. Carries `role="listbox"` itself in the editable anatomy; becomes a neutral popup surface when a `[forComboboxList]` is present.          |
+| `ForComboboxList`       | `[forComboboxList]`       | _(picker anatomy)_ The `role="listbox"` element nested inside content next to the input. Owns the options and the labelled role. See [Picker anatomy](#picker-anatomy-trigger--input-inside-the-panel).                          |
 | `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                                                                                                                      |
 | `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`.                                                                                                |
 | `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).                                                                                                        |
@@ -92,6 +99,42 @@ By default the listbox is positioned against `[forComboboxInput]`. When the inpu
 ```
 
 `[forComboboxAnchor]` changes **only** positioning. The input keeps `aria-controls` / `aria-expanded` / `aria-activedescendant`, all keyboard interaction, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the input, so existing markup is unaffected. At most one `[forComboboxAnchor]` per `[forCombobox]` — a second one throws `[forty-cdk/combobox]`. In multi mode, wrap `[forComboboxChips]` (which already wraps the chips + input) to anchor against the full chip cluster.
+
+## Picker anatomy (trigger + input inside the panel)
+
+The default (editable) anatomy is a text field that filters in place. A **picker** is the other common shape: a button shows the committed selection (label + icon), and clicking it opens a panel whose search input filters a list — shadcn / cmdk / Base UI's "combobox with trigger". Reach for it when the closed control should read as "the selected thing", not as an editable field.
+
+Add two parts:
+
+- **`[forComboboxTrigger]`** — a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close.
+- **`[forComboboxList]`** — the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes a neutral popup surface.
+
+```html
+<div forCombobox #combobox="forCombobox" [(value)]="value" [(query)]="query" [(open)]="open">
+  <button forComboboxTrigger>{{ selectedLabel() }}</button>
+  @if (combobox.open()) {
+  <div forComboboxContent>
+    <input forComboboxInput placeholder="Search…" />
+    <div forComboboxList>
+      @for (item of filtered(); track item.id) {
+      <div forComboboxOption [value]="item.id" [label]="item.label">{{ item.label }}</div>
+      }
+      <div forComboboxEmpty>No matches.</div>
+    </div>
+  </div>
+  }
+</div>
+```
+
+Why the list part is required, not optional: a `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Nesting the input inside a listbox would be invalid, so the listbox role moves to `[forComboboxList]` and the input sits beside it under the neutral popup surface. Put non-option chrome — `[forComboboxInput]`, `[forComboboxEmpty]`, `[forComboboxStatus]` — inside `[forComboboxContent]` but **outside** `[forComboboxList]`.
+
+**Focus hand-off.** Registering a trigger opts the combobox into the standard trigger-anchored focus model: on open, focus moves into the input (the search field inside the panel); on close, focus returns to the trigger. Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`, and the return is gated by `[returnFocus]` (default `true`). Escape stays owned by the input. See [Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks](#focus--the-autofocusonopen--autofocusonclose-hooks).
+
+**Trigger keyboard.** Click / Enter / Space toggle (open moves focus into the input). ArrowDown opens with the first enabled option highlighted; ArrowUp opens with the last.
+
+**Anchor preference.** With a trigger present the panel anchors to it by default. An explicit `[forComboboxAnchor]` still wins (explicit anchor → trigger → input), so you can wrap a decorated trigger box and anchor against it.
+
+**Picking which anatomy.** Use the editable anatomy for type-to-filter text fields and tag inputs (the input is always visible). Use the picker anatomy for select-like pickers where the closed state shows a chosen value and search is an in-panel affordance. Everything else — filtering being the consumer's job, `[(value)]` / `[(query)]` / object values / multi mode / virtualization — works identically in both.
 
 ## Self-hiding pieces
 
@@ -236,11 +279,19 @@ Each dismiss reason emits a vetoable event from `[forCombobox]` — call `preven
 | `(focusOutside)`       | Focus moves outside both input and content.                       |
 | `(interactOutside)`    | Either of the two above.                                          |
 
-## No `(autoFocusOnOpen)` / `(autoFocusOnClose)`
+## Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks
 
-Unlike `[forDialog]`, `[forPopover]`, `[forDropdownMenu]`, `[forContextMenu]`, and `[forSelect]`, the combobox does **not** expose these events. By design, the input retains focus the entire time the listbox is open and on close — the active option is tracked via `aria-activedescendant`, never via `.focus()`. There's no automatic focus move to veto.
+The two anatomies have different focus models:
 
-If you need to programmatically move focus elsewhere (e.g. into the listbox), do it from your own keydown handler — the combobox won't fight you.
+- **Editable anatomy** — the input retains focus the entire time the listbox is open and on close; the active option is tracked via `aria-activedescendant`, never via `.focus()`. There is no automatic focus move, so `(autoFocusOnOpen)` / `(autoFocusOnClose)` never fire. If you need to move focus elsewhere, do it from your own keydown handler — the combobox won't fight you.
+- **Picker anatomy** — focus moves into the input on open and returns to the `[forComboboxTrigger]` on close, exactly like the other trigger-anchored overlays (`[forPopover]`, `[forDropdownMenu]`, `[forSelect]`). Both moves emit a vetoable event on `[forCombobox]`; call `preventDefault()` to keep focus where it is:
+
+| Output                | When                                          | `preventDefault()` effect       |
+| --------------------- | --------------------------------------------- | ------------------------------- |
+| `(autoFocusOnOpen)`   | Just before focus enters the input on open.   | Focus stays on the trigger.     |
+| `(autoFocusOnClose)`  | Just before focus returns to the trigger.     | Focus stays where it is.        |
+
+Return focus is also gated by `[returnFocus]` (default `true`) and is skipped on a Tab close (Tab already advanced focus past the closing panel).
 
 ## Form integration
 
@@ -435,7 +486,9 @@ Focus stays on the `<input>` the whole time the listbox is open, so options neve
 ## Accessibility notes
 
 - Apply the input directive to an actual `<input>` — the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.
-- `aria-multiselectable="true"` is set on `[forComboboxContent]` in multi mode.
+- `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is role-less so it can hold the input next to the list without an `aria-required-owned-elements` violation.
+- `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"` — content in the editable anatomy, the list in the picker anatomy.
+- `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` (the popup surface, while open), and native `disabled` from the combobox's effective disabled. It is exempt from the popup's outside-pointer dismissal layer, like the input.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()` — every selected option carries `aria-selected="true"` simultaneously.
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.
 - `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style — `data-highlighted` is the canonical CSS hook (Radix-aligned).

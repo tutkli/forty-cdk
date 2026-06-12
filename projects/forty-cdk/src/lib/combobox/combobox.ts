@@ -32,7 +32,9 @@ import {
 } from '../_internal/selection/selection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
+  emitVetoableEvent,
   emitVetoableNativeEvent,
+  type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import {
@@ -241,7 +243,15 @@ export class ForCombobox<T = string>
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** Manual `aria-label` on `[forComboboxContent]` when the input isn't a meaningful name. */
+  /**
+   * When true (default), focus returns to the `[forComboboxTrigger]` on close.
+   * Only relevant in the picker anatomy (a trigger is registered) — in the
+   * editable anatomy focus never leaves the input, so there is nothing to
+   * return.
+   */
+  readonly returnFocus = input(true, { transform: booleanAttribute });
+
+  /** Manual `aria-label` on the listbox (`[forComboboxList]`, or `[forComboboxContent]` in the editable anatomy) when the input isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
   /**
@@ -279,32 +289,66 @@ export class ForCombobox<T = string>
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
+  /**
+   * _(picker anatomy only)_ Fires just before focus moves into the input on
+   * open. Call `preventDefault()` on the emitted veto to skip the imperative
+   * focus move. Only emitted when a `[forComboboxTrigger]` is registered — the
+   * editable anatomy keeps focus in the input the whole time and has no move to
+   * veto.
+   */
+  readonly autoFocusOnOpen = output<VetoableEvent>();
+
+  /**
+   * _(picker anatomy only)_ Fires just before focus returns to the trigger on
+   * close. Call `preventDefault()` on the veto to suppress the return-focus.
+   */
+  readonly autoFocusOnClose = output<VetoableEvent>();
+
   readonly inputId = signal(this.#idGen.next('for-combobox-input'));
   readonly contentId = signal(this.#idGen.next('for-combobox-content'));
+  readonly listId = signal(this.#idGen.next('for-combobox-list'));
 
   readonly #inputEl = signal<HTMLInputElement | null>(null);
   readonly input = this.#inputEl.asReadonly();
 
   readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly #triggerEl = signal<HTMLElement | null>(null);
+  readonly trigger = this.#triggerEl.asReadonly();
 
   /**
-   * Element floating-ui anchors the listbox against. Prefers an optional
-   * `[forComboboxAnchor]` when registered, otherwise falls back to the input
-   * so existing comboboxes without an anchor keep their behavior. Decoupled
-   * from `input` so the input keeps driving `aria-controls`,
-   * `aria-activedescendant`, keyboard interaction, and its dismissal exemption
-   * regardless of where the listbox paints.
+   * Element floating-ui anchors the listbox against. Resolution order:
+   * explicit `[forComboboxAnchor]` → `[forComboboxTrigger]` (picker anatomy) →
+   * the input (editable anatomy fallback, so existing comboboxes keep their
+   * behavior). Decoupled from `input` so the input keeps driving
+   * `aria-controls`, `aria-activedescendant`, keyboard interaction, and its
+   * dismissal exemption regardless of where the listbox paints.
    */
-  readonly anchor = computed<ReferenceElement | null>(() => this.#anchorEl() ?? this.#inputEl());
+  readonly anchor = computed<ReferenceElement | null>(
+    () => this.#anchorEl() ?? this.#triggerEl() ?? this.#inputEl(),
+  );
 
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
+
+  readonly #listEl = signal<HTMLElement | null>(null);
+  readonly list = this.#listEl.asReadonly();
+  /** True once a `[forComboboxList]` has registered (picker anatomy). */
+  readonly hasList = computed(() => this.#listEl() !== null);
+  /**
+   * Id of the element carrying `role="listbox"`: the list when one is
+   * registered (picker anatomy), otherwise the content surface (editable
+   * anatomy). The input targets this with `aria-controls`.
+   */
+  readonly listboxId = computed(() => (this.hasList() ? this.listId() : this.contentId()));
 
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
 
   readonly #initialFocus = signal<'first' | 'last'>('first');
   readonly initialFocus = this.#initialFocus.asReadonly();
+
+  readonly #lastCloseReason = signal<ForComboboxCloseReason | null>(null);
+  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
 
   /**
    * The activedescendant pointer. A `linkedSignal` so the
@@ -536,12 +580,30 @@ export class ForCombobox<T = string>
     }
   }
 
+  registerTrigger(el: HTMLElement): void {
+    this.#triggerEl.set(el);
+  }
+  unregisterTrigger(el: HTMLElement): void {
+    if (this.#triggerEl() === el) {
+      this.#triggerEl.set(null);
+    }
+  }
+
   registerContent(el: HTMLElement): void {
     this.#contentEl.set(el);
   }
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+    }
+  }
+
+  registerList(el: HTMLElement): void {
+    this.#listEl.set(el);
+  }
+  unregisterList(el: HTMLElement): void {
+    if (this.#listEl() === el) {
+      this.#listEl.set(null);
     }
   }
 
@@ -751,16 +813,28 @@ export class ForCombobox<T = string>
       return;
     }
     this.#initialFocus.set(initialFocus);
+    this.#lastCloseReason.set(null);
     this.open.set(true);
   }
 
-  closeMenu(_reason: ForComboboxCloseReason): void {
+  closeMenu(reason: ForComboboxCloseReason): void {
     if (!this.open()) {
       return;
     }
+    this.#lastCloseReason.set(reason);
     this.open.set(false);
     this.#activeId.set(null);
     this.#navigator?.resetPending();
+  }
+
+  /** Fire `(autoFocusOnOpen)` and report whether the consumer vetoed the focus move. */
+  emitAutoFocusOnOpen(): boolean {
+    return emitVetoableEvent(this.autoFocusOnOpen);
+  }
+
+  /** Fire `(autoFocusOnClose)` and report whether the consumer vetoed the return-focus. */
+  emitAutoFocusOnClose(): boolean {
+    return emitVetoableEvent(this.autoFocusOnClose);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {

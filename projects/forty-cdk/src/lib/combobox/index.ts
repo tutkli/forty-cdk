@@ -1,7 +1,9 @@
 export { ForCombobox } from './combobox';
 export { ForComboboxAnchor } from './combobox-anchor';
+export { ForComboboxTrigger } from './combobox-trigger';
 export { ForComboboxInput } from './combobox-input';
 export { ForComboboxContent } from './combobox-content';
+export { ForComboboxList } from './combobox-list';
 export { ForComboboxOption } from './combobox-option';
 export { ForComboboxIndicator } from './combobox-indicator';
 export { ForComboboxEmpty } from './combobox-empty';

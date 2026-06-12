@@ -56,6 +56,7 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'pending',
   'readonly',
   'required',
+  'returnFocus',
   'side',
   'sideOffset',
   'sticky',
@@ -78,6 +79,8 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS = [
   'pointerDownOutside',
   'focusOutside',
   'interactOutside',
+  'autoFocusOnOpen',
+  'autoFocusOnClose',
   'touchedChange',
   'touch',
 ] as const;
