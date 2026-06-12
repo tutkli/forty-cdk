@@ -1,8 +1,18 @@
-import { computed, Directive, model } from '@angular/core';
+import { computed, Directive, InjectionToken, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+
+/**
+ * Injection key the `[forCheckboxIndicator]` uses to resolve its parent
+ * checkbox, decoupled from the concrete `ForCheckbox` class. `ForCheckbox`
+ * provides itself under this token, so a design system wrapping the checkbox
+ * by subclassing re-points it at the subclass with a single provider
+ * (`{ provide: FOR_CHECKBOX, useExisting: MtxCheckbox }`) and the indicator
+ * keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
 
 /**
  * Headless checkbox implementing the
@@ -38,6 +48,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 @Directive({
   selector: '[forCheckbox]',
   exportAs: 'forCheckbox',
+  providers: [{ provide: FOR_CHECKBOX, useExisting: ForCheckbox }],
   host: {
     role: 'checkbox',
     type: 'button',

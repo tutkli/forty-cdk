@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { ForCheckbox } from './checkbox';
+import { FOR_CHECKBOX, type ForCheckbox } from './checkbox';
 
 /**
  * Optional indicator slot inside a `ForCheckbox`. Apply on the element
@@ -24,7 +24,7 @@ export class ForCheckboxIndicator {
   protected readonly parent: ForCheckbox;
 
   constructor() {
-    const parent = inject(ForCheckbox, { optional: true });
+    const parent = inject(FOR_CHECKBOX, { optional: true });
     if (!parent) {
       throw new Error(
         '[forty-cdk/checkbox] ForCheckboxIndicator must be used inside a [forCheckbox] element.',

@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  InjectionToken,
   input,
   signal,
 } from '@angular/core';
@@ -12,6 +13,16 @@ import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectSelectContext } from './select-context';
+
+/**
+ * Injection key the `[forSelectIndicator]` uses to resolve its parent option,
+ * decoupled from the concrete `ForSelectOption` class. `ForSelectOption`
+ * provides itself under this token, so a design system wrapping the option by
+ * subclassing re-points it at the subclass with a single provider
+ * (`{ provide: FOR_SELECT_OPTION, useExisting: MtxSelectOption }`) and the
+ * indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT_OPTION');
 
 /**
  * One option inside a `[forSelectContent]`. Apply on a `<button type="button">`
@@ -41,6 +52,7 @@ import { injectSelectContext } from './select-context';
 @Directive({
   selector: '[forSelectOption]',
   exportAs: 'forSelectOption',
+  providers: [{ provide: FOR_SELECT_OPTION, useExisting: ForSelectOption }],
   host: {
     role: 'option',
     type: 'button',

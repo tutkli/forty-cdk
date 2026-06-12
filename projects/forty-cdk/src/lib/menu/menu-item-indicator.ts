@@ -1,7 +1,7 @@
 import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
 
-import { ForMenuCheckboxItem } from './menu-checkbox-item';
-import { ForMenuRadioItem } from './menu-radio-item';
+import { FOR_MENU_CHECKBOX_ITEM } from './menu-checkbox-item';
+import { FOR_MENU_RADIO_ITEM } from './menu-radio-item';
 
 /**
  * Visibility helper inside `[forMenuCheckboxItem]` or `[forMenuRadioItem]`.
@@ -43,8 +43,8 @@ import { ForMenuRadioItem } from './menu-radio-item';
   },
 })
 export class ForMenuItemIndicator {
-  readonly #checkbox = inject(ForMenuCheckboxItem, { optional: true });
-  readonly #radio = inject(ForMenuRadioItem, { optional: true });
+  readonly #checkbox = inject(FOR_MENU_CHECKBOX_ITEM, { optional: true });
+  readonly #radio = inject(FOR_MENU_RADIO_ITEM, { optional: true });
 
   protected readonly checked = computed(() => {
     if (this.#checkbox) {

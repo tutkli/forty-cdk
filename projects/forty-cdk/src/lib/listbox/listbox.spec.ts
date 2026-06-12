@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
@@ -6,7 +6,7 @@ import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
-import { ForListboxOption } from './listbox-option';
+import { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 import { ForListboxOptionIndicator } from './listbox-option-indicator';
 
 const LISTBOX_IMPORTS = [ForListbox, ForListboxOption] as const;
@@ -1266,6 +1266,34 @@ describe('ForListbox', () => {
       expect(() => renderHost(Orphan)).toThrow(
         /\[forty-cdk\/listbox\] ForListboxOptionIndicator must be used inside a \[forListboxOption\] element\./,
       );
+    });
+
+    it('resolves a subclassed option via the re-provided FOR_LISTBOX_OPTION token', () => {
+      @Directive({
+        selector: '[testListboxOption]',
+        providers: [{ provide: FOR_LISTBOX_OPTION, useExisting: TestListboxOption }],
+      })
+      class TestListboxOption extends ForListboxOption {}
+
+      @Component({
+        imports: [ForListbox, TestListboxOption, ForListboxOptionIndicator],
+        template: `
+          <ul forListbox [(value)]="picked">
+            <li>
+              <button type="button" testListboxOption value="a" data-test-id="opt-a">
+                A <span forListboxOptionIndicator data-ind="a"></span>
+              </button>
+            </li>
+          </ul>
+        `,
+      })
+      class SubclassHost {
+        readonly picked = signal<readonly string[]>(['a']);
+      }
+
+      const { el } = renderHost(SubclassHost);
+      const ind = el.querySelector<HTMLElement>('[data-ind="a"]')!;
+      expect(ind.getAttribute('data-state')).toBe('checked');
     });
   });
 

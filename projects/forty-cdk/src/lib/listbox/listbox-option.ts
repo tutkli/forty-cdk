@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  InjectionToken,
   input,
   signal,
 } from '@angular/core';
@@ -12,6 +13,16 @@ import { registerHandle } from '../_internal/collection/register-handle';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectListboxContext } from './listbox-context';
+
+/**
+ * Injection key the `[forListboxOptionIndicator]` uses to resolve its parent
+ * option, decoupled from the concrete `ForListboxOption` class.
+ * `ForListboxOption` provides itself under this token, so a design system
+ * wrapping the option by subclassing re-points it at the subclass with a
+ * single provider (`{ provide: FOR_LISTBOX_OPTION, useExisting: MtxListboxOption }`)
+ * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
+ */
+export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LISTBOX_OPTION');
 
 /**
  * One option inside a `ForListbox`. Apply on a `<button type="button">` so
@@ -28,6 +39,7 @@ import { injectListboxContext } from './listbox-context';
 @Directive({
   selector: '[forListboxOption]',
   exportAs: 'forListboxOption',
+  providers: [{ provide: FOR_LISTBOX_OPTION, useExisting: ForListboxOption }],
   host: {
     role: 'option',
     type: 'button',

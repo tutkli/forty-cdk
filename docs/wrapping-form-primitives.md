@@ -155,11 +155,44 @@ import { FOR_LISTBOX_CONTEXT, ForListbox } from 'forty-cdk';
 export class MtxListbox extends ForListbox {}
 ```
 
-Primitives whose root provides a context token (and therefore needs the re-provide):
+Primitives whose **root** provides a context token (and therefore needs the re-provide):
 `ForCombobox`, `ForDateField`, `ForDatePicker`, `ForListbox`, `ForOtpInput`,
-`ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`, `ForToggleGroup`. The leaf
-controls — `ForInput`, `ForTextarea`, `ForCheckbox`, `ForSwitch`, `ForToggle`,
-`ForNumberInput` — declare no providers, so a bare subclass is enough.
+`ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`, `ForToggleGroup`. The pure leaf
+controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput` — declare no
+providers, so a bare subclass is enough.
+
+### Indicator parent parts also self-provide a token
+
+A second family of parts provides a self-token so their optional **indicator** resolves the
+parent without importing the concrete class. Subclassing one of these parts and projecting
+its indicator needs the same one-line re-provide, pointing `useExisting` at the subclass:
+
+```ts
+import { Directive } from '@angular/core';
+import { FOR_SELECT_OPTION, ForSelectOption } from 'forty-cdk';
+
+@Directive({
+  selector: 'button[mtxSelectOption]',
+  host: { class: 'mtx-select-option' },
+  providers: [{ provide: FOR_SELECT_OPTION, useExisting: MtxSelectOption }],
+})
+export class MtxSelectOption extends ForSelectOption {}
+```
+
+| Subclassed part       | Indicator that resolves it    | Token to re-provide      |
+| --------------------- | ----------------------------- | ------------------------ |
+| `ForSelectOption`     | `[forSelectIndicator]`        | `FOR_SELECT_OPTION`      |
+| `ForComboboxOption`   | `[forComboboxIndicator]`      | `FOR_COMBOBOX_OPTION`    |
+| `ForListboxOption`    | `[forListboxOptionIndicator]` | `FOR_LISTBOX_OPTION`     |
+| `ForCheckbox`         | `[forCheckboxIndicator]`      | `FOR_CHECKBOX`           |
+| `ForRadio`            | `[forRadioIndicator]`         | `FOR_RADIO`              |
+| `ForMenuCheckboxItem` | `[forMenuItemIndicator]`      | `FOR_MENU_CHECKBOX_ITEM` |
+| `ForMenuRadioItem`    | `[forMenuItemIndicator]`      | `FOR_MENU_RADIO_ITEM`    |
+
+`ForCheckbox` is the one part that is both a leaf form control and an indicator parent: a bare
+`MtxCheckbox extends ForCheckbox` is enough on its own, and the re-provide is only needed when
+the wrapper projects `[forCheckboxIndicator]` into it. The other parts always carry their
+indicator inside the same wrapper, so re-provide the token whenever you subclass them.
 
 ## Choosing a pattern
 

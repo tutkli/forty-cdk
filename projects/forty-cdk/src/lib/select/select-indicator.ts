@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { ForSelectOption } from './select-option';
+import { FOR_SELECT_OPTION, type ForSelectOption } from './select-option';
 
 /**
  * Visibility helper inside a `[forSelectOption]`. The directive flips a
@@ -35,7 +35,7 @@ export class ForSelectIndicator {
 }
 
 function injectParentOption(): ForSelectOption {
-  const option = inject(ForSelectOption, { optional: true });
+  const option = inject(FOR_SELECT_OPTION, { optional: true });
   if (!option) {
     throw new Error(
       '[forty-cdk/select] ForSelectIndicator must be used inside a [forSelectOption] element.',

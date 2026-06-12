@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { ForComboboxOption } from './combobox-option';
+import { FOR_COMBOBOX_OPTION, type ForComboboxOption } from './combobox-option';
 
 /**
  * Visibility helper inside a `[forComboboxOption]`. The directive flips a
@@ -38,7 +38,7 @@ export class ForComboboxIndicator {
 }
 
 function injectParentOption(): ForComboboxOption {
-  const option = inject(ForComboboxOption, { optional: true });
+  const option = inject(FOR_COMBOBOX_OPTION, { optional: true });
   if (!option) {
     throw new Error(
       '[forty-cdk/combobox] ForComboboxIndicator must be used inside a [forComboboxOption] element.',

@@ -1,9 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, Directive, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import { renderHost } from '../../test-utils/render';
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
-import { ForCheckbox } from './checkbox';
+import { FOR_CHECKBOX, ForCheckbox } from './checkbox';
 import { ForCheckboxIndicator } from './checkbox-indicator';
 
 @Component({
@@ -238,6 +238,30 @@ describe('ForCheckbox', () => {
       expect(() => renderHost(Orphan)).toThrow(
         /\[forty-cdk\/checkbox\] ForCheckboxIndicator must be used inside a \[forCheckbox\] element\./,
       );
+    });
+
+    it('resolves a subclassed checkbox via the re-provided FOR_CHECKBOX token', () => {
+      @Directive({
+        selector: '[testCheckbox]',
+        providers: [{ provide: FOR_CHECKBOX, useExisting: TestCheckbox }],
+      })
+      class TestCheckbox extends ForCheckbox {}
+
+      @Component({
+        imports: [TestCheckbox, ForCheckboxIndicator],
+        template: `
+          <button testCheckbox [(checked)]="agreed">
+            <span forCheckboxIndicator data-test-id="ind">✓</span>
+          </button>
+        `,
+      })
+      class SubclassHost {
+        readonly agreed = signal(true);
+      }
+
+      const { el } = renderHost(SubclassHost);
+      const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
+      expect(ind.getAttribute('data-state')).toBe('checked');
     });
   });
 
