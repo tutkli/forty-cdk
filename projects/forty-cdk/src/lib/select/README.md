@@ -98,6 +98,25 @@ By default the listbox is positioned against `[forSelectTrigger]`. When the trig
 
 `[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. At most one `[forSelectAnchor]` per `[forSelect]` — a second one throws `[forty-cdk/select]`.
 
+## Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forSelectTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forSelect"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forSelect #root="forSelect" [(value)]="value">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forSelectContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forSelectTrigger]="root">
+    <span forSelectValue placeholder="Pick a fruit"></span>
+  </button>
+</ng-template>
+```
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -2103,6 +2104,29 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
   });
 
   describe('trigger', () => {
+    it('throws from ForComboboxTrigger on first change detection', () => {
+      @Component({
+        imports: [ForComboboxTrigger],
+        template: `<button forComboboxTrigger></button>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/combobox\] ForComboboxTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forComboboxTrigger\]="root"/);
+      expect(message).toMatch(/#root="forCombobox"/);
+    });
+
     it('wires aria-haspopup + aria-expanded + aria-controls + data-state', async () => {
       const r = renderHost(PickerHost);
       const trigger = getTrigger();
@@ -2220,6 +2244,68 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(r.instance.autoFocusOnCloseCount).toBe(1);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxTrigger,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxList,
+        ForComboboxOption,
+        NgTemplateOutlet,
+      ],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forComboboxTrigger]="root">Pick</button>
+        </ng-template>
+
+        <div forCombobox [(open)]="open" #root="forCombobox">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput />
+              <div forComboboxList>
+                <div forComboboxOption value="apple" label="Apple">Apple</div>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on click when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(document.querySelector('[forComboboxContent]')).not.toBeNull();
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-controls')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
 });

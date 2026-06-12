@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -1547,7 +1548,7 @@ describe('ForSelect', () => {
   });
 
   describe('orphan errors', () => {
-    it('throws when [forSelectTrigger] is used outside [forSelect]', () => {
+    it('throws from ForSelectTrigger on first change detection', () => {
       @Component({
         imports: [ForSelectTrigger],
         template: `<button forSelectTrigger></button>`,
@@ -1555,9 +1556,19 @@ describe('ForSelect', () => {
       class Orphan {}
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/select\] ForSelectTrigger must be used inside a \[forSelect\] element\./,
-      );
+      const fixture = TestBed.createComponent(Orphan);
+      let error: unknown;
+      try {
+        fixture.detectChanges();
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(Error);
+      const message = (error as Error).message;
+      expect(message).toMatch(/\[forty-cdk\/select\] ForSelectTrigger could not resolve/);
+      expect(message).toMatch(/declaration site/);
+      expect(message).toMatch(/\[forSelectTrigger\]="root"/);
+      expect(message).toMatch(/#root="forSelect"/);
     });
 
     it('throws when ForSelectGroupLabel is used outside [forSelectGroup]', () => {
@@ -1953,6 +1964,57 @@ describe('ForSelectIndicator', () => {
 
       expect(t.getAttribute('aria-errormessage')).toBe(error.id);
       expect(t.getAttribute('aria-describedby')).toContain(error.id);
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forSelectTrigger]="root">Open</button>
+        </ng-template>
+
+        <div forSelect [(open)]="open" #root="forSelect">
+          <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
+          @if (open()) {
+            <div forSelectContent>
+              <button forSelectOption value="apple">Apple</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StampedHost {
+      readonly open = signal(false);
+    }
+
+    it('opens on click when the root is passed explicitly', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(document.querySelector('[forSelectContent]')).not.toBeNull();
+    });
+
+    it('open state stays reactive without zone.js through the explicit reference', async () => {
+      const r = renderHost(StampedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+      expect(trigger.getAttribute('aria-controls')).not.toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
 });
