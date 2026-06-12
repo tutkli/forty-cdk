@@ -1,7 +1,9 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import { flush, nextMacrotask, pressKey, renderHost } from '../../../test-utils';
+import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 
 /**
@@ -640,6 +642,157 @@ describe('injectOverlayShell', () => {
       ctx.close();
       expect(document.activeElement).toBe(triggerEl);
       ctx.destroy();
+    });
+  });
+
+  describe('modal-peer marking (#676)', () => {
+    function makeOwnerWithTrigger(): { owner: HTMLElement; trigger: HTMLButtonElement } {
+      const owner = document.createElement('div');
+      const trigger = document.createElement('button');
+      owner.appendChild(trigger);
+      document.body.appendChild(owner);
+      return { owner, trigger };
+    }
+
+    /**
+     * Mounts the shell with an optional active modal owner. The owner is
+     * activated on the inert stack BEFORE the component is created, so the
+     * shell's `afterNextRender` marking sees the active owner (the shared
+     * `mountShell` flushes the marking during `renderHost`'s own
+     * `detectChanges`, which would be before any post-mount `activate`).
+     */
+    function mountShellWithModal(
+      buildConfig: () => OverlayShellConfig,
+      activateOwner?: HTMLElement,
+    ): {
+      fixture: ComponentFixture<unknown>;
+      surface: () => HTMLElement | null;
+      handle: InertSiblingsHandle | null;
+    } {
+      @Directive({ selector: '[mountedShell]' })
+      class MountedShell {
+        constructor() {
+          injectOverlayShell(buildConfig());
+        }
+      }
+
+      @Component({
+        standalone: true,
+        imports: [MountedShell],
+        template: `<div mountedShell id="surface" tabindex="-1"></div>`,
+      })
+      class Host {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const handle = activateOwner
+        ? TestBed.inject(InertSiblingsStack).activate(activateOwner)
+        : null;
+      const fixture = TestBed.createComponent(Host);
+      activeFixture = fixture;
+      return {
+        fixture,
+        surface: () => document.querySelector<HTMLElement>('#surface'),
+        handle,
+      };
+    }
+
+    it('stamps data-for-modal-peer when the anchor is inside an active modal owner', async () => {
+      const { owner, trigger } = makeOwnerWithTrigger();
+      const ref = signal<HTMLElement | null>(trigger);
+      const open = signal(true);
+
+      const m = mountShellWithModal(
+        () => ({ positioner: { kind: 'floating', reference: ref, open, portal: false } }),
+        owner,
+      );
+      await flush(m.fixture);
+
+      expect(m.surface()?.hasAttribute('data-for-modal-peer')).toBe(true);
+
+      m.handle?.deactivate();
+      m.fixture.destroy();
+      owner.remove();
+    });
+
+    it('does not stamp when the anchor sits in an inerted background subtree', async () => {
+      const background = makeReference();
+      const trigger = document.createElement('button');
+      background.appendChild(trigger);
+      const owner = document.createElement('div');
+      document.body.appendChild(owner);
+      const ref = signal<HTMLElement | null>(trigger);
+      const open = signal(true);
+
+      const m = mountShellWithModal(
+        () => ({ positioner: { kind: 'floating', reference: ref, open, portal: false } }),
+        owner,
+      );
+
+      // The background sibling is inerted by the modal pass.
+      expect(background.hasAttribute('inert')).toBe(true);
+
+      await flush(m.fixture);
+
+      expect(m.surface()?.hasAttribute('data-for-modal-peer')).toBe(false);
+
+      m.handle?.deactivate();
+      m.fixture.destroy();
+      background.remove();
+      owner.remove();
+    });
+
+    it('does not stamp when no modal owner is active', async () => {
+      const trigger = makeReference();
+      const ref = signal<HTMLElement | null>(trigger);
+      const open = signal(true);
+
+      const m = mountShellWithModal(() => ({
+        positioner: { kind: 'floating', reference: ref, open, portal: false },
+      }));
+      await flush(m.fixture);
+
+      expect(m.surface()?.hasAttribute('data-for-modal-peer')).toBe(false);
+
+      m.fixture.destroy();
+    });
+
+    it('resolves a virtual anchor via the return-focus target (ContextMenu shape)', async () => {
+      const { owner, trigger } = makeOwnerWithTrigger();
+
+      // A pointer-positioned overlay anchors to a floating-ui VirtualElement
+      // (no backing DOM element); the shell falls back to the return-focus
+      // target, which is the logical trigger the overlay was opened from.
+      const virtualAnchor = signal<ReferenceElement | null>({
+        getBoundingClientRect: () => ({
+          x: 10,
+          y: 10,
+          width: 0,
+          height: 0,
+          top: 10,
+          left: 10,
+          right: 10,
+          bottom: 10,
+          toJSON() {
+            return this;
+          },
+        }),
+      });
+      const open = signal(true);
+
+      const m = mountShellWithModal(
+        () => ({
+          positioner: { kind: 'floating', reference: virtualAnchor, open, portal: false },
+          returnFocus: { enabled: signal(true), target: () => trigger },
+        }),
+        owner,
+      );
+      await flush(m.fixture);
+
+      expect(m.surface()?.hasAttribute('data-for-modal-peer')).toBe(true);
+
+      m.handle?.deactivate();
+      m.fixture.destroy();
+      owner.remove();
     });
   });
 });

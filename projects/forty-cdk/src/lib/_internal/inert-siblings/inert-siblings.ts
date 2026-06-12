@@ -49,7 +49,16 @@ import { isPlatformBrowser } from '@angular/common';
  * `afterNextRender`, which doesn't run server-side.
  */
 
-const PEER_ATTRIBUTE = 'data-for-modal-peer';
+/**
+ * Attribute that exempts a `document.body` child from the modal inert pass.
+ * Carried by dialog / drawer backdrops (portaled to body alongside the modal)
+ * and stamped by `injectOverlayShell` onto anchored-overlay hosts that were
+ * opened from inside the protected root (#676), so the initial sweep and the
+ * late-sibling observer skip them instead of inerting them like background
+ * siblings. The backdrops host-bind the literal; imperative callers use this
+ * exported constant.
+ */
+export const MODAL_PEER_ATTRIBUTE = 'data-for-modal-peer';
 
 interface SnapshotEntry {
   readonly el: HTMLElement;
@@ -124,6 +133,30 @@ export class InertSiblingsStack {
     };
   }
 
+  /**
+   * Whether an overlay anchored to `anchor` should be left interactive over
+   * the active modal — i.e. treated as a peer of the topmost owner instead of
+   * inerted. Returns `true` only while at least one owner is active AND
+   * `anchor` lives inside the current protected root, which means the overlay
+   * was opened from within the modal (e.g. a Select / DropdownMenu opened from
+   * a form inside a Dialog).
+   *
+   * Returns `false` when no owner is active — so an overlay opened with no
+   * modal present is never pre-marked, and a modal opened later inerts it like
+   * any other background sibling — and when `anchor` sits in an already-inerted
+   * background subtree (a toast or a tooltip anchored to a backdrop element).
+   *
+   * `injectOverlayShell` calls this when an anchored-overlay host is portaled,
+   * to decide whether to stamp `MODAL_PEER_ATTRIBUTE` on it so the
+   * inert-siblings observer skips forty's own overlays instead of swallowing
+   * them (#676). SSR-safe: on the server the stack is always empty (no owner
+   * activates), so this returns `false`.
+   */
+  ownsAnchor(anchor: Element): boolean {
+    const protectedRoot = this.#currentProtectedRoot();
+    return protectedRoot !== null && protectedRoot.contains(anchor);
+  }
+
   #applyForCurrentTopmost(): void {
     const protectedRoot = this.#currentProtectedRoot();
     if (!protectedRoot) {
@@ -148,7 +181,7 @@ export class InertSiblingsStack {
     if (child === protectedRoot) {
       return;
     }
-    if (child.hasAttribute(PEER_ATTRIBUTE)) {
+    if (child.hasAttribute(MODAL_PEER_ATTRIBUTE)) {
       return;
     }
     if (this.#appliedSnapshot.some((entry) => entry.el === child)) {

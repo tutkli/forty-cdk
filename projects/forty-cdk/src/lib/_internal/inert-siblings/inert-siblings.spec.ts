@@ -246,6 +246,34 @@ describe('InertSiblingsStack', () => {
     expect(lateSibling.hasAttribute('aria-hidden')).toBe(false);
   });
 
+  it('does not inert a late sibling flagged data-for-modal-peer (overlay opened inside the modal)', async () => {
+    const owner = appendChild();
+    track(owner);
+
+    const handle = stack.activate(owner);
+
+    // An anchored overlay (Select / DropdownMenu) opened from inside the modal
+    // portals its content to body *after* the modal opened, but marks itself a
+    // peer first — the observer must leave it interactive, unlike a toast.
+    const overlay = appendChild();
+    overlay.setAttribute('data-for-modal-peer', '');
+    track(overlay);
+
+    // A toast portaled from background context the same way carries no peer
+    // marker, so the observer still inerts it (#388 stays green).
+    const toast = appendChild();
+    track(toast);
+
+    await Promise.resolve();
+
+    expect(overlay.hasAttribute('inert')).toBe(false);
+    expect(overlay.hasAttribute('aria-hidden')).toBe(false);
+    expect(toast.hasAttribute('inert')).toBe(true);
+    expect(toast.getAttribute('aria-hidden')).toBe('true');
+
+    handle.deactivate();
+  });
+
   it('stops inerting late siblings once the stack empties', async () => {
     const owner = appendChild();
     track(owner);
@@ -279,5 +307,108 @@ describe('InertSiblingsStack', () => {
     handle.deactivate();
 
     expect(otherTopLevel.hasAttribute('inert')).toBe(false);
+  });
+
+  describe('ownsAnchor', () => {
+    it('returns false when no owner is active', () => {
+      const anchor = appendChild('button');
+      track(anchor);
+
+      expect(stack.ownsAnchor(anchor)).toBe(false);
+    });
+
+    it('returns true for an anchor inside the active protected root', () => {
+      const owner = appendChild();
+      const anchor = document.createElement('button');
+      owner.appendChild(anchor);
+      track(owner);
+
+      const handle = stack.activate(owner);
+
+      expect(stack.ownsAnchor(anchor)).toBe(true);
+
+      handle.deactivate();
+    });
+
+    it('returns true when the anchor is the protected root itself', () => {
+      const owner = appendChild();
+      track(owner);
+
+      const handle = stack.activate(owner);
+
+      expect(stack.ownsAnchor(owner)).toBe(true);
+
+      handle.deactivate();
+    });
+
+    it('returns false for an anchor in an inerted background subtree', () => {
+      const background = appendChild();
+      const anchor = document.createElement('button');
+      background.appendChild(anchor);
+      const owner = appendChild();
+      track(background, owner);
+
+      const handle = stack.activate(owner);
+
+      // The background sibling is inerted; an overlay anchored there must not
+      // escape isolation.
+      expect(background.hasAttribute('inert')).toBe(true);
+      expect(stack.ownsAnchor(anchor)).toBe(false);
+
+      handle.deactivate();
+    });
+
+    it('returns false after the owner deactivates', () => {
+      const owner = appendChild();
+      const anchor = document.createElement('button');
+      owner.appendChild(anchor);
+      track(owner);
+
+      const handle = stack.activate(owner);
+      handle.deactivate();
+
+      expect(stack.ownsAnchor(anchor)).toBe(false);
+    });
+
+    it('non-portaled owner: owns an anchor anywhere inside the protected app shell', () => {
+      const appShell = appendChild();
+      const ownerInPlace = document.createElement('div');
+      appShell.appendChild(ownerInPlace);
+      const anchorElsewhereInShell = document.createElement('button');
+      appShell.appendChild(anchorElsewhereInShell);
+      track(appShell);
+
+      const handle = stack.activate(ownerInPlace);
+
+      // The protected root is the app shell (body-level ancestor of the
+      // in-place owner), so an anchor anywhere inside it is owned.
+      expect(stack.ownsAnchor(anchorElsewhereInShell)).toBe(true);
+
+      handle.deactivate();
+    });
+
+    it('tracks the topmost owner when stacked', () => {
+      const ownerA = appendChild();
+      const anchorA = document.createElement('button');
+      ownerA.appendChild(anchorA);
+      const ownerB = appendChild();
+      const anchorB = document.createElement('button');
+      ownerB.appendChild(anchorB);
+      track(ownerA, ownerB);
+
+      const handleA = stack.activate(ownerA);
+      const handleB = stack.activate(ownerB);
+
+      // B is topmost: its subtree is the protected root, A is now inerted.
+      expect(stack.ownsAnchor(anchorB)).toBe(true);
+      expect(stack.ownsAnchor(anchorA)).toBe(false);
+
+      handleB.deactivate();
+
+      // A is topmost again.
+      expect(stack.ownsAnchor(anchorA)).toBe(true);
+
+      handleA.deactivate();
+    });
   });
 });
