@@ -1776,6 +1776,136 @@ describe('ForCombobox', () => {
   });
 });
 
+describe('ForCombobox static option (issue #674)', () => {
+  afterEachOverlayCleanup();
+
+  // Repro shape from the issue: a static "add new…" sentinel option rendered
+  // directly inside `@if (open())`, above the `@for` list. The static option
+  // registers during the content view's creation pass but its `[value]`
+  // binding only lands on the update pass; the label-cache fold (primed by the
+  // host's bridge effect in between) used to read its `value()` early and
+  // throw NG0950. The fold is now tolerant and re-folds once the binding lands.
+  @Component({
+    imports: BASE_IMPORTS,
+    template: `
+      <div forCombobox #cb="forCombobox" [(query)]="query" [(value)]="value" [(open)]="open">
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div
+              data-test-id="add"
+              forComboboxOption
+              [value]="sentinel"
+              [label]="sentinelLabel"
+            >
+              {{ sentinelLabel }}
+            </div>
+            @for (it of filtered(); track it.id) {
+              <div
+                [attr.data-test-id]="it.id"
+                forComboboxOption
+                [value]="it.id"
+                [label]="it.label"
+                [disabled]="!!it.disabled"
+              >
+                {{ it.label }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <output data-testid="sel">{{ cb.selected().length ? cb.selected()[0].label : 'none' }}</output>
+    `,
+  })
+  class StaticOptionHost {
+    readonly query = signal('');
+    readonly value = signal<readonly string[]>([]);
+    readonly open = signal(false);
+    readonly sentinel = '__add__';
+    readonly sentinelLabel = 'Add new…';
+    readonly filtered = computed<readonly FruitItem[]>(() => {
+      const q = this.query().toLowerCase();
+      return q ? FRUITS.filter((it) => it.label.toLowerCase().includes(q)) : FRUITS;
+    });
+  }
+
+  const selText = (root: HTMLElement) =>
+    root.querySelector<HTMLElement>('[data-testid="sel"]')!.textContent;
+
+  it('opens without NG0950 and renders both the static option and the @for list', async () => {
+    const r = renderHost(StaticOptionHost);
+    r.instance.open.set(true);
+    // A throw here is the NG0950 regression — the fold reading the static
+    // option's `value()` before its binding was written.
+    await flush(r.fixture);
+
+    expect(getOption('add')).toBeTruthy();
+    expect(getOption('apple')).toBeTruthy();
+    expect(getOption('date')).toBeTruthy();
+  });
+
+  it('makes the static option part of the navigable collection (index 0)', async () => {
+    const r = renderHost(StaticOptionHost);
+    const input = getInput();
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    // Auto-highlight seeds the first enabled option — the static sentinel.
+    expect(input.getAttribute('aria-activedescendant')).toBe(getOption('add').id);
+
+    // ArrowDown moves to the first @for option, proving the static option
+    // occupies index 0 of the navigable collection.
+    pressKey(input, 'ArrowDown');
+    await flush(r.fixture);
+    expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+  });
+
+  it('commits the static option and resolves its label from the cache after close', async () => {
+    const r = renderHost(StaticOptionHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    getOption('add').click();
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual(['__add__']);
+    // Single-mode activation closed the listbox, so the options unmounted. The
+    // label still resolves through the persisted cache — proving the static
+    // option folded in once its inputs were set.
+    expect(selText(r.el)).toBe('Add new…');
+  });
+
+  it('keeps the static option mounted while the @for list filters', async () => {
+    const r = renderHost(StaticOptionHost);
+    const input = getInput();
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    typeInto(input, 'ap');
+    await flush(r.fixture);
+
+    expect(getOption('add')).toBeTruthy();
+    expect(getOption('apple')).toBeTruthy();
+    expect(getOption('apricot')).toBeTruthy();
+    expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+  });
+
+  it('zoneless: re-folds the static option once its binding lands', async () => {
+    const r = renderHost(StaticOptionHost);
+    // Pre-select the sentinel before the listbox ever opens — cold cache.
+    r.instance.value.set(['__add__']);
+    await flush(r.fixture);
+    expect(selText(r.el)).toBe('__add__');
+
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    // The static option registered, its `[value]` binding landed, and the
+    // NG0950-tolerant fold re-ran — the cache now resolves the real label,
+    // all without Zone.js (renderHost configures zoneless change detection).
+    expect(selText(r.el)).toBe('Add new…');
+  });
+});
+
 describe('ForCombobox object values', () => {
   afterEachOverlayCleanup();
 

@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { foldSnapshotOnTotalCountTransition } from './combobox-snapshot-fold';
+import { foldSnapshotOnTotalCountTransition, tryReadHandle } from './combobox-snapshot-fold';
 import type { ForComboboxOptionHandle } from './combobox-context';
 
 /**
@@ -51,8 +51,18 @@ export class OptionLabelCache<T> {
           merged.set(entry.id, entry);
         }
         for (const item of items) {
-          const id = item.id();
-          merged.set(id, { id, value: item.value(), label: item.label() });
+          // A static option (rendered outside `@for`) registers before its
+          // `[value]` binding is written; skip it this fold and pick it up on
+          // the re-run the binding triggers. See `tryReadHandle`.
+          const entry = tryReadHandle(() => ({
+            id: item.id(),
+            value: item.value(),
+            label: item.label(),
+          }));
+          if (entry === null) {
+            continue;
+          }
+          merged.set(entry.id, entry);
         }
         return [...merged.values()];
       },

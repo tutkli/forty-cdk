@@ -1,7 +1,7 @@
 import { signal, type Signal } from '@angular/core';
 
 import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { foldSnapshotOnTotalCountTransition } from './combobox-snapshot-fold';
+import { foldSnapshotOnTotalCountTransition, tryReadHandle } from './combobox-snapshot-fold';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import type { SnapshotEntry } from './combobox-label-cache';
 
@@ -93,12 +93,17 @@ export class VirtualizedNavigator<T> {
         for (const item of items) {
           const pos = item.posInSet?.() ?? null;
           if (pos === null) continue;
-          next.set(pos, {
+          // A static option registers before its `[value]` binding is written;
+          // skip it this fold and pick it up on the re-run the binding
+          // triggers. See `tryReadHandle`.
+          const entry = tryReadHandle(() => ({
             id: item.id(),
             value: item.value(),
             label: item.label(),
             disabled: item.disabled(),
-          });
+          }));
+          if (entry === null) continue;
+          next.set(pos, entry);
         }
         return next;
       },
