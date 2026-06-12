@@ -13,7 +13,10 @@ import {
 } from '@angular/core';
 
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
-import { type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
+import {
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from '../_internal/vetoable-event/vetoable-event';
 import { ForDrawer } from './drawer';
 import {
   type ForDrawerDragEvent,
@@ -136,6 +139,41 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * on unmount. Call `event.preventDefault()` to skip the return-focus.
    */
   autoFocusOnClose?: (event: VetoableEvent) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(escapeKeyDown)`
+   * output. Fires when Escape is pressed while this drawer is the topmost
+   * dismissable layer. Call `event.preventDefault()` on the veto to suppress
+   * the implicit close while keeping the other dismiss channels live. The
+   * original `KeyboardEvent` is on `.event`.
+   */
+  escapeKeyDown?: (event: VetoableNativeEvent<KeyboardEvent>) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(pointerDownOutside)`
+   * output. Fires when a pointer goes down outside the drawer. Call
+   * `event.preventDefault()` on the veto to suppress the implicit close. The
+   * native `PointerEvent` is on `.event`.
+   */
+  pointerDownOutside?: (event: VetoableNativeEvent<PointerEvent>) => void;
+
+  /**
+   * Per-channel dismiss hook mirroring the declarative `(focusOutside)`
+   * output. Fires when focus moves outside the drawer. Call
+   * `event.preventDefault()` on the veto to suppress the implicit close. The
+   * native `FocusEvent` is on `.event`.
+   */
+  focusOutside?: (event: VetoableNativeEvent<FocusEvent>) => void;
+
+  /**
+   * Composite dismiss hook mirroring the declarative `(interactOutside)`
+   * output. Fires alongside `pointerDownOutside` / `focusOutside` and shares
+   * their veto state — `event.preventDefault()` on either suppresses the
+   * implicit close. Use this to keep a programmatic floater open on outside
+   * interaction while leaving Escape live (set `dismissible: true` and veto
+   * here). The native `PointerEvent | FocusEvent` is on `.event`.
+   */
+  interactOutside?: (event: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
 
   /**
    * Mirrors the declarative `(drag)` output: invoked on every pointer-move
@@ -305,11 +343,33 @@ export class ForDrawerManager {
       ref.close(drawerInstance.lastCloseValue() as R);
     });
 
+    const subs = [closeSub];
+
+    // Forward the four vetoable dismiss channels the directive emits. The
+    // shell emits each `VetoableNativeEvent` synchronously through the
+    // directive output before reading `defaultPrevented`, so a
+    // `preventDefault()` inside the callback vetoes the implicit close exactly
+    // as the declarative `(escapeKeyDown)` / `(interactOutside)` outputs do —
+    // letting a programmatic floater stay open on outside click while Escape
+    // still closes it. Each subscription is torn down with the shell.
+    const { escapeKeyDown, pointerDownOutside, focusOutside, interactOutside } = config;
+    if (escapeKeyDown) {
+      subs.push(drawerInstance.escapeKeyDown.subscribe(escapeKeyDown));
+    }
+    if (pointerDownOutside) {
+      subs.push(drawerInstance.pointerDownOutside.subscribe(pointerDownOutside));
+    }
+    if (focusOutside) {
+      subs.push(drawerInstance.focusOutside.subscribe(focusOutside));
+    }
+    if (interactOutside) {
+      subs.push(drawerInstance.interactOutside.subscribe(interactOutside));
+    }
+
     // Forward the drag/release/active-snap streams the programmatic host
     // already exposes via `hostDirectives`, so an imperatively-opened
     // snap-point drawer has the same observability as the declarative API.
     // Each subscription is torn down with the shell.
-    const subs = [closeSub];
     const { onDrag, onRelease, onActiveSnapPointChange } = config;
     if (onDrag) {
       subs.push(drawerInstance.drag.subscribe(onDrag));
