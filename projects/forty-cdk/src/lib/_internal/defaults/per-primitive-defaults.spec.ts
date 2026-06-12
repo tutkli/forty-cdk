@@ -22,6 +22,11 @@ import {
   provideForDropdownMenuDefaults,
 } from '../../dropdown-menu/dropdown-menu-defaults';
 import {
+  FOR_HOVER_CARD_DEFAULTS,
+  FOR_HOVER_CARD_FALLBACK_DEFAULTS,
+  provideForHoverCardDefaults,
+} from '../../hover-card/hover-card-defaults';
+import {
   FOR_LISTBOX_DEFAULTS,
   FOR_LISTBOX_FALLBACK_DEFAULTS,
   provideForListboxDefaults,
@@ -36,6 +41,11 @@ import {
   FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS,
   provideForNavigationMenuDefaults,
 } from '../../navigation-menu/navigation-menu-defaults';
+import {
+  FOR_POPOVER_DEFAULTS,
+  FOR_POPOVER_FALLBACK_DEFAULTS,
+  provideForPopoverDefaults,
+} from '../../popover/popover-defaults';
 import {
   FOR_PROGRESS_DEFAULTS,
   FOR_PROGRESS_FALLBACK_DEFAULTS,
@@ -204,6 +214,20 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_TOOLTIP_FALLBACK_DEFAULTS,
     provide: provideForTooltipDefaults,
     override: { side: 'bottom' },
+  }),
+  defaultsCase({
+    name: 'provideForHoverCardDefaults',
+    token: FOR_HOVER_CARD_DEFAULTS,
+    fallback: FOR_HOVER_CARD_FALLBACK_DEFAULTS,
+    provide: provideForHoverCardDefaults,
+    override: { side: 'bottom' },
+  }),
+  defaultsCase({
+    name: 'provideForPopoverDefaults',
+    token: FOR_POPOVER_DEFAULTS,
+    fallback: FOR_POPOVER_FALLBACK_DEFAULTS,
+    provide: provideForPopoverDefaults,
+    override: { side: 'top' },
   }),
 ];
 

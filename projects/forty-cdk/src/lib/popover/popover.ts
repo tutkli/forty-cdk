@@ -19,6 +19,7 @@ import {
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
+import { FOR_POPOVER_DEFAULTS } from './popover-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),
@@ -56,6 +57,7 @@ import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
 })
 export class ForPopover implements ForPopoverContext {
   readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_POPOVER_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the popover is currently shown. The `model()`
@@ -66,20 +68,53 @@ export class ForPopover implements ForPopoverContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Side the popover is anchored to. Defaults to `'bottom'`. Pair with
+   * Per-popover override for the side the popover is anchored to. Pair with
    * `align` for the full positioning API (`side="bottom" align="start"`).
+   * When `undefined` (default), falls back to `ForPopoverDefaults.side` from
+   * the surrounding `provideForPopoverDefaults` scope (`'bottom'` unless
+   * configured).
+   *
+   * The input is aliased to `side`; consumers bind `[side]="..."` and read
+   * the effective value via the public `side` computed below.
    */
-  readonly side = input<FloatingSide | undefined>(undefined);
+  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
 
-  /** Alignment along the chosen `side`. Defaults to `'center'`. */
-  readonly align = input<FloatingAlign | undefined>(undefined);
+  /** Effective anchor side: the `side` input when set, else the scope default. */
+  readonly side = computed<FloatingSide>(() => this._sideInput() ?? this.#defaults.side);
 
   /**
-   * Gap (px) between trigger and content along the *main* axis
-   * (perpendicular to `side`). Default `8`. Forwarded to floating-ui's
-   * `offset` middleware. Mirrors Radix's `sideOffset`.
+   * Per-popover override for the alignment along the chosen `side`. When
+   * `undefined` (default), falls back to `ForPopoverDefaults.align` from the
+   * surrounding `provideForPopoverDefaults` scope (`'center'` unless
+   * configured).
+   *
+   * The input is aliased to `align`; consumers bind `[align]="..."` and read
+   * the effective value via the public `align` computed below.
    */
-  readonly sideOffset = input(8, { transform: numberAttribute });
+  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
+
+  /** Effective alignment: the `align` input when set, else the scope default. */
+  readonly align = computed<FloatingAlign>(() => this._alignInput() ?? this.#defaults.align);
+
+  /**
+   * Per-popover override for the gap (px) between trigger and content along
+   * the *main* axis (perpendicular to `side`). Forwarded to floating-ui's
+   * `offset` middleware. Mirrors Radix's `sideOffset`. When `undefined`
+   * (default), falls back to `ForPopoverDefaults.sideOffset` from the
+   * surrounding `provideForPopoverDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `sideOffset`; consumers bind `[sideOffset]="..."`
+   * and read the effective value via the public `sideOffset` computed below.
+   */
+  readonly _sideOffsetInput = input(undefined, {
+    alias: 'sideOffset',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective main-axis gap (px): the `sideOffset` input when set, else the scope default. */
+  readonly sideOffset = computed<number>(
+    () => this._sideOffsetInput() ?? this.#defaults.sideOffset,
+  );
 
   /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -91,10 +126,25 @@ export class ForPopover implements ForPopoverContext {
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
   /**
-   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
-   * middlewares. Default `8`. Mirrors Radix's `collisionPadding`.
+   * Per-popover override for the padding (px) applied uniformly to the
+   * `flip`, `shift`, and `size` middlewares. Mirrors Radix's
+   * `collisionPadding`. When `undefined` (default), falls back to
+   * `ForPopoverDefaults.collisionPadding` from the surrounding
+   * `provideForPopoverDefaults` scope (`8` unless configured).
+   *
+   * The input is aliased to `collisionPadding`; consumers bind
+   * `[collisionPadding]="..."` and read the effective value via the public
+   * `collisionPadding` computed below.
    */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  readonly _collisionPaddingInput = input(undefined, {
+    alias: 'collisionPadding',
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /** Effective collision padding (px): the `collisionPadding` input when set, else the scope default. */
+  readonly collisionPadding = computed<number>(
+    () => this._collisionPaddingInput() ?? this.#defaults.collisionPadding,
+  );
 
   /**
    * Padding (px) for the `arrow` middleware so the arrow stays inside any

@@ -1,21 +1,53 @@
 import { type Provider } from '@angular/core';
 
 import { createDefaults } from '../_internal/defaults/defaults';
+import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 
 /**
  * Defaults inherited by descendant popovers in the surrounding injector
- * scope. Configure with `provideForPopoverDefaults`. The shape is a stub
- * today — present so future per-scope tuning (default side / align,
- * collision padding) can land without churning the public surface.
+ * scope. Configure with `provideForPopoverDefaults` at the app root or in
+ * any component's `providers`; partial overrides merge with the parent scope.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForPopoverDefaults {}
+export interface ForPopoverDefaults {
+  /**
+   * Side the popover is anchored to for popovers that don't override `side`
+   * locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for popovers that don't override
+   * `align` locally. Library fallback `'center'`.
+   */
+  align: FloatingAlign;
+  /**
+   * Gap (px) between trigger and content along the main axis for popovers
+   * that don't override `sideOffset` locally. Mirrors Radix's `sideOffset`.
+   * Library fallback `8`.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares for popovers that don't override `collisionPadding` locally.
+   * Library fallback `8`.
+   */
+  collisionPadding: number;
+}
 
-const FALLBACK: ForPopoverDefaults = {};
+/**
+ * Library fallback for popover defaults, read at the root injector when no
+ * consumer has called `provideForPopoverDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_POPOVER_FALLBACK_DEFAULTS: ForPopoverDefaults = {
+  side: 'bottom',
+  align: 'center',
+  sideOffset: 8,
+  collisionPadding: 8,
+};
 
 const { token, provideDefaults } = createDefaults<ForPopoverDefaults>(
   'FOR_POPOVER_DEFAULTS',
-  FALLBACK,
+  FOR_POPOVER_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved popover defaults for the current scope. */

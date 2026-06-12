@@ -20,8 +20,8 @@ export interface ForPopoverContext {
   readonly returnFocus: Signal<boolean>;
   readonly initialFocus: Signal<'first' | 'container'>;
 
-  readonly side: Signal<FloatingSide | undefined>;
-  readonly align: Signal<FloatingAlign | undefined>;
+  readonly side: Signal<FloatingSide>;
+  readonly align: Signal<FloatingAlign>;
   readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;

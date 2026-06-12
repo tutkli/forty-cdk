@@ -8,8 +8,8 @@ export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus
 export interface ForHoverCardContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  readonly side: Signal<FloatingSide | undefined>;
-  readonly align: Signal<FloatingAlign | undefined>;
+  readonly side: Signal<FloatingSide>;
+  readonly align: Signal<FloatingAlign>;
   readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;

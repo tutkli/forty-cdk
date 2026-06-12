@@ -17,16 +17,17 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 ## Inputs / models
 
-| API           | Type                                              | Description                                                                                                                                           |
-| ------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`        | `model<boolean>` (two-way bindable as `[(open)]`) | `(openChange)` fires only on internal transitions (delay timers, escape, blur, and the force-close that runs when `disabled` flips to true).          |
-| `side`        | `input<FloatingSide>`                             | Anchor side. Default `'top'`.                                                                                                                         |
-| `align`       | `input<FloatingAlign>`                            | Alignment along `side`. Default `'center'`.                                                                                                           |
-| `sideOffset`  | `input<number>`                                   | Gap (px) between trigger and card along the main axis. Default `8`.                                                                                   |
-| `alignOffset` | `input<number>`                                   | Gap (px) along the cross axis. Default `0`.                                                                                                           |
-| `openDelay`   | `input<number \| undefined>`                      | Per-card override for open delay. Falls back to `provideForHoverCardDefaults` (700ms).                                                                |
-| `closeDelay`  | `input<number \| undefined>`                      | Per-card override for close delay. Falls back to `provideForHoverCardDefaults` (300ms).                                                               |
-| `disabled`    | `input<boolean>`                                  | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync). |
+| API                | Type                                              | Description                                                                                                                                           |
+| ------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>` (two-way bindable as `[(open)]`) | `(openChange)` fires only on internal transitions (delay timers, escape, blur, and the force-close that runs when `disabled` flips to true).          |
+| `side`             | `input<FloatingSide \| undefined>`                | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForHoverCardDefaults` (`'top'`).                                     |
+| `align`            | `input<FloatingAlign \| undefined>`               | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForHoverCardDefaults` (`'center'`).                                  |
+| `sideOffset`       | `input<number \| undefined>`                      | Gap (px) between trigger and card along the main axis. Falls back to `provideForHoverCardDefaults` (`8`).                                             |
+| `alignOffset`      | `input<number>`                                   | Gap (px) along the cross axis. Default `0`.                                                                                                           |
+| `collisionPadding` | `input<number \| undefined>`                      | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForHoverCardDefaults` (`8`).                              |
+| `openDelay`        | `input<number \| undefined>`                      | Per-card override for open delay. Falls back to `provideForHoverCardDefaults` (700ms).                                                                |
+| `closeDelay`       | `input<number \| undefined>`                      | Per-card override for close delay. Falls back to `provideForHoverCardDefaults` (300ms).                                                               |
+| `disabled`         | `input<boolean>`                                  | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync). |
 
 ## Outputs
 
@@ -36,9 +37,37 @@ There is no APG pattern for HoverCard. Treat it as a presentational layer: the t
 
 ## Defaults
 
-`provideForHoverCardDefaults({ openDelay, closeDelay, skipDelayDuration })` configures the cadence for an injector subtree. Each call establishes a coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
+`provideForHoverCardDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
+
+| Key                 | Library fallback | Meaning                                                                   |
+| ------------------- | ---------------- | ------------------------------------------------------------------------- |
+| `openDelay`         | `700`            | ms before showing after hover/focus enters.                               |
+| `closeDelay`        | `300`            | ms before hiding after hover/focus leaves.                                |
+| `skipDelayDuration` | `300`            | Window (ms) after a peer closes during which the next open is instant.    |
+| `side`              | `'top'`          | Anchor side for cards that don't set `side` themselves.                   |
+| `align`             | `'center'`       | Alignment along `side` for cards that don't set `align` themselves.       |
+| `sideOffset`        | `8`              | Main-axis gap (px) for cards that don't set `sideOffset` themselves.      |
+| `collisionPadding`  | `8`              | Collision-middleware padding (px) for cards that don't set it themselves. |
+
+Per-instance inputs always win over the scope defaults.
 
 The HoverCard coordinator is **independent** from `TooltipCoordinator` — the two patterns have different cadences and shouldn't share their skip-delay windows.
+
+```ts
+import { provideForHoverCardDefaults } from 'forty-cdk';
+
+// Right-aligned profile cards app-wide
+bootstrapApplication(App, {
+  providers: [provideForHoverCardDefaults({ side: 'right', sideOffset: 4 })],
+});
+
+// component-level override layers on top, per key
+@Component({
+  providers: [provideForHoverCardDefaults({ openDelay: 200 })],
+  ...
+})
+class ProfileList {}
+```
 
 ## Usage
 

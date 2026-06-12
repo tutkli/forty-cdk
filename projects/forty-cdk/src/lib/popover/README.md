@@ -82,24 +82,54 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ## Inputs (`ForPopover`)
 
-| API            | Default    | Description                                                                     |
-| -------------- | ---------- | ------------------------------------------------------------------------------- |
-| `open`         | `false`    | Two-way bindable visibility.                                                    |
-| `side`         | `'bottom'` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`).                      |
-| `align`        | `'center'` | Alignment along the chosen side (`'start'` / `'center'` / `'end'`).             |
-| `sideOffset`   | `8`        | Gap (px) between trigger and content along the main axis.                       |
-| `alignOffset`  | `0`        | Gap (px) along the cross axis (parallel to `side`).                             |
-| `disabled`     | `false`    | When `true`, trigger does not toggle.                                           |
-| `dismissible`  | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.            |
-| `returnFocus`  | `true`     | Focus returns to the trigger on close.                                          |
-| `initialFocus` | `'first'`  | `'first'` (first focusable inside content) or `'container'` (the content host). |
-| `ariaLabel`    | `null`     | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.     |
+| API                | Default    | Description                                                                                                      |
+| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| `open`             | `false`    | Two-way bindable visibility.                                                                                     |
+| `side`             | `'bottom'` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForPopoverDefaults`.            |
+| `align`            | `'center'` | Alignment along the chosen side (`'start'` / `'center'` / `'end'`). Falls back to `provideForPopoverDefaults`.   |
+| `sideOffset`       | `8`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.             |
+| `alignOffset`      | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                              |
+| `collisionPadding` | `8`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`. |
+| `disabled`         | `false`    | When `true`, trigger does not toggle.                                                                            |
+| `dismissible`      | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.                                             |
+| `returnFocus`      | `true`     | Focus returns to the trigger on close.                                                                           |
+| `initialFocus`     | `'first'`  | `'first'` (first focusable inside content) or `'container'` (the content host).                                  |
+| `ariaLabel`        | `null`     | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.                                      |
 
 ## Inputs (`ForPopoverTrigger`)
 
 | API        | Default | Description                                                                                                                                                       |
 | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `false` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard. |
+
+## Scoped defaults
+
+`provideForPopoverDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                | Library fallback | Meaning                                                                      |
+| ------------------ | ---------------- | ---------------------------------------------------------------------------- |
+| `side`             | `'bottom'`       | Anchor side for popovers that don't set `side` themselves.                   |
+| `align`            | `'center'`       | Alignment along `side` for popovers that don't set `align` themselves.       |
+| `sideOffset`       | `8`              | Main-axis gap (px) for popovers that don't set `sideOffset` themselves.      |
+| `collisionPadding` | `8`              | Collision-middleware padding (px) for popovers that don't set it themselves. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { provideForPopoverDefaults } from 'forty-cdk';
+
+// Top-anchored popovers app-wide
+bootstrapApplication(App, {
+  providers: [provideForPopoverDefaults({ side: 'top', sideOffset: 4 })],
+});
+
+// component-level override layers on top, per key
+@Component({
+  providers: [provideForPopoverDefaults({ align: 'start' })],
+  ...
+})
+class Toolbar {}
+```
 
 ## Outputs (`ForPopover`)
 
