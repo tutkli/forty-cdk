@@ -260,6 +260,8 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
 
+A single-select consumer usually models the field as `T | null` rather than `readonly T[]`. Bridge it with `forSingleValueField` so the same `[formField]` wiring works unchanged: `[formField]="forSingleValueField(form.color)"`. See [Signal Forms helpers](../signal-forms/README.md).
+
 ## Object values
 
 Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forSelect]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
