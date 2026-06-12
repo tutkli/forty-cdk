@@ -233,7 +233,9 @@ export function injectMenuContext(piece: string): ForMenuContext {
   const ctx = inject(FOR_MENU_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu], [forContextMenu], [forMenubar], or [forMenuSub] element.`,
+      `[forty-cdk/menu] ${piece} must be used inside a [forDropdownMenu], [forContextMenu], [forMenubar], or [forMenuSub] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the menu root.',
     );
   }
   return ctx;

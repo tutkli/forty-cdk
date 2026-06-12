@@ -76,6 +76,23 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 </div>
 ```
 
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDropdownMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDropdownMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forDropdownMenu #root="forDropdownMenu">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forDropdownMenuTrigger]="root">Options</button>
+</ng-template>
+```
+
 ## Pieces
 
 | Class                    | Selector                   | Role                                                                                |

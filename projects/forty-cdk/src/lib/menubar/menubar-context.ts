@@ -116,7 +116,12 @@ export const FOR_MENUBAR_CONTEXT = new InjectionToken<ForMenubarContext>('FOR_ME
 export function injectMenubarContext(piece: string): ForMenubarContext {
   const ctx = inject(FOR_MENUBAR_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/menubar] ${piece} must be used inside a [forMenubar] element.`);
+    throw new Error(
+      `[forty-cdk/menubar] ${piece} must be used inside a [forMenubar] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forMenubar] root.',
+    );
   }
   return ctx;
 }

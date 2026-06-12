@@ -317,7 +317,12 @@ export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_
 export function injectComboboxContext<T = unknown>(piece: string): ForComboboxContext<T> {
   const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element.`);
+    throw new Error(
+      `[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forCombobox] root.',
+    );
   }
   return ctx as unknown as ForComboboxContext<T>;
 }

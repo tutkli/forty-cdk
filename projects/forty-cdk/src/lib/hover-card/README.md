@@ -100,6 +100,23 @@ import {
 export class DemoProfileLink {}
 ```
 
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forHoverCardTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forHoverCard"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<span forHoverCard #root="forHoverCard">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forHoverCardContent>…</div>
+  }
+</span>
+
+<ng-template #trig let-root="root">
+  <a [forHoverCardTrigger]="root" href="/users/ada">Ada Lovelace</a>
+</ng-template>
+```
+
 ## Behavior notes
 
 - **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the card. Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. The helper ships no default visual.

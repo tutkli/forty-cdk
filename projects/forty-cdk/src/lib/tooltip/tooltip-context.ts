@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 
@@ -47,7 +47,40 @@ export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TO
 export function injectTooltipContext(piece: string): ForTooltipContext {
   const ctx = inject(FOR_TOOLTIP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/tooltip] ${piece} must be used inside a [forTooltip] element.`);
+    throw new Error(
+      `[forty-cdk/tooltip] ${piece} must be used inside a [forTooltip] element. ` +
+        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
+        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
+        '[forTooltip] root.',
+    );
   }
   return ctx;
+}
+
+/**
+ * Resolves the trigger's root context: the explicit reference when the
+ * `[forTooltipTrigger]` input carries one, the injected `FOR_TOOLTIP_CONTEXT`
+ * otherwise. The orphan error only fires when neither resolves, on first read
+ * of the returned signal. Must be called in an injection context.
+ */
+export function injectTooltipTriggerContext(
+  explicitRoot: Signal<ForTooltipContext | ''>,
+): Signal<ForTooltipContext> {
+  const injected = inject(FOR_TOOLTIP_CONTEXT, { optional: true });
+  return computed(() => {
+    const explicit = explicitRoot();
+    if (explicit !== '') {
+      return explicit;
+    }
+    if (injected) {
+      return injected;
+    }
+    throw new Error(
+      '[forty-cdk/tooltip] ForTooltipTrigger could not resolve its [forTooltip] root: ' +
+        'no FOR_TOOLTIP_CONTEXT provider is visible and no explicit root reference was passed. ' +
+        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+        'root explicitly: [forTooltipTrigger]="root" with #root="forTooltip".',
+    );
+  });
 }
