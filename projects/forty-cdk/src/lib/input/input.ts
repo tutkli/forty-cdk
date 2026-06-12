@@ -37,7 +37,6 @@ import { TextValueControlBase } from './text-value-control-base';
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.readonly]': 'readonly() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',

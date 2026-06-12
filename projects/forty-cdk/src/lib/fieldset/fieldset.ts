@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset-context';
 
@@ -43,7 +44,6 @@ import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset-contex
   host: {
     '[attr.role]': 'roleAttr()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.disabled]': 'isNativeFieldset() && disabled() ? "" : null',
     '[attr.aria-disabled]': '!isNativeFieldset() && disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
   },
@@ -81,6 +81,17 @@ export class ForFieldset implements ForFieldsetContext {
   protected readonly isNativeFieldset = computed(
     () => this.#host.nativeElement.tagName === 'FIELDSET',
   );
+
+  /**
+   * Native `disabled` is reflected only on a real `<fieldset>` (where it
+   * natively disables descendant controls); a non-`<fieldset>` host advertises
+   * its disabled state via `aria-disabled` instead.
+   */
+  protected readonly nativeDisabled = computed(() => this.isNativeFieldset() && this.disabled());
+
+  constructor() {
+    reflectDisabled(this.nativeDisabled);
+  }
 
   /** `role="group"` on a non-`<fieldset>` element, else null. */
   protected readonly roleAttr = computed(() => (this.isNativeFieldset() ? null : 'group'));

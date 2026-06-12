@@ -1,6 +1,7 @@
 import { computed, Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
@@ -28,7 +29,6 @@ import {
     '[attr.aria-expanded]': 'isOpen() ? "true" : "false"',
     '[attr.aria-controls]': 'isOpen() ? contentId() : null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
-    '[attr.disabled]': 'disabled() ? "" : null',
     '[attr.data-state]': 'isOpen() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '(click)': 'onClick()',
@@ -68,6 +68,7 @@ export class ForNavigationMenuTrigger {
       (h) => this.menu.unregisterTrigger(h),
       'afterNextRender',
     );
+    reflectDisabled(this.disabled);
   }
 
   protected onClick(): void {

@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -29,7 +30,6 @@ import { injectPopoverContext } from './popover-context';
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
   },
 })
@@ -49,6 +49,7 @@ export class ForPopoverTrigger {
       (el) => this.ctx.registerTrigger(el),
       (el) => this.ctx.unregisterTrigger(el),
     );
+    reflectDisabled(this.effectiveDisabled);
   }
 
   protected onClick(): void {

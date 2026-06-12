@@ -1,14 +1,7 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { injectMenuContext } from '../menu/menu-context';
 
@@ -51,7 +44,6 @@ import { injectMenuContext } from '../menu/menu-context';
 export class ForDropdownMenuTrigger {
   protected readonly ctx = injectMenuContext('ForDropdownMenuTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  #setDisabledAttribute = false;
   #pointerActivation = false;
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
@@ -66,18 +58,7 @@ export class ForDropdownMenuTrigger {
       (el) => this.ctx.registerTrigger(el),
       (el) => this.ctx.unregisterTrigger(el),
     );
-    effect(() => {
-      const el = this.#host.nativeElement;
-      if (this.effectiveDisabled()) {
-        if (!el.hasAttribute('disabled')) {
-          el.setAttribute('disabled', '');
-          this.#setDisabledAttribute = true;
-        }
-      } else if (this.#setDisabledAttribute) {
-        el.removeAttribute('disabled');
-        this.#setDisabledAttribute = false;
-      }
-    });
+    reflectDisabled(this.effectiveDisabled);
   }
 
   protected onPointerDown(): void {

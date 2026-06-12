@@ -1,5 +1,6 @@
 import { computed, Directive, inject } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
 
@@ -21,7 +22,6 @@ import { ForComboboxChip } from './combobox-chip';
     type: 'button',
     tabindex: '-1',
     '[attr.aria-label]': 'ariaLabel()',
-    '[attr.disabled]': 'ctx.effectiveDisabled() || ctx.readonly() ? "" : null',
     '(click)': 'onClick($event)',
   },
 })
@@ -33,18 +33,24 @@ export class ForComboboxChipRemove {
   protected readonly ctx = injectComboboxContext<unknown>('ForComboboxChipRemove');
   readonly #chip = inject<ForComboboxChip<unknown>>(ForComboboxChip, { optional: true });
 
+  /** Disabled when the combobox is disabled or read-only — chip removal is unavailable. */
+  protected readonly isDisabled = computed(
+    () => this.ctx.effectiveDisabled() || this.ctx.readonly(),
+  );
+
   constructor() {
     if (!this.#chip) {
       throw new Error(
         '[forty-cdk/combobox] ForComboboxChipRemove must be used inside a [forComboboxChip] element.',
       );
     }
+    reflectDisabled(this.isDisabled);
   }
 
   protected readonly ariaLabel = computed(() => `Remove ${this.#chip!.label()}`);
 
   protected onClick(event: MouseEvent): void {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
+    if (this.isDisabled()) {
       return;
     }
     // Don't let the click bubble up to the chip body — that would trigger

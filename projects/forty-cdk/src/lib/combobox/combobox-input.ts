@@ -1,6 +1,7 @@
 import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -43,7 +44,6 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-required]': 'ctx.required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx.invalid() ? "true" : null',
     '[attr.aria-busy]': 'ctx.pending() ? "true" : null',
-    '[attr.disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.readonly]': 'ctx.readonly() ? "" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
@@ -71,6 +71,7 @@ export class ForComboboxInput {
       (el) => this.ctx.registerInput(el),
       (el) => this.ctx.unregisterInput(el),
     );
+    reflectDisabled(this.ctx.effectiveDisabled);
 
     const doc = inject(DOCUMENT);
 

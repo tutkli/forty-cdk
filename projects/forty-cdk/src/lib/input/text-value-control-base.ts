@@ -1,6 +1,7 @@
 import { DOCUMENT, Directive, effect, ElementRef, inject, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 
 /**
@@ -39,6 +40,10 @@ export abstract class TextValueControlBase
 
   constructor() {
     super();
+
+    // Reflect the native `disabled` attribute non-destructively so a
+    // consumer-set `disabled` on the same element survives an enabled state.
+    reflectDisabled(this.effectiveDisabled);
 
     // Mirror external writes (consumer `[(value)]` or `[formField]`) back to
     // the native element — but only while it isn't focused, since assigning

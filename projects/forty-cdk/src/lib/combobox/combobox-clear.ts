@@ -1,5 +1,6 @@
 import { computed, Directive } from '@angular/core';
 
+import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -21,7 +22,6 @@ import { injectComboboxContext } from './combobox-context';
     'aria-label': 'Clear',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
-    '[attr.disabled]': 'ctx.effectiveDisabled() || ctx.readonly() ? "" : null',
     '[attr.tabindex]': '-1',
     '(click)': 'onClick()',
   },
@@ -33,8 +33,17 @@ export class ForComboboxClear {
     () => this.ctx.value().length > 0 || this.ctx.query().length > 0,
   );
 
+  /** Disabled when the combobox is disabled or read-only — the clear action is unavailable. */
+  protected readonly isDisabled = computed(
+    () => this.ctx.effectiveDisabled() || this.ctx.readonly(),
+  );
+
+  constructor() {
+    reflectDisabled(this.isDisabled);
+  }
+
   protected onClick(): void {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
+    if (this.isDisabled()) {
       return;
     }
     this.ctx.clear(true);
