@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import {
   el,
+  expectFocused,
   gotoFixture,
   imeEnd,
   imeStart,
@@ -126,6 +127,78 @@ test.describe('Combobox', () => {
 
       await expect.poll(() => anchorWidth(page)).toBeGreaterThan(0);
       expect(Math.abs((await anchorWidth(page)) - inputRect!.width)).toBeLessThanOrEqual(1);
+    });
+  });
+
+  // #675 — the picker anatomy (`?picker=1`): a `[forComboboxTrigger]` button
+  // outside the panel, with `[forComboboxInput]` + `[forComboboxList]` inside
+  // `[forComboboxContent]`. jsdom mis-models `document.activeElement`, so the
+  // focus hand-off (input on open, trigger on close) is asserted here.
+  test.describe('picker anatomy (trigger + inner list)', () => {
+    test('opening from the trigger moves focus into the inner input', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      const trigger = el(page, 'trigger');
+      await trigger.click();
+
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    test('the inner list owns the listbox role; the input controls the list', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+
+      const list = el(page, 'list');
+      await expect(list).toHaveAttribute('role', 'listbox');
+      // The popup surface is role-less so it can hold the input next to the list.
+      await expect(el(page, 'content')).not.toHaveAttribute('role', /.+/);
+      const listId = await list.getAttribute('id');
+      await expect(el(page, 'combo-input')).toHaveAttribute('aria-controls', listId!);
+    });
+
+    test('Escape returns focus to the trigger', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'combo-input'));
+
+      await el(page, 'combo-input').press('Escape');
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger'));
+    });
+
+    test('selecting an option commits it and returns focus to the trigger', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await el(page, 'opt-banana').click();
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger'));
+      await expect(el(page, 'trigger')).toHaveText('banana');
+    });
+
+    test('ArrowDown on the trigger opens with the first option highlighted', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      const trigger = el(page, 'trigger');
+      await trigger.focus();
+      await trigger.press('ArrowDown');
+
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'combo-input'));
+      await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+    });
+
+    test('a vetoed (autoFocusOnOpen) keeps focus on the trigger', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1', vetoOpen: '1' });
+      const trigger = el(page, 'trigger');
+      // Focus + Enter so the trigger holds focus deterministically across
+      // browsers (WebKit doesn't focus a <button> on plain click).
+      await trigger.focus();
+      await trigger.press('Enter');
+
+      await expect(el(page, 'content')).toBeVisible();
+      // The panel opened but focus stayed on the trigger (the move was vetoed).
+      await expectFocused(trigger);
     });
   });
 });

@@ -94,6 +94,12 @@ export interface ForComboboxContext<T = unknown> {
   readonly clearOnQueryChange: Signal<boolean>;
 
   readonly dismissible: Signal<boolean>;
+  /**
+   * Whether focus returns to the `[forComboboxTrigger]` on close (picker
+   * anatomy). Ignored in the editable anatomy, where focus never left the
+   * input. Default `true`.
+   */
+  readonly returnFocus: Signal<boolean>;
   readonly side: Signal<FloatingSide | undefined>;
   readonly align: Signal<FloatingAlign>;
   readonly sideOffset: Signal<number>;
@@ -107,6 +113,19 @@ export interface ForComboboxContext<T = unknown> {
 
   readonly inputId: Signal<string>;
   readonly contentId: Signal<string>;
+  /**
+   * Id of the `[forComboboxList]` listbox surface (picker anatomy). The input's
+   * `aria-controls` points here when a list is registered; without one it falls
+   * back to {@link contentId} (the editable anatomy where content itself is the
+   * listbox).
+   */
+  readonly listId: Signal<string>;
+  /**
+   * Id of the element carrying `role="listbox"` — {@link listId} when a
+   * `[forComboboxList]` is registered, otherwise {@link contentId}. The input
+   * targets this with `aria-controls`.
+   */
+  readonly listboxId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
 
   /**
@@ -130,9 +149,30 @@ export interface ForComboboxContext<T = unknown> {
   registerAnchor(el: HTMLElement): void;
   unregisterAnchor(el: HTMLElement): void;
 
+  /**
+   * The optional `[forComboboxTrigger]` button (picker anatomy). When present
+   * it is the default positioning anchor (after an explicit `[forComboboxAnchor]`)
+   * and the element focus returns to on close. `null` in the editable anatomy.
+   */
+  readonly trigger: Signal<HTMLElement | null>;
+  registerTrigger(el: HTMLElement): void;
+  unregisterTrigger(el: HTMLElement): void;
+
   readonly content: Signal<HTMLElement | null>;
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
+
+  /**
+   * The optional `[forComboboxList]` listbox surface (picker anatomy). When
+   * registered, `[forComboboxContent]` drops its `role="listbox"` semantics and
+   * becomes a neutral popup surface; the list carries the listbox role and owns
+   * the options. `null` in the editable anatomy.
+   */
+  readonly list: Signal<HTMLElement | null>;
+  /** True when a `[forComboboxList]` is registered (picker anatomy). */
+  readonly hasList: Signal<boolean>;
+  registerList(el: HTMLElement): void;
+  unregisterList(el: HTMLElement): void;
 
   registerOption(handle: ForComboboxOptionHandle<T>): void;
   unregisterOption(handle: ForComboboxOptionHandle<T>): void;
@@ -211,6 +251,28 @@ export interface ForComboboxContext<T = unknown> {
   toggle(): void;
   openMenu(initialFocus?: 'first' | 'last'): void;
   closeMenu(reason: ForComboboxCloseReason): void;
+
+  /**
+   * The reason of the most recent close (or `null` before any close / after a
+   * fresh open). `[forComboboxContent]` reads this so a `'tab'` close skips the
+   * return-focus move — Tab has already advanced focus and re-focusing the
+   * trigger would steal it back. Only meaningful in the picker anatomy.
+   */
+  readonly lastCloseReason: Signal<ForComboboxCloseReason | null>;
+
+  /**
+   * Fires the `(autoFocusOnOpen)` output and returns whether the consumer
+   * vetoed (called `preventDefault()`). The picker anatomy moves focus into the
+   * input on open; a veto skips that imperative move. Editable anatomy never
+   * calls this (focus never moves).
+   */
+  emitAutoFocusOnOpen(): boolean;
+  /**
+   * Fires the `(autoFocusOnClose)` output and returns whether the consumer
+   * vetoed. The picker anatomy returns focus to the trigger on close; a veto
+   * skips it.
+   */
+  emitAutoFocusOnClose(): boolean;
 
   /**
    * Escape is consumer-owned and routed through the input directive (focus
