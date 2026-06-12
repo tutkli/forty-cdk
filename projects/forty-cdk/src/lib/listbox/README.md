@@ -172,6 +172,11 @@ export class DemoPriorities {
 > Enforce "at least one" with the explicit `validate(...)` length rule above, or with Angular's
 > `minLength(s.priorities, 1)` (which emits a `minLengthError` instead of a `requiredError`).
 
+> **Single-select fields.** When you model the field as `T | null` rather than `readonly T[]`,
+> bridge it with `forSingleValueField` so the standard `[formField]` wiring still works:
+> `[formField]="forSingleValueField(prefs.fruit)"`. See
+> [Signal Forms helpers](../signal-forms/README.md).
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

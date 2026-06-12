@@ -231,6 +231,8 @@ If you need to programmatically move focus elsewhere (e.g. into the listbox), do
 
 For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
 
+When the consumer models a single-select field as `T | null` (not `readonly T[]`), bridge it with `forSingleValueField` so the same `[formField]` wiring works unchanged: `[formField]="forSingleValueField(form.country)"`. See [Signal Forms helpers](../signal-forms/README.md).
+
 ## Object values
 
 Real apps usually have richer option models — `{ id, label, ... }` — where the user-facing label and the comparison key differ, plus extra fields the consumer wants on selection. `[forCombobox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.

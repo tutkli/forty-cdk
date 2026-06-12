@@ -35,6 +35,7 @@ export * from './lib/context-menu';
 export * from './lib/menubar';
 export * from './lib/select';
 export * from './lib/combobox';
+export * from './lib/signal-forms';
 export * from './lib/slider';
 export * from './lib/toast';
 export * from './lib/separator';

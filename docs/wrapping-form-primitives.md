@@ -192,3 +192,46 @@ controls — `ForInput`, `ForTextarea`, `ForCheckbox`, `ForSwitch`, `ForToggle`,
 | `ForTimeField`   | `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS`   | `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS`   |
 | `ForToggle`      | `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS`       | `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS`       |
 | `ForToggleGroup` | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS` |
+
+## Binding a single-valued field to a selection primitive
+
+The selection primitives — `ForSelect`, `ForListbox`, `ForCombobox` — model their value as
+`readonly T[]`, with single mode keeping the array at length ≤ 1 (the selection value-type
+contract). That uniform array shape is the `FormValueControl<readonly T[]>` backing the
+`[formField]` directive auto-wires to, and it is deliberately the same for single and multi
+selection.
+
+A single-select consumer, however, models their domain field as `T | null` — so a
+`FieldTree<T | null>` cannot bind to the control through `[formField]` directly: the value
+types don't line up, and the read-only `selected` / `selectedItem` accessors only help the
+read direction. Rather than hand-roll the `T | null` ⇄ `readonly T[]` mapping in every
+wrapper (and re-plumb `disabled` / `invalid` / `errors` / `touched` / `required` alongside
+it — exactly the glue `[formField]` exists to delete), use the `forSingleValueField` helper:
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
+import { ForSelect, forSingleValueField } from 'forty-cdk';
+
+@Component({
+  selector: 'app-country-picker',
+  imports: [ForSelect, FormField],
+  template: `<div forSelect [formField]="country">…</div>`,
+})
+export class CountryPicker {
+  private readonly model = signal({ country: null as string | null });
+  protected readonly profile = form(this.model);
+
+  // FieldTree<string | null> → FieldTree<readonly string[]>; bind the result.
+  protected readonly country = forSingleValueField(this.profile.country);
+}
+```
+
+`forSingleValueField` returns a derived `FieldTree<readonly T[]>` view: the value maps both
+directions (`null` ↔ `[]`, `v` ↔ `[v]`, last entry wins for a longer write), and every other
+field-state member delegates to the original field, so `[formField]` pushes the same UI state
+into the control it would for any other field. The value is `computed`, never copied — there
+is no second source of truth. Multi-select fields are already `readonly T[]`; bind those (and
+any field you model as `readonly T[]` yourself) with `[formField]` directly. See
+[the helper's README](../projects/forty-cdk/src/lib/signal-forms/README.md) for the full
+behaviour table.
