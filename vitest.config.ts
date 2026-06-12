@@ -31,6 +31,15 @@ import { defineConfig } from 'vitest/config';
  * - `unstubEnvs: true` — same contract for `vi.stubEnv(...)`.
  * - `isolate: true` — explicit per-pool worker isolation. This is the Vitest
  *   default today, pinned here so a future CI pool change can't silently flip it.
+ * - `testTimeout: 15000` — raised from Vitest's 5000ms default. The floating-ui
+ *   overlay suites (select / combobox / popover / …) drain several real
+ *   macrotask hops per `flush()`; under the default parallel jsdom schedule a
+ *   worker can be CPU-starved long enough for one of those hops to blow the
+ *   5000ms budget on an otherwise-correct test (select.spec runs ~7x slower
+ *   under full-suite contention than in isolation). 15000ms absorbs the
+ *   contention spike without masking a genuine hang. Same propagation caveat as
+ *   the mock-reset flags below, so it is mirrored imperatively in
+ *   `vitest-invariants-setup.ts`.
  *
  * If a future `@angular/build` release wires user `test.*` invariants through
  * to the runtime config, the setup-file layer becomes redundant but harmless.
@@ -66,6 +75,7 @@ const worstCase = process.env['FORTY_CDK_TEST_WORST_CASE'] === 'true';
 export default defineConfig({
   test: {
     isolate: true,
+    testTimeout: 15000,
     clearMocks: true,
     restoreMocks: true,
     unstubGlobals: true,
