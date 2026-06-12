@@ -709,6 +709,154 @@ describe('Menu items / content', () => {
     });
   });
 
+  describe('hover-follows-pointer (#662)', () => {
+    function pointerMove(el: HTMLElement, pointerType?: string): void {
+      const event = new PointerEvent('pointermove', { bubbles: true });
+      if (pointerType !== undefined) {
+        Object.defineProperty(event, 'pointerType', { value: pointerType, configurable: true });
+      }
+      el.dispatchEvent(event);
+    }
+
+    function pointerLeave(el: HTMLElement): void {
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+    }
+
+    it('pointermove over an enabled item focuses and highlights it', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      pointerMove(copy);
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('copy');
+      expect(copy.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('the highlight follows the pointer from item to item', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      pointerMove(cut);
+      await flush(r.fixture);
+      expect(cut.getAttribute('data-highlighted')).toBe('');
+
+      pointerMove(copy);
+      await flush(r.fixture);
+      expect(copy.getAttribute('data-highlighted')).toBe('');
+      expect(cut.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('hovering the focused-but-unhighlighted first item after a pointer open highlights it', async () => {
+      const r = renderHost(MenuHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      trigger.click();
+      await flush(r.fixture);
+
+      // #655 contract: pointer open focuses the first item without highlighting it.
+      expect(document.activeElement?.id).toBe('cut');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      pointerMove(cut);
+      await flush(r.fixture);
+
+      // Hover is an explicit pointer intent — it highlights even the already-focused item.
+      expect(cut.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('pointermove over a disabled item neither focuses nor highlights it', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const paste = document.querySelector<HTMLElement>('#paste')!;
+      pointerMove(paste);
+      await flush(r.fixture);
+
+      expect(paste.hasAttribute('data-highlighted')).toBe(false);
+      expect(document.activeElement?.id).not.toBe('paste');
+    });
+
+    it('a touch / pen pointermove never highlights (hover is a mouse affordance)', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      pointerMove(copy, 'touch');
+      await flush(r.fixture);
+
+      expect(copy.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('highlights a checkbox item on hover', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLElement>('#bold')!;
+      pointerMove(bold);
+      await flush(r.fixture);
+
+      expect(bold.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('highlights a radio item on hover', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const left = document.querySelector<HTMLElement>('#left')!;
+      pointerMove(left);
+      await flush(r.fixture);
+
+      expect(left.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('pointerleave on the content clears the highlight but keeps focus on the item', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      pointerMove(copy);
+      await flush(r.fixture);
+      expect(copy.getAttribute('data-highlighted')).toBe('');
+
+      pointerLeave(document.querySelector<HTMLElement>('[forMenuContent]')!);
+      await flush(r.fixture);
+
+      expect(copy.hasAttribute('data-highlighted')).toBe(false);
+      expect(document.activeElement?.id).toBe('copy');
+    });
+
+    it('keyboard navigation still works after the pointer leaves the surface', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const copy = document.querySelector<HTMLElement>('#copy')!;
+      pointerMove(copy);
+      await flush(r.fixture);
+      pointerLeave(document.querySelector<HTMLElement>('[forMenuContent]')!);
+      await flush(r.fixture);
+
+      // Focus is still anchored on #copy, so ArrowDown navigates from it
+      // (skipping disabled #paste) and re-highlights the next enabled item.
+      pressKey(copy, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
+      expect(copy.hasAttribute('data-highlighted')).toBe(false);
+    });
+  });
+
   describe('typeahead', () => {
     it('highlights the first item whose text matches the prefix', async () => {
       const r = renderHost(MenuHost);

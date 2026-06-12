@@ -27,6 +27,10 @@ import { handleMenuTabOut } from './menu-tab-out';
  * - **Typeahead** — printable keys delegate to parent's typeahead.
  *
  * Pointer (mouse):
+ * - **pointermove** — drop the parent menu's hover highlight so no sibling item
+ *   stays active while the submenu opens. The sub-trigger reflects no
+ *   `data-highlighted` of its own and does not take focus (hover-open never
+ *   moves focus, per #332).
  * - **pointerenter** — open the submenu after the configured `subMenuOpenDelay`
  *   ({@link provideForMenuDefaults}), without moving focus into it.
  * - **pointerleave** — close after `subMenuCloseDelay`, unless the pointer
@@ -58,6 +62,7 @@ import { handleMenuTabOut } from './menu-tab-out';
     '(keydown)': 'onKeyDown($event)',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerleave)': 'onPointerLeave($event)',
+    '(pointermove)': 'onPointerMove($event)',
   },
 })
 export class ForMenuSubTrigger {
@@ -113,6 +118,20 @@ export class ForMenuSubTrigger {
       return;
     }
     this.submenu.scheduleOpenByPointer?.();
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      return;
+    }
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    // The sub-trigger carries no highlight of its own, and hover-open must not
+    // move focus into the submenu (#332). So hovering it just drops the parent
+    // menu's hover highlight, leaving no sibling item active while the submenu
+    // opens — focus stays where it was.
+    this.submenu.parentMenu?.clearItemHighlights();
   }
 
   protected onPointerLeave(event: PointerEvent): void {

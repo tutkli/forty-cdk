@@ -27,6 +27,62 @@ test.describe('Menu (base)', () => {
     await expect(el(page, 'item-apple')).not.toHaveAttribute('data-highlighted');
   });
 
+  test('hovering an item focuses and highlights it (hover follows the pointer)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'item-apple')).toBeFocused();
+    // After a pointer open the first item is focused but not highlighted (#655);
+    // the pointer is still over the trigger.
+    await expect(el(page, 'item-apple')).not.toHaveAttribute('data-highlighted');
+
+    await el(page, 'item-apricot').hover();
+    await expect(el(page, 'item-apricot')).toBeFocused();
+    await expect(el(page, 'item-apricot')).toHaveAttribute('data-highlighted', '');
+  });
+
+  test('the highlight follows the pointer between items', async ({ page }) => {
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').click();
+
+    await el(page, 'item-apple').hover();
+    await expect(el(page, 'item-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'item-apricot').hover();
+    await expect(el(page, 'item-apricot')).toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'item-apple')).not.toHaveAttribute('data-highlighted');
+  });
+
+  test('leaving the surface clears the highlight while focus stays on the item', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').click();
+
+    await el(page, 'item-apricot').hover();
+    await expect(el(page, 'item-apricot')).toHaveAttribute('data-highlighted', '');
+
+    // Move the pointer off the surface without clicking, so the menu stays open.
+    await page.mouse.move(2, 2);
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-apricot')).not.toHaveAttribute('data-highlighted');
+    await expect(el(page, 'item-apricot')).toBeFocused();
+  });
+
+  test('hovering a disabled item neither focuses nor highlights it', async ({ page }) => {
+    // banana(2) is disabled.
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').click();
+
+    await el(page, 'item-apple').hover();
+    await expect(el(page, 'item-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'item-banana').hover();
+    await expect(el(page, 'item-banana')).not.toHaveAttribute('data-highlighted');
+    await expect(el(page, 'item-banana')).not.toBeFocused();
+  });
+
   test('keyboard open highlights the first enabled item', async ({ page }) => {
     await gotoFixture(page, 'menu-base', { disabled: '2,5' });
     await el(page, 'trigger').focus();

@@ -64,7 +64,7 @@ class SubMenuHost {
  * `pointerType === 'mouse'`, so the spec defines them directly.
  */
 function pointerEvent(
-  type: 'pointerenter' | 'pointerleave',
+  type: 'pointerenter' | 'pointerleave' | 'pointermove',
   { pointerType = 'mouse', clientX = 0, clientY = 0 } = {},
 ): PointerEvent {
   const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
@@ -330,6 +330,44 @@ describe('ForMenuSub', () => {
 
       expect(r.instance.lastSelected()).toBe('paste');
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('hover-follows-pointer (#662)', () => {
+    it('pointermove over the SubTrigger clears the parent item highlight without moving focus', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      cut.dispatchEvent(pointerEvent('pointermove'));
+      flush();
+      expect(cut.getAttribute('data-highlighted')).toBe('');
+      expect(document.activeElement?.id).toBe('cut');
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointermove'));
+      flush();
+
+      // The sub-trigger reflects no highlight and does not take focus
+      // (hover-open never moves focus, #332); #cut just stops being highlighted.
+      expect(cut.hasAttribute('data-highlighted')).toBe(false);
+      expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('pointermove over a submenu item highlights it', () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      flush();
+      instance.subOpen.set(true);
+      flush();
+
+      const advanced = document.querySelector<HTMLElement>('#advanced')!;
+      advanced.dispatchEvent(pointerEvent('pointermove'));
+      flush();
+
+      expect(document.activeElement?.id).toBe('advanced');
+      expect(advanced.getAttribute('data-highlighted')).toBe('');
     });
   });
 

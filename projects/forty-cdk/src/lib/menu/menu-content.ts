@@ -42,6 +42,7 @@ import { injectMenuContext } from './menu-context';
     '[attr.aria-orientation]': '"vertical"',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     tabindex: '-1',
+    '(pointerleave)': 'onPointerLeave($event)',
   },
 })
 export class ForMenuContent {
@@ -104,5 +105,18 @@ export class ForMenuContent {
         skip: () => this.ctx.lastCloseReason() === 'tab',
       },
     });
+  }
+
+  /**
+   * Hover-follows-pointer: the pointer left the menu surface, so drop the
+   * highlight from whichever item the pointer was over. Focus is left where it
+   * is (anchored on the item for keyboard navigation); only `data-highlighted`
+   * clears. Gated to mouse — touch / pen never hover.
+   */
+  protected onPointerLeave(event: PointerEvent): void {
+    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      return;
+    }
+    this.ctx.clearItemHighlights();
   }
 }

@@ -227,6 +227,15 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   /**
+   * Clears `data-highlighted` from every item without moving focus. The shared
+   * `[forMenuContent]` calls this on `pointerleave` so the hover highlight
+   * follows the pointer off the surface (Radix-style).
+   */
+  clearItemHighlights(): void {
+    this.#itemList.clearHighlights();
+  }
+
+  /**
    * Focuses the first enabled item. When the most recent `openMenu` was
    * pointer-activated, this one move suppresses the item's focus-driven
    * `data-highlighted` (one-shot — later calls highlight normally).

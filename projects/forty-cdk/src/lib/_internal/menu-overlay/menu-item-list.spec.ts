@@ -250,4 +250,30 @@ describe('MenuItemList', () => {
       expect(document.activeElement?.id).toBe('a');
     });
   });
+
+  describe('clearHighlights', () => {
+    it('invokes clearHighlight on every registered item without moving focus', () => {
+      const list = build();
+      const clearA = vi.fn();
+      const clearB = vi.fn();
+      const a = makeItem('a');
+      const b = makeItem('b');
+      list.registerItem({ ...a, clearHighlight: clearA });
+      list.registerItem({ ...b, clearHighlight: clearB });
+
+      a.host.focus();
+      list.clearHighlights();
+
+      expect(clearA).toHaveBeenCalledTimes(1);
+      expect(clearB).toHaveBeenCalledTimes(1);
+      // Clearing the highlight must not move DOM focus.
+      expect(document.activeElement?.id).toBe('a');
+    });
+
+    it('tolerates handles without the optional clearHighlight hook', () => {
+      const list = build();
+      list.registerItem(makeItem('a'));
+      expect(() => list.clearHighlights()).not.toThrow();
+    });
+  });
 });

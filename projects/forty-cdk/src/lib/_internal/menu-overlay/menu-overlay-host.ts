@@ -91,6 +91,10 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     this._overlay.handleTypeahead(event);
   }
 
+  clearItemHighlights(): void {
+    this._overlay.clearItemHighlights();
+  }
+
   focusFirstEnabledItem(): boolean {
     return this._overlay.focusFirstEnabledItem();
   }
