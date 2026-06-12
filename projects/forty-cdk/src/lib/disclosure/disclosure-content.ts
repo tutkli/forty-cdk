@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { injectDisclosureContext } from './disclosure-context';
 
@@ -25,4 +25,8 @@ import { injectDisclosureContext } from './disclosure-context';
 })
 export class ForDisclosureContent {
   protected readonly ctx = injectDisclosureContext('ForDisclosureContent');
+
+  constructor() {
+    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+  }
 }

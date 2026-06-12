@@ -1,16 +1,8 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { injectHasFocusableContent } from '../_internal/focusable-content/focusable-content';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { injectTabsContext } from './tabs-context';
 
 /**
@@ -45,7 +37,6 @@ import { injectTabsContext } from './tabs-context';
 })
 export class ForTabsContent {
   protected readonly group = injectTabsContext('ForTabsContent');
-  readonly #idGen = inject(IdGenerator);
 
   readonly value = input.required<string>();
 
@@ -62,7 +53,7 @@ export class ForTabsContent {
     transform: (value: unknown) => (value == null ? null : booleanAttribute(value)),
   });
 
-  readonly id = signal(this.#idGen.next('for-tabs-content')).asReadonly();
+  readonly id = hostId('for-tabs-content');
 
   readonly #hasFocusableContent = injectHasFocusableContent();
 

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   emitVetoableEvent,
@@ -268,12 +269,22 @@ export class ForPopover implements ForPopoverContext {
   });
 
   registerTrigger(el: HTMLElement): void {
+    adoptHostId(el, this.triggerId);
     this.#triggerEl.set(el);
   }
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
     }
+  }
+
+  /**
+   * Adopts a consumer-set static `id` on the `[forPopoverContent]` host into
+   * `contentId` (preserving anchors / external `aria-labelledby` references)
+   * instead of letting the `[id]` host binding clobber it.
+   */
+  adoptContentId(el: HTMLElement): void {
+    adoptHostId(el, this.contentId);
   }
 
   registerAnchor(el: HTMLElement): void {

@@ -1,5 +1,6 @@
 import { computed, Directive, inject, signal } from '@angular/core';
 
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
@@ -129,10 +130,7 @@ export class ForField implements ForFieldContext {
     // the control nominates a distinct labelled element it carries its own
     // `labelledElementId`, which `controlId` prefers — so a wrapper-host id, if
     // any, is harmlessly ignored there.
-    const existing = handle.host.getAttribute('id');
-    if (existing) {
-      this.#controlId.set(existing);
-    }
+    adoptHostId(handle.host, this.#controlId);
   }
 
   /** Remove a previously registered control. */

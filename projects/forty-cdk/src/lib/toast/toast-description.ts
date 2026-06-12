@@ -1,7 +1,7 @@
 import { afterEveryRender, Directive, ElementRef, inject, signal } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { resolveHostId } from '../_internal/host-id/host-id';
 import { injectToastContext, type ForToastTextHandle } from './toast-context';
 
 /**
@@ -18,7 +18,7 @@ import { injectToastContext, type ForToastTextHandle } from './toast-context';
 export class ForToastDescription {
   readonly #ctx = injectToastContext('ForToastDescription');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  protected readonly id = inject(IdGenerator).next('for-toast-description');
+  protected readonly id = resolveHostId(this.#host.nativeElement, 'for-toast-description');
   readonly #text = signal('');
 
   constructor() {

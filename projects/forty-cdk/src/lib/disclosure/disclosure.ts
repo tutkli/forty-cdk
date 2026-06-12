@@ -1,5 +1,6 @@
 import { booleanAttribute, Directive, inject, input, model, signal } from '@angular/core';
 
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { FOR_DISCLOSURE_CONTEXT, type ForDisclosureContext } from './disclosure-context';
 
@@ -44,8 +45,25 @@ export class ForDisclosure implements ForDisclosureContext {
   /** When true, click on the trigger is ignored and `data-disabled` is reflected. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly triggerId = signal(this.#idGen.next('for-disclosure-trigger')).asReadonly();
-  readonly contentId = signal(this.#idGen.next('for-disclosure-content')).asReadonly();
+  readonly #triggerId = signal(this.#idGen.next('for-disclosure-trigger'));
+  readonly #contentId = signal(this.#idGen.next('for-disclosure-content'));
+
+  readonly triggerId = this.#triggerId.asReadonly();
+  readonly contentId = this.#contentId.asReadonly();
+
+  /**
+   * Adopts a consumer-set static `id` on the `[forDisclosureTrigger]` host into
+   * `triggerId` (preserving anchors / external `aria-labelledby` references /
+   * label `for`) instead of letting the `[id]` host binding clobber it.
+   */
+  adoptTriggerId(el: HTMLElement): void {
+    adoptHostId(el, this.#triggerId);
+  }
+
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void {
+    adoptHostId(el, this.#contentId);
+  }
 
   toggle(): void {
     if (this.disabled()) {

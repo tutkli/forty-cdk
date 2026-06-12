@@ -23,6 +23,7 @@ import {
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
@@ -484,6 +485,7 @@ export class ForDatePicker<D>
   }
 
   registerTrigger(el: HTMLElement): void {
+    adoptHostId(el, this.triggerId);
     this.#triggerEl.set(el);
   }
   unregisterTrigger(el: HTMLElement): void {
@@ -493,6 +495,7 @@ export class ForDatePicker<D>
   }
 
   registerContent(el: HTMLElement): void {
+    adoptHostId(el, this.contentId);
     this.#contentEl.set(el);
   }
   unregisterContent(el: HTMLElement): void {

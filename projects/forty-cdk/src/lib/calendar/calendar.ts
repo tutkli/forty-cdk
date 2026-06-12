@@ -17,6 +17,7 @@ import {
   type DateAdapter,
   injectDateAdapter,
 } from '../_internal/date-adapter/date-adapter';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -185,7 +186,17 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     );
   });
 
-  readonly headingId = signal(this.#idGen.next('for-calendar-heading')).asReadonly();
+  readonly #headingId = signal(this.#idGen.next('for-calendar-heading'));
+  readonly headingId = this.#headingId.asReadonly();
+
+  /**
+   * Adopts a consumer-set static `id` on the `[forCalendarHeading]` host into
+   * `headingId` (the grid's `aria-labelledby` resolves to it) instead of
+   * letting the `[id]` host binding clobber it.
+   */
+  adoptHeadingId(el: HTMLElement): void {
+    adoptHostId(el, this.#headingId);
+  }
 
   readonly visibleMonthLabel = computed(() =>
     this.adapter.format(this.visibleMonth(), { month: 'long', year: 'numeric' }),

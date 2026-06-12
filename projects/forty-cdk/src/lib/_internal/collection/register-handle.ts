@@ -1,6 +1,6 @@
-import { afterNextRender, DestroyRef, inject, signal, type Signal } from '@angular/core';
+import { afterNextRender, DestroyRef, ElementRef, inject, signal, type Signal } from '@angular/core';
 
-import { IdGenerator } from '../id-generator/id-generator';
+import { resolveHostId } from '../host-id/host-id';
 import type { Collection } from './collection';
 
 /**
@@ -138,11 +138,18 @@ export interface A11yDescriptionOwner {
  * readonly id = registerA11yName(this.#ctx, 'for-dialog-title');
  * ```
  *
+ * A consumer-set **static** `id` on the host is adopted (and registered as the
+ * accessible-name id) instead of being clobbered — the host element is read
+ * optionally, so the helper still works when invoked outside a directive host
+ * context (it falls back to a generated id). See {@link resolveHostId} for the
+ * static-only boundary.
+ *
  * Must be invoked in an injection context — internally calls `inject` for
- * `IdGenerator` and `DestroyRef`.
+ * `ElementRef`, `IdGenerator`, and `DestroyRef`.
  */
 export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<string> {
-  const id = inject(IdGenerator).next(prefix);
+  const host = inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
+  const id = resolveHostId(host, prefix);
   registerHandle(
     id,
     (myId) => owner.registerLabel(myId),
@@ -153,13 +160,15 @@ export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<
 
 /**
  * Counterpart to {@link registerA11yName} for `aria-describedby`. See that
- * function for the rationale and usage.
+ * function for the rationale and usage — including the consumer-set static
+ * `id` adoption.
  */
 export function registerA11yDescription(
   owner: A11yDescriptionOwner,
   prefix: string,
 ): Signal<string> {
-  const id = inject(IdGenerator).next(prefix);
+  const host = inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
+  const id = resolveHostId(host, prefix);
   registerHandle(
     id,
     (myId) => owner.registerDescription(myId),

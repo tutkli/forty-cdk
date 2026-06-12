@@ -19,6 +19,7 @@ import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   moveIndex,
@@ -557,6 +558,7 @@ export class ForCombobox<T = string>
   }
 
   registerInput(el: HTMLInputElement): void {
+    adoptHostId(el, this.inputId);
     this.#inputEl.set(el);
   }
   unregisterInput(el: HTMLInputElement): void {
@@ -590,6 +592,7 @@ export class ForCombobox<T = string>
   }
 
   registerContent(el: HTMLElement): void {
+    adoptHostId(el, this.contentId);
     this.#contentEl.set(el);
   }
   unregisterContent(el: HTMLElement): void {
@@ -599,6 +602,7 @@ export class ForCombobox<T = string>
   }
 
   registerList(el: HTMLElement): void {
+    adoptHostId(el, this.listId);
     this.#listEl.set(el);
   }
   unregisterList(el: HTMLElement): void {

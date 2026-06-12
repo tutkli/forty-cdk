@@ -1,15 +1,7 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTabsContext } from './tabs-context';
 
@@ -47,12 +39,11 @@ import { injectTabsContext } from './tabs-context';
 export class ForTabsTrigger {
   protected readonly group = injectTabsContext('ForTabsTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #idGen = inject(IdGenerator);
 
   readonly value = input.required<string>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly id = signal(this.#idGen.next('for-tabs-trigger')).asReadonly();
+  readonly id = hostId('for-tabs-trigger');
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());

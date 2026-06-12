@@ -50,6 +50,10 @@ export interface ForAccordionItemContext {
   readonly value: Signal<string>;
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
+  /** Adopts a consumer-set static `id` on the trigger host into `triggerId`. */
+  adoptTriggerId(el: HTMLElement): void;
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void;
   toggle(): void;
 }
 

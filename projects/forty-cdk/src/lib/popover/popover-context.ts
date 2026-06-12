@@ -50,6 +50,8 @@ export interface ForPopoverContext {
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+  /** Adopts a consumer-set static `id` on the content host into `contentId`. */
+  adoptContentId(el: HTMLElement): void;
   registerAnchor(el: HTMLElement): void;
   unregisterAnchor(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
