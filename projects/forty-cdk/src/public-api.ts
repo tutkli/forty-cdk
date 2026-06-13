@@ -55,3 +55,4 @@ export * from './lib/calendar';
 export * from './lib/date-field';
 export * from './lib/date-picker';
 export * from './lib/time-field';
+export * from './lib/carousel';
