@@ -148,6 +148,7 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       ref.close();
       await ref.closed;
+      TestBed.tick();
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
 
@@ -174,6 +175,7 @@ describe('ForDrawerManager (programmatic)', () => {
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
       ref.close();
       await ref.closed;
+      TestBed.tick();
       expect(document.activeElement).toBe(trigger);
     });
 
@@ -185,6 +187,7 @@ describe('ForDrawerManager (programmatic)', () => {
       });
       ref.close();
       await ref.closed;
+      TestBed.tick();
       expect(document.activeElement).not.toBe(trigger);
     });
 
@@ -310,6 +313,7 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.body.style.overflow).toBe('hidden');
       ref.close();
       await ref.closed;
+      TestBed.tick();
       expect(document.body.style.overflow).toBe('');
     });
 
@@ -463,6 +467,7 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       ref.close();
       await ref.closed;
+      TestBed.tick();
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
 
@@ -666,6 +671,70 @@ describe('ForDrawerManager (programmatic)', () => {
       drawers.open(SheetDrawer, { data: { message: 'x' } });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(host.className).toBe('');
+    });
+  });
+
+  describe('exit-animation / control-flow contract (#677)', () => {
+    it('isClosed() flips true and closed promise resolves immediately on close', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
+
+      expect(ref.isClosed()).toBe(false);
+      ref.close();
+      expect(ref.isClosed()).toBe(true);
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+    });
+
+    it('host is removed from document.body after a CD cycle (one TestBed.tick)', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+
+    it('closing one of N drawers leaves the others mounted', async () => {
+      const { drawers } = setup();
+      const a = drawers.open(SheetDrawer, { data: { message: 'a' } });
+      const b = drawers.open(SheetDrawer, { data: { message: 'b' } });
+
+      a.close();
+      await a.closed;
+      TestBed.tick();
+
+      expect(a.isClosed()).toBe(true);
+      expect(b.isClosed()).toBe(false);
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
+
+      b.close();
+    });
+
+    it('zoneless open + close (provideZonelessChangeDetection)', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+
+    it('accepts animateEnter / animateLeave config and mounts', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        animateEnter: 'drawer-in',
+        animateLeave: 'drawer-out',
+      });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
     });
   });
 });

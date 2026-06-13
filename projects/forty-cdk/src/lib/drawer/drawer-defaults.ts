@@ -74,6 +74,18 @@ export interface ForDrawerDefaults {
    * amount when its child opens).
    */
   nestedTranslateYpx?: number;
+  /**
+   * CSS class applied (via `animate.enter`) to the programmatic overlay host
+   * when it mounts, so it plays an enter animation. The class lands on the
+   * `[forDrawer]` host that also carries the consumer `class`. No default.
+   */
+  animateEnter?: string;
+  /**
+   * CSS class applied to the programmatic overlay host when `close()` is
+   * called, kept on the still-mounted host until its CSS animations finish so
+   * an exit transition plays before teardown. No default (close is immediate).
+   */
+  animateLeave?: string;
 }
 
 const FALLBACK: ForDrawerDefaults = {

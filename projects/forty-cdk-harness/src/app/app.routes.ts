@@ -7,6 +7,16 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/dialog.fixture').then((m) => m.DialogFixture),
   },
   {
+    path: 'dialog-programmatic',
+    loadComponent: () =>
+      import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),
+  },
+  {
+    path: 'drawer-programmatic',
+    loadComponent: () =>
+      import('./fixtures/drawer-programmatic.fixture').then((m) => m.DrawerProgrammaticFixture),
+  },
+  {
     path: 'accordion',
     loadComponent: () => import('./fixtures/accordion.fixture').then((m) => m.AccordionFixture),
   },
@@ -93,9 +103,7 @@ export const routes: Routes = [
   {
     path: 'overlay-inside-dialog',
     loadComponent: () =>
-      import('./fixtures/overlay-inside-dialog.fixture').then(
-        (m) => m.OverlayInsideDialogFixture,
-      ),
+      import('./fixtures/overlay-inside-dialog.fixture').then((m) => m.OverlayInsideDialogFixture),
   },
   {
     path: 'pane-resizer',
