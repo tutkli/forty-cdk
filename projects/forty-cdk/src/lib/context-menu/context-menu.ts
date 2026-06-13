@@ -20,7 +20,7 @@ import type {
   VetoableEvent,
   VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
+import { FOR_MENU_CONTEXT, type ForMenuContext } from '../_internal/menu-overlay/menu-context';
 import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
 import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
 

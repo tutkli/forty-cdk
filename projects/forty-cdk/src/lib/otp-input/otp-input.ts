@@ -18,7 +18,7 @@ import {
 import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 
 import { FOR_FIELD_CONTEXT, type FieldControlHandle } from '../_internal/field/field-wiring';
-import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
+import { FOR_FIELDSET_CONTEXT } from '../_internal/fieldset/fieldset-context';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 

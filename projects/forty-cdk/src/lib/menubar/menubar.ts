@@ -20,7 +20,7 @@ import {
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import { FOR_MENU_CONTEXT } from '../menu/menu-context';
+import { FOR_MENU_CONTEXT } from '../_internal/menu-overlay/menu-context';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,

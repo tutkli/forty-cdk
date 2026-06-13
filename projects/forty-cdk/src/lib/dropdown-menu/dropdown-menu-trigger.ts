@@ -11,7 +11,7 @@ import {
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import { FOR_MENU_CONTEXT, type ForMenuContext } from '../menu/menu-context';
+import { FOR_MENU_CONTEXT, type ForMenuContext } from '../_internal/menu-overlay/menu-context';
 
 /**
  * Resolves the trigger's menu root: the explicit reference when the
