@@ -216,6 +216,50 @@ Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[
 
 The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
 
+## Range selection
+
+Set `selectionMode="range"` on both the picker root and the projected calendar and bind `[(range)]` to a `CalendarDateRange<D> | null` signal.
+
+```ts
+import { type CalendarDateRange } from 'forty-cdk';
+
+readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
+```
+
+```html
+<div
+  forDatePicker
+  selectionMode="range"
+  [(range)]="dateRange"
+  [(open)]="open"
+  [ariaLabel]="'Choose date range'"
+>
+  <button forDatePickerTrigger>
+    <span forDatePickerValue [placeholder]="'Pick a range'"></span>
+  </button>
+
+  @if (open()) {
+    <div forDatePickerContent>
+      <div forCalendar selectionMode="range" [(range)]="dateRange">
+        <!-- …header + grid… -->
+      </div>
+    </div>
+  }
+</div>
+```
+
+**`formattedValue` in range mode.** `[forDatePickerValue]` renders `start – end` using the adapter's `format` for each endpoint. The separator defaults to `' – '` and is configurable via `[rangeSeparator]`.
+
+**`closeOnSelect` in range mode.** The surface closes when a full range is committed (both endpoints set). Clicking the first cell (anchor) keeps the surface open; clicking the second (end) commits and closes. Set `[closeOnSelect]="false"` to keep it open after commit.
+
+**v1 scope.** Range mode is day-granular only (`granularity` / time is not supported in v1). The `[(range)]` model is not a `FormValueControl` target — it does not integrate with `[formField]` in v1. `minRangeLength` / `maxRangeLength` are configured on the projected `[forCalendar]` directly.
+
+| New input / model  | Type                                       | Description                                                                                                    |
+| ------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `selectionMode`    | `input<'single' \| 'range'>`               | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                                  |
+| `range`            | `model<CalendarDateRange<D> \| null>`      | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`.                |
+| `rangeSeparator`   | `input<string>`                            | String placed between start and end in the formatted display. Default `' – '`.                                 |
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

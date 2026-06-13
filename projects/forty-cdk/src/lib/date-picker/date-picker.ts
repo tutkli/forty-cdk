@@ -34,6 +34,7 @@ import {
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { ForCalendar } from '../calendar/calendar';
+import type { CalendarDateRange } from '../calendar/calendar-context';
 import { ForTimeField } from '../time-field/time-field';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
@@ -218,6 +219,29 @@ export class ForDatePicker<D>
   /** Text rendered by `[forDatePickerValue]` when no date is selected. */
   readonly placeholder = input<string>('');
 
+  /**
+   * Selection mode. `'single'` (default) keeps the existing single-date
+   * `[(value)]` and `FormValueControl<D | null>` behaviour unchanged.
+   * `'range'` switches to the two-click anchor → commit flow and exposes the
+   * result through `[(range)]`. Range mode is day-granular and ignores
+   * `granularity` / time. Range is not a Signal Forms value in v1.
+   */
+  readonly selectionMode = input<'single' | 'range'>('single');
+
+  /**
+   * Two-way bindable committed date range, or `null`. Only used when
+   * `selectionMode="range"`. The `model()` change emitter (`(rangeChange)`)
+   * fires only when the picker internally commits or clears a range, never on
+   * consumer writes via `[(range)]`.
+   */
+  readonly range = model<CalendarDateRange<D> | null>(null);
+
+  /**
+   * Separator rendered between start and end in `[forDatePickerValue]` while
+   * in `selectionMode="range"`. Default `' – '` (en-dash with spaces).
+   */
+  readonly rangeSeparator = input<string>(' – ');
+
   /** Side the surface is anchored to. Defaults to `'bottom'`. Ignored in `modal` mode. */
   readonly side = input<FloatingSide | undefined>('bottom');
 
@@ -317,6 +341,18 @@ export class ForDatePicker<D>
 
   /** Formatted current value via the adapter, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
+    if (this.selectionMode() === 'range') {
+      const r = this.range();
+      if (r === null) {
+        return null;
+      }
+      const fmtOpts = this.#effectiveFormatOptions();
+      return (
+        this.adapter.format(r.start, fmtOpts) +
+        this.rangeSeparator() +
+        this.adapter.format(r.end, fmtOpts)
+      );
+    }
     const value = this.value();
     return value === null ? null : this.adapter.format(value, this.#effectiveFormatOptions());
   });
@@ -390,10 +426,11 @@ export class ForDatePicker<D>
     });
 
     // Calendar selection bridge. This `effect` does no state derivation — it
-    // only (re)subscribes to the projected calendar's `valueChange` as the
-    // surface mounts / unmounts. The writes happen asynchronously in the
-    // subscription callback (a discrete selection event), exactly like a click
-    // handler, never during the effect's reactive computation.
+    // only (re)subscribes to the projected calendar's `valueChange` or
+    // `rangeChange` as the surface mounts / unmounts. The writes happen
+    // asynchronously in the subscription callback (a discrete selection event),
+    // exactly like a click handler, never during the effect's reactive
+    // computation.
     effect((onCleanup) => {
       const calendar = this.calendar();
       if (!calendar) {
@@ -404,6 +441,22 @@ export class ForDatePicker<D>
           '[forty-cdk/date-picker] The projected ForCalendar must use the same DateAdapter as the ForDatePicker.',
         );
       }
+
+      if (this.selectionMode() === 'range') {
+        const sub = (calendar as ForCalendar<D>).range.subscribe((next) => {
+          if (this.readonly() || this.effectiveDisabled()) {
+            return;
+          }
+          this.range.set(next as CalendarDateRange<D> | null);
+          this.markTouched();
+          if (next !== null && this.closeOnSelect()) {
+            this.close();
+          }
+        });
+        onCleanup(() => sub.unsubscribe());
+        return;
+      }
+
       const sub = calendar.value.subscribe((date) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;

@@ -8,6 +8,7 @@ export { ForCalendarNextButton } from './calendar-next-button';
 export {
   FOR_CALENDAR_CONTEXT,
   type CalendarDateLabelFormatter,
+  type CalendarDateRange,
   type ForCalendarContext,
   type ForCalendarCellHandle,
   type CalendarWeek,

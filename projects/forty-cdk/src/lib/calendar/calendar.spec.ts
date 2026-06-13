@@ -11,7 +11,7 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
-import type { CalendarDateLabelFormatter } from './calendar-context';
+import type { CalendarDateLabelFormatter, CalendarDateRange } from './calendar-context';
 import {
   InternationalizedDateAdapter,
   InternationalizedDateTimeAdapter,
@@ -185,6 +185,45 @@ class DateTimeCalendarHost {
 })
 class DayOnlyCalendarHost {
   readonly value = signal<CalendarDate | null>(new CalendarDate(2026, 6, 15));
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forCalendar
+      selectionMode="range"
+      [(range)]="range"
+      [minRangeLength]="minRangeLength()"
+      [maxRangeLength]="maxRangeLength()"
+      [min]="min()"
+      [max]="max()"
+      [isDateUnavailable]="unavailable()"
+    >
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date" [attr.data-testid]="'cell-' + cell.key">
+                  {{ cell.label }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarRangeHost {
+  readonly range = signal<CalendarDateRange<Date> | null>(null);
+  readonly minRangeLength = signal<number | null>(null);
+  readonly maxRangeLength = signal<number | null>(null);
+  readonly min = signal<Date | null>(null);
+  readonly max = signal<Date | null>(null);
+  readonly unavailable = signal<(date: Date) => boolean>(() => false);
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
@@ -621,6 +660,257 @@ describe('ForCalendar', () => {
       expect(janCell).toBeTruthy();
       expect(janCell.getAttribute('aria-selected')).toBe('true');
       expect(tabbableCells(r)[0]).toBe(janCell);
+    });
+  });
+
+  describe('range mode', () => {
+    const rangeCell = (r: RenderResult<CalendarRangeHost>, date: Date) =>
+      r.query<HTMLElement>(`[data-testid="cell-${keyOf(date)}"]`)!;
+
+    const click = (el: HTMLElement) =>
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const JUN_10 = new Date(2026, 5, 10);
+    const JUN_15 = new Date(2026, 5, 15);
+    const JUN_20 = new Date(2026, 5, 20);
+
+    it('anchor → commit: sets range, emits data-range-start/end/in-range', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(range).not.toBeNull();
+      expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
+      expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
+      expect(compareDateOf(adapter, range!.start, range!.end)).toBeLessThanOrEqual(0);
+
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-in-range')).toBe(true);
+      expect(rangeCell(r, JUN_10).hasAttribute('data-in-range')).toBe(true);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-in-range')).toBe(true);
+    });
+
+    it('committed range: aria-selected is true across the band', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+
+      for (let d = 10; d <= 15; d++) {
+        const c = rangeCell(r, new Date(2026, 5, d));
+        expect(c.getAttribute('aria-selected')).toBe('true');
+      }
+      expect(rangeCell(r, new Date(2026, 5, 9)).getAttribute('aria-selected')).toBe('false');
+      expect(rangeCell(r, new Date(2026, 5, 16)).getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('hover preview: data-range-preview spans anchor→hovered inclusive while selecting', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+
+      rangeCell(r, JUN_20).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 15)).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, JUN_20).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, JUN_10).hasAttribute('data-in-range')).toBe(false);
+
+      rangeCell(r, JUN_20).dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      await flush(r.fixture);
+      expect(rangeCell(r, JUN_20).hasAttribute('data-range-preview')).toBe(false);
+    });
+
+    it('data-in-range and data-range-preview are mutually exclusive', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      rangeCell(r, JUN_15).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      const mid = rangeCell(r, new Date(2026, 5, 12));
+      expect(mid.hasAttribute('data-range-preview')).toBe(true);
+      expect(mid.hasAttribute('data-in-range')).toBe(false);
+
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+      expect(mid.hasAttribute('data-range-preview')).toBe(false);
+      expect(mid.hasAttribute('data-in-range')).toBe(true);
+    });
+
+    it('re-anchor: clicking before the anchor starts over', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(false);
+    });
+
+    it('keyboard: Enter sets anchor, arrows move preview, Enter commits', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      const startCell = rangeCell(r, JUN_10);
+      pressKey(startCell, 'Enter');
+      await flush(r.fixture);
+      expect(r.instance.range()).toBeNull();
+      expect(startCell.hasAttribute('data-range-start')).toBe(true);
+
+      pressKey(startCell, 'ArrowRight');
+      await flush(r.fixture);
+      pressKey(rangeCell(r, new Date(2026, 5, 11)), 'ArrowRight');
+      await flush(r.fixture);
+
+      const endCell = rangeCell(r, new Date(2026, 5, 12));
+      pressKey(endCell, 'Enter');
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(range).not.toBeNull();
+      expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
+      expect(adapter.isSameDay(range!.end, new Date(2026, 5, 12))).toBe(true);
+    });
+
+    it('maxRangeLength: clicking past the limit is a no-op, anchor is preserved', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.maxRangeLength.set(3);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      click(rangeCell(r, new Date(2026, 5, 15)));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+    });
+
+    it('maxRangeLength: a valid-length click commits', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.maxRangeLength.set(3);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      click(rangeCell(r, new Date(2026, 5, 12)));
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(range).not.toBeNull();
+      expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
+      expect(adapter.isSameDay(range!.end, new Date(2026, 5, 12))).toBe(true);
+    });
+
+    it('minRangeLength: clicking too close to anchor is a no-op', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.minRangeLength.set(5);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      click(rangeCell(r, new Date(2026, 5, 11)));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+    });
+
+    it('minRangeLength: a sufficient-length click commits', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.minRangeLength.set(3);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      click(rangeCell(r, new Date(2026, 5, 12)));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).not.toBeNull();
+    });
+
+    it('unavailable date cannot be an anchor', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.unavailable.set((d) => adapter.isSameDay(d, JUN_15));
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-start')).toBe(false);
+    });
+
+    it('out-of-bounds date (min) cannot be an anchor', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.min.set(JUN_15);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(false);
+    });
+
+    describe('zoneless', () => {
+      it('range selection works under provideZonelessChangeDetection', async () => {
+        const r = renderHost(CalendarRangeHost);
+
+        click(rangeCell(r, JUN_10));
+        await flush(r.fixture);
+        click(rangeCell(r, JUN_15));
+        await flush(r.fixture);
+
+        const range = r.instance.range();
+        expect(range).not.toBeNull();
+        expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
+        expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
+        expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+        expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(true);
+      });
+    });
+  });
+
+  describe('single mode unchanged (regression)', () => {
+    it('range facets are absent in default single mode', () => {
+      const r = renderHost(CalendarHost);
+      const all = r.queryAll('[role="gridcell"]');
+      for (const td of all) {
+        expect(td.hasAttribute('data-range-start')).toBe(false);
+        expect(td.hasAttribute('data-range-end')).toBe(false);
+        expect(td.hasAttribute('data-in-range')).toBe(false);
+        expect(td.hasAttribute('data-range-preview')).toBe(false);
+      }
+    });
+
+    it('single-mode value and data-selected are unchanged', async () => {
+      const r = renderHost(CalendarHost);
+      const JUN_15 = new Date(2026, 5, 15);
+      const target = cell(r, new Date(2026, 5, 20));
+
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(target.getAttribute('aria-selected')).toBe('true');
+      expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('false');
+      expect(target.hasAttribute('data-selected')).toBe(true);
     });
   });
 

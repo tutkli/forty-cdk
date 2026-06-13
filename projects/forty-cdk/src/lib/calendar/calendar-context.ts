@@ -3,6 +3,19 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 
+/**
+ * An inclusive date range where `start <= end` (day-granular). Used by
+ * `ForCalendar` and `ForDatePicker` in `selectionMode="range"`.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface CalendarDateRange<D> {
+  /** Inclusive start of the range. */
+  readonly start: D;
+  /** Inclusive end of the range (`>= start`). */
+  readonly end: D;
+}
+
 /** A weekday column header in the calendar grid. */
 export interface CalendarWeekday {
   /** Stable key for `@for` tracking (the **0-6** weekday index as a string). */
@@ -115,6 +128,42 @@ export interface ForCalendarContext<D> {
   isUnavailable(date: D): boolean;
   /** The full accessible date string for `date`'s gridcell (`aria-label`). */
   getDateLabel(date: D): string;
+
+  /**
+   * The active selection mode. `'single'` (default) keeps the existing
+   * single-date behaviour; `'range'` enables the two-click anchor → commit flow.
+   */
+  readonly selectionMode: Signal<'single' | 'range'>;
+
+  /**
+   * Whether `date` is the start of the effective range (committed when idle,
+   * preview when a selection is in progress).
+   */
+  isRangeStart(date: D): boolean;
+
+  /**
+   * Whether `date` is the end of the effective range (committed when idle,
+   * preview when a selection is in progress).
+   */
+  isRangeEnd(date: D): boolean;
+
+  /**
+   * Whether `date` falls within the **committed** range, inclusive (idle state
+   * only; mutually exclusive with `isRangePreview`).
+   */
+  isInRange(date: D): boolean;
+
+  /**
+   * Whether `date` falls within the **preview** band, inclusive (selecting
+   * state only; mutually exclusive with `isInRange`).
+   */
+  isRangePreview(date: D): boolean;
+
+  /**
+   * Update the pointer-hovered date for the range preview. Ignored in
+   * `selectionMode='single'`. Pass `null` on `pointerleave`.
+   */
+  setHovered(date: D | null): void;
 
   /** Select `date`, unless the calendar is disabled / read-only or the date is unavailable. */
   selectDate(date: D): void;

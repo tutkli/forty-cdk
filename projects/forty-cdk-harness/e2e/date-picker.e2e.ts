@@ -99,3 +99,36 @@ test.describe('DatePicker', () => {
     await expectFocused(el(page, 'trigger'));
   });
 });
+
+test.describe('DatePicker — range', () => {
+  test('committing a range closes the surface and the trigger shows the formatted range', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'date-picker', { range: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'cell-2026-6-10').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'cell-2026-6-20').click();
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expectFocused(el(page, 'trigger'));
+
+    await expect(el(page, 'trigger')).toContainText('June 10, 2026');
+    await expect(el(page, 'trigger')).toContainText('June 20, 2026');
+  });
+
+  test('mid-selection anchor click keeps surface open and shows no range text yet', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'date-picker', { range: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'cell-2026-6-10').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await expect(el(page, 'trigger')).toHaveText('Pick a range');
+  });
+});
