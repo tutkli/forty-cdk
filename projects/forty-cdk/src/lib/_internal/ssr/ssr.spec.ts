@@ -68,6 +68,14 @@ import { ForSelectOption } from '../../select/select-option';
 import { ForSelectTrigger } from '../../select/select-trigger';
 import { ForSelectValue } from '../../select/select-value';
 import { ForSwitch } from '../../switch/switch';
+import { ForCarousel } from '../../carousel/carousel';
+import { ForCarouselIndicator } from '../../carousel/carousel-indicator';
+import { ForCarouselIndicators } from '../../carousel/carousel-indicators';
+import { ForCarouselNext } from '../../carousel/carousel-next';
+import { ForCarouselPrevious } from '../../carousel/carousel-previous';
+import { ForCarouselSlide } from '../../carousel/carousel-slide';
+import { ForCarouselTrack } from '../../carousel/carousel-track';
+import { ForCarouselViewport } from '../../carousel/carousel-viewport';
 import { ForTabs } from '../../tabs/tabs';
 import { ForTabsContent } from '../../tabs/tabs-content';
 import { ForTabsList } from '../../tabs/tabs-list';
@@ -160,6 +168,36 @@ class AccordionFixture {}
   `,
 })
 class TabsFixture {}
+
+@Component({
+  imports: [
+    ForCarousel,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+    ForCarouselPrevious,
+    ForCarouselNext,
+    ForCarouselIndicators,
+    ForCarouselIndicator,
+  ],
+  template: `
+    <div forCarousel ariaLabel="Examples">
+      <button forCarouselPrevious aria-label="Previous">&#x2039;</button>
+      <div forCarouselViewport>
+        <div forCarouselTrack>
+          <div forCarouselSlide>One</div>
+          <div forCarouselSlide>Two</div>
+        </div>
+      </div>
+      <button forCarouselNext aria-label="Next">&#x203a;</button>
+      <div forCarouselIndicators ariaLabel="Choose slide">
+        <button forCarouselIndicator></button>
+        <button forCarouselIndicator></button>
+      </div>
+    </div>
+  `,
+})
+class CarouselFixture {}
 
 @Component({
   imports: [ForSwitch],
@@ -473,6 +511,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
   TabsFixture,
+  CarouselFixture,
   SwitchFixture,
   CheckboxFixture,
   RadioFixture,
@@ -647,6 +686,20 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('Carousel renders aria-roledescription on root and each slide server-side', () => {
+    const f = TestBed.createComponent(CarouselFixture);
+    f.detectChanges();
+    const carouselRoot = f.nativeElement.querySelector('[forCarousel]') as HTMLElement;
+    expect(carouselRoot.getAttribute('aria-roledescription')).toBe('carousel');
+    const slides = f.nativeElement.querySelectorAll(
+      '[forCarouselSlide]',
+    ) as NodeListOf<HTMLElement>;
+    expect(slides.length).toBe(2);
+    slides.forEach((s) => {
+      expect(s.getAttribute('aria-roledescription')).toBe('slide');
+    });
   });
 
   it('BodyScrollLock is a no-op on the server', () => {
