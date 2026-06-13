@@ -1,10 +1,11 @@
 import {
-  afterEveryRender,
   booleanAttribute,
   computed,
   Directive,
+  effect,
   inject,
   input,
+  linkedSignal,
   model,
   numberAttribute,
   output,
@@ -46,6 +47,22 @@ import {
   type ForSelectOptionHandle,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
+
+/** Sentinel for an option handle whose `input.required` `[value]` is not yet written. */
+const NO_VALUE = Symbol('forty-cdk/select:no-value');
+
+/**
+ * NG0950 — `RuntimeError(-950)` — is thrown when an `input.required` is read
+ * before its binding is written. Detected via the stable numeric `code` rather
+ * than the message text (which is stripped in production builds).
+ */
+function isRequiredInputUnset(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as Error & { code?: unknown }).code;
+  return typeof code === 'number' && Math.abs(code) === 950;
+}
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -308,24 +325,58 @@ export class ForSelect<T = string>
   readonly options = this.#items.items;
 
   /**
-   * Snapshot of the last non-empty option set, used by closed-state typeahead
+   * Persisted snapshot of the registered options as `{ value, label }` tuples,
+   * keyed internally by serialized form value. Drives closed-state typeahead
    * and `[forSelectValue]` label rendering — the live `#items` registry is
-   * empty whenever `[forSelectContent]` is unmounted. Updated by an
-   * `afterEveryRender` hook (reading `textContent` reliably requires a
-   * post-render phase; an effect or linkedSignal would race with text-node
-   * commits).
+   * empty whenever `[forSelectContent]` is unmounted, so the snapshot carries
+   * the last non-empty option set across close → re-open cycles.
+   *
+   * A `linkedSignal` that folds the live option set on every `#items.items()`
+   * change: when the listbox unmounts (`items().length === 0`) it returns the
+   * previous accumulator unchanged so labels stay resolvable while closed. Each
+   * option's `label` is itself a `Signal<string>`, so this never reads
+   * `textContent` from inside the fold — the canonical replacement for the
+   * previous `afterEveryRender(() => signal.set(...))` snapshot (no
+   * state-propagation inside an `effect`). A statically-rendered option that
+   * registers before its `[value]` binding is written is skipped this fold and
+   * folded in on the re-run the binding triggers (see {@link #readHandleValue}).
    */
-  readonly #cachedOptions = signal<readonly { value: T; label: string }[]>([]);
+  readonly #cachedOptions = linkedSignal<
+    readonly ForSelectOptionHandle<T>[],
+    readonly { value: T; label: string }[]
+  >({
+    source: () => this.#items.items(),
+    computation: (items, prev) => {
+      if (items.length === 0) {
+        return prev?.value ?? [];
+      }
+      const toFormValue = this.itemToFormValue();
+      const merged = new Map<string, { value: T; label: string }>();
+      for (const entry of prev?.value ?? []) {
+        merged.set(toFormValue(entry.value), entry);
+      }
+      for (const item of items) {
+        const value = this.#readHandleValue(item);
+        if (value === NO_VALUE) {
+          continue;
+        }
+        merged.set(toFormValue(value), { value, label: item.label() });
+      }
+      return [...merged.values()];
+    },
+  });
 
   /**
-   * Trimmed display labels of the selected values, in selection order.
+   * Trimmed display labels of the selected values, in selection order. Pure
+   * derivation: when `[itemToLabel]` is supplied it is authoritative; otherwise
+   * resolve from the persisted option snapshot, then the serialized form value
+   * so non-string items still render meaningfully on a cold cache.
    *
-   * Invariant: when no `[itemToLabel]` is supplied the label is read from the
-   * option host's `textContent` — a non-reactive source inside this `computed`.
-   * A label that changes its rendered text without a value change therefore
-   * self-heals only via the `#cachedOptions` snapshot, which the
-   * `afterEveryRender` hook re-warms each render. Supply `[itemToLabel]` for a
-   * pure signal derivation that observes label changes directly.
+   * The snapshot's labels come from each option's reactive `label` signal,
+   * which reads the rendered `textContent`. `textContent` is not a signal, so a
+   * label whose rendered text changes without a value change does not self-heal
+   * here — supply `[itemToLabel]` for a pure signal derivation that observes
+   * label changes directly.
    */
   readonly selectedLabels = computed<readonly string[]>(() => {
     const values = this.value();
@@ -340,18 +391,8 @@ export class ForSelect<T = string>
     if (itemToLabel) {
       return values.map(itemToLabel);
     }
-    // Otherwise resolve from the live option registry first so a pre-set value
-    // renders the option label as soon as `[forSelectOption]` registers, then
-    // the cached snapshot (warmed by `afterEveryRender`, used while the listbox
-    // is unmounted), then the serialized form value so non-string items still
-    // render meaningfully on a cold cache.
-    const items = this.#items.items();
     const cached = this.#cachedOptions();
     const toFormValue = this.itemToFormValue();
-    const liveByKey = new Map<string, ForSelectOptionHandle<T>>();
-    for (const o of items) {
-      liveByKey.set(toFormValue(o.value()), o);
-    }
     const cachedByKey = new Map<string, { value: T; label: string }>();
     for (const o of cached) {
       cachedByKey.set(toFormValue(o.value), o);
@@ -359,11 +400,6 @@ export class ForSelect<T = string>
     const labels: string[] = [];
     for (const v of values) {
       const key = toFormValue(v);
-      const live = liveByKey.get(key);
-      if (live) {
-        labels.push((live.host.textContent ?? '').trim());
-        continue;
-      }
       const opt = cachedByKey.get(key);
       labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : key);
     }
@@ -398,6 +434,28 @@ export class ForSelect<T = string>
     return this.triggerId();
   }
 
+  /**
+   * Read an option handle's `value()` inside the snapshot fold, tolerating the
+   * NG0950 thrown while a statically-rendered option is between registering
+   * (its constructor, during the content view's creation pass) and having its
+   * `input.required` `[value]` binding written (that view's update pass). The
+   * fold's prime read can run in that gap, so a static option above a `@for`
+   * list would otherwise hard-crash on open. Returns {@link NO_VALUE} in that
+   * window; the fold skips the option and folds it in on the re-run the binding
+   * triggers (the required-input producer is accessed before the read throws,
+   * so the dependency is still tracked). Any non-NG0950 error propagates.
+   */
+  #readHandleValue(item: ForSelectOptionHandle<T>): T | typeof NO_VALUE {
+    try {
+      return item.value();
+    } catch (error) {
+      if (isRequiredInputUnset(error)) {
+        return NO_VALUE;
+      }
+      throw error;
+    }
+  }
+
   constructor() {
     super();
     injectHiddenInput<T>({
@@ -407,30 +465,15 @@ export class ForSelect<T = string>
       disabled: this.effectiveDisabled,
     });
 
-    afterEveryRender(() => {
-      const items = this.#items.items();
-      if (items.length === 0) {
-        // Keep the previous snapshot when the listbox unmounts so closed-
-        // state typeahead and `[forSelectValue]` rendering still resolve.
-        return;
-      }
-      const next: { value: T; label: string }[] = new Array(items.length);
-      const cached = this.#cachedOptions();
-      let changed = cached.length !== items.length;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]!;
-        const value = item.value();
-        const label = (item.host.textContent ?? '').trim();
-        next[i] = { value, label };
-        if (!changed) {
-          const prev = cached[i]!;
-          if (prev.value !== value || prev.label !== label) {
-            changed = true;
-          }
-        }
-      }
-      if (changed) {
-        this.#cachedOptions.set(next);
+    // Prime the snapshot fold while the listbox is open so its `linkedSignal`
+    // `prev` slot is seeded with the live options before they unmount — closed-
+    // state typeahead and `[forSelectValue]` then resolve labels even when no
+    // `[forSelectValue]` pulls the cache during the open cycle. A read, not a
+    // write: this is a legitimate side effect (forcing the lazy fold to run),
+    // not state propagation inside an `effect`.
+    effect(() => {
+      if (this.open()) {
+        this.#cachedOptions();
       }
     });
   }

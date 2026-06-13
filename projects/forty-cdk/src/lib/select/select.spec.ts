@@ -1520,6 +1520,42 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('reactive option label snapshot', () => {
+    it('warms the closed-typeahead snapshot from the open cycle without a [forSelectValue]', async () => {
+      // No `[forSelectValue]` is present, so nothing pulls `selectedLabels`
+      // during the open cycle — the snapshot is warmed solely by the open-gated
+      // prime effect. Closed-state typeahead then resolves against it.
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      pressKey(trigger, 'c');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['cherry']);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('keeps resolving a selected label from the snapshot after the listbox closes, without zone.js', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      // Select while open (live registry), then close so the live options
+      // unmount. The persisted snapshot must still resolve the label.
+      getOption('banana').click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      expect(r.query<HTMLElement>('[forSelectContent]')).toBeNull();
+
+      const value = r.query<HTMLSpanElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Banana');
+    });
+  });
+
   describe('position input', () => {
     @Component({
       imports: HOST_IMPORTS,

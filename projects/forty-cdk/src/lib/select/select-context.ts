@@ -39,6 +39,13 @@ export type ForSelectInitialFocus = 'first' | 'last' | 'selected';
  */
 export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
   readonly value: Signal<T>;
+  /**
+   * The option's resolved display label as a reactive `Signal<string>` — the
+   * trimmed `textContent` of the host. The root folds it into a persisted
+   * snapshot so `selectedLabels` and closed-state typeahead resolve labels
+   * without peeking at `textContent` from inside a `computed`.
+   */
+  readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -148,7 +155,7 @@ export interface ForSelectContext<T = unknown> {
 
   /** All registered options in DOM order. */
   readonly options: Signal<readonly ForSelectOptionHandle<T>[]>;
-  /** Trimmed `textContent` of the options whose value is in `value()`, in selection order. */
+  /** Resolved labels of the options whose value is in `value()`, in selection order. */
   readonly selectedLabels: Signal<readonly string[]>;
   /**
    * Host element of the first enabled, currently-selected option, or `null`
