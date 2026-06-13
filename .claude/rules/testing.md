@@ -27,6 +27,20 @@ Vitest runs through the Angular CLI builder `@angular/build:unit-test` (configur
 
 Every primitive's test suite must include a case running under `provideZonelessChangeDetection()` to guarantee reactivity works without Zone.js.
 
+### SSR smoke coverage — every new primitive needs a fixture
+
+The library advertises zoneless **and** SSR-safe primitives, so server-side coverage is part of every new primitive's workflow — not an afterthought. A primitive with no SSR assertion can ship a `document` / `window` access (or an eager DOM mutation, or shared module-level state between requests) that only fails in a server render, undetected until an Angular Universal consumer hits it.
+
+`projects/forty-cdk/src/lib/_internal/ssr/ssr.spec.ts` is the single suite that proves this. It forces `PLATFORM_ID` to the server id and asserts each registered fixture (a) renders without throwing on the server, (b) emits the static markup (role / `aria-*` / id / `data-state`) that hydration matches on, and (c) for overlays, leaves `document.body` untouched (`injectPortal`, the modal shell, scroll lock, inert siblings, and the NavigationMenu viewport re-parenting all run inside `afterNextRender`, which never fires server-side).
+
+When you add a primitive, add its SSR fixture in the same PR:
+
+1. Add a minimal `@Component` fixture mirroring the existing ones — the root plus the one or two pieces needed to render — and register it in the suite's `FIXTURES` array so the parameterised "renders … without throwing on the server" case picks it up.
+2. If the primitive portals content, runs `afterNextRender` side effects, or otherwise gates on `isPlatformBrowser` (every overlay, plus disclosure / menu families with viewport or portal side effects), mount the fixture in its **open / active** state and add an `it` asserting `<body>` is untouched after change detection — copy the assertion shape from the `DialogOpenFixture` / `PopoverOpenFixture` blocks. A closed fixture for such a primitive proves little, because the gated side-effect path never runs.
+3. Date / time primitives need a `DateAdapter`; provide `...provideNativeDateAdapter()` in the fixture's `providers`, as `CalendarFixture` / `DateFieldFixture` already do.
+
+If a new fixture throws on the server, or mutates `document.body` in its open state, that is a genuine SSR bug in the primitive — fix the primitive (gate the offending access behind `isPlatformBrowser` / move it into `afterNextRender`), not the test.
+
 ### Test isolation — non-negotiables
 
 These invariants are the rationale behind the mechanical enforcement (ESLint rules, Vitest setup file). They exist because each one was, at some point, a bug that bled state across specs or a contract leak that made a refactor harder than it needed to be. A new spec must clear them all.
