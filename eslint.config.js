@@ -1011,6 +1011,133 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    // Mechanizes the #695 footgun: a form-value control that folds in
+    // `[forFieldset]`-disabled (by declaring an `effectiveDisabled` member)
+    // must pass *that* signal — not the raw `disabled` input — to
+    // `injectHiddenInput({ … disabled: … })`. #695 fixed `[forNumberInput]` /
+    // `[forSlider]` passing the raw `disabled`, which left the hidden `<input>`
+    // submitting its value inside a disabled fieldset; #728 added a DOM
+    // contract spec, but only for the primitives it enumerates. This rule
+    // catches the regression at author time for every primitive, current and
+    // future.
+    //
+    // Precision (kept narrow to avoid false positives on the live library —
+    // every current call site already passes `disabled: this.effectiveDisabled`):
+    //   - Fires only when the call's enclosing class declares a member named
+    //     `effectiveDisabled` AND the `disabled` property's value does NOT
+    //     reference an `effectiveDisabled` member. A control with no
+    //     `effectiveDisabled` member does not fold in fieldset-disabled, so
+    //     passing the raw `disabled` is correct — the rule stays silent.
+    //   - The `disabled` value is considered correct when it references an
+    //     `effectiveDisabled` member anywhere in its expression
+    //     (`this.effectiveDisabled`, the shorthand `effectiveDisabled`,
+    //     `computed(() => this.effectiveDisabled())`, …).
+    //
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/hidden-input-effective-disabled.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#695, tutkli/forty-cdk#728, tutkli/forty-cdk#741
+    'hidden-input-effective-disabled': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'A control exposing `effectiveDisabled` must pass it (not the raw `disabled`) to `injectHiddenInput`, otherwise its value submits inside a disabled `[forFieldset]` (tutkli/forty-cdk#695).',
+        },
+        schema: [],
+        messages: {
+          rawDisabled:
+            'A control exposing `effectiveDisabled` must pass it (not the raw `disabled`) to `injectHiddenInput({ … disabled: … })`, otherwise its value submits inside a disabled `[forFieldset]`. Pass `disabled: this.effectiveDisabled`. (tutkli/forty-cdk#695.)',
+        },
+      },
+      create(context) {
+        // True when the subtree references an `effectiveDisabled` member —
+        // either the shorthand `effectiveDisabled` identifier or a non-computed
+        // `…​.effectiveDisabled` member access. Covers `this.effectiveDisabled`,
+        // `effectiveDisabled`, and wrapped forms like
+        // `computed(() => this.effectiveDisabled())`.
+        function referencesEffectiveDisabled(node) {
+          const stack = [node];
+          while (stack.length) {
+            const current = stack.pop();
+            if (!current || typeof current !== 'object') continue;
+            if (Array.isArray(current)) {
+              for (const item of current) stack.push(item);
+              continue;
+            }
+            if (!current.type) continue;
+            if (
+              current.type === 'MemberExpression' &&
+              !current.computed &&
+              current.property.type === 'Identifier' &&
+              current.property.name === 'effectiveDisabled'
+            ) {
+              return true;
+            }
+            if (current.type === 'Identifier' && current.name === 'effectiveDisabled') {
+              return true;
+            }
+            for (const key in current) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(current[key]);
+            }
+          }
+          return false;
+        }
+        // True when the class body declares a member (property / method /
+        // accessor) named `effectiveDisabled`.
+        function declaresEffectiveDisabled(classNode) {
+          const members = (classNode.body && classNode.body.body) || [];
+          for (const member of members) {
+            if (
+              (member.type === 'PropertyDefinition' ||
+                member.type === 'MethodDefinition' ||
+                member.type === 'AccessorProperty') &&
+              !member.computed &&
+              member.key &&
+              member.key.type === 'Identifier' &&
+              member.key.name === 'effectiveDisabled'
+            ) {
+              return true;
+            }
+          }
+          return false;
+        }
+        // Walk up from a node to the nearest enclosing class declaration /
+        // expression, stopping at the class boundary.
+        function enclosingClass(node) {
+          let current = node.parent;
+          while (current) {
+            if (current.type === 'ClassDeclaration' || current.type === 'ClassExpression') {
+              return current;
+            }
+            current = current.parent;
+          }
+          return null;
+        }
+        return {
+          CallExpression(node) {
+            if (node.callee.type !== 'Identifier' || node.callee.name !== 'injectHiddenInput') {
+              return;
+            }
+            const config = node.arguments[0];
+            if (!config || config.type !== 'ObjectExpression') return;
+            const disabledProp = config.properties.find(
+              (p) =>
+                p.type === 'Property' &&
+                !p.computed &&
+                ((p.key.type === 'Identifier' && p.key.name === 'disabled') ||
+                  (p.key.type === 'Literal' && p.key.value === 'disabled')),
+            );
+            if (!disabledProp) return;
+            const classNode = enclosingClass(node);
+            if (!classNode || !declaresEffectiveDisabled(classNode)) return;
+            if (referencesEffectiveDisabled(disabledProp.value)) return;
+            context.report({ node: disabledProp, messageId: 'rawDisabled' });
+          },
+        };
+      },
+    },
   },
 };
 
@@ -1170,6 +1297,11 @@ module.exports = tseslint.config(
       // ---- No state propagation inside effect() (CLAUDE.md § "Never
       // propagate state inside `effect()`"). ----
       'forty-cdk/no-effect-state-propagation': 'error',
+
+      // ---- injectHiddenInput must pass `effectiveDisabled`, not raw
+      // `disabled`, when the control folds in fieldset-disabled
+      // (tutkli/forty-cdk#695, #728, #741). ----
+      'forty-cdk/hidden-input-effective-disabled': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
