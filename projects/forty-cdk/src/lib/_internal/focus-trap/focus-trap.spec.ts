@@ -9,6 +9,10 @@ function tab(shift = false): KeyboardEvent {
   });
 }
 
+function flushMutationObserver(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('FocusTrap', () => {
   let container: HTMLElement;
   let outsideBefore: HTMLButtonElement;
@@ -400,6 +404,52 @@ describe('FocusTrap', () => {
       document.dispatchEvent(tab());
 
       expect(document.activeElement?.id).toBe('b1');
+    });
+  });
+
+  describe('focusables cache invalidation', () => {
+    it('includes a focusable appended after activation once the observer fires', async () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const b3 = container.querySelector<HTMLElement>('#b3')!;
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+
+      const appended = document.createElement('button');
+      appended.id = 'b4';
+      appended.textContent = 'four';
+      container.appendChild(appended);
+      await flushMutationObserver();
+
+      appended.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+
+      const b1 = container.querySelector<HTMLElement>('#b1')!;
+      b1.focus();
+      document.dispatchEvent(tab(true));
+      expect(document.activeElement?.id).toBe('b4');
+    });
+
+    it('excludes a focusable disabled after activation once the observer fires', async () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const b1 = container.querySelector<HTMLButtonElement>('#b1')!;
+      const b3 = container.querySelector<HTMLElement>('#b3')!;
+
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+
+      b1.disabled = true;
+      await flushMutationObserver();
+
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b2');
     });
   });
 });
