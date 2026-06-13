@@ -7,7 +7,7 @@ import type {
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import type { MenuSiblingNavigator } from '../menu/menu-context';
+import type { MenuSiblingNavigator } from '../_internal/menu-overlay/menu-context';
 
 /**
  * Per-trigger configuration that the menubar root reads when its menu is the

@@ -9,7 +9,7 @@ import type {
   ForMenuContext,
   ForMenuItemHandle,
   MenuSiblingNavigator,
-} from '../menu/menu-context';
+} from '../_internal/menu-overlay/menu-context';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
 /**
