@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: '*.{ts,js,mjs,cjs}'
+      run: pnpm exec eslint {staged_files}
+    format:
+      glob: '*.{ts,js,mjs,cjs,html,json,md,yml,yaml,css,scss}'
+      run: pnpm exec prettier --check {staged_files}
+    typecheck:
+      glob: '*.ts'
+      run: pnpm typecheck
