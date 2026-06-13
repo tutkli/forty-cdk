@@ -93,8 +93,9 @@ When asked to add a primitive, follow this order:
 3. Confirm the API with the user before implementing if non-trivial design decisions exist.
 4. Implement piece by piece, one file each (no type suffixes), respecting every rule above.
 5. Tests in parallel — behavior, a11y (roles + aria + keyboard + focus), and explicit zoneless coverage (TestBed configured with `provideZonelessChangeDetection`).
-6. A `README.md` inside the primitive folder with a minimal styleless usage example.
-7. Verify tree-shaking: the primitive imports cleanly in isolation.
+6. Add an SSR smoke fixture for the primitive in `projects/forty-cdk/src/lib/_internal/ssr/ssr.spec.ts` — a minimal compose registered in the suite's fixture list so it is asserted to render server-side without throwing. Overlay / `afterNextRender`-gated primitives get an open-state fixture that also asserts `<body>` is untouched. This is mandatory: the library advertises SSR-safe primitives, and a primitive with no server-side assertion can ship a `document` / `window` access that only fails under Angular Universal. See `.claude/rules/testing.md` for the SSR coverage contract.
+7. A `README.md` inside the primitive folder with a minimal styleless usage example.
+8. Verify tree-shaking: the primitive imports cleanly in isolation.
 
 ## TypeScript expectations
 
