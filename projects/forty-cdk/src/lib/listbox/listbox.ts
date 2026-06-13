@@ -221,7 +221,7 @@ export class ForListbox<T = string>
       name: this.name,
       values: this.value,
       serialize: (item) => this.itemToFormValue()(item),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
     reconcileRovingActive(this.roving, this.#options.items);
   }
