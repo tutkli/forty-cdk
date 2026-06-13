@@ -156,6 +156,8 @@ export class FocusTrap {
   #returnTo: HTMLElement | null = null;
   #active = false;
   #containerHadTabindex = false;
+  #focusablesCache: HTMLElement[] | null = null;
+  #observer: MutationObserver | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
@@ -186,6 +188,19 @@ export class FocusTrap {
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
     this.#stack.push(this);
 
+    const win = this.#container.ownerDocument.defaultView;
+    if (win && typeof win.MutationObserver === 'function') {
+      this.#observer = new win.MutationObserver(() => {
+        this.#focusablesCache = null;
+      });
+      this.#observer.observe(this.#container, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['disabled', 'hidden', 'inert', 'tabindex', 'type', 'contenteditable'],
+      });
+    }
+
     if (options.preventInitialFocus) {
       // Tab cycling and return-focus are still set up; the imperative
       // focus move is the only thing skipped. Focus stays wherever the
@@ -215,6 +230,9 @@ export class FocusTrap {
     this.#active = false;
     this.#document.removeEventListener('keydown', this.#onKeyDown, true);
     this.#stack.remove(this);
+    this.#observer?.disconnect();
+    this.#observer = null;
+    this.#focusablesCache = null;
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -273,8 +291,14 @@ export class FocusTrap {
   }
 
   #focusables(): HTMLElement[] {
+    if (this.#focusablesCache !== null) {
+      return this.#focusablesCache;
+    }
     const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-    return all.filter((el) => !el.hasAttribute('hidden') && !this.#hasInertAncestor(el));
+    this.#focusablesCache = all.filter(
+      (el) => !el.hasAttribute('hidden') && !this.#hasInertAncestor(el),
+    );
+    return this.#focusablesCache;
   }
 
   #hasInertAncestor(el: HTMLElement): boolean {
