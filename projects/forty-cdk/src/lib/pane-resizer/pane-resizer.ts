@@ -322,11 +322,14 @@ export class ForPaneResizer {
     if (!this.#dragging) {
       return;
     }
+    const armed = this.#dragArmed;
     this.#endDrag();
     if (this.#host.hasPointerCapture(event.pointerId)) {
       this.#host.releasePointerCapture(event.pointerId);
     }
-    this.resizeCommit.emit(this.value());
+    if (armed) {
+      this.resizeCommit.emit(this.value());
+    }
   };
 
   #endDrag(): void {
