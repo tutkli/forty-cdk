@@ -34,7 +34,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `no-directive-internal-signal-read.fixture.ts` — 1 error.
 - `no-effect-state-propagation.fixture.ts` — 2 errors (the `.set` and `.update` read-and-write forms).
 - `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).
-- `hidden-input-effective-disabled.fixture.ts` — 1 error (the class declares `effectiveDisabled` but passes the raw `disabled` to `injectHiddenInput`; the `effectiveDisabled` case and the no-`effectiveDisabled` case are allowed).
+- `hidden-input-effective-disabled.fixture.ts` — 2 errors (an in-body `effectiveDisabled` control and a control inheriting it from `FormUiControlBase`, both passing the raw `disabled` to `injectHiddenInput`; the `this.effectiveDisabled` case and the wrapped `computed(() => this.effectiveDisabled() || …)` case are allowed).
 
 The default `pnpm lint` ignores this directory (configured at the top of
 `eslint.config.js`) so CI doesn't pick up these intentional violations.

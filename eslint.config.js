@@ -1012,27 +1012,33 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Mechanizes the #695 footgun: a form-value control that folds in
-    // `[forFieldset]`-disabled (by declaring an `effectiveDisabled` member)
-    // must pass *that* signal — not the raw `disabled` input — to
-    // `injectHiddenInput({ … disabled: … })`. #695 fixed `[forNumberInput]` /
-    // `[forSlider]` passing the raw `disabled`, which left the hidden `<input>`
-    // submitting its value inside a disabled fieldset; #728 added a DOM
-    // contract spec, but only for the primitives it enumerates. This rule
-    // catches the regression at author time for every primitive, current and
-    // future.
+    // Mechanizes the #695 footgun: any control wiring `injectHiddenInput` is a
+    // form-value control that can sit inside a disabled `[forFieldset]`, so the
+    // hidden `<input>` it spawns must reflect `effectiveDisabled` — the signal
+    // that folds in the fieldset's disabled state — never the raw `disabled`
+    // input. #695 fixed `[forNumberInput]` / `[forSlider]` passing the raw
+    // `disabled`, which left the hidden `<input>` submitting its value inside a
+    // disabled fieldset; #728 added a DOM contract spec, but only for the
+    // primitives it enumerates. This rule catches the regression at author time
+    // for every primitive, current and future.
     //
-    // Precision (kept narrow to avoid false positives on the live library —
-    // every current call site already passes `disabled: this.effectiveDisabled`):
-    //   - Fires only when the call's enclosing class declares a member named
-    //     `effectiveDisabled` AND the `disabled` property's value does NOT
-    //     reference an `effectiveDisabled` member. A control with no
-    //     `effectiveDisabled` member does not fold in fieldset-disabled, so
-    //     passing the raw `disabled` is correct — the rule stays silent.
+    // Semantics — unconditional on the call (no "class declares
+    // `effectiveDisabled`" precondition):
+    //   - Fires on every `injectHiddenInput({ … disabled: <expr> … })` call
+    //     whose `disabled` value does NOT reference an `effectiveDisabled`
+    //     member anywhere in its expression. This also covers controls that
+    //     *inherit* `effectiveDisabled` from `FormUiControlBase` (checkbox,
+    //     switch, toggle, toggle-group, radio-group, …) and never declare it
+    //     in their own body — the previous "class declares it" gate left those
+    //     unchecked.
     //   - The `disabled` value is considered correct when it references an
     //     `effectiveDisabled` member anywhere in its expression
     //     (`this.effectiveDisabled`, the shorthand `effectiveDisabled`,
-    //     `computed(() => this.effectiveDisabled())`, …).
+    //     `computed(() => this.effectiveDisabled() || this.readonly())`, …).
+    //
+    // The `injectHiddenInput` test harness in `hidden-input.spec.ts` exercises
+    // the helper itself with a bare `disabled` and is exempt via the spec /
+    // test-utility relaxation block below.
     //
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/hidden-input-effective-disabled.fixture.ts`.
     //
@@ -1042,12 +1048,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'A control exposing `effectiveDisabled` must pass it (not the raw `disabled`) to `injectHiddenInput`, otherwise its value submits inside a disabled `[forFieldset]` (tutkli/forty-cdk#695).',
+            'Every `injectHiddenInput` call must pass `effectiveDisabled` (not the raw `disabled`) as its `disabled`, otherwise the control’s value submits inside a disabled `[forFieldset]` (tutkli/forty-cdk#695).',
         },
         schema: [],
         messages: {
           rawDisabled:
-            'A control exposing `effectiveDisabled` must pass it (not the raw `disabled`) to `injectHiddenInput({ … disabled: … })`, otherwise its value submits inside a disabled `[forFieldset]`. Pass `disabled: this.effectiveDisabled`. (tutkli/forty-cdk#695.)',
+            '`injectHiddenInput({ … disabled: … })` must pass `effectiveDisabled` (not the raw `disabled`), otherwise the control’s value submits inside a disabled `[forFieldset]`. Pass `disabled: this.effectiveDisabled`. (tutkli/forty-cdk#695.)',
         },
       },
       create(context) {
@@ -1084,37 +1090,6 @@ const fortyCdkPlugin = {
           }
           return false;
         }
-        // True when the class body declares a member (property / method /
-        // accessor) named `effectiveDisabled`.
-        function declaresEffectiveDisabled(classNode) {
-          const members = (classNode.body && classNode.body.body) || [];
-          for (const member of members) {
-            if (
-              (member.type === 'PropertyDefinition' ||
-                member.type === 'MethodDefinition' ||
-                member.type === 'AccessorProperty') &&
-              !member.computed &&
-              member.key &&
-              member.key.type === 'Identifier' &&
-              member.key.name === 'effectiveDisabled'
-            ) {
-              return true;
-            }
-          }
-          return false;
-        }
-        // Walk up from a node to the nearest enclosing class declaration /
-        // expression, stopping at the class boundary.
-        function enclosingClass(node) {
-          let current = node.parent;
-          while (current) {
-            if (current.type === 'ClassDeclaration' || current.type === 'ClassExpression') {
-              return current;
-            }
-            current = current.parent;
-          }
-          return null;
-        }
         return {
           CallExpression(node) {
             if (node.callee.type !== 'Identifier' || node.callee.name !== 'injectHiddenInput') {
@@ -1130,8 +1105,6 @@ const fortyCdkPlugin = {
                   (p.key.type === 'Literal' && p.key.value === 'disabled')),
             );
             if (!disabledProp) return;
-            const classNode = enclosingClass(node);
-            if (!classNode || !declaresEffectiveDisabled(classNode)) return;
             if (referencesEffectiveDisabled(disabledProp.value)) return;
             context.report({ node: disabledProp, messageId: 'rawDisabled' });
           },
@@ -1373,6 +1346,10 @@ module.exports = tseslint.config(
       // Specs run under jsdom and freely poke at `document` to set up
       // fixtures or assert on the rendered DOM.
       'no-restricted-globals': 'off',
+      // The `injectHiddenInput` test harness (hidden-input.spec.ts) drives the
+      // helper directly with a bare `disabled` — it is not a shipped form-value
+      // control, so the `effectiveDisabled` fieldset contract does not apply.
+      'forty-cdk/hidden-input-effective-disabled': 'off',
     },
   },
 
