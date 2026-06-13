@@ -9,8 +9,11 @@ The worked example is a **Popover**: the simplest trigger-anchored overlay and t
 ## Prerequisites
 
 ```bash
-npm install forty-cdk @floating-ui/dom
+npm install forty-cdk
 ```
+
+`@floating-ui/dom` (used for overlay positioning) is a regular dependency installed
+automatically with the package — no separate install needed.
 
 Import the pieces you use. Standalone directives, no `NgModule`:
 
