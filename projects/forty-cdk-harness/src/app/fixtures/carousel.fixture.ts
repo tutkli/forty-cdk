@@ -6,6 +6,7 @@ import {
   ForCarouselIndicators,
   ForCarouselNext,
   ForCarouselPrevious,
+  ForCarouselRotationControl,
   ForCarouselSlide,
   ForCarouselTrack,
   ForCarouselViewport,
@@ -14,7 +15,8 @@ import {
 /**
  * Carousel harness fixture — exercises the WAI-ARIA Carousel keyboard journey
  * and geometry on real browsers (roving tabindex, ArrowLeft/Right/Down/Up,
- * Home/End, RTL, prev/next disabled states, viewport geometry CSS vars).
+ * Home/End, RTL, prev/next disabled states, viewport geometry CSS vars,
+ * autoplay rotation control).
  *
  * Mounts 4 slides (0–3) so disabled-skip and loop wrap-around have room to
  * exercise.
@@ -25,6 +27,8 @@ import {
  *  - `?slidesPerView=2` — shows two slides at once.
  *  - `?dir=rtl` — flips arrow-key semantics.
  *  - `?align=center` / `?align=end` — alignment of the active slide.
+ *  - `?autoplay=1` — enables auto-rotation.
+ *  - `?autoplayInterval=400` — ms between auto-advances (default 400 for fast tests).
  */
 @Component({
   selector: 'app-carousel-fixture',
@@ -38,6 +42,7 @@ import {
     ForCarouselNext,
     ForCarouselIndicators,
     ForCarouselIndicator,
+    ForCarouselRotationControl,
   ],
   styles: [
     `
@@ -76,9 +81,12 @@ import {
       [dir]="dir"
       [align]="align"
       [slidesPerView]="slidesPerView"
+      [autoplay]="autoplay"
+      [autoplayInterval]="autoplayInterval"
       ariaLabel="Test carousel"
       data-testid="carousel-root"
     >
+      <button forCarouselRotationControl data-testid="rotation">&#x25B6;</button>
       <button forCarouselPrevious aria-label="Previous slide" data-testid="prev"></button>
 
       <div forCarouselViewport data-testid="viewport">
@@ -124,6 +132,12 @@ export class CarouselFixture {
   protected readonly align: 'start' | 'center' | 'end' =
     (this.#route.snapshot.queryParamMap.get('align') as 'start' | 'center' | 'end' | null) ??
     'start';
+
+  protected readonly autoplay: boolean = this.#route.snapshot.queryParamMap.get('autoplay') === '1';
+
+  protected readonly autoplayInterval: number = Number(
+    this.#route.snapshot.queryParamMap.get('autoplayInterval') ?? '400',
+  );
 
   protected readonly active = signal(0);
 

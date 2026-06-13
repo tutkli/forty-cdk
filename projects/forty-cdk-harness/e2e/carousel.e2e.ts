@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectFocused, gotoFixture, rovingFirst, tabN } from './_helpers';
 
 /**
  * Real-browser coverage for the Carousel primitive. The Vitest contract
@@ -177,5 +177,144 @@ test.describe('Carousel (geometry — Tier A)', () => {
       return slideBox.left >= vpBox.left - 1 && slideBox.right <= vpBox.right + 1;
     });
     expect(inViewport).toBe(true);
+  });
+});
+
+test.describe('Carousel (rotation control — tab order)', () => {
+  test('Tab from before-input lands on rotation control first', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await el(page, 'before').focus();
+    await tabN(page, 1);
+    await expectFocused(el(page, 'rotation'));
+  });
+});
+
+test.describe('Carousel (rotation control — label swap, no aria-pressed)', () => {
+  test('default aria-label is "Start automatic slide show"', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Start automatic slide show');
+  });
+
+  test('rotation control has no aria-pressed attribute', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await expect(el(page, 'rotation')).not.toHaveAttribute('aria-pressed');
+  });
+
+  test('clicking control changes label to "Stop automatic slide show", clicking again reverts', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    await el(page, 'rotation').click();
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Stop automatic slide show');
+    await el(page, 'rotation').click();
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Start automatic slide show');
+  });
+});
+
+test.describe('Carousel (autoplay — auto-rotation advances)', () => {
+  test('slides advance automatically with autoplay=1', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-2')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('slides wrap back to slide-0 after the last slide', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-2')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-3')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('aria-live is "off" while rotating', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'viewport')).toHaveAttribute('aria-live', 'off');
+  });
+
+  test('aria-live becomes "polite" after clicking stop', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await el(page, 'rotation').click();
+    await expect(el(page, 'viewport')).toHaveAttribute('aria-live', 'polite');
+  });
+});
+
+test.describe('Carousel (autoplay — pause on hover)', () => {
+  test('hovering pauses rotation; moving away resumes', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await el(page, 'carousel-root').hover();
+    const activeBefore = await el(page, 'carousel-root').getAttribute('style');
+    await page.waitForTimeout(800);
+    const activeAfter = await el(page, 'carousel-root').getAttribute('style');
+    expect(activeBefore).toBe(activeAfter);
+    await page.mouse.move(0, 0);
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+  });
+});
+
+test.describe('Carousel (autoplay — pause on focus-within)', () => {
+  test('focusing the rotation control pauses; blurring outside resumes', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await el(page, 'rotation').focus();
+    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+    await el(page, 'before').focus();
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+  });
+});
+
+test.describe('Carousel (autoplay — sticky stop)', () => {
+  test('clicking stop; hover in/out does not restart rotation', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await el(page, 'rotation').click();
+    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+    await el(page, 'carousel-root').hover();
+    await page.mouse.move(0, 0);
+    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+  });
+
+  test('clicking start after sticky stop resumes rotation', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await el(page, 'rotation').click();
+    await el(page, 'rotation').click();
+    await el(page, 'before').focus();
+    await page.mouse.move(0, 0);
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+  });
+});
+
+test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
+  test('autoplay=1 under reduced motion does not auto-start', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    try {
+      await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+      await expect(el(page, 'rotation')).toHaveAttribute(
+        'aria-label',
+        'Start automatic slide show',
+      );
+      await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+      await page.waitForTimeout(800);
+      await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('explicit click starts rotation even under reduced motion', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    try {
+      await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+      await el(page, 'rotation').click();
+      await el(page, 'before').focus();
+      await page.mouse.move(0, 0);
+      await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+      await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    } finally {
+      await context.close();
+    }
   });
 });

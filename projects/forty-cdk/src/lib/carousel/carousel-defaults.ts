@@ -26,6 +26,10 @@ export interface ForCarouselDefaults {
    * set to `100% / slidesPerView` by the consumer's CSS.
    */
   slidesPerView: number;
+  /** Whether the carousel auto-rotates on mount (when not under reduced-motion). Default `false`. */
+  autoplay: boolean;
+  /** Milliseconds between automatic slide advances. Default `5000`. */
+  autoplayInterval: number;
 }
 
 /**
@@ -37,6 +41,8 @@ export const FOR_CAROUSEL_FALLBACK_DEFAULTS: ForCarouselDefaults = {
   loop: false,
   align: 'start',
   slidesPerView: 1,
+  autoplay: false,
+  autoplayInterval: 5000,
 };
 
 const { token, provideDefaults } = createDefaults<ForCarouselDefaults>(

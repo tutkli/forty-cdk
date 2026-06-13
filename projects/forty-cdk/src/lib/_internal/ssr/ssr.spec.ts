@@ -73,6 +73,7 @@ import { ForCarouselIndicator } from '../../carousel/carousel-indicator';
 import { ForCarouselIndicators } from '../../carousel/carousel-indicators';
 import { ForCarouselNext } from '../../carousel/carousel-next';
 import { ForCarouselPrevious } from '../../carousel/carousel-previous';
+import { ForCarouselRotationControl } from '../../carousel/carousel-rotation-control';
 import { ForCarouselSlide } from '../../carousel/carousel-slide';
 import { ForCarouselTrack } from '../../carousel/carousel-track';
 import { ForCarouselViewport } from '../../carousel/carousel-viewport';
@@ -179,9 +180,11 @@ class TabsFixture {}
     ForCarouselNext,
     ForCarouselIndicators,
     ForCarouselIndicator,
+    ForCarouselRotationControl,
   ],
   template: `
     <div forCarousel ariaLabel="Examples">
+      <button forCarouselRotationControl></button>
       <button forCarouselPrevious aria-label="Previous">&#x2039;</button>
       <div forCarouselViewport>
         <div forCarouselTrack>
@@ -198,6 +201,28 @@ class TabsFixture {}
   `,
 })
 class CarouselFixture {}
+
+@Component({
+  imports: [
+    ForCarousel,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+    ForCarouselRotationControl,
+  ],
+  template: `
+    <div forCarousel ariaLabel="Examples" autoplay [autoplayInterval]="1000">
+      <button forCarouselRotationControl></button>
+      <div forCarouselViewport>
+        <div forCarouselTrack>
+          <div forCarouselSlide>One</div>
+          <div forCarouselSlide>Two</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class CarouselAutoplayFixture {}
 
 @Component({
   imports: [ForSwitch],
@@ -512,6 +537,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   AccordionFixture,
   TabsFixture,
   CarouselFixture,
+  CarouselAutoplayFixture,
   SwitchFixture,
   CheckboxFixture,
   RadioFixture,

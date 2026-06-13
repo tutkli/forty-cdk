@@ -35,12 +35,20 @@ export interface ForCarouselContext {
   readonly slideCount: Signal<number>;
   readonly roving: RovingTabindex;
 
+  /** Whether auto-rotation is currently "on" (user intent). Drives the rotation control's label. */
+  readonly playing: Signal<boolean>;
+  /** Whether the carousel is actively auto-rotating right now (`playing && !paused`). Drives the viewport's `aria-live`. */
+  readonly rotating: Signal<boolean>;
+
   canScrollPrev(): boolean;
   canScrollNext(): boolean;
   scrollPrev(): void;
   scrollNext(): void;
   scrollTo(index: number): void;
   navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void;
+
+  /** Toggle auto-rotation on/off (the explicit, sticky user choice). Called by the rotation control. */
+  toggleAutoplay(): void;
 
   registerSlide(handle: ForCarouselSlideHandle): void;
   unregisterSlide(handle: ForCarouselSlideHandle): void;

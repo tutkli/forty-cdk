@@ -1,13 +1,19 @@
 import {
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
+  effect,
+  ElementRef,
   inject,
   input,
   model,
   numberAttribute,
+  PLATFORM_ID,
   signal,
+  untracked,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -17,9 +23,14 @@ import {
   moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import {
+  isPageHidden,
+  subscribeVisibilityPause,
+} from '../_internal/visibility-pause/visibility-pause';
 import {
   type CarouselAlign,
   FOR_CAROUSEL_CONTEXT,
@@ -57,6 +68,12 @@ import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
     '[style.--for-carousel-slides-per-view]': 'slidesPerView()',
     '[style.--for-carousel-viewport-width]': 'viewportWidth()',
     '[style.--for-carousel-viewport-height]': 'viewportHeight()',
+    '[attr.data-autoplay]': 'autoplay() ? "" : null',
+    '[attr.data-rotating]': 'rotating() ? "" : null',
+    '(pointerenter)': 'onAutoplayPause("hover")',
+    '(pointerleave)': 'onAutoplayResume("hover")',
+    '(focusin)': 'onAutoplayPause("focus")',
+    '(focusout)': 'onAutoplayFocusOut($event)',
   },
   providers: [{ provide: FOR_CAROUSEL_CONTEXT, useExisting: ForCarousel }],
 })
@@ -104,6 +121,26 @@ export class ForCarousel implements ForCarouselContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
+   * Whether the carousel auto-rotates. When `true` and the user has not
+   * explicitly stopped it, rotation starts on mount — *unless*
+   * `prefers-reduced-motion: reduce` is set, which suppresses auto-start
+   * (the user can still start it via the rotation control). Default from
+   * `provideForCarouselDefaults` or `false`.
+   *
+   * APG requires a `[forCarouselRotationControl]` to be present whenever
+   * autoplay is enabled. The directive does not enforce this — see the README.
+   */
+  readonly autoplay = input(this.#defaults.autoplay, { transform: booleanAttribute });
+
+  /**
+   * Milliseconds between automatic slide advances while rotating. Values
+   * `<= 0` disable the timer. Default from `provideForCarouselDefaults` or `5000`.
+   */
+  readonly autoplayInterval = input(this.#defaults.autoplayInterval, {
+    transform: numberAttribute,
+  });
+
+  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -115,6 +152,26 @@ export class ForCarousel implements ForCarouselContext {
 
   /** Roving tabindex tracker for the indicator group. */
   readonly roving = new RovingTabindex();
+
+  readonly #destroyRef = inject(DestroyRef);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #element = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #prefersReducedMotion = injectPrefersReducedMotion();
+
+  readonly #userPlaying = signal<boolean | null>(null);
+
+  /** Whether auto-rotation is "on" (user intent). Sticky once the user decides. */
+  readonly playing = computed(
+    () => this.#userPlaying() ?? (this.autoplay() && !this.#prefersReducedMotion()),
+  );
+
+  readonly #paused = signal(false);
+  readonly #pauseReasons = new Set<'hover' | 'focus' | 'visibility'>();
+
+  /** Whether the carousel is actively auto-rotating right now. */
+  readonly rotating = computed(() => this.playing() && !this.#paused());
+
+  #timerHandle: ReturnType<typeof setInterval> | null = null;
 
   readonly #slides = new Collection<ForCarouselSlideHandle>();
   readonly #indicators = new Collection<ForCarouselIndicatorHandle>();
@@ -156,6 +213,25 @@ export class ForCarousel implements ForCarouselContext {
 
   constructor() {
     reconcileRovingActive(this.roving, this.#indicators.items);
+
+    effect(() => {
+      const rotating = this.rotating();
+      const interval = this.autoplayInterval();
+      untracked(() => this.#syncTimer(rotating, interval));
+    });
+    this.#destroyRef.onDestroy(() => this.#clearTimer());
+
+    const unsubscribe = subscribeVisibilityPause((hidden) => {
+      if (hidden) {
+        this.#applyPause('visibility');
+      } else {
+        this.#releasePause('visibility');
+      }
+    });
+    this.#destroyRef.onDestroy(unsubscribe);
+    if (isPageHidden()) {
+      this.#applyPause('visibility');
+    }
   }
 
   /** Returns `true` when scrolling backward is possible given the current loop/index state. */
@@ -283,6 +359,72 @@ export class ForCarousel implements ForCarouselContext {
   hasCurrentIndicator(): boolean {
     const active = this.activeIndex();
     return this.#indicators.items().some((i, idx) => idx === active && !i.disabled());
+  }
+
+  /** Start auto-rotation (explicit, sticky). Overrides the reduced-motion auto-start gate. */
+  play(): void {
+    this.#userPlaying.set(true);
+  }
+
+  /** Stop auto-rotation (explicit, sticky). Hover/focus/visibility changes will not restart it. */
+  pause(): void {
+    this.#userPlaying.set(false);
+  }
+
+  /** Toggle auto-rotation. Called by `[forCarouselRotationControl]`. */
+  toggleAutoplay(): void {
+    this.#userPlaying.set(!this.playing());
+  }
+
+  protected onAutoplayPause(reason: 'hover' | 'focus'): void {
+    this.#applyPause(reason);
+  }
+
+  protected onAutoplayResume(reason: 'hover' | 'focus'): void {
+    this.#releasePause(reason);
+  }
+
+  protected onAutoplayFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget as Node | null;
+    if (next && this.#element.nativeElement.contains(next)) {
+      return;
+    }
+    this.#releasePause('focus');
+  }
+
+  #applyPause(reason: 'hover' | 'focus' | 'visibility'): void {
+    this.#pauseReasons.add(reason);
+    this.#updatePaused();
+  }
+
+  #releasePause(reason: 'hover' | 'focus' | 'visibility'): void {
+    this.#pauseReasons.delete(reason);
+    this.#updatePaused();
+  }
+
+  #updatePaused(): void {
+    this.#paused.set(this.#pauseReasons.size > 0);
+  }
+
+  #syncTimer(rotating: boolean, interval: number): void {
+    this.#clearTimer();
+    if (this.#isBrowser && rotating && interval > 0) {
+      this.#timerHandle = setInterval(() => this.#advance(), interval);
+    }
+  }
+
+  #advance(): void {
+    const count = this.slideCount();
+    if (count > 0) {
+      this.activeIndex.set((this.activeIndex() + 1) % count);
+    }
+  }
+
+  #clearTimer(): void {
+    if (this.#timerHandle !== null) {
+      clearInterval(this.#timerHandle);
+      this.#timerHandle = null;
+    }
   }
 
   #move(action: ListNavigationAction): void {
