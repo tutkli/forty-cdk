@@ -69,6 +69,7 @@ import { ForSelectTrigger } from '../../select/select-trigger';
 import { ForSelectValue } from '../../select/select-value';
 import { ForSwitch } from '../../switch/switch';
 import { ForCarousel } from '../../carousel/carousel';
+import { ForCarouselDrag } from '../../carousel/carousel-drag';
 import { ForCarouselIndicator } from '../../carousel/carousel-indicator';
 import { ForCarouselIndicators } from '../../carousel/carousel-indicators';
 import { ForCarouselNext } from '../../carousel/carousel-next';
@@ -173,6 +174,7 @@ class TabsFixture {}
 @Component({
   imports: [
     ForCarousel,
+    ForCarouselDrag,
     ForCarouselViewport,
     ForCarouselTrack,
     ForCarouselSlide,
@@ -186,7 +188,7 @@ class TabsFixture {}
     <div forCarousel ariaLabel="Examples">
       <button forCarouselRotationControl></button>
       <button forCarouselPrevious aria-label="Previous">&#x2039;</button>
-      <div forCarouselViewport>
+      <div forCarouselViewport forCarouselDrag>
         <div forCarouselTrack>
           <div forCarouselSlide>One</div>
           <div forCarouselSlide>Two</div>

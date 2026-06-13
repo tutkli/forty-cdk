@@ -66,16 +66,17 @@ so they cascade to the track. The consumer applies the transform and transition.
 ## CSS custom properties
 
 The following properties are set on the `[forCarousel]` host and cascade to
-children:
+children, unless noted otherwise:
 
-| Property                         | Value        | Notes                                                                             |
-| -------------------------------- | ------------ | --------------------------------------------------------------------------------- |
-| `--for-carousel-offset`          | e.g. `-100%` | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                     |
-| `--for-carousel-active-index`    | integer      | Current `activeIndex`.                                                            |
-| `--for-carousel-slide-count`     | integer      | Total registered slides.                                                          |
-| `--for-carousel-slides-per-view` | integer      | From the `slidesPerView` input.                                                   |
-| `--for-carousel-viewport-width`  | e.g. `640px` | Measured via `ResizeObserver`. Absent on the server and before first measurement. |
-| `--for-carousel-viewport-height` | e.g. `400px` | Same as above, for the block axis.                                                |
+| Property                         | Host                    | Value        | Notes                                                                             |
+| -------------------------------- | ----------------------- | ------------ | --------------------------------------------------------------------------------- |
+| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%` | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                     |
+| `--for-carousel-active-index`    | `[forCarousel]`         | integer      | Current `activeIndex`.                                                            |
+| `--for-carousel-slide-count`     | `[forCarousel]`         | integer      | Total registered slides.                                                          |
+| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer      | From the `slidesPerView` input.                                                   |
+| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px` | Measured via `ResizeObserver`. Absent on the server and before first measurement. |
+| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px` | Same as above, for the block axis.                                                |
+| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px`| Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
 
 ## Autoplay
 
@@ -149,6 +150,82 @@ car.pause(); // stop (explicit, sticky)
 car.toggleAutoplay(); // toggle
 car.playing(); // Signal<boolean> — user intent
 ```
+
+## Drag / swipe
+
+Apply `forCarouselDrag` on the `[forCarouselViewport]` element to enable
+pointer drag and touch swipe navigation. The directive is **opt-in and
+tree-shakeable** — it adds nothing to the root `ForCarousel` for consumers who
+don't use it.
+
+```html
+<div forCarousel [(activeIndex)]="index" ariaLabel="Featured products">
+  <div forCarouselViewport forCarouselDrag>
+    <div forCarouselTrack>…</div>
+  </div>
+  <!-- prev / next / indicators as before -->
+</div>
+```
+
+### CSS contract
+
+The directive publishes `--for-carousel-drag` (a raw px value) on the viewport
+host during the gesture. Compose it with `--for-carousel-offset` on the track
+transform:
+
+```css
+[forCarouselTrack] {
+  transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+  transition: transform 300ms ease;
+}
+[forCarousel][data-orientation='vertical'] [forCarouselTrack] {
+  transform: translateY(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+}
+/* Kill the settle transition while the finger is down so the track follows 1:1 */
+[forCarouselViewport][data-dragging] [forCarouselTrack] {
+  transition: none;
+}
+[forCarouselViewport][data-dragging] {
+  user-select: none;
+}
+```
+
+### RTL
+
+`--for-carousel-drag` is always the **physical** finger displacement, so compose
+it **without** the `-1` factor the consumer may apply to `--for-carousel-offset`
+in RTL:
+
+```css
+[dir='rtl'] [forCarouselTrack] {
+  transform: translateX(calc(-1 * var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+}
+```
+
+### Reduced motion
+
+Under `prefers-reduced-motion: reduce` the directive does **not** publish
+`--for-carousel-drag` (no live track motion). The gesture still snaps
+`activeIndex` on release — only the continuous live offset is suppressed.
+
+### Cross-axis / touch
+
+`touch-action` is set automatically on the viewport host — `pan-y` for
+horizontal carousels (allows vertical page scroll) and `pan-x` for vertical
+carousels (allows horizontal page scroll). A mostly-cross-axis swipe is never
+captured, so page scrolling on the perpendicular axis is unaffected.
+
+### Styling hooks
+
+| Attribute       | Host                    | When present                              |
+| --------------- | ----------------------- | ----------------------------------------- |
+| `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed.    |
+
+### Inputs on `[forCarouselDrag]`
+
+| Input      | Type      | Default | Description                                       |
+| ---------- | --------- | ------- | ------------------------------------------------- |
+| `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
 
 ## Inputs
 

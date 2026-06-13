@@ -7,6 +7,7 @@ export { ForCarouselNext } from './carousel-next';
 export { ForCarouselIndicators } from './carousel-indicators';
 export { ForCarouselIndicator } from './carousel-indicator';
 export { ForCarouselRotationControl } from './carousel-rotation-control';
+export { ForCarouselDrag } from './carousel-drag';
 export {
   FOR_CAROUSEL_CONTEXT,
   type ForCarouselContext,
