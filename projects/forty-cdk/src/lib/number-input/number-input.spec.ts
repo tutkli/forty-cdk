@@ -7,6 +7,7 @@ import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';
 import { ForField } from '../field/field';
 import { ForLabel } from '../field/label';
+import { ForFieldset } from '../fieldset/fieldset';
 import { ForNumberInput } from './number-input';
 import { ForNumberInputDecrement } from './number-input-decrement';
 import { ForNumberInputGroup } from './number-input-group';
@@ -593,6 +594,36 @@ describe('ForNumberInput', () => {
       flush();
       const formEl = el.querySelector('form')!;
       expect(Array.from(new FormData(formEl).entries())).toEqual([]);
+    });
+  });
+
+  describe('disabled fieldset', () => {
+    @Component({
+      imports: [ForNumberInput, ForFieldset],
+      template: `
+        <div forFieldset [disabled]="disabled()">
+          <input forNumberInput [(value)]="qty" name="qty" />
+        </div>
+      `,
+    })
+    class FieldsetHost {
+      readonly disabled = signal(false);
+      readonly qty = signal<number | null>(5);
+    }
+
+    const hiddenOf = (host: HTMLElement) =>
+      host.querySelector<HTMLInputElement>('input[type="hidden"][name="qty"]')!;
+
+    it('does not disable the hidden input while the fieldset is enabled', () => {
+      const { el } = renderHost(FieldsetHost);
+      expect(hiddenOf(el).hasAttribute('disabled')).toBe(false);
+    });
+
+    it('disables the hidden input when the surrounding fieldset is disabled', async () => {
+      const { el, fixture, flush } = renderHost(FieldsetHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      expect(hiddenOf(el).hasAttribute('disabled')).toBe(true);
     });
   });
 

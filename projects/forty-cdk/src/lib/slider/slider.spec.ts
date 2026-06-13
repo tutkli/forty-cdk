@@ -3,6 +3,7 @@ import { form, FormField } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../test-utils/render';
+import { ForFieldset } from '../fieldset/fieldset';
 import { ForSlider } from './slider';
 import { ForSliderRange } from './slider-range';
 import { ForSliderThumb } from './slider-thumb';
@@ -676,6 +677,42 @@ describe('ForSlider', () => {
       fixture.componentInstance.disabled.set(true);
       flush();
       expect(hidden(el)[0]!.hasAttribute('disabled')).toBe(true);
+    });
+  });
+
+  describe('disabled fieldset', () => {
+    @Component({
+      imports: [ForSlider, ForSliderTrack, ForSliderThumb, ForFieldset],
+      template: `
+        <div forFieldset [disabled]="disabled()">
+          <div forSlider [(value)]="picked" name="vol">
+            <span forSliderTrack>
+              @for (v of picked(); let i = $index; track i) {
+                <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+              }
+            </span>
+          </div>
+        </div>
+      `,
+    })
+    class FieldsetHost {
+      readonly disabled = signal(false);
+      readonly picked = signal<readonly number[]>([42]);
+    }
+
+    const hiddenOf = (host: HTMLElement) =>
+      host.querySelector<HTMLInputElement>('input[type="hidden"][name="vol"]')!;
+
+    it('does not disable the hidden input while the fieldset is enabled', () => {
+      const { el } = renderHost(FieldsetHost);
+      expect(hiddenOf(el).hasAttribute('disabled')).toBe(false);
+    });
+
+    it('disables the hidden input when the surrounding fieldset is disabled', async () => {
+      const { el, fixture, flush } = renderHost(FieldsetHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      expect(hiddenOf(el).hasAttribute('disabled')).toBe(true);
     });
   });
 
