@@ -7,7 +7,7 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
 /**
  * Item handle the list's `Collection` registers. Structurally compatible
  * with primitives' `ForMenuItemHandle` — typing is generic so the unit
- * stays orthogonal to `menu/menu-context.ts` (no cycle into a primitive).
+ * stays orthogonal to `_internal/menu-overlay/menu-context.ts` (no cycle into a primitive).
  */
 export interface MenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;

@@ -10,7 +10,7 @@ import {
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset-context';
+import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from '../_internal/fieldset/fieldset-context';
 
 /**
  * Headless grouping container that gives a set of related fields a shared

@@ -20,7 +20,7 @@ import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './me
 
 /**
  * Reason a menu requested close. Mirrors `ForMenuCloseReason` from
- * `menu/menu-context.ts` structurally so primitives can pass either type
+ * `_internal/menu-overlay/menu-context.ts` structurally so primitives can pass either type
  * across the helper boundary without re-declaration.
  */
 export type MenuOverlayCloseReason =
