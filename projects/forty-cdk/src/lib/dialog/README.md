@@ -133,13 +133,44 @@ export class DemoHost {
 
 `injectDialogData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload.
 
-**Styling the programmatic overlay root.** Declaratively you write the surface yourself (`<div forDialog class="my-dialog">`), so the class lands on the same element that carries `data-state` / `role`. The manager creates that host for you and it is class-less, so pass `class` / `classList` to style it:
+**Styling the programmatic overlay root.** Declaratively you write the surface yourself (`<div forDialog class="my-dialog">`), so the class lands on the same element that carries `data-state` / `role`. The manager creates that host for you and it is class-less, so pass `class` / `classList` to style it.
 
 ```ts
 this.dialogs.open(ConfirmDialog, { data, alert: true, class: 'my-dialog my-dialog--pop' });
 ```
 
 The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `aria-modal`, merged and de-duped, never clobbering those attributes.
+
+**Enter / exit animations.** A programmatic dialog is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately — only the visual teardown waits. With no class (or under `prefers-reduced-motion`, if your CSS disables the animation) close is immediate.
+
+```ts
+this.dialogs.open(ConfirmDialog, {
+  data,
+  class: 'my-dialog',
+  animateEnter: 'dialog-in',
+  animateLeave: 'dialog-out',
+});
+```
+
+```css
+.my-dialog {
+  opacity: 1;
+  transition: opacity 150ms ease-out;
+}
+.dialog-in {
+  animation: dialog-fade-in 150ms ease-out;
+}
+.my-dialog.dialog-out {
+  opacity: 0;
+}
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+```
+
+Set them once for a scope with `provideForDialogDefaults({ animateEnter, animateLeave })`; a per-`open()` value always wins over the scope default.
 
 ## Pieces (declarative)
 
@@ -183,7 +214,12 @@ The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `
 
 ```html
 @if (open()) {
-<div forDialog [modal]="false" (interactOutside)="$event.preventDefault()" (close)="open.set(false)">
+<div
+  forDialog
+  [modal]="false"
+  (interactOutside)="$event.preventDefault()"
+  (close)="open.set(false)"
+>
   …
 </div>
 }
@@ -246,25 +282,26 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 
 ### `ForDialogOpenConfig`
 
-| Field              | Default   | Description                                                                                             |
-| ------------------ | --------- | ------------------------------------------------------------------------------------------------------- |
-| `data`             | —         | Payload available as `injectDialogData<T>()`.                                                           |
-| `dismissible`      | `true`    | Escape closes when `true`.                                                                              |
-| `modal`            | `true`    | Sets `aria-modal`, locks body scroll, traps focus.                                                      |
-| `alert`            | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                                                         |
-| `returnFocus`      | `true`    | Focus returns to the previously focused element on close.                                               |
-| `initialFocus`     | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                        |
-| `ariaLabel`        | —         | Manual accessible name when no title element is rendered.                                               |
-| `hostTag`          | `'div'`   | Tag name for the host element (e.g. `'section'`).                                                       |
-| `class`            | —         | CSS class(es) applied to the overlay root (the `[forDialog]` host). Single or space-separated string.   |
-| `classList`        | —         | CSS class(es) applied to the overlay root, as an array or space-separated string. Merged with `class`.  |
-| `providers`        | `[]`      | Extra providers for the opened component's injector.                                                    |
-| `autoFocusOnOpen`  | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move. |
-| `autoFocusOnClose` | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.         |
-| `escapeKeyDown`    | —         | Callback. `VetoableNativeEvent<KeyboardEvent>`; `preventDefault()` suppresses the Escape close.          |
-| `pointerDownOutside` | —       | Callback. `VetoableNativeEvent<PointerEvent>`; `preventDefault()` suppresses the outside-pointer close.  |
-| `focusOutside`     | —         | Callback. `VetoableNativeEvent<FocusEvent>`; `preventDefault()` suppresses the outside-focus close.      |
-| `interactOutside`  | —         | Callback. Composite `VetoableNativeEvent<PointerEvent \| FocusEvent>`; shares the veto of the two above. |
+| Field                | Default   | Description                                                                                              |
+| -------------------- | --------- | -------------------------------------------------------------------------------------------------------- |
+| `data`               | —         | Payload available as `injectDialogData<T>()`.                                                            |
+| `dismissible`        | `true`    | Escape closes when `true`.                                                                               |
+| `modal`              | `true`    | Sets `aria-modal`, locks body scroll, traps focus.                                                       |
+| `alert`              | `false`   | Use `role="alertdialog"` instead of `"dialog"`.                                                          |
+| `returnFocus`        | `true`    | Focus returns to the previously focused element on close.                                                |
+| `initialFocus`       | `'first'` | `'first'` finds first focusable; `'container'` focuses the host.                                         |
+| `ariaLabel`          | —         | Manual accessible name when no title element is rendered.                                                |
+| `animateEnter`       | —         | CSS class applied on mount (via `animate.enter`) to play an enter animation.                             |
+| `animateLeave`       | —         | CSS class applied on close; the host stays mounted until its animation finishes, then tears down.        |
+| `class`              | —         | CSS class(es) applied to the overlay root (the `[forDialog]` host). Single or space-separated string.    |
+| `classList`          | —         | CSS class(es) applied to the overlay root, as an array or space-separated string. Merged with `class`.   |
+| `providers`          | `[]`      | Extra providers for the opened component's injector.                                                     |
+| `autoFocusOnOpen`    | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the imperative initial focus move.  |
+| `autoFocusOnClose`   | —         | Callback. Receives a `VetoableEvent`; `event.preventDefault()` skips the return-focus on close.          |
+| `escapeKeyDown`      | —         | Callback. `VetoableNativeEvent<KeyboardEvent>`; `preventDefault()` suppresses the Escape close.          |
+| `pointerDownOutside` | —         | Callback. `VetoableNativeEvent<PointerEvent>`; `preventDefault()` suppresses the outside-pointer close.  |
+| `focusOutside`       | —         | Callback. `VetoableNativeEvent<FocusEvent>`; `preventDefault()` suppresses the outside-focus close.      |
+| `interactOutside`    | —         | Callback. Composite `VetoableNativeEvent<PointerEvent \| FocusEvent>`; shares the veto of the two above. |
 
 The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` outputs exactly — same events, same veto semantics. See [Per-channel dismissal](#per-channel-dismissal-escape-only-dialogs).
 

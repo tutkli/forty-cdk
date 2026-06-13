@@ -119,13 +119,6 @@ describe('ForDialogManager (programmatic)', () => {
       expect(document.querySelector('#typed-null')!.textContent).toBe('null');
     });
 
-    it('honors the hostTag option', () => {
-      const { dialogs } = setup();
-      dialogs.open(ConfirmDialog, { data: { message: 'x' }, hostTag: 'section' });
-      const host = document.querySelector('section[role="dialog"]');
-      expect(host).toBeTruthy();
-    });
-
     it('sets aria-label when configured', () => {
       const { dialogs } = setup();
       dialogs.open(ConfirmDialog, { data: { message: 'x' }, ariaLabel: 'Quick confirm' });
@@ -187,6 +180,7 @@ describe('ForDialogManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
@@ -198,10 +192,8 @@ describe('ForDialogManager (programmatic)', () => {
 
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
-      // Single owner (the portal) detaches the host; the invariant is that by
-      // the time return-focus has landed on the trigger the dialog host is no
-      // longer in the document.
       expect(host.isConnected).toBe(false);
       expect(document.activeElement).toBe(trigger);
     });
@@ -233,6 +225,7 @@ describe('ForDialogManager (programmatic)', () => {
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
       expect(document.activeElement).toBe(trigger);
     });
@@ -245,6 +238,7 @@ describe('ForDialogManager (programmatic)', () => {
       });
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
       expect(document.activeElement).not.toBe(trigger);
     });
@@ -284,6 +278,7 @@ describe('ForDialogManager (programmatic)', () => {
 
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
       expect(document.activeElement?.id).toBe('sentinel');
       sentinel.remove();
@@ -331,6 +326,7 @@ describe('ForDialogManager (programmatic)', () => {
 
       ref.close();
       await ref.closed;
+      TestBed.tick();
 
       expect(document.body.style.overflow).toBe('');
     });
@@ -358,10 +354,12 @@ describe('ForDialogManager (programmatic)', () => {
 
       a.close();
       await a.closed;
+      TestBed.tick();
       expect(document.body.style.overflow).toBe('hidden');
 
       b.close();
       await b.closed;
+      TestBed.tick();
       expect(document.body.style.overflow).toBe('');
     });
 
@@ -412,6 +410,7 @@ describe('ForDialogManager (programmatic)', () => {
 
       outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
       await ref.closed;
+      TestBed.tick();
 
       expect(ref.isClosed()).toBe(true);
       outside.remove();
@@ -700,6 +699,70 @@ describe('ForDialogManager (programmatic)', () => {
       dialogs.open(ConfirmDialog, { data: { message: 'x' } });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(host.className).toBe('');
+    });
+  });
+
+  describe('exit-animation / control-flow contract (#677)', () => {
+    it('isClosed() flips true and closed promise resolves immediately on close', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      expect(ref.isClosed()).toBe(false);
+      ref.close();
+      expect(ref.isClosed()).toBe(true);
+      await ref.closed;
+      expect(ref.isClosed()).toBe(true);
+    });
+
+    it('host is removed from document.body after a CD cycle (one TestBed.tick)', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+
+    it('closing one of N dialogs leaves the others mounted', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+
+      a.close();
+      await a.closed;
+      TestBed.tick();
+
+      expect(a.isClosed()).toBe(true);
+      expect(b.isClosed()).toBe(false);
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
+
+      b.close();
+    });
+
+    it('zoneless open + close (provideZonelessChangeDetection)', async () => {
+      const { dialogs } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+
+    it('accepts animateEnter / animateLeave config and mounts', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        animateEnter: 'dialog-in',
+        animateLeave: 'dialog-out',
+      });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
     });
   });
 });

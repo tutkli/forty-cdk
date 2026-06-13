@@ -4,13 +4,25 @@ import { createDefaults } from '../_internal/defaults/defaults';
 
 /**
  * Defaults inherited by descendant dialogs in the surrounding injector
- * scope. Configure with `provideForDialogDefaults`. The shape is a stub
- * today — present so future per-scope tuning (default `returnFocus`
- * behavior, scroll-lock policy) can land without churning the public
- * surface.
+ * scope. Configure with `provideForDialogDefaults`. Applies to both
+ * declarative dialogs and `ForDialogManager.open()`; the manager resolves
+ * `config[key] ?? defaults[key]` so a per-`open()` value always wins over the
+ * scope default.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ForDialogDefaults {}
+export interface ForDialogDefaults {
+  /**
+   * CSS class applied (via `animate.enter`) to the programmatic overlay host
+   * when it mounts, so it plays an enter animation. The class lands on the
+   * `[forDialog]` host that also carries the consumer `class`. No default.
+   */
+  animateEnter?: string;
+  /**
+   * CSS class applied to the programmatic overlay host when `close()` is
+   * called, kept on the still-mounted host until its CSS animations finish so
+   * an exit transition plays before teardown. No default (close is immediate).
+   */
+  animateLeave?: string;
+}
 
 const FALLBACK: ForDialogDefaults = {};
 

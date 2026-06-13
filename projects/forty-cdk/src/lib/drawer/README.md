@@ -163,6 +163,18 @@ this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 }
 ```
 
+**Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately — only the visual teardown waits. Set them once for a scope with `provideForDrawerDefaults({ animateEnter, animateLeave })`; a per-`open()` value wins over the scope default.
+
+```ts
+this.#drawers.open(ConfirmDrawer, {
+  data,
+  side: 'bottom',
+  class: 'my-drawer',
+  animateEnter: 'drawer-in',
+  animateLeave: 'drawer-out',
+});
+```
+
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
 **Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(drag)` / `(release)` / `(activeSnapPointChange)` outputs via the `onDrag` / `onRelease` / `onActiveSnapPointChange` config callbacks:
@@ -209,6 +221,8 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 | `returnFocus`               | `boolean`                                   | `true`     | Restore focus on close.                                                                                                                                                                    |
 | `initialFocus`              | `'first' \| 'container'`                    | `'first'`  |                                                                                                                                                                                            |
 | `ariaLabel`                 | `string \| null`                            | `null`     | Use when no visible title is rendered.                                                                                                                                                     |
+| `animateEnter`              | `string`                                    | —          | CSS class applied on mount (via `animate.enter`) to play an enter animation.                                                                                                               |
+| `animateLeave`              | `string`                                    | —          | CSS class applied on close; the host stays mounted until its animation finishes, then tears down.                                                                                          |
 | `autoFocusOnOpen`           | `(e: VetoableEvent) => void` \| `undefined` | —          | `event.preventDefault()` skips the imperative focus move.                                                                                                                                  |
 | `autoFocusOnClose`          | `(e: VetoableEvent) => void` \| `undefined` | —          | Fires on every close path regardless of mode. In non-modal mode the directive doesn't move focus, so the veto is informational; in modal mode `event.preventDefault()` skips return-focus. |
 | `swipeToDismiss`            | `boolean`                                   | `true`     | Disabled automatically under `prefers-reduced-motion: reduce`.                                                                                                                             |

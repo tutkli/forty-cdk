@@ -1,7 +1,8 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ApplicationRef,
+  computed,
   createComponent,
+  DOCUMENT,
   EnvironmentInjector,
   inject,
   Injectable,
@@ -13,12 +14,14 @@ import {
 } from '@angular/core';
 
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
+import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { ForDialog } from './dialog';
-import { ForDialogProgrammaticHost } from './dialog-programmatic-host';
+import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
+import type { ForDialogEntry } from './dialog-outlet';
+import { ForDialogOutlet } from './dialog-outlet';
 import { ForDialogRef } from './dialog-ref';
 
 /**
@@ -65,8 +68,25 @@ export interface ForDialogOpenConfig<D = unknown> {
   /** Manual `aria-label`. Use when no visible title element is rendered. */
   ariaLabel?: string;
 
-  /** Tag name for the host element. Default `'div'`. Pass `'section'`, `'article'`, etc. for semantics. */
-  hostTag?: keyof HTMLElementTagNameMap;
+  /**
+   * CSS class applied (via `animate.enter`) to the overlay root the moment it
+   * mounts, so a programmatic dialog plays an enter animation just like a
+   * declarative `<div forDialog animate.enter="…">`. The class lands on the
+   * same `[forDialog]` host as {@link class}. Falls back to
+   * `provideForDialogDefaults({ animateEnter })`.
+   */
+  animateEnter?: string;
+
+  /**
+   * CSS class applied to the overlay root when `close()` is called. The
+   * manager keeps the host mounted with this class until its CSS animations /
+   * transitions finish, then tears the dialog down — so a programmatic dialog
+   * plays an exit animation. `close()` still resolves its promise and flips
+   * `isClosed()` immediately; only the visual teardown waits. With no class (or
+   * no animation, or under `prefers-reduced-motion`), close is immediate. Falls
+   * back to `provideForDialogDefaults({ animateLeave })`.
+   */
+  animateLeave?: string;
 
   /**
    * Consumer CSS class(es) applied to the overlay root (the `[forDialog]`
@@ -142,15 +162,17 @@ export interface ForDialogOpenConfig<D = unknown> {
   interactOutside?: (event: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
 }
 
+interface InternalDialogEntry extends ForDialogEntry {
+  readonly ref: ForDialogRef<unknown>;
+}
+
 /**
  * Programmatic dialog opener — the headless equivalent of CDK's `Dialog`.
  * Inject anywhere, call `open(MyComponent, { data, ... })` and get a
- * `ForDialogRef<R>` back. Internally the manager mounts the user component
- * underneath an internal `[forDialog]` host directive, so all declarative
- * primitive behaviours apply identically: focus trap, scroll lock, Escape,
- * dismissable layer (with the triple-veto + composite `interactOutside`
- * pattern), portal, return-focus, and the WebKit-#136 sync return-target
- * capture.
+ * `ForDialogRef<R>` back. Internally the manager renders the user component
+ * inside a manager-owned `@for` outlet, so Angular's control-flow unmount
+ * fires `animate.leave` before the node leaves the DOM — identical to the
+ * declarative `@if (open()) { <div forDialog animate.leave="…"> }` path.
  *
  * Inside the opened component the usual dialog pieces work without any extra
  * wiring: `[forDialogTitle]`, `[forDialogDescription]`, `[forDialogBackdrop]`,
@@ -164,186 +186,132 @@ export interface ForDialogOpenConfig<D = unknown> {
 export class ForDialogManager {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
+  readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_DIALOG_DEFAULTS);
   readonly #document = inject(DOCUMENT);
 
-  readonly #count = signal(0);
+  readonly #entries = signal<readonly InternalDialogEntry[]>([]);
+
   /** Reactive count of currently open programmatic dialogs (useful for diagnostics). */
-  readonly openCount = this.#count.asReadonly();
+  readonly openCount = computed(() => this.#entries().length);
+
+  #outletRef: ReturnType<typeof createComponent<ForDialogOutlet>> | null = null;
+  #destroying = false;
+
+  #closeAllForDestroy(): void {
+    this.#destroying = true;
+    for (const entry of this.#entries()) {
+      entry.ref.close();
+    }
+  }
+
+  #beginLeave(id: string, leaveClass: string | undefined, remove: () => void): void {
+    if (this.#destroying || !leaveClass || typeof requestAnimationFrame === 'undefined') {
+      remove();
+      return;
+    }
+    const host = this.#document.querySelector<HTMLElement>(`[data-for-dialog-id="${id}"]`);
+    if (!host || typeof host.getAnimations !== 'function') {
+      remove();
+      return;
+    }
+    host.classList.add(leaveClass);
+    requestAnimationFrame(() => {
+      const animations = host.getAnimations();
+      if (animations.length === 0) {
+        remove();
+        return;
+      }
+      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
+        () => remove(),
+      );
+    });
+  }
 
   open<C, R = unknown, D = unknown>(
     component: Type<C>,
     config: ForDialogOpenConfig<D> = {},
   ): ForDialogRef<R> {
-    const hostEl = this.#document.createElement(config.hostTag ?? 'div');
-    // Apply consumer classes to the real `[forDialog]` host BEFORE the
-    // directive is attached, so they compose with — never clobber — the
-    // directive's own host attributes (`data-state`, `role`, `aria-modal`),
-    // which are reflected as separate attribute bindings.
-    const hostClass = resolveConfigClass(config);
-    if (hostClass) {
-      hostEl.className = hostClass;
-    }
-    // The host is parked in body BEFORE the component is created so that the
-    // directive's `afterNextRender` side effects (focus moves, inert siblings,
-    // dismissable-layer push) see a connected element. The directive's own
-    // `injectPortal()` is then a no-op (host already has body as parent).
-    this.#document.body.appendChild(hostEl);
+    this.#ensureOutlet();
 
-    let teardown = (): void => {};
-    const ref = new ForDialogRef<R>(() => teardown());
-
-    // The shell injector hosts `FOR_DIALOG_DATA` and `ForDialogRef` so that
-    // the user component (created beneath it) can `inject(...)` either. We
-    // also surface the user-supplied `providers`.
-    const elementInjector = Injector.create({
-      parent: this.#envInjector,
-      providers: [
-        { provide: FOR_DIALOG_DATA, useValue: config.data ?? null },
-        { provide: ForDialogRef, useValue: ref },
-        ...(config.providers ?? []),
-      ],
-    });
-
-    const shellRef = createComponent(ForDialogProgrammaticHost, {
-      environmentInjector: this.#envInjector,
-      elementInjector,
-      hostElement: hostEl,
-    });
-
-    // Push every input the consumer wants set BEFORE the first detectChanges
-    // so the directive's `afterNextRender` reads the configured values, not
-    // the default ones. Only set keys the consumer actually specified so the
-    // directive's own fallback logic still applies for unset keys.
-    setIfDefined(shellRef, 'dismissible', config.dismissible);
-    setIfDefined(shellRef, 'modal', config.modal);
-    setIfDefined(shellRef, 'alert', config.alert);
-    setIfDefined(shellRef, 'returnFocus', config.returnFocus);
-    setIfDefined(shellRef, 'initialFocus', config.initialFocus);
-    setIfDefined(shellRef, 'ariaLabel', config.ariaLabel);
-    setIfDefined(shellRef, 'autoFocusOnOpen', config.autoFocusOnOpen);
-    setIfDefined(shellRef, 'autoFocusOnClose', config.autoFocusOnClose);
-
-    this.#appRef.attachView(shellRef.hostView);
-    // First detectChanges resolves the `viewChild` ViewContainerRef so we can
-    // mount the user component as a child view.
-    shellRef.changeDetectorRef.detectChanges();
-
-    const dialogInstance = shellRef.injector.get(ForDialog);
-
-    // Render the user component as a child view of the shell. We deliberately
-    // do NOT pass an explicit `injector` here so the user component inherits
-    // the shell's full element injector chain — including the `ForDialog`
-    // directive's own `providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting:
-    // ForDialog }]` AND the `FOR_DIALOG_DATA` / `ForDialogRef` we added on
-    // top via `elementInjector`. With that, `[forDialogClose]`,
-    // `[forDialogTitle]`, `[forDialogDescription]`, and `[forDialogBackdrop]`
-    // resolve `FOR_DIALOG_CONTEXT` exactly as in declarative usage;
-    // `[forDialogClose] [closeWith]` propagates through `requestClose(reason,
-    // value)` to `ForDialogRef.close(value)` (see the `(close)` subscription
-    // below).
-    const vc = shellRef.instance.vc();
-    const userRef = vc.createComponent(component);
-
-    // Bridge `(close)` → ForDialogRef.close(value). The directive captures
-    // the optional `value` argument from `requestClose(reason, value)` in a
-    // signal we read back here.
-    const subs = [
-      dialogInstance.close.subscribe(() => {
-        ref.close(dialogInstance.lastCloseValue() as R);
-      }),
-    ];
-
-    // Forward the four vetoable dismiss channels the directive emits. The
-    // shell builds one `VetoableNativeEvent` per physical interaction, emits
-    // it through the directive output (synchronously, so the consumer's
-    // callback runs before the shell reads `defaultPrevented`), and only then
-    // decides whether to `requestClose`. A `preventDefault()` inside the
-    // callback therefore vetoes the implicit close exactly as the declarative
-    // `(escapeKeyDown)` / `(interactOutside)` outputs do — this lets a
-    // programmatic floater stay open on outside click (veto `interactOutside`)
-    // while Escape still closes it. Each subscription is torn down with the
-    // shell.
-    const { escapeKeyDown, pointerDownOutside, focusOutside, interactOutside } = config;
-    if (escapeKeyDown) {
-      subs.push(dialogInstance.escapeKeyDown.subscribe(escapeKeyDown));
-    }
-    if (pointerDownOutside) {
-      subs.push(dialogInstance.pointerDownOutside.subscribe(pointerDownOutside));
-    }
-    if (focusOutside) {
-      subs.push(dialogInstance.focusOutside.subscribe(focusOutside));
-    }
-    if (interactOutside) {
-      subs.push(dialogInstance.interactOutside.subscribe(interactOutside));
-    }
-
-    // The directive's own `afterNextRender` lifecycle wires the focus trap,
-    // scroll lock, dismissable layer, inert siblings, and return-focus
-    // capture. The first `detectChanges` above runs the shell's view but does
-    // NOT flush the global render queue where `afterNextRender` callbacks
-    // live; `appRef.tick()` does. We tick once here so consumers calling
-    // `manager.open(...)` see the dialog fully wired by the time the call
-    // returns — this matches the synchronous contract the existing
-    // `dialog-manager.spec` suite was built around.
-    this.#appRef.tick();
-
-    this.#count.update((n) => n + 1);
-
-    let torn = false;
-    teardown = (): void => {
-      if (torn) {
+    const id = this.#idGen.next('for-dialog-instance');
+    let removed = false;
+    const remove = (): void => {
+      if (removed) {
         return;
       }
-      torn = true;
-      // Tearing down the shell triggers ForDialog's `DestroyRef.onDestroy`
-      // (registered by `injectModalShell`) which deactivates focus trap (with
-      // return-focus), inert siblings, scroll lock, and dismissable layer.
-      // The user component's view destroys ahead of the shell because Angular
-      // tears down child views first, so `[forDialogClose]`, `[forDialogTitle]`,
-      // etc. all unregister cleanly.
-      for (const sub of subs) {
-        sub.unsubscribe();
-      }
-      userRef.destroy();
-      this.#appRef.detachView(shellRef.hostView);
-      // The portal owns host removal: `shellRef.destroy()` fires ForDialog's
-      // `DestroyRef`, whose `injectPortal()` hook removes `hostEl` from the
-      // body. The modal-shell's return-focus runs in the same teardown after
-      // the host is detached, so focus returns to a tree without the (inert)
-      // dialog still attached. No second `hostEl.remove()` here — one owner.
-      shellRef.destroy();
-      this.#count.update((n) => Math.max(0, n - 1));
+      removed = true;
+      this.#entries.update((arr) => arr.filter((e) => e.id !== id));
     };
 
-    shellRef.onDestroy(() => {
-      // Defensive: if the host environment destroys the view without going
-      // through ref.close() (TestBed reset, manual ApplicationRef destroy),
-      // run the same teardown path.
-      if (!torn) {
-        ref.close();
-      }
-    });
+    const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
+    const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
 
-    if (ref.isClosed()) {
-      teardown();
-    }
+    const ref = new ForDialogRef<R>(() => this.#beginLeave(id, animateLeave, remove));
+
+    const hostClass = resolveConfigClass(config) ?? '';
+    const consumerProviders = config.providers ?? [];
+    const data = config.data ?? null;
+
+    let cachedInjector: Injector | null = null;
+    let cachedParent: Injector | null = null;
+
+    const entry: InternalDialogEntry = {
+      id,
+      component: component as Type<unknown>,
+      hostClass,
+      dismissible: config.dismissible,
+      modal: config.modal,
+      alert: config.alert,
+      returnFocus: config.returnFocus,
+      initialFocus: config.initialFocus,
+      ariaLabel: config.ariaLabel,
+      animateEnter,
+      autoFocusOnOpen: config.autoFocusOnOpen,
+      autoFocusOnClose: config.autoFocusOnClose,
+      escapeKeyDown: config.escapeKeyDown,
+      pointerDownOutside: config.pointerDownOutside,
+      focusOutside: config.focusOutside,
+      interactOutside: config.interactOutside,
+      ref: ref as ForDialogRef<unknown>,
+      handleClose(value: unknown): void {
+        ref.close(value as R);
+      },
+      injectorFor(parent: Injector): Injector {
+        if (cachedInjector && cachedParent === parent) {
+          return cachedInjector;
+        }
+        cachedParent = parent;
+        cachedInjector = Injector.create({
+          parent,
+          providers: [
+            { provide: FOR_DIALOG_DATA, useValue: data },
+            { provide: ForDialogRef, useValue: ref },
+            ...consumerProviders,
+          ],
+        });
+        return cachedInjector;
+      },
+    };
+
+    this.#entries.update((arr) => [...arr, entry]);
+    this.#appRef.tick();
 
     return ref;
   }
-}
 
-/**
- * Helper: only push an input when the resolved value is not `undefined`. This
- * preserves the directive's own fallback semantics (its `input()` defaults)
- * for keys the consumer left unset, and avoids overwriting them with
- * `undefined` from `componentRef.setInput`.
- */
-function setIfDefined<T>(
-  componentRef: { setInput: (name: string, value: unknown) => void },
-  name: string,
-  value: T | undefined,
-): void {
-  if (value !== undefined) {
-    componentRef.setInput(name, value);
+  #ensureOutlet(): void {
+    if (this.#outletRef) {
+      return;
+    }
+    const outletRef = createComponent(ForDialogOutlet, {
+      environmentInjector: this.#envInjector,
+    });
+    this.#appRef.attachView(outletRef.hostView);
+    outletRef.instance.init({
+      entries: this.#entries.asReadonly(),
+      closeAllForDestroy: () => this.#closeAllForDestroy(),
+    });
+    this.#outletRef = outletRef;
   }
 }
