@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prepare": "lefthook install || true",
     "start": "ng serve",
     "build": "ng build forty-cdk",
     "watch": "ng build forty-cdk --watch --configuration development",
@@ -43,6 +44,7 @@
     "angular-eslint": "^22.0.0",
     "eslint": "^10.3.0",
     "jsdom": "^28.0.0",
+    "lefthook": "^2.1.9",
     "ng-packagr": "^22.0.0",
     "prettier": "^3.8.1",
     "rxjs": "~7.8.0",

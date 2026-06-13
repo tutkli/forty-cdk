@@ -40,6 +40,16 @@ pnpm watch       # ng build forty-cdk --watch --configuration development
 pnpm test:e2e    # playwright test (Chromium + WebKit; spins up the harness)
 ```
 
+### Pre-commit hook
+
+A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook runs lint
+(`eslint`), format check (`prettier --check`), and a project typecheck (`tsc --noEmit`)
+on each commit. Lint and format only inspect the **staged** files, so the hook stays
+fast; the typecheck runs project-wide but only when staged TypeScript files exist.
+
+The hook installs automatically — `pnpm install` runs the `prepare` script
+(`lefthook install`). Bypass it for a one-off commit with `git commit --no-verify`.
+
 ## License
 
 See [LICENSE](LICENSE).
