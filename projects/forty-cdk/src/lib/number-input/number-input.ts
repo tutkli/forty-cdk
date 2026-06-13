@@ -228,7 +228,7 @@ export class ForNumberInput
         const current = this.value();
         return current === null ? [] : [String(current)];
       }),
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
 
     // Register with an optional surrounding [forNumberInputGroup] so its

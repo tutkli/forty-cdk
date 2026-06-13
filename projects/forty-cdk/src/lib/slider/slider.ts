@@ -237,7 +237,7 @@ export class ForSlider
     injectHiddenInput({
       name: this.name,
       values: stringValues,
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
     });
     this.#destroyRef.onDestroy(() => {
       for (const cleanup of this.#activeDragCleanups) {
