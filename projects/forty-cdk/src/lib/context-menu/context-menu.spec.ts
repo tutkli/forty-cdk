@@ -3,7 +3,7 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
-import { FOR_MENU_CONTEXT } from '../menu/menu-context';
+import { FOR_MENU_CONTEXT } from '../_internal/menu-overlay/menu-context';
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForContextMenu } from './context-menu';

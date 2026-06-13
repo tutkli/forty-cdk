@@ -12,7 +12,7 @@ import {
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { emitVetoableEvent, type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
-import { injectMenuContext } from './menu-context';
+import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 

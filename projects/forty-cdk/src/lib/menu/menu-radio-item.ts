@@ -17,7 +17,7 @@ import {
   emitVetoableEvent,
   type VetoableEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { injectMenuContext } from './menu-context';
+import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';

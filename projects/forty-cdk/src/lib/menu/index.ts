@@ -15,7 +15,7 @@ export {
   type ForMenuContext,
   type ForMenuItemHandle,
   type MenuActivationModality,
-} from './menu-context';
+} from '../_internal/menu-overlay/menu-context';
 export {
   FOR_MENU_RADIO_GROUP_CONTEXT,
   type ForMenuRadioGroupContext,

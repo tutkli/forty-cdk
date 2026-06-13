@@ -29,7 +29,11 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
-import { FOR_MENU_CONTEXT, type ForMenuCloseReason, type ForMenuContext } from './menu-context';
+import {
+  FOR_MENU_CONTEXT,
+  type ForMenuCloseReason,
+  type ForMenuContext,
+} from '../_internal/menu-overlay/menu-context';
 import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**
