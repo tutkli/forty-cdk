@@ -347,17 +347,25 @@ export class ForSelect<T = string>
     // render meaningfully on a cold cache.
     const items = this.#items.items();
     const cached = this.#cachedOptions();
-    const equals = this.isItemEqualToValue();
     const toFormValue = this.itemToFormValue();
+    const liveByKey = new Map<string, ForSelectOptionHandle<T>>();
+    for (const o of items) {
+      liveByKey.set(toFormValue(o.value()), o);
+    }
+    const cachedByKey = new Map<string, { value: T; label: string }>();
+    for (const o of cached) {
+      cachedByKey.set(toFormValue(o.value), o);
+    }
     const labels: string[] = [];
     for (const v of values) {
-      const live = items.find((o) => equals(o.value(), v));
+      const key = toFormValue(v);
+      const live = liveByKey.get(key);
       if (live) {
         labels.push((live.host.textContent ?? '').trim());
         continue;
       }
-      const opt = cached.find((o) => equals(o.value, v));
-      labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : toFormValue(v));
+      const opt = cachedByKey.get(key);
+      labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : key);
     }
     return labels;
   });
@@ -367,10 +375,14 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const equals = this.isItemEqualToValue();
     const items = this.#items.items();
+    const toFormValue = this.itemToFormValue();
+    const byKey = new Map<string, ForSelectOptionHandle<T>>();
+    for (const o of items) {
+      byKey.set(toFormValue(o.value()), o);
+    }
     for (const v of values) {
-      const opt = items.find((o) => equals(o.value(), v));
+      const opt = byKey.get(toFormValue(v));
       if (opt) {
         return opt.host;
       }

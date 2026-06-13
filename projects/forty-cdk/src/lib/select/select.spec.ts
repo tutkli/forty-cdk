@@ -1438,6 +1438,88 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('multi-select label resolution precedence', () => {
+    interface City {
+      id: number;
+      name: string;
+    }
+
+    const PARIS: City = { id: 1, name: 'Paris' };
+    const BERLIN: City = { id: 2, name: 'Berlin' };
+    const TOKYO: City = { id: 3, name: 'Tokyo' };
+    const GHOST: City = { id: 99, name: 'Ghost' };
+
+    @Component({
+      imports: [...BASE_IMPORTS, ForSelectValue],
+      template: `
+        <div
+          forSelect
+          multiple
+          [(open)]="open"
+          [(value)]="value"
+          [isItemEqualToValue]="byId"
+          [itemToFormValue]="toId"
+        >
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick cities"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="paris" forSelectOption [value]="paris">Paris</button>
+              <button data-test-id="berlin" forSelectOption [value]="berlin">Berlin</button>
+              <button data-test-id="tokyo" forSelectOption [value]="tokyo">Tokyo</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class MultiHost {
+      readonly paris = PARIS;
+      readonly berlin = BERLIN;
+      readonly tokyo = TOKYO;
+      readonly open = signal(false);
+      readonly value = signal<readonly City[]>([]);
+      readonly byId = (a: City, b: City) => a.id === b.id;
+      readonly toId = (c: City) => String(c.id);
+    }
+
+    it('renders labels in selection order from the live registry', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set([TOKYO, PARIS]);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Tokyo, Paris');
+    });
+
+    it('falls back to the serialized form value for a value absent from the registry', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.value.set([BERLIN, GHOST]);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Berlin, 99');
+    });
+
+    it('resolves from the cached snapshot once the listbox closes, mixing live, cached, and fallback', async () => {
+      const r = renderHost(MultiHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.value.set([PARIS, TOKYO, GHOST]);
+      await flush(r.fixture);
+      const value = r.query<HTMLElement>('[forSelectValue]')!;
+      expect(value.textContent).toBe('Paris, Tokyo, 99');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[forSelectContent]')).toBeNull();
+      expect(value.textContent).toBe('Paris, Tokyo, 99');
+    });
+  });
+
   describe('position input', () => {
     @Component({
       imports: HOST_IMPORTS,
