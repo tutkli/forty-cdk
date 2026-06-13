@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute } from '@angular/router';
 import {
   ForCarousel,
+  ForCarouselDrag,
   ForCarouselIndicator,
   ForCarouselIndicators,
   ForCarouselNext,
@@ -35,6 +36,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForCarousel,
+    ForCarouselDrag,
     ForCarouselViewport,
     ForCarouselTrack,
     ForCarouselSlide,
@@ -53,12 +55,12 @@ import {
       }
       [forCarouselTrack] {
         display: flex;
-        transform: translateX(var(--for-carousel-offset));
+        transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
         transition: none;
       }
       [forCarousel][data-orientation='vertical'] [forCarouselTrack] {
         flex-direction: column;
-        transform: translateY(var(--for-carousel-offset));
+        transform: translateY(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
       }
       [forCarouselSlide] {
         flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
@@ -89,7 +91,7 @@ import {
       <button forCarouselRotationControl data-testid="rotation">&#x25B6;</button>
       <button forCarouselPrevious aria-label="Previous slide" data-testid="prev"></button>
 
-      <div forCarouselViewport data-testid="viewport">
+      <div forCarouselViewport forCarouselDrag data-testid="viewport">
         <div forCarouselTrack data-testid="track">
           @for (slide of slides(); track slide) {
             <div forCarouselSlide [attr.data-testid]="'slide-' + slide">Slide {{ slide }}</div>

@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst, tabN } from './_helpers';
+import {
+  dragFrom,
+  dragFromSteps,
+  el,
+  expectFocused,
+  gotoFixture,
+  isMobileProject,
+  rovingFirst,
+  tabN,
+} from './_helpers';
 
 /**
  * Real-browser coverage for the Carousel primitive. The Vitest contract
@@ -312,6 +321,108 @@ test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
       await el(page, 'before').focus();
       await page.mouse.move(0, 0);
       await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+      await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+test.describe('Carousel (drag / swipe) @mobile', () => {
+  // These drive the gesture through `page.mouse` (no `testInfo` passed), which on
+  // the mobile projects (hasTouch) Playwright translates to pointerType:'touch'
+  // events while preserving pointer-capture forwarding — the same path the
+  // drawer flick-velocity block uses. Gestures stay short so the endpoint lands
+  // inside the narrow mobile viewport; a fast flick (>= 0.4 px/ms) advances even
+  // on a sub-half-slide drag. The slow position-snap case is desktop-only because
+  // a > half-slide drag (260px) does not fit the mobile viewport width.
+
+  test('horizontal LTR — flick left advances to slide-1', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
+  });
+
+  test('horizontal LTR — flick right returns to slide-0', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await el(page, 'next').click();
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('slow position drag advances by nearest index — desktop', async ({ page }, testInfo) => {
+    // A slow, > half-slide drag exercises the no-flick nearest-index round. 260px
+    // exceeds the narrow mobile viewport, so this is desktop-only; the flick
+    // cases above cover the touch projects.
+    test.skip(isMobileProject(testInfo), 'position drag exceeds the mobile viewport width');
+    await gotoFixture(page, 'carousel');
+    await dragFrom(page, el(page, 'viewport'), { dx: -260, dy: 0 }, { stepDelayMs: 700 });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('vertical — flick up advances; flick down reverses', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { orientation: 'vertical' });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: -40 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: 40 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('RTL — flick right advances to slide-1', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { dir: 'rtl' });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('cross-axis gesture does not arm (no page-scroll hijack)', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: -25 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('boundary without loop — flick toward prev at slide-0 stays at slide-0', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+  });
+
+  test('live offset published during drag; clears on release', async ({ page }) => {
+    await gotoFixture(page, 'carousel');
+    await dragFrom(page, el(page, 'viewport'), { dx: -120, dy: 0 }, { release: false });
+    await expect(el(page, 'viewport')).toHaveAttribute('data-dragging', '');
+    const dragVar = await page.evaluate(() => {
+      const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
+      return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+    });
+    expect(dragVar).not.toBe('');
+    expect(dragVar).toMatch(/-\d/);
+    await page.mouse.up();
+    await expect(el(page, 'viewport')).not.toHaveAttribute('data-dragging');
+    const dragVarAfter = await page.evaluate(() => {
+      const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
+      return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+    });
+    expect(dragVarAfter).toBe('');
+  });
+
+  test('reduced motion suppresses live offset but still snaps index (D3)', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    try {
+      await gotoFixture(page, 'carousel');
+      await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
+        stepDelayMs: 50,
+        release: false,
+      });
+      const dragVar = await page.evaluate(() => {
+        const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
+        return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+      });
+      expect(dragVar).toBe('');
+      await page.mouse.up();
       await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
     } finally {
       await context.close();
