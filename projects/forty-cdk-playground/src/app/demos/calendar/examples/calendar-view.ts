@@ -166,7 +166,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font-weight: 600;
     }
 
-    .pg-cal-cell[data-highlighted],
+    .pg-cal-grid:focus-within .pg-cal-cell[data-highlighted],
     .pg-cal-cell:focus-visible {
       outline: 2px solid var(--pg-primary);
       outline-offset: -2px;

@@ -11,7 +11,7 @@ import { ConfirmDrawer, type ConfirmResult } from './confirm-drawer';
   template: `
     <playground-demo
       title="Programmatic (ForDrawerManager)"
-      subtitle="Open an arbitrary component imperatively and await its result. The manager mounts the component under the same [forDrawer] engine, so every piece and input works identically; [forDrawerClose] [closeWith] propagates straight through to ForDrawerRef.close(value)."
+      subtitle="Open an arbitrary component imperatively and await its result. The manager mounts the component under the same [forDrawer] engine, so every piece and input works identically; [forDrawerClose] [closeWith] propagates straight through to ForDrawerRef.close(value). Since #745 the config accepts animateEnter / animateLeave — this example plays the same slide-in/out animation as the declarative drawer examples."
       sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/programmatic.example.ts"
     >
       <div demo class="pg-center">
@@ -47,6 +47,8 @@ export class DrawerProgrammaticExample {
       side: 'bottom',
       ariaLabel: 'Delete account',
       class: 'pg-drawer',
+      animateEnter: 'pg-drawer-in-bottom',
+      animateLeave: 'pg-drawer-out-bottom',
     });
     const result = await ref.closed;
     this.confirmResult.set(result ?? 'dismissed');

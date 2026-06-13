@@ -171,5 +171,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./demos/date-picker/date-picker.page').then((m) => m.DatePickerPage),
   },
+  {
+    path: 'carousel',
+    loadComponent: () => import('./demos/carousel/carousel.page').then((m) => m.CarouselPage),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];
