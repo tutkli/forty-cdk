@@ -66,6 +66,9 @@ concurrency:
   group: test-shuffle-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   test-worst-case:
     name: Test (forks + isolate=false)
