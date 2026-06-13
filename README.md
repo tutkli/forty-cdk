@@ -1,59 +1,45 @@
-# FortyCdk
+# forty-cdk
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.9.
+Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.
+Inspired by Radix UI and Base UI but reinterpreted idiomatically for modern Angular.
 
-## Development server
+The library exposes state, behavior, focus management, and keyboard interaction; you apply
+your own styles. Every primitive is standalone, `OnPush`, signal-based, and works under
+`provideZonelessChangeDetection()`.
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Installation
 
 ```bash
-ng generate component component-name
+npm install forty-cdk
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Documentation
+
+- [Library README](projects/forty-cdk/README.md) — installation, peer dependencies, the full
+  primitive list, and the directive → host element matrix.
+- [Your first overlay](docs/your-first-overlay.md) — one Popover from empty markup to
+  styled-and-animated, explaining the `@if` / open-state model and the portal → global CSS
+  requirement every overlay shares.
+- [Styling forty-cdk](docs/styling.md) — the three hooks you style against: your own class,
+  `data-*` state attributes, and `--for-*` custom properties.
+- [`docs/`](docs) — the remaining guides (styling floating content, the selected-indicator
+  pattern, wrapping form primitives).
+- [CHANGELOG](CHANGELOG.md) — release notes.
+
+## Development
+
+This is an Angular CLI workspace with the `forty-cdk` library and a dev-only
+`forty-cdk-harness` app used by the Playwright E2E suite. The repo uses
+[pnpm](https://pnpm.io/) (pinned via Corepack).
 
 ```bash
-ng generate --help
+pnpm test        # unit tests (Vitest + jsdom), pinned to the library project
+pnpm lint        # eslint (flat config)
+pnpm build       # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
+pnpm watch       # ng build forty-cdk --watch --configuration development
+pnpm test:e2e    # playwright test (Chromium + WebKit; spins up the harness)
 ```
 
-## Building
+## License
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+See [LICENSE](LICENSE).
