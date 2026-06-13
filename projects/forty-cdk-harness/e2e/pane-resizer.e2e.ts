@@ -102,6 +102,24 @@ test.describe('PaneResizer (pointer drag)', () => {
     expect(committed).toBeGreaterThanOrEqual(295);
     expect(committed).toBeLessThanOrEqual(305);
   });
+
+  test('a plain click that never crosses the dead-zone emits no resizeCommit', async ({ page }) => {
+    await gotoFixture(page, 'pane-resizer');
+    await expect(el(page, 'resize-commit-count')).toHaveText('0');
+
+    // Press and release at the same coordinate: the drag never arms (no travel
+    // past the dead-zone), so the trailing resizeCommit must not fire.
+    const box = (await el(page, 'resizer').boundingBox())!;
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(el(page, 'value')).toHaveText('200');
+    await expect(el(page, 'resize-commit-count')).toHaveText('0');
+    await expect(el(page, 'last-resize-commit')).toHaveText('none');
+  });
 });
 
 test.describe('PaneResizer (keyboard navigation)', () => {
