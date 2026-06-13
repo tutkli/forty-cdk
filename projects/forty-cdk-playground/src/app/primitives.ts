@@ -226,6 +226,13 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/accordion/',
       },
       {
+        slug: 'carousel',
+        title: 'Carousel',
+        description:
+          'A slideshow of content panels with previous / next controls, an indicator group, optional looping and multi-slide views, and an accessible autoplay mode with a pause control.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/carousel/',
+      },
+      {
         slug: 'disclosure',
         title: 'Disclosure',
         description: 'A single trigger that shows or hides a related region of content.',
