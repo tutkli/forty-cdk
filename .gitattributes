@@ -1,0 +1,7 @@
+# Normalize all text files to LF in the repository and on checkout, so that
+# `pnpm format:check` (Prettier) agrees with CI (Ubuntu) regardless of a
+# contributor's `core.autocrlf` setting (notably Windows checkouts).
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.ico binary
