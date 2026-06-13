@@ -167,6 +167,8 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     return result;
   });
 
+  readonly #visibleHandles = computed(() => this.#visibleEntries().map((entry) => entry.handle));
+
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
   constructor() {
@@ -239,7 +241,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled()) {
       return;
     }
-    const items = this.#visibleEntries().map((entry) => entry.handle);
+    const items = this.#visibleHandles();
     if (items.length === 0) {
       return;
     }
@@ -329,7 +331,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled() || !this.multiple()) {
       return;
     }
-    const items = this.#visibleEntries().map((entry) => entry.handle);
+    const items = this.#visibleHandles();
     if (items.length === 0) {
       return;
     }
@@ -364,7 +366,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled() || !this.multiple()) {
       return;
     }
-    const items = this.#visibleEntries().map((entry) => entry.handle);
+    const items = this.#visibleHandles();
     const currentIndex = items.findIndex((item) => item.host === currentItem);
     if (currentIndex < 0) {
       return;
