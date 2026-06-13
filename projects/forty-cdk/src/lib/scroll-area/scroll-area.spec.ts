@@ -133,6 +133,41 @@ describe('ForScrollArea', () => {
     }).not.toThrow();
   });
 
+  // The single non-geometry carve-out: `type="always"` short-circuits the
+  // scrollbar / corner self-hide so the track stays painted regardless of
+  // overflow (Radix parity). jsdom returns zeros for layout, so `hasOverflow()`
+  // is always false here — which is exactly why the `always` branch (a literal
+  // short-circuit, no measurement) is assertable in Vitest while thumb sizing
+  // stays in `scroll-area.e2e.ts`. See testing.md rule #8.
+  describe('type="always" keeps the scrollbar visible without overflow', () => {
+    it('paints the scrollbar (data-state="visible", not removed) with no overflow under "always"', () => {
+      const { query, flush } = renderHost(ScrollAreaHost);
+      flush();
+
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      expect(vbar.getAttribute('data-state')).toBe('visible');
+      expect(vbar.hasAttribute('hidden')).toBe(false);
+      expect(vbar.style.display).not.toBe('none');
+
+      const corner = query<HTMLElement>('[data-testid="corner"]')!;
+      expect(corner.hasAttribute('hidden')).toBe(false);
+      expect(corner.style.display).not.toBe('none');
+    });
+
+    it('self-hides the scrollbar (data-state="hidden", removed) with no overflow under "hover"', () => {
+      const { fixture, query, flush } = renderHost(ScrollAreaHost);
+      flush();
+
+      fixture.componentInstance.type.set('hover');
+      flush();
+
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      expect(vbar.getAttribute('data-state')).toBe('hidden');
+      expect(vbar.hasAttribute('hidden')).toBe(true);
+      expect(vbar.style.display).toBe('none');
+    });
+  });
+
   describe('content re-observe (viewport ResizeObserver swap)', () => {
     interface RoCall {
       readonly kind: 'observe' | 'unobserve';
