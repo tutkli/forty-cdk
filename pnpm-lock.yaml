@@ -29,9 +29,6 @@ importers:
       '@internationalized/date':
         specifier: ^3.12.2
         version: 3.12.2
-      rxjs:
-        specifier: ~7.8.0
-        version: 7.8.2
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -48,9 +45,6 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@js-temporal/polyfill':
-        specifier: ^0.5.1
-        version: 0.5.1
       '@playwright/test':
         specifier: ^1.60.0
         version: 1.60.0
@@ -69,6 +63,9 @@ importers:
       prettier:
         specifier: ^3.8.1
         version: 3.8.3
+      rxjs:
+        specifier: ~7.8.0
+        version: 7.8.2
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -1015,10 +1012,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@js-temporal/polyfill@0.5.1':
-    resolution: {integrity: sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==}
-    engines: {node: '>=12'}
 
   '@listr2/prompt-adapter-inquirer@4.2.3':
     resolution: {integrity: sha512-Co9U3AJ3LW0J8XBHjVoNKA79dMAyFt8EZH3OaKTMcDTj8r+6kG3vSUPq/eGLHT7P0iK3uLaFfhdFYd3033P24g==}
@@ -2493,9 +2486,6 @@ packages:
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
-
-  jsbi@4.3.2:
-    resolution: {integrity: sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==}
 
   jsdom@28.1.0:
     resolution: {integrity: sha512-0+MoQNYyr2rBHqO1xilltfDjV9G7ymYGlAUazgcDLQaUf8JDHbuGwsxN6U9qWaElZ4w1B2r7yEGIL3GdeW3Rug==}
@@ -4246,10 +4236,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@js-temporal/polyfill@0.5.1':
-    dependencies:
-      jsbi: 4.3.2
-
   '@listr2/prompt-adapter-inquirer@4.2.3(@inquirer/prompts@8.4.2)(listr2@10.2.1)':
     dependencies:
       '@inquirer/prompts': 8.4.2
@@ -5649,8 +5635,6 @@ snapshots:
   jose@6.2.3: {}
 
   js-tokens@4.0.0: {}
-
-  jsbi@4.3.2: {}
 
   jsdom@28.1.0:
     dependencies:
