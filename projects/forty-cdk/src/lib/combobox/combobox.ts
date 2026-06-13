@@ -761,7 +761,7 @@ export class ForCombobox<T = string>
     this.#activeId.set(id);
   }
 
-  cachedOptions(): readonly { id: string; value: T; label: string }[] {
+  readonly #cachedOptionsMemo = computed<readonly { id: string; value: T; label: string }[]>(() => {
     const live = this.#labelCache.entries();
     if (this.totalCount() === undefined) {
       return live;
@@ -783,6 +783,10 @@ export class ForCombobox<T = string>
       merged.push({ id: entry.id, value: entry.value, label: entry.label });
     }
     return merged;
+  });
+
+  cachedOptions(): readonly { id: string; value: T; label: string }[] {
+    return this.#cachedOptionsMemo();
   }
 
   clear(clearQuery: boolean = true): void {
