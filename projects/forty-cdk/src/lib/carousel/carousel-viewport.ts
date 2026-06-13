@@ -5,9 +5,11 @@ import { injectCarouselContext } from './carousel-context';
 
 /**
  * Clips the visible window of the carousel track. Acts as the APG-mandated
- * live region for screen-reader announcements (`aria-live="polite"`,
- * `aria-atomic="false"`). Also serves as the `aria-controls` target for the
- * prev/next buttons.
+ * live region for screen-reader announcements. `aria-live` flips between
+ * `"off"` while the carousel is actively auto-rotating (so advancing slides
+ * do not bombard the screen reader) and `"polite"` at all other times so
+ * manual navigation is announced. Also serves as the `aria-controls` target
+ * for the prev/next buttons.
  *
  * Registers itself with the carousel root on construction so the root's
  * `injectElementSize` observer starts and prev/next's `aria-controls` resolves.
@@ -19,7 +21,7 @@ import { injectCarouselContext } from './carousel-context';
   host: {
     '[id]': 'id()',
     'aria-atomic': 'false',
-    'aria-live': 'polite',
+    '[attr.aria-live]': 'ctx.rotating() ? "off" : "polite"',
     '[attr.data-orientation]': 'ctx.orientation()',
   },
 })

@@ -77,22 +77,99 @@ children:
 | `--for-carousel-viewport-width`  | e.g. `640px` | Measured via `ResizeObserver`. Absent on the server and before first measurement. |
 | `--for-carousel-viewport-height` | e.g. `400px` | Same as above, for the block axis.                                                |
 
+## Autoplay
+
+Add the `autoplay` attribute and a `[forCarouselRotationControl]` as the **first
+focusable child** of the carousel to enable automatic slide rotation.
+
+```html
+<div forCarousel autoplay [autoplayInterval]="4000" ariaLabel="Featured products">
+  <button forCarouselRotationControl>
+    <!-- swap icon with [data-playing] in your CSS -->
+  </button>
+  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+  <div forCarouselViewport>…</div>
+  <button forCarouselNext aria-label="Next slide">›</button>
+  <div forCarouselIndicators ariaLabel="Choose slide to display">…</div>
+</div>
+```
+
+**Behaviour:**
+
+- Rotation pauses on hover, on keyboard focus anywhere inside the carousel, and
+  while the browser tab is backgrounded. It resumes when none of those hold.
+- An explicit user stop (clicking the rotation control or calling `pause()`) is
+  **sticky**: hover-in/out and focus-in/out will not restart it. Only an explicit
+  Start does.
+- Under `prefers-reduced-motion: reduce`, rotation does **not** auto-start. The
+  user can still start it manually by clicking the rotation control (explicit
+  consent overrides the gate).
+- While rotating, the viewport's `aria-live` is `"off"` (so advancing slides do
+  not bombard the screen reader). When stopped or paused it is `"polite"` so
+  manual navigation is announced.
+
+**APG requirement:** if you enable `autoplay`, you **must** render a
+`[forCarouselRotationControl]` and place it first in the tab order — an
+auto-rotating carousel without a visible pause control fails WCAG 2.2.2 (Pause,
+Stop, Hide). The directive does not enforce this, but your implementation does.
+
+**Label inputs:** the control uses a label swap, not `aria-pressed`. Override
+the defaults with `startLabel` / `stopLabel` inputs:
+
+```html
+<button forCarouselRotationControl startLabel="Play slideshow" stopLabel="Pause slideshow"></button>
+```
+
+**Styling hooks:**
+
+```css
+[forCarouselRotationControl]::before {
+  content: '▶';
+}
+[forCarouselRotationControl][data-playing]::before {
+  content: '⏸';
+}
+```
+
+| Attribute       | When present                                            |
+| --------------- | ------------------------------------------------------- |
+| `data-playing`  | On `[forCarouselRotationControl]` — user intent is "on" |
+| `data-rotating` | On `[forCarousel]` — actively rotating right now        |
+| `data-autoplay` | On `[forCarousel]` — the `autoplay` input is `true`     |
+
+**Programmatic control** via `exportAs`:
+
+```html
+<div forCarousel #car="forCarousel" autoplay>…</div>
+```
+
+```ts
+car.play(); // start (explicit, sticky)
+car.pause(); // stop (explicit, sticky)
+car.toggleAutoplay(); // toggle
+car.playing(); // Signal<boolean> — user intent
+```
+
 ## Inputs
 
 All inputs are on `[forCarousel]` unless noted.
 
-| Input                                      | Type                           | Default           | Description                             |
-| ------------------------------------------ | ------------------------------ | ----------------- | --------------------------------------- |
-| `activeIndex`                              | `model<number>`                | `0`               | Two-way bindable current slide index.   |
-| `orientation`                              | `'horizontal' \| 'vertical'`   | `'horizontal'`    | Scroll axis.                            |
-| `loop`                                     | `boolean`                      | `false`           | Wrap-around at the boundaries.          |
-| `align`                                    | `'start' \| 'center' \| 'end'` | `'start'`         | Alignment of the active slide.          |
-| `slidesPerView`                            | `number`                       | `1`               | Visible slides at once.                 |
-| `ariaLabel`                                | `string \| null`               | `null`            | Accessible label for the carousel root. |
-| `dir`                                      | `'ltr' \| 'rtl' \| null`       | `null` (inherits) | Writing direction.                      |
-| `ariaLabel` (on `[forCarouselIndicators]`) | `string \| null`               | `null`            | Label for the picker group.             |
-| `ariaLabel` (on `[forCarouselSlide]`)      | `string \| null`               | `null`            | Override the positional "N of M" label. |
-| `disabled` (on `[forCarouselIndicator]`)   | `boolean`                      | `false`           | Disable this indicator.                 |
+| Input                                            | Type                           | Default                        | Description                                                            |
+| ------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
+| `activeIndex`                                    | `model<number>`                | `0`                            | Two-way bindable current slide index.                                  |
+| `orientation`                                    | `'horizontal' \| 'vertical'`   | `'horizontal'`                 | Scroll axis.                                                           |
+| `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                         |
+| `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                         |
+| `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                |
+| `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`). |
+| `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.        |
+| `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                |
+| `dir`                                            | `'ltr' \| 'rtl' \| null`       | `null` (inherits)              | Writing direction.                                                     |
+| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | `null`                         | Label for the picker group.                                            |
+| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | `null`                         | Override the positional "N of M" label.                                |
+| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                |
+| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                             |
+| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                             |
 
 ## Keyboard interaction (indicator group)
 
@@ -120,12 +197,11 @@ automatically.
 - The current indicator is marked with `aria-current="true"`.
 - Prev/next buttons use native `disabled` so they are removed from the tab order when
   at the boundary without loop.
-- The viewport carries `aria-live="polite"` and `aria-atomic="false"` as the APG-prescribed
-  live region. Note: because all slides stay mounted and only the track is translated,
-  the DOM text does not change on navigation, so `aria-live` may not announce on its own in
-  v1. The per-slide `aria-roledescription`, `aria-label`, and `aria-hidden` toggle carry the
-  screen-reader experience. The `aria-live` attribute is the APG-prescribed slot and becomes
-  load-bearing in the autoplay follow-up.
+- The viewport carries `aria-live` and `aria-atomic="false"`. While the carousel is actively
+  auto-rotating, `aria-live` is `"off"` so advancing slides do not bombard the screen reader.
+  When stopped or paused, it is `"polite"` so manual navigation announces. The per-slide
+  `aria-roledescription`, `aria-label`, and `aria-hidden` toggle carry the screen-reader
+  experience for non-auto-rotating carousels.
 
 ## Reduced-motion
 
