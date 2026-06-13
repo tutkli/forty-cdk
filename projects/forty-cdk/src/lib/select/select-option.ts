@@ -92,10 +92,22 @@ export class ForSelectOption<T = string> {
   /** True while this option has DOM focus. Reflected as `data-highlighted`. */
   readonly highlighted = this.#highlighted.asReadonly();
 
+  /**
+   * Reactive effective label exposed on the handle — the trimmed `textContent`
+   * of the host. Mirrors `ForComboboxOption`'s `#effectiveLabel` so the root
+   * can fold a per-option `Signal<string>` into its persisted snapshot instead
+   * of reading `textContent` from inside a `computed`. `textContent` is not a
+   * signal, so this still does not self-heal on a text-only change with no
+   * value change — supply `[forSelect][itemToLabel]` for a pure signal
+   * derivation when the label can change without the value.
+   */
+  readonly #effectiveLabel = computed(() => (this.#host.nativeElement.textContent ?? '').trim());
+
   constructor() {
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,
+      label: this.#effectiveLabel,
       disabled: this.effectiveDisabled,
     };
     registerHandle(
