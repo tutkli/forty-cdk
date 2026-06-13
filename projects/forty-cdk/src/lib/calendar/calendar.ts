@@ -25,6 +25,7 @@ import { injectTextDirection } from '../_internal/text-direction/text-direction'
 import { buildMonthMatrix } from './build-month-matrix';
 import {
   type CalendarDateLabelFormatter,
+  type CalendarDateRange,
   type CalendarWeek,
   type CalendarWeekday,
   FOR_CALENDAR_CONTEXT,
@@ -53,7 +54,9 @@ import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
  * when crossing a month boundary; `Enter` / `Space` select.
  *
  * `ForCalendar` is the grid widget, not a form value — it exposes `[(value)]`
- * as a `model<D | null>`. The `FormValueControl<D>` contract arrives with the
+ * as a `model<D | null>` in `selectionMode="single"` (default), and
+ * `[(range)]` as a `model<CalendarDateRange<D> | null>` in
+ * `selectionMode="range"`. The `FormValueControl<D>` contract arrives with the
  * follow-up `ForDatePicker` / `ForDateField`.
  *
  * @typeParam D The adapter's immutable date type.
@@ -150,6 +153,35 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly readonly = input(false, { transform: booleanAttribute });
 
   /**
+   * Selection mode. `'single'` (default) keeps the single-date `[(value)]`
+   * behaviour unchanged. `'range'` switches to the two-click anchor → commit
+   * flow and exposes the result through `[(range)]`.
+   */
+  readonly selectionMode = input<'single' | 'range'>('single');
+
+  /**
+   * Two-way bindable committed date range, or `null`. Only used when
+   * `selectionMode="range"`. The `model()` change emitter (`(rangeChange)`)
+   * fires only when the calendar internally commits or clears a range, never
+   * on consumer writes via `[(range)]`.
+   */
+  readonly range = model<CalendarDateRange<D> | null>(null);
+
+  /**
+   * Minimum inclusive day count for a range selection. A click that would
+   * commit a range shorter than this is a no-op (anchor is preserved).
+   * `null` (default) means no minimum. Only honoured in `selectionMode="range"`.
+   */
+  readonly minRangeLength = input<number | null>(null);
+
+  /**
+   * Maximum inclusive day count for a range selection. A click that would
+   * commit a range longer than this is a no-op (anchor is preserved).
+   * `null` (default) means no maximum. Only honoured in `selectionMode="range"`.
+   */
+  readonly maxRangeLength = input<number | null>(null);
+
+  /**
    * First day of the week as a **0-6** index (`0` = Sunday). When `null`
    * (default, overridable via `provideForCalendarDefaults`), the adapter's
    * `getFirstDayOfWeek()` is used.
@@ -169,8 +201,25 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #today = this.adapter.today();
   readonly #cells = new Collection<ForCalendarCellHandle<D>>();
 
-  /** Internal focused date (the roving entry point), seeded from `value ?? today`. */
-  readonly focusedDate = linkedSignal<D>(() => this.value() ?? this.#today);
+  readonly #anchor = signal<D | null>(null);
+  readonly #hovered = signal<D | null>(null);
+
+  readonly #effectiveRange = computed<{ start: D; end: D; preview: boolean } | null>(() => {
+    const anchor = this.#anchor();
+    if (anchor !== null) {
+      const cursor = this.#hovered() ?? this.focusedDate();
+      const cmp = compareDateOf(this.adapter, cursor, anchor);
+      const [start, end] = cmp < 0 ? [cursor, anchor] : [anchor, cursor];
+      return { start, end, preview: true };
+    }
+    const committed = this.range();
+    return committed === null ? null : { start: committed.start, end: committed.end, preview: false };
+  });
+
+  /** Internal focused date (the roving entry point), seeded from `value ?? range.start ?? today`. */
+  readonly focusedDate = linkedSignal<D>(
+    () => this.value() ?? this.range()?.start ?? this.#today,
+  );
 
   readonly #resolvedFirstDayOfWeek = computed(
     () => this.firstDayOfWeek() ?? this.adapter.getFirstDayOfWeek(),
@@ -211,7 +260,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * (explicit day move, selection, external `value` write), tracked via
    * {@link #pagedFocus}.
    */
-  #intendedDay = this.adapter.getDate(this.value() ?? this.#today);
+  #intendedDay = this.adapter.getDate(this.value() ?? this.range()?.start ?? this.#today);
 
   /**
    * The focused date the last paging operation produced. Lets paging detect a
@@ -267,8 +316,38 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   });
 
   isSelected(date: D): boolean {
+    if (this.selectionMode() === 'range') {
+      return this.isInRange(date);
+    }
     const value = this.value();
     return value !== null && this.adapter.isSameDay(date, value);
+  }
+
+  isRangeStart(date: D): boolean {
+    const er = this.#effectiveRange();
+    return er !== null && this.adapter.isSameDay(date, er.start);
+  }
+
+  isRangeEnd(date: D): boolean {
+    const er = this.#effectiveRange();
+    return er !== null && this.adapter.isSameDay(date, er.end);
+  }
+
+  isInRange(date: D): boolean {
+    const er = this.#effectiveRange();
+    return er !== null && !er.preview && this.#withinInclusive(date, er);
+  }
+
+  isRangePreview(date: D): boolean {
+    const er = this.#effectiveRange();
+    return er !== null && er.preview && this.#withinInclusive(date, er);
+  }
+
+  setHovered(date: D | null): void {
+    if (this.selectionMode() !== 'range') {
+      return;
+    }
+    this.#hovered.set(date);
   }
 
   isToday(date: D): boolean {
@@ -314,9 +393,53 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled() || this.readonly() || this.isUnavailable(date)) {
       return;
     }
+    if (this.selectionMode() === 'range') {
+      this.#selectRange(date);
+      return;
+    }
     this.#setFocusedDay(date);
     this.value.set(this.#withPreservedTime(date));
     this.#focusDate(date);
+  }
+
+  #selectRange(date: D): void {
+    const anchor = this.#anchor();
+    if (anchor === null) {
+      this.range.set(null);
+      this.#anchor.set(date);
+    } else if (compareDateOf(this.adapter, date, anchor) < 0) {
+      this.#anchor.set(date);
+    } else {
+      if (!this.#rangeLengthSatisfied(anchor, date)) {
+        return;
+      }
+      this.range.set({ start: anchor, end: date });
+      this.#anchor.set(null);
+    }
+    this.#setFocusedDay(date);
+    this.focusedDate.set(date);
+    this.#focusDate(date);
+  }
+
+  #rangeLengthSatisfied(anchor: D, end: D): boolean {
+    const minLen = this.minRangeLength();
+    const maxLen = this.maxRangeLength();
+    if (minLen === null && maxLen === null) {
+      return true;
+    }
+    let len = 1;
+    let cursor = anchor;
+    while (compareDateOf(this.adapter, cursor, end) < 0) {
+      cursor = this.adapter.addDays(cursor, 1);
+      len++;
+      if (maxLen !== null && len > maxLen) {
+        return false;
+      }
+    }
+    if (minLen !== null && len < minLen) {
+      return false;
+    }
+    return true;
   }
 
   pageMonths(delta: number): void {
@@ -381,6 +504,13 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   unregisterCell(handle: ForCalendarCellHandle<D>): void {
     this.#cells.unregister(handle);
+  }
+
+  #withinInclusive(date: D, range: { start: D; end: D }): boolean {
+    return (
+      compareDateOf(this.adapter, date, range.start) >= 0 &&
+      compareDateOf(this.adapter, date, range.end) <= 0
+    );
   }
 
   #resolveMove(event: KeyboardEvent, fromDate: D): D | null {

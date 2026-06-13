@@ -104,3 +104,68 @@ test.describe('Calendar', () => {
     await expectFocused(el(page, 'cell-2026-6-15'));
   });
 });
+
+test.describe('Calendar — range', () => {
+  test('pointer anchor → commit: data-range-start, data-range-end, data-in-range', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'calendar', { range: '1' });
+
+    await el(page, 'cell-2026-6-10').click();
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-start', '');
+
+    await el(page, 'cell-2026-6-15').click();
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-start', '');
+    await expect(el(page, 'cell-2026-6-15')).toHaveAttribute('data-range-end', '');
+    await expect(el(page, 'cell-2026-6-12')).toHaveAttribute('data-in-range', '');
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-in-range', '');
+    await expect(el(page, 'cell-2026-6-15')).toHaveAttribute('data-in-range', '');
+    await expect(el(page, 'cell-2026-6-9')).not.toHaveAttribute('data-in-range');
+    await expect(el(page, 'cell-2026-6-16')).not.toHaveAttribute('data-in-range');
+  });
+
+  test('pointer hover preview: data-range-preview while selecting', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { range: '1' });
+
+    await el(page, 'cell-2026-6-10').click();
+    await el(page, 'cell-2026-6-15').hover();
+
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-preview', '');
+    await expect(el(page, 'cell-2026-6-15')).toHaveAttribute('data-range-preview', '');
+    await expect(el(page, 'cell-2026-6-12')).toHaveAttribute('data-range-preview', '');
+    await expect(el(page, 'cell-2026-6-10')).not.toHaveAttribute('data-in-range');
+  });
+
+  test('keyboard: Enter sets anchor, arrows move preview, Enter commits', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { range: '1' });
+
+    await el(page, 'cell-2026-6-10').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-start', '');
+
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'cell-2026-6-11'));
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'cell-2026-6-12'));
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'cell-2026-6-13'));
+    await page.keyboard.press('Enter');
+
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-start', '');
+    await expect(el(page, 'cell-2026-6-13')).toHaveAttribute('data-range-end', '');
+    await expect(el(page, 'cell-2026-6-11')).toHaveAttribute('data-in-range', '');
+  });
+
+  test('aria-selected is true across the committed range band', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { range: '1' });
+
+    await el(page, 'cell-2026-6-10').click();
+    await el(page, 'cell-2026-6-12').click();
+
+    for (const day of ['10', '11', '12']) {
+      await expect(el(page, `cell-2026-6-${day}`)).toHaveAttribute('aria-selected', 'true');
+    }
+    await expect(el(page, 'cell-2026-6-9')).toHaveAttribute('aria-selected', 'false');
+    await expect(el(page, 'cell-2026-6-13')).toHaveAttribute('aria-selected', 'false');
+  });
+});

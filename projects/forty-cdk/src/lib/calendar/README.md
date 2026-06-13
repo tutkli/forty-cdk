@@ -40,7 +40,11 @@ bootstrapApplication(App, {
 
 | API                 | Type                                   | Description                                                                                                                  |
 | ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. `(valueChange)` fires only on internal selection. Default `null`.                 |
+| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection. Default `null`. |
+| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.         |
+| `range`             | `model<CalendarDateRange<D> \| null>`  | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears. Default `null`. |
+| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op. Default `null` (no minimum).                            |
+| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op. Default `null` (no maximum).                             |
 | `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                          |
 | `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                            |
 | `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                           |
@@ -112,6 +116,59 @@ export class DatePage {
 ```
 
 The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]` yourself (`[data-selected]`, `[data-today]`, `[data-outside-month]`, `[data-highlighted]`, and `:not([data-disabled])` for the enabled state).
+
+## Range selection
+
+Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In range mode the single-date `value` is unused and stays `null`.
+
+```html
+<div forCalendar selectionMode="range" [(range)]="dateRange">
+  <!-- …header + grid… -->
+</div>
+```
+
+**Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell at or after the anchor to commit the range. Clicking before the anchor re-anchors (starts over from the earlier date). No explicit Escape-to-cancel — an in-progress anchor is simply overwritten by the next click.
+
+**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview end (the keyboard equivalent of pointer hover).
+
+**`min` / `max` / `isDateUnavailable`** still gate both endpoints. An unavailable or out-of-bounds date cannot become an anchor or an end.
+
+**`minRangeLength` / `maxRangeLength`.** Constrain the inclusive day count of the committed range. A click that would violate either limit is a no-op (the anchor is preserved). Both default to `null` (unconstrained).
+
+**Cell facets (range mode).** Four boolean `data-*` attributes are added to `[forCalendarCell]`:
+
+| Attribute            | Present when                                                                      |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `data-range-start`   | Cell is the start of the effective range (committed idle, or preview selecting)   |
+| `data-range-end`     | Cell is the end of the effective range                                            |
+| `data-in-range`      | Cell is within the **committed** range, inclusive (idle only)                     |
+| `data-range-preview` | Cell is within the **preview** band, inclusive (selecting only)                   |
+
+`data-in-range` and `data-range-preview` are mutually exclusive. Endpoints carry both the endpoint attribute and the band attribute (inclusive). All four are absent in single mode.
+
+```css
+[data-in-range] {
+  background: var(--accent-light);
+}
+[data-range-start],
+[data-range-end] {
+  background: var(--accent);
+  color: white;
+}
+[data-range-preview] {
+  background: var(--accent-faint);
+}
+[data-range-start]:not([data-range-end]) {
+  border-radius: 50% 0 0 50%;
+}
+[data-range-end]:not([data-range-start]) {
+  border-radius: 0 50% 50% 0;
+}
+```
+
+**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive), matching React Aria's range calendar semantics. During selecting (range null), it is `"false"` everywhere.
+
+**v1 scope.** Range mode is day-granular only — `granularity` / time is orthogonal and not supported in v1.
 
 ## Styling
 

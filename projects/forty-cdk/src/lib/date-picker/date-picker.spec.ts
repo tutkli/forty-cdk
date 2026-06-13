@@ -23,6 +23,7 @@ import { ForDatePicker } from './date-picker';
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
+import type { CalendarDateRange } from '../calendar/calendar-context';
 
 const adapter = new NativeDateAdapter();
 
@@ -799,6 +800,157 @@ describe('ForDatePicker', () => {
       await flush(r.fixture);
 
       expect(r.instance.model().dob?.getTime()).toBe(new Date(2026, 5, 12).getTime());
+      expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('range mode', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        ...CALENDAR_PIECES,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          selectionMode="range"
+          [(range)]="range"
+          [(open)]="open"
+          [rangeSeparator]="separator()"
+          #picker="forDatePicker"
+        >
+          <button data-testid="trigger" forDatePickerTrigger>
+            <span forDatePickerValue [placeholder]="'Pick a range'"></span>
+          </button>
+
+          @if (open()) {
+            <div forDatePickerContent data-testid="content">
+              <div forCalendar selectionMode="range" [(range)]="range">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <thead forCalendarGridHeader>
+                    <tr>
+                      @for (day of grid.weekDays(); track day.key) {
+                        <th scope="col">{{ day.short }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class RangePickerHost {
+      readonly range = signal<CalendarDateRange<Date> | null>(null);
+      readonly open = signal(false);
+      readonly separator = signal(' – ');
+    }
+
+    type RP = RenderResult<RangePickerHost>;
+    const rangeValue = (r: RP) => r.query('[forDatePickerValue]')!;
+    const rangeContent = () => document.querySelector<HTMLElement>('[forDatePickerContent]');
+    const rangeCell = (key: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="cell-${key}"]`)!;
+
+    async function openRangePicker(r: RP): Promise<void> {
+      r.query<HTMLButtonElement>('[forDatePickerTrigger]')!.click();
+      await flush(r.fixture);
+    }
+
+    it('committing a range in the grid mirrors into picker range and closes', async () => {
+      const r = renderHost(RangePickerHost);
+      await openRangePicker(r);
+
+      rangeCell('2026-6-10')!.click();
+      await flush(r.fixture);
+      expect(r.instance.range()).toBeNull();
+      expect(rangeContent()).not.toBeNull();
+
+      rangeCell('2026-6-15')!.click();
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(range).not.toBeNull();
+      expect(adapter.isSameDay(range!.start, new Date(2026, 5, 10))).toBe(true);
+      expect(adapter.isSameDay(range!.end, new Date(2026, 5, 15))).toBe(true);
+      expect(rangeContent()).toBeNull();
+    });
+
+    it('[forDatePickerValue] shows start – end formatted via the adapter', async () => {
+      const r = renderHost(RangePickerHost);
+      r.instance.range.set({
+        start: new Date(2026, 5, 10),
+        end: new Date(2026, 5, 15),
+      });
+      await flush(r.fixture);
+
+      const text = rangeValue(r).textContent ?? '';
+      expect(text).toContain('2026');
+      expect(text).toContain(' – ');
+      expect(rangeValue(r).hasAttribute('data-placeholder')).toBe(false);
+    });
+
+    it('rangeSeparator override is respected in the value display', async () => {
+      const r = renderHost(RangePickerHost);
+      r.instance.separator.set(' to ');
+      r.instance.range.set({
+        start: new Date(2026, 5, 10),
+        end: new Date(2026, 5, 15),
+      });
+      await flush(r.fixture);
+
+      const text = rangeValue(r).textContent ?? '';
+      expect(text).toContain(' to ');
+    });
+
+    it('shows placeholder when range is null', async () => {
+      const r = renderHost(RangePickerHost);
+      expect(rangeValue(r).textContent?.trim()).toBe('Pick a range');
+      expect(rangeValue(r).getAttribute('data-placeholder')).toBe('');
+    });
+
+    it('zoneless: range committed via grid mirrors into picker under provideZonelessChangeDetection', async () => {
+      const r = renderHost(RangePickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      rangeCell('2026-6-10')!.click();
+      await flush(r.fixture);
+      rangeCell('2026-6-15')!.click();
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(range).not.toBeNull();
+      expect(adapter.isSameDay(range!.start, new Date(2026, 5, 10))).toBe(true);
+    });
+  });
+
+  describe('single mode regression', () => {
+    it('single mode value and close behaviour unchanged in presence of range API', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15));
+      await openPicker(r);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 20).getTime());
       expect(r.instance.open()).toBe(false);
     });
   });

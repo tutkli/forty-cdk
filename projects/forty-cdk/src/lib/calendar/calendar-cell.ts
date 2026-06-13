@@ -12,8 +12,10 @@ import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-co
  * content), `aria-selected` (always emitted), `aria-current="date"` on today,
  * `aria-disabled` on unavailable dates, and the boolean `data-*` styling hooks
  * (`data-selected`, `data-today`, `data-highlighted`, `data-disabled`,
- * `data-outside-month`). Click and `Enter` / `Space` select; arrow / paging
- * keys move the focused date.
+ * `data-outside-month`). In `selectionMode="range"`, also emits
+ * `data-range-start`, `data-range-end`, `data-in-range`, and
+ * `data-range-preview` (all boolean present/absent). Click and `Enter` /
+ * `Space` select; arrow / paging keys move the focused date.
  *
  * @typeParam D The adapter's date type (inferred from the bound `[date]`).
  */
@@ -32,8 +34,14 @@ import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-co
     '[attr.data-highlighted]': 'focused() ? "" : null',
     '[attr.data-disabled]': 'unavailable() ? "" : null',
     '[attr.data-outside-month]': 'outsideMonth() ? "" : null',
+    '[attr.data-range-start]': 'rangeStart() ? "" : null',
+    '[attr.data-range-end]': 'rangeEnd() ? "" : null',
+    '[attr.data-in-range]': 'inRange() ? "" : null',
+    '[attr.data-range-preview]': 'rangePreview() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(pointerenter)': 'ctx.setHovered(date())',
+    '(pointerleave)': 'ctx.setHovered(null)',
   },
 })
 export class ForCalendarCell<D> {
@@ -49,6 +57,10 @@ export class ForCalendarCell<D> {
   protected readonly unavailable = computed(() => this.ctx.isUnavailable(this.date()));
   protected readonly outsideMonth = computed(() => this.ctx.isOutsideMonth(this.date()));
   protected readonly dateLabel = computed(() => this.ctx.getDateLabel(this.date()));
+  protected readonly rangeStart = computed(() => this.ctx.isRangeStart(this.date()));
+  protected readonly rangeEnd = computed(() => this.ctx.isRangeEnd(this.date()));
+  protected readonly inRange = computed(() => this.ctx.isInRange(this.date()));
+  protected readonly rangePreview = computed(() => this.ctx.isRangePreview(this.date()));
 
   constructor() {
     const handle: ForCalendarCellHandle<unknown> = {
