@@ -15,12 +15,41 @@ import { ForAccordionTrigger } from '../../accordion/accordion-trigger';
 import { ForAvatar } from '../../avatar/avatar';
 import { ForAvatarFallback } from '../../avatar/avatar-fallback';
 import { ForAvatarImage } from '../../avatar/avatar-image';
+import { ForCalendar } from '../../calendar/calendar';
+import { ForCalendarCell } from '../../calendar/calendar-cell';
+import { ForCalendarGrid } from '../../calendar/calendar-grid';
+import { ForCalendarHeading } from '../../calendar/calendar-heading';
+import { provideNativeDateAdapter } from '../../calendar/native-date-adapter';
 import { ForCheckbox } from '../../checkbox/checkbox';
+import { ForCombobox } from '../../combobox/combobox';
+import { ForComboboxContent } from '../../combobox/combobox-content';
+import { ForComboboxInput } from '../../combobox/combobox-input';
+import { ForComboboxOption } from '../../combobox/combobox-option';
+import { ForDateField } from '../../date-field/date-field';
+import { ForDateFieldLiteral } from '../../date-field/date-field-literal';
+import { ForDateFieldSegment } from '../../date-field/date-field-segment';
+import { ForDatePicker } from '../../date-picker/date-picker';
+import { ForDatePickerTrigger } from '../../date-picker/date-picker-trigger';
+import { ForDatePickerValue } from '../../date-picker/date-picker-value';
 import { ForDialog } from '../../dialog/dialog';
 import { ForDialogTitle } from '../../dialog/dialog-title';
 import { ForDisclosure } from '../../disclosure/disclosure';
 import { ForDisclosureContent } from '../../disclosure/disclosure-content';
 import { ForDisclosureTrigger } from '../../disclosure/disclosure-trigger';
+import { ForDrawer } from '../../drawer/drawer';
+import { ForDrawerTitle } from '../../drawer/drawer-title';
+import { ForMenuContent } from '../../menu/menu-content';
+import { ForMenuItem } from '../../menu/menu-item';
+import { ForMenubar } from '../../menubar/menubar';
+import { ForMenubarTrigger } from '../../menubar/menubar-trigger';
+import { ForNavigationMenu } from '../../navigation-menu/navigation-menu';
+import { ForNavigationMenuContent } from '../../navigation-menu/navigation-menu-content';
+import { ForNavigationMenuItem } from '../../navigation-menu/navigation-menu-item';
+import { ForNavigationMenuLink } from '../../navigation-menu/navigation-menu-link';
+import { ForNavigationMenuList } from '../../navigation-menu/navigation-menu-list';
+import { ForNavigationMenuTrigger } from '../../navigation-menu/navigation-menu-trigger';
+import { ForOtpInput } from '../../otp-input/otp-input';
+import { ForOtpInputSlot } from '../../otp-input/otp-input-slot';
 import { ForPopover } from '../../popover/popover';
 import { ForPopoverContent } from '../../popover/popover-content';
 import { ForPopoverTitle } from '../../popover/popover-title';
@@ -33,14 +62,30 @@ import { ForScrollAreaCorner } from '../../scroll-area/scroll-area-corner';
 import { ForScrollAreaScrollbar } from '../../scroll-area/scroll-area-scrollbar';
 import { ForScrollAreaThumb } from '../../scroll-area/scroll-area-thumb';
 import { ForScrollAreaViewport } from '../../scroll-area/scroll-area-viewport';
+import { ForSelect } from '../../select/select';
+import { ForSelectContent } from '../../select/select-content';
+import { ForSelectOption } from '../../select/select-option';
+import { ForSelectTrigger } from '../../select/select-trigger';
+import { ForSelectValue } from '../../select/select-value';
 import { ForSwitch } from '../../switch/switch';
 import { ForTabs } from '../../tabs/tabs';
 import { ForTabsContent } from '../../tabs/tabs-content';
 import { ForTabsList } from '../../tabs/tabs-list';
 import { ForTabsTrigger } from '../../tabs/tabs-trigger';
+import { ForTimeField } from '../../time-field/time-field';
+import { ForTimeFieldLiteral } from '../../time-field/time-field-literal';
+import { ForTimeFieldSegment } from '../../time-field/time-field-segment';
+import { ForToast } from '../../toast/toast';
+import { ForToastTitle } from '../../toast/toast-title';
+import { ForToastViewport } from '../../toast/toast-viewport';
 import { ForTooltip } from '../../tooltip/tooltip';
 import { ForTooltipContent } from '../../tooltip/tooltip-content';
 import { ForTooltipTrigger } from '../../tooltip/tooltip-trigger';
+import { ForTree } from '../../tree/tree';
+import { ForTreeGroup } from '../../tree/tree-group';
+import { ForTreeItem } from '../../tree/tree-item';
+import { ForTreeItemLabel } from '../../tree/tree-item-label';
+import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
@@ -64,15 +109,19 @@ import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
  * resolves true. Regressions that touch the DOM eagerly or share
  * module-level state between requests get caught here.
  *
- * Two of the fixtures mount in their OPEN state so the overlay-open
- * gating is exercised, not just the initial unmounted render: a
- * trigger-anchored overlay (`PopoverOpenFixture`, `@floating-ui`
- * positioner + `injectPortal`) and a free-floating overlay
- * (`DialogOpenFixture`, modal shell + scroll lock + inert siblings).
- * Both assert the open render produces no throw AND leaves
- * `document.body` untouched — `injectPortal` and the shell side effects
- * run inside `afterNextRender`, which never fires server-side, so the
- * content stays in the view tree and nothing is appended to `<body>`.
+ * Several fixtures mount in their OPEN / active state so the
+ * overlay-open gating is exercised, not just the initial unmounted
+ * render: trigger-anchored overlays (`PopoverOpenFixture`,
+ * `SelectOpenFixture`, `ComboboxOpenFixture`, `@floating-ui` positioner
+ * + `injectPortal`), free-floating overlays (`DialogOpenFixture`,
+ * `DrawerOpenFixture`, modal shell + scroll lock + inert siblings), and
+ * the disclosure / menu families that gate `isPlatformBrowser`-only
+ * viewport / portal side effects (`NavigationMenuOpenFixture`,
+ * `MenubarOpenFixture`). Each asserts the open render produces no throw
+ * AND leaves `document.body` untouched — `injectPortal`, the shell side
+ * effects, and the NavigationMenu viewport re-parenting all run inside
+ * `afterNextRender`, which never fires server-side, so the content stays
+ * in the view tree and nothing is appended to `<body>`.
  */
 
 @Component({
@@ -222,6 +271,204 @@ class PopoverOpenFixture {}
 })
 class DialogOpenFixture {}
 
+@Component({
+  imports: [ForDrawer, ForDrawerTitle],
+  template: `
+    <div forDrawer ariaLabel="d">
+      <h2 forDrawerTitle>title</h2>
+    </div>
+  `,
+})
+class DrawerOpenFixture {}
+
+@Component({
+  imports: [ForToastViewport, ForToast, ForToastTitle],
+  template: `
+    <for-toast-viewport>
+      <div forToast>
+        <div forToastTitle>Saved</div>
+      </div>
+    </for-toast-viewport>
+  `,
+})
+class ToastFixture {}
+
+@Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption],
+  template: `
+    <div forSelect [open]="true" [(value)]="value">
+      <button forSelectTrigger>
+        <span forSelectValue></span>
+      </button>
+      <div forSelectContent>
+        <button forSelectOption value="a">A</button>
+      </div>
+    </div>
+  `,
+})
+class SelectOpenFixture {
+  readonly value = signal<readonly string[]>(['a']);
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  template: `
+    <div forCombobox [open]="true">
+      <input forComboboxInput />
+      <div forComboboxContent>
+        <div forComboboxOption value="a" label="A">A</div>
+      </div>
+    </div>
+  `,
+})
+class ComboboxOpenFixture {}
+
+@Component({
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuLink,
+  ],
+  template: `
+    <nav forNavigationMenu value="products">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger>Products</button>
+          <div forNavigationMenuContent>
+            <a href="/web" forNavigationMenuLink>Web</a>
+          </div>
+        </li>
+      </ul>
+    </nav>
+  `,
+})
+class NavigationMenuOpenFixture {}
+
+@Component({
+  imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenubar value="file" ariaLabel="Main">
+      <button forMenubarTrigger value="file">File</button>
+      <div forMenuContent>
+        <button forMenuItem>New</button>
+      </div>
+    </div>
+  `,
+})
+class MenubarOpenFixture {}
+
+@Component({
+  imports: [ForOtpInput, ForOtpInputSlot],
+  template: `
+    <div forOtpInput [length]="4" #otp="forOtpInput">
+      @for (i of otp.slots(); track i) {
+        <div forOtpInputSlot [index]="i">{{ i }}</div>
+      }
+    </div>
+  `,
+})
+class OtpInputFixture {}
+
+@Component({
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+  template: `
+    <ul forTree ariaLabel="Files">
+      <li forTreeItem value="root">
+        <div forTreeItemLabel>
+          <span forTreeItemToggle>▸</span>
+          Root
+        </div>
+        <ul forTreeGroup>
+          <li forTreeItem value="child">
+            <div forTreeItemLabel>Child</div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  `,
+})
+class TreeFixture {}
+
+@Component({
+  imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value">
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarFixture {
+  readonly value = new Date(2026, 5, 15);
+}
+
+@Component({
+  imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forDateField [(value)]="value" ariaLabel="Date" #field="forDateField">
+      @for (seg of field.segments(); track seg.id) {
+        @if (seg.isLiteral) {
+          <span forDateFieldLiteral>{{ seg.text }}</span>
+        } @else {
+          <span forDateFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+        }
+      }
+    </div>
+  `,
+})
+class DateFieldFixture {
+  readonly value = signal<Date | null>(null);
+}
+
+@Component({
+  imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forTimeField [(value)]="value" ariaLabel="Time" #field="forTimeField">
+      @for (seg of field.segments(); track seg.id) {
+        @if (seg.isLiteral) {
+          <span forTimeFieldLiteral>{{ seg.text }}</span>
+        } @else {
+          <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+        }
+      }
+    </div>
+  `,
+})
+class TimeFieldFixture {
+  readonly value = signal<Date | null>(null);
+}
+
+@Component({
+  imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forDatePicker [(value)]="value" ariaLabel="Choose date">
+      <button forDatePickerTrigger>
+        <span forDatePickerValue placeholder="Pick a date"></span>
+      </button>
+    </div>
+  `,
+})
+class DatePickerFixture {
+  readonly value = signal<Date | null>(null);
+}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -235,6 +482,18 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ScrollAreaFixture,
   PopoverOpenFixture,
   DialogOpenFixture,
+  DrawerOpenFixture,
+  ToastFixture,
+  SelectOpenFixture,
+  ComboboxOpenFixture,
+  NavigationMenuOpenFixture,
+  MenubarOpenFixture,
+  OtpInputFixture,
+  TreeFixture,
+  CalendarFixture,
+  DateFieldFixture,
+  TimeFieldFixture,
+  DatePickerFixture,
 ];
 
 function configureServer(): void {
@@ -337,6 +596,57 @@ describe('SSR smoke tests', () => {
     expect(dialog.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
     expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a free-floating overlay (Drawer) does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DrawerOpenFixture);
+    f.detectChanges();
+    const drawer = f.nativeElement.querySelector('[forDrawer]') as HTMLElement;
+    expect(drawer.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(drawer)).toBe(true);
+    expect(drawer.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDrawer]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a trigger-anchored overlay (Select) does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(SelectOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forSelectContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('listbox');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forSelectContent]')).toBeNull();
+  });
+
+  it('opening a trigger-anchored overlay (Combobox) does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(ComboboxOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forComboboxContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('listbox');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forComboboxContent]')).toBeNull();
+  });
+
+  it('an open NavigationMenu does not re-parent into a viewport or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(NavigationMenuOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forNavigationMenuContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forNavigationMenuContent]')).toBeNull();
+  });
+
+  it('an open Menubar menu does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(MenubarOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forMenuContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('menu');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
   });
 
   it('BodyScrollLock is a no-op on the server', () => {
