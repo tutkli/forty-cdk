@@ -2216,7 +2216,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
   });
 
   describe('selection', () => {
-    it('single-mode activation commits the label and closes', async () => {
+    it('single-mode activation replaces value, closes, and leaves query empty (no label commit)', async () => {
       const r = renderHost(PickerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -2226,7 +2226,47 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
 
       expect(r.instance.value()).toEqual(['banana']);
       expect(r.instance.open()).toBe(false);
-      expect(r.instance.query()).toBe('Banana');
+      expect(r.instance.query()).toBe('');
+    });
+
+    it('resets the query on close so a reopen shows the full list with the picked option checked', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      typeInto(getPickerInput(), 'ban');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('ban');
+
+      getOption('banana').click();
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual(['banana']);
+      expect(r.instance.query()).toBe('');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('');
+      for (const id of ['apple', 'apricot', 'banana', 'cherry', 'date']) {
+        expect(document.querySelector(`[data-test-id="${id}"]`)).not.toBeNull();
+      }
+      expect(getOption('banana').getAttribute('data-state')).toBe('checked');
+    });
+
+    it('resets the query on a non-select close (escape) too', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      typeInto(getPickerInput(), 'ch');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('ch');
+
+      pressKey(getPickerInput(), 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.query()).toBe('');
     });
   });
 
@@ -2244,6 +2284,22 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(r.instance.autoFocusOnCloseCount).toBe(1);
+    });
+
+    it('picker query resets on close without zone.js', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      typeInto(getPickerInput(), 'ap');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('ap');
+
+      getOption('apple').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.query()).toBe('');
     });
   });
 

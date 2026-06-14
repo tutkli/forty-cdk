@@ -100,8 +100,8 @@ export class ForCombobox<T = string>
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter
    * (`(queryChange)`) fires only on internal mutations (option activation
-   * commit, `clear()`, multi-mode select reset), never on consumer writes
-   * via `[(query)]`.
+   * commit, `clear()`, multi-mode select reset, picker-anatomy reset on
+   * close), never on consumer writes via `[(query)]`.
    */
   readonly query = model<string>('');
 
@@ -173,6 +173,11 @@ export class ForCombobox<T = string>
    * multi mode, instead **clear** the query so the user can search the
    * next item. On by default in both. Set `false` to leave `query`
    * untouched on activation in either mode.
+   *
+   * Governs the **editable anatomy** only. In the picker anatomy (a
+   * `[forComboboxTrigger]` is registered) the in-panel input is a transient
+   * filter, not the value display: the single-mode label copy is always
+   * skipped and `query` resets to `''` on close regardless of this flag.
    */
   readonly commitOnSelect = input(true, { transform: booleanAttribute });
 
@@ -655,7 +660,7 @@ export class ForCombobox<T = string>
     }
     // Single mode: replace + close + commit label.
     this.value.set([v]);
-    if (this.commitOnSelect()) {
+    if (this.commitOnSelect() && this.trigger() === null) {
       this.query.set(handle.label());
       this.#syncInputValue(handle.label());
     }
@@ -833,6 +838,10 @@ export class ForCombobox<T = string>
     this.open.set(false);
     this.#activeId.set(null);
     this.#navigator?.resetPending();
+    if (this.trigger() !== null) {
+      this.query.set('');
+      this.#syncInputValue('');
+    }
   }
 
   /** Fire `(autoFocusOnOpen)` and report whether the consumer vetoed the focus move. */
