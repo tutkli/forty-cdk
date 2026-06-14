@@ -26,6 +26,13 @@ export interface ForCarouselDefaults {
    * set to `100% / slidesPerView` by the consumer's CSS.
    */
   slidesPerView: number;
+  /**
+   * When `true` (and the carousel is not looping), clamps the track offset so the
+   * trailing slides align flush to the viewport's trailing edge instead of
+   * overscrolling into empty space when `slidesPerView > 1`. The indicator/slide
+   * mapping is unchanged — only the visual offset is contained. Default `false`.
+   */
+  containScroll: boolean;
   /** Whether the carousel auto-rotates on mount (when not under reduced-motion). Default `false`. */
   autoplay: boolean;
   /** Milliseconds between automatic slide advances. Default `5000`. */
@@ -41,6 +48,7 @@ export const FOR_CAROUSEL_FALLBACK_DEFAULTS: ForCarouselDefaults = {
   loop: false,
   align: 'start',
   slidesPerView: 1,
+  containScroll: false,
   autoplay: false,
   autoplayInterval: 5000,
 };

@@ -238,6 +238,7 @@ All inputs are on `[forCarousel]` unless noted.
 | `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                         |
 | `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                         |
 | `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                |
+| `containScroll`                                  | `boolean`                      | `false`                        | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping. |
 | `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`). |
 | `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.        |
 | `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                |
@@ -247,6 +248,25 @@ All inputs are on `[forCarousel]` unless noted.
 | `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                |
 | `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                             |
 | `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                             |
+
+### Contain scroll
+
+With `slidesPerView > 1`, `align="start"`, and no `loop`, advancing to the last
+slide overscrolls the track: the final page may show only one real slide followed
+by empty space. Adding the `containScroll` attribute to `[forCarousel]` clamps
+`--for-carousel-offset` so the last visible page always sits flush at the
+viewport's trailing edge:
+
+```html
+<div forCarousel containScroll [slidesPerView]="3" ariaLabel="Featured products">
+  …
+</div>
+```
+
+Every slide still has its own indicator; trailing indicators that would map to the
+same clamped view simply share the same visual position. The clamp has no effect
+when `loop` is enabled (the entire range is valid when wrapping) or when
+`slidesPerView` is `1` (a single-view carousel never overscrolls).
 
 ## Keyboard interaction (indicator group)
 

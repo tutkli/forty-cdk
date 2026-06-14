@@ -113,6 +113,16 @@ export class ForCarousel implements ForCarouselContext {
   readonly slidesPerView = input(this.#defaults.slidesPerView, { transform: numberAttribute });
 
   /**
+   * When `true` and the carousel is not looping, clamps `--for-carousel-offset` so the
+   * trailing slides align flush to the viewport's trailing edge instead of overscrolling
+   * into empty space (relevant when `slidesPerView > 1`). The one-indicator-per-slide
+   * mapping is preserved — `activeIndex` still reaches the last slide; only the visual
+   * offset is contained. No effect when `loop` is enabled or `slidesPerView` is 1.
+   * Default from `provideForCarouselDefaults` or `false`.
+   */
+  readonly containScroll = input(this.#defaults.containScroll, { transform: booleanAttribute });
+
+  /**
    * Accessible label for the carousel root (`role="group"`). Should describe
    * the carousel's purpose without using the word "carousel" (APG guidance).
    * When null (default), no `aria-label` is emitted; use `aria-labelledby`
@@ -196,7 +206,12 @@ export class ForCarousel implements ForCarouselContext {
     const align = this.align();
     const adjust =
       align === 'center' ? (100 - slideSizePct) / 2 : align === 'end' ? 100 - slideSizePct : 0;
-    return `${base + adjust}%`;
+    const raw = base + adjust;
+    if (this.containScroll() && !this.loop()) {
+      const minOffset = -(Math.max(0, this.slideCount() - perView) * slideSizePct);
+      return `${Math.min(0, Math.max(minOffset, raw))}%`;
+    }
+    return `${raw}%`;
   });
 
   /** The measured viewport width, or `null` before first measurement / on the server. */
