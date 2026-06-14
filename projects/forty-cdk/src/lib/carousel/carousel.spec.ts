@@ -40,6 +40,7 @@ const CAROUSEL_IMPORTS = [
       [dir]="dir()"
       [align]="align()"
       [slidesPerView]="slidesPerView()"
+      [containScroll]="containScroll()"
       [ariaLabel]="ariaLabel()"
       [autoplay]="autoplay()"
       [autoplayInterval]="autoplayInterval()"
@@ -72,6 +73,7 @@ class CarouselHost {
   readonly ariaLabel = signal<string | null>('Featured items');
   readonly indicatorsLabel = signal<string | null>('Choose slide');
   readonly slides = signal([0, 1, 2]);
+  readonly containScroll = signal(false);
   readonly autoplay = signal(false);
   readonly autoplayInterval = signal(5000);
 }
@@ -267,6 +269,67 @@ describe('ForCarousel', () => {
       instance.slidesPerView.set(1);
       fixture.detectChanges();
       expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('0%');
+    });
+
+    it('containScroll=false (default): no clamp — activeIndex=2, slidesPerView=2 produces -100%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(2);
+      instance.align.set('start');
+      instance.slidesPerView.set(2);
+      instance.containScroll.set(false);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-100%');
+    });
+
+    it('containScroll=true: trailing overscroll clamped — activeIndex=2, slidesPerView=2 produces -50%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(2);
+      instance.align.set('start');
+      instance.slidesPerView.set(2);
+      instance.containScroll.set(true);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-50%');
+    });
+
+    it('containScroll=true with loop=true: clamp bypassed — activeIndex=2, slidesPerView=2 produces -100%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(2);
+      instance.align.set('start');
+      instance.slidesPerView.set(2);
+      instance.containScroll.set(true);
+      instance.loop.set(true);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-100%');
+    });
+
+    it('containScroll=true with slidesPerView=1: no-op — activeIndex=2 produces -200%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(2);
+      instance.align.set('start');
+      instance.slidesPerView.set(1);
+      instance.containScroll.set(true);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-200%');
+    });
+
+    it('containScroll=true, align=center, activeIndex=0: leading adjust clamped to 0%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(0);
+      instance.align.set('center');
+      instance.slidesPerView.set(2);
+      instance.containScroll.set(true);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('0%');
+    });
+
+    it('containScroll=false, align=center, activeIndex=0: center adjust not clamped — 25%', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(0);
+      instance.align.set('center');
+      instance.slidesPerView.set(2);
+      instance.containScroll.set(false);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('25%');
     });
   });
 
