@@ -45,6 +45,7 @@ __screenshots__/
 .claude/worktrees/
 .claude/workflows/
 .claude/launch.json
+/plans
 
 # Audit working files (issue body drafts kept locally, not part of source)
 /.audit-issues/
