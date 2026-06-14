@@ -136,6 +136,8 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
 
 **Picking which anatomy.** Use the editable anatomy for type-to-filter text fields and tag inputs (the input is always visible). Use the picker anatomy for select-like pickers where the closed state shows a chosen value and search is an in-panel affordance. Everything else — filtering being the consumer's job, `[(value)]` / `[(query)]` / object values / multi mode / virtualization — works identically in both.
 
+**Transient query.** In the picker anatomy the in-panel `[forComboboxInput]` is a _transient filter_, not the value display — the committed selection lives on the `[forComboboxTrigger]`. So the combobox resets `query` to `''` every time the panel closes, and single-mode activation never copies the option label into `query` (the editable anatomy's `commitOnSelect` is effectively off here). Reopen the panel and the search starts empty with the full option list, the previously-picked option carrying `data-state="checked"` — matching cmdk / shadcn / Radix Command. `commitOnSelect` governs the **editable** anatomy only; to keep a typed filter across reopen in the picker, drive `query` yourself from `(openChange)`.
+
 **Triggers stamped from outside-declared templates.** Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forComboboxTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forCombobox"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
