@@ -21,6 +21,7 @@ export {
   type ForComboboxChipHandle,
   type ForComboboxCloseReason,
   type ForComboboxContext,
+  type ForComboboxInitialFocus,
   type ForComboboxOptionHandle,
 } from './combobox-context';
 export {
