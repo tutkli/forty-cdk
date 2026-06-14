@@ -12,6 +12,11 @@ import {
   provideForAvatarDefaults,
 } from '../../avatar/avatar-defaults';
 import {
+  FOR_CAROUSEL_DEFAULTS,
+  FOR_CAROUSEL_FALLBACK_DEFAULTS,
+  provideForCarouselDefaults,
+} from '../../carousel/carousel-defaults';
+import {
   FOR_CONTEXT_MENU_DEFAULTS,
   FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
   provideForContextMenuDefaults,
@@ -228,6 +233,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_POPOVER_FALLBACK_DEFAULTS,
     provide: provideForPopoverDefaults,
     override: { side: 'top' },
+  }),
+  defaultsCase({
+    name: 'provideForCarouselDefaults',
+    token: FOR_CAROUSEL_DEFAULTS,
+    fallback: FOR_CAROUSEL_FALLBACK_DEFAULTS,
+    provide: provideForCarouselDefaults,
+    override: { slidesPerView: 3 },
   }),
 ];
 
