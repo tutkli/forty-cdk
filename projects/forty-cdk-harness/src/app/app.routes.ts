@@ -33,6 +33,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/popover.fixture').then((m) => m.PopoverFixture),
   },
   {
+    path: 'popover-animation',
+    loadComponent: () =>
+      import('./fixtures/popover-animation.fixture').then((m) => m.PopoverAnimationFixture),
+  },
+  {
     path: 'radio-group',
     loadComponent: () => import('./fixtures/radio-group.fixture').then((m) => m.RadioGroupFixture),
   },
