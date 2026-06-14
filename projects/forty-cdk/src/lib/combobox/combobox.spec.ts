@@ -2270,6 +2270,122 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
     });
   });
 
+  describe('picker initial highlight on open (issue #754)', () => {
+    it('seeds the committed selection on open', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.value.set(['banana']);
+
+      getTrigger().click();
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      const bananaEl = getOption('banana');
+      const appleEl = getOption('apple');
+      expect(input.getAttribute('aria-activedescendant')).toBe(bananaEl.id);
+      expect(bananaEl.getAttribute('data-highlighted')).toBe('');
+      expect(appleEl.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('falls back to the first enabled option when there is no selection', async () => {
+      const r = renderHost(PickerHost);
+
+      getTrigger().click();
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      const appleEl = getOption('apple');
+      expect(input.getAttribute('aria-activedescendant')).toBe(appleEl.id);
+      expect(appleEl.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('falls back to the first enabled option when the selected option is filtered out', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.value.set(['banana']);
+
+      getTrigger().click();
+      await flush(r.fixture);
+
+      typeInto(getPickerInput(), 'ap');
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      const appleEl = getOption('apple');
+      expect(input.getAttribute('aria-activedescendant')).toBe(appleEl.id);
+      expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+    });
+
+    it('zoneless: seeds the committed selection without zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const r = renderHost(PickerHost);
+      r.instance.value.set(['banana']);
+
+      getTrigger().click();
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      const bananaEl = getOption('banana');
+      expect(input.getAttribute('aria-activedescendant')).toBe(bananaEl.id);
+    });
+
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxTrigger,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxList,
+        ForComboboxOption,
+      ],
+      template: `
+        <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
+          <button forComboboxTrigger data-test-id="trigger">Pick</button>
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput data-test-id="picker-input" />
+              <div forComboboxList>
+                <div data-test-id="add" forComboboxOption [value]="sentinel" [label]="sentinelLabel">
+                  {{ sentinelLabel }}
+                </div>
+                @for (it of filtered(); track it.id) {
+                  <div
+                    [attr.data-test-id]="it.id"
+                    forComboboxOption
+                    [value]="it.id"
+                    [label]="it.label"
+                    [disabled]="!!it.disabled"
+                  >
+                    {{ it.label }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StaticPickerHost {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(false);
+      readonly sentinel = '__add__';
+      readonly sentinelLabel = 'Add new…';
+      readonly filtered = computed<readonly FruitItem[]>(() => {
+        const q = this.query().toLowerCase();
+        return q ? FRUITS.filter((it) => it.label.toLowerCase().includes(q)) : FRUITS;
+      });
+    }
+
+    it('seeds the committed selection without NG0950 when a static option precedes the @for list', async () => {
+      const r = renderHost(StaticPickerHost);
+      r.instance.value.set(['banana']);
+
+      getTrigger().click();
+      await flush(r.fixture);
+
+      expect(getPickerInput().getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+    });
+  });
+
   describe('zoneless', () => {
     it('trigger → open → list role + focus hooks stay reactive without zone.js', async () => {
       const r = renderHost(PickerHost);

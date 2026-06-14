@@ -44,9 +44,11 @@ import {
   type ForComboboxChipHandle,
   type ForComboboxCloseReason,
   type ForComboboxContext,
+  type ForComboboxInitialFocus,
   type ForComboboxOptionHandle,
 } from './combobox-context';
 import { OptionLabelCache } from './combobox-label-cache';
+import { tryReadHandle } from './combobox-snapshot-fold';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
@@ -350,7 +352,7 @@ export class ForCombobox<T = string>
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
 
-  readonly #initialFocus = signal<'first' | 'last'>('first');
+  readonly #initialFocus = signal<ForComboboxInitialFocus>('first');
   readonly initialFocus = this.#initialFocus.asReadonly();
 
   readonly #lastCloseReason = signal<ForComboboxCloseReason | null>(null);
@@ -384,8 +386,10 @@ export class ForCombobox<T = string>
       open: boolean;
       autoHighlight: boolean;
       virtualized: boolean;
-      initialFocus: 'first' | 'last';
+      initialFocus: ForComboboxInitialFocus;
       items: readonly ForComboboxOptionHandle<T>[];
+      value: readonly T[];
+      equals: (a: T, b: T) => boolean;
     },
     string | null
   >({
@@ -396,8 +400,13 @@ export class ForCombobox<T = string>
       virtualized: this.totalCount() !== undefined,
       initialFocus: this.#initialFocus(),
       items: this.#items.items(),
+      value: this.value(),
+      equals: this.isItemEqualToValue(),
     }),
-    computation: ({ query, open, autoHighlight, virtualized, initialFocus, items }, prev) => {
+    computation: (
+      { query, open, autoHighlight, virtualized, initialFocus, items, value, equals },
+      prev,
+    ) => {
       const queryChanged = prev !== undefined && prev.source.query !== query;
       let current = queryChanged ? null : (prev?.value ?? null);
       if (current !== null && !items.some((o) => o.id() === current)) {
@@ -408,6 +417,15 @@ export class ForCombobox<T = string>
       }
       if (virtualized || !autoHighlight || !open || items.length === 0) {
         return null;
+      }
+      if (initialFocus === 'selected') {
+        const selected = findSelectedEnabled(items, value, equals);
+        if (selected === NOT_READY) {
+          return null;
+        }
+        if (selected) {
+          return selected.id();
+        }
       }
       const target = initialFocus === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
       return target?.id() ?? null;
@@ -806,7 +824,7 @@ export class ForCombobox<T = string>
     this.#activeId.set(null);
   }
 
-  setInitialFocus(target: 'first' | 'last'): void {
+  setInitialFocus(target: ForComboboxInitialFocus): void {
     this.#initialFocus.set(target);
   }
 
@@ -817,11 +835,11 @@ export class ForCombobox<T = string>
     if (this.open()) {
       this.closeMenu('programmatic');
     } else {
-      this.openMenu();
+      this.openMenu(this.trigger() !== null ? 'selected' : 'first');
     }
   }
 
-  openMenu(initialFocus: 'first' | 'last' = 'first'): void {
+  openMenu(initialFocus: ForComboboxInitialFocus = 'first'): void {
     if (this.effectiveDisabled() || this.open()) {
       return;
     }
@@ -933,6 +951,31 @@ function findLastEnabled<T>(
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (item && !item.disabled()) {
+      return item;
+    }
+  }
+  return null;
+}
+
+const NOT_READY = Symbol('forty-cdk/combobox:not-ready');
+
+function findSelectedEnabled<T>(
+  items: readonly ForComboboxOptionHandle<T>[],
+  values: readonly T[],
+  equals: (a: T, b: T) => boolean,
+): ForComboboxOptionHandle<T> | null | typeof NOT_READY {
+  if (values.length === 0) {
+    return null;
+  }
+  for (const item of items) {
+    if (item.disabled()) {
+      continue;
+    }
+    const read = tryReadHandle(() => ({ value: item.value() }));
+    if (read === null) {
+      return NOT_READY;
+    }
+    if (values.some((sel) => equals(read.value, sel))) {
       return item;
     }
   }

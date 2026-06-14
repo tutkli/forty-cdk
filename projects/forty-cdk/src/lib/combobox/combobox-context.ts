@@ -32,6 +32,14 @@ export type ForComboboxCloseReason =
  */
 export type ForComboboxAutocomplete = 'none' | 'list' | 'inline' | 'both';
 
+/**
+ * Where the auto-highlight seed lands when the listbox opens. `'first'` / `'last'`
+ * bias to the natural extreme (e.g. ArrowDown / ArrowUp on the trigger). `'selected'`
+ * — used by the picker trigger's plain open — seeds the committed selection, falling
+ * back to the first enabled option when there is no selection or it is filtered out.
+ */
+export type ForComboboxInitialFocus = 'first' | 'last' | 'selected';
+
 export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
   readonly id: Signal<string>;
   readonly value: Signal<T>;
@@ -245,11 +253,11 @@ export interface ForComboboxContext<T = unknown> {
   clear(clearQuery?: boolean): void;
 
   /** Where focus should land after the listbox opens. The input directive sets this before flipping `open`. */
-  readonly initialFocus: Signal<'first' | 'last'>;
-  setInitialFocus(target: 'first' | 'last'): void;
+  readonly initialFocus: Signal<ForComboboxInitialFocus>;
+  setInitialFocus(target: ForComboboxInitialFocus): void;
 
   toggle(): void;
-  openMenu(initialFocus?: 'first' | 'last'): void;
+  openMenu(initialFocus?: ForComboboxInitialFocus): void;
   closeMenu(reason: ForComboboxCloseReason): void;
 
   /**
