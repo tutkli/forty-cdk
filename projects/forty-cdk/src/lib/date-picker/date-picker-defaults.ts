@@ -23,14 +23,19 @@ export interface ForDatePickerDefaults {
   collisionPadding: number;
 }
 
-const FALLBACK: ForDatePickerDefaults = {
+/**
+ * Library fallback for date-picker defaults, read at the root injector when no
+ * consumer has called `provideForDatePickerDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_DATE_PICKER_FALLBACK_DEFAULTS: ForDatePickerDefaults = {
   sideOffset: 8,
   collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForDatePickerDefaults>(
   'FOR_DATE_PICKER_DEFAULTS',
-  FALLBACK,
+  FOR_DATE_PICKER_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved date-picker defaults for the current scope. */

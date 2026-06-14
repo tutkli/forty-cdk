@@ -16,13 +16,18 @@ export interface ForNumberInputDefaults {
   stepMultiplier: number;
 }
 
-const FALLBACK: ForNumberInputDefaults = {
+/**
+ * Library fallback for number-input defaults, read at the root injector when no
+ * consumer has called `provideForNumberInputDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_NUMBER_INPUT_FALLBACK_DEFAULTS: ForNumberInputDefaults = {
   stepMultiplier: 10,
 };
 
 const { token, provideDefaults } = createDefaults<ForNumberInputDefaults>(
   'FOR_NUMBER_INPUT_DEFAULTS',
-  FALLBACK,
+  FOR_NUMBER_INPUT_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved number-input defaults for the current scope. */

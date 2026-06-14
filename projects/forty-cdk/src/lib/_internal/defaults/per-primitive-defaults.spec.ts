@@ -12,6 +12,11 @@ import {
   provideForAvatarDefaults,
 } from '../../avatar/avatar-defaults';
 import {
+  FOR_CALENDAR_DEFAULTS,
+  FOR_CALENDAR_FALLBACK_DEFAULTS,
+  provideForCalendarDefaults,
+} from '../../calendar/calendar-defaults';
+import {
   FOR_CAROUSEL_DEFAULTS,
   FOR_CAROUSEL_FALLBACK_DEFAULTS,
   provideForCarouselDefaults,
@@ -21,6 +26,11 @@ import {
   FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
   provideForContextMenuDefaults,
 } from '../../context-menu/context-menu-defaults';
+import {
+  FOR_DATE_PICKER_DEFAULTS,
+  FOR_DATE_PICKER_FALLBACK_DEFAULTS,
+  provideForDatePickerDefaults,
+} from '../../date-picker/date-picker-defaults';
 import {
   FOR_DROPDOWN_MENU_DEFAULTS,
   FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
@@ -42,10 +52,20 @@ import {
   provideForMenuDefaults,
 } from '../../menu/menu-defaults';
 import {
+  FOR_MENUBAR_DEFAULTS,
+  FOR_MENUBAR_FALLBACK_DEFAULTS,
+  provideForMenubarDefaults,
+} from '../../menubar/menubar-defaults';
+import {
   FOR_NAVIGATION_MENU_DEFAULTS,
   FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS,
   provideForNavigationMenuDefaults,
 } from '../../navigation-menu/navigation-menu-defaults';
+import {
+  FOR_NUMBER_INPUT_DEFAULTS,
+  FOR_NUMBER_INPUT_FALLBACK_DEFAULTS,
+  provideForNumberInputDefaults,
+} from '../../number-input/number-input-defaults';
 import {
   FOR_POPOVER_DEFAULTS,
   FOR_POPOVER_FALLBACK_DEFAULTS,
@@ -96,6 +116,11 @@ import {
   FOR_TOOLTIP_FALLBACK_DEFAULTS,
   provideForTooltipDefaults,
 } from '../../tooltip/tooltip-defaults';
+import {
+  FOR_TREE_DEFAULTS,
+  FOR_TREE_FALLBACK_DEFAULTS,
+  provideForTreeDefaults,
+} from '../../tree/tree-defaults';
 
 interface DefaultsCase<D extends object> {
   /** Name of the primitive's provider, used as the test suite label. */
@@ -240,6 +265,41 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_CAROUSEL_FALLBACK_DEFAULTS,
     provide: provideForCarouselDefaults,
     override: { slidesPerView: 3 },
+  }),
+  defaultsCase({
+    name: 'provideForCalendarDefaults',
+    token: FOR_CALENDAR_DEFAULTS,
+    fallback: FOR_CALENDAR_FALLBACK_DEFAULTS,
+    provide: provideForCalendarDefaults,
+    override: { firstDayOfWeek: 1 },
+  }),
+  defaultsCase({
+    name: 'provideForDatePickerDefaults',
+    token: FOR_DATE_PICKER_DEFAULTS,
+    fallback: FOR_DATE_PICKER_FALLBACK_DEFAULTS,
+    provide: provideForDatePickerDefaults,
+    override: { sideOffset: 12 },
+  }),
+  defaultsCase({
+    name: 'provideForNumberInputDefaults',
+    token: FOR_NUMBER_INPUT_DEFAULTS,
+    fallback: FOR_NUMBER_INPUT_FALLBACK_DEFAULTS,
+    provide: provideForNumberInputDefaults,
+    override: { stepMultiplier: 5 },
+  }),
+  defaultsCase({
+    name: 'provideForMenubarDefaults',
+    token: FOR_MENUBAR_DEFAULTS,
+    fallback: FOR_MENUBAR_FALLBACK_DEFAULTS,
+    provide: provideForMenubarDefaults,
+    override: { closeDelay: 300 },
+  }),
+  defaultsCase({
+    name: 'provideForTreeDefaults',
+    token: FOR_TREE_DEFAULTS,
+    fallback: FOR_TREE_FALLBACK_DEFAULTS,
+    provide: provideForTreeDefaults,
+    override: { selectionFollowsFocus: true },
   }),
 ];
 

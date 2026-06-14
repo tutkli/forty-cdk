@@ -13,13 +13,18 @@ export interface ForMenubarDefaults {
   closeDelay: number;
 }
 
-const FALLBACK: ForMenubarDefaults = {
+/**
+ * Library fallback for menubar defaults, read at the root injector when no
+ * consumer has called `provideForMenubarDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
   closeDelay: 150,
 };
 
 const { token, provideDefaults } = createDefaults<ForMenubarDefaults>(
   'FOR_MENUBAR_DEFAULTS',
-  FALLBACK,
+  FOR_MENUBAR_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved menubar defaults for the current scope. */

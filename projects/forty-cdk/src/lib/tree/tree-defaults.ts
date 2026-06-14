@@ -17,11 +17,19 @@ export interface ForTreeDefaults {
   selectionFollowsFocus: boolean;
 }
 
-const FALLBACK: ForTreeDefaults = {
+/**
+ * Library fallback for tree defaults, read at the root injector when no
+ * consumer has called `provideForTreeDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TREE_FALLBACK_DEFAULTS: ForTreeDefaults = {
   selectionFollowsFocus: false,
 };
 
-const { token, provideDefaults } = createDefaults<ForTreeDefaults>('FOR_TREE_DEFAULTS', FALLBACK);
+const { token, provideDefaults } = createDefaults<ForTreeDefaults>(
+  'FOR_TREE_DEFAULTS',
+  FOR_TREE_FALLBACK_DEFAULTS,
+);
 
 /** Token holding the resolved tree defaults for the current scope. */
 export const FOR_TREE_DEFAULTS = token;

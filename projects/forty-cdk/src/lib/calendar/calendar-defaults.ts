@@ -18,13 +18,18 @@ export interface ForCalendarDefaults {
   firstDayOfWeek: number | null;
 }
 
-const FALLBACK: ForCalendarDefaults = {
+/**
+ * Library fallback for calendar defaults, read at the root injector when no
+ * consumer has called `provideForCalendarDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_CALENDAR_FALLBACK_DEFAULTS: ForCalendarDefaults = {
   firstDayOfWeek: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForCalendarDefaults>(
   'FOR_CALENDAR_DEFAULTS',
-  FALLBACK,
+  FOR_CALENDAR_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved calendar defaults for the current scope. */
