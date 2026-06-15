@@ -37,3 +37,65 @@ test.describe('Popover exit animation (#766 spike B)', () => {
     await expect(el(page, 'first-anim')).toBeVisible();
   });
 });
+
+test.describe('Popover leave stays anchored (#772)', () => {
+  test('opacity leave retains translate mid-leave so surface stays anchored', async ({ page }) => {
+    await gotoFixture(page, 'popover-animation');
+    await el(page, 'trigger-anim').click();
+    await expect(el(page, 'popover-anim')).toBeVisible();
+
+    const openState = await el(page, 'popover-anim').evaluate((node) => {
+      const el = node as HTMLElement;
+      return {
+        translate: el.style.translate,
+      };
+    });
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(60);
+
+    const midLeave = await el(page, 'popover-anim').evaluate((node) => {
+      const el = node as HTMLElement;
+      return {
+        translate: el.style.translate,
+        hasLeaveClass: el.classList.contains('popover-leaving'),
+        rect: el.getBoundingClientRect(),
+      };
+    });
+
+    expect(midLeave.translate).toMatch(/^-?\d+px -?\d+px$/);
+    expect(midLeave.translate).toBe(openState.translate);
+    expect(midLeave.hasLeaveClass).toBe(true);
+    expect(midLeave.rect.x > 2 || midLeave.rect.y > 2).toBe(true);
+  });
+
+  test('scale leave retains translate mid-leave so surface stays anchored', async ({ page }) => {
+    await gotoFixture(page, 'popover-animation', { leave: 'scale' });
+    await el(page, 'trigger-anim').click();
+    await expect(el(page, 'popover-anim')).toBeVisible();
+
+    const openState = await el(page, 'popover-anim').evaluate((node) => {
+      const el = node as HTMLElement;
+      return {
+        translate: el.style.translate,
+      };
+    });
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(60);
+
+    const midLeave = await el(page, 'popover-anim').evaluate((node) => {
+      const el = node as HTMLElement;
+      return {
+        translate: el.style.translate,
+        hasLeaveClass: el.classList.contains('popover-leaving'),
+        rect: el.getBoundingClientRect(),
+      };
+    });
+
+    expect(midLeave.translate).toMatch(/^-?\d+px -?\d+px$/);
+    expect(midLeave.translate).toBe(openState.translate);
+    expect(midLeave.hasLeaveClass).toBe(true);
+    expect(midLeave.rect.x > 2 || midLeave.rect.y > 2).toBe(true);
+  });
+});

@@ -309,7 +309,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
 
-    it('clears every style, CSS var, and data-* attr the helper wrote on close', async () => {
+    it('clears every style, CSS var, and data-* attr on close — except the resolved translate (retained for animate.leave)', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -338,13 +338,13 @@ describe('injectFloating', () => {
       bubble.open.set(false);
       await flushPositioning(fixture);
 
-      // Floating element is wiped.
+      // Floating element is wiped — except the retained translate (kept for animate.leave).
       expect(bubbleEl.dataset['placement']).toBeUndefined();
       expect(bubbleEl.dataset['side']).toBeUndefined();
       expect(bubbleEl.dataset['align']).toBeUndefined();
       expect(bubbleEl.dataset['occluded']).toBeUndefined();
       expect(bubbleEl.dataset['detached']).toBeUndefined();
-      expect(bubbleEl.style.translate).toBe('');
+      expect(bubbleEl.style.translate).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-available-width')).toBe('');
@@ -446,13 +446,13 @@ describe('injectFloating', () => {
 
       // A side change while open re-runs the effect: onCleanup clears the
       // styles, then the effect synchronously re-arms the clip-path baseline
-      // so the surface stays hidden at the (now-cleared) stale position until
+      // so the surface stays hidden at the retained stale position until
       // the async computePosition resolves. Synchronous detectChanges flushes
       // the effect without letting the position promise resolve.
       bubble.side.set('bottom');
       fixture.detectChanges();
       expect(bubbleEl.style.clipPath).toBe('inset(50%)');
-      expect(bubbleEl.style.translate).toBe('');
+      expect(bubbleEl.style.translate).not.toBe('');
 
       // Once the new position resolves the baseline drops again.
       await flushPositioning(fixture);
