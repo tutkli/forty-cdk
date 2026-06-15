@@ -19,9 +19,10 @@ export interface ForDrawerDefaults {
   /** Default `true`. Pointer drag gesture toward the anchored edge dismisses. */
   swipeToDismiss?: boolean;
   /**
-   * Default `0.25`. Fraction of the drawer's dimension along the dismissal
-   * axis past which a release dismisses instead of snapping back. Vaul
-   * semantics (see `_internal/swipe-dismiss/resolveSnapTarget`).
+   * Default `0.25`. Fraction past which a release dismisses instead of
+   * snapping back: of the full dimension without snap points, of the lowest
+   * snap's extent with them. Vaul semantics (see
+   * `_internal/swipe-dismiss/resolveSnapTarget`).
    */
   closeThreshold?: number;
   /** Default `'first'`. Where to send focus on mount. */

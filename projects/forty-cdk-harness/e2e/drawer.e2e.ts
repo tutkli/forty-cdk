@@ -510,14 +510,37 @@ test.describe('Drawer', () => {
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
 
-    test('snap point: drag past the lowest snap by closeThreshold * dim dismisses', async ({
+    test('snap point: drag past the lowest snap by closeThreshold of that snap dismisses', async ({
       page,
     }) => {
       // Initial active is '148px' (the lowest snap). closeThreshold defaults
-      // to 0.25, drawer height 400 ⇒ dismissal threshold = 100px PAST the
-      // lowest snap. Drag down 130px — position = 148 - 130 = 18, less than
-      // 148 - 100 = 48, so resolveSnapTarget returns willClose=true.
+      // to 0.25 and is now measured against the lowest snap's own extent, so
+      // the dismiss threshold is 148 * (1 - 0.25) = 111. Drag down 130px —
+      // position = 148 - 130 = 18, below 111, so resolveSnapTarget returns
+      // willClose=true. (Drawer height no longer affects this threshold.)
       await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '148px,0.5,1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 130 });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+    });
+
+    test('snap point: a small peek on a tall sheet dismisses on a modest drag (threshold scales to the peek, not the full dim)', async ({
+      page,
+    }) => {
+      // Regression: the dismiss threshold used to be `lowestPos - dim *
+      // closeThreshold`, which goes negative once the peek is smaller than
+      // closeThreshold of the full drawer (148 - 650 * 0.25 = -14.5) — the
+      // surface had to be dragged fully off-screen to close. The threshold is
+      // now a fraction of the peek's own extent (148 * 0.75 = 111), so a 130px
+      // drag (position 148 - 130 ≈ 18) dismisses. drawerHeight 650 keeps the
+      // handle reachable on the 720px desktop viewport.
+      await gotoFixture(page, 'drawer', { drawerHeight: '650', snap: '148px,0.5,1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'active-snap')).toHaveText('148px');
@@ -531,12 +554,11 @@ test.describe('Drawer', () => {
 
     test('"NNpx" snap entry resolves against a known live dimension', async ({ page }) => {
       // Round-trip the px conversion: with `'100px'` first and a 400px
-      // drawer, the lowest snap sits 100px from the edge. closeThreshold
-      // 0.25 × dim 400 = 100px past that lowest snap to dismiss, so a
-      // 200px drag from rest crosses the threshold (offset 200 ⇒
-      // position = 100 - 200 = -100, well below the dismissThreshold of
-      // 100 - 100 = 0). Single fresh-page drag keeps the velocity profile
-      // simple and dodges any per-gesture state weirdness.
+      // drawer, the lowest snap sits 100px from the edge. The dismiss
+      // threshold is 0.25 of that snap's extent → 100 * (1 - 0.25) = 75, so a
+      // 200px drag from rest crosses it (offset 200 ⇒ position = 100 - 200 =
+      // -100, well below 75). Single fresh-page drag keeps the velocity
+      // profile simple and dodges any per-gesture state weirdness.
       await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '100px,0.5,1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();

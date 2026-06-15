@@ -338,7 +338,6 @@ describe('resolveSnapTarget', () => {
       activeSnapPoint: 0.5,
       position: 380,
       velocity: 0.05,
-      dimension: 800,
       closeThreshold: 0.25,
     });
     expect(r.willClose).toBe(false);
@@ -352,7 +351,6 @@ describe('resolveSnapTarget', () => {
       activeSnapPoint: 0.5,
       position: 410,
       velocity: 1, // fast away from edge
-      dimension: 800,
       closeThreshold: 0.25,
     });
     expect(r.willClose).toBe(false);
@@ -366,7 +364,6 @@ describe('resolveSnapTarget', () => {
       activeSnapPoint: 0.5,
       position: 380,
       velocity: -1, // fast toward edge
-      dimension: 800,
       closeThreshold: 0.25,
     });
     expect(r.willClose).toBe(false);
@@ -380,7 +377,6 @@ describe('resolveSnapTarget', () => {
       activeSnapPoint: 0.25,
       position: -50, // way past the lowest snap, toward the edge
       velocity: 0,
-      dimension: 800,
       closeThreshold: 0.25,
     });
     expect(r.willClose).toBe(true);
@@ -395,7 +391,6 @@ describe('resolveSnapTarget', () => {
         activeSnapPoint: null,
         position: 100,
         velocity: 0,
-        dimension: 800,
         closeThreshold: 0.25,
       }),
     ).toThrow(/at least one snap point/);
@@ -409,10 +404,42 @@ describe('resolveSnapTarget', () => {
       activeSnapPoint: 0.5,
       position: 350,
       velocity: 0,
-      dimension: 800,
       closeThreshold: 0.25,
     });
     expect(r.willClose).toBe(false);
     expect(r.nextSnapPoint).toBe(0.5);
+  });
+
+  it('dismisses from a small "peek" snap on a modest drag (the threshold scales to the lowest snap, not the full dimension)', () => {
+    // Playground-shaped config: a 148px peek on a tall 650px sheet. The old
+    // formula (lowestPos - dimension * closeThreshold = 148 - 650 * 0.25 =
+    // -14.5) made the dismiss threshold negative, so the surface had to be
+    // dragged entirely off-screen to close. The threshold is now a fraction
+    // of the peek's own extent: 148 * (1 - 0.25) = 111.
+    const r = resolveSnapTarget({
+      snapPoints: ['148px', 0.5, 1] as const,
+      snapPositions: [148, 325, 650],
+      activeSnapPoint: '148px',
+      position: 90, // peek dragged down 58px — nowhere near off-screen
+      velocity: 0,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(true);
+    expect(r.nextSnapPoint).toBe(null);
+  });
+
+  it('snaps back to the peek (does not dismiss) when the drag stays short of the threshold', () => {
+    // Same 148px peek; a 25px drag (position 123) stays above the 111 dismiss
+    // threshold, so the release settles back on the peek instead of closing.
+    const r = resolveSnapTarget({
+      snapPoints: ['148px', 0.5, 1] as const,
+      snapPositions: [148, 325, 650],
+      activeSnapPoint: '148px',
+      position: 123,
+      velocity: 0,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe('148px');
   });
 });
