@@ -19,7 +19,7 @@ export type ConfirmResult = 'confirm' | 'cancel';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDialogBackdrop, ForDialogTitle, ForDialogDescription, ForDialogClose],
   template: `
-    <div forDialogBackdrop class="pg-backdrop"></div>
+    <div forDialogBackdrop class="pg-backdrop" animate.enter="pg-backdrop-in"></div>
     <h2 forDialogTitle>{{ data?.title }}</h2>
     <p forDialogDescription>{{ data?.message }}</p>
     <div class="pg-dialog-actions">

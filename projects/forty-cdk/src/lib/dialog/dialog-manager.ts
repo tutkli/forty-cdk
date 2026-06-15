@@ -19,6 +19,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
+import { FOR_DIALOG_INSTANCE_ID } from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
 import type { ForDialogEntry } from './dialog-outlet';
 import { ForDialogOutlet } from './dialog-outlet';
@@ -87,6 +88,23 @@ export interface ForDialogOpenConfig<D = unknown> {
    * back to `provideForDialogDefaults({ animateLeave })`.
    */
   animateLeave?: string;
+
+  /**
+   * Exit-animation class for the portaled `[forDialogBackdrop]`: the manager
+   * adds it when `close()` is called and keeps the backdrop mounted until the
+   * animation finishes, so the backdrop fades out in lockstep with the host.
+   *
+   * The split with the enter animation is intentional, not an oversight.
+   * Declare the backdrop's **enter** with `animate.enter="…"` on the element
+   * itself — it fires on mount, which Angular runs normally even inside the
+   * manager's `ngComponentOutlet` — and declare only its **leave** here. A
+   * template `animate.leave` on the backdrop never fires under the manager:
+   * Angular does not run leave animations across the `ngComponentOutlet` the
+   * opened component is mounted through. (The host box is symmetric — both
+   * `animateEnter` and `animateLeave` are config, since the manager owns that
+   * element.) Falls back to `provideForDialogDefaults({ backdropAnimateLeave })`.
+   */
+  backdropAnimateLeave?: string;
 
   /**
    * Consumer CSS class(es) applied to the overlay root (the `[forDialog]`
@@ -205,19 +223,46 @@ export class ForDialogManager {
     }
   }
 
-  #beginLeave(id: string, leaveClass: string | undefined, remove: () => void): void {
-    if (this.#destroying || !leaveClass || typeof requestAnimationFrame === 'undefined') {
+  #beginLeave(
+    id: string,
+    leaveClass: string | undefined,
+    backdropLeaveClass: string | undefined,
+    remove: () => void,
+  ): void {
+    if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
       remove();
       return;
     }
-    const host = this.#document.querySelector<HTMLElement>(`[data-for-dialog-id="${id}"]`);
-    if (!host || typeof host.getAnimations !== 'function') {
+    // Drive the exit animation on the host and, in lockstep, on the portaled
+    // backdrop. The backdrop is matched by the same per-instance id (it
+    // reflects `data-for-dialog-id` from FOR_DIALOG_INSTANCE_ID) because its
+    // template `animate.leave` never fires under the manager's
+    // `ngComponentOutlet` mount — see ForDialogBackdrop / backdropAnimateLeave.
+    const targets: HTMLElement[] = [];
+    if (leaveClass) {
+      const host = this.#document.querySelector<HTMLElement>(
+        `[data-for-dialog-id="${id}"]:not([data-for-dialog-backdrop])`,
+      );
+      if (host && typeof host.getAnimations === 'function') {
+        host.classList.add(leaveClass);
+        targets.push(host);
+      }
+    }
+    if (backdropLeaveClass) {
+      const backdrop = this.#document.querySelector<HTMLElement>(
+        `[data-for-dialog-backdrop][data-for-dialog-id="${id}"]`,
+      );
+      if (backdrop && typeof backdrop.getAnimations === 'function') {
+        backdrop.classList.add(backdropLeaveClass);
+        targets.push(backdrop);
+      }
+    }
+    if (targets.length === 0) {
       remove();
       return;
     }
-    host.classList.add(leaveClass);
     requestAnimationFrame(() => {
-      const animations = host.getAnimations();
+      const animations = targets.flatMap((el) => el.getAnimations());
       if (animations.length === 0) {
         remove();
         return;
@@ -246,8 +291,11 @@ export class ForDialogManager {
 
     const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
     const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
+    const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
 
-    const ref = new ForDialogRef<R>(() => this.#beginLeave(id, animateLeave, remove));
+    const ref = new ForDialogRef<R>(() =>
+      this.#beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+    );
 
     const hostClass = resolveConfigClass(config) ?? '';
     const consumerProviders = config.providers ?? [];
@@ -286,6 +334,7 @@ export class ForDialogManager {
           parent,
           providers: [
             { provide: FOR_DIALOG_DATA, useValue: data },
+            { provide: FOR_DIALOG_INSTANCE_ID, useValue: id },
             { provide: ForDialogRef, useValue: ref },
             ...consumerProviders,
           ],

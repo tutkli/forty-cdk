@@ -22,6 +22,15 @@ export interface ForDialogDefaults {
    * an exit transition plays before teardown. No default (close is immediate).
    */
   animateLeave?: string;
+  /**
+   * CSS class applied to the portaled `[forDialogBackdrop]` when `close()` is
+   * called, so the backdrop plays an exit animation in lockstep with the
+   * host. Needed because a backdrop declared inside the opened component plays
+   * its `animate.enter` on mount but cannot run its template `animate.leave` —
+   * Angular does not process leave animations across the `ngComponentOutlet`
+   * boundary the manager mounts the component through. No default.
+   */
+  backdropAnimateLeave?: string;
 }
 
 const FALLBACK: ForDialogDefaults = {};

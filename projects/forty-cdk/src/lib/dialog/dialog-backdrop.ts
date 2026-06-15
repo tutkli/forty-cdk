@@ -1,7 +1,7 @@
-import { Directive } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 
 import { injectPortal } from '../_internal/portal/portal';
-import { injectDialogContext } from './dialog-context';
+import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**
  * Optional backdrop overlay. Portaled to `document.body` so it sits
@@ -22,11 +22,20 @@ import { injectDialogContext } from './dialog-context';
     // rest of the document.
     'data-for-modal-peer': '',
     'data-state': 'open',
+    '[attr.data-for-dialog-id]': 'instanceId',
     '(click)': 'onClick($event)',
   },
 })
 export class ForDialogBackdrop {
   protected readonly ctx = injectDialogContext('ForDialogBackdrop');
+
+  /**
+   * Per-instance dialog id when opened through `ForDialogManager` (reflected
+   * as `data-for-dialog-id` so the manager can pair this portaled backdrop
+   * with its dialog and drive its exit animation). `null` in the declarative
+   * path, where the host binding emits no attribute.
+   */
+  protected readonly instanceId = inject(FOR_DIALOG_INSTANCE_ID, { optional: true });
 
   constructor() {
     injectPortal();

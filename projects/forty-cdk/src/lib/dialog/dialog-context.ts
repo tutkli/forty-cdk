@@ -48,6 +48,15 @@ export interface ForDialogContext {
 
 export const FOR_DIALOG_CONTEXT = new InjectionToken<ForDialogContext>('FOR_DIALOG_CONTEXT');
 
+/**
+ * @internal Per-instance dialog id, provided by `ForDialogManager` into the
+ * opened component's injector so the portaled `[forDialogBackdrop]` can
+ * reflect `data-for-dialog-id` and be paired with its dialog for the
+ * manager's exit-animation orchestration. Absent in the declarative path,
+ * where the backdrop's own `animate.leave` runs normally.
+ */
+export const FOR_DIALOG_INSTANCE_ID = new InjectionToken<string>('FOR_DIALOG_INSTANCE_ID');
+
 export function injectDialogContext(piece: string): ForDialogContext {
   const ctx = inject(FOR_DIALOG_CONTEXT, { optional: true });
   if (!ctx) {

@@ -1,7 +1,7 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectPortal } from '../_internal/portal/portal';
-import { injectDrawerContext } from './drawer-context';
+import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
 
 /**
  * Optional backdrop overlay. Portaled to `document.body` so it sits
@@ -42,6 +42,7 @@ import { injectDrawerContext } from './drawer-context';
     // rest of the document.
     'data-for-modal-peer': '',
     'data-state': 'open',
+    '[attr.data-for-drawer-id]': 'instanceId',
     '[attr.data-fade-from-active]': 'ctx.fadeFromActive() ? "" : null',
     '[attr.data-dragging]': 'ctx.dragging() ? "" : null',
     '[style.--for-drawer-drag-progress]': 'ctx.dragProgress()',
@@ -51,6 +52,14 @@ import { injectDrawerContext } from './drawer-context';
 export class ForDrawerBackdrop {
   protected readonly ctx = injectDrawerContext('ForDrawerBackdrop');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * Per-instance drawer id when opened through `ForDrawerManager` (reflected
+   * as `data-for-drawer-id` so the manager can pair this portaled backdrop
+   * with its drawer and drive its exit animation). `null` in the declarative
+   * path, where the host binding emits no attribute.
+   */
+  protected readonly instanceId = inject(FOR_DRAWER_INSTANCE_ID, { optional: true });
 
   constructor() {
     injectPortal();
