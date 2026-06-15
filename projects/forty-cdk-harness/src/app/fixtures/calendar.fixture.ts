@@ -5,8 +5,13 @@ import {
   ForCalendarGrid,
   ForCalendarGridHeader,
   ForCalendarHeading,
+  ForCalendarMonthCell,
+  ForCalendarMonthGrid,
   ForCalendarNextButton,
   ForCalendarPrevButton,
+  ForCalendarViewTrigger,
+  ForCalendarYearCell,
+  ForCalendarYearGrid,
   provideNativeDateAdapter,
   type CalendarDateRange,
 } from 'forty-cdk';
@@ -24,12 +29,92 @@ import { queryFlag } from './_query-flag';
     ForCalendarGrid,
     ForCalendarGridHeader,
     ForCalendarCell,
+    ForCalendarViewTrigger,
+    ForCalendarMonthGrid,
+    ForCalendarMonthCell,
+    ForCalendarYearGrid,
+    ForCalendarYearCell,
   ],
   providers: [...provideNativeDateAdapter()],
   template: `
     <input data-testid="before" placeholder="before-calendar" />
 
-    @if (isDropdowns) {
+    @if (isViews) {
+      <div forCalendar [(value)]="value" #cal="forCalendar">
+        <header>
+          <button forCalendarPrevButton [ariaLabel]="'Previous'" data-testid="prev">‹</button>
+          <button forCalendarViewTrigger #vt="forCalendarViewTrigger" data-testid="view-trigger">
+            {{ vt.label() }}
+          </button>
+          <button forCalendarNextButton [ariaLabel]="'Next'" data-testid="next">›</button>
+          <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+            {{ heading.label() }}
+          </h2>
+        </header>
+        @switch (cal.view()) {
+          @case ('day') {
+            <table forCalendarGrid #grid="forCalendarGrid">
+              <thead forCalendarGridHeader>
+                <tr>
+                  @for (day of grid.weekDays(); track day.key) {
+                    <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (week of grid.weeks(); track week.key) {
+                  <tr>
+                    @for (c of week.days; track c.key) {
+                      <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                        {{ c.label }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @case ('month') {
+            <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
+              <tbody>
+                @for (row of mg.rows(); track row.key) {
+                  <tr>
+                    @for (m of row.months; track m.value) {
+                      <td
+                        forCalendarMonthCell
+                        [month]="m.value"
+                        [attr.data-testid]="'month-cell-' + m.value"
+                      >
+                        {{ m.label }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @case ('year') {
+            <table forCalendarYearGrid #yg="forCalendarYearGrid">
+              <tbody>
+                @for (row of yg.rows(); track row.key) {
+                  <tr>
+                    @for (y of row.years; track y.value) {
+                      <td
+                        forCalendarYearCell
+                        [year]="y.value"
+                        [attr.data-testid]="'year-cell-' + y.value"
+                      >
+                        {{ y.value }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    } @else if (isDropdowns) {
       <div forCalendar [(value)]="dropdownValue" [min]="dropdownMin" [max]="dropdownMax" [dir]="dir" #cal="forCalendar">
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
@@ -158,6 +243,7 @@ export class CalendarFixture {
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
   protected readonly isRange = queryFlag('range');
   protected readonly isDropdowns = queryFlag('dropdowns');
+  protected readonly isViews = queryFlag('views');
   protected selectValue(event: Event): string {
     return (event.target as HTMLSelectElement).value;
   }

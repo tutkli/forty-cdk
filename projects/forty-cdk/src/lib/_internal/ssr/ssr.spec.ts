@@ -19,6 +19,11 @@ import { ForCalendar } from '../../calendar/calendar';
 import { ForCalendarCell } from '../../calendar/calendar-cell';
 import { ForCalendarGrid } from '../../calendar/calendar-grid';
 import { ForCalendarHeading } from '../../calendar/calendar-heading';
+import { ForCalendarMonthCell } from '../../calendar/calendar-month-cell';
+import { ForCalendarMonthGrid } from '../../calendar/calendar-month-grid';
+import { ForCalendarViewTrigger } from '../../calendar/calendar-view-trigger';
+import { ForCalendarYearCell } from '../../calendar/calendar-year-cell';
+import { ForCalendarYearGrid } from '../../calendar/calendar-year-grid';
 import { provideNativeDateAdapter } from '../../calendar/native-date-adapter';
 import { ForCheckbox } from '../../checkbox/checkbox';
 import { ForCombobox } from '../../combobox/combobox';
@@ -517,6 +522,68 @@ class CalendarDropdownsFixture {
 }
 
 @Component({
+  imports: [
+    ForCalendar,
+    ForCalendarHeading,
+    ForCalendarViewTrigger,
+    ForCalendarMonthGrid,
+    ForCalendarMonthCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value" view="month" #cal="forCalendar">
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <button forCalendarViewTrigger #vt="forCalendarViewTrigger">{{ vt.label() }}</button>
+      <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
+        <tbody>
+          @for (row of mg.rows(); track row.key) {
+            <tr>
+              @for (m of row.months; track m.value) {
+                <td forCalendarMonthCell [month]="m.value">{{ m.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarMonthViewFixture {
+  readonly value = new Date(2026, 5, 15);
+}
+
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarHeading,
+    ForCalendarViewTrigger,
+    ForCalendarYearGrid,
+    ForCalendarYearCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value" view="year" #cal="forCalendar">
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <button forCalendarViewTrigger #vt="forCalendarViewTrigger">{{ vt.label() }}</button>
+      <table forCalendarYearGrid #yg="forCalendarYearGrid">
+        <tbody>
+          @for (row of yg.rows(); track row.key) {
+            <tr>
+              @for (y of row.years; track y.value) {
+                <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarYearViewFixture {
+  readonly value = new Date(2026, 5, 15);
+}
+
+@Component({
   imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -594,6 +661,8 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TreeFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
+  CalendarMonthViewFixture,
+  CalendarYearViewFixture,
   DateFieldFixture,
   TimeFieldFixture,
   DatePickerFixture,

@@ -3,6 +3,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 
+/** The active display mode of a `ForCalendar`. */
+export type CalendarView = 'day' | 'month' | 'year';
+
 /**
  * An inclusive date range where `start <= end` (day-granular). Used by
  * `ForCalendar` and `ForDatePicker` in `selectionMode="range"`.
@@ -14,6 +17,52 @@ export interface CalendarDateRange<D> {
   readonly start: D;
   /** Inclusive end of the range (`>= start`). */
   readonly end: D;
+}
+
+/** A selectable year in the year picker grid. */
+export interface CalendarYearOption {
+  /** The full year (e.g. `2026`). */
+  readonly value: number;
+  /** Whether the entire year falls outside `[min, max]`. */
+  readonly disabled: boolean;
+}
+
+/** A row of three months in the month picker grid. */
+export interface CalendarMonthRow {
+  /** Stable key for `@for` tracking. */
+  readonly key: string;
+  /** The (up to three) month options in this row. */
+  readonly months: readonly CalendarMonthOption[];
+}
+
+/** A row of three years in the year picker grid. */
+export interface CalendarYearRow {
+  /** Stable key for `@for` tracking. */
+  readonly key: string;
+  /** The (up to three) year options in this row. */
+  readonly years: readonly CalendarYearOption[];
+}
+
+/**
+ * Handle a `ForCalendarMonthCell` registers with the root so the root can move
+ * DOM focus to the correct cell during keyboard navigation and view switches.
+ */
+export interface ForCalendarMonthCellHandle {
+  /** The `role="gridcell"` host element. */
+  readonly host: HTMLElement;
+  /** The month this cell represents, **1-12**. */
+  readonly month: Signal<number>;
+}
+
+/**
+ * Handle a `ForCalendarYearCell` registers with the root so the root can move
+ * DOM focus to the correct cell during keyboard navigation and view switches.
+ */
+export interface ForCalendarYearCellHandle {
+  /** The `role="gridcell"` host element. */
+  readonly host: HTMLElement;
+  /** The year this cell represents. */
+  readonly year: Signal<number>;
 }
 
 /** A selectable month in the visible year, for building a month dropdown. */
@@ -143,6 +192,56 @@ export interface ForCalendarContext<D> {
   isMonthDisabled(month: number): boolean;
   /** Whether every day of `year` is out of `[min, max]`. */
   isYearDisabled(year: number): boolean;
+
+  /** Active calendar view; `'day'` (default), `'month'`, or `'year'`. */
+  readonly view: Signal<CalendarView>;
+  /** Number of years the year picker shows as an aligned block. Default `12`. */
+  readonly yearBlockSize: Signal<number>;
+  /** Rows of the month picker grid (3 columns) for the visible year. */
+  readonly monthRows: Signal<readonly CalendarMonthRow[]>;
+  /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
+  readonly yearRows: Signal<readonly CalendarYearRow[]>;
+  /** Label for the active view shown on the view-trigger button. */
+  readonly viewTriggerLabel: Signal<string>;
+  /** Whether the prev button should be disabled for the active view. */
+  readonly isPreviousDisabled: Signal<boolean>;
+  /** Whether the next button should be disabled for the active view. */
+  readonly isNextDisabled: Signal<boolean>;
+
+  /** Cycle the view one step coarser: `day → month → year`, clamped at `'year'`. */
+  cycleView(): void;
+  /** Drill into a month (1-12): navigate to it and switch to day view. No-op when disabled/read-only/out of bounds. */
+  selectMonth(month: number): void;
+  /** Drill into a year: navigate to it and switch to month view. No-op when disabled/read-only/out of bounds. */
+  selectYear(year: number): void;
+  /** Page backward by one month / year / block depending on the active view. */
+  pagePrevious(): void;
+  /** Page forward by one month / year / block depending on the active view. */
+  pageNext(): void;
+
+  /** Whether `month` (1-12) in the visible year is the selected date's month. */
+  isMonthSelected(month: number): boolean;
+  /** Whether `month` (1-12) is today's month in the visible year. */
+  isMonthToday(month: number): boolean;
+  /** Whether `month` (1-12) is the roving-tabindex focused month. */
+  isMonthFocused(month: number): boolean;
+
+  /** Whether `year` is the selected date's year. */
+  isYearSelected(year: number): boolean;
+  /** Whether `year` is today's year. */
+  isYearToday(year: number): boolean;
+  /** Whether `year` is the roving-tabindex focused year. */
+  isYearFocused(year: number): boolean;
+
+  /** Handle a keydown originating on a month cell. */
+  handleMonthCellKeydown(event: KeyboardEvent, month: number): void;
+  /** Handle a keydown originating on a year cell. */
+  handleYearCellKeydown(event: KeyboardEvent, year: number): void;
+
+  registerMonthCell(handle: ForCalendarMonthCellHandle): void;
+  unregisterMonthCell(handle: ForCalendarMonthCellHandle): void;
+  registerYearCell(handle: ForCalendarYearCellHandle): void;
+  unregisterYearCell(handle: ForCalendarYearCellHandle): void;
 
   /** Whether `date` is the currently selected value. */
   isSelected(date: D): boolean;
