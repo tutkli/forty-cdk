@@ -482,6 +482,41 @@ class CalendarFixture {
 }
 
 @Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell, ForCalendarHeading],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value" #cal="forCalendar">
+      <select [value]="cal.visibleMonthNumber()">
+        @for (m of cal.monthOptions(); track m.value) {
+          <option [value]="m.value" [disabled]="m.disabled">{{ m.label }}</option>
+        }
+      </select>
+      <select [value]="cal.visibleYear()">
+        @for (y of years; track y) {
+          <option [value]="y" [disabled]="cal.isYearDisabled(y)">{{ y }}</option>
+        }
+      </select>
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarDropdownsFixture {
+  readonly value = new Date(2026, 5, 15);
+  readonly years = [2024, 2025, 2026, 2027, 2028];
+}
+
+@Component({
   imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -558,6 +593,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   OtpInputFixture,
   TreeFixture,
   CalendarFixture,
+  CalendarDropdownsFixture,
   DateFieldFixture,
   TimeFieldFixture,
   DatePickerFixture,

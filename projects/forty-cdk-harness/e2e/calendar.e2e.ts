@@ -105,6 +105,27 @@ test.describe('Calendar', () => {
   });
 });
 
+test.describe('Calendar — month/year dropdowns', () => {
+  test('selecting a month re-pages the grid', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { dropdowns: '1' });
+    await el(page, 'month-select').selectOption('9');
+    await expect(el(page, 'cell-2026-9-15')).toBeVisible();
+  });
+
+  test('selecting a year re-pages the grid', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { dropdowns: '1' });
+    await el(page, 'year-select').selectOption('2027');
+    await expect(el(page, 'cell-2027-6-15')).toBeVisible();
+  });
+
+  test('out-of-bounds options are disabled', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { dropdowns: '1' });
+    await expect(el(page, 'month-opt-1')).toBeDisabled();
+    await expect(el(page, 'year-opt-2024')).toBeDisabled();
+    await expect(el(page, 'year-opt-2026')).toBeEnabled();
+  });
+});
+
 test.describe('Calendar — range', () => {
   test('pointer anchor → commit: data-range-start, data-range-end, data-in-range', async ({
     page,

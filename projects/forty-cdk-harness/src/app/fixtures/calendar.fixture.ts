@@ -29,7 +29,56 @@ import { queryFlag } from './_query-flag';
   template: `
     <input data-testid="before" placeholder="before-calendar" />
 
-    @if (isRange) {
+    @if (isDropdowns) {
+      <div forCalendar [(value)]="dropdownValue" [min]="dropdownMin" [max]="dropdownMax" [dir]="dir" #cal="forCalendar">
+        <header>
+          <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
+          <select
+            data-testid="month-select"
+            [value]="cal.visibleMonthNumber()"
+            (change)="cal.goToMonth(+selectValue($event))"
+          >
+            @for (m of cal.monthOptions(); track m.value) {
+              <option [value]="m.value" [disabled]="m.disabled" [attr.data-testid]="'month-opt-' + m.value">
+                {{ m.label }}
+              </option>
+            }
+          </select>
+          <select
+            data-testid="year-select"
+            [value]="cal.visibleYear()"
+            (change)="cal.goToYear(+selectValue($event))"
+          >
+            @for (y of years; track y) {
+              <option [value]="y" [disabled]="cal.isYearDisabled(y)" [attr.data-testid]="'year-opt-' + y">
+                {{ y }}
+              </option>
+            }
+          </select>
+          <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">›</button>
+          <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">{{ heading.label() }}</h2>
+        </header>
+
+        <table forCalendarGrid #grid="forCalendarGrid">
+          <thead forCalendarGridHeader>
+            <tr>
+              @for (day of grid.weekDays(); track day.key) {
+                <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (week of grid.weeks(); track week.key) {
+              <tr>
+                @for (c of week.days; track c.key) {
+                  <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">{{ c.label }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (isRange) {
       <div forCalendar selectionMode="range" [(range)]="range" [dir]="dir">
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
@@ -102,6 +151,14 @@ export class CalendarFixture {
     start: new Date(2026, 5, 10),
     end: new Date(2026, 5, 15),
   });
+  protected readonly dropdownValue = signal<Date | null>(new Date(2026, 5, 15));
+  protected readonly dropdownMin = new Date(2026, 1, 1);
+  protected readonly dropdownMax = new Date(2027, 10, 30);
+  protected readonly years = [2024, 2025, 2026, 2027, 2028];
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
   protected readonly isRange = queryFlag('range');
+  protected readonly isDropdowns = queryFlag('dropdowns');
+  protected selectValue(event: Event): string {
+    return (event.target as HTMLSelectElement).value;
+  }
 }
