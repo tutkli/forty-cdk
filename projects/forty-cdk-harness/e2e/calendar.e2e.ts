@@ -190,3 +190,64 @@ test.describe('Calendar — range', () => {
     await expect(el(page, 'cell-2026-6-13')).toHaveAttribute('aria-selected', 'false');
   });
 });
+
+test.describe('Calendar — view switching', () => {
+  test('click view-trigger → month grid appears', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await expect(page.locator('[forCalendar][data-view="month"]')).toBeVisible();
+    await expect(page.locator('[forCalendarMonthGrid]')).toBeVisible();
+  });
+
+  test('click a month cell → day grid shows that month', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await el(page, 'month-cell-3').click();
+    await expect(page.locator('[forCalendar][data-view="day"]')).toBeVisible();
+    await expect(page.locator('[forCalendarGrid]')).toBeVisible();
+    await expect(el(page, 'cell-2026-3-15')).toBeVisible();
+  });
+
+  test('click trigger twice → year grid', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await el(page, 'view-trigger').click();
+    await expect(page.locator('[forCalendar][data-view="year"]')).toBeVisible();
+    await expect(page.locator('[forCalendarYearGrid]')).toBeVisible();
+  });
+
+  test('click a year cell → month grid', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await el(page, 'view-trigger').click();
+    await el(page, 'year-cell-2025').click();
+    await expect(page.locator('[forCalendar][data-view="month"]')).toBeVisible();
+  });
+
+  test('arrow navigation within the month grid moves focus', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await el(page, 'month-cell-6').focus();
+
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'month-cell-7'));
+
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'month-cell-10'));
+  });
+
+  test('round-trip: day→month→day shows the correct month', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { views: '1' });
+
+    await el(page, 'view-trigger').click();
+    await el(page, 'month-cell-9').click();
+
+    await expect(el(page, 'cell-2026-9-15')).toBeVisible();
+    await expect(page.locator('[forCalendar][data-view="day"]')).toBeVisible();
+  });
+});

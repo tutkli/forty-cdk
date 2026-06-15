@@ -3,11 +3,13 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   inject,
   Injector,
   input,
   linkedSignal,
   model,
+  numberAttribute,
   signal,
 } from '@angular/core';
 
@@ -27,13 +29,21 @@ import {
   type CalendarDateLabelFormatter,
   type CalendarDateRange,
   type CalendarMonthOption,
+  type CalendarMonthRow,
+  type CalendarView,
   type CalendarWeek,
   type CalendarWeekday,
+  type CalendarYearOption,
+  type CalendarYearRow,
   FOR_CALENDAR_CONTEXT,
   type ForCalendarCellHandle,
   type ForCalendarContext,
+  type ForCalendarMonthCellHandle,
+  type ForCalendarYearCellHandle,
 } from './calendar-context';
 import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
+
+const GRID_COLUMNS = 3;
 
 /**
  * Headless implementation of a single-date calendar grid following the
@@ -98,6 +108,7 @@ import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
     '[attr.dir]': 'dir()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
+    '[attr.data-view]': 'view()',
   },
   providers: [{ provide: FOR_CALENDAR_CONTEXT, useExisting: ForCalendar }],
 })
@@ -161,6 +172,20 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly selectionMode = input<'single' | 'range'>('single');
 
   /**
+   * Active calendar view. `'day'` (default) shows the date grid; `'month'` and
+   * `'year'` show the month / year picker grids. Two-way bindable; the `model()`
+   * change emitter (`(viewChange)`) fires only when the calendar itself cycles
+   * or drills the view, never on consumer writes via `[(view)]`.
+   */
+  readonly view = model<CalendarView>('day');
+
+  /**
+   * Number of years the year view shows, as an aligned block containing the
+   * visible year. Default `12`.
+   */
+  readonly yearBlockSize = input(12, { transform: numberAttribute });
+
+  /**
    * Two-way bindable committed date range, or `null`. Only used when
    * `selectionMode="range"`. The `model()` change emitter (`(rangeChange)`)
    * fires only when the calendar internally commits or clears a range, never
@@ -201,6 +226,8 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   readonly #today = this.adapter.today();
   readonly #cells = new Collection<ForCalendarCellHandle<D>>();
+  readonly #monthCells = new Collection<ForCalendarMonthCellHandle>();
+  readonly #yearCells = new Collection<ForCalendarYearCellHandle>();
 
   readonly #anchor = signal<D | null>(null);
   readonly #hovered = signal<D | null>(null);
@@ -221,6 +248,16 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly focusedDate = linkedSignal<D>(
     () => this.value() ?? this.range()?.start ?? this.#today,
   );
+
+  #viewSwitched = false;
+  readonly #viewFocusEffect = effect(() => {
+    const view = this.view();
+    if (!this.#viewSwitched) {
+      this.#viewSwitched = true;
+      return;
+    }
+    afterNextRender(() => this.#focusActiveForView(view), { injector: this.#injector });
+  });
 
   readonly #resolvedFirstDayOfWeek = computed(
     () => this.firstDayOfWeek() ?? this.adapter.getFirstDayOfWeek(),
@@ -275,6 +312,73 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       });
     }
     return options;
+  });
+
+  readonly #yearBlockStart = computed(() => {
+    const size = this.yearBlockSize();
+    return Math.floor(this.visibleYear() / size) * size;
+  });
+
+  /** Rows of the month picker grid (3 columns) for the visible year. */
+  readonly monthRows = computed<readonly CalendarMonthRow[]>(() => {
+    const months = this.monthOptions();
+    const rows: CalendarMonthRow[] = [];
+    for (let i = 0; i < months.length; i += GRID_COLUMNS) {
+      rows.push({ key: `m-${i}`, months: months.slice(i, i + GRID_COLUMNS) });
+    }
+    return rows;
+  });
+
+  /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
+  readonly yearRows = computed<readonly CalendarYearRow[]>(() => {
+    const start = this.#yearBlockStart();
+    const size = this.yearBlockSize();
+    const years: CalendarYearOption[] = [];
+    for (let i = 0; i < size; i++) {
+      const value = start + i;
+      years.push({ value, disabled: this.isYearDisabled(value) });
+    }
+    const rows: CalendarYearRow[] = [];
+    for (let i = 0; i < years.length; i += GRID_COLUMNS) {
+      rows.push({ key: `y-${i}`, years: years.slice(i, i + GRID_COLUMNS) });
+    }
+    return rows;
+  });
+
+  /** Label for the view trigger / heading, reflecting the active view. */
+  readonly viewTriggerLabel = computed(() => {
+    switch (this.view()) {
+      case 'day':
+        return this.visibleMonthLabel();
+      case 'month':
+        return String(this.visibleYear());
+      case 'year': {
+        const start = this.#yearBlockStart();
+        return `${start} – ${start + this.yearBlockSize() - 1}`;
+      }
+    }
+  });
+
+  readonly isPreviousDisabled = computed(() => {
+    switch (this.view()) {
+      case 'day':
+        return this.isPreviousMonthDisabled();
+      case 'month':
+        return this.isYearDisabled(this.visibleYear() - 1);
+      case 'year':
+        return this.isYearDisabled(this.#yearBlockStart() - 1);
+    }
+  });
+
+  readonly isNextDisabled = computed(() => {
+    switch (this.view()) {
+      case 'day':
+        return this.isNextMonthDisabled();
+      case 'month':
+        return this.isYearDisabled(this.visibleYear() + 1);
+      case 'year':
+        return this.isYearDisabled(this.#yearBlockStart() + this.yearBlockSize());
+    }
   });
 
   /**
@@ -356,6 +460,39 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   isYearDisabled(year: number): boolean {
     const adapter = this.adapter;
     return this.#outOfBounds(adapter.createDate(year, 1, 1), adapter.createDate(year, 12, 31));
+  }
+
+  isMonthSelected(month: number): boolean {
+    const value = this.value();
+    return (
+      value !== null &&
+      this.adapter.getYear(value) === this.visibleYear() &&
+      this.adapter.getMonth(value) === month
+    );
+  }
+
+  isMonthToday(month: number): boolean {
+    return (
+      this.adapter.getYear(this.#today) === this.visibleYear() &&
+      this.adapter.getMonth(this.#today) === month
+    );
+  }
+
+  isMonthFocused(month: number): boolean {
+    return month === this.visibleMonthNumber();
+  }
+
+  isYearSelected(year: number): boolean {
+    const value = this.value();
+    return value !== null && this.adapter.getYear(value) === year;
+  }
+
+  isYearToday(year: number): boolean {
+    return this.adapter.getYear(this.#today) === year;
+  }
+
+  isYearFocused(year: number): boolean {
+    return year === this.visibleYear();
   }
 
   isSelected(date: D): boolean {
@@ -562,15 +699,90 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   /**
+   * Cycle the view one step coarser: `day → month → year`, clamped at `'year'`.
+   * No-op when the whole calendar is disabled.
+   */
+  cycleView(): void {
+    if (this.disabled()) {
+      return;
+    }
+    const order: readonly CalendarView[] = ['day', 'month', 'year'];
+    const next = order[order.indexOf(this.view()) + 1];
+    if (next) {
+      this.view.set(next);
+    }
+  }
+
+  /**
+   * Select a whole month (1-12): navigate to it within the current visible year
+   * and switch the view to `'day'`. No-op when the calendar is disabled /
+   * read-only or the month is out of `[min, max]`.
+   */
+  selectMonth(month: number): void {
+    if (this.disabled() || this.readonly() || this.isMonthDisabled(month)) {
+      return;
+    }
+    this.goToMonth(month);
+    this.view.set('day');
+  }
+
+  /**
+   * Select a whole year: navigate to it and switch the view to `'month'`. No-op
+   * when the calendar is disabled / read-only or the year is out of `[min, max]`.
+   */
+  selectYear(year: number): void {
+    if (this.disabled() || this.readonly() || this.isYearDisabled(year)) {
+      return;
+    }
+    this.goToYear(year);
+    this.view.set('month');
+  }
+
+  /** Page backward by one month / year / block depending on the active view. */
+  pagePrevious(): void {
+    this.#page(-1);
+  }
+
+  /** Page forward by one month / year / block depending on the active view. */
+  pageNext(): void {
+    this.#page(1);
+  }
+
+  #page(direction: -1 | 1): void {
+    if (this.disabled()) {
+      return;
+    }
+    if (this.view() === 'day') {
+      this.pageMonths(direction);
+      return;
+    }
+    const previousMonth = this.visibleMonth();
+    this.#syncIntendedDay();
+    const step = this.view() === 'year' ? direction * this.yearBlockSize() : direction;
+    const next = this.#clampToBounds(
+      this.#applyIntendedDay(this.adapter.addYears(this.focusedDate(), step)),
+    );
+    this.focusedDate.set(next);
+    this.#pagedFocus = next;
+    this.#announceMonthChange(previousMonth);
+  }
+
+  /**
    * Move DOM focus to the roving cell — the gridcell carrying the tab stop,
-   * i.e. the one matching {@link focusedDate}. Returns `false` when no matching
-   * cell is currently rendered (empty grid, or the focused date paged out), so
-   * an overlay host wrapping the calendar can fall back to its own focus logic.
-   * The cell already exists when this runs, so it focuses synchronously without
-   * waiting for a render.
+   * i.e. the one matching {@link focusedDate} (day view) or the highlighted
+   * month / year cell (month / year view). Returns `false` when no matching
+   * cell is currently rendered, so an overlay host wrapping the calendar can
+   * fall back to its own focus logic.
    */
   focusActiveCell(): boolean {
-    return this.#focusCell(this.focusedDate());
+    switch (this.view()) {
+      case 'day':
+        return this.#focusCell(this.focusedDate());
+      case 'month':
+        return this.#focusMonthCell(this.visibleMonthNumber());
+      case 'year':
+        return this.#focusYearCell(this.visibleYear());
+    }
   }
 
   registerCell(handle: ForCalendarCellHandle<D>): void {
@@ -579,6 +791,58 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   unregisterCell(handle: ForCalendarCellHandle<D>): void {
     this.#cells.unregister(handle);
+  }
+
+  handleMonthCellKeydown(event: KeyboardEvent, fromMonth: number): void {
+    if (this.disabled()) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      this.selectMonth(fromMonth);
+      return;
+    }
+    const target = this.#resolveMonthMove(event, fromMonth);
+    if (target === null) {
+      return;
+    }
+    event.preventDefault();
+    this.focusedDate.set(this.#dateInMonth(target.year, target.month));
+    afterNextRender(() => this.#focusMonthCell(this.visibleMonthNumber()), { injector: this.#injector });
+  }
+
+  handleYearCellKeydown(event: KeyboardEvent, fromYear: number): void {
+    if (this.disabled()) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      this.selectYear(fromYear);
+      return;
+    }
+    const target = this.#resolveYearMove(event, fromYear);
+    if (target === null) {
+      return;
+    }
+    event.preventDefault();
+    this.focusedDate.set(this.#dateInMonth(target, this.visibleMonthNumber()));
+    afterNextRender(() => this.#focusYearCell(this.visibleYear()), { injector: this.#injector });
+  }
+
+  registerMonthCell(handle: ForCalendarMonthCellHandle): void {
+    this.#monthCells.register(handle);
+  }
+
+  unregisterMonthCell(handle: ForCalendarMonthCellHandle): void {
+    this.#monthCells.unregister(handle);
+  }
+
+  registerYearCell(handle: ForCalendarYearCellHandle): void {
+    this.#yearCells.register(handle);
+  }
+
+  unregisterYearCell(handle: ForCalendarYearCellHandle): void {
+    this.#yearCells.unregister(handle);
   }
 
   #withinInclusive(date: D, range: { start: D; end: D }): boolean {
@@ -694,6 +958,103 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   #startOfWeek(date: D): D {
     const offset = (this.adapter.getDayOfWeek(date) - this.#resolvedFirstDayOfWeek() + 7) % 7;
     return this.adapter.addDays(date, -offset);
+  }
+
+  #resolveMonthMove(event: KeyboardEvent, fromMonth: number): { year: number; month: number } | null {
+    const rtl = this.dir() === 'rtl';
+    const year = this.visibleYear();
+    const base = year * 12 + (fromMonth - 1);
+    let index: number;
+    switch (event.key) {
+      case 'ArrowLeft':
+        index = base + (rtl ? 1 : -1);
+        break;
+      case 'ArrowRight':
+        index = base + (rtl ? -1 : 1);
+        break;
+      case 'ArrowUp':
+        index = base - GRID_COLUMNS;
+        break;
+      case 'ArrowDown':
+        index = base + GRID_COLUMNS;
+        break;
+      case 'Home':
+        index = year * 12;
+        break;
+      case 'End':
+        index = year * 12 + 11;
+        break;
+      case 'PageUp':
+        index = base - 12;
+        break;
+      case 'PageDown':
+        index = base + 12;
+        break;
+      default:
+        return null;
+    }
+    return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+  }
+
+  #resolveYearMove(event: KeyboardEvent, fromYear: number): number | null {
+    const rtl = this.dir() === 'rtl';
+    const size = this.yearBlockSize();
+    const start = this.#yearBlockStart();
+    switch (event.key) {
+      case 'ArrowLeft':
+        return fromYear + (rtl ? 1 : -1);
+      case 'ArrowRight':
+        return fromYear + (rtl ? -1 : 1);
+      case 'ArrowUp':
+        return fromYear - GRID_COLUMNS;
+      case 'ArrowDown':
+        return fromYear + GRID_COLUMNS;
+      case 'Home':
+        return start;
+      case 'End':
+        return start + size - 1;
+      case 'PageUp':
+        return fromYear - size;
+      case 'PageDown':
+        return fromYear + size;
+      default:
+        return null;
+    }
+  }
+
+  #dateInMonth(year: number, month: number): D {
+    const adapter = this.adapter;
+    const daysInMonth = adapter.getDaysInMonth(adapter.createDate(year, month, 1));
+    const day = Math.min(adapter.getDate(this.focusedDate()), daysInMonth);
+    return adapter.createDate(year, month, day);
+  }
+
+  #focusMonthCell(month: number): boolean {
+    const handle = this.#monthCells.items().find((cell) => cell.month() === month);
+    if (!handle) {
+      return false;
+    }
+    handle.host.focus();
+    return true;
+  }
+
+  #focusYearCell(year: number): boolean {
+    const handle = this.#yearCells.items().find((cell) => cell.year() === year);
+    if (!handle) {
+      return false;
+    }
+    handle.host.focus();
+    return true;
+  }
+
+  #focusActiveForView(view: CalendarView): void {
+    if (view === 'day') {
+      this.#focusCell(this.focusedDate());
+    } else if (view === 'month') {
+      this.#focusMonthCell(this.visibleMonthNumber());
+    } else {
+      this.#focusYearCell(this.visibleYear());
+    }
   }
 
   #focusDate(target: D): void {

@@ -1,4 +1,5 @@
-import { Component, signal, viewChild } from '@angular/core';
+import { Component, model, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
@@ -11,7 +12,12 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
-import type { CalendarDateLabelFormatter, CalendarDateRange } from './calendar-context';
+import type { CalendarDateLabelFormatter, CalendarDateRange, CalendarView } from './calendar-context';
+import { ForCalendarMonthCell } from './calendar-month-cell';
+import { ForCalendarMonthGrid } from './calendar-month-grid';
+import { ForCalendarViewTrigger } from './calendar-view-trigger';
+import { ForCalendarYearCell } from './calendar-year-cell';
+import { ForCalendarYearGrid } from './calendar-year-grid';
 import {
   InternationalizedDateAdapter,
   InternationalizedDateTimeAdapter,
@@ -290,6 +296,116 @@ class CalendarDropdownsHost {
   selectValue(event: Event): string {
     return (event.target as HTMLSelectElement).value;
   }
+}
+
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarHeading,
+    ForCalendarPrevButton,
+    ForCalendarNextButton,
+    ForCalendarGrid,
+    ForCalendarGridHeader,
+    ForCalendarCell,
+    ForCalendarViewTrigger,
+    ForCalendarMonthGrid,
+    ForCalendarMonthCell,
+    ForCalendarYearGrid,
+    ForCalendarYearCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forCalendar
+      [(value)]="value"
+      [(view)]="view"
+      [min]="min()"
+      [max]="max()"
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      #cal="forCalendar"
+    >
+      <button forCalendarPrevButton [ariaLabel]="'Previous'" data-testid="prev">‹</button>
+      <button forCalendarViewTrigger #vt="forCalendarViewTrigger" data-testid="view-trigger">
+        {{ vt.label() }}
+      </button>
+      <button forCalendarNextButton [ariaLabel]="'Next'" data-testid="next">›</button>
+      <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+        {{ heading.label() }}
+      </h2>
+      @switch (cal.view()) {
+        @case ('day') {
+          <table forCalendarGrid #grid="forCalendarGrid">
+            <thead forCalendarGridHeader>
+              <tr>
+                @for (day of grid.weekDays(); track day.key) {
+                  <th scope="col">{{ day.short }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (week of grid.weeks(); track week.key) {
+                <tr>
+                  @for (c of week.days; track c.key) {
+                    <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                      {{ c.label }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('month') {
+          <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
+            <tbody>
+              @for (row of mg.rows(); track row.key) {
+                <tr>
+                  @for (m of row.months; track m.value) {
+                    <td
+                      forCalendarMonthCell
+                      [month]="m.value"
+                      [attr.data-testid]="'month-cell-' + m.value"
+                    >
+                      {{ m.label }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('year') {
+          <table forCalendarYearGrid #yg="forCalendarYearGrid">
+            <tbody>
+              @for (row of yg.rows(); track row.key) {
+                <tr>
+                  @for (y of row.years; track y.value) {
+                    <td
+                      forCalendarYearCell
+                      [year]="y.value"
+                      [attr.data-testid]="'year-cell-' + y.value"
+                    >
+                      {{ y.value }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    </div>
+  `,
+})
+class CalendarViewsHost {
+  readonly calendar = viewChild.required(ForCalendar);
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  readonly view = model<CalendarView>('day');
+  readonly min = signal<Date | null>(null);
+  readonly max = signal<Date | null>(null);
+  readonly disabled = signal(false);
+  readonly readonly = signal(false);
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
@@ -1333,6 +1449,332 @@ describe('ForCalendar', () => {
       const selected = r.instance.value()!;
       expect(selected.day).toBe(20);
       expect('hour' in selected).toBe(false);
+    });
+  });
+
+  describe('view switching (#768)', () => {
+    const viewRoot = (r: RenderResult<CalendarViewsHost>) => r.query('[forCalendar]')!;
+    const trigger = (r: RenderResult<CalendarViewsHost>) =>
+      r.query<HTMLElement>('[data-testid="view-trigger"]')!;
+    const prevBtn = (r: RenderResult<CalendarViewsHost>) =>
+      r.query<HTMLElement>('[data-testid="prev"]')!;
+    const nextBtn = (r: RenderResult<CalendarViewsHost>) =>
+      r.query<HTMLElement>('[data-testid="next"]')!;
+    const monthCell = (r: RenderResult<CalendarViewsHost>, m: number) =>
+      r.query<HTMLElement>(`[data-testid="month-cell-${m}"]`)!;
+    const yearCell = (r: RenderResult<CalendarViewsHost>, y: number) =>
+      r.query<HTMLElement>(`[data-testid="year-cell-${y}"]`)!;
+    const click = (el: HTMLElement) =>
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    it('view trigger cycles day → month → year and clamps at year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+
+      click(trigger(r));
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+      expect(trigger(r).getAttribute('data-view')).toBe('month');
+
+      click(trigger(r));
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('year');
+      expect(trigger(r).getAttribute('data-view')).toBe('year');
+
+      click(trigger(r));
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('year');
+    });
+
+    it('view trigger label reflects the active view', async () => {
+      const r = renderHost(CalendarViewsHost);
+
+      click(trigger(r));
+      await flush(r.fixture);
+      expect(trigger(r).textContent!.trim()).toBe(String(2026));
+
+      click(trigger(r));
+      await flush(r.fixture);
+      const blockStart = Math.floor(2026 / 12) * 12;
+      expect(trigger(r).textContent!.trim()).toBe(`${blockStart} – ${blockStart + 11}`);
+    });
+
+    it('month grid has role="grid" and data-view="month" with 12 cells', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      const grid = r.query('[forCalendarMonthGrid]')!;
+      expect(grid.getAttribute('role')).toBe('grid');
+      expect(grid.getAttribute('data-view')).toBe('month');
+      expect(r.queryAll('[forCalendarMonthCell]').length).toBe(12);
+    });
+
+    it('month grid has exactly one tabindex="0" cell (the visible month)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      const tabbable = r.queryAll('[forCalendarMonthCell][tabindex="0"]');
+      expect(tabbable.length).toBe(1);
+      expect(tabbable[0]).toBe(monthCell(r, 6));
+    });
+
+    it('month cells emit aria-selected (always) and data-today for today month', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      const jun = monthCell(r, 6);
+      expect(jun.getAttribute('aria-selected')).toBe('true');
+      expect(jun.getAttribute('data-selected')).toBe('');
+
+      const jul = monthCell(r, 7);
+      expect(jul.getAttribute('aria-selected')).toBe('false');
+      expect(jul.hasAttribute('data-selected')).toBe(false);
+    });
+
+    it('ArrowRight moves the roving month cell', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      pressKey(monthCell(r, 6), 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(monthCell(r, 7).getAttribute('tabindex')).toBe('0');
+      expect(monthCell(r, 7).hasAttribute('data-highlighted')).toBe(true);
+      expect(monthCell(r, 6).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('ArrowDown moves roving cell by 3 (one row)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      pressKey(monthCell(r, 6), 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(monthCell(r, 9).getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowRight from December rolls to January of the next year and trigger shows next year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      r.instance.calendar().goToMonth(12);
+      await flush(r.fixture);
+      expect(r.queryAll('[forCalendarMonthCell][tabindex="0"]')[0]).toBe(monthCell(r, 12));
+
+      pressKey(monthCell(r, 12), 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(trigger(r).textContent!.trim()).toBe(String(2027));
+      expect(r.queryAll('[forCalendarMonthCell][tabindex="0"]').length).toBe(1);
+    });
+
+    it('clicking a month cell drills to day view and shows that month, value unchanged', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      click(monthCell(r, 3));
+      await flush(r.fixture);
+
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+      expect(r.instance.value()!.getMonth() + 1).toBe(6);
+      expect(r.query('[data-testid^="cell-2026-3-"]')).toBeTruthy();
+    });
+
+    it('Enter on a month cell drills to day view', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      pressKey(monthCell(r, 4), 'Enter');
+      await flush(r.fixture);
+
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+    });
+
+    it('year grid has data-view="year" and yearBlockSize cells (default 12)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const grid = r.query('[forCalendarYearGrid]')!;
+      expect(grid.getAttribute('data-view')).toBe('year');
+      expect(r.queryAll('[forCalendarYearCell]').length).toBe(12);
+    });
+
+    it('year block is aligned: first cell = floor(visibleYear/12)*12', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const blockStart = Math.floor(2026 / 12) * 12;
+      expect(r.queryAll('[forCalendarYearCell]')[0]!.getAttribute('data-testid')).toBe(
+        `year-cell-${blockStart}`,
+      );
+    });
+
+    it('highlighted year cell is the visible year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const highlighted = r.queryAll('[forCalendarYearCell][data-highlighted]');
+      expect(highlighted.length).toBe(1);
+      expect(highlighted[0]).toBe(yearCell(r, 2026));
+    });
+
+    it('clicking a year cell drills to month view', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      click(yearCell(r, 2025));
+      await flush(r.fixture);
+
+      expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+      expect(trigger(r).textContent!.trim()).toBe(String(2025));
+    });
+
+    it('next button in month view pages by year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      click(nextBtn(r));
+      await flush(r.fixture);
+
+      expect(trigger(r).textContent!.trim()).toBe(String(2027));
+    });
+
+    it('next button in year view pages by a block', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const blockStart = Math.floor(2026 / 12) * 12;
+      click(nextBtn(r));
+      await flush(r.fixture);
+
+      const firstCell = r.queryAll('[forCalendarYearCell]')[0]!;
+      expect(firstCell.getAttribute('data-testid')).toBe(`year-cell-${blockStart + 12}`);
+    });
+
+    it('prev button in month view pages backward by year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      click(prevBtn(r));
+      await flush(r.fixture);
+
+      expect(trigger(r).textContent!.trim()).toBe(String(2025));
+    });
+
+    it('out-of-bounds month cell reflects data-disabled + aria-disabled, click is no-op', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.min.set(new Date(2026, 5, 1));
+      r.instance.max.set(new Date(2026, 9, 31));
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      const disabled = monthCell(r, 1);
+      expect(disabled.getAttribute('aria-disabled')).toBe('true');
+      expect(disabled.hasAttribute('data-disabled')).toBe(true);
+
+      const viewBefore = r.instance.view();
+      click(disabled);
+      await flush(r.fixture);
+      expect(r.instance.view()).toBe(viewBefore);
+    });
+
+    it('out-of-bounds year cell reflects data-disabled + aria-disabled, click is no-op', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.min.set(new Date(2026, 0, 1));
+      r.instance.max.set(new Date(2027, 11, 31));
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const blockStart = Math.floor(2026 / 12) * 12;
+      const disabledYear = yearCell(r, blockStart);
+      expect(disabledYear.getAttribute('aria-disabled')).toBe('true');
+
+      click(disabledYear);
+      await flush(r.fixture);
+      expect(r.instance.view()).toBe('year');
+    });
+
+    it('prev button disabled at view bound (month view, all previous years out-of-bounds)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.min.set(new Date(2026, 0, 1));
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      expect(prevBtn(r).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('next button disabled at view bound (year view, next block out-of-bounds)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      const blockStart = Math.floor(2026 / 12) * 12;
+      r.instance.max.set(new Date(blockStart + 11, 11, 31));
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      expect(nextBtn(r).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('focusActiveCell in month view focuses the highlighted month cell', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      const moved = r.instance.calendar().focusActiveCell();
+      expect(moved).toBe(true);
+      expect(document.activeElement).toBe(monthCell(r, 6));
+    });
+
+    it('focusActiveCell in year view focuses the highlighted year cell', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      const moved = r.instance.calendar().focusActiveCell();
+      expect(moved).toBe(true);
+      expect(document.activeElement).toBe(yearCell(r, 2026));
+    });
+
+    it('focus moves to the active cell after a view switch via the trigger', async () => {
+      const r = renderHost(CalendarViewsHost);
+
+      click(trigger(r));
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(monthCell(r, 6));
+    });
+
+    describe('zoneless', () => {
+      it('cycleView renders month grid and roving cell under provideZonelessChangeDetection', async () => {
+        const fixture = TestBed.configureTestingModule({
+          providers: [provideZonelessChangeDetection()],
+          imports: [CalendarViewsHost],
+        }).createComponent(CalendarViewsHost);
+        fixture.detectChanges();
+        await flush(fixture);
+
+        click(fixture.nativeElement.querySelector('[data-testid="view-trigger"]')!);
+        fixture.detectChanges();
+        await flush(fixture);
+
+        expect(fixture.nativeElement.querySelector('[forCalendarMonthGrid]')).toBeTruthy();
+        expect(
+          fixture.nativeElement.querySelectorAll('[forCalendarMonthCell][tabindex="0"]').length,
+        ).toBe(1);
+      });
     });
   });
 });
