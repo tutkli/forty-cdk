@@ -229,6 +229,129 @@ A month/year is "disabled" only when its **entire** span is out of range — its
 
 Dedicated convenience directives (`[forCalendarMonthSelect]` / `[forCalendarYearSelect]`) may arrive in a future release. For now the public hooks are the stable API.
 
+## View switching (month / year picker)
+
+`ForCalendar` supports two additional views — **month grid** and **year grid** — so users can jump quickly to a different month or year without paging one at a time. All three views share a single `[(view)]` model and the same `focusedDate` cursor.
+
+### Pieces
+
+| Class                   | Selector                  | Role                                                                                                              |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `ForCalendarViewTrigger`| `[forCalendarViewTrigger]`| Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                    |
+| `ForCalendarMonthGrid`  | `[forCalendarMonthGrid]`  | 4×3 month grid (`role="grid"`). Exposes `rows()` — array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
+| `ForCalendarMonthCell`  | `[forCalendarMonthCell]`  | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.         |
+| `ForCalendarYearGrid`   | `[forCalendarYearGrid]`   | 4×3 year grid (`role="grid"`). Exposes `rows()` — array of `CalendarYearRow`, each with three `CalendarYearOption`. |
+| `ForCalendarYearCell`   | `[forCalendarYearCell]`   | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                  |
+
+### `view` model — `ForCalendar`
+
+| API            | Type                                          | Description                                                            |
+| -------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| `view`         | `model<CalendarView>` (`'day' \| 'month' \| 'year'`) | Active view. Default `'day'`. `[(view)]` for two-way binding or read `cal.view()`. |
+| `yearBlockSize`| `input<number>`                               | Years per year-grid page (must be a multiple of 3). Default `12`.      |
+
+### Usage
+
+```html
+<div forCalendar [(value)]="date" #cal="forCalendar">
+  <header>
+    <button forCalendarPrevButton [ariaLabel]="'Previous'">‹</button>
+    <button forCalendarViewTrigger #vt="forCalendarViewTrigger">{{ vt.label() }}</button>
+    <button forCalendarNextButton [ariaLabel]="'Next'">›</button>
+    <!-- keep a visually-hidden heading so the grid stays labelled -->
+    <h2 forCalendarHeading #h="forCalendarHeading" class="sr-only">{{ h.label() }}</h2>
+  </header>
+
+  @switch (cal.view()) {
+    @case ('day') {
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <thead forCalendarGridHeader>
+          <tr>
+            @for (day of grid.weekDays(); track day.key) {
+              <th scope="col" [attr.aria-label]="day.long">{{ day.narrow }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+    @case ('month') {
+      <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
+        <tbody>
+          @for (row of mg.rows(); track row.key) {
+            <tr>
+              @for (m of row.months; track m.value) {
+                <td forCalendarMonthCell [month]="m.value">{{ m.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+    @case ('year') {
+      <table forCalendarYearGrid #yg="forCalendarYearGrid">
+        <tbody>
+          @for (row of yg.rows(); track row.key) {
+            <tr>
+              @for (y of row.years; track y.value) {
+                <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>
+```
+
+### Keyboard (month / year grids)
+
+| Key                        | Behavior                                                             |
+| -------------------------- | -------------------------------------------------------------------- |
+| **ArrowLeft / ArrowRight** | Previous / next cell (RTL-mirrored).                                 |
+| **ArrowUp / ArrowDown**    | Previous / next row (three cells per row).                           |
+| **Home / End**             | First / last cell in the current row.                                |
+| **PageUp / PageDown**      | Previous / next year (month grid) or previous / next block (year grid). |
+| **Enter / Space**          | Select the focused month or year and drill down.                     |
+| **Escape**                 | (handled by consumer via `[(view)]`).                                |
+
+### Prev / next behavior per view
+
+The prev and next buttons (`[forCalendarPrevButton]` / `[forCalendarNextButton]`) are view-aware:
+
+| View  | Prev / Next pages by                            |
+| ----- | ----------------------------------------------- |
+| `day` | One month (as before).                          |
+| `month`| One year.                                      |
+| `year` | One `yearBlockSize` block (default 12 years).  |
+
+Auto-disabled when the entire previous / next page would be outside `[min, max]`.
+
+### Data attributes (view switching)
+
+| Piece                    | Attribute       | Values            |
+| ------------------------ | --------------- | ----------------- |
+| `[forCalendar]`          | `data-view`     | `"day"` \| `"month"` \| `"year"` |
+| `[forCalendarMonthGrid]` | `data-view`     | `"month"` (static) |
+| `[forCalendarYearGrid]`  | `data-view`     | `"year"` (static)  |
+| `[forCalendarMonthCell]` | `data-selected` | present \| absent  |
+| `[forCalendarMonthCell]` | `data-today`    | present \| absent  |
+| `[forCalendarMonthCell]` | `data-highlighted` | present \| absent |
+| `[forCalendarMonthCell]` | `data-disabled` | present \| absent  |
+| `[forCalendarYearCell]`  | `data-selected` | present \| absent  |
+| `[forCalendarYearCell]`  | `data-today`    | present \| absent  |
+| `[forCalendarYearCell]`  | `data-highlighted` | present \| absent |
+| `[forCalendarYearCell]`  | `data-disabled` | present \| absent  |
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

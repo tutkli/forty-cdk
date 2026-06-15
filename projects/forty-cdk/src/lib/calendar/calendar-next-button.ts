@@ -4,13 +4,14 @@ import { reflectDisabled } from '../_internal/disabled-reflection/disabled-refle
 import { injectCalendarContext } from './calendar-context';
 
 /**
- * Navigates the calendar to the next month. Apply on a `<button>`. Keeps DOM
- * focus on itself while paging; the `aria-live` heading announces the new
- * month. Auto-disabled when paging forward would leave the `max` bound, or
- * when the whole calendar is disabled.
+ * Pages the calendar forward. In `day` view pages by one month; in `month` view
+ * pages by one year; in `year` view pages by one block. Apply on a `<button>`.
+ * Keeps DOM focus on itself while paging; the `aria-live` heading announces the
+ * new period. Auto-disabled at the view's bound, or when the whole calendar is
+ * disabled.
  *
  * Provide an accessible name via the `[ariaLabel]` input (e.g.
- * `[ariaLabel]="'Next month'"`).
+ * `[ariaLabel]="'Next'"`).
  */
 @Directive({
   selector: '[forCalendarNextButton]',
@@ -20,7 +21,7 @@ import { injectCalendarContext } from './calendar-context';
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '(click)': 'ctx.pageMonths(1)',
+    '(click)': 'ctx.pageNext()',
   },
 })
 export class ForCalendarNextButton {
@@ -30,7 +31,7 @@ export class ForCalendarNextButton {
   readonly ariaLabel = input<string | null>(null);
 
   protected readonly disabled = computed(
-    () => this.ctx.disabled() || this.ctx.isNextMonthDisabled(),
+    () => this.ctx.disabled() || this.ctx.isNextDisabled(),
   );
 
   constructor() {
