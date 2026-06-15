@@ -5,19 +5,19 @@ Applies to every primitive that portals positioned content to `document.body`:
 
 ---
 
-## Rule 1 — use `animate.enter` only, never `animate.leave`
+## Rule 1 — `animate.enter` and `animate.leave` both work
 
-The positioner (floating-ui) writes the inline `translate` property directly on the content element to place it on screen. The moment `open` flips to `false` the library clears that `translate` so the DOM can be unmounted cleanly. An `animate.leave` animation therefore runs against an element whose `translate` has already been zeroed, which sends the content flying to the viewport corner (0, 0) before it fades out.
+The positioner (floating-ui) writes the inline `translate` property directly on the content element to place it on screen, and **keeps it set through the close** so an exit animation stays anchored to the trigger instead of snapping to the viewport corner. The portal also defers unmounting the content until its animations finish, so a CSS `animate.leave` plays in full before the node is removed.
 
-**Use `animate.enter` for enter animations only.** Let the `@if` control instant unmounting on close, with no `animate.leave` on the positioned content.
+**Use `animate.enter` and `animate.leave` freely** on the positioned content — let the `@if` drive mount / unmount and Angular's native animation hooks handle the transitions.
 
 ```html
 @if (open()) {
-<div forPopoverContent class="my-popover" animate.enter="pop-in">…</div>
+<div forPopoverContent class="my-popover" animate.enter="pop-in" animate.leave="pop-out">…</div>
 }
 ```
 
-If you want a visual exit transition, wrap the content in a non-positioned host element and apply `animate.leave` there, or handle the exit entirely in CSS via `data-state="closed"` combined with the `@starting-style` CSS rule (native CSS transitions entry) without relying on `animate.leave`.
+`prefers-reduced-motion` is honored automatically: with the animation suppressed there is nothing to wait for, so the content unmounts immediately.
 
 ---
 

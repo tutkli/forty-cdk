@@ -420,15 +420,14 @@ export function injectFloating(config: FloatingConfig): void {
 }
 
 /**
- * Strip every inline style, CSS custom property, and `data-*` attribute
- * `injectFloating` writes to the floating element (including the
- * `clip-path` hide baseline). Pairs with the `autoUpdate` teardown so a
- * closed-then-reopened floating element starts from a clean slate (no
- * leftover `translate` jumping the next mount, no stale
- * `--for-anchor-width` poisoning size styles).
+ * Strip the CSS custom properties, `data-*` attributes, and the `clip-path`
+ * hide baseline `injectFloating` writes to the floating element. The resolved
+ * `translate` is intentionally retained so a closing surface stays anchored to
+ * its trigger through `animate.leave`; the next mount re-arms the `clip-path`
+ * baseline in `afterNextRender` and recomputes `translate` before painting, so
+ * a retained value never produces a stale-position flash.
  */
 function resetFloatingStyles(el: HTMLElement): void {
-  el.style.removeProperty('translate');
   // Clearing (not re-arming) the hide baseline keeps a closing surface
   // visible for its `animate.leave`; the next mount re-applies the
   // `clip-path` baseline in `afterNextRender`.
