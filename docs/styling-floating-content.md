@@ -7,7 +7,7 @@ Applies to every primitive that portals positioned content to `document.body`:
 
 ## Rule 1 — use `animate.enter` only, never `animate.leave`
 
-The positioner (floating-ui) writes an inline `transform: translate(…)` directly on the content element to place it on screen. The moment `open` flips to `false` the library clears that inline transform so the DOM can be unmounted cleanly. An `animate.leave` animation therefore runs against an element whose `transform` has already been zeroed, which sends the content flying to the viewport corner (0, 0) before it fades out.
+The positioner (floating-ui) writes the inline `translate` property directly on the content element to place it on screen. The moment `open` flips to `false` the library clears that `translate` so the DOM can be unmounted cleanly. An `animate.leave` animation therefore runs against an element whose `translate` has already been zeroed, which sends the content flying to the viewport corner (0, 0) before it fades out.
 
 **Use `animate.enter` for enter animations only.** Let the `@if` control instant unmounting on close, with no `animate.leave` on the positioned content.
 
@@ -21,11 +21,11 @@ If you want a visual exit transition, wrap the content in a non-positioned host 
 
 ---
 
-## Rule 2 — animate with standalone `scale` / `opacity`, never `transform`
+## Rule 2 — `transform`, `scale`, and `opacity` are free; the positioner owns `translate`
 
-floating-ui owns the `transform` property on the content element — it writes `transform: translate(x, y)` (or sometimes `translate` + `rotate` when a `shift`/`flip` is active). If your keyframe uses `transform: scale(…)` it clobbers that placement entirely and the content snaps to `(0, 0)`.
+The positioner writes the **`translate` property** (`translate: <x>px <y>px`) to place the content on screen — not `transform`. That leaves the `transform` property, plus the standalone `scale` and `rotate` properties, entirely free for your animations. Don't set `translate` yourself; everything else is yours.
 
-Use the **standalone CSS properties** `scale` and `opacity` instead — they compose on top of floating-ui's `transform` and never interfere with positioning:
+CSS composes the individual `translate` / `rotate` / `scale` properties and the `transform` property in a fixed order, with `translate` applied outermost, so a consumer `transform: scale(0.95)` (or the standalone `scale: 0.95`) pivots the content **in place** around `--for-content-transform-origin` instead of scaling the positioning offset and dragging the surface in from the viewport corner. Either form works:
 
 ```css
 @keyframes pop-in {
@@ -41,7 +41,7 @@ Use the **standalone CSS properties** `scale` and `opacity` instead — they com
 }
 ```
 
-The `--for-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center.
+The `--for-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center. (`transform: scale(0.95)` with the same `transform-origin` is equivalent — use whichever fits your keyframes.)
 
 ---
 
@@ -51,7 +51,7 @@ The positioner owns those properties completely.
 
 - `position: fixed` / `position: absolute` — set by the library; overriding them breaks placement.
 - `top` / `left` (or `inset-*` equivalents) — written by floating-ui; overriding them repositions or hides the content.
-- `z-index` — the library deliberately sets **no** default `z-index`. Set it yourself on the content element to control stacking order within your own project's z-axis, but do not use a value that interferes with the `transform`-based placement.
+- `z-index` — the library deliberately sets **no** default `z-index`. Set it yourself on the content element to control stacking order within your own project's z-axis.
 
 Add all layout properties (`width`, `max-width`, `padding`, `background`, `border-radius`, `box-shadow`, etc.) freely — only the three positioning props above are reserved.
 
