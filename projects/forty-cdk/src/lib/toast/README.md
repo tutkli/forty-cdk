@@ -227,14 +227,15 @@ The directive does NOT animate anything — the consumer's CSS transitions / `an
     0
   );
 }
+[forToast][data-swipe='move'] {
+  transition: none;
+}
 [forToast][data-swipe='cancel'] {
-  /* spring back */
-  --for-toast-swipe-movement-x: 0px;
-  --for-toast-swipe-movement-y: 0px;
+  transform: translate3d(0, 0, 0);
 }
 ```
 
-After a cancel the host keeps `data-swipe="cancel"` and the released movement vars so the transition above can run on its own timeline. The directive then clears that parked state — `data-swipe` removed, movement vars zeroed — on the next `pointerdown`, so a stale `cancel` never bleeds into the next gesture or lingers after a CSS-less consumer. A re-armed swipe overwrites it anyway.
+Spring the toast back by resetting **`transform`** on `[data-swipe='cancel']` — not by zeroing the `--for-toast-swipe-movement-*` variables. The directive publishes those variables as **inline styles** on the host and holds them at the released delta through the cancel, so a stylesheet rule that tries to set them to `0` loses to the inline value and has no effect (the toast would stay stuck at the release position). Overriding `transform` sidesteps the inline variables entirely. After a cancel the host keeps `data-swipe="cancel"` and the parked movement vars so the transition above can run on its own timeline; the directive then clears that parked state — `data-swipe` removed, movement vars zeroed — on the next `pointerdown`, so a stale `cancel` never bleeds into the next gesture or lingers after a CSS-less consumer. A re-armed swipe overwrites it anyway.
 
 Outputs:
 
@@ -292,9 +293,11 @@ Written on the `[forToast]` host while a swipe gesture is live, so the consumer 
     0
   );
 }
+[forToast][data-swipe='move'] {
+  transition: none;
+}
 [forToast][data-swipe='cancel'] {
-  --for-toast-swipe-movement-x: 0px;
-  --for-toast-swipe-movement-y: 0px;
+  transform: translate3d(0, 0, 0);
 }
 [forToast][data-variant='error'] {
   border-inline-start: 4px solid red;

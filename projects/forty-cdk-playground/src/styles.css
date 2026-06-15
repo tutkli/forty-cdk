@@ -1827,8 +1827,7 @@ a.pg-nav-link.active {
 }
 
 [forToast][data-swipe='cancel'] {
-  --for-toast-swipe-movement-x: 0px;
-  --for-toast-swipe-movement-y: 0px;
+  transform: translate3d(0, 0, 0);
 }
 
 [forToastTitle] {
