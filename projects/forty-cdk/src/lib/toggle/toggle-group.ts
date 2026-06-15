@@ -67,7 +67,6 @@ import {
   exportAs: 'forToggleGroup',
   host: {
     role: 'group',
-    '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
