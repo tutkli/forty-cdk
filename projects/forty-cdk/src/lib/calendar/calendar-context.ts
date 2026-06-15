@@ -16,6 +16,16 @@ export interface CalendarDateRange<D> {
   readonly end: D;
 }
 
+/** A selectable month in the visible year, for building a month dropdown. */
+export interface CalendarMonthOption {
+  /** Month number, **1-12**. */
+  readonly value: number;
+  /** Localized month name via the adapter (e.g. `"June"`). */
+  readonly label: string;
+  /** Whether the whole month falls outside `[min, max]`. */
+  readonly disabled: boolean;
+}
+
 /** A weekday column header in the calendar grid. */
 export interface CalendarWeekday {
   /** Stable key for `@for` tracking (the **0-6** weekday index as a string). */
@@ -115,6 +125,24 @@ export interface ForCalendarContext<D> {
   readonly isPreviousMonthDisabled: Signal<boolean>;
   /** Whether the next-month button should be disabled (bounded by `max`). */
   readonly isNextMonthDisabled: Signal<boolean>;
+
+  /** The visible month's full year (e.g. `2026`). */
+  readonly visibleYear: Signal<number>;
+  /** The visible month, **1-12**. */
+  readonly visibleMonthNumber: Signal<number>;
+  /** Twelve localized, bounds-aware month options for the visible year. */
+  readonly monthOptions: Signal<readonly CalendarMonthOption[]>;
+
+  /** Set the visible month to (`year`, `month`) without selecting. `month` is **1-12**. */
+  goTo(year: number, month: number): void;
+  /** Set the visible month within the current visible year. `month` is **1-12**. */
+  goToMonth(month: number): void;
+  /** Set the visible year, keeping the current visible month. */
+  goToYear(year: number): void;
+  /** Whether every day of `month` (**1-12**) in the visible year is out of `[min, max]`. */
+  isMonthDisabled(month: number): boolean;
+  /** Whether every day of `year` is out of `[min, max]`. */
+  isYearDisabled(year: number): boolean;
 
   /** Whether `date` is the currently selected value. */
   isSelected(date: D): boolean;

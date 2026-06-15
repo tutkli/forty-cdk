@@ -26,6 +26,7 @@ import { buildMonthMatrix } from './build-month-matrix';
 import {
   type CalendarDateLabelFormatter,
   type CalendarDateRange,
+  type CalendarMonthOption,
   type CalendarWeek,
   type CalendarWeekday,
   FOR_CALENDAR_CONTEXT,
@@ -251,6 +252,31 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     this.adapter.format(this.visibleMonth(), { month: 'long', year: 'numeric' }),
   );
 
+  /** The visible month's full year (e.g. `2026`). */
+  readonly visibleYear = computed(() => this.adapter.getYear(this.visibleMonth()));
+
+  /** The visible month, **1-12**. */
+  readonly visibleMonthNumber = computed(() => this.adapter.getMonth(this.visibleMonth()));
+
+  /**
+   * Twelve entries for the visible year — each a localized month name plus
+   * whether the whole month falls outside `[min, max]`. Tracks {@link visibleYear}.
+   * Build native `<select>` month dropdowns from it.
+   */
+  readonly monthOptions = computed<readonly CalendarMonthOption[]>(() => {
+    const adapter = this.adapter;
+    const year = this.visibleYear();
+    const options: CalendarMonthOption[] = [];
+    for (let month = 1; month <= 12; month++) {
+      options.push({
+        value: month,
+        label: adapter.format(adapter.createDate(year, month, 1), { month: 'long' }),
+        disabled: this.#isMonthOutOfBounds(year, month),
+      });
+    }
+    return options;
+  });
+
   /**
    * Day-of-month the user is conceptually navigating with. Paging across months
    * re-derives the focused date from it (clamped to the target month's length)
@@ -314,6 +340,23 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     const nextMonthFirstDay = this.adapter.addMonths(this.visibleMonth(), 1);
     return compareDateOf(this.adapter, nextMonthFirstDay, max) > 0;
   });
+
+  /**
+   * Whether every day of `month` (**1-12**) in the visible year falls outside
+   * `[min, max]`. Use it to disable a month in a custom dropdown.
+   */
+  isMonthDisabled(month: number): boolean {
+    return this.#isMonthOutOfBounds(this.visibleYear(), month);
+  }
+
+  /**
+   * Whether every day of `year` falls outside `[min, max]`. Use it to disable a
+   * year in a custom dropdown.
+   */
+  isYearDisabled(year: number): boolean {
+    const adapter = this.adapter;
+    return this.#outOfBounds(adapter.createDate(year, 1, 1), adapter.createDate(year, 12, 31));
+  }
 
   isSelected(date: D): boolean {
     if (this.selectionMode() === 'range') {
@@ -456,6 +499,38 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     this.#announceMonthChange(previousMonth);
   }
 
+  /**
+   * Set the visible month to (`year`, `month`) without selecting a date.
+   * `month` is **1-12**. Re-applies the user's intended day-of-month (clamped to
+   * the target month's length), clamps the result into `[min, max]`, and
+   * announces the new period politely when the visible month changes. Keeps DOM
+   * focus on the caller — it does not move focus into the grid. A no-op while the
+   * calendar is disabled.
+   */
+  goTo(year: number, month: number): void {
+    if (this.disabled()) {
+      return;
+    }
+    const previousMonth = this.visibleMonth();
+    this.#syncIntendedDay();
+    const next = this.#clampToBounds(
+      this.#applyIntendedDay(this.adapter.createDate(year, month, 1)),
+    );
+    this.focusedDate.set(next);
+    this.#pagedFocus = next;
+    this.#announceMonthChange(previousMonth);
+  }
+
+  /** Set the visible month within the current visible year. `month` is **1-12**. */
+  goToMonth(month: number): void {
+    this.goTo(this.visibleYear(), month);
+  }
+
+  /** Set the visible year, keeping the current visible month. */
+  goToYear(year: number): void {
+    this.goTo(year, this.visibleMonthNumber());
+  }
+
   handleCellKeydown(event: KeyboardEvent, fromDate: D): void {
     if (this.disabled()) {
       return;
@@ -594,6 +669,26 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return max;
     }
     return date;
+  }
+
+  #isMonthOutOfBounds(year: number, month: number): boolean {
+    const adapter = this.adapter;
+    const firstDay = adapter.createDate(year, month, 1);
+    const lastDay = adapter.createDate(year, month, adapter.getDaysInMonth(firstDay));
+    return this.#outOfBounds(firstDay, lastDay);
+  }
+
+  #outOfBounds(firstDay: D, lastDay: D): boolean {
+    const adapter = this.adapter;
+    const min = this.min();
+    if (min !== null && compareDateOf(adapter, lastDay, min) < 0) {
+      return true;
+    }
+    const max = this.max();
+    if (max !== null && compareDateOf(adapter, firstDay, max) > 0) {
+      return true;
+    }
+    return false;
   }
 
   #startOfWeek(date: D): D {

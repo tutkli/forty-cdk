@@ -170,6 +170,65 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 **v1 scope.** Range mode is day-granular only — `granularity` / time is orthogonal and not supported in v1.
 
+## Month / year navigation
+
+`ForCalendar` exposes absolute-navigation methods so consumers can wire their own month/year `<select>` dropdowns — or any other UI — without needing a library directive.
+
+### Navigation methods
+
+| Method                        | Description                                                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `goTo(year, month)`           | Set the visible month to `(year, month)` without selecting a date. `month` is **1-12**.                                      |
+| `goToMonth(month)`            | Set the visible month within the current visible year. `month` is **1-12**.                                                   |
+| `goToYear(year)`              | Set the visible year, keeping the current visible month.                                                                      |
+
+All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the visible month changes. They keep DOM focus on the caller — they do not move focus into the grid. They are a no-op while the calendar is `disabled`.
+
+### Read accessors and predicates
+
+| API                         | Type                                    | Description                                                                       |
+| --------------------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
+| `visibleYear()`             | `Signal<number>`                        | The visible month's full year (e.g. `2026`).                                     |
+| `visibleMonthNumber()`      | `Signal<number>`                        | The visible month, **1-12**.                                                      |
+| `monthOptions()`            | `Signal<readonly CalendarMonthOption[]>`| Twelve localized, bounds-aware entries for the visible year. See `CalendarMonthOption`. |
+| `isMonthDisabled(month)`    | `(month: number) => boolean`            | Whether every day of `month` (**1-12**) in the visible year is outside `[min, max]`. |
+| `isYearDisabled(year)`      | `(year: number) => boolean`             | Whether every day of `year` is outside `[min, max]`.                             |
+
+`CalendarMonthOption` has three fields: `value: number` (1-12), `label: string` (localized month name via the adapter), and `disabled: boolean`.
+
+A month/year is "disabled" only when its **entire** span is out of range — its last day falls before `min`, or its first day falls after `max`. A non-midnight `min`/`max` keeps its boundary month/year enabled, matching the grid's existing day-level availability.
+
+### Usage — native `<select>` dropdowns
+
+```html
+<div forCalendar [(value)]="date" #cal="forCalendar">
+  <header>
+    <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+    <select
+      [value]="cal.visibleMonthNumber()"
+      (change)="cal.goToMonth(+monthSelect.value)"
+      #monthSelect
+    >
+      @for (m of cal.monthOptions(); track m.value) {
+        <option [value]="m.value" [disabled]="m.disabled">{{ m.label }}</option>
+      }
+    </select>
+    <select [value]="cal.visibleYear()" (change)="cal.goToYear(+yearSelect.value)" #yearSelect>
+      @for (y of years; track y) {
+        <option [value]="y" [disabled]="cal.isYearDisabled(y)">{{ y }}</option>
+      }
+    </select>
+    <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+    <h2 forCalendarHeading class="sr-only" #h="forCalendarHeading">{{ h.label() }}</h2>
+  </header>
+  <table forCalendarGrid>…</table>
+</div>
+```
+
+**Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named — removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
+
+Dedicated convenience directives (`[forCalendarMonthSelect]` / `[forCalendarYearSelect]`) may arrive in a future release. For now the public hooks are the stable API.
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.

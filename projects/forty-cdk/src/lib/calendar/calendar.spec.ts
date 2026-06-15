@@ -226,6 +226,72 @@ class CalendarRangeHost {
   readonly unavailable = signal<(date: Date) => boolean>(() => false);
 }
 
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarHeading,
+    ForCalendarGrid,
+    ForCalendarCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [(value)]="value" [min]="min()" [max]="max()" #cal="forCalendar">
+      <select
+        data-testid="month-select"
+        [value]="cal.visibleMonthNumber()"
+        (change)="cal.goToMonth(+selectValue($event))"
+      >
+        @for (m of cal.monthOptions(); track m.value) {
+          <option
+            [value]="m.value"
+            [disabled]="m.disabled"
+            [attr.data-testid]="'month-opt-' + m.value"
+          >
+            {{ m.label }}
+          </option>
+        }
+      </select>
+      <select
+        data-testid="year-select"
+        [value]="cal.visibleYear()"
+        (change)="cal.goToYear(+selectValue($event))"
+      >
+        @for (y of years; track y) {
+          <option [value]="y" [disabled]="cal.isYearDisabled(y)" [attr.data-testid]="'year-opt-' + y">
+            {{ y }}
+          </option>
+        }
+      </select>
+      <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+        {{ heading.label() }}
+      </h2>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (c of week.days; track c.key) {
+                <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                  {{ c.label }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarDropdownsHost {
+  readonly calendar = viewChild.required(ForCalendar);
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  readonly min = signal<Date | null>(null);
+  readonly max = signal<Date | null>(null);
+  readonly years = [2024, 2025, 2026, 2027, 2028];
+  selectValue(event: Event): string {
+    return (event.target as HTMLSelectElement).value;
+  }
+}
+
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
 const cell = (r: RenderResult<unknown>, date: Date) =>
   r.query(`[data-testid="cell-${keyOf(date)}"]`)!;
@@ -911,6 +977,124 @@ describe('ForCalendar', () => {
       expect(target.getAttribute('aria-selected')).toBe('true');
       expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('false');
       expect(target.hasAttribute('data-selected')).toBe(true);
+    });
+  });
+
+  describe('month / year navigation (#767)', () => {
+    const selectMonth = (r: RenderResult<CalendarDropdownsHost>, month: number) => {
+      const sel = r.query<HTMLSelectElement>('[data-testid="month-select"]')!;
+      sel.value = String(month);
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const selectYear = (r: RenderResult<CalendarDropdownsHost>, year: number) => {
+      const sel = r.query<HTMLSelectElement>('[data-testid="year-select"]')!;
+      sel.value = String(year);
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const dcell = (r: RenderResult<CalendarDropdownsHost>, date: Date) =>
+      r.query<HTMLElement>(`[data-testid="cell-${keyOf(date)}"]`)!;
+    const dFocused = (r: RenderResult<CalendarDropdownsHost>) =>
+      r.queryAll('[role="gridcell"][tabindex="0"]')[0]!;
+    const monthOpt = (r: RenderResult<CalendarDropdownsHost>, m: number) =>
+      r.query<HTMLOptionElement>(`[data-testid="month-opt-${m}"]`)!;
+    const yearOpt = (r: RenderResult<CalendarDropdownsHost>, y: number) =>
+      r.query<HTMLOptionElement>(`[data-testid="year-opt-${y}"]`)!;
+
+    it('goToMonth re-pages the grid and leaves value untouched', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      selectMonth(r, 1);
+      await flush(r.fixture);
+      const heading = r.query('[data-testid="heading"]')!.textContent!;
+      expect(heading).toContain('2026');
+      expect(heading).toContain(adapter.format(new Date(2026, 0, 1), { month: 'long' }));
+      expect(dFocused(r)).toBe(dcell(r, new Date(2026, 0, 15)));
+      expect(r.instance.value()!.getMonth()).toBe(5);
+      expect(r.instance.value()!.getDate()).toBe(15);
+    });
+
+    it('goToYear keeps the month and re-pages', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      selectYear(r, 2028);
+      await flush(r.fixture);
+      const heading = r.query('[data-testid="heading"]')!.textContent!;
+      expect(heading).toContain('2028');
+      expect(heading).toContain(adapter.format(new Date(2026, 5, 1), { month: 'long' }));
+      expect(r.instance.value()!.getFullYear()).toBe(2026);
+    });
+
+    it('intended day is preserved and clamped when crossing a short month', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      r.instance.value.set(new Date(2026, 0, 31));
+      await flush(r.fixture);
+      selectMonth(r, 2);
+      await flush(r.fixture);
+      expect(dFocused(r)).toBe(dcell(r, new Date(2026, 1, 28)));
+    });
+
+    it('monthOptions produces 12 localized entries', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      const opts = r.queryAll('[data-testid^="month-opt-"]');
+      expect(opts.length).toBe(12);
+      const junLabel = monthOpt(r, 6).textContent!.trim();
+      expect(junLabel).toBe(adapter.format(new Date(2026, 5, 1), { month: 'long' }));
+    });
+
+    it('out-of-bounds months and years are disabled', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      r.instance.min.set(new Date(2026, 1, 1));
+      r.instance.max.set(new Date(2027, 10, 30));
+      await flush(r.fixture);
+      expect(monthOpt(r, 1).disabled).toBe(true);
+      expect(monthOpt(r, 6).disabled).toBe(false);
+      expect(yearOpt(r, 2024).disabled).toBe(true);
+      expect(yearOpt(r, 2025).disabled).toBe(true);
+      expect(yearOpt(r, 2026).disabled).toBe(false);
+      expect(yearOpt(r, 2027).disabled).toBe(false);
+      expect(yearOpt(r, 2028).disabled).toBe(true);
+    });
+
+    it('[min, max] clamps navigation via goToYear', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      r.instance.max.set(new Date(2026, 7, 31));
+      await flush(r.fixture);
+      r.instance.calendar().goToYear(2030);
+      await flush(r.fixture);
+      const heading = r.query('[data-testid="heading"]')!.textContent!;
+      expect(heading).toContain('2026');
+      expect(heading).toContain(adapter.format(new Date(2026, 7, 1), { month: 'long' }));
+    });
+
+    it('announces on month change when the month changes', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      const liveRegion = () =>
+        Array.from(document.body.querySelectorAll('[aria-live="polite"]')).find(
+          (el) => !el.closest('[forCalendar]'),
+        );
+      selectMonth(r, 1);
+      await flush(r.fixture);
+      expect(liveRegion()?.textContent).toContain('2026');
+      expect(liveRegion()?.textContent).toContain(adapter.format(new Date(2026, 0, 1), { month: 'long' }));
+    });
+
+    it('does not announce when navigating to the already-visible month', async () => {
+      const r = renderHost(CalendarDropdownsHost);
+      const liveRegion = () =>
+        Array.from(document.body.querySelectorAll('[aria-live="polite"]')).find(
+          (el) => !el.closest('[forCalendar]'),
+        );
+      selectMonth(r, 6);
+      await flush(r.fixture);
+      expect(liveRegion()?.textContent ?? '').toBe('');
+    });
+
+    describe('zoneless', () => {
+      it('goToMonth renders correctly under provideZonelessChangeDetection', async () => {
+        const r = renderHost(CalendarDropdownsHost);
+        selectMonth(r, 1);
+        await flush(r.fixture);
+        expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
+        expect(dFocused(r)).toBe(dcell(r, new Date(2026, 0, 15)));
+      });
     });
   });
 

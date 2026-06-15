@@ -11,6 +11,7 @@ export {
   type CalendarDateRange,
   type ForCalendarContext,
   type ForCalendarCellHandle,
+  type CalendarMonthOption,
   type CalendarWeek,
   type CalendarWeekday,
   type CalendarDayCell,
