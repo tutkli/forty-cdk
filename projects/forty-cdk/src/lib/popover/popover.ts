@@ -169,6 +169,15 @@ export class ForPopover implements ForPopoverContext {
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+
+  /**
    * When true, trigger interaction is ignored and any open popover stays
    * open until the consumer flips `open` themselves. Disable on the trigger
    * side; the content side keeps its dismissable behavior unaffected.

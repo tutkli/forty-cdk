@@ -136,6 +136,17 @@ export interface FloatingConfig {
   readonly hideWhenDetached?: Signal<boolean>;
 
   /**
+   * When `true` (default / omitted), the floating element is clipped with
+   * `clip-path: inset(50%)` until `@floating-ui/dom` resolves its first
+   * position, so a short enter animation never flashes at the viewport
+   * corner before placement lands. Set to `false` to paint from the first
+   * frame — useful for a dramatic `animate.enter` that would otherwise lose
+   * its opening frames while the async `computePosition` resolves, at the
+   * cost of a possible first-frame flash at the pre-resolved position.
+   */
+  readonly clipUntilPositioned?: Signal<boolean>;
+
+  /**
    * Padding (px) handed to the `shift` middleware so the floating element
    * never crowds the viewport edge. Default `8`. Used as the fallback for
    * `collisionPadding` when that signal is not provided.
@@ -226,8 +237,10 @@ export function injectFloating(config: FloatingConfig): void {
       position: 'fixed',
       left: '0',
       top: '0',
-      clipPath: 'inset(50%)',
     });
+    if (config.clipUntilPositioned?.() !== false) {
+      el.style.clipPath = 'inset(50%)';
+    }
   });
 
   const fallbackShiftPadding = config.shiftPadding ?? 8;
@@ -254,7 +267,9 @@ export function injectFloating(config: FloatingConfig): void {
     // previous frame's stale `translate` until the async `computePosition`
     // resolves. Re-arming hides it until the first resolved position drops the
     // baseline again below.
-    el.style.clipPath = 'inset(50%)';
+    if (config.clipUntilPositioned?.() !== false) {
+      el.style.clipPath = 'inset(50%)';
+    }
 
     // Resolve placement from `side` + `align` with sensible defaults.
     const sideInput = config.side?.() ?? 'bottom';

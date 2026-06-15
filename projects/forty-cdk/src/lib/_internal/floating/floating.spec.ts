@@ -210,6 +210,39 @@ class InPlaceHost {
   readonly bubble = viewChild.required<InPlaceBubble>('b');
 }
 
+@Component({
+  selector: 'no-clip-bubble',
+  template: '<ng-content />',
+})
+class NoClipBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly clipUntilPositioned = signal(false);
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      clipUntilPositioned: this.clipUntilPositioned,
+      portal: true,
+    });
+  }
+}
+
+@Component({
+  imports: [NoClipBubble],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <no-clip-bubble #bubble>Content</no-clip-bubble>
+    </div>
+  `,
+})
+class NoClipBubbleHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<NoClipBubble>('bubble');
+}
+
 describe('injectFloating', () => {
   // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
   // still doesn't ship them. Install no-op polyfills for this spec only; the
@@ -458,6 +491,43 @@ describe('injectFloating', () => {
       await flushPositioning(fixture);
       expect(bubbleEl.style.clipPath).toBe('');
       expect(bubbleEl.dataset['placement']).toBe('bottom');
+    });
+  });
+
+  describe('clip-path baseline opt-out', () => {
+    it('arms the clip-path baseline by default until the first position resolves', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      fixture.detectChanges();
+      expect(bubbleEl.style.clipPath).toBe('inset(50%)');
+
+      await flushPositioning(fixture);
+      expect(bubbleEl.style.clipPath).toBe('');
+    });
+
+    it('never arms the clip-path baseline when clipUntilPositioned() is false', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(NoClipBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('no-clip-bubble')!;
+
+      expect(bubbleEl.style.clipPath).toBe('');
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      fixture.detectChanges();
+      expect(bubbleEl.style.clipPath).toBe('');
+
+      await flushPositioning(fixture);
+      expect(bubbleEl.style.clipPath).toBe('');
+      expect(bubbleEl.dataset['placement']).toBeTruthy();
     });
   });
 
