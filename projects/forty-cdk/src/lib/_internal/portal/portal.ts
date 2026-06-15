@@ -62,13 +62,22 @@ export function injectPortal(config: PortalConfig = {}): void {
   });
 
   destroyRef.onDestroy(() => {
-    // `Element.remove()` is a no-op when the node has no parent, so this is
-    // safe whether the portal moved the element to `target`, the element is
-    // still in its original parent, or it's been detached already. It also
-    // cleans up the synchronous-teardown ordering, where the pending
-    // `appendChild` flushes just before this hook runs: the cancellation in
-    // `afterNextRenderCancellable` covers the true-async path (queued render
-    // after destroy), `el.remove()` covers the synchronous one.
-    el.remove();
+    if (
+      typeof requestAnimationFrame === 'undefined' ||
+      typeof el.getAnimations !== 'function'
+    ) {
+      el.remove();
+      return;
+    }
+    requestAnimationFrame(() => {
+      const animations = el.getAnimations();
+      if (animations.length === 0) {
+        el.remove();
+        return;
+      }
+      Promise.all(
+        animations.map((animation) => animation.finished.catch(() => undefined)),
+      ).then(() => el.remove());
+    });
   });
 }

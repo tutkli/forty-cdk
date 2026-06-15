@@ -75,6 +75,40 @@ describe('injectPortal', () => {
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
   });
 
+  it('defers removal until in-flight animations finish when getAnimations is present', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PortalHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector<HTMLElement>('portaled-bubble')!;
+
+    let resolveFinished!: () => void;
+    const finished = new Promise<void>((resolve) => {
+      resolveFinished = resolve;
+    });
+    portaled.getAnimations = (() => [
+      { finished } as unknown as Animation,
+    ]) as HTMLElement['getAnimations'];
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      });
+
+    try {
+      fixture.destroy();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
+
+      resolveFinished();
+      await nextMacrotask();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
+    } finally {
+      rafSpy.mockRestore();
+      document.querySelectorAll('portaled-bubble').forEach((n) => n.remove());
+    }
+  });
+
   it('honors a custom target container', async () => {
     const target = document.createElement('div');
     target.id = 'custom-target';
