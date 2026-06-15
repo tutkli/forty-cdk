@@ -182,7 +182,7 @@ export class ForSelect<T = string>
    * different; switching at runtime would need a remount, and the surface
    * mounts lazily via `@if (open())` well after `modal` settles). Every
    * anchored-positioning input — `position`, `side`, `align`, `sideOffset`,
-   * `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`,
+   * `alignOffset`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`, `avoidCollisions`,
    * `collisionPadding`, `arrowPadding` — is a no-op in this mode. Default
    * `false` (non-breaking). The swipe / snap-point sheet is deliberately not
    * this mode — compose a `ForListbox` inside a `ForDrawer` for that.
@@ -200,7 +200,7 @@ export class ForSelect<T = string>
    *   — visually the menu "snaps over" the trigger when opened, mirroring
    *   macOS native `<select>`. Falls back to the first enabled option when
    *   nothing is selected. `side`, `align`, `sideOffset`, `alignOffset`,
-   *   `sticky`, `hideWhenDetached`, and `avoidCollisions` are ignored in
+   *   `sticky`, `hideWhenDetached`, `clipUntilPositioned`, and `avoidCollisions` are ignored in
    *   this mode; only `collisionPadding` is honored.
    */
   readonly position = input<'popper' | 'item-aligned'>('popper');
@@ -245,6 +245,15 @@ export class ForSelect<T = string>
 
   /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+
+  /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
 
   readonly loop = input(true, { transform: booleanAttribute });
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');

@@ -158,6 +158,15 @@ export class ForHoverCard implements ForHoverCardContext {
   /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
+  /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+
   /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
   readonly openDelay = input<number | undefined>(undefined);
 

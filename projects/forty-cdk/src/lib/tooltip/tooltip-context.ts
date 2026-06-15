@@ -22,6 +22,7 @@ export interface ForTooltipContext {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   /** Trigger element id — a consumer-set host `id` is adopted, else a generated one. */
   readonly triggerId: Signal<string>;
   /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */

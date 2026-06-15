@@ -152,6 +152,15 @@ export class ForTooltip implements ForTooltipContext {
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
   /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+
+  /**
    * Per-tooltip override for the open delay (ms). When `undefined`
    * (default), falls back to `ForTooltipDefaults.openDelay` from the
    * surrounding `provideForTooltipDefaults` scope (700ms unless configured).

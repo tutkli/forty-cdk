@@ -101,6 +101,7 @@ export interface ForMenuContext {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   readonly loop: Signal<boolean>;
 
   /** Where focus should land after the menu mounts. Set by triggers before flipping `open`. */

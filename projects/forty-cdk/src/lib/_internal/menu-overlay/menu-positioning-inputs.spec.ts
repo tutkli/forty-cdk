@@ -56,6 +56,7 @@ describe('menu positioning inputs drift guard', () => {
       expect(root.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
       expect(root.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
       expect(root.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
+      expect(root.clipUntilPositioned()).toBe(MENU_POSITIONING_DEFAULTS.clipUntilPositioned);
     }
   });
 

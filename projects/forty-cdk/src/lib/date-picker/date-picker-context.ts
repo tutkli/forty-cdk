@@ -51,6 +51,7 @@ export interface ForDatePickerContext {
   readonly collisionPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
 
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;

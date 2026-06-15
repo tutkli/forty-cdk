@@ -32,6 +32,7 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'ariaLabel',
   'arrowPadding',
   'avoidCollisions',
+  'clipUntilPositioned',
   'collisionPadding',
   'dir',
   'dirty',

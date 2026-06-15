@@ -117,6 +117,7 @@ export interface ForComboboxContext<T = unknown> {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   readonly loop: Signal<boolean>;
 
   readonly inputId: Signal<string>;

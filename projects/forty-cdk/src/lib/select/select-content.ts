@@ -149,6 +149,7 @@ export class ForSelectContent {
             arrowPadding: ctx.arrowPadding,
             sticky: ctx.sticky,
             hideWhenDetached: ctx.hideWhenDetached,
+            clipUntilPositioned: ctx.clipUntilPositioned,
           };
 
     injectOverlayShell({

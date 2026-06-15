@@ -129,6 +129,15 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   });
 
   /**
+   * When `true` (default), the menu is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame.
+   */
+  readonly clipUntilPositioned = input(MENU_POSITIONING_DEFAULTS.clipUntilPositioned, {
+    transform: booleanAttribute,
+  });
+
+  /**
    * When `true` (default), arrow-key navigation wraps from the last enabled
    * item back to the first (and vice versa). When `false`, navigation stops
    * at the ends.

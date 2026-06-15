@@ -103,6 +103,7 @@ export class ForComboboxContent {
         arrowPadding: ctx.arrowPadding,
         sticky: ctx.sticky,
         hideWhenDetached: ctx.hideWhenDetached,
+        clipUntilPositioned: ctx.clipUntilPositioned,
       },
       dismiss: {
         dismissible: ctx.dismissible,
