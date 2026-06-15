@@ -53,12 +53,12 @@ const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forTogg
 
 describe('ForToggleGroup', () => {
   describe('a11y baseline', () => {
-    it('sets role=group, aria-orientation, and each item type=button + aria-pressed=false', () => {
+    it('sets role=group, no aria-orientation, and each item type=button + aria-pressed=false', () => {
       const { el } = renderHost(ToggleGroupHost);
       const group = groupOf(el);
 
       expect(group.getAttribute('role')).toBe('group');
-      expect(group.getAttribute('aria-orientation')).toBe('horizontal');
+      expect(group.getAttribute('aria-orientation')).toBeNull();
       expect(group.getAttribute('data-orientation')).toBe('horizontal');
 
       for (const v of ['left', 'center', 'right']) {
@@ -75,7 +75,7 @@ describe('ForToggleGroup', () => {
       r.flush();
 
       const group = groupOf(r.el);
-      expect(group.getAttribute('aria-orientation')).toBe('vertical');
+      expect(group.getAttribute('aria-orientation')).toBeNull();
       expect(group.getAttribute('data-orientation')).toBe('vertical');
     });
 
