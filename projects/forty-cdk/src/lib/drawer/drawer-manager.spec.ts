@@ -737,4 +737,70 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
     });
   });
+
+  // ---- Backdrop exit animation under the manager ----
+  // A backdrop declared inside the opened component plays its `animate.enter`
+  // on mount but cannot run a template `animate.leave` (Angular does not
+  // process leave animations across the `ngComponentOutlet` the manager mounts
+  // the component through), so the manager drives the backdrop's exit class in
+  // lockstep with the host — matched by a shared per-instance id.
+  describe('backdrop exit animation (backdropAnimateLeave)', () => {
+    @Component({
+      imports: [ForDrawerBackdrop],
+      template: `
+        <div data-testid="bd" forDrawerBackdrop></div>
+        <button id="ok">OK</button>
+      `,
+    })
+    class BackdropDrawer {}
+
+    it('pairs the portaled backdrop with its drawer via data-for-drawer-id', () => {
+      const { drawers } = setup();
+      drawers.open(BackdropDrawer);
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
+      const id = host.getAttribute('data-for-drawer-id');
+      expect(id).toBeTruthy();
+      expect(backdrop.getAttribute('data-for-drawer-id')).toBe(id);
+    });
+
+    it('drives the backdrop exit class in lockstep with the host on close', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(BackdropDrawer, {
+        animateLeave: 'drawer-out',
+        backdropAnimateLeave: 'backdrop-out',
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
+
+      // jsdom ships no Web Animations engine; fake a running animation so the
+      // manager keeps both nodes mounted through the exit and applies the
+      // classes rather than tearing down immediately.
+      const running = () => [{ finished: Promise.resolve() }] as unknown as Animation[];
+      host.getAnimations = running;
+      backdrop.getAnimations = running;
+
+      ref.close();
+
+      expect(host.classList.contains('drawer-out')).toBe(true);
+      expect(backdrop.classList.contains('backdrop-out')).toBe(true);
+
+      await ref.closed;
+    });
+
+    it('closes cleanly when backdropAnimateLeave is set but no backdrop is rendered', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        backdropAnimateLeave: 'backdrop-out',
+      });
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.querySelector('[role="dialog"]')).toBeFalsy();
+    });
+  });
 });

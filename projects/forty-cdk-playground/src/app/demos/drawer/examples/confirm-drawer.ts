@@ -26,12 +26,7 @@ export type ConfirmResult = 'confirm' | 'cancel';
     ForDrawerClose,
   ],
   template: `
-    <div
-      forDrawerBackdrop
-      class="pg-drawer-backdrop"
-      animate.enter="pg-backdrop-in"
-      animate.leave="pg-backdrop-out"
-    ></div>
+    <div forDrawerBackdrop class="pg-drawer-backdrop" animate.enter="pg-backdrop-in"></div>
     <div forDrawerHandle class="pg-drawer-handle"></div>
     <h2 forDrawerTitle class="pg-drawer-title">{{ data.title }}</h2>
     <p forDrawerDescription class="pg-drawer-desc">{{ data.message }}</p>

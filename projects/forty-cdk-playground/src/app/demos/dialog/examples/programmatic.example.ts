@@ -11,7 +11,7 @@ import { type ConfirmData, ConfirmDialog, type ConfirmResult } from './confirm-d
   template: `
     <playground-demo
       title="Programmatic (ForDialogManager)"
-      subtitle="Open a component imperatively and await its result. The manager mounts it under the same [forDialog] engine, so every piece works identically; [forDialogClose] [closeWith] propagates straight to ForDialogRef.close(value). Here as a non-dismissible alertdialog. Since #745 the config accepts animateLeave, so the host stays mounted to play a fade-out before unmounting (the pop-in comes from its mount animation)."
+      subtitle="Open a component imperatively and await its result. The manager mounts it under the same [forDialog] engine, so every piece works identically; [forDialogClose] [closeWith] propagates straight to ForDialogRef.close(value). Here as a non-dismissible alertdialog. The config accepts animateLeave + backdropAnimateLeave, so the box and the portaled backdrop fade out in lockstep before unmounting (the pop-in comes from the mount animation; the backdrop's fade-in from its template animate.enter)."
       sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/programmatic.example.ts"
     >
       <div demo class="pg-center">
@@ -49,6 +49,7 @@ export class DialogProgrammaticExample {
       dismissible: false,
       class: 'pg-dialog pg-dialog--pop',
       animateLeave: 'pg-dialog-out',
+      backdropAnimateLeave: 'pg-backdrop-out',
     });
     const result = await ref.closed;
     this.confirmResult.set(result ?? 'dismissed');

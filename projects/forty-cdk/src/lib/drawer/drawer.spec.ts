@@ -214,6 +214,15 @@ describe('ForDrawer (declarative)', () => {
       expect(closeBtn.getAttribute('data-state')).toBe('open');
     });
 
+    it('does not emit data-for-drawer-id in the declarative path (it is manager-only)', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+      expect(backdrop.hasAttribute('data-for-drawer-id')).toBe(false);
+    });
+
     it('reflects data-side from the side input', async () => {
       const r = renderHost(DrawerHost);
       r.instance.side.set('right');

@@ -352,6 +352,15 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('ForDialogBackdrop', () => {
+    it('does not emit data-for-dialog-id in the declarative path (it is manager-only)', async () => {
+      const r = renderHost(DialogHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      expect(backdrop.hasAttribute('data-for-dialog-id')).toBe(false);
+    });
+
     it('emits (close) with reason "backdrop" on direct click when dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);

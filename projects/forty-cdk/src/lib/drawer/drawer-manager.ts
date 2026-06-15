@@ -20,6 +20,7 @@ import {
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import {
+  FOR_DRAWER_INSTANCE_ID,
   type ForDrawerDragEvent,
   type ForDrawerReleaseEvent,
   type ForDrawerSide,
@@ -91,6 +92,23 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * back to `provideForDrawerDefaults({ animateLeave })`.
    */
   animateLeave?: string;
+
+  /**
+   * Exit-animation class for the portaled `[forDrawerBackdrop]`: the manager
+   * adds it when `close()` is called and keeps the backdrop mounted until the
+   * animation finishes, so the backdrop fades out in lockstep with the host.
+   *
+   * The split with the enter animation is intentional, not an oversight.
+   * Declare the backdrop's **enter** with `animate.enter="…"` on the element
+   * itself — it fires on mount, which Angular runs normally even inside the
+   * manager's `ngComponentOutlet` — and declare only its **leave** here. A
+   * template `animate.leave` on the backdrop never fires under the manager:
+   * Angular does not run leave animations across the `ngComponentOutlet` the
+   * opened component is mounted through. (The host sheet is symmetric — both
+   * `animateEnter` and `animateLeave` are config, since the manager owns that
+   * element.) Falls back to `provideForDrawerDefaults({ backdropAnimateLeave })`.
+   */
+  backdropAnimateLeave?: string;
 
   /** When true (default), pointer drag past `closeThreshold` dismisses. */
   swipeToDismiss?: boolean;
@@ -261,19 +279,46 @@ export class ForDrawerManager {
     }
   }
 
-  #beginLeave(id: string, leaveClass: string | undefined, remove: () => void): void {
-    if (this.#destroying || !leaveClass || typeof requestAnimationFrame === 'undefined') {
+  #beginLeave(
+    id: string,
+    leaveClass: string | undefined,
+    backdropLeaveClass: string | undefined,
+    remove: () => void,
+  ): void {
+    if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
       remove();
       return;
     }
-    const host = this.#document.querySelector<HTMLElement>(`[data-for-drawer-id="${id}"]`);
-    if (!host || typeof host.getAnimations !== 'function') {
+    // Drive the exit animation on the host and, in lockstep, on the portaled
+    // backdrop. The backdrop is matched by the same per-instance id (it
+    // reflects `data-for-drawer-id` from FOR_DRAWER_INSTANCE_ID) because its
+    // template `animate.leave` never fires under the manager's
+    // `ngComponentOutlet` mount — see ForDrawerBackdrop / backdropAnimateLeave.
+    const targets: HTMLElement[] = [];
+    if (leaveClass) {
+      const host = this.#document.querySelector<HTMLElement>(
+        `[data-for-drawer-id="${id}"]:not([data-for-drawer-backdrop])`,
+      );
+      if (host && typeof host.getAnimations === 'function') {
+        host.classList.add(leaveClass);
+        targets.push(host);
+      }
+    }
+    if (backdropLeaveClass) {
+      const backdrop = this.#document.querySelector<HTMLElement>(
+        `[data-for-drawer-backdrop][data-for-drawer-id="${id}"]`,
+      );
+      if (backdrop && typeof backdrop.getAnimations === 'function') {
+        backdrop.classList.add(backdropLeaveClass);
+        targets.push(backdrop);
+      }
+    }
+    if (targets.length === 0) {
       remove();
       return;
     }
-    host.classList.add(leaveClass);
     requestAnimationFrame(() => {
-      const animations = host.getAnimations();
+      const animations = targets.flatMap((el) => el.getAnimations());
       if (animations.length === 0) {
         remove();
         return;
@@ -309,8 +354,11 @@ export class ForDrawerManager {
 
     const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
     const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
+    const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
 
-    const ref = new ForDrawerRef<R>(() => this.#beginLeave(id, animateLeave, remove));
+    const ref = new ForDrawerRef<R>(() =>
+      this.#beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+    );
 
     const hostClass = resolveConfigClass(config) ?? '';
     const consumerProviders = config.providers ?? [];
@@ -362,6 +410,7 @@ export class ForDrawerManager {
           parent,
           providers: [
             { provide: FOR_DRAWER_DATA, useValue: data },
+            { provide: FOR_DRAWER_INSTANCE_ID, useValue: id },
             { provide: ForDrawerRef, useValue: ref },
             ...consumerProviders,
           ],

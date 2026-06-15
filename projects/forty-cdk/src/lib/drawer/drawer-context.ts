@@ -116,6 +116,15 @@ export interface ForDrawerContext {
 
 export const FOR_DRAWER_CONTEXT = new InjectionToken<ForDrawerContext>('FOR_DRAWER_CONTEXT');
 
+/**
+ * @internal Per-instance drawer id, provided by `ForDrawerManager` into the
+ * opened component's injector so the portaled `[forDrawerBackdrop]` can
+ * reflect `data-for-drawer-id` and be paired with its drawer for the
+ * manager's exit-animation orchestration. Absent in the declarative path,
+ * where the backdrop's own `animate.leave` runs normally.
+ */
+export const FOR_DRAWER_INSTANCE_ID = new InjectionToken<string>('FOR_DRAWER_INSTANCE_ID');
+
 export function injectDrawerContext(piece: string): ForDrawerContext {
   const ctx = inject(FOR_DRAWER_CONTEXT, { optional: true });
   if (!ctx) {
