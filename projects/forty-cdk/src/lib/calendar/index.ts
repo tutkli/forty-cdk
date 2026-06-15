@@ -10,6 +10,8 @@ export { ForCalendarMonthCell } from './calendar-month-cell';
 export { ForCalendarYearGrid } from './calendar-year-grid';
 export { ForCalendarYearCell } from './calendar-year-cell';
 export { ForCalendarViewTrigger } from './calendar-view-trigger';
+export { ForCalendarMonthSelect } from './calendar-month-select';
+export { ForCalendarYearSelect } from './calendar-year-select';
 export {
   FOR_CALENDAR_CONTEXT,
   type CalendarDateLabelFormatter,

@@ -21,9 +21,11 @@ import { ForCalendarGrid } from '../../calendar/calendar-grid';
 import { ForCalendarHeading } from '../../calendar/calendar-heading';
 import { ForCalendarMonthCell } from '../../calendar/calendar-month-cell';
 import { ForCalendarMonthGrid } from '../../calendar/calendar-month-grid';
+import { ForCalendarMonthSelect } from '../../calendar/calendar-month-select';
 import { ForCalendarViewTrigger } from '../../calendar/calendar-view-trigger';
 import { ForCalendarYearCell } from '../../calendar/calendar-year-cell';
 import { ForCalendarYearGrid } from '../../calendar/calendar-year-grid';
+import { ForCalendarYearSelect } from '../../calendar/calendar-year-select';
 import { provideNativeDateAdapter } from '../../calendar/native-date-adapter';
 import { ForCheckbox } from '../../checkbox/checkbox';
 import { ForCombobox } from '../../combobox/combobox';
@@ -524,6 +526,47 @@ class CalendarDropdownsFixture {
 @Component({
   imports: [
     ForCalendar,
+    ForCalendarMonthSelect,
+    ForCalendarYearSelect,
+    ForCalendarHeading,
+    ForCalendarGrid,
+    ForCalendarCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value">
+      <select forCalendarMonthSelect #m="forCalendarMonthSelect">
+        @for (opt of m.options(); track opt.value) {
+          <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
+        }
+      </select>
+      <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="2020" [maxYear]="2030">
+        @for (opt of y.years(); track opt.value) {
+          <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+        }
+      </select>
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarSelectDirectivesFixture {
+  readonly value = new Date(2026, 5, 15);
+}
+
+@Component({
+  imports: [
+    ForCalendar,
     ForCalendarHeading,
     ForCalendarViewTrigger,
     ForCalendarMonthGrid,
@@ -661,6 +704,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TreeFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
+  CalendarSelectDirectivesFixture,
   CalendarMonthViewFixture,
   CalendarYearViewFixture,
   DateFieldFixture,

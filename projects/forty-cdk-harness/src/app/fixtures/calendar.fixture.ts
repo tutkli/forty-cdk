@@ -7,11 +7,13 @@ import {
   ForCalendarHeading,
   ForCalendarMonthCell,
   ForCalendarMonthGrid,
+  ForCalendarMonthSelect,
   ForCalendarNextButton,
   ForCalendarPrevButton,
   ForCalendarViewTrigger,
   ForCalendarYearCell,
   ForCalendarYearGrid,
+  ForCalendarYearSelect,
   provideNativeDateAdapter,
   type CalendarDateRange,
 } from 'forty-cdk';
@@ -34,6 +36,8 @@ import { queryFlag } from './_query-flag';
     ForCalendarMonthCell,
     ForCalendarYearGrid,
     ForCalendarYearCell,
+    ForCalendarMonthSelect,
+    ForCalendarYearSelect,
   ],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -115,28 +119,20 @@ import { queryFlag } from './_query-flag';
         }
       </div>
     } @else if (isDropdowns) {
-      <div forCalendar [(value)]="dropdownValue" [min]="dropdownMin" [max]="dropdownMax" [dir]="dir" #cal="forCalendar">
+      <div forCalendar [(value)]="dropdownValue" [min]="dropdownMin" [max]="dropdownMax" [dir]="dir">
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
-          <select
-            data-testid="month-select"
-            [value]="cal.visibleMonthNumber()"
-            (change)="cal.goToMonth(+selectValue($event))"
-          >
-            @for (m of cal.monthOptions(); track m.value) {
-              <option [value]="m.value" [disabled]="m.disabled" [attr.data-testid]="'month-opt-' + m.value">
-                {{ m.label }}
+          <select forCalendarMonthSelect #m="forCalendarMonthSelect" data-testid="month-select">
+            @for (opt of m.options(); track opt.value) {
+              <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'month-opt-' + opt.value">
+                {{ opt.label }}
               </option>
             }
           </select>
-          <select
-            data-testid="year-select"
-            [value]="cal.visibleYear()"
-            (change)="cal.goToYear(+selectValue($event))"
-          >
-            @for (y of years; track y) {
-              <option [value]="y" [disabled]="cal.isYearDisabled(y)" [attr.data-testid]="'year-opt-' + y">
-                {{ y }}
+          <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="2024" [maxYear]="2028" data-testid="year-select">
+            @for (opt of y.years(); track opt.value) {
+              <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'year-opt-' + opt.value">
+                {{ opt.value }}
               </option>
             }
           </select>
@@ -239,12 +235,8 @@ export class CalendarFixture {
   protected readonly dropdownValue = signal<Date | null>(new Date(2026, 5, 15));
   protected readonly dropdownMin = new Date(2026, 1, 1);
   protected readonly dropdownMax = new Date(2027, 10, 30);
-  protected readonly years = [2024, 2025, 2026, 2027, 2028];
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
   protected readonly isRange = queryFlag('range');
   protected readonly isDropdowns = queryFlag('dropdowns');
   protected readonly isViews = queryFlag('views');
-  protected selectValue(event: Event): string {
-    return (event.target as HTMLSelectElement).value;
-  }
 }
