@@ -57,6 +57,7 @@ export class ForPopoverContent {
         arrowPadding: this.ctx.arrowPadding,
         sticky: this.ctx.sticky,
         hideWhenDetached: this.ctx.hideWhenDetached,
+        clipUntilPositioned: this.ctx.clipUntilPositioned,
         arrow: this.ctx.arrow,
       },
       dismiss: {
