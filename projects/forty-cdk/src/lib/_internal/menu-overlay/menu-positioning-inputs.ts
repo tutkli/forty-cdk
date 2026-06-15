@@ -36,4 +36,6 @@ export const MENU_POSITIONING_DEFAULTS = {
   sticky: 'partial' as 'partial' | 'always' | false,
   /** `data-detached=""` is not reflected by default. */
   hideWhenDetached: false,
+  /** Content is clipped until floating-ui resolves its first position by default. */
+  clipUntilPositioned: true,
 } as const;

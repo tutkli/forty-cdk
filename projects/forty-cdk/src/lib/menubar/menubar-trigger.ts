@@ -98,6 +98,15 @@ export class ForMenubarTrigger {
   readonly sticky = input<'partial' | 'always' | false>('partial');
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
+  /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+
   /** Manual `aria-label` on `[forMenuContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
@@ -131,6 +140,7 @@ export class ForMenubarTrigger {
       arrowPadding: this.arrowPadding,
       sticky: this.sticky,
       hideWhenDetached: this.hideWhenDetached,
+      clipUntilPositioned: this.clipUntilPositioned,
       ariaLabel: this.ariaLabel,
     };
     registerHandle(

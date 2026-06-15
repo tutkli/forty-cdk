@@ -30,6 +30,7 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   readonly ariaLabel: Signal<string | null>;
 }
 

@@ -91,7 +91,7 @@ export interface ForSelectContext<T = unknown> {
    * anchored placement; `'item-aligned'` overlays the listbox so the
    * selected option's center aligns with the trigger's center (macOS-style
    * native `<select>`). All `side`/`align`/`*Offset`/`sticky`/
-   * `hideWhenDetached`/`avoidCollisions` inputs are no-ops in
+   * `hideWhenDetached`/`clipUntilPositioned`/`avoidCollisions` inputs are no-ops in
    * `'item-aligned'` mode (only `collisionPadding` is honored).
    */
   readonly position: Signal<'popper' | 'item-aligned'>;
@@ -104,6 +104,7 @@ export interface ForSelectContext<T = unknown> {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   readonly loop: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;

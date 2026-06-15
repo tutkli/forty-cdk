@@ -98,6 +98,7 @@ export class ForDatePickerContent {
         collisionPadding: ctx.collisionPadding,
         sticky: ctx.sticky,
         hideWhenDetached: ctx.hideWhenDetached,
+        clipUntilPositioned: ctx.clipUntilPositioned,
       },
       dismiss: {
         dismissible: ctx.dismissible,

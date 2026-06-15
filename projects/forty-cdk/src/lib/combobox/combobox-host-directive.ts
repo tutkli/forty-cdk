@@ -36,6 +36,7 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'autocompleteMode',
   'avoidCollisions',
   'clearOnQueryChange',
+  'clipUntilPositioned',
   'collisionPadding',
   'commitOnSelect',
   'dir',

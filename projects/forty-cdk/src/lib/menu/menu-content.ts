@@ -70,6 +70,7 @@ export class ForMenuContent {
         arrowPadding: this.ctx.arrowPadding,
         sticky: this.ctx.sticky,
         hideWhenDetached: this.ctx.hideWhenDetached,
+        clipUntilPositioned: this.ctx.clipUntilPositioned,
       },
       dismiss: {
         dismissible: this.ctx.dismissible,

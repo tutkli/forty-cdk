@@ -17,6 +17,7 @@ export interface ForHoverCardContext {
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
+  readonly clipUntilPositioned: Signal<boolean>;
   readonly trigger: Signal<HTMLElement | null>;
   readonly arrow: Signal<HTMLElement | null>;
 

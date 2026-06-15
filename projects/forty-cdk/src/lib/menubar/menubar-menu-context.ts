@@ -84,6 +84,9 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly hideWhenDetached = computed(
     () => this.#host.activeTrigger()?.hideWhenDetached() ?? false,
   );
+  readonly clipUntilPositioned = computed(
+    () => this.#host.activeTrigger()?.clipUntilPositioned() ?? true,
+  );
   readonly loop: Signal<boolean>;
   readonly initialFocus = this.#initialFocus.asReadonly();
   readonly lastCloseReason = this.#lastCloseReason.asReadonly();

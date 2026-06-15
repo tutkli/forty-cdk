@@ -268,6 +268,15 @@ export class ForDatePicker<D>
   /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
   readonly hideWhenDetached = input(false, { transform: booleanAttribute });
 
+  /**
+   * When `true` (default), the content is clipped until floating-ui resolves
+   * its first position, preventing a flash at the viewport corner. Set to
+   * `false` so a dramatic `animate.enter` plays from its first frame (the
+   * surface may flash briefly at the unresolved position while positioning
+   * computes).
+   */
+  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+
   /** Accessible name for the dialog surface. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
 
