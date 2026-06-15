@@ -110,13 +110,12 @@ import { DemoLayout } from '../../../ui/demo-layout';
     }
 
     .pg-cal-header--dropdowns {
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
       gap: 0.4rem;
     }
 
     .pg-cal-select {
-      flex: 1 1 auto;
       min-width: 0;
       padding: 0.25rem 0.4rem;
       border: 1px solid var(--pg-border-strong);

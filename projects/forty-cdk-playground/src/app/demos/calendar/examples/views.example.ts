@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { getLocalTimeZone, today, type CalendarDate } from '@internationalized/date';
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
   ForCalendar,
   ForCalendarCell,
@@ -16,6 +16,7 @@ import {
 } from 'forty-cdk';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
+import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';
 
 @Component({
@@ -23,6 +24,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DemoLayout,
+    ControlSelect,
     ForCalendar,
     ForCalendarHeading,
     ForCalendarPrevButton,
@@ -40,11 +42,11 @@ import { DemoLayout } from '../../../ui/demo-layout';
   template: `
     <playground-demo
       title="View switching (month / year picker)"
-      subtitle="Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view."
+      subtitle="Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view. min/max disable out-of-range months and years and stop the arrows at the bounds, and yearBlockSize sets how many years fill the year grid."
       sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/views.example.ts"
     >
       <div demo>
-        <div forCalendar class="pg-cal" [(value)]="value" #cal="forCalendar">
+        <div forCalendar class="pg-cal" [(value)]="value" [min]="min" [max]="max" [yearBlockSize]="yearBlockSize()" #cal="forCalendar">
           <header class="pg-cal-header">
             <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous'">‹</button>
             <button forCalendarViewTrigger #vt="forCalendarViewTrigger" class="pg-cal-title pg-cal-view-btn">
@@ -116,6 +118,16 @@ import { DemoLayout } from '../../../ui/demo-layout';
       </div>
 
       <div controls class="pg-controls">
+        <app-control-select
+          label="yearBlockSize"
+          hint="How many years the year grid shows at once. Blocks align to multiples of the size."
+          [options]="blockSizeOptions"
+          [(value)]="blockSize"
+        />
+        <p class="pg-hint">
+          min = Apr 1 last year · max = Sep 30 next year. Switch to month or year view to see
+          out-of-range cells disabled, and the prev/next arrows stop at the bounds.
+        </p>
         <p class="pg-state">
           selected: <b>{{ selectedLabel() }}</b>
         </p>
@@ -277,5 +289,16 @@ import { DemoLayout } from '../../../ui/demo-layout';
 export class CalendarViewSwitchingExample {
   readonly #todayDate = today(getLocalTimeZone());
   protected readonly value = signal<CalendarDate | null>(this.#todayDate);
+  protected readonly min = new CalendarDate(this.#todayDate.year - 1, 4, 1);
+  protected readonly max = new CalendarDate(this.#todayDate.year + 1, 9, 30);
+
+  protected readonly blockSizeOptions: readonly ControlOption<'12' | '15' | '24'>[] = [
+    { value: '12', label: '12 years' },
+    { value: '15', label: '15 years' },
+    { value: '24', label: '24 years' },
+  ];
+  protected readonly blockSize = signal<'12' | '15' | '24'>('12');
+  protected readonly yearBlockSize = computed(() => Number(this.blockSize()));
+
   protected readonly selectedLabel = computed(() => this.value()?.toString() ?? '—');
 }
