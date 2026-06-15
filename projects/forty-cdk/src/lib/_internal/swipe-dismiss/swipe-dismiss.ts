@@ -301,7 +301,8 @@ export interface ResolveSnapTargetOptions<S> {
   /**
    * The pixel position (along the dismissal axis, measured from the anchored
    * edge) of each snap point. Same length and ordering as {@link snapPoints}.
-   * Computed from `dimension` and the snap-point semantics by the caller.
+   * Computed from the live drawer dimension and the snap-point semantics by
+   * the caller.
    */
   readonly snapPositions: ReadonlyArray<number>;
   /** The currently-active snap point. Match the elements of `snapPoints` by reference. */
@@ -319,15 +320,12 @@ export interface ResolveSnapTargetOptions<S> {
    */
   readonly velocity: number;
   /**
-   * Drawer extent along the dismissal axis (height for top/bottom,
-   * width for left/right) in CSS pixels. Used to compute the pixel
-   * threshold below which a release dismisses instead of snapping back
-   * (only relevant when `activeSnapPoint` is the closest-to-edge entry).
-   */
-  readonly dimension: number;
-  /**
-   * Vaul-style fraction of `dimension` past which a release from the
-   * lowest-index snap point dismisses the drawer. Default `0.25`.
+   * Vaul-style fraction of the **lowest snap point's** extent past which a
+   * release from that snap dismisses the drawer. Default `0.25` — a release
+   * that has dragged more than 25% of the lowest snap's size past it (toward
+   * the edge) closes. Measuring against the lowest snap rather than the full
+   * drawer dimension keeps dismissal reachable when the lowest snap is a
+   * small "peek" relative to the full surface.
    */
   readonly closeThreshold: number;
 }
@@ -348,7 +346,10 @@ const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
  *      positive = away from edge. Clamped at the array bounds.
  *   3. If the chosen target is the closest-to-edge snap point AND the gesture
  *      ended *past* (closer to the edge than) that snap by more than
- *      `closeThreshold * dimension`, return `willClose: true`.
+ *      `closeThreshold` of the lowest snap's own extent, return
+ *      `willClose: true`. Scaling by the lowest snap rather than the full
+ *      drawer dimension keeps a small "peek" snap dismissable without having
+ *      to drag it entirely off-screen.
  *
  * Snap points are passed by the caller already converted to pixel positions
  * (`snapPositions`); the algorithm does not know whether they came from a
@@ -361,7 +362,7 @@ const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
  * formula. Passing an empty `snapPoints` throws.
  */
 export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapResolution<S> {
-  const { snapPoints, snapPositions, activeSnapPoint, position, velocity, dimension } = opts;
+  const { snapPoints, snapPositions, activeSnapPoint, position, velocity } = opts;
   if (snapPositions.length !== snapPoints.length) {
     throw new Error(
       '[forty-cdk/swipe-dismiss] resolveSnapTarget: snapPoints and snapPositions must have the same length.',
@@ -407,7 +408,7 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
   //    has dragged the drawer far enough off-screen to count as a dismiss.
   if (targetIdx === 0) {
     const lowestPos = snapPositions[0]!;
-    const dismissThreshold = lowestPos - dimension * opts.closeThreshold;
+    const dismissThreshold = lowestPos * (1 - opts.closeThreshold);
     if (position < dismissThreshold) {
       return { willClose: true, nextSnapPoint: null };
     }

@@ -187,9 +187,12 @@ export class ForDrawer implements ForDrawerContext {
   });
 
   /**
-   * Fraction of the drawer's dimension along the dismissal axis past which
-   * a release dismisses instead of snapping back. Vaul-aligned default
-   * `0.25` (i.e. dragged > 25% of the surface size).
+   * Fraction past which a release dismisses instead of snapping back.
+   * Vaul-aligned default `0.25`. Without `snapPoints` it is a fraction of the
+   * full drawer dimension along the dismissal axis (dragged > 25% of the
+   * surface size toward the edge dismisses); with `snapPoints` it is a
+   * fraction of the **lowest snap's** extent, so a small "peek" snap stays
+   * dismissable without dragging it entirely off-screen.
    */
   readonly closeThreshold = input(this.#defaults.closeThreshold ?? 0.25);
 
@@ -225,8 +228,8 @@ export class ForDrawer implements ForDrawerContext {
    * Snap points (Vaul semantics): each entry is a `number ∈ [0, 1]`,
    * a `'NN%'` string, or a `'NNpx'` string. Strictly increasing
    * (closest-to-edge first). The surface settles at the nearest snap on
-   * release; dragging past the lowest snap by `closeThreshold * dimension`
-   * dismisses.
+   * release; dragging past the lowest snap by `closeThreshold` of that
+   * snap's own extent dismisses.
    */
   readonly snapPoints = input<ReadonlyArray<ForDrawerSnapPoint> | undefined>(undefined);
 
@@ -907,7 +910,6 @@ export class ForDrawer implements ForDrawerContext {
         activeSnapPoint: this.activeSnapPoint(),
         position,
         velocity: -this.#pointerVelocity, // helper sema: positive = away from edge
-        dimension: dim,
         closeThreshold,
       });
       willClose = resolved.willClose;
