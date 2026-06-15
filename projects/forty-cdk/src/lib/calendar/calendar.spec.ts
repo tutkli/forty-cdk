@@ -15,9 +15,11 @@ import { ForCalendarPrevButton } from './calendar-prev-button';
 import type { CalendarDateLabelFormatter, CalendarDateRange, CalendarView } from './calendar-context';
 import { ForCalendarMonthCell } from './calendar-month-cell';
 import { ForCalendarMonthGrid } from './calendar-month-grid';
+import { ForCalendarMonthSelect } from './calendar-month-select';
 import { ForCalendarViewTrigger } from './calendar-view-trigger';
 import { ForCalendarYearCell } from './calendar-year-cell';
 import { ForCalendarYearGrid } from './calendar-year-grid';
+import { ForCalendarYearSelect } from './calendar-year-select';
 import {
   InternationalizedDateAdapter,
   InternationalizedDateTimeAdapter,
@@ -406,6 +408,57 @@ class CalendarViewsHost {
   readonly max = signal<Date | null>(null);
   readonly disabled = signal(false);
   readonly readonly = signal(false);
+}
+
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarMonthSelect,
+    ForCalendarYearSelect,
+    ForCalendarHeading,
+    ForCalendarGrid,
+    ForCalendarCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [(value)]="value" [min]="min()" [max]="max()" [disabled]="disabled()" #cal="forCalendar">
+      <select forCalendarMonthSelect #m="forCalendarMonthSelect" data-testid="month-select">
+        @for (opt of m.options(); track opt.value) {
+          <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'month-opt-' + opt.value">
+            {{ opt.label }}
+          </option>
+        }
+      </select>
+      <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="minYear()" [maxYear]="maxYear()" data-testid="year-select">
+        @for (opt of y.years(); track opt.value) {
+          <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'year-opt-' + opt.value">
+            {{ opt.value }}
+          </option>
+        }
+      </select>
+      <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">{{ heading.label() }}</h2>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (c of week.days; track c.key) {
+                <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">{{ c.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarSelectDirectivesHost {
+  readonly calendar = viewChild.required(ForCalendar);
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  readonly min = signal<Date | null>(null);
+  readonly max = signal<Date | null>(null);
+  readonly disabled = signal(false);
+  readonly minYear = signal<number | null>(2024);
+  readonly maxYear = signal<number | null>(2028);
 }
 
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
@@ -1210,6 +1263,103 @@ describe('ForCalendar', () => {
         await flush(r.fixture);
         expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
         expect(dFocused(r)).toBe(dcell(r, new Date(2026, 0, 15)));
+      });
+    });
+  });
+
+  describe('select convenience directives (#789)', () => {
+    const monthSelect = (r: RenderResult<CalendarSelectDirectivesHost>) =>
+      r.query<HTMLSelectElement>('[data-testid="month-select"]')!;
+    const yearSelect = (r: RenderResult<CalendarSelectDirectivesHost>) =>
+      r.query<HTMLSelectElement>('[data-testid="year-select"]')!;
+    const fireMonth = (r: RenderResult<CalendarSelectDirectivesHost>, m: number) => {
+      const s = monthSelect(r);
+      s.value = String(m);
+      s.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const fireYear = (r: RenderResult<CalendarSelectDirectivesHost>, y: number) => {
+      const s = yearSelect(r);
+      s.value = String(y);
+      s.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const dcell = (r: RenderResult<CalendarSelectDirectivesHost>, date: Date) =>
+      r.query<HTMLElement>(`[data-testid="cell-${keyOf(date)}"]`)!;
+    const yearOpt = (r: RenderResult<CalendarSelectDirectivesHost>, y: number) =>
+      r.query<HTMLOptionElement>(`[data-testid="year-opt-${y}"]`);
+    const monthOpt = (r: RenderResult<CalendarSelectDirectivesHost>, m: number) =>
+      r.query<HTMLOptionElement>(`[data-testid="month-opt-${m}"]`)!;
+
+    it('month select reflects the visible month and navigating re-pages, value untouched', async () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      expect(monthSelect(r).value).toBe('6');
+      fireMonth(r, 1);
+      await flush(r.fixture);
+      const heading = r.query('[data-testid="heading"]')!.textContent!;
+      expect(heading).toContain('2026');
+      expect(heading).toContain(adapter.format(new Date(2026, 0, 1), { month: 'long' }));
+      expect(r.instance.value()!.getMonth()).toBe(5);
+      expect(r.instance.value()!.getDate()).toBe(15);
+    });
+
+    it('options() exposes 12 month entries', () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      expect(r.queryAll('[data-testid^="month-opt-"]').length).toBe(12);
+    });
+
+    it('year select reflects the visible year and navigating re-pages, value untouched', async () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      expect(yearSelect(r).value).toBe('2026');
+      fireYear(r, 2027);
+      await flush(r.fixture);
+      const heading = r.query('[data-testid="heading"]')!.textContent!;
+      expect(heading).toContain('2027');
+      expect(heading).toContain(adapter.format(new Date(2026, 5, 1), { month: 'long' }));
+      expect(r.instance.value()!.getFullYear()).toBe(2026);
+    });
+
+    it('years() spans [minYear, maxYear] and disables out-of-range', async () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      r.instance.min.set(new Date(2026, 1, 1));
+      r.instance.max.set(new Date(2027, 10, 30));
+      await flush(r.fixture);
+      expect(monthOpt(r, 1).disabled).toBe(true);
+      expect(monthOpt(r, 6).disabled).toBe(false);
+      expect(yearOpt(r, 2024)!.disabled).toBe(true);
+      expect(yearOpt(r, 2025)!.disabled).toBe(true);
+      expect(yearOpt(r, 2026)!.disabled).toBe(false);
+      expect(yearOpt(r, 2027)!.disabled).toBe(false);
+      expect(yearOpt(r, 2028)!.disabled).toBe(true);
+      expect(r.queryAll('[data-testid^="year-opt-"]').length).toBe(5);
+    });
+
+    it('years() defaults to a current-year-anchored window when minYear/maxYear are null', async () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      r.instance.minYear.set(null);
+      r.instance.maxYear.set(null);
+      await flush(r.fixture);
+      const cy = new Date().getFullYear();
+      expect(yearOpt(r, cy)).toBeTruthy();
+      expect(yearOpt(r, cy - 100)).toBeTruthy();
+      expect(yearOpt(r, cy + 10)).toBeTruthy();
+      expect(yearOpt(r, cy - 101)).toBeNull();
+      expect(yearOpt(r, cy + 11)).toBeNull();
+    });
+
+    it('a disabled calendar disables both selects', async () => {
+      const r = renderHost(CalendarSelectDirectivesHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+      expect(monthSelect(r).disabled).toBe(true);
+      expect(yearSelect(r).disabled).toBe(true);
+    });
+
+    describe('zoneless', () => {
+      it('fireMonth updates the grid under provideZonelessChangeDetection', async () => {
+        const r = renderHost(CalendarSelectDirectivesHost);
+        fireMonth(r, 1);
+        await flush(r.fixture);
+        expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
+        expect(r.queryAll('[role="gridcell"][tabindex="0"]')[0]).toBe(dcell(r, new Date(2026, 0, 15)));
       });
     });
   });

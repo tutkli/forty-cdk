@@ -124,6 +124,16 @@ test.describe('Calendar — month/year dropdowns', () => {
     await expect(el(page, 'year-opt-2024')).toBeDisabled();
     await expect(el(page, 'year-opt-2026')).toBeEnabled();
   });
+
+  test('paging with the prev/next buttons updates the month select value', async ({ page }) => {
+    await gotoFixture(page, 'calendar', { dropdowns: '1' });
+    await expect(el(page, 'month-select')).toHaveValue('6');
+    await el(page, 'prev').click();
+    await expect(el(page, 'month-select')).toHaveValue('5');
+    await el(page, 'next').click();
+    await el(page, 'next').click();
+    await expect(el(page, 'month-select')).toHaveValue('7');
+  });
 });
 
 test.describe('Calendar — range', () => {

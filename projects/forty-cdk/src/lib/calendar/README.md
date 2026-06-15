@@ -200,22 +200,20 @@ A month/year is "disabled" only when its **entire** span is out of range — its
 
 ### Usage — native `<select>` dropdowns
 
+The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`. Apply them on `<select>` elements inside `[forCalendar]` and render the `<option>` elements yourself from the directive's signals:
+
 ```html
-<div forCalendar [(value)]="date" #cal="forCalendar">
+<div forCalendar [(value)]="date">
   <header>
     <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
-    <select
-      [value]="cal.visibleMonthNumber()"
-      (change)="cal.goToMonth(+monthSelect.value)"
-      #monthSelect
-    >
-      @for (m of cal.monthOptions(); track m.value) {
-        <option [value]="m.value" [disabled]="m.disabled">{{ m.label }}</option>
+    <select forCalendarMonthSelect #m="forCalendarMonthSelect">
+      @for (opt of m.options(); track opt.value) {
+        <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
       }
     </select>
-    <select [value]="cal.visibleYear()" (change)="cal.goToYear(+yearSelect.value)" #yearSelect>
-      @for (y of years; track y) {
-        <option [value]="y" [disabled]="cal.isYearDisabled(y)">{{ y }}</option>
+    <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="1900" [maxYear]="2100">
+      @for (opt of y.years(); track opt.value) {
+        <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
       }
     </select>
     <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
@@ -225,9 +223,25 @@ A month/year is "disabled" only when its **entire** span is out of range — its
 </div>
 ```
 
+#### `ForCalendarMonthSelect` API
+
+| API | Description |
+| --- | --- |
+| `options()` | `Signal<readonly CalendarMonthOption[]>` — twelve localized, bounds-aware month options for the visible year. |
+
+#### `ForCalendarYearSelect` API
+
+| API | Description |
+| --- | --- |
+| `minYear` | `input<number \| null>` — lowest listed year. Defaults to `currentYear - 100` when `null`. |
+| `maxYear` | `input<number \| null>` — highest listed year. Defaults to `currentYear + 10` when `null`. |
+| `years()` | `Signal<readonly CalendarYearOption[]>` — years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
+
+The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
+
 **Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named — removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
 
-Dedicated convenience directives (`[forCalendarMonthSelect]` / `[forCalendarYearSelect]`) may arrive in a future release. For now the public hooks are the stable API.
+The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`, `goToMonth()`, `goToYear()`, `isYearDisabled()`) in the table above remain available for any other UI.
 
 ## View switching (month / year picker)
 

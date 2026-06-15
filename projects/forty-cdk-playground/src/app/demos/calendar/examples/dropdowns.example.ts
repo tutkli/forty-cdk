@@ -6,8 +6,10 @@ import {
   ForCalendarGrid,
   ForCalendarGridHeader,
   ForCalendarHeading,
+  ForCalendarMonthSelect,
   ForCalendarNextButton,
   ForCalendarPrevButton,
+  ForCalendarYearSelect,
 } from 'forty-cdk';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
@@ -25,36 +27,30 @@ import { DemoLayout } from '../../../ui/demo-layout';
     ForCalendarGrid,
     ForCalendarGridHeader,
     ForCalendarCell,
+    ForCalendarMonthSelect,
+    ForCalendarYearSelect,
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
     <playground-demo
       title="Month / year dropdowns"
-      subtitle="goTo, goToMonth, and goToYear navigate the visible period without touching the selected date. monthOptions() supplies localized, bounds-aware entries for the month dropdown; isYearDisabled() does the same for years."
+      subtitle="[forCalendarMonthSelect] and [forCalendarYearSelect] wire native selects to the calendar's month/year navigation. Render the options yourself from m.options() and y.years()."
       sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/dropdowns.example.ts"
     >
       <div demo>
-        <div forCalendar class="pg-cal" [(value)]="value" [min]="min" [max]="max" #cal="forCalendar">
+        <div forCalendar class="pg-cal" [(value)]="value" [min]="min" [max]="max">
           <header class="pg-cal-header pg-cal-header--dropdowns">
             <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous month'">‹</button>
 
-            <select class="pg-cal-select"
-              [value]="cal.visibleMonthNumber()"
-              (change)="cal.goToMonth(+monthSel.value)"
-              #monthSel
-            >
-              @for (m of cal.monthOptions(); track m.value) {
-                <option [value]="m.value" [disabled]="m.disabled">{{ m.label }}</option>
+            <select forCalendarMonthSelect #m="forCalendarMonthSelect" class="pg-cal-select">
+              @for (opt of m.options(); track opt.value) {
+                <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
               }
             </select>
 
-            <select class="pg-cal-select"
-              [value]="cal.visibleYear()"
-              (change)="cal.goToYear(+yearSel.value)"
-              #yearSel
-            >
-              @for (y of years; track y) {
-                <option [value]="y" [disabled]="cal.isYearDisabled(y)">{{ y }}</option>
+            <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="minYear" [maxYear]="maxYear" class="pg-cal-select">
+              @for (opt of y.years(); track opt.value) {
+                <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
               }
             </select>
 
@@ -241,6 +237,7 @@ export class CalendarDropdownsExample {
   protected readonly value = signal<CalendarDate | null>(this.#todayDate);
   protected readonly min = new CalendarDate(this.#todayDate.year - 1, 2, 1);
   protected readonly max = new CalendarDate(this.#todayDate.year + 1, 12, 31);
-  protected readonly years = Array.from({ length: 5 }, (_, i) => this.#todayDate.year - 2 + i);
+  protected readonly minYear = this.#todayDate.year - 2;
+  protected readonly maxYear = this.#todayDate.year + 2;
   protected readonly selectedLabel = computed(() => this.value()?.toString() ?? '—');
 }
