@@ -359,6 +359,27 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
 - **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
 
+## Scoped / contained dialog (`container`)
+
+Pass `[container]` to portal the dialog surface into a specific element instead of `document.body`. Pair it with `[modal]="false"` for a dialog scoped to a region of the page.
+
+```html
+<section #panel style="position: relative; height: 300px; overflow: hidden;">
+  @if (open()) {
+    <div forDialog [modal]="false" [container]="panel" (close)="open.set(false)">
+      <h2 forDialogTitle>Details</h2>
+      <button forDialogClose>Close</button>
+    </div>
+  }
+</section>
+```
+
+**CSS contract.** The container must be positioned (`position: relative`); the dialog surface must use `position: absolute` (not `fixed`) so it is bounded to the container's box.
+
+**v1 limitation — `[forDialogBackdrop]` still portals to `document.body`.** If you use a backdrop with a contained non-modal dialog, style your own absolutely-positioned backdrop or omit `[forDialogBackdrop]` and include a custom one inside the dialog surface.
+
+**`container` + `modal: true` is NOT region-isolating.** `InertSiblingsStack` always inerts children of `document.body` and `BodyScrollLock` only knows `<body>`, so a contained modal dialog still locks and inerts the whole page. Use `modal: false`.
+
 ## Accessibility notes
 
 - Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`.

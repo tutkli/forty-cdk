@@ -1278,6 +1278,103 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
+  describe('container (scoped drawer)', () => {
+    let boxEl: HTMLDivElement;
+
+    beforeEach(() => {
+      boxEl = document.createElement('div');
+      boxEl.id = 'scoped-box';
+      document.body.appendChild(boxEl);
+    });
+
+    afterEach(() => {
+      boxEl.remove();
+    });
+
+    it('portals the surface into the container element', async () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+              <button id="inside">In</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly box = boxEl;
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      expect(drawer.parentElement).toBe(boxEl);
+    });
+
+    it('portals the backdrop into the same container element', async () => {
+      @Component({
+        imports: [ForDrawer, ForDrawerBackdrop],
+        template: `
+          @if (open()) {
+            <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+              <div forDrawerBackdrop></div>
+              <button id="inside">In</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly box = boxEl;
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+      expect(backdrop.parentElement).toBe(boxEl);
+    });
+
+    it('does not lock body scroll or inert siblings when modal=false and container is set', async () => {
+      const sibling = document.createElement('section');
+      document.body.appendChild(sibling);
+
+      try {
+        @Component({
+          imports: [ForDrawer],
+          template: `
+            @if (open()) {
+              <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+                <button id="inside">In</button>
+              </div>
+            }
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+          readonly box = boxEl;
+        }
+
+        document.body.style.overflow = 'auto';
+        const r = renderHost(Host);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        expect(document.body.style.overflow).toBe('auto');
+        expect(sibling.hasAttribute('inert')).toBe(false);
+        expect(sibling.getAttribute('aria-hidden')).toBeNull();
+      } finally {
+        sibling.remove();
+        document.body.style.overflow = '';
+      }
+    });
+  });
+
   describe('autoFocusOnOpen / autoFocusOnClose', () => {
     it('skips initial focus when [autoFocusOnOpen] calls preventDefault', async () => {
       @Component({

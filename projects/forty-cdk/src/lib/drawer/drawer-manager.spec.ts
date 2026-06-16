@@ -803,4 +803,26 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
   });
+
+  describe('container (scoped programmatic drawer)', () => {
+    it('portals the host into the container element when modal: false', () => {
+      const boxEl = document.createElement('div');
+      boxEl.id = 'scoped-box';
+      document.body.appendChild(boxEl);
+
+      try {
+        const { drawers } = setup();
+        drawers.open(SheetDrawer, {
+          data: { message: 'hi' },
+          modal: false,
+          container: boxEl,
+        });
+
+        const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+        expect(host.parentElement).toBe(boxEl);
+      } finally {
+        boxEl.remove();
+      }
+    });
+  });
 });

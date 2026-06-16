@@ -44,6 +44,7 @@ import { ForDisclosure } from '../../disclosure/disclosure';
 import { ForDisclosureContent } from '../../disclosure/disclosure-content';
 import { ForDisclosureTrigger } from '../../disclosure/disclosure-trigger';
 import { ForDrawer } from '../../drawer/drawer';
+import { ForDrawerBackdrop } from '../../drawer/drawer-backdrop';
 import { ForDrawerTitle } from '../../drawer/drawer-title';
 import { ForMenuContent } from '../../menu/menu-content';
 import { ForMenuItem } from '../../menu/menu-item';
@@ -376,6 +377,19 @@ class DialogOpenFixture {}
   `,
 })
 class DrawerOpenFixture {}
+
+@Component({
+  imports: [ForDrawer, ForDrawerBackdrop, ForDrawerTitle],
+  template: `
+    <div #box style="position: relative">
+      <div forDrawer [modal]="false" [container]="box" ariaLabel="d">
+        <div forDrawerBackdrop></div>
+        <h2 forDrawerTitle>title</h2>
+      </div>
+    </div>
+  `,
+})
+class DrawerContainedFixture {}
 
 @Component({
   imports: [ForToastViewport, ForToast, ForToastTitle],
@@ -898,6 +912,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   PopoverOpenFixture,
   DialogOpenFixture,
   DrawerOpenFixture,
+  DrawerContainedFixture,
   ToastFixture,
   SelectOpenFixture,
   ComboboxOpenFixture,
@@ -1024,6 +1039,18 @@ describe('SSR smoke tests', () => {
   it('opening a free-floating overlay (Drawer) does not portal or mutate <body> server-side', () => {
     const overflowBefore = document.body.style.overflow;
     const f = TestBed.createComponent(DrawerOpenFixture);
+    f.detectChanges();
+    const drawer = f.nativeElement.querySelector('[forDrawer]') as HTMLElement;
+    expect(drawer.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(drawer)).toBe(true);
+    expect(drawer.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDrawer]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a contained (scoped) Drawer does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DrawerContainedFixture);
     f.detectChanges();
     const drawer = f.nativeElement.querySelector('[forDrawer]') as HTMLElement;
     expect(drawer.getAttribute('role')).toBe('dialog');

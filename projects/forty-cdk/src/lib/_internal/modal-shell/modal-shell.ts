@@ -117,6 +117,12 @@ export interface ModalShellConfig {
    * close-output emission.
    */
   readonly autoFocusOnClose?: () => ((event: VetoableEvent) => void) | undefined;
+  /**
+   * Portal target for the surface. A signal so it is read once at the first
+   * render (the portal moves the host once), after the consumer's input is
+   * bound. `undefined` / a signal yielding `null` ⇒ `document.body`.
+   */
+  readonly container?: Signal<HTMLElement | null>;
   /** Optional dismiss bundle. Absent for primitives that don't dismiss via the layer. */
   readonly dismiss?: ModalShellDismissConfig;
 }
@@ -230,7 +236,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    previously-focused element (the trigger, captured synchronously above),
   //    which lives OUTSIDE the portaled host, so removing the host first never
   //    affects it.
-  injectPortal();
+  injectPortal(config.container ? { target: config.container } : {});
 
   // Captured at mount time so the destroy path can mirror the same mode the
   // shell activated, regardless of any `modal()` toggle on a doomed

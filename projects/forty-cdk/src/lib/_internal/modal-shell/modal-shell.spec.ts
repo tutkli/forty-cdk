@@ -126,6 +126,24 @@ describe('injectModalShell', () => {
       ctx.destroy();
     });
 
+    it('portals the host into config.container when provided', async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+      try {
+        const ctx = mountShell(() => ({
+          modal: signal(false),
+          returnFocus: signal(true),
+          initialFocus: signal('first'),
+          container: signal(target),
+        }));
+        await flush(ctx.fixture);
+        expect(ctx.surface()?.parentElement).toBe(target);
+        ctx.destroy();
+      } finally {
+        target.remove();
+      }
+    });
+
     it('removes the host from the DOM on destroy', async () => {
       const ctx = mountShell(() => ({
         modal: signal(false),

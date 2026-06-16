@@ -35,6 +35,26 @@ class TargetedBubble {
 }
 
 @Component({
+  selector: 'lazy-target-bubble',
+  template: '<ng-content />',
+})
+class LazyTargetBubble {
+  constructor() {
+    injectPortal({ target: () => document.getElementById('custom-target') as HTMLElement | null });
+  }
+}
+
+@Component({
+  imports: [LazyTargetBubble],
+  template: `
+    <div id="parent">
+      <lazy-target-bubble>lazy</lazy-target-bubble>
+    </div>
+  `,
+})
+class LazyTargetHost {}
+
+@Component({
   imports: [TargetedBubble],
   template: `
     <div id="parent">
@@ -119,6 +139,19 @@ describe('injectPortal', () => {
     await flush(fixture);
 
     const portaled = document.querySelector('targeted-bubble')!;
+    expect(portaled.parentElement).toBe(target);
+  });
+
+  it('resolves a function target lazily and portals to it', async () => {
+    const target = document.createElement('div');
+    target.id = 'custom-target';
+    document.body.appendChild(target);
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(LazyTargetHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector('lazy-target-bubble')!;
     expect(portaled.parentElement).toBe(target);
   });
 

@@ -68,6 +68,12 @@ export interface ForDrawerContext {
   readonly dragProgress: Signal<number>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
+  /**
+   * Portal target shared with the backdrop so both resolve the same
+   * container. `null` ⇒ `document.body`. Set via the drawer's `container`
+   * input; read once per mount.
+   */
+  readonly container: Signal<HTMLElement | null>;
 
   /**
    * Host element of the drawer surface. Exposed so a nested child can

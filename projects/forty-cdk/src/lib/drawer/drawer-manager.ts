@@ -74,6 +74,13 @@ export interface ForDrawerOpenConfig<D = unknown> {
   ariaLabel?: string;
 
   /**
+   * Portal target for the surface + backdrop. Defaults to `document.body`.
+   * Pair with `modal: false` for a drawer scoped to a positioned region
+   * instead of the viewport.
+   */
+  container?: HTMLElement | null;
+
+  /**
    * CSS class applied (via `animate.enter`) to the overlay root the moment it
    * mounts, so a programmatic drawer plays an enter animation just like a
    * declarative `<div forDrawer animate.enter="…">`. The class lands on the
@@ -378,6 +385,7 @@ export class ForDrawerManager {
       returnFocus: config.returnFocus ?? this.#defaults.returnFocus,
       initialFocus: config.initialFocus ?? this.#defaults.initialFocus,
       ariaLabel: config.ariaLabel,
+      container: config.container,
       animateEnter,
       autoFocusOnOpen: config.autoFocusOnOpen,
       autoFocusOnClose: config.autoFocusOnClose,
