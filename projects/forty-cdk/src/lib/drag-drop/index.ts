@@ -1,6 +1,8 @@
 export { ForDropList } from './drop-list';
 export { ForDraggable } from './draggable';
 export { ForDragHandle } from './drag-handle';
+export { ForDragPreview } from './drag-preview';
+export { ForDragPlaceholder } from './drag-placeholder';
 export { ForDropListGroup, FOR_DROP_LIST_GROUP } from './drop-list-group';
 export {
   FOR_DRAG_DROP_CONTEXT,

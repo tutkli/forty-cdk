@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  viewChild,
   type WritableSignal,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -9,6 +10,8 @@ import { TestBed } from '@angular/core/testing';
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
 import { ForDragHandle } from './drag-handle';
+import { ForDragPlaceholder } from './drag-placeholder';
+import { ForDragPreview } from './drag-preview';
 import { ForDraggable } from './draggable';
 import { ForDropList } from './drop-list';
 import { ForDropListGroup } from './drop-list-group';
@@ -633,6 +636,137 @@ describe('ForDropList + ForDraggable', () => {
       first.focus();
       pressKey(first, ' ');
       fixture.detectChanges();
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+  });
+
+  describe('[forDragPreview] / [forDragPlaceholder]', () => {
+    interface TplRow {
+      id: number;
+      label: string;
+    }
+
+    @Component({
+      imports: [ForDropList, ForDraggable, ForDragPreview, ForDragPlaceholder],
+      template: `
+        <ul forDropList (dragDrop)="onDrop($event)">
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">
+              {{ row.label }}
+              <ng-template forDragPreview
+                ><span class="cp">preview {{ row.label }}</span></ng-template
+              >
+              <ng-template forDragPlaceholder><span class="ph">gap</span></ng-template>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class TemplatesHost {
+      readonly rows: WritableSignal<TplRow[]> = signal([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      readonly lastDrop = signal<ForDragDropEvent | null>(null);
+      onDrop(event: ForDragDropEvent): void {
+        this.lastDrop.set(event);
+      }
+    }
+
+    @Component({
+      imports: [ForDropList, ForDraggable, ForDragPreview, ForDragPlaceholder],
+      template: `
+        <ul forDropList>
+          <li forDraggable [dragData]="'x'">
+            x
+            <ng-template forDragPreview #tplPreview="forDragPreview"><span>prev</span></ng-template>
+            <ng-template forDragPlaceholder #tplPlaceholder="forDragPlaceholder"
+              ><span>gap</span></ng-template
+            >
+          </li>
+        </ul>
+      `,
+    })
+    class StaticTemplatesHost {
+      readonly previewRef = viewChild.required<ForDragPreview>('tplPreview');
+      readonly placeholderRef = viewChild.required<ForDragPlaceholder>('tplPlaceholder');
+    }
+
+    @Component({
+      imports: [ForDragPreview],
+      template: `<ng-template forDragPreview></ng-template>`,
+    })
+    class OrphanPreviewHost {}
+
+    @Component({
+      imports: [ForDragPlaceholder],
+      template: `<ng-template forDragPlaceholder></ng-template>`,
+    })
+    class OrphanPlaceholderHost {}
+
+    it('ForDragPreview exposes a defined templateRef', () => {
+      const { fixture } = renderHost(StaticTemplatesHost);
+      expect(fixture.componentInstance.previewRef().templateRef).toBeTruthy();
+    });
+
+    it('ForDragPlaceholder exposes a defined templateRef', () => {
+      const { fixture } = renderHost(StaticTemplatesHost);
+      expect(fixture.componentInstance.placeholderRef().templateRef).toBeTruthy();
+    });
+
+    it('ForDragPreview outside [forDraggable] throws the orphan error', () => {
+      expect(() => renderHost(OrphanPreviewHost)).toThrow(
+        '[forty-cdk/drag-drop] ForDragPreview must be used inside a [forDraggable] element.',
+      );
+    });
+
+    it('ForDragPlaceholder outside [forDraggable] throws the orphan error', () => {
+      expect(() => renderHost(OrphanPlaceholderHost)).toThrow(
+        '[forty-cdk/drag-drop] ForDragPlaceholder must be used inside a [forDraggable] element.',
+      );
+    });
+
+    it('keyboard lift/drop with templates present emits correct indices and never hides the host', () => {
+      const { el, fixture } = renderHost(TemplatesHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    it('keyboard lift/drop with templates works under provideZonelessChangeDetection', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TemplatesHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
       pressKey(first, 'ArrowDown');
       fixture.detectChanges();
       pressKey(first, ' ');

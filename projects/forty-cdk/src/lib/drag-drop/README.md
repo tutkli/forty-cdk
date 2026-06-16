@@ -37,20 +37,42 @@ unaffected.
 </li>
 ```
 
-Consumer-supplied `ng-template` preview and placeholder directives are a
-planned follow-up (Phase 2b).
+### Custom preview & placeholder
+
+Place `<ng-template forDragPreview>` and/or `<ng-template forDragPlaceholder>` as direct
+children of `[forDraggable]` to override the default drag visuals during a pointer drag.
+
+```html
+<li forDraggable [dragData]="item">
+  {{ item.label }}
+  <ng-template forDragPreview>
+    <div class="my-preview">{{ item.label }}</div>
+  </ng-template>
+  <ng-template forDragPlaceholder>
+    <div class="my-placeholder"></div>
+  </ng-template>
+</li>
+```
+
+- **`[forDragPreview]`** replaces the default cloned floating element that follows the pointer
+  during a pointer drag. Applies to pointer drags only; keyboard dragging is unaffected.
+- **`[forDragPlaceholder]`** renders in the dragged item's slot while a pointer drag is in flight.
+  The dragged item's host is hidden (`display: none`) and the placeholder template occupies its
+  space, preserving the gap. When the drag ends (drop or cancel) the placeholder is removed and
+  the item is revealed again. Keyboard dragging keeps the default behaviour — the lifted item
+  stays in place reflecting `data-dragging`, and no placeholder is rendered.
 
 ## Data attributes
 
-| Attribute               | Element           | Meaning                                     |
-| ----------------------- | ----------------- | ------------------------------------------- |
-| `data-orientation`      | `[forDropList]`   | `"vertical"` or `"horizontal"`              |
-| `data-disabled`         | both              | Present when the item or list is disabled   |
-| `data-dragging`         | `[forDropList]`   | Present while a drag originates here        |
-| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted           |
-| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target  |
-| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle     |
-| `data-for-drag-preview` | preview clone     | Present on the default pointer-drag preview |
+| Attribute               | Element           | Meaning                                                                             |
+| ----------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| `data-orientation`      | `[forDropList]`   | `"vertical"` or `"horizontal"`                                                      |
+| `data-disabled`         | both              | Present when the item or list is disabled                                           |
+| `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                |
+| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                   |
+| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                          |
+| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                             |
+| `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper |
 
 ## Sortable list
 

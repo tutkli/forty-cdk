@@ -205,7 +205,11 @@ export class ForDropList implements ForDropListContext {
     return this.#beginLift(el);
   }
 
-  pointerLift(el: HTMLElement, point: { x: number; y: number }): number {
+  pointerLift(
+    el: HTMLElement,
+    point: { x: number; y: number },
+    preview?: { moveTo(x: number, y: number): void; destroy(): void } | null,
+  ): number {
     const from = this.#beginLift(el);
     if (from < 0) {
       return -1;
@@ -214,7 +218,7 @@ export class ForDropList implements ForDropListContext {
       const rect = el.getBoundingClientRect();
       this.#grabOffsetX = point.x - rect.left;
       this.#grabOffsetY = point.y - rect.top;
-      this.#preview = createDragPreview(el, this.#document);
+      this.#preview = preview ?? createDragPreview(el, this.#document);
       this.#preview.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
     }
     return from;

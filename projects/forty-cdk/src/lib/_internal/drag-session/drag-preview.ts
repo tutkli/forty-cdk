@@ -43,3 +43,40 @@ export function createDragPreview(source: HTMLElement, doc: Document): DragPrevi
     },
   };
 }
+
+/**
+ * Creates a drag preview from caller-supplied root nodes (e.g. an Angular embedded view's
+ * `rootNodes`): wraps them in a fixed-position, non-interactive, assistive-tech-hidden container
+ * appended to `doc.body`. `onDestroy` runs on teardown (before the wrapper is removed) so the
+ * caller can dispose the backing view. Caller must gate on a browser platform.
+ */
+export function createTemplatePreview(
+  nodes: readonly Node[],
+  doc: Document,
+  onDestroy: () => void,
+): DragPreview {
+  const wrapper = doc.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '0';
+  wrapper.style.left = '0';
+  wrapper.style.margin = '0';
+  wrapper.style.pointerEvents = 'none';
+  wrapper.style.zIndex = '2147483647';
+  wrapper.setAttribute('data-for-drag-preview', '');
+  wrapper.setAttribute('aria-hidden', 'true');
+
+  for (const node of nodes) {
+    wrapper.appendChild(node);
+  }
+  doc.body.appendChild(wrapper);
+
+  return {
+    moveTo(x: number, y: number): void {
+      wrapper.style.transform = `translate(${x}px, ${y}px)`;
+    },
+    destroy(): void {
+      onDestroy();
+      wrapper.remove();
+    },
+  };
+}

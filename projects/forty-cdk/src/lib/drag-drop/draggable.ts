@@ -1,20 +1,25 @@
 import {
   booleanAttribute,
   computed,
+  contentChild,
   DestroyRef,
   Directive,
   DOCUMENT,
   ElementRef,
+  type EmbeddedViewRef,
   inject,
   input,
   output,
   PLATFORM_ID,
+  signal,
+  ViewContainerRef,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { attachSwipeDismiss, type SwipeDirection } from '../_internal/swipe-dismiss/swipe-dismiss';
+import { createTemplatePreview, type DragPreview } from '../_internal/drag-session/drag-preview';
 import {
   FOR_DRAGGABLE_CONTEXT,
   injectDropListContext,
@@ -24,6 +29,8 @@ import {
   type ForDraggableHandle,
 } from './drag-drop-context';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
+import { ForDragPreview } from './drag-preview';
+import { ForDragPlaceholder } from './drag-placeholder';
 
 /**
  * Marks an element as a draggable item inside a `[forDropList]`. Handles
@@ -40,6 +47,7 @@ import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
     '[attr.data-dragging]': "lifted() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[style.touch-action]': 'touchAction()',
+    '[style.display]': "placeholderActive() ? 'none' : null",
     '(dragstart)': 'onNativeDragStart($event)',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
@@ -53,6 +61,14 @@ export class ForDraggable implements ForDraggableContext {
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #document = inject(DOCUMENT);
+  readonly #vcr = inject(ViewContainerRef);
+  protected readonly previewTpl = contentChild(ForDragPreview);
+  protected readonly placeholderTpl = contentChild(ForDragPlaceholder);
+  #placeholderView: EmbeddedViewRef<unknown> | null = null;
+
+  /** `true` while a pointer-drag placeholder template occupies this item's slot (host hidden). */
+  protected readonly placeholderActive = signal(false);
+
   readonly #handles = new Set<HTMLElement>();
   #downOnHandle = false;
   #pointerDragging = false;
@@ -134,6 +150,7 @@ export class ForDraggable implements ForDraggableContext {
       });
       this.#destroyRef.onDestroy(cleanup);
       this.#destroyRef.onDestroy(() => this.#removeEscapeListener());
+      this.#destroyRef.onDestroy(() => this.#clearPlaceholder());
     }
   }
 
@@ -152,13 +169,17 @@ export class ForDraggable implements ForDraggableContext {
   }
 
   #onPointerStart(event: PointerEvent): void {
-    const index = this.#list.pointerLift(this.#host.nativeElement, {
-      x: event.clientX,
-      y: event.clientY,
-    });
+    const preview = this.#buildPreview();
+    const index = this.#list.pointerLift(
+      this.#host.nativeElement,
+      { x: event.clientX, y: event.clientY },
+      preview,
+    );
     if (index < 0) {
+      preview?.destroy();
       return;
     }
+    this.#renderPlaceholder();
     this.#pointerDragging = true;
     this.dragStart.emit({ source: this.#list, index });
     this.#addEscapeListener();
@@ -177,6 +198,7 @@ export class ForDraggable implements ForDraggableContext {
     }
     this.#pointerDragging = false;
     this.#removeEscapeListener();
+    this.#clearPlaceholder();
     this.#list.drop();
     this.dragEnd.emit({ dropped: true });
   }
@@ -187,6 +209,7 @@ export class ForDraggable implements ForDraggableContext {
     }
     this.#pointerDragging = false;
     this.#removeEscapeListener();
+    this.#clearPlaceholder();
     this.#list.cancel();
     this.dragEnd.emit({ dropped: false });
   }
@@ -196,6 +219,7 @@ export class ForDraggable implements ForDraggableContext {
       if (event.key === 'Escape' && this.#pointerDragging) {
         this.#pointerDragging = false;
         this.#removeEscapeListener();
+        this.#clearPlaceholder();
         this.#list.cancel();
         this.dragEnd.emit({ dropped: false });
       }
@@ -211,6 +235,32 @@ export class ForDraggable implements ForDraggableContext {
     }
   }
 
+  #buildPreview(): DragPreview | null {
+    const preview = this.previewTpl();
+    if (!preview || !this.#isBrowser) {
+      return null;
+    }
+    const viewRef = this.#vcr.createEmbeddedView(preview.templateRef);
+    viewRef.detectChanges();
+    return createTemplatePreview(viewRef.rootNodes, this.#document, () => viewRef.destroy());
+  }
+
+  #renderPlaceholder(): void {
+    const placeholder = this.placeholderTpl();
+    if (!placeholder || !this.#isBrowser) {
+      return;
+    }
+    this.#placeholderView = this.#vcr.createEmbeddedView(placeholder.templateRef);
+    this.#placeholderView.detectChanges();
+    this.placeholderActive.set(true);
+  }
+
+  #clearPlaceholder(): void {
+    this.placeholderActive.set(false);
+    this.#placeholderView?.destroy();
+    this.#placeholderView = null;
+  }
+
   protected onNativeDragStart(event: Event): void {
     if (this.#pointerDragging) {
       event.preventDefault();
@@ -224,7 +274,7 @@ export class ForDraggable implements ForDraggableContext {
   }
 
   protected onBlur(): void {
-    if (this.lifted()) {
+    if (this.lifted() && !this.#pointerDragging) {
       this.#list.cancel();
       this.dragEnd.emit({ dropped: false });
     }
