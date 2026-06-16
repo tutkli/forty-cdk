@@ -127,6 +127,11 @@ import {
   provideForDragDropDefaults,
 } from '../../drag-drop/drag-drop-defaults';
 import {
+  FOR_STEPPER_DEFAULTS,
+  FOR_STEPPER_FALLBACK_DEFAULTS,
+  provideForStepperDefaults,
+} from '../../stepper/stepper-defaults';
+import {
   FOR_TREE_DEFAULTS,
   FOR_TREE_FALLBACK_DEFAULTS,
   provideForTreeDefaults,
@@ -324,6 +329,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_DRAG_DROP_FALLBACK_DEFAULTS,
     provide: provideForDragDropDefaults,
     override: { itemRoleDescription: 'draggable' },
+  }),
+  defaultsCase({
+    name: 'provideForStepperDefaults',
+    token: FOR_STEPPER_DEFAULTS,
+    fallback: FOR_STEPPER_FALLBACK_DEFAULTS,
+    provide: provideForStepperDefaults,
+    override: { activationMode: 'automatic' },
   }),
 ];
 
