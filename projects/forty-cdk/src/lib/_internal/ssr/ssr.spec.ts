@@ -106,6 +106,8 @@ import { ForTooltipTrigger } from '../../tooltip/tooltip-trigger';
 import { ForTree } from '../../tree/tree';
 import { ForTreeGroup } from '../../tree/tree-group';
 import { ForTreeItem } from '../../tree/tree-item';
+import { ForTreeItemCheckbox } from '../../tree/tree-item-checkbox';
+import { ForTreeItemCheckboxIndicator } from '../../tree/tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from '../../tree/tree-item-label';
 import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
@@ -470,6 +472,37 @@ class OtpInputFixture {}
 class TreeFixture {}
 
 @Component({
+  imports: [
+    ForTree,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemCheckbox,
+    ForTreeItemCheckboxIndicator,
+  ],
+  template: `
+    <ul forTree selectionMode="checkbox" ariaLabel="Categories">
+      <li forTreeItem value="a">
+        <div forTreeItemLabel>
+          <span forTreeItemCheckbox>
+            <span forTreeItemCheckboxIndicator>✓</span>
+          </span>
+          Alpha
+        </div>
+      </li>
+      <li forTreeItem value="b">
+        <div forTreeItemLabel>
+          <span forTreeItemCheckbox>
+            <span forTreeItemCheckboxIndicator>✓</span>
+          </span>
+          Beta
+        </div>
+      </li>
+    </ul>
+  `,
+})
+class TreeCheckboxFixture {}
+
+@Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -733,6 +766,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   MenubarOpenFixture,
   OtpInputFixture,
   TreeFixture,
+  TreeCheckboxFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
   CalendarSelectDirectivesFixture,

@@ -35,7 +35,8 @@ import {
   host: {
     role: 'treeitem',
     '[attr.aria-expanded]': 'expandable() ? (expanded() ? "true" : "false") : null',
-    '[attr.aria-selected]': 'selected() ? "true" : "false"',
+    '[attr.aria-checked]': 'checkboxMode() ? (selected() ? "true" : "false") : null',
+    '[attr.aria-selected]': 'checkboxMode() ? null : (selected() ? "true" : "false")',
     '[attr.aria-level]': 'level()',
     '[attr.aria-setsize]': 'setsize()',
     '[attr.aria-posinset]': 'posinset()',
@@ -45,6 +46,7 @@ import {
     '[attr.data-selected]': 'selected() ? "" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-checked]': 'checkboxMode() ? (selected() ? "true" : "false") : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
   },
@@ -75,6 +77,8 @@ export class ForTreeItem implements ForTreeItemContext {
   readonly expandable = computed(() => this.#toggleCount() > 0);
   readonly expanded = computed(() => this.#tree.isExpanded(this.value()));
   readonly selected = computed(() => this.#tree.isSelected(this.value()));
+  /** True when the root tree is in `'checkbox'` selection mode. */
+  readonly checkboxMode = computed(() => this.#tree.selectionMode() === 'checkbox');
 
   /** True when this node is the roving-tabindex active candidate. */
   readonly highlighted = computed(() => this.#tree.roving.active() === this.#host.nativeElement);

@@ -5,6 +5,8 @@ import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
+import { ForTreeItemCheckbox } from './tree-item-checkbox';
+import { ForTreeItemCheckboxIndicator } from './tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from './tree-item-label';
 import { ForTreeItemToggle } from './tree-item-toggle';
 
@@ -516,6 +518,151 @@ describe('ForTree', () => {
       await flush(fixture);
       expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('true');
       expect(itemOf(el, 'documents').getAttribute('data-state')).toBe('open');
+    });
+  });
+
+  describe('checkbox selection mode', () => {
+    @Component({
+      imports: [
+        ForTree,
+        ForTreeItem,
+        ForTreeItemLabel,
+        ForTreeItemCheckbox,
+        ForTreeItemCheckboxIndicator,
+      ],
+      template: `
+        <ul forTree selectionMode="checkbox" [(value)]="picked" aria-label="Categories">
+          <li forTreeItem value="a" data-test-id="a">
+            <div forTreeItemLabel data-test-label="a">
+              <span forTreeItemCheckbox data-test-checkbox="a">
+                <span forTreeItemCheckboxIndicator data-test-indicator="a">✓</span>
+              </span>
+              <span>Alpha</span>
+            </div>
+          </li>
+          <li forTreeItem value="b" data-test-id="b">
+            <div forTreeItemLabel data-test-label="b">
+              <span forTreeItemCheckbox data-test-checkbox="b">
+                <span forTreeItemCheckboxIndicator data-test-indicator="b">✓</span>
+              </span>
+              <span>Beta</span>
+            </div>
+          </li>
+        </ul>
+      `,
+    })
+    class CheckboxTreeHost {
+      readonly picked = signal<readonly string[]>([]);
+    }
+
+    async function setupCheckbox() {
+      const result = renderHost(CheckboxTreeHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    const checkboxItemOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-id="${id}"]`)!;
+    const checkboxOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-checkbox="${id}"]`)!;
+    const indicatorOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-indicator="${id}"]`)!;
+
+    it('default state: aria-checked="false", no aria-selected, data-checked="false"', async () => {
+      const { el } = await setupCheckbox();
+      const itemA = checkboxItemOf(el, 'a');
+      expect(itemA.getAttribute('aria-checked')).toBe('false');
+      expect(itemA.hasAttribute('aria-selected')).toBe(false);
+      expect(itemA.getAttribute('data-checked')).toBe('false');
+    });
+
+    it('clicking the checkbox toggles on: aria-checked="true", data-checked="true", no aria-selected', async () => {
+      const { el, fixture } = await setupCheckbox();
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      const itemA = checkboxItemOf(el, 'a');
+      expect(fixture.componentInstance.picked()).toEqual(['a']);
+      expect(itemA.getAttribute('aria-checked')).toBe('true');
+      expect(itemA.getAttribute('data-checked')).toBe('true');
+      expect(itemA.hasAttribute('aria-selected')).toBe(false);
+    });
+
+    it('clicking the checkbox again toggles off', async () => {
+      const { el, fixture } = await setupCheckbox();
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual([]);
+      expect(checkboxItemOf(el, 'a').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('checkbox surface data-state: unchecked → "unchecked", checked → "checked"', async () => {
+      const { el, fixture } = await setupCheckbox();
+      expect(checkboxOf(el, 'a').getAttribute('data-state')).toBe('unchecked');
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      expect(checkboxOf(el, 'a').getAttribute('data-state')).toBe('checked');
+    });
+
+    it('indicator self-hides while unchecked and shows while checked', async () => {
+      const { el, fixture } = await setupCheckbox();
+      const ind = indicatorOf(el, 'a');
+      expect(ind.hasAttribute('hidden')).toBe(true);
+      expect(ind.style.display).toBe('none');
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      expect(ind.hasAttribute('hidden')).toBe(false);
+      expect(ind.style.display).toBe('');
+    });
+
+    it('inherently multi: without multiple input, two nodes can both be checked', async () => {
+      const { el, fixture } = await setupCheckbox();
+      checkboxOf(el, 'a').click();
+      await flush(fixture);
+      checkboxOf(el, 'b').click();
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual(['a', 'b']);
+    });
+
+    it('highlight mode is unaffected: aria-selected present, no aria-checked', async () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        template: `
+          <ul forTree selectionMode="highlight" [(value)]="picked" aria-label="Files">
+            <li forTreeItem value="x" data-test-id="x">
+              <div forTreeItemLabel data-test-label="x"><span>X</span></div>
+            </li>
+          </ul>
+        `,
+      })
+      class HighlightTreeHost {
+        readonly picked = signal<readonly string[]>([]);
+      }
+
+      const result = renderHost(HighlightTreeHost);
+      await flush(result.fixture);
+      const { el, fixture } = result;
+      const item = el.querySelector<HTMLElement>('[data-test-id="x"]')!;
+      expect(item.hasAttribute('aria-checked')).toBe(false);
+      expect(item.getAttribute('aria-selected')).toBe('false');
+      el.querySelector<HTMLElement>('[data-test-label="x"]')!.click();
+      await flush(fixture);
+      expect(item.getAttribute('aria-selected')).toBe('true');
+      expect(item.hasAttribute('aria-checked')).toBe(false);
+    });
+
+    it('zoneless reactivity: aria-checked flips without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(CheckboxTreeHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const itemA = el.querySelector<HTMLElement>('[data-test-id="a"]')!;
+      expect(itemA.getAttribute('aria-checked')).toBe('false');
+      el.querySelector<HTMLElement>('[data-test-checkbox="a"]')!.click();
+      await flush(fixture);
+      expect(itemA.getAttribute('aria-checked')).toBe('true');
     });
   });
 

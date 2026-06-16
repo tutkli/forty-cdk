@@ -104,6 +104,13 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
+   * Selection presentation. `'highlight'` (default) keeps the `aria-selected`
+   * contract; `'checkbox'` switches each `treeitem` to `aria-checked` and is
+   * inherently multi-select (each node toggles independently).
+   */
+  readonly selectionMode = input<'highlight' | 'checkbox'>('highlight');
+
+  /**
    * Manual `aria-label` for the tree. Use this when no visible label element
    * exists; otherwise prefer pointing `aria-labelledby` at one. A `null`
    * (default) or empty value emits no attribute.
@@ -210,7 +217,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled()) {
       return;
     }
-    if (this.multiple()) {
+    if (this.multiple() || this.selectionMode() === 'checkbox') {
       const current = this.value();
       this.value.set(
         current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
