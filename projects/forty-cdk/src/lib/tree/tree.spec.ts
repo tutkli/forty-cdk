@@ -666,6 +666,218 @@ describe('ForTree', () => {
     });
   });
 
+  describe('cascade checkbox selection', () => {
+    const DESCENDANTS: Record<string, readonly string[]> = {
+      g: ['g1', 'g2', 'g2a', 'g2b'],
+      g2: ['g2a', 'g2b'],
+      g1: [],
+      g2a: [],
+      g2b: [],
+    };
+
+    @Component({
+      imports: [
+        ForTree,
+        ForTreeItem,
+        ForTreeItemLabel,
+        ForTreeItemToggle,
+        ForTreeGroup,
+        ForTreeItemCheckbox,
+        ForTreeItemCheckboxIndicator,
+      ],
+      template: `
+        <ul
+          forTree
+          selectionMode="checkbox"
+          cascade
+          [descendantsOf]="descendantsFn"
+          [(value)]="picked"
+          [(expanded)]="open"
+          aria-label="Groups"
+        >
+          <li forTreeItem value="g" data-test-id="g">
+            <div forTreeItemLabel>
+              <span forTreeItemToggle data-test-toggle="g">▸</span>
+              <span forTreeItemCheckbox data-test-checkbox="g">
+                <span forTreeItemCheckboxIndicator data-test-indicator="g">✓</span>
+              </span>
+              G
+            </div>
+            @if (open().includes('g')) {
+              <ul forTreeGroup>
+                <li forTreeItem value="g1" data-test-id="g1">
+                  <div forTreeItemLabel>
+                    <span forTreeItemCheckbox data-test-checkbox="g1">
+                      <span forTreeItemCheckboxIndicator data-test-indicator="g1">✓</span>
+                    </span>
+                    G1
+                  </div>
+                </li>
+                <li forTreeItem value="g2" data-test-id="g2">
+                  <div forTreeItemLabel>
+                    <span forTreeItemToggle data-test-toggle="g2">▸</span>
+                    <span forTreeItemCheckbox data-test-checkbox="g2">
+                      <span forTreeItemCheckboxIndicator data-test-indicator="g2">✓</span>
+                    </span>
+                    G2
+                  </div>
+                  @if (open().includes('g2')) {
+                    <ul forTreeGroup>
+                      <li forTreeItem value="g2a" data-test-id="g2a">
+                        <div forTreeItemLabel>
+                          <span forTreeItemCheckbox data-test-checkbox="g2a">
+                            <span forTreeItemCheckboxIndicator data-test-indicator="g2a">✓</span>
+                          </span>
+                          G2A
+                        </div>
+                      </li>
+                      <li forTreeItem value="g2b" data-test-id="g2b">
+                        <div forTreeItemLabel>
+                          <span forTreeItemCheckbox data-test-checkbox="g2b">
+                            <span forTreeItemCheckboxIndicator data-test-indicator="g2b">✓</span>
+                          </span>
+                          G2B
+                        </div>
+                      </li>
+                    </ul>
+                  }
+                </li>
+              </ul>
+            }
+          </li>
+        </ul>
+      `,
+    })
+    class CascadeHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>([]);
+      readonly descendantsFn = (v: string): readonly string[] => DESCENDANTS[v] ?? [];
+    }
+
+    const cascadeItemOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-id="${id}"]`)!;
+    const cascadeCheckboxOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-checkbox="${id}"]`)!;
+    const cascadeIndicatorOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-indicator="${id}"]`)!;
+
+    async function setupCascade(configure?: (i: CascadeHost) => void) {
+      const result = renderHost(CascadeHost);
+      configure?.(result.instance);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('checking a collapsed parent selects it and all descendants', async () => {
+      const { el, fixture } = await setupCascade();
+      cascadeCheckboxOf(el, 'g').click();
+      await flush(fixture);
+
+      const picked = fixture.componentInstance.picked();
+      expect(picked).toContain('g');
+      expect(picked).toContain('g1');
+      expect(picked).toContain('g2');
+      expect(picked).toContain('g2a');
+      expect(picked).toContain('g2b');
+      expect(picked.length).toBe(5);
+
+      fixture.componentInstance.open.set(['g', 'g2']);
+      await flush(fixture);
+
+      expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+      expect(cascadeItemOf(el, 'g2').getAttribute('aria-checked')).toBe('true');
+      expect(cascadeItemOf(el, 'g2a').getAttribute('aria-checked')).toBe('true');
+      expect(cascadeItemOf(el, 'g2b').getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('partial selection produces mixed on parent: aria-checked, data-checked, checkbox data-state, indicator visible and indeterminate', async () => {
+      const { el, fixture } = await setupCascade();
+      fixture.componentInstance.picked.set(['g', 'g2', 'g2a', 'g2b']);
+      fixture.componentInstance.open.set(['g', 'g2']);
+      await flush(fixture);
+
+      const g = cascadeItemOf(el, 'g');
+      expect(g.getAttribute('aria-checked')).toBe('mixed');
+      expect(g.getAttribute('data-checked')).toBe('mixed');
+
+      const gCheckbox = cascadeCheckboxOf(el, 'g');
+      expect(gCheckbox.getAttribute('data-state')).toBe('indeterminate');
+
+      const gIndicator = cascadeIndicatorOf(el, 'g');
+      expect(gIndicator.hasAttribute('hidden')).toBe(false);
+      expect(gIndicator.style.display).toBe('');
+      expect(gIndicator.getAttribute('data-state')).toBe('indeterminate');
+    });
+
+    it('unchecking a parent clears it and all descendants', async () => {
+      const { el, fixture } = await setupCascade();
+      fixture.componentInstance.picked.set(['g', 'g1', 'g2', 'g2a', 'g2b']);
+      await flush(fixture);
+
+      cascadeCheckboxOf(el, 'g').click();
+      await flush(fixture);
+
+      const picked = fixture.componentInstance.picked();
+      expect(picked.includes('g')).toBe(false);
+      expect(picked.includes('g1')).toBe(false);
+      expect(picked.includes('g2')).toBe(false);
+      expect(picked.includes('g2a')).toBe(false);
+      expect(picked.includes('g2b')).toBe(false);
+    });
+
+    it('checking the last unchecked descendant flips the parent to true', async () => {
+      const { el, fixture } = await setupCascade();
+      fixture.componentInstance.picked.set(['g', 'g2', 'g2a', 'g2b']);
+      fixture.componentInstance.open.set(['g']);
+      await flush(fixture);
+
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+
+      cascadeCheckboxOf(el, 'g1').click();
+      await flush(fixture);
+
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('cascade without descendantsOf throws a prefixed error on detectChanges', () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
+        template: `
+          <ul forTree selectionMode="checkbox" cascade aria-label="G">
+            <li forTreeItem value="x" data-test-id="x">
+              <div forTreeItemLabel>
+                <span forTreeItemCheckbox>X</span>
+              </div>
+            </li>
+          </ul>
+        `,
+      })
+      class MissingDescendants {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => {
+        const f = TestBed.createComponent(MissingDescendants);
+        f.detectChanges();
+      }).toThrowError(/\[forty-cdk\/tree\]/);
+    });
+
+    it('zoneless: cascade checkbox click flips descendant aria-checked without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(CascadeHost);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const el = fixture.nativeElement as HTMLElement;
+      fixture.componentInstance.open.set(['g']);
+      await flush(fixture);
+
+      expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('false');
+      cascadeCheckboxOf(el, 'g').click();
+      await flush(fixture);
+      expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
   describe('orphan usage', () => {
     it('throws a prefixed error when ForTreeItem is used outside a tree', () => {
       @Component({

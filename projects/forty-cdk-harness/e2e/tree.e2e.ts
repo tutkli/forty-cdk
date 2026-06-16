@@ -207,6 +207,28 @@ test.describe('Tree', () => {
     await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test.describe('cascade mode', () => {
+    test('cascade reaches collapsed descendants', async ({ page }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1', cascade: '1' });
+      await el(page, 'checkbox-documents').click();
+      await expect(el(page, 'item-documents')).toHaveAttribute('aria-checked', 'true');
+
+      await el(page, 'toggle-documents').click();
+      await expect(el(page, 'item-resume')).toHaveAttribute('aria-checked', 'true');
+      await expect(el(page, 'item-projects')).toHaveAttribute('aria-checked', 'true');
+    });
+
+    test('partial check produces mixed on parent', async ({ page }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1', cascade: '1' });
+      await el(page, 'toggle-documents').click();
+      await el(page, 'checkbox-documents').click();
+      await el(page, 'checkbox-resume').click();
+
+      await expect(el(page, 'item-documents')).toHaveAttribute('aria-checked', 'mixed');
+      await expect(el(page, 'item-documents')).toHaveAttribute('data-checked', 'mixed');
+    });
+  });
+
   test.describe('checkbox mode', () => {
     test('each treeitem starts with aria-checked="false" and no aria-selected', async ({
       page,

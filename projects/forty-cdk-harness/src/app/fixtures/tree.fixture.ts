@@ -41,6 +41,25 @@ const ROOTS: FileNode[] = [
   { id: 'notes', name: 'Notes' },
 ];
 
+function collectDescendants(node: FileNode): readonly string[] {
+  if (!node.children?.length) {
+    return [];
+  }
+  return node.children.flatMap((c) => [c.id, ...collectDescendants(c)]);
+}
+
+function buildDescendantsMap(nodes: FileNode[]): Map<string, readonly string[]> {
+  const map = new Map<string, readonly string[]>();
+  const walk = (n: FileNode): void => {
+    map.set(n.id, collectDescendants(n));
+    n.children?.forEach(walk);
+  };
+  nodes.forEach(walk);
+  return map;
+}
+
+const DESCENDANTS = buildDescendantsMap(ROOTS);
+
 @Component({
   selector: 'app-tree-node',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -116,6 +135,8 @@ export class TreeNode {
       [selectionFollowsFocus]="follow"
       [dir]="dir"
       [selectionMode]="checkbox ? 'checkbox' : 'highlight'"
+      [cascade]="cascade"
+      [descendantsOf]="descendantsFn"
       aria-label="File system"
     >
       @for (n of roots; track n.id) {
@@ -141,9 +162,13 @@ export class TreeFixture {
   protected readonly follow = queryFlag('selectionFollowsFocus');
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
   protected readonly checkbox = queryFlag('checkbox');
+  protected readonly cascade = queryFlag('cascade');
   protected readonly disabledNodes = signal<readonly string[]>(
     queryFlag('disableMusic') ? ['music'] : [],
   );
+
+  protected readonly descendantsFn = (value: string): readonly string[] =>
+    DESCENDANTS.get(value) ?? [];
 
   protected disableNotes(): void {
     this.disabledNodes.update((ids) => (ids.includes('notes') ? ids : [...ids, 'notes']));

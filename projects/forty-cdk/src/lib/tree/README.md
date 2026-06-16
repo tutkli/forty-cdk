@@ -20,18 +20,20 @@ Selection and expansion are two independent models: `value` (selected nodes) and
 
 ### `ForTree`
 
-| API                     | Type                                | Description                                                                                                                                                                               |
-| ----------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly string[]>`          | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number. Default `[]`.                                                                                         |
-| `expanded`              | `model<readonly string[]>`          | Two-way bindable. Open (expanded) parent node values. Always multi. Default `[]`.                                                                                                         |
-| `selected`              | `Signal<string \| null>`            | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.                                                                    |
-| `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected. Default `false`.                                                                                                                               |
-| `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.                                                                                                                  |
-| `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. Default `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.                                         |
-| `ariaLabel`             | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Default `null` (and empty) emits no attribute. Prefer native `aria-labelledby` when a visible label exists.                          |
-| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. Default `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.  |
-| `selectionFollowsFocus` | `input<boolean>`                    | Single-mode only. When true, arrow navigation also selects the focused node. Default from `provideForTreeDefaults` (library default `false`).                                             |
-| `selectionMode`         | `input<'highlight' \| 'checkbox'>`  | Selection presentation. `'highlight'` (default) uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select). Default `'highlight'`. |
+| API                     | Type                                          | Description                                                                                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly string[]>`                    | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number. Default `[]`.                                                                                                                                                   |
+| `expanded`              | `model<readonly string[]>`                    | Two-way bindable. Open (expanded) parent node values. Always multi. Default `[]`.                                                                                                                                                                   |
+| `selected`              | `Signal<string \| null>`                      | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.                                                                                                                              |
+| `multiple`              | `input<boolean>`                              | When true, multiple nodes can be selected. Default `false`.                                                                                                                                                                                         |
+| `disabled`              | `input<boolean>`                              | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.                                                                                                                                                                            |
+| `orientation`           | `input<'vertical' \| 'horizontal'>`           | Navigation axis. Default `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.                                                                                                   |
+| `ariaLabel`             | `input<string \| null>`                       | Reactive accessible name, reflected as `aria-label`. Default `null` (and empty) emits no attribute. Prefer native `aria-labelledby` when a visible label exists.                                                                                    |
+| `dir`                   | `input<'ltr' \| 'rtl' \| null>`               | Writing direction. Default `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.                                                            |
+| `selectionFollowsFocus` | `input<boolean>`                              | Single-mode only. When true, arrow navigation also selects the focused node. Default from `provideForTreeDefaults` (library default `false`).                                                                                                       |
+| `selectionMode`         | `input<'highlight' \| 'checkbox'>`            | Selection presentation. `'highlight'` (default) uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select). Default `'highlight'`.                                                           |
+| `cascade`               | `input<boolean>`                              | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`. Default `false`. |
+| `descendantsOf`         | `input<(value: string) => readonly string[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.                                                                            |
 
 ### `ForTreeItem`
 
@@ -130,7 +132,7 @@ In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `S
 
 ## Checkbox selection
 
-`selectionMode="checkbox"` switches each `treeitem` to `aria-checked` (instead of `aria-selected`) and makes every node toggle independently — `multiple` is not required. Place `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` inside the label for a visible checkbox surface. Cascade selection with a `mixed` tri-state across descendants is a follow-up (#779); today each node toggles on its own.
+`selectionMode="checkbox"` switches each `treeitem` to `aria-checked` (instead of `aria-selected`) and makes every node toggle independently — `multiple` is not required. Place `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` inside the label for a visible checkbox surface.
 
 ```ts
 import {
@@ -210,6 +212,55 @@ export class Categories {
 }
 ```
 
+### Cascade selection
+
+Add `cascade` and `[descendantsOf]` to enable tri-state propagation. Checking a parent selects it and all its descendants atomically (including collapsed / unmounted ones), and a parent derives `aria-checked="mixed"` / `data-checked="mixed"` when only some descendants are checked. The `descendantsOf` function must return every selectable descendant id of the given node (not just direct children).
+
+```ts
+@Component({
+  selector: 'app-categories',
+  imports: [ForTree, TreeNode],
+  template: `
+    <ul
+      forTree
+      selectionMode="checkbox"
+      cascade
+      [descendantsOf]="descendantsFn"
+      [(value)]="selected"
+      [(expanded)]="expanded"
+      aria-label="Categories"
+    >
+      @for (n of roots; track n.id) {
+        <app-tree-node [node]="n" [expanded]="expanded()" />
+      }
+    </ul>
+  `,
+})
+export class Categories {
+  readonly selected = signal<readonly string[]>([]);
+  readonly expanded = signal<readonly string[]>([]);
+  readonly roots: Node[] = [
+    {
+      id: 'fruits',
+      name: 'Fruits',
+      children: [
+        { id: 'apple', name: 'Apple' },
+        { id: 'pear', name: 'Pear' },
+      ],
+    },
+  ];
+
+  readonly descendantsFn = (id: string): readonly string[] => {
+    const flatten = (nodes: Node[]): string[] =>
+      nodes.flatMap((n) => [n.id, ...flatten(n.children ?? [])]);
+    const find = (nodes: Node[]): Node | undefined =>
+      nodes.find((n) => n.id === id) ?? nodes.flatMap((n) => find(n.children ?? [])).find(Boolean);
+    const node = find(this.roots);
+    return node?.children ? flatten(node.children) : [];
+  };
+}
+```
+
 ## Keyboard
 
 Vertical, LTR (mirrored for `dir="rtl"`):
@@ -245,18 +296,18 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 
 ### Data attributes
 
-| Piece                            | Attribute          | Values                                     |
-| -------------------------------- | ------------------ | ------------------------------------------ |
-| `[forTree]`                      | `data-orientation` | `vertical` \| `horizontal`                 |
-| `[forTree]`                      | `data-disabled`    | present \| absent                          |
-| `[forTreeItem]`                  | `data-state`       | `open` \| `closed` (parent items only)     |
-| `[forTreeItem]`                  | `data-selected`    | present \| absent                          |
-| `[forTreeItem]`                  | `data-highlighted` | present \| absent                          |
-| `[forTreeItem]`                  | `data-disabled`    | present \| absent                          |
-| `[forTreeItem]`                  | `data-checked`     | `"true"` \| `"false"` (checkbox mode only) |
-| `[forTreeItemToggle]`            | `data-state`       | `open` \| `closed`                         |
-| `[forTreeItemCheckbox]`          | `data-state`       | `checked` \| `unchecked`                   |
-| `[forTreeItemCheckboxIndicator]` | `data-state`       | `checked` \| `unchecked`                   |
+| Piece                            | Attribute          | Values                                                  |
+| -------------------------------- | ------------------ | ------------------------------------------------------- |
+| `[forTree]`                      | `data-orientation` | `vertical` \| `horizontal`                              |
+| `[forTree]`                      | `data-disabled`    | present \| absent                                       |
+| `[forTreeItem]`                  | `data-state`       | `open` \| `closed` (parent items only)                  |
+| `[forTreeItem]`                  | `data-selected`    | present \| absent                                       |
+| `[forTreeItem]`                  | `data-highlighted` | present \| absent                                       |
+| `[forTreeItem]`                  | `data-disabled`    | present \| absent                                       |
+| `[forTreeItem]`                  | `data-checked`     | `"true"` \| `"false"` \| `"mixed"` (checkbox mode only) |
+| `[forTreeItemToggle]`            | `data-state`       | `open` \| `closed`                                      |
+| `[forTreeItemCheckbox]`          | `data-state`       | `checked` \| `unchecked` \| `indeterminate`             |
+| `[forTreeItemCheckboxIndicator]` | `data-state`       | `checked` \| `unchecked` \| `indeterminate`             |
 
 A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemToggle]` is registered inside it); leaves carry neither `data-state` nor `aria-expanded`. Expansion (`data-state`) and selection (`data-selected`) are independent hooks because a node can be both expandable and selected at once.
 
@@ -280,4 +331,4 @@ A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemTo
 - **`data-selected`** (present / absent) reflects selection on every node — a node is simultaneously expandable and selectable, so expansion (`data-state`) and selection (`data-selected`) get separate hooks.
 - **`data-highlighted=""`** marks the current roving-tabindex node, the same hook used across the listbox / menu / select primitives.
 - **Exactly one node is tabbable** at a time (the selected node, or the first enabled node). `Tab` enters and leaves the whole tree in one stop.
-- **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative — the `treeitem` itself is the accessible checkbox.
+- **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative — the `treeitem` itself is the accessible checkbox. With `cascade`, a parent reports `aria-checked="mixed"` (and `data-checked="mixed"`) when only some of its descendants are checked; the cascade reaches collapsed / unmounted descendants through the `descendantsOf` descriptor, so the tri-state is always correct even when children are not yet mounted.
