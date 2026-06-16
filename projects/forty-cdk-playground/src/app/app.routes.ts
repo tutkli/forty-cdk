@@ -167,6 +167,11 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/time-field/time-field.page').then((m) => m.TimeFieldPage),
   },
   {
+    path: 'time-picker',
+    loadComponent: () =>
+      import('./demos/time-picker/time-picker.page').then((m) => m.TimePickerPage),
+  },
+  {
     path: 'date-picker',
     loadComponent: () =>
       import('./demos/date-picker/date-picker.page').then((m) => m.DatePickerPage),
