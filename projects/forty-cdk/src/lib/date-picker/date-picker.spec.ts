@@ -19,6 +19,10 @@ import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-
 import { ForTimeField } from '../time-field/time-field';
 import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
 import { ForTimeFieldSegment } from '../time-field/time-field-segment';
+import { ForTimePicker } from '../time-picker/time-picker';
+import { ForTimePickerContent } from '../time-picker/time-picker-content';
+import { ForTimePickerOption } from '../time-picker/time-picker-option';
+import { ForTimePickerTrigger } from '../time-picker/time-picker-trigger';
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
@@ -718,6 +722,101 @@ describe('ForDatePicker', () => {
         today: () => new Date(),
       } as unknown as DateAdapter<Date>;
       expect(() => assertTimeCapable(dayOnly, 'ForDatePicker')).toThrow(/time-capable/);
+    });
+  });
+
+  describe('date-time with projected ForTimePicker', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        ForTimePicker,
+        ForTimePickerTrigger,
+        ForTimePickerContent,
+        ForTimePickerOption,
+        ForCalendar,
+        ForCalendarGrid,
+        ForCalendarCell,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="24"
+          #picker="forDatePicker"
+        >
+          <button data-testid="trigger" forDatePickerTrigger>
+            <span forDatePickerValue [placeholder]="'Pick date & time'"></span>
+          </button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar [value]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div
+                forTimePicker
+                [value]="picker.value()"
+                [step]="60"
+                [hourCycle]="24"
+                #tp="forTimePicker"
+              >
+                <button forTimePickerTrigger data-testid="tp-trigger"></button>
+                @if (tp.open()) {
+                  <div forTimePickerContent>
+                    @for (slot of tp.slots(); track slot.id) {
+                      <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled"
+                        [attr.data-testid]="'tp-slot-' + slot.id">{{ slot.label }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class DateTimePickerHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('selecting a time slot grafts the time onto the committed date', async () => {
+      const r = renderHost(DateTimePickerHost);
+      r.instance.value.set(new Date(2026, 5, 15, 0, 0));
+      await flush(r.fixture);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const tpTrigger = document.querySelector<HTMLButtonElement>('[data-testid="tp-trigger"]')!;
+      tpTrigger.click();
+      await flush(r.fixture);
+
+      const nineAm = document.querySelector<HTMLElement>('[data-testid="tp-slot-slot-32400"]');
+      nineAm?.click();
+      await flush(r.fixture);
+
+      const value = r.instance.value();
+      expect(value).not.toBeNull();
+      expect(adapter.getHours(value!)).toBe(9);
+      expect(adapter.getDate(value!)).toBe(15);
     });
   });
 

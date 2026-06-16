@@ -117,6 +117,11 @@ import {
   provideForTooltipDefaults,
 } from '../../tooltip/tooltip-defaults';
 import {
+  FOR_TIME_PICKER_DEFAULTS,
+  FOR_TIME_PICKER_FALLBACK_DEFAULTS,
+  provideForTimePickerDefaults,
+} from '../../time-picker/time-picker-defaults';
+import {
   FOR_TREE_DEFAULTS,
   FOR_TREE_FALLBACK_DEFAULTS,
   provideForTreeDefaults,
@@ -300,6 +305,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_TREE_FALLBACK_DEFAULTS,
     provide: provideForTreeDefaults,
     override: { selectionFollowsFocus: true },
+  }),
+  defaultsCase({
+    name: 'provideForTimePickerDefaults',
+    token: FOR_TIME_PICKER_DEFAULTS,
+    fallback: FOR_TIME_PICKER_FALLBACK_DEFAULTS,
+    provide: provideForTimePickerDefaults,
+    override: { sideOffset: 12 },
   }),
 ];
 

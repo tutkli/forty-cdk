@@ -92,6 +92,11 @@ import { ForTabsTrigger } from '../../tabs/tabs-trigger';
 import { ForTimeField } from '../../time-field/time-field';
 import { ForTimeFieldLiteral } from '../../time-field/time-field-literal';
 import { ForTimeFieldSegment } from '../../time-field/time-field-segment';
+import { ForTimePicker } from '../../time-picker/time-picker';
+import { ForTimePickerContent } from '../../time-picker/time-picker-content';
+import { ForTimePickerOption } from '../../time-picker/time-picker-option';
+import { ForTimePickerTrigger } from '../../time-picker/time-picker-trigger';
+import { ForTimePickerValue } from '../../time-picker/time-picker-value';
 import { ForToast } from '../../toast/toast';
 import { ForToastTitle } from '../../toast/toast-title';
 import { ForToastViewport } from '../../toast/toast-viewport';
@@ -679,6 +684,32 @@ class DatePickerFixture {
   readonly value = signal<Date | null>(null);
 }
 
+@Component({
+  imports: [
+    ForTimePicker,
+    ForTimePickerTrigger,
+    ForTimePickerValue,
+    ForTimePickerContent,
+    ForTimePickerOption,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forTimePicker [open]="true" [step]="60" #picker="forTimePicker">
+      <button forTimePickerTrigger>
+        <span forTimePickerValue placeholder="Pick a time"></span>
+      </button>
+      <div forTimePickerContent>
+        @for (slot of picker.slots(); track slot.id) {
+          <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+            {{ slot.label }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TimePickerOpenFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -710,6 +741,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DateFieldFixture,
   TimeFieldFixture,
   DatePickerFixture,
+  TimePickerOpenFixture,
 ];
 
 function configureServer(): void {
@@ -877,6 +909,16 @@ describe('SSR smoke tests', () => {
     slides.forEach((s) => {
       expect(s.getAttribute('aria-roledescription')).toBe('slide');
     });
+  });
+
+  it('opening a trigger-anchored overlay (TimePicker) does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(TimePickerOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forTimePickerContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('listbox');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forTimePickerContent]')).toBeNull();
   });
 
   it('BodyScrollLock is a no-op on the server', () => {

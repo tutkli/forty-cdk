@@ -35,7 +35,7 @@ import {
 } from '../_internal/vetoable-event/vetoable-event';
 import { ForCalendar } from '../calendar/calendar';
 import type { CalendarDateRange } from '../calendar/calendar-context';
-import { ForTimeField } from '../time-field/time-field';
+import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
 
@@ -391,7 +391,7 @@ export class ForDatePicker<D>
    * `D | null` because `contentChild` erases the generic; a dev-mode assertion
    * guards the same-adapter contract.
    */
-  private readonly timeField = contentChild(ForTimeField, { descendants: true });
+  private readonly timeSource = contentChild(FOR_TIME_VALUE_SOURCE, { descendants: true });
 
   constructor() {
     super();
@@ -504,20 +504,21 @@ export class ForDatePicker<D>
       onCleanup(() => sub.unsubscribe());
     });
 
-    // Time-field bridge (date-time pickers only). The projected `ForTimeField`
-    // is bound one-way to the picker's value, so its composed `valueChange`
-    // already carries the correct day plus the new time — mirror it straight in.
+    // Time-source bridge (date-time pickers only). The projected time source
+    // (ForTimeField or ForTimePicker) is bound one-way to the picker's value,
+    // so its composed `valueChange` already carries the correct day plus the
+    // new time — mirror it straight in.
     effect((onCleanup) => {
-      const timeField = this.timeField();
-      if (!timeField) {
+      const timeSource = this.timeSource();
+      if (!timeSource) {
         return;
       }
-      if (isDevMode() && timeField.adapter !== this.adapter) {
+      if (isDevMode() && timeSource.adapter !== this.adapter) {
         throw new Error(
-          '[forty-cdk/date-picker] The projected ForTimeField must use the same DateAdapter as the ForDatePicker.',
+          '[forty-cdk/date-picker] The projected time source (ForTimeField / ForTimePicker) must use the same DateAdapter as the ForDatePicker.',
         );
       }
-      const sub = timeField.value.subscribe((value) => {
+      const sub = timeSource.value.subscribe((value) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
