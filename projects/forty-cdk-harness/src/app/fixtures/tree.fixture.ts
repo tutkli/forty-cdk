@@ -1,5 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { ForTree, ForTreeGroup, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
+import {
+  ForTree,
+  ForTreeGroup,
+  ForTreeItem,
+  ForTreeItemCheckbox,
+  ForTreeItemCheckboxIndicator,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+} from 'forty-cdk';
 
 import { queryFlag } from './_query-flag';
 
@@ -36,7 +44,15 @@ const ROOTS: FileNode[] = [
 @Component({
   selector: 'app-tree-node',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup, TreeNode],
+  imports: [
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemToggle,
+    ForTreeGroup,
+    ForTreeItemCheckbox,
+    ForTreeItemCheckboxIndicator,
+    TreeNode,
+  ],
   host: { style: 'display: contents' },
   template: `
     <li
@@ -49,13 +65,29 @@ const ROOTS: FileNode[] = [
         @if (node().children?.length) {
           <span forTreeItemToggle [attr.data-testid]="'toggle-' + node().id">▸</span>
         }
+        @if (checkbox()) {
+          <span
+            forTreeItemCheckbox
+            style="display: inline-block; width: 14px; height: 14px; border: 1px solid"
+            [attr.data-testid]="'checkbox-' + node().id"
+          >
+            <span forTreeItemCheckboxIndicator [attr.data-testid]="'indicator-' + node().id"
+              >✓</span
+            >
+          </span>
+        }
         {{ node().name }}
       </div>
 
       @if (node().children?.length && expanded().includes(node().id)) {
         <ul forTreeGroup>
           @for (child of node().children ?? []; track child.id) {
-            <app-tree-node [node]="child" [expanded]="expanded()" [disabled]="disabled()" />
+            <app-tree-node
+              [node]="child"
+              [expanded]="expanded()"
+              [disabled]="disabled()"
+              [checkbox]="checkbox()"
+            />
           }
         </ul>
       }
@@ -66,6 +98,7 @@ export class TreeNode {
   readonly node = input.required<FileNode>();
   readonly expanded = input.required<readonly string[]>();
   readonly disabled = input.required<readonly string[]>();
+  readonly checkbox = input.required<boolean>();
 }
 
 @Component({
@@ -82,10 +115,16 @@ export class TreeNode {
       [multiple]="multiple"
       [selectionFollowsFocus]="follow"
       [dir]="dir"
+      [selectionMode]="checkbox ? 'checkbox' : 'highlight'"
       aria-label="File system"
     >
       @for (n of roots; track n.id) {
-        <app-tree-node [node]="n" [expanded]="open()" [disabled]="disabledNodes()" />
+        <app-tree-node
+          [node]="n"
+          [expanded]="open()"
+          [disabled]="disabledNodes()"
+          [checkbox]="checkbox"
+        />
       }
     </ul>
     <input data-testid="after" placeholder="after-tree" />
@@ -101,6 +140,7 @@ export class TreeFixture {
   protected readonly multiple = queryFlag('multiple');
   protected readonly follow = queryFlag('selectionFollowsFocus');
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
+  protected readonly checkbox = queryFlag('checkbox');
   protected readonly disabledNodes = signal<readonly string[]>(
     queryFlag('disableMusic') ? ['music'] : [],
   );

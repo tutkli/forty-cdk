@@ -206,4 +206,51 @@ test.describe('Tree', () => {
     await page.keyboard.press('ArrowRight');
     await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test.describe('checkbox mode', () => {
+    test('each treeitem starts with aria-checked="false" and no aria-selected', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1' });
+      for (const id of ['item-documents', 'item-music', 'item-notes']) {
+        await expect(el(page, id)).toHaveAttribute('aria-checked', 'false');
+        await expect(el(page, id)).not.toHaveAttribute('aria-selected');
+      }
+    });
+
+    test('pointer: clicking a checkbox toggles aria-checked and data-checked on/off', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1' });
+      await el(page, 'checkbox-notes').click();
+      await expect(el(page, 'item-notes')).toHaveAttribute('aria-checked', 'true');
+      await expect(el(page, 'item-notes')).toHaveAttribute('data-checked', 'true');
+      await expect(el(page, 'item-notes')).not.toHaveAttribute('aria-selected');
+      await el(page, 'checkbox-notes').click();
+      await expect(el(page, 'item-notes')).toHaveAttribute('aria-checked', 'false');
+      await expect(el(page, 'item-notes')).toHaveAttribute('data-checked', 'false');
+    });
+
+    test('keyboard: Space toggles aria-checked; aria-selected is never present', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1' });
+      await el(page, 'item-notes').focus();
+      await page.keyboard.press('Space');
+      await expect(el(page, 'item-notes')).toHaveAttribute('aria-checked', 'true');
+      await expect(el(page, 'item-notes')).not.toHaveAttribute('aria-selected');
+      await page.keyboard.press('Space');
+      await expect(el(page, 'item-notes')).toHaveAttribute('aria-checked', 'false');
+    });
+
+    test('independent multi: two nodes can both be checked without multiple input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'tree', { checkbox: '1' });
+      await el(page, 'checkbox-notes').click();
+      await el(page, 'checkbox-music').click();
+      await expect(el(page, 'item-notes')).toHaveAttribute('aria-checked', 'true');
+      await expect(el(page, 'item-music')).toHaveAttribute('aria-checked', 'true');
+    });
+  });
 });

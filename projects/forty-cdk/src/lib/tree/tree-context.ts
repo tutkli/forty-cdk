@@ -44,6 +44,8 @@ export interface ForTreeContext {
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly selectionFollowsFocus: Signal<boolean>;
+  /** Selection presentation: `'highlight'` (aria-selected) or `'checkbox'` (aria-checked). */
+  readonly selectionMode: Signal<'highlight' | 'checkbox'>;
   readonly roving: RovingTabindex;
 
   isExpanded(value: string): boolean;
@@ -126,6 +128,8 @@ export interface ForTreeItemContext {
   readonly level: Signal<number>;
   readonly expanded: Signal<boolean>;
   readonly expandable: Signal<boolean>;
+  /** Whether this node is in the root's selection set (its `aria-checked` / `aria-selected` state). */
+  readonly selected: Signal<boolean>;
   /** Register a toggle. Presence makes the item expandable (D4). Returns an unregister fn. */
   registerToggle(): () => void;
   /** Set (or clear, on collapse) the nested `[forTreeGroup]` container. */
