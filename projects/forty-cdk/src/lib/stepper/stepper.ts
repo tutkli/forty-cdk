@@ -1,4 +1,13 @@
-import { booleanAttribute, computed, Directive, inject, input, model } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+} from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -51,12 +60,21 @@ export class ForStepper implements ForStepperContext {
   readonly #defaults = inject(FOR_STEPPER_DEFAULTS);
 
   /**
-   * Two-way bindable selected step index. Defaults to `0`. The `model()` change
+   * Two-way bindable selected step index in the inclusive range `0 … count`.
+   * Defaults to `0`. The terminal value `=== count()` (one past the last step) is
+   * the **completed** state (see `isCompleted` / `complete`). The `model()` change
    * emitter (`(selectedIndexChange)`) fires only on internal selection changes
    * (trigger click, Next/Previous, automatic-mode arrow navigation), never on
    * consumer writes via `[(selectedIndex)]`.
    */
   readonly selectedIndex = model<number>(0);
+
+  /**
+   * Emits once each time the stepper transitions **into** the completed terminal
+   * state — i.e. when `selectedIndex()` reaches `count()`. Does not re-emit while
+   * it stays completed; retreating via `previous()` and re-entering emits again.
+   */
+  readonly complete = output<void>();
 
   /**
    * When true, steps are only reachable after all preceding steps are completed
@@ -118,12 +136,28 @@ export class ForStepper implements ForStepperContext {
   /** Total number of registered step items. */
   readonly count = computed(() => this.#items.items().length);
 
+  /**
+   * True when the stepper is in the terminal **completed** state: `selectedIndex()`
+   * has reached `count()` (one past the last step). No step is current and every
+   * `[forStepperContent]` panel is inactive while this holds.
+   */
+  readonly isCompleted = computed(() => this.selectedIndex() >= this.count());
+
   readonly #firstSelectableTriggerHost = computed(() =>
     firstEnabledHost(this.#triggers.items()),
   );
 
   constructor() {
     reconcileRovingActive(this.roving, this.#triggers.items);
+
+    let wasCompleted = this.isCompleted();
+    effect(() => {
+      const completed = this.isCompleted();
+      if (completed && !wasCompleted) {
+        this.complete.emit();
+      }
+      wasCompleted = completed;
+    });
   }
 
   indexOf(item: ForStepperItemHandle): number {
@@ -185,7 +219,7 @@ export class ForStepper implements ForStepperContext {
   }
 
   canAdvance(): boolean {
-    if (this.disabled() || this.selectedIndex() >= this.count() - 1) {
+    if (this.disabled() || this.selectedIndex() >= this.count()) {
       return false;
     }
     if (!this.linear()) {

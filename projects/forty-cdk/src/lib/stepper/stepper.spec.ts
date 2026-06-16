@@ -6,6 +6,7 @@ import { pressKey, renderHost } from '../../test-utils';
 import { assertRovingTabindexContract } from '../../test-utils/contract';
 import { ForStepper } from './stepper';
 import { ForStepperContent } from './stepper-content';
+import { ForStepperCompletedContent } from './stepper-completed-content';
 import { ForStepperIndicator } from './stepper-indicator';
 import { ForStepperItem } from './stepper-item';
 import { ForStepperList } from './stepper-list';
@@ -24,6 +25,7 @@ const STEPPER_IMPORTS = [
   ForStepperIndicator,
   ForStepperSeparator,
   ForStepperContent,
+  ForStepperCompletedContent,
   ForStepperNext,
   ForStepperPrevious,
 ] as const;
@@ -50,6 +52,7 @@ interface StepDef {
       [loop]="loop()"
       [disabled]="rootDisabled()"
       [dir]="dir()"
+      (complete)="onComplete()"
     >
       <ol forStepperList [ariaLabel]="listLabel()">
         @for (s of steps(); track $index) {
@@ -80,6 +83,7 @@ interface StepDef {
           }
         </section>
       }
+      <section forStepperCompletedContent data-completed>All steps complete</section>
       <button forStepperPrevious data-prev>Back</button>
       <button forStepperNext data-next>Next</button>
     </div>
@@ -100,6 +104,10 @@ class StepperHost {
     { label: 'B', completed: false, optional: false, disabled: false, hasError: false, state: null },
     { label: 'C', completed: false, optional: false, disabled: false, hasError: false, state: null },
   ]);
+  readonly completeCount = signal(0);
+  onComplete(): void {
+    this.completeCount.update((n) => n + 1);
+  }
 }
 
 const triggerAt = (el: HTMLElement, i: number) =>
@@ -120,6 +128,7 @@ const sepAt = (el: HTMLElement, i: number) =>
 const listEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forStepperList]')!;
 const nextBtn = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-next]')!;
 const prevBtn = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-prev]')!;
+const completedEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-completed]')!;
 
 const triggers = (el: HTMLElement): HTMLElement[] =>
   Array.from(el.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
@@ -559,20 +568,97 @@ describe('ForStepper', () => {
       expect(prevBtn(el).hasAttribute('aria-disabled')).toBe(false);
     });
 
-    it('next is aria-disabled at the last step', () => {
+    it('next is enabled on the last step and advances into the terminal completed state', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
       instance.selectedIndex.set(2);
+      fixture.detectChanges();
+      expect(nextBtn(el).hasAttribute('aria-disabled')).toBe(false);
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(3);
+    });
+
+    it('next is aria-disabled at the terminal completed state', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.selectedIndex.set(3);
       fixture.detectChanges();
       expect(nextBtn(el).getAttribute('aria-disabled')).toBe('true');
     });
 
     it('clicking next while aria-disabled is a no-op', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
-      instance.selectedIndex.set(2);
+      instance.selectedIndex.set(3);
       fixture.detectChanges();
       nextBtn(el).click();
       fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(3);
+    });
+  });
+
+  describe('completed terminal state', () => {
+    it('next() into terminal emits complete once and the completed panel becomes active', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(2);
+      await flush();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      await flush();
+      expect(instance.completeCount()).toBe(1);
+      expect(completedEl(el).getAttribute('data-state')).toBe('active');
+      expect(completedEl(el).hasAttribute('aria-hidden')).toBe(false);
+      expect(completedEl(el).hasAttribute('inert')).toBe(false);
+    });
+
+    it('completed panel is the only active panel in the terminal state', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(3);
+      fixture.detectChanges();
+      await flush();
+      for (let i = 0; i < 3; i++) {
+        expect(contentAt(el, i).hasAttribute('inert')).toBe(true);
+        expect(contentAt(el, i).getAttribute('data-state')).toBe('inactive');
+      }
+      expect(completedEl(el).getAttribute('data-state')).toBe('active');
+    });
+
+    it('completed panel is inactive while not completed', async () => {
+      const { el, flush } = renderHost(StepperHost);
+      await flush();
+      expect(completedEl(el).getAttribute('data-state')).toBe('inactive');
+      expect(completedEl(el).getAttribute('aria-hidden')).toBe('true');
+      expect(completedEl(el).hasAttribute('inert')).toBe(true);
+    });
+
+    it('previous() from terminal returns to the last step and un-completes', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(3);
+      fixture.detectChanges();
+      await flush();
+      prevBtn(el).click();
+      fixture.detectChanges();
       expect(instance.selectedIndex()).toBe(2);
+      expect(completedEl(el).getAttribute('data-state')).toBe('inactive');
+    });
+
+    it('complete fires exactly once across a stay in the terminal state', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(2);
+      await flush();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      await flush();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      await flush();
+      expect(instance.completeCount()).toBe(1);
+    });
+
+    it('zoneless: completed panel flips to active and complete fires after detectChanges', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.selectedIndex.set(3);
+      fixture.detectChanges();
+      expect(completedEl(el).getAttribute('data-state')).toBe('active');
+      expect(instance.completeCount()).toBe(1);
     });
   });
 
@@ -655,6 +741,19 @@ describe('ForStepper', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan).detectChanges()).toThrow(
         /\[forty-cdk\/stepper\] ForStepperList must be used inside a \[forStepper\] element/,
+      );
+    });
+
+    it('ForStepperCompletedContent throws when used outside [forStepper]', () => {
+      @Component({
+        imports: [ForStepperCompletedContent],
+        template: `<section forStepperCompletedContent></section>`,
+      })
+      class OrphanCompleted {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(OrphanCompleted).detectChanges()).toThrow(
+        /\[forty-cdk\/stepper\] ForStepperCompletedContent must be used inside a \[forStepper\] element/,
       );
     });
 
@@ -895,6 +994,23 @@ describe('ForStepperProgress', () => {
     instance.valueBy.set('completed');
     instance.steps.set([{ completed: true }, { completed: true }, { completed: false }]);
     instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('index basis: terminal selectedIndex=count clamps aria-valuenow to 100', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(3);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('Step 3 of 3');
+  });
+
+  it('completed basis: terminal with all steps completed clamps aria-valuenow to 100', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: true }]);
+    instance.selectedIndex.set(3);
     fixture.detectChanges();
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
   });

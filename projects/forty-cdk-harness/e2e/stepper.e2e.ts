@@ -73,12 +73,31 @@ test.describe('ForStepper — interactive mode', () => {
     await expect(el(page, 'prev')).toHaveAttribute('aria-disabled', 'true');
   });
 
-  test('Next is aria-disabled at the last step', async ({ page }) => {
+  test('Next advances the last step into the terminal completed state and disables there', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'stepper');
     await el(page, 'next').click();
     await el(page, 'next').click();
     await el(page, 'next').click();
+    await expect(el(page, 'next')).not.toHaveAttribute('aria-disabled');
+    await expect(el(page, 'completed')).toHaveAttribute('inert');
+    await el(page, 'next').click();
     await expect(el(page, 'next')).toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'completed')).not.toHaveAttribute('inert');
+    await expect(el(page, 'completed')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'content-3')).toHaveAttribute('inert');
+    await expect(el(page, 'complete-count')).toHaveText('1');
+  });
+
+  test('Previous from the terminal completed state returns to the last step', async ({ page }) => {
+    await gotoFixture(page, 'stepper');
+    for (let i = 0; i < 4; i++) await el(page, 'next').click();
+    await expect(el(page, 'completed')).toHaveAttribute('data-state', 'active');
+    await el(page, 'prev').click();
+    await expect(el(page, 'completed')).toHaveAttribute('data-state', 'inactive');
+    await expect(el(page, 'content-3')).not.toHaveAttribute('inert');
+    await expect(el(page, 'next')).not.toHaveAttribute('aria-disabled');
   });
 });
 
