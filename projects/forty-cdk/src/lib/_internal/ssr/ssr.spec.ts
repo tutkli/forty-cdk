@@ -110,6 +110,7 @@ import { ForTreeItemCheckbox } from '../../tree/tree-item-checkbox';
 import { ForTreeItemCheckboxIndicator } from '../../tree/tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from '../../tree/tree-item-label';
 import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
+import { ForDragHandle } from '../../drag-drop/drag-handle';
 import { ForDraggable } from '../../drag-drop/draggable';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
@@ -780,11 +781,14 @@ class DatePickerFixture {
 class TimePickerOpenFixture {}
 
 @Component({
-  imports: [ForDropListGroup, ForDropList, ForDraggable],
+  imports: [ForDropListGroup, ForDropList, ForDraggable, ForDragHandle],
   template: `
     <div forDropListGroup>
       <ul forDropList>
-        <li forDraggable [dragData]="'a'">Alpha</li>
+        <li forDraggable [dragData]="'a'">
+          <span forDragHandle aria-hidden="true">::</span>
+          Alpha
+        </li>
         <li forDraggable [dragData]="'b'">Beta</li>
       </ul>
       <ul forDropList>

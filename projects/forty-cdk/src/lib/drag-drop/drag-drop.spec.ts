@@ -8,6 +8,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
+import { ForDragHandle } from './drag-handle';
 import { ForDraggable } from './draggable';
 import { ForDropList } from './drop-list';
 import { ForDropListGroup } from './drop-list-group';
@@ -15,6 +16,7 @@ import { moveItemInArray } from './move-item-in-array';
 import type { ForDragDropEvent } from './drag-drop-context';
 
 const DND_IMPORTS = [ForDropList, ForDraggable] as const;
+const HANDLE_IMPORTS = [ForDropList, ForDraggable, ForDragHandle] as const;
 const GROUP_IMPORTS = [ForDropList, ForDraggable, ForDropListGroup] as const;
 
 interface Row {
@@ -39,7 +41,9 @@ interface Row {
           [dragData]="row"
           [dragDisabled]="!!row.disabled"
           [attr.data-test-id]="row.id"
-        >{{ row.label }}</li>
+        >
+          {{ row.label }}
+        </li>
       }
     </ul>
   `,
@@ -81,13 +85,15 @@ class TwoListGroupHost {
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Beta' },
   ]);
-  readonly rowsB: WritableSignal<Row[]> = signal([
-    { id: 3, label: 'Gamma' },
-  ]);
+  readonly rowsB: WritableSignal<Row[]> = signal([{ id: 3, label: 'Gamma' }]);
   readonly lastDropA = signal<ForDragDropEvent | null>(null);
   readonly lastDropB = signal<ForDragDropEvent | null>(null);
-  onDropA(e: ForDragDropEvent): void { this.lastDropA.set(e); }
-  onDropB(e: ForDragDropEvent): void { this.lastDropB.set(e); }
+  onDropA(e: ForDragDropEvent): void {
+    this.lastDropA.set(e);
+  }
+  onDropB(e: ForDragDropEvent): void {
+    this.lastDropB.set(e);
+  }
 }
 
 @Component({
@@ -110,13 +116,15 @@ class TwoListConnectedHost {
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Beta' },
   ]);
-  readonly rowsB: WritableSignal<Row[]> = signal([
-    { id: 3, label: 'Gamma' },
-  ]);
+  readonly rowsB: WritableSignal<Row[]> = signal([{ id: 3, label: 'Gamma' }]);
   readonly lastDropA = signal<ForDragDropEvent | null>(null);
   readonly lastDropB = signal<ForDragDropEvent | null>(null);
-  onDropA(e: ForDragDropEvent): void { this.lastDropA.set(e); }
-  onDropB(e: ForDragDropEvent): void { this.lastDropB.set(e); }
+  onDropA(e: ForDragDropEvent): void {
+    this.lastDropA.set(e);
+  }
+  onDropB(e: ForDragDropEvent): void {
+    this.lastDropB.set(e);
+  }
 }
 
 @Component({
@@ -143,7 +151,36 @@ class DisabledConnectedHost {
   ]);
   readonly rowsB: WritableSignal<Row[]> = signal([{ id: 3, label: 'Gamma' }]);
   readonly lastDropA = signal<ForDragDropEvent | null>(null);
-  onDropA(e: ForDragDropEvent): void { this.lastDropA.set(e); }
+  onDropA(e: ForDragDropEvent): void {
+    this.lastDropA.set(e);
+  }
+}
+
+@Component({
+  imports: [...HANDLE_IMPORTS],
+  template: `
+    <ul forDropList (dragDrop)="onDrop($event)">
+      @for (row of rows(); track row.id) {
+        <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">
+          @if (row.id === 1) {
+            <span forDragHandle data-testid="handle-1" aria-hidden="true">::</span>
+          }
+          {{ row.label }}
+        </li>
+      }
+    </ul>
+  `,
+})
+class HandleHost {
+  readonly rows: WritableSignal<Row[]> = signal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Beta' },
+    { id: 3, label: 'Gamma' },
+  ]);
+  readonly lastDrop = signal<ForDragDropEvent | null>(null);
+  onDrop(event: ForDragDropEvent): void {
+    this.lastDrop.set(event);
+  }
 }
 
 function itemEl(host: HTMLElement, testId: string | number): HTMLElement {
@@ -547,6 +584,63 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
       expect(drop!.item).toEqual({ id: 1, label: 'Alpha' });
+    });
+  });
+
+  describe('[forDragHandle]', () => {
+    it('renders data-drag-handle attribute and touch-action: none on the handle element', () => {
+      const { el } = renderHost(HandleHost);
+      const handle = el.querySelector('[forDragHandle]') as HTMLElement;
+      expect(handle).not.toBeNull();
+      expect(handle.hasAttribute('data-drag-handle')).toBe(true);
+      expect(handle.style.touchAction).toBe('none');
+    });
+
+    it('an item with a handle does not set touch-action: none on its own host', () => {
+      const { el } = renderHost(HandleHost);
+      const itemWithHandle = itemEl(el, 1);
+      expect(itemWithHandle.style.touchAction).not.toBe('none');
+    });
+
+    it('an item without a handle sets touch-action: none on its host', () => {
+      const { el } = renderHost(HandleHost);
+      const itemWithoutHandle = itemEl(el, 2);
+      expect(itemWithoutHandle.style.touchAction).toBe('none');
+    });
+
+    it('keyboard lift/drop still works when a handle is present (handle does not break keyboard model)', () => {
+      const { el, fixture } = renderHost(HandleHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      pressKey(first, ' ');
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    it('keyboard lift/drop works under provideZonelessChangeDetection with a handle present', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(HandleHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
     });
   });
 });
