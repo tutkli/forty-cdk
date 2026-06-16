@@ -41,7 +41,7 @@ import { Icon } from '../../../ui/icon';
   template: `
     <playground-demo
       title="Rich content"
-      subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain forMenuItem actions, a forMenuCheckboxItem toggle, a forMenuRadioGroup, a forMenuSub submenu, and grouped labels with separators. Checkbox and radio items preventDefault() on (select) to stay open; plain items close the menu and bubble up through any open submenu."
+      subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain forMenuItem actions, a forMenuCheckboxItem toggle, a forMenuRadioGroup, a forMenuSub submenu, and grouped labels with separators. Checkbox and radio items preventDefault() on (activate) to stay open; plain items close the menu and bubble up through any open submenu."
       sourcePath="projects/forty-cdk-playground/src/app/demos/context-menu/examples/rich-content.example.ts"
     >
       <div demo class="ctx-demo">
@@ -52,8 +52,8 @@ import { Icon } from '../../../ui/icon';
           </div>
           @if (open()) {
             <div forMenuContent class="pg-menu pg-menu--wide" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Back')">Back</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Reload')">Reload</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Back')">Back</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Reload')">Reload</button>
 
               <hr forMenuSeparator class="pg-menu-separator" />
 
@@ -61,7 +61,7 @@ import { Icon } from '../../../ui/icon';
                 forMenuCheckboxItem
                 class="pg-menu-item pg-menu-item--check"
                 [(checked)]="showBookmarks"
-                (select)="$event.preventDefault()"
+                (activate)="$event.preventDefault()"
               >
                 <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                   <app-icon name="check" />
@@ -79,13 +79,13 @@ import { Icon } from '../../../ui/icon';
                 </button>
                 @if (zoomOpen()) {
                   <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Zoom in')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Zoom in')">
                       Zoom in
                     </button>
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Zoom out')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Zoom out')">
                       Zoom out
                     </button>
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Reset zoom')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Reset zoom')">
                       Reset
                     </button>
                   </div>
@@ -101,7 +101,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="utf-8"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -114,7 +114,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="utf-16"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -127,7 +127,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="latin-1"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -144,7 +144,7 @@ import { Icon } from '../../../ui/icon';
               <button
                 forMenuItem
                 class="pg-menu-item pg-menu-item--danger"
-                (select)="onAction('Inspect')"
+                (activate)="onAction('Inspect')"
               >
                 Inspect
               </button>

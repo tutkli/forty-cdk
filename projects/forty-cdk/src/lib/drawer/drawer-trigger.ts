@@ -15,7 +15,7 @@ import { reflectDisabled } from '../_internal/disabled-reflection/disabled-refle
  * ```html
  * <button forDrawerTrigger [(open)]="drawerOpen" controls="my-drawer">Open</button>
  * @if (drawerOpen()) {
- *   <div forDrawer id="my-drawer" (close)="drawerOpen.set(false)">…</div>
+ *   <div forDrawer id="my-drawer" (dismiss)="drawerOpen.set(false)">…</div>
  * }
  * ```
  */

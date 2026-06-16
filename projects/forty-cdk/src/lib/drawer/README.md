@@ -21,7 +21,7 @@ Same engine as Dialog: the directive composes focus trap + scroll lock + dismiss
 
 ### Declarative — `[forDrawer]`
 
-Mount equals open. The consumer's signal drives `@if`; the directive emits `(close)` when it wants to be unmounted.
+Mount equals open. The consumer's signal drives `@if`; the directive emits `(dismiss)` when it wants to be unmounted.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -57,7 +57,7 @@ import {
         side="bottom"
         [snapPoints]="snaps"
         [(activeSnapPoint)]="snap"
-        (close)="open.set(false)"
+        (dismiss)="open.set(false)"
         animate.enter="slide-up"
         animate.leave="slide-down"
       >
@@ -177,7 +177,7 @@ this.#drawers.open(ConfirmDrawer, {
 
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
-**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(drag)` / `(release)` / `(activeSnapPointChange)` outputs via the `onDrag` / `onRelease` / `onActiveSnapPointChange` config callbacks:
+**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(dragMove)` / `(release)` / `(activeSnapPointChange)` outputs via the `onDrag` / `onRelease` / `onActiveSnapPointChange` config callbacks:
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
@@ -238,15 +238,17 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 | Name                 | Payload                                           | Notes                                                           |
 | -------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
-| `close`              | `ForDrawerCloseReason`                            | Wire to `(close)="open.set(false)"`.                            |
+| `dismiss`            | `ForDrawerCloseReason`                            | Wire to `(dismiss)="open.set(false)"`.                            |
 | `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | `preventDefault()` suppresses auto-close.                       |
 | `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | "                                                               |
 | `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | "                                                               |
 | `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite — vetoed by either specific event.                    |
-| `drag`               | `ForDrawerDragEvent`                              | Streams `percentageDragged` and the originating `PointerEvent`. |
+| `dragMove`           | `ForDrawerDragEvent`                              | Streams `percentageDragged` and the originating `PointerEvent`. |
 | `release`            | `ForDrawerReleaseEvent`                           | `willClose`, `nextSnapPoint`. Directive already updated state.  |
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
+
+> **Declarative vs. imperative naming asymmetry.** The declarative output is `(dismiss)`, but the imperative handle method stays `ForDrawerRef.close()`, the `[forDrawerClose]` directive selector is unchanged, and the `ForDrawerCloseReason` type keeps its name. This is intentional: the output rename removes the native-event collision (see [#814](https://github.com/tutkli/forty-cdk/issues/814)) while the imperative surface follows the convention established before that rename.
 
 ## Snap points
 
@@ -302,7 +304,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 ### Backdrop drag-fade (CSS contract)
 
-`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the Vaul-style "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(drag)` listener required:
+`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the Vaul-style "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(dragMove)` listener required:
 
 ```css
 .drawer-backdrop {
@@ -346,7 +348,7 @@ Opt in to the "viewport recedes behind the drawer" effect popularised by Vaul: w
   forDrawer
   side="bottom"
   [scaleBackground]="true"
-  (close)="open.set(false)"
+  (dismiss)="open.set(false)"
   animate.enter="slide-up"
   animate.leave="slide-down"
 >
@@ -374,13 +376,13 @@ Each drawer also reflects its position in the stack as `data-depth` (`"0"` for t
 
 ```html
 @if (parentOpen()) {
-<div forDrawer side="bottom" (close)="parentOpen.set(false)" animate.leave="slide-down">
+<div forDrawer side="bottom" (dismiss)="parentOpen.set(false)" animate.leave="slide-down">
   <h2 forDrawerTitle>Filters</h2>
 
   <button (click)="childOpen.set(true)">Date range</button>
 
   @if (childOpen()) {
-  <div forDrawer side="bottom" (close)="childOpen.set(false)" animate.leave="slide-down">
+  <div forDrawer side="bottom" (dismiss)="childOpen.set(false)" animate.leave="slide-down">
     <h2 forDrawerTitle>Date range</h2>
     …
   </div>
@@ -475,7 +477,7 @@ Pass `[container]` to portal the surface **and** the backdrop into a specific el
   <button forDrawerTrigger [(open)]="open">Open</button>
 
   @if (open()) {
-    <div forDrawer side="right" [modal]="false" [container]="listBox" (close)="open.set(false)">
+    <div forDrawer side="right" [modal]="false" [container]="listBox" (dismiss)="open.set(false)">
       <div forDrawerBackdrop></div>
       <h2 forDrawerTitle>Filters</h2>
       <button forDrawerClose>Close</button>
@@ -511,7 +513,7 @@ The directive deliberately does **not** apply `[hidden]` to its surface. Wrap wi
 <div
   forDrawer
   side="bottom"
-  (close)="open.set(false)"
+  (dismiss)="open.set(false)"
   animate.enter="slide-up"
   animate.leave="slide-down"
 >

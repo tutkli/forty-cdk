@@ -4,7 +4,7 @@ import { injectToastContext } from './toast-context';
 
 /**
  * Close button inside a toast. Apply on a `<button type="button">` so
- * Space / Enter dispatch a native click. Clicking emits `(close)` from
+ * Space / Enter dispatch a native click. Clicking emits `(dismiss)` from
  * the parent `[forToast]` with reason `'manual'`.
  *
  * The host carries `aria-label="Close"` by default; override with your

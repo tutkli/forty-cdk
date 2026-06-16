@@ -28,7 +28,7 @@ import { ForDialogTrigger } from './dialog-trigger';
     @if (open()) {
       <div
         forDialog
-        (close)="open.set(false); reasons.push($event)"
+        (dismiss)="open.set(false); reasons.push($event)"
         [dismissible]="dismissible()"
         [alert]="alert()"
       >
@@ -53,7 +53,7 @@ class DialogHost {
   template: `
     <button (click)="open.set(true)">Open</button>
     @if (open()) {
-      <div forDialog (close)="open.set(false)" [ariaLabel]="'Quick prompt'"></div>
+      <div forDialog (dismiss)="open.set(false)" [ariaLabel]="'Quick prompt'"></div>
     }
   `,
 })
@@ -66,7 +66,7 @@ class AriaLabelHost {
   template: `
     <button (click)="open.set(true)">Open</button>
     @if (open()) {
-      <div forDialog (close)="open.set(false)" [ariaLabel]="''">
+      <div forDialog (dismiss)="open.set(false)" [ariaLabel]="''">
         <h2 forDialogTitle>Confirm</h2>
       </div>
     }
@@ -80,12 +80,12 @@ class EmptyAriaLabelHost {
   imports: [ForDialog, ForDialogClose],
   template: `
     @if (a()) {
-      <div forDialog (close)="a.set(false)">
+      <div forDialog (dismiss)="a.set(false)">
         <button forDialogClose>close A</button>
       </div>
     }
     @if (b()) {
-      <div forDialog (close)="b.set(false)">
+      <div forDialog (dismiss)="b.set(false)">
         <button forDialogClose>close B</button>
       </div>
     }
@@ -103,7 +103,7 @@ class StackedDialogsHost {
       <div
         forDialog
         [dismissible]="dismissible()"
-        (close)="open.set(false)"
+        (dismiss)="open.set(false)"
         (escapeKeyDown)="onEscape($event)"
         (pointerDownOutside)="onPointer($event)"
         (focusOutside)="onFocus($event)"
@@ -310,7 +310,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('Escape key (close-reason payload)', () => {
-    it('emits (close) with reason "escape" while dismissible', async () => {
+    it('emits (dismiss) with reason "escape" while dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -324,7 +324,7 @@ describe('ForDialog (declarative)', () => {
   });
 
   describe('ForDialogClose', () => {
-    it('emits (close) with reason "closeButton" when clicked', async () => {
+    it('emits (dismiss) with reason "closeButton" when clicked', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -337,7 +337,7 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.reasons).toEqual(['closeButton']);
     });
 
-    it('always emits (close) regardless of dismissible (close button is non-dismiss)', async () => {
+    it('always emits (dismiss) regardless of dismissible (close button is non-dismiss)', async () => {
       const r = renderHost(DialogHost);
       r.instance.dismissible.set(false);
       r.instance.open.set(true);
@@ -361,7 +361,7 @@ describe('ForDialog (declarative)', () => {
       expect(backdrop.hasAttribute('data-for-dialog-id')).toBe(false);
     });
 
-    it('emits (close) with reason "backdrop" on direct click when dismissible', async () => {
+    it('emits (dismiss) with reason "backdrop" on direct click when dismissible', async () => {
       const r = renderHost(DialogHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -395,7 +395,7 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.open()).toBe(true);
     });
 
-    it('does not emit (close) when dismissible=false', async () => {
+    it('does not emit (dismiss) when dismissible=false', async () => {
       const r = renderHost(DialogHost);
       r.instance.dismissible.set(false);
       r.instance.open.set(true);
@@ -508,7 +508,7 @@ describe('ForDialog (declarative)', () => {
         template: `
           <button #trigger type="button" (click)="open.set(true)">Open</button>
           @if (open()) {
-            <div forDialog (close)="open.set(false)" [returnFocus]="false" ariaLabel="t">
+            <div forDialog (dismiss)="open.set(false)" [returnFocus]="false" ariaLabel="t">
               <button id="inside" type="button">In</button>
             </div>
           }
@@ -536,7 +536,7 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           @if (open()) {
-            <div forDialog (close)="open.set(false)" initialFocus="container" ariaLabel="t">
+            <div forDialog (dismiss)="open.set(false)" initialFocus="container" ariaLabel="t">
               <button id="inside" type="button">In</button>
             </div>
           }
@@ -560,7 +560,7 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           @if (open()) {
-            <div forDialog (close)="open.set(false)" [modal]="false" ariaLabel="t">
+            <div forDialog (dismiss)="open.set(false)" [modal]="false" ariaLabel="t">
               <button id="inside" type="button">In</button>
             </div>
           }
@@ -630,7 +630,7 @@ describe('ForDialog (declarative)', () => {
         imports: [ForDialog],
         template: `
           @if (open()) {
-            <div forDialog (close)="open.set(false)" [modal]="false" ariaLabel="t"></div>
+            <div forDialog (dismiss)="open.set(false)" [modal]="false" ariaLabel="t"></div>
           }
         `,
       })
@@ -723,7 +723,7 @@ describe('ForDialog (declarative)', () => {
       restoreReducedMotion();
     });
 
-    it('mount/unmount cycle still portals, focuses, and emits (close) under reduced-motion', async () => {
+    it('mount/unmount cycle still portals, focuses, and emits (dismiss) under reduced-motion', async () => {
       const r = renderHost(DialogHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.focus();
@@ -754,7 +754,7 @@ describe('ForDialog (declarative)', () => {
           @if (open()) {
             <div
               forDialog
-              (close)="open.set(false)"
+              (dismiss)="open.set(false)"
               [autoFocusOnOpen]="onAutoFocusOpen"
               ariaLabel="t"
             >
@@ -787,7 +787,7 @@ describe('ForDialog (declarative)', () => {
         template: `
           <input #q id="search" type="search" />
           @if (open()) {
-            <div forDialog (close)="open.set(false)" [autoFocusOnOpen]="vetoOpen" ariaLabel="t">
+            <div forDialog (dismiss)="open.set(false)" [autoFocusOnOpen]="vetoOpen" ariaLabel="t">
               <button id="inside">inside</button>
             </div>
           }
@@ -819,9 +819,9 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement?.id).toBe('inside');
     });
 
-    it('fires [autoFocusOnClose] once when closing via the (close) output', async () => {
+    it('fires [autoFocusOnClose] once when closing via the (dismiss) output', async () => {
       // Issue #104 path-1: close via close button → `requestClose` →
-      // `(close)` output → consumer flips the `@if`-gating signal.
+      // `(dismiss)` output → consumer flips the `@if`-gating signal.
       // Callback must fire exactly once, in the destroy hook.
       @Component({
         imports: [ForDialog, ForDialogClose],
@@ -830,7 +830,7 @@ describe('ForDialog (declarative)', () => {
           @if (open()) {
             <div
               forDialog
-              (close)="open.set(false); closeCount = closeCount + 1"
+              (dismiss)="open.set(false); closeCount = closeCount + 1"
               [autoFocusOnClose]="vetoClose"
               ariaLabel="t"
             >
@@ -861,7 +861,7 @@ describe('ForDialog (declarative)', () => {
       await flush(r.fixture);
       expect(document.activeElement?.id).toBe('inside');
 
-      // Close via the close button — goes through `(close)` output →
+      // Close via the close button — goes through `(dismiss)` output →
       // consumer flips signal → `@if` unmounts → destroy hook fires the
       // callback. Cancel is INSIDE the dialog, so focusing it does not
       // trip the dismissable layer's outside-focus path.
@@ -869,7 +869,7 @@ describe('ForDialog (declarative)', () => {
       cancel.click();
       await flush(r.fixture);
 
-      // Issue #104 acceptance: callback fires once (not twice) on the (close) path.
+      // Issue #104 acceptance: callback fires once (not twice) on the (dismiss) path.
       expect(r.instance.callCount).toBe(1);
       expect(r.instance.closeCount).toBe(1);
       // returnFocus was vetoed — focus did NOT return to the trigger.
@@ -878,7 +878,7 @@ describe('ForDialog (declarative)', () => {
 
     it('skips return-focus when [autoFocusOnClose] calls preventDefault (close via direct signal flip)', async () => {
       // Issue #104 path-2 reproduction: consumer flips `open.set(false)`
-      // directly without going through `(close)` (no listener bound).
+      // directly without going through `(dismiss)` (no listener bound).
       // Before the refactor, `requestClose` was never invoked, so the
       // veto event was never emitted — the dialog silently fell back to
       // the default return-focus behaviour. After the refactor, the
@@ -919,7 +919,7 @@ describe('ForDialog (declarative)', () => {
       sentinel.focus();
       expect(document.activeElement?.id).toBe('sentinel');
 
-      // Direct signal flip — bypasses `(close)` entirely.
+      // Direct signal flip — bypasses `(dismiss)` entirely.
       r.instance.open.set(false);
       await flush(r.fixture);
 
@@ -934,7 +934,7 @@ describe('ForDialog (declarative)', () => {
         template: `
           <button id="trigger" (click)="open.set(true)">open</button>
           @if (open()) {
-            <div forDialog (close)="open.set(false)" [autoFocusOnClose]="onClose" ariaLabel="t">
+            <div forDialog (dismiss)="open.set(false)" [autoFocusOnClose]="onClose" ariaLabel="t">
               <button id="inside">inside</button>
             </div>
           }
@@ -1048,7 +1048,7 @@ describe('ForDialog (declarative)', () => {
           imports: [ForDialog],
           template: `
             @if (open()) {
-              <div forDialog [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+              <div forDialog [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
                 <button id="inside">In</button>
               </div>
             }
@@ -1072,7 +1072,7 @@ describe('ForDialog (declarative)', () => {
           imports: [ForDialog, ForDialogBackdrop],
           template: `
             @if (open()) {
-              <div forDialog [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+              <div forDialog [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
                 <div forDialogBackdrop></div>
                 <button id="inside">In</button>
               </div>
@@ -1097,7 +1097,7 @@ describe('ForDialog (declarative)', () => {
           imports: [ForDialog, ForDialogBackdrop],
           template: `
             @if (open()) {
-              <div forDialog (close)="open.set(false)" ariaLabel="t">
+              <div forDialog (dismiss)="open.set(false)" ariaLabel="t">
                 <div forDialogBackdrop></div>
                 <button id="inside">In</button>
               </div>
@@ -1164,7 +1164,7 @@ describe('ForDialogTrigger', () => {
         Open
       </button>
       @if (open()) {
-        <div forDialog [id]="dialogId" (close)="open.set(false)" ariaLabel="t"></div>
+        <div forDialog [id]="dialogId" (dismiss)="open.set(false)" ariaLabel="t"></div>
       }
     `,
   })
@@ -1274,7 +1274,7 @@ describe('ForDialogTrigger', () => {
       template: `
         <button forDialogTrigger [(open)]="open">Open</button>
         @if (open()) {
-          <div forDialog (close)="open.set(false)" ariaLabel="t"></div>
+          <div forDialog (dismiss)="open.set(false)" ariaLabel="t"></div>
         }
       `,
     })

@@ -64,7 +64,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         class="pg-drawer pg-drawer--tall"
         [scaleBackground]="true"
         [setBackgroundColorOnScale]="scaleBgColor()"
-        (close)="scaleOpen.set(false)"
+        (dismiss)="scaleOpen.set(false)"
         animate.enter="pg-drawer-in-bottom"
         animate.leave="pg-drawer-out-bottom"
       >

@@ -24,7 +24,7 @@ import { queryFlag } from './_query-flag';
         ariaLabel="Test dialog"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
-        (close)="onClose($event)"
+        (dismiss)="onClose($event)"
       >
         <button data-testid="first">First</button>
         <button data-testid="second">Second</button>

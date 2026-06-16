@@ -25,7 +25,7 @@ import { reflectDisabled } from '../_internal/disabled-reflection/disabled-refle
  * ```html
  * <button forDialogTrigger [(open)]="dialogOpen" controls="my-dialog">Open</button>
  * @if (dialogOpen()) {
- *   <div forDialog id="my-dialog" (close)="dialogOpen.set(false)">…</div>
+ *   <div forDialog id="my-dialog" (dismiss)="dialogOpen.set(false)">…</div>
  * }
  * ```
  */

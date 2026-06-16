@@ -35,7 +35,7 @@ import { Icon } from '../../../ui/icon';
   template: `
     <playground-demo
       title="Checkbox & radio items"
-      subtitle="A settings-style dropdown built from the full menu vocabulary: forMenuGroup with a forMenuGroupLabel header, forMenuCheckboxItem toggles (role menuitemcheckbox) and a forMenuRadioGroup of forMenuRadioItem options (role menuitemradio). Each item carries a forMenuItemIndicator that paints its checkmark / dot from the item's checked state. Calling preventDefault() on (select) keeps the menu open so several options can be flipped in one pass — try Space to toggle without closing."
+      subtitle="A settings-style dropdown built from the full menu vocabulary: forMenuGroup with a forMenuGroupLabel header, forMenuCheckboxItem toggles (role menuitemcheckbox) and a forMenuRadioGroup of forMenuRadioItem options (role menuitemradio). Each item carries a forMenuItemIndicator that paints its checkmark / dot from the item's checked state. Calling preventDefault() on (activate) keeps the menu open so several options can be flipped in one pass — try Space to toggle without closing."
       sourcePath="projects/forty-cdk-playground/src/app/demos/dropdown-menu/examples/checkbox-radio.example.ts"
     >
       <div demo class="menu-demo">
@@ -49,7 +49,7 @@ import { Icon } from '../../../ui/icon';
                   forMenuCheckboxItem
                   class="pg-menu-item pg-menu-item--check"
                   [(checked)]="showToolbar"
-                  (select)="$event.preventDefault()"
+                  (activate)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                     <app-icon name="check" />
@@ -60,7 +60,7 @@ import { Icon } from '../../../ui/icon';
                   forMenuCheckboxItem
                   class="pg-menu-item pg-menu-item--check"
                   [(checked)]="showStatusBar"
-                  (select)="$event.preventDefault()"
+                  (activate)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                     <app-icon name="check" />
@@ -71,7 +71,7 @@ import { Icon } from '../../../ui/icon';
                   forMenuCheckboxItem
                   class="pg-menu-item pg-menu-item--check"
                   [(checked)]="wordWrap"
-                  (select)="$event.preventDefault()"
+                  (activate)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                     <app-icon name="check" />
@@ -89,7 +89,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="system"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -102,7 +102,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="light"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -115,7 +115,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="dark"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">

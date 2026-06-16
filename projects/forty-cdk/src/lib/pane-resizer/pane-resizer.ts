@@ -38,7 +38,7 @@ const DRAG_DEAD_ZONE_PX = 3;
  * the focusable divider between two resizable panes. Carries `role="separator"`
  * with live `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, is tabbable,
  * handles arrow keys / Page Up-Down / Home / End / (optional) Enter, and
- * supports pointer drag with `setPointerCapture`. Emits `(resize)` on every
+ * supports pointer drag with `setPointerCapture`. Emits `(resizing)` on every
  * mutation and `(resizeCommit)` once per key release / drag end.
  *
  * It is essentially a 1-D slider wearing a separator role; the static
@@ -47,7 +47,7 @@ const DRAG_DEAD_ZONE_PX = 3;
  *
  * Pointer drag arms only after the pointer travels past a small dead-zone (a
  * few px), so a plain click that fires a stray sub-threshold `pointermove`
- * never mutates the value — `(resize)` won't fire on a jittery click.
+ * never mutates the value — `(resizing)` won't fire on a jittery click.
  *
  * @example
  * ```html
@@ -113,7 +113,7 @@ export class ForPaneResizer {
    * The `model()` change emitter (`(valueChange)`) follows the project-wide
    * contract: it fires only on internal updates (keyboard, drag), never on
    * consumer writes via `[(value)]` — observe transitions without binding
-   * back. `(resize)` carries the same value with a verb-named alias for
+   * back. `(resizing)` carries the same value with a verb-named alias for
    * one-way wiring.
    */
   readonly value = model<number>(0);
@@ -169,12 +169,12 @@ export class ForPaneResizer {
    * `(valueChange)`; pick one or the other based on whether you want
    * two-way binding (`[(value)]`) or one-shot observation.
    */
-  readonly resize = output<number>();
+  readonly resizing = output<number>();
 
   /**
    * Fires once at the end of a resize burst — when the user releases the
    * pointer (or it is cancelled) or releases an arrow / page key. Useful for
-   * persisting the final size after a drag, where `(resize)` may fire 60+
+   * persisting the final size after a drag, where `(resizing)` may fire 60+
    * times per second.
    */
   readonly resizeCommit = output<number>();
@@ -259,7 +259,7 @@ export class ForPaneResizer {
       return;
     }
     this.value.set(next);
-    this.resize.emit(next);
+    this.resizing.emit(next);
     this.#pendingKeyboardCommit = true;
   }
 
@@ -315,7 +315,7 @@ export class ForPaneResizer {
       return;
     }
     this.value.set(next);
-    this.resize.emit(next);
+    this.resizing.emit(next);
   };
 
   readonly #onPointerUp = (event: PointerEvent): void => {
@@ -358,7 +358,7 @@ export class ForPaneResizer {
       return;
     }
     this.value.set(next);
-    this.resize.emit(next);
+    this.resizing.emit(next);
     this.resizeCommit.emit(next);
   }
 

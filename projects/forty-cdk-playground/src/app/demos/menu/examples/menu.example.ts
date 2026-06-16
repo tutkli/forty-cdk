@@ -55,7 +55,7 @@ import { Icon } from '../../../ui/icon';
                   forMenuCheckboxItem
                   class="pg-menu-item pg-menu-item--check"
                   [(checked)]="showToolbar"
-                  (select)="$event.preventDefault()"
+                  (activate)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                     <app-icon name="check" />
@@ -66,7 +66,7 @@ import { Icon } from '../../../ui/icon';
                   forMenuCheckboxItem
                   class="pg-menu-item pg-menu-item--check"
                   [(checked)]="showSidebar"
-                  (select)="$event.preventDefault()"
+                  (activate)="$event.preventDefault()"
                 >
                   <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                     <app-icon name="check" />
@@ -84,7 +84,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="name"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -97,7 +97,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="date"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -110,7 +110,7 @@ import { Icon } from '../../../ui/icon';
                     forMenuRadioItem
                     value="size"
                     class="pg-menu-item pg-menu-item--check"
-                    (select)="$event.preventDefault()"
+                    (activate)="$event.preventDefault()"
                   >
                     <span forMenuItemIndicator [forceMount]="true" class="pg-menu-indicator">
                       <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
@@ -134,13 +134,13 @@ import { Icon } from '../../../ui/icon';
                 </button>
                 @if (moreOpen()) {
                   <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Developer tools')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Developer tools')">
                       Developer tools
                     </button>
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Extensions')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Extensions')">
                       Extensions
                     </button>
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Task manager')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Task manager')">
                       Task manager
                     </button>
                   </div>

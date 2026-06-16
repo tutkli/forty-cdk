@@ -363,7 +363,7 @@ describe('consumer-set static id preservation (#659)', () => {
       imports: [ForDialog, ForDialogTitle, ForDialogDescription],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `@if (open()) {
-        <div forDialog (close)="open.set(false)">
+        <div forDialog (dismiss)="open.set(false)">
           <h2 forDialogTitle id="probe">Confirm</h2>
           <p forDialogDescription id="probe-desc">Sure?</p>
         </div>
@@ -386,7 +386,7 @@ describe('consumer-set static id preservation (#659)', () => {
       imports: [ForDrawer, ForDrawerTitle, ForDrawerDescription],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `@if (open()) {
-        <div forDrawer (close)="open.set(false)">
+        <div forDrawer (dismiss)="open.set(false)">
           <h2 forDrawerTitle id="probe">Title</h2>
           <p forDrawerDescription id="probe-desc">Description</p>
         </div>
@@ -619,7 +619,7 @@ describe('consumer-set static id preservation (#659)', () => {
       imports: [ForToast, ForToastTitle, ForToastDescription],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `@if (open()) {
-        <div forToast (close)="open.set(false)">
+        <div forToast (dismiss)="open.set(false)">
           <div forToastTitle id="probe">Saved</div>
           <div forToastDescription id="probe-desc">Changes are live.</div>
         </div>
@@ -641,7 +641,7 @@ describe('consumer-set static id preservation (#659)', () => {
         imports: [ForToast, ForToastTitle],
         changeDetection: ChangeDetectionStrategy.OnPush,
         template: `@if (open()) {
-          <div forToast (close)="open.set(false)">
+          <div forToast (dismiss)="open.set(false)">
             <div forToastTitle>Saved</div>
           </div>
         }`,

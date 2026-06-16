@@ -36,7 +36,7 @@ import { ForDialog } from './dialog';
   ],
   template: `
     @if (dialogOpen()) {
-      <div forDialog (close)="dialogOpen.set(false)" [ariaLabel]="'Form dialog'">
+      <div forDialog (dismiss)="dialogOpen.set(false)" [ariaLabel]="'Form dialog'">
         <div forSelect [(open)]="selectOpen">
           <button forSelectTrigger>Pick</button>
           @if (selectOpen()) {

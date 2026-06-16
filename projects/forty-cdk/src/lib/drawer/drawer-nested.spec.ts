@@ -14,12 +14,12 @@ import type { ForDrawerCloseReason } from './drawer-context';
   imports: [ForDrawer],
   template: `
     @if (parentOpen()) {
-      <div forDrawer id="parent-drawer" ariaLabel="Parent" (close)="onParentClose($event)">
+      <div forDrawer id="parent-drawer" ariaLabel="Parent" (dismiss)="onParentClose($event)">
         <button id="parent-first" type="button">Parent first</button>
         <button id="open-child" type="button" (click)="childOpen.set(true)">Open child</button>
 
         @if (childOpen()) {
-          <div forDrawer id="child-drawer" ariaLabel="Child" (close)="onChildClose($event)">
+          <div forDrawer id="child-drawer" ariaLabel="Child" (dismiss)="onChildClose($event)">
             <button id="child-first" type="button">Child first</button>
             <button id="child-second" type="button">Child second</button>
           </div>

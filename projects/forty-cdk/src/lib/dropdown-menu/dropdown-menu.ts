@@ -43,7 +43,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
  * ```
  *
  * Selecting a `[forMenuItem]` closes the menu (call `event.preventDefault()`
- * on the item's `(select)` event to keep it open). Escape, pointer-down
+ * on the item's `(activate)` event to keep it open). Escape, pointer-down
  * outside, and focus-outside also close — each emits a vetoable event.
  *
  * Most of the directive's body (id generation, item collection, typeahead,

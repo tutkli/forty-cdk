@@ -20,7 +20,7 @@ import { ForPaneResizer } from './pane-resizer';
       [largeStep]="largeStep()"
       [valueText]="valueText()"
       [controls]="controls()"
-      (resize)="resizeEvents.push($event)"
+      (resizing)="resizeEvents.push($event)"
       (resizeCommit)="commitEvents.push($event)"
     ></div>
   `,
@@ -203,7 +203,7 @@ describe('ForPaneResizer', () => {
       expect(ev.defaultPrevented).toBe(true);
     });
 
-    it('emits (resize) on every step and (resizeCommit) on keyup', () => {
+    it('emits (resizing) on every step and (resizeCommit) on keyup', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
       const inst = fixture.componentInstance;

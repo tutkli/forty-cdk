@@ -66,7 +66,7 @@ test.describe('Toast', () => {
   test('swipe past the default 50 px threshold dismisses the toast', async ({ page }) => {
     // Default swipeThreshold is 50 px. A 200 px horizontal drag clears the
     // threshold comfortably and the toast unmounts (the manager calls
-    // dismiss() from `(close)`, which removes the entry from the toasts
+    // dismiss() from `(dismiss)`, which removes the entry from the toasts
     // signal and the viewport's `@for` drops the DOM node).
     await gotoFixture(page, 'toast', { swipe: 'right' });
     await el(page, 'enqueue').click();

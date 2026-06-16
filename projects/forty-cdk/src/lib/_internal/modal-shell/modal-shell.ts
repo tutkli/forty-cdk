@@ -31,7 +31,7 @@ import {
  *   portaled siblings — Drawer's backdrop is the live example) are picked up.
  *
  * `requestClose` is the consumer's existing implementation; the shell never
- * touches the directive's `(close)` output directly. This keeps the shell
+ * touches the directive's `(dismiss)` output directly. This keeps the shell
  * orthogonal to each primitive's own close-reason union.
  */
 export interface ModalShellDismissConfig {
@@ -380,7 +380,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     dismissable.deactivate();
     // Invoke `(autoFocusOnClose)` synchronously, BEFORE either the modal or
     // non-modal teardown runs. Fires on every close path regardless of mode
-    // (the consumer's `(close)` flow AND a direct `open.set(false)` that
+    // (the consumer's `(dismiss)` flow AND a direct `open.set(false)` that
     // bypasses any close-output emission). The callback is a plain function
     // reference — input signals stay readable during destroy and there is no
     // dependency on `OutputEmitterRef` lifecycle. Non-modal mode never moves

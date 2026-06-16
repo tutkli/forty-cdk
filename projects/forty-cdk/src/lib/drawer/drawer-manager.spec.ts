@@ -547,7 +547,7 @@ describe('ForDrawerManager (programmatic)', () => {
       imports: [ForDrawer],
       template: `
         @if (open()) {
-          <div forDrawer id="parent" ariaLabel="Parent" (close)="open.set(false)"></div>
+          <div forDrawer id="parent" ariaLabel="Parent" (dismiss)="open.set(false)"></div>
         }
       `,
     })

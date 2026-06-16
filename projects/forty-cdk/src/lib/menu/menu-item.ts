@@ -20,7 +20,7 @@ import { handleMenuTabOut } from './menu-tab-out';
  * A single action inside `[forMenuContent]`. Apply on a `<button>` so
  * Space / Enter activation come from native button semantics.
  *
- * Activation emits `(select)` and then closes the menu. To keep the menu
+ * Activation emits `(activate)` and then closes the menu. To keep the menu
  * open after activation (e.g. the action toggled something the user
  * wants to refine), call `event.preventDefault()` on the emitted event.
  *
@@ -80,7 +80,7 @@ export class ForMenuItem {
    * Fires on click / Enter / Space activation. Call `preventDefault()`
    * on the emitted veto to keep the menu open after activation.
    */
-  readonly select = output<VetoableEvent>();
+  readonly activate = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -105,7 +105,7 @@ export class ForMenuItem {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (!emitVetoableEvent(this.select)) {
+    if (!emitVetoableEvent(this.activate)) {
       this.ctx.closeMenu('select');
     }
   }

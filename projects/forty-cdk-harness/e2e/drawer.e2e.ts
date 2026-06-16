@@ -338,7 +338,7 @@ test.describe('Drawer', () => {
     }) => {
       // Same 200px drawer and 120px drag that dismisses with the default
       // swipeToDismiss=true (first test in this block). With the input
-      // disabled the pointerdown listener never arms the gesture: no `(drag)`
+      // disabled the pointerdown listener never arms the gesture: no `(dragMove)`
       // fires and the drawer stays mounted with no close reason.
       await gotoFixture(page, 'drawer', { drawerHeight: '200', noSwipeToDismiss: '1' });
       await el(page, 'trigger').click();
@@ -462,7 +462,7 @@ test.describe('Drawer', () => {
       page,
     }) => {
       // Two-phase: start a drag on the `first` button (on the drawer surface
-      // outside the handle) — no `(drag)` ever fires. Then start one on the
+      // outside the handle) — no `(dragMove)` ever fires. Then start one on the
       // handle and confirm the gesture arms (drag-count climbs).
       await gotoFixture(page, 'drawer', { drawerHeight: '200', handleOnly: '1' });
       await el(page, 'trigger').click();
@@ -582,7 +582,7 @@ test.describe('Drawer', () => {
       // 10 × 30 px = 300 px cumulative travel on a 400 px drawer; with
       // closeThreshold raised to 1 the gesture cannot dismiss, so the
       // release path just snaps back and we can read the final
-      // `(drag)` percent off the fixture. Final offset is 10 * 30 = 300,
+      // `(dragMove)` percent off the fixture. Final offset is 10 * 30 = 300,
       // percent = 300 / 400 = 0.75. Polled per-step so a "latest delta"
       // regression (offset stuck at 30) would surface as a non-monotonic
       // sequence, not just a wrong terminal value.

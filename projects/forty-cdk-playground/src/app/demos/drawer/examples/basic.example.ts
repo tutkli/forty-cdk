@@ -97,7 +97,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         [alert]="basicAlert()"
         [handleOnly]="basicHandleOnly()"
         [swipeToDismiss]="basicSwipe()"
-        (close)="onBasicClose($event)"
+        (dismiss)="onBasicClose($event)"
         [animate.enter]="basicEnter()"
         [animate.leave]="basicLeave()"
       >

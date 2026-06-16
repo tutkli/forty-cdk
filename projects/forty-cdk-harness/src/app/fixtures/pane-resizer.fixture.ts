@@ -100,7 +100,7 @@ import { ForPaneResizer } from 'forty-cdk';
         [step]="step"
         [largeStep]="largeStep"
         [dir]="dir"
-        (resize)="onResize($event)"
+        (resizing)="onResize($event)"
         (resizeCommit)="onResizeCommit($event)"
       ></div>
       <div data-testid="right-pane"></div>

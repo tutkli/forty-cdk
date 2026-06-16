@@ -36,15 +36,15 @@ import { DemoLayout } from '../../../ui/demo-layout';
           </div>
           @if (open()) {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Cut')">Cut</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Copy')">Copy</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Paste')">Paste</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Cut')">Cut</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Copy')">Copy</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Paste')">Paste</button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Rename')">Rename</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Rename')">Rename</button>
               <button
                 forMenuItem
                 class="pg-menu-item pg-menu-item--danger"
-                (select)="onAction('Delete')"
+                (activate)="onAction('Delete')"
               >
                 Delete
               </button>

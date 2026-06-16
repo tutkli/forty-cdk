@@ -70,7 +70,7 @@ export function createVetoableNativeEvent<E extends Event>(event: E): VetoableNa
  * Builds a fresh `VetoableEvent`, emits it through `emitter`, and returns
  * whether the consumer vetoed. Use for one-shot outputs whose veto state
  * doesn't need to be observed by sibling outputs (e.g. `(autoFocusOnOpen)`,
- * a menu item's `(select)`).
+ * a menu item's `(activate)`).
  */
 export function emitVetoableEvent(emitter: OutputEmitterRef<VetoableEvent>): boolean {
   const veto = createVetoableEvent();

@@ -220,7 +220,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
   interactOutside?: (event: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
 
   /**
-   * Mirrors the declarative `(drag)` output: invoked on every pointer-move
+   * Mirrors the declarative `(dragMove)` output: invoked on every pointer-move
    * frame of a swipe gesture with `percentageDragged` ∈ `[0, 1]`. Lets a
    * programmatic consumer drive bespoke drag visualizations the way the
    * directive consumer can.

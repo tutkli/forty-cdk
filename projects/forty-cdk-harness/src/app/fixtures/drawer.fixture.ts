@@ -106,8 +106,8 @@ import { queryFlag } from './_query-flag';
         [autoFocusOnClose]="vetoClose ? veto : undefined"
         [style.height.px]="drawerHeightPx()"
         [closeThreshold]="closeThresholdValue()"
-        (close)="onClose($event)"
-        (drag)="onDrag($event)"
+        (dismiss)="onClose($event)"
+        (dragMove)="onDrag($event)"
         (release)="onRelease($event)"
       >
         @if (backdrop) {
@@ -135,7 +135,7 @@ import { queryFlag } from './_query-flag';
               data-testid="child-drawer"
               ariaLabel="Child drawer"
               [scaleBackground]="scaleBackground"
-              (close)="onChildClose($event)"
+              (dismiss)="onChildClose($event)"
             >
               <button data-testid="child-first">Child first</button>
               <button data-testid="child-second">Child second</button>
@@ -162,7 +162,7 @@ export class DrawerFixture {
   protected readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly lastChildCloseReason = signal<ForDrawerCloseReason | null>(null);
 
-  // Drag / release telemetry. Updated from the (drag) / (release) outputs and
+  // Drag / release telemetry. Updated from the (dragMove) / (release) outputs and
   // mirrored into <output> elements so Playwright specs can poll them as text.
   // Keep numbers + booleans only — anything richer (e.g. PointerEvent shape)
   // would have to be serialised by hand on every emit.

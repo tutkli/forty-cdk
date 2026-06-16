@@ -52,7 +52,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         />
         <app-control-switch
           label="dismissible"
-          hint="When on, Escape, backdrop click, and pointer-down outside emit (close). Turn off for critical confirm flows that must be answered via a close button."
+          hint="When on, Escape, backdrop click, and pointer-down outside emit (dismiss). Turn off for critical confirm flows that must be answered via a close button."
           [(checked)]="dismissible"
         />
         <app-control-switch
@@ -89,7 +89,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         [alert]="alert()"
         [returnFocus]="returnFocus()"
         [initialFocus]="initialFocus()"
-        (close)="onClose($event)"
+        (dismiss)="onClose($event)"
         animate.enter="pg-fade-in"
         animate.leave="pg-fade-out"
       >

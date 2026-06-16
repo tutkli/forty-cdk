@@ -246,7 +246,7 @@ The root directive wraps both the trigger and the content and owns its open stat
 
 ### Flat (Dialog)
 
-Dialog is structurally different: the trigger and the dialog surface can live anywhere in the template and are wired together by a shared id. There is no wrapper directive. The consumer's signal drives the `@if` gate, and the dialog emits a `(close)` event when it wants to be unmounted (Escape, backdrop, close button).
+Dialog is structurally different: the trigger and the dialog surface can live anywhere in the template and are wired together by a shared id. There is no wrapper directive. The consumer's signal drives the `@if` gate, and the dialog emits a `(dismiss)` event when it wants to be unmounted (Escape, backdrop, close button).
 
 ```html
 <!-- trigger anywhere in the template -->
@@ -254,7 +254,7 @@ Dialog is structurally different: the trigger and the dialog surface can live an
 
 <!-- surface anywhere in the template — id must match controls above -->
 @if (open()) {
-<div forDialog id="my-dialog" (close)="open.set(false)">
+<div forDialog id="my-dialog" (dismiss)="open.set(false)">
   <h2 forDialogTitle>Are you sure?</h2>
   <button forDialogClose>Cancel</button>
   <button (click)="confirm()">Confirm</button>
