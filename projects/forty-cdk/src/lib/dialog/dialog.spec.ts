@@ -1066,6 +1066,55 @@ describe('ForDialog (declarative)', () => {
         const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
         expect(dialog.parentElement).toBe(boxEl);
       });
+
+      it('portals the backdrop into the same container element', async () => {
+        @Component({
+          imports: [ForDialog, ForDialogBackdrop],
+          template: `
+            @if (open()) {
+              <div forDialog [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+                <div forDialogBackdrop></div>
+                <button id="inside">In</button>
+              </div>
+            }
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+          readonly box = boxEl;
+        }
+
+        const r = renderHost(Host);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const backdrop = document.querySelector<HTMLElement>('[forDialogBackdrop]')!;
+        expect(backdrop.parentElement).toBe(boxEl);
+      });
+
+      it('portals the backdrop to document.body when no container is set', async () => {
+        @Component({
+          imports: [ForDialog, ForDialogBackdrop],
+          template: `
+            @if (open()) {
+              <div forDialog (close)="open.set(false)" ariaLabel="t">
+                <div forDialogBackdrop></div>
+                <button id="inside">In</button>
+              </div>
+            }
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+        }
+
+        const r = renderHost(Host);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const backdrop = document.querySelector<HTMLElement>('[forDialogBackdrop]')!;
+        expect(backdrop.parentElement).toBe(document.body);
+      });
     });
 
     describe('zoneless reactivity', () => {

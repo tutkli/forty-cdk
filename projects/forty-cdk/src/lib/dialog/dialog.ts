@@ -93,8 +93,8 @@ export class ForDialog implements ForDialogContext {
   /**
    * Portal target for the dialog surface. Defaults to `document.body`. Pair
    * with `[modal]="false"` for a dialog scoped to a positioned region
-   * instead of the viewport. Read once at mount. NOTE: `[forDialogBackdrop]`
-   * still portals to `document.body` in v1 — see the README.
+   * instead of the viewport. Read once at mount. The backdrop portals to the
+   * same container.
    */
   readonly container = input<HTMLElement | null>(null);
 

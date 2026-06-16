@@ -26,6 +26,12 @@ export interface ForDialogContext {
   readonly alert: Signal<boolean>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
+  /**
+   * Portal target shared with the backdrop so both resolve the same
+   * container. `null` ⇒ `document.body`. Set via the dialog's `container`
+   * input; read once per mount.
+   */
+  readonly container: Signal<HTMLElement | null>;
 
   registerLabel(id: string): void;
   unregisterLabel(id: string): void;

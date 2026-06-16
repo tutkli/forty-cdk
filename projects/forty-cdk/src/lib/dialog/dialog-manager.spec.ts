@@ -831,4 +831,34 @@ describe('ForDialogManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
   });
+
+  describe('container (scoped programmatic dialog)', () => {
+    @Component({
+      imports: [ForDialogBackdrop],
+      template: `
+        <div forDialogBackdrop></div>
+        <button id="ok">OK</button>
+      `,
+    })
+    class ContainerBackdropDialog {}
+
+    it('portals the surface and backdrop into the container element when modal: false', () => {
+      const boxEl = document.createElement('div');
+      boxEl.id = 'scoped-box';
+      document.body.appendChild(boxEl);
+
+      try {
+        const { dialogs } = setup();
+        dialogs.open(ContainerBackdropDialog, { modal: false, container: boxEl });
+        TestBed.tick();
+
+        const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+        const backdrop = document.querySelector<HTMLElement>('[forDialogBackdrop]')!;
+        expect(host.parentElement).toBe(boxEl);
+        expect(backdrop.parentElement).toBe(boxEl);
+      } finally {
+        boxEl.remove();
+      }
+    });
+  });
 });
