@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import {
   ForDragPlaceholder,
@@ -50,7 +51,7 @@ interface Item {
     `,
   ],
   template: `
-    <ul forDropList data-testid="list" (dragDrop)="onDrop($event)">
+    <ul forDropList data-testid="list" [liveSort]="liveSort" (dragDrop)="onDrop($event)">
       @for (item of items(); track item.id; let i = $index) {
         <li forDraggable [dragData]="item" [attr.data-testid]="'item-' + i">
           {{ item.label }}
@@ -66,6 +67,10 @@ interface Item {
   `,
 })
 export class DragDropTemplatesFixture {
+  readonly #route = inject(ActivatedRoute);
+
+  protected readonly liveSort = this.#route.snapshot.queryParamMap.get('liveSort') === 'true';
+
   protected readonly items = signal<Item[]>([
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Beta' },

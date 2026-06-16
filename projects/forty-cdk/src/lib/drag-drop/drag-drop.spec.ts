@@ -777,4 +777,101 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
   });
+
+  describe('[liveSort]', () => {
+    interface TplRow {
+      id: number;
+      label: string;
+    }
+
+    @Component({
+      imports: [ForDropList, ForDraggable, ForDragPreview, ForDragPlaceholder],
+      template: `
+        <ul forDropList [liveSort]="liveSort()" (dragDrop)="onDrop($event)">
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">
+              {{ row.label }}
+              <ng-template forDragPreview
+                ><span class="cp">preview {{ row.label }}</span></ng-template
+              >
+              <ng-template forDragPlaceholder><span class="ph">gap</span></ng-template>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class LiveSortHost {
+      readonly liveSort = signal(true);
+      readonly rows: WritableSignal<TplRow[]> = signal([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      readonly lastDrop = signal<ForDragDropEvent | null>(null);
+      onDrop(event: ForDragDropEvent): void {
+        this.lastDrop.set(event);
+      }
+    }
+
+    it('keyboard lift/drop with liveSort=true emits correct indices and never hides the host', () => {
+      const { el, fixture } = renderHost(LiveSortHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      const drop = comp.lastDrop();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    it('keyboard lift/drop with liveSort=false (default) also never hides the host', async () => {
+      const { el, fixture } = renderHost(LiveSortHost);
+      const comp = fixture.componentInstance;
+      comp.liveSort.set(false);
+      fixture.detectChanges();
+      await flush(fixture);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      expect(first.style.display).not.toBe('none');
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    it('zoneless: keyboard lift → move → drop on liveSort list commits correct indices', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(LiveSortHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+  });
 });
