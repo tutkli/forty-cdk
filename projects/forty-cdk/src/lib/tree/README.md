@@ -261,6 +261,38 @@ export class Categories {
 }
 ```
 
+## Filtering
+
+forty-cdk ships no filtering machinery — matching stays consumer-owned. The library exports one pure helper, `expandToReveal`, that translates the matched set into the ancestor values you need to expand so every match becomes visible.
+
+**Three-step recipe:**
+
+1. **Filter your own data and re-render.** Derive a filtered node list with `computed()` and drive the tree's `@for` off that signal. The library adds no filtering engine, empty-state pieces, or snapshot logic.
+2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` to get the unique ancestor values to merge into `[(expanded)]`. The helper is pure — it has no Angular reactivity, no DOM, and no side effects.
+3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
+
+```ts
+import { expandToReveal } from 'forty-cdk';
+
+readonly query = signal('');
+readonly filtered = computed(() => filterNodes(this.roots, this.query()));
+
+constructor() {
+  // Consumer-owned: re-reveal matches whenever the query changes.
+  effect(() => {
+    const matches = collectIds(this.filtered());
+    this.expanded.update((open) => [
+      ...new Set([...open, ...expandToReveal(matches, this.ancestorsOf)]),
+    ]);
+  });
+}
+
+// Returns a node's ancestor ids from the consumer's own hierarchy.
+ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the path */ };
+```
+
+`expandToReveal` accepts any `Iterable<string>` (array, `Set`, generator). Root-level matches contribute nothing — a root has no ancestors to expand.
+
 ## Keyboard
 
 Vertical, LTR (mirrored for `dir="rtl"`):

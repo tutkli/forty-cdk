@@ -7,6 +7,7 @@ import {
   ForTreeItemCheckboxIndicator,
   ForTreeItemLabel,
   ForTreeItemToggle,
+  expandToReveal,
 } from 'forty-cdk';
 
 import { queryFlag } from './_query-flag';
@@ -59,6 +60,18 @@ function buildDescendantsMap(nodes: FileNode[]): Map<string, readonly string[]> 
 }
 
 const DESCENDANTS = buildDescendantsMap(ROOTS);
+
+function buildAncestorsMap(nodes: FileNode[]): Map<string, readonly string[]> {
+  const map = new Map<string, readonly string[]>();
+  const walk = (n: FileNode, ancestors: readonly string[]): void => {
+    map.set(n.id, ancestors);
+    n.children?.forEach((c) => walk(c, [n.id, ...ancestors]));
+  };
+  nodes.forEach((n) => walk(n, []));
+  return map;
+}
+
+const ANCESTORS = buildAncestorsMap(ROOTS);
 
 @Component({
   selector: 'app-tree-node',
@@ -125,6 +138,13 @@ export class TreeNode {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTree, TreeNode],
   template: `
+    @if (showFilter) {
+      <input
+        data-testid="filter"
+        placeholder="filter"
+        (input)="onFilter($any($event.target).value)"
+      />
+    }
     <input data-testid="before" placeholder="before-tree" />
     <button data-testid="disable-notes" type="button" (click)="disableNotes()">disable</button>
     <ul
@@ -169,6 +189,27 @@ export class TreeFixture {
 
   protected readonly descendantsFn = (value: string): readonly string[] =>
     DESCENDANTS.get(value) ?? [];
+
+  protected readonly showFilter = queryFlag('filter');
+  protected readonly ancestorsFn = (value: string): readonly string[] => ANCESTORS.get(value) ?? [];
+
+  protected onFilter(query: string): void {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return;
+    }
+    const matches: string[] = [];
+    const walk = (n: FileNode): void => {
+      if (n.name.toLowerCase().includes(q)) {
+        matches.push(n.id);
+      }
+      n.children?.forEach(walk);
+    };
+    this.roots.forEach(walk);
+    this.open.update((open) => [
+      ...new Set([...open, ...expandToReveal(matches, this.ancestorsFn)]),
+    ]);
+  }
 
   protected disableNotes(): void {
     this.disabledNodes.update((ids) => (ids.includes('notes') ? ids : [...ids, 'notes']));
