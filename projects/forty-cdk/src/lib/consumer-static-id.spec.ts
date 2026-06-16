@@ -60,6 +60,13 @@ import {
   ForSelectOption,
   ForSelectTrigger,
 } from './select';
+import {
+  ForStepper,
+  ForStepperContent,
+  ForStepperItem,
+  ForStepperList,
+  ForStepperTrigger,
+} from './stepper';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from './tabs';
 import { ForToast, ForToastDescription, ForToastTitle } from './toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from './tooltip';
@@ -199,6 +206,31 @@ describe('consumer-set static id preservation (#659)', () => {
       await flush(fixture);
       expect(idOf(fixture, '[forTabsTrigger]')).toBe('probe');
       expect(idOf(fixture, '[forTabsContent]')).toBe('probe-content');
+    });
+  });
+
+  describe('Stepper', () => {
+    @Component({
+      imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forStepper [(selectedIndex)]="index">
+        <ol forStepperList>
+          <li forStepperItem>
+            <button forStepperTrigger id="probe">A</button>
+          </li>
+        </ol>
+        <section forStepperContent id="probe-content">Content A</section>
+      </div>`,
+    })
+    class Host {
+      readonly index = signal(0);
+    }
+
+    it('trigger and content preserve a consumer-set static id', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(idOf(fixture, '[forStepperTrigger]')).toBe('probe');
+      expect(idOf(fixture, '[forStepperContent]')).toBe('probe-content');
     });
   });
 

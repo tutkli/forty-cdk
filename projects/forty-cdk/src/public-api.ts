@@ -58,3 +58,4 @@ export * from './lib/time-field';
 export * from './lib/time-picker';
 export * from './lib/carousel';
 export * from './lib/drag-drop';
+export * from './lib/stepper';

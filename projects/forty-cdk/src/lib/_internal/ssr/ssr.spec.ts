@@ -116,6 +116,15 @@ import { ForDragPreview } from '../../drag-drop/drag-preview';
 import { ForDraggable } from '../../drag-drop/draggable';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
+import { ForStepper } from '../../stepper/stepper';
+import { ForStepperContent } from '../../stepper/stepper-content';
+import { ForStepperIndicator } from '../../stepper/stepper-indicator';
+import { ForStepperItem } from '../../stepper/stepper-item';
+import { ForStepperList } from '../../stepper/stepper-list';
+import { ForStepperNext } from '../../stepper/stepper-next';
+import { ForStepperPrevious } from '../../stepper/stepper-previous';
+import { ForStepperSeparator } from '../../stepper/stepper-separator';
+import { ForStepperTrigger } from '../../stepper/stepper-trigger';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
@@ -812,10 +821,43 @@ class TimePickerOpenFixture {}
 })
 class DragDropFixture {}
 
+@Component({
+  imports: [
+    ForStepper,
+    ForStepperList,
+    ForStepperItem,
+    ForStepperTrigger,
+    ForStepperIndicator,
+    ForStepperSeparator,
+    ForStepperContent,
+    ForStepperNext,
+    ForStepperPrevious,
+  ],
+  template: `
+    <div forStepper [selectedIndex]="0">
+      <ol forStepperList ariaLabel="Checkout">
+        <li forStepperItem>
+          <button forStepperTrigger><span forStepperIndicator></span>One</button>
+          <span forStepperSeparator></span>
+        </li>
+        <li forStepperItem [completed]="true">
+          <button forStepperTrigger><span forStepperIndicator></span>Two</button>
+        </li>
+      </ol>
+      <section forStepperContent>One body</section>
+      <section forStepperContent>Two body</section>
+      <button forStepperPrevious>Back</button>
+      <button forStepperNext>Next</button>
+    </div>
+  `,
+})
+class StepperFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
   TabsFixture,
+  StepperFixture,
   CarouselFixture,
   CarouselAutoplayFixture,
   SwitchFixture,

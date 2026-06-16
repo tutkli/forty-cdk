@@ -128,6 +128,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
   },
   {
+    path: 'stepper',
+    loadComponent: () => import('./fixtures/stepper.fixture').then((m) => m.StepperFixture),
+  },
+  {
     path: 'toast',
     loadComponent: () => import('./fixtures/toast.fixture').then((m) => m.ToastFixture),
   },
