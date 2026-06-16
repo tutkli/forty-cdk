@@ -39,7 +39,7 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
  * <div forContextMenu [(open)]="open">
  *   <div forContextMenuTrigger class="region">Right-click here</div>
  *   @if (open()) {
- *     <div forMenuContent (close)="open.set(false)">…</div>
+ *     <div forMenuContent>…</div>
  *   }
  * </div>
  * ```
