@@ -7,6 +7,7 @@ export { ForStepperSeparator } from './stepper-separator';
 export { ForStepperContent } from './stepper-content';
 export { ForStepperNext } from './stepper-next';
 export { ForStepperPrevious } from './stepper-previous';
+export { ForStepperProgress } from './stepper-progress';
 export {
   FOR_STEPPER_CONTEXT,
   FOR_STEPPER_ITEM_CONTEXT,

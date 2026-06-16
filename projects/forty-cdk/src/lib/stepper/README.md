@@ -22,6 +22,7 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 | `ForStepperContent`    | `[forStepperContent]`       | `tabpanel` / `group`                   |
 | `ForStepperNext`       | `button[forStepperNext]`    | next-step button                       |
 | `ForStepperPrevious`   | `button[forStepperPrevious]`| previous-step button                   |
+| `ForStepperProgress`   | `[forStepperProgress]`      | `progressbar` (optional)               |
 
 ---
 
@@ -156,6 +157,30 @@ export class SignupWizard {
 
 ---
 
+## Progress bar (`ForStepperProgress`)
+
+An optional `role="progressbar"` reflecting how far through the steps the user is. Reports
+`aria-valuenow` (0–100) + `aria-valuetext`, and publishes a `--for-stepper-progress` (0–1)
+custom property for a styleable fill. `valueBy="index"` (default) tracks the current step
+index; `valueBy="completed"` tracks the count of completed steps.
+
+```html
+<div forStepper [(selectedIndex)]="step">
+  <div forStepperProgress ariaLabel="Checkout progress"></div>
+  <!-- … list / content … -->
+</div>
+```
+
+```css
+[forStepperProgress]::after {
+  content: '';
+  display: block;
+  width: calc(var(--for-stepper-progress) * 100%);
+}
+```
+
+---
+
 ## Custom icon per state (indicator example)
 
 ```html
@@ -230,3 +255,4 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 - **Disabled triggers** in interactive mode retain their tab stop using `aria-disabled="true"` rather than the native `disabled` attribute, so assistive technology can announce them.
 - **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` + `data-disabled=""` on the trigger. Keyboard navigation skips them automatically.
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.
+- **Progress bar** (`[forStepperProgress]`) is an opt-in part. When present it exposes `role="progressbar"` with `aria-valuemin="0"`, `aria-valuemax="100"`, and `aria-valuenow` derived from the current step or the count of completed steps.

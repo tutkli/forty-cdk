@@ -11,6 +11,7 @@ import { ForStepperItem } from './stepper-item';
 import { ForStepperList } from './stepper-list';
 import { ForStepperNext } from './stepper-next';
 import { ForStepperPrevious } from './stepper-previous';
+import { ForStepperProgress } from './stepper-progress';
 import { ForStepperSeparator } from './stepper-separator';
 import { ForStepperTrigger } from './stepper-trigger';
 import { provideForStepperDefaults } from './stepper-defaults';
@@ -811,5 +812,190 @@ describe('ForStepper', () => {
       fixture.detectChanges();
       expect(itemAt(el, 0).getAttribute('data-state')).toBe('completed');
     });
+  });
+});
+
+describe('ForStepperProgress', () => {
+  @Component({
+    imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
+    template: `
+      <div forStepper [(selectedIndex)]="selectedIndex" [orientation]="orientation()">
+        <div forStepperProgress [valueBy]="valueBy()" [ariaLabel]="ariaLabel()" data-testid="progress"></div>
+        <ol forStepperList ariaLabel="Steps">
+          @for (s of steps(); track $index) {
+            <li forStepperItem [completed]="s.completed">
+              <button type="button" forStepperTrigger>Step {{ $index }}</button>
+            </li>
+          }
+        </ol>
+      </div>
+    `,
+  })
+  class ProgressHost {
+    readonly selectedIndex = signal(0);
+    readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+    readonly valueBy = signal<'index' | 'completed'>('index');
+    readonly ariaLabel = signal<string | null>(null);
+    readonly steps = signal([
+      { completed: false },
+      { completed: false },
+      { completed: false },
+    ]);
+  }
+
+  const progressEl = (el: HTMLElement) =>
+    el.querySelector<HTMLElement>('[data-testid="progress"]')!;
+
+  it('has role="progressbar", aria-valuemin="0", aria-valuemax="100"', () => {
+    const { el } = renderHost(ProgressHost);
+    const p = progressEl(el);
+    expect(p.getAttribute('role')).toBe('progressbar');
+    expect(p.getAttribute('aria-valuemin')).toBe('0');
+    expect(p.getAttribute('aria-valuemax')).toBe('100');
+  });
+
+  it('index basis: selectedIndex=0 → aria-valuenow="0"', () => {
+    const { el } = renderHost(ProgressHost);
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('0');
+  });
+
+  it('index basis: selectedIndex=1 of 3 → aria-valuenow="50"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('50');
+  });
+
+  it('index basis: selectedIndex=2 of 3 (last) → aria-valuenow="100"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('aria-valuetext (index basis): selectedIndex=1 of 3 → "Step 2 of 3"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('Step 2 of 3');
+  });
+
+  it('completed basis: 1 completed step of 3 → aria-valuenow="50", aria-valuetext="50% complete"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: false }, { completed: false }]);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('50');
+    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('50% complete');
+  });
+
+  it('completed basis: all-completed → aria-valuenow="100"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: false }]);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('edge — single step: aria-valuenow="0"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.steps.set([{ completed: false }]);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('0');
+  });
+
+  it('edge — zero steps: aria-valuenow="0", role="progressbar" present, no throw', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.steps.set([]);
+    fixture.detectChanges();
+    const p = progressEl(el);
+    expect(p.getAttribute('role')).toBe('progressbar');
+    expect(p.getAttribute('aria-valuenow')).toBe('0');
+  });
+
+  it('--for-stepper-progress custom property is 0.5 at 50%', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    const p = progressEl(el);
+    const inlineStyle = p.getAttribute('style') ?? '';
+    const fromProp = p.style.getPropertyValue('--for-stepper-progress');
+    if (fromProp !== '') {
+      expect(fromProp.trim()).toBe('0.5');
+    } else {
+      expect(inlineStyle).toContain('--for-stepper-progress: 0.5');
+    }
+  });
+
+  it('data-orientation reflects the root orientation', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.orientation.set('vertical');
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('data-orientation')).toBe('vertical');
+  });
+
+  it('ariaLabel is reflected when set', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.ariaLabel.set('Checkout progress');
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-label')).toBe('Checkout progress');
+  });
+
+  it('ariaLabel null → no aria-label attribute', () => {
+    const { el } = renderHost(ProgressHost);
+    expect(progressEl(el).hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('ariaLabel empty string → no aria-label attribute', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.ariaLabel.set('');
+    fixture.detectChanges();
+    expect(progressEl(el).hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('zoneless: updating selectedIndex updates aria-valuenow after detectChanges', () => {
+    @Component({
+      imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
+      template: `
+        <div forStepper [(selectedIndex)]="idx">
+          <div forStepperProgress data-testid="zl-progress"></div>
+          <ol forStepperList ariaLabel="Steps">
+            <li forStepperItem><button type="button" forStepperTrigger>A</button></li>
+            <li forStepperItem><button type="button" forStepperTrigger>B</button></li>
+            <li forStepperItem><button type="button" forStepperTrigger>C</button></li>
+          </ol>
+        </div>
+      `,
+    })
+    class ZonelessProgressHost {
+      readonly idx = signal(0);
+    }
+
+    const { el, instance, fixture } = renderHost(ZonelessProgressHost);
+    expect(
+      el.querySelector<HTMLElement>('[data-testid="zl-progress"]')!.getAttribute('aria-valuenow'),
+    ).toBe('0');
+
+    instance.idx.set(1);
+    fixture.detectChanges();
+
+    expect(
+      el.querySelector<HTMLElement>('[data-testid="zl-progress"]')!.getAttribute('aria-valuenow'),
+    ).toBe('50');
+  });
+
+  it('orphan guard: ForStepperProgress outside [forStepper] throws', () => {
+    @Component({
+      imports: [ForStepperProgress],
+      template: `<div forStepperProgress></div>`,
+    })
+    class OrphanProgress {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(OrphanProgress).detectChanges()).toThrow(
+      /\[forty-cdk\/stepper\] ForStepperProgress must be used inside a \[forStepper\] element/,
+    );
   });
 });

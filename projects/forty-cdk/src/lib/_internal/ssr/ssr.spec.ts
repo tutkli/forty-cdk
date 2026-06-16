@@ -124,6 +124,7 @@ import { ForStepperList } from '../../stepper/stepper-list';
 import { ForStepperNext } from '../../stepper/stepper-next';
 import { ForStepperPrevious } from '../../stepper/stepper-previous';
 import { ForStepperSeparator } from '../../stepper/stepper-separator';
+import { ForStepperProgress } from '../../stepper/stepper-progress';
 import { ForStepperTrigger } from '../../stepper/stepper-trigger';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
@@ -832,9 +833,11 @@ class DragDropFixture {}
     ForStepperContent,
     ForStepperNext,
     ForStepperPrevious,
+    ForStepperProgress,
   ],
   template: `
     <div forStepper [selectedIndex]="0">
+      <div forStepperProgress ariaLabel="Checkout progress"></div>
       <ol forStepperList ariaLabel="Checkout">
         <li forStepperItem>
           <button forStepperTrigger><span forStepperIndicator></span>One</button>
