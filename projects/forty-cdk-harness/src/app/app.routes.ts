@@ -25,6 +25,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/drawer.fixture').then((m) => m.DrawerFixture),
   },
   {
+    path: 'drawer-contained',
+    loadComponent: () =>
+      import('./fixtures/drawer-contained.fixture').then((m) => m.DrawerContainedFixture),
+  },
+  {
     path: 'disclosure',
     loadComponent: () => import('./fixtures/disclosure.fixture').then((m) => m.DisclosureFixture),
   },

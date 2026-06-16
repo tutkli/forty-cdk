@@ -62,7 +62,7 @@ export class ForDrawerBackdrop {
   protected readonly instanceId = inject(FOR_DRAWER_INSTANCE_ID, { optional: true });
 
   constructor() {
-    injectPortal();
+    injectPortal({ target: this.ctx.container });
     // Register so the drawer's dismissable layer treats pointer-down on the
     // backdrop as "inside" — see ForDrawerContext#registerBackdrop.
     this.ctx.registerBackdrop(this.#host.nativeElement);

@@ -167,6 +167,15 @@ export class ForDrawer implements ForDrawerContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
+   * Portal target for the surface. Defaults to `document.body`. Pass a
+   * positioned (`position: relative`) container — paired with
+   * `[modal]="false"` — for a drawer scoped to a region instead of the
+   * viewport. Read once at mount (the portal moves the host once); changing
+   * it after open has no effect. The backdrop portals to the same container.
+   */
+  readonly container = input<HTMLElement | null>(null);
+
+  /**
    * Callback invoked just before focus moves into the drawer on mount.
    * `event.preventDefault()` skips the imperative move (Tab cycling and
    * return-focus capture still wire up). See Dialog for the same shape and
@@ -557,6 +566,7 @@ export class ForDrawer implements ForDrawerContext {
       modal: this.modal,
       returnFocus: this.returnFocus,
       initialFocus: this.initialFocus,
+      container: this.container,
       autoFocusOnOpen: () => this.autoFocusOnOpen(),
       autoFocusOnClose: () => this.autoFocusOnClose(),
       dismiss: {

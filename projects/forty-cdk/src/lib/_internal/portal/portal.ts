@@ -8,8 +8,13 @@ export interface PortalConfig {
    * Where to portal the host element. Defaults to `document.body`. Pass a
    * specific container for cases like fullscreen API stacking, scoped
    * testing harnesses, or shadow DOM hosts.
+   *
+   * A function form is also accepted; it is resolved lazily inside the
+   * existing `afterNextRender` callback so a value that is not yet available
+   * at construction time — for example a directive input — can be used.
+   * Returns `null` or `undefined` to fall back to `document.body`.
    */
-  readonly target?: HTMLElement;
+  readonly target?: HTMLElement | (() => HTMLElement | null | undefined);
 }
 
 /**
@@ -53,9 +58,13 @@ export function injectPortal(config: PortalConfig = {}): void {
   const destroyRef = inject(DestroyRef);
   const doc = inject(DOCUMENT);
   const el = host.nativeElement;
-  const target = config.target ?? doc.body;
+  const resolveTarget = (): HTMLElement => {
+    const t = typeof config.target === 'function' ? config.target() : config.target;
+    return t ?? doc.body;
+  };
 
   afterNextRenderCancellable(() => {
+    const target = resolveTarget();
     if (el.parentNode !== target) {
       target.appendChild(el);
     }

@@ -466,6 +466,42 @@ Per-component overrides nest:
 })
 ```
 
+## Scoped / contained drawer (`container`)
+
+Pass `[container]` to portal the surface **and** the backdrop into a specific element instead of `document.body`. The supported shape is `[container]` paired with `[modal]="false"`.
+
+```html
+<section #listBox data-testid="container" style="position: relative; height: 400px; overflow: hidden;">
+  <button forDrawerTrigger [(open)]="open">Open</button>
+
+  @if (open()) {
+    <div forDrawer side="right" [modal]="false" [container]="listBox" (close)="open.set(false)">
+      <div forDrawerBackdrop></div>
+      <h2 forDrawerTitle>Filters</h2>
+      <button forDrawerClose>Close</button>
+    </div>
+  }
+</section>
+```
+
+**CSS contract.** The container must be positioned (`position: relative`); the surface and backdrop must use `position: absolute` (not `fixed`) so they are bounded to the container's box:
+
+```css
+section[data-testid='container'] { position: relative; }
+[forDrawer]          { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; background: #fff; }
+[forDrawerBackdrop]  { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+```
+
+**Why `[modal]="false"`?** Non-modal mode skips `BodyScrollLock`, `InertSiblingsStack`, and `FocusTrap` — the three body-anchored behaviours that do not make sense for a region-scoped drawer. A modal drawer portaled to a container would still lock the entire page scroll and inert all body siblings, which is not what a scoped drawer is for.
+
+**`container` + `modal: true` is NOT region-isolating.** `InertSiblingsStack` always inerts children of `document.body` and `BodyScrollLock` only knows `<body>`, so a contained modal drawer still locks and inerts the whole page. Use `modal: false`.
+
+**Swipe-to-dismiss and snap points** keep working inside a container — the math is dimension-based (`getBoundingClientRect`), not viewport-based.
+
+**`scaleBackground` / nested visual transforms** assume a full-screen model and are not meaningful inside a container.
+
+**Programmatic equivalent.** `ForDrawerManager.open(Cmp, { modal: false, container: boxEl })` portals both the surface and any `[forDrawerBackdrop]` inside the opened component into `boxEl`.
+
 ## Mount/unmount and animations
 
 The directive deliberately does **not** apply `[hidden]` to its surface. Wrap with `@if (open())` and use Angular's native `animate.enter` / `animate.leave` for transitions. `data-state="open"` reflects the logical state for CSS hooks but is never tied to visibility — that is `@if`'s job.

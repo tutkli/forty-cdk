@@ -91,6 +91,14 @@ export class ForDialog implements ForDialogContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
+   * Portal target for the dialog surface. Defaults to `document.body`. Pair
+   * with `[modal]="false"` for a dialog scoped to a positioned region
+   * instead of the viewport. Read once at mount. NOTE: `[forDialogBackdrop]`
+   * still portals to `document.body` in v1 — see the README.
+   */
+  readonly container = input<HTMLElement | null>(null);
+
+  /**
    * Emitted when the dialog wants to close. Consumers wire this to flip
    * the signal that gates the surrounding `@if`. Reasons: `'escape'`,
    * `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`,
@@ -186,6 +194,7 @@ export class ForDialog implements ForDialogContext {
       modal: this.modal,
       returnFocus: this.returnFocus,
       initialFocus: this.initialFocus,
+      container: this.container,
       autoFocusOnOpen: () => this.autoFocusOnOpen(),
       autoFocusOnClose: () => this.autoFocusOnClose(),
       dismiss: {

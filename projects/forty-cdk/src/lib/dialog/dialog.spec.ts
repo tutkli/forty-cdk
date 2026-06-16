@@ -1030,6 +1030,44 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.captured?.defaultPrevented).toBe(true);
     });
 
+    describe('container (scoped dialog)', () => {
+      let boxEl: HTMLDivElement;
+
+      beforeEach(() => {
+        boxEl = document.createElement('div');
+        boxEl.id = 'scoped-box';
+        document.body.appendChild(boxEl);
+      });
+
+      afterEach(() => {
+        boxEl.remove();
+      });
+
+      it('portals the surface into the container element', async () => {
+        @Component({
+          imports: [ForDialog],
+          template: `
+            @if (open()) {
+              <div forDialog [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+                <button id="inside">In</button>
+              </div>
+            }
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+          readonly box = boxEl;
+        }
+
+        const r = renderHost(Host);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+        expect(dialog.parentElement).toBe(boxEl);
+      });
+    });
+
     describe('zoneless reactivity', () => {
       it('fires [autoFocusOnClose] under provideZonelessChangeDetection on direct signal-flip close', async () => {
         @Component({
