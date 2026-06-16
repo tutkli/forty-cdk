@@ -252,6 +252,13 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/tabs/',
       },
       {
+        slug: 'stepper',
+        title: 'Stepper',
+        description:
+          'A multi-step wizard built on the Tabs pattern: a step list with indicators and separators, a content panel per step, Next / Previous navigation, linear gating with optional Signal Forms completion, a display-only progress mode and an optional progress bar.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/tabs/',
+      },
+      {
         slug: 'toolbar',
         title: 'Toolbar',
         description: 'A container that groups a set of controls under roving-tabindex navigation.',

@@ -48,6 +48,10 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/tabs/tabs.page').then((m) => m.TabsPage),
   },
   {
+    path: 'stepper',
+    loadComponent: () => import('./demos/stepper/stepper.page').then((m) => m.StepperPage),
+  },
+  {
     path: 'separator',
     loadComponent: () => import('./demos/separator/separator.page').then((m) => m.SeparatorPage),
   },
