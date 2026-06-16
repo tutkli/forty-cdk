@@ -111,6 +111,22 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   readonly selectionMode = input<'highlight' | 'checkbox'>('highlight');
 
   /**
+   * Enables cascade selection in `selectionMode="checkbox"`: checking or
+   * unchecking a node propagates to all its descendants, and a parent derives
+   * `aria-checked="mixed"` when only some descendants are checked. Ignored in
+   * `'highlight'` mode. Requires {@link ForTree.descendantsOf}. Default `false`.
+   */
+  readonly cascade = input(false, { transform: booleanAttribute });
+
+  /**
+   * Returns the selectable descendant values of a node (excluding the node
+   * itself), used to cascade selection and derive `'mixed'` across collapsed —
+   * possibly unmounted — subtrees. **Required** when {@link ForTree.cascade} is
+   * `true`; the tree throws a `[forty-cdk/tree]` error otherwise.
+   */
+  readonly descendantsOf = input<(value: string) => readonly string[]>();
+
+  /**
    * Manual `aria-label` for the tree. Use this when no visible label element
    * exists; otherwise prefer pointing `aria-labelledby` at one. A `null`
    * (default) or empty value emits no attribute.
@@ -202,6 +218,34 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     return this.value().includes(value);
   }
 
+  /**
+   * Tri-state check status of a node in `selectionMode="checkbox"`. Without
+   * cascade (or in `'highlight'` mode) returns `'true'` / `'false'` by direct
+   * membership. With cascade a parent returns `'true'` when all its descendants
+   * are checked, `'false'` when none are, and `'mixed'` otherwise.
+   */
+  checkState(value: string): 'true' | 'false' | 'mixed' {
+    const current = this.value();
+    if (this.selectionMode() !== 'checkbox' || !this.cascade()) {
+      return current.includes(value) ? 'true' : 'false';
+    }
+    const descendants = this.#resolveDescendants(value);
+    if (descendants.length === 0) {
+      return current.includes(value) ? 'true' : 'false';
+    }
+    const selected = new Set(current);
+    let checked = 0;
+    for (const d of descendants) {
+      if (selected.has(d)) {
+        checked += 1;
+      }
+    }
+    if (checked === 0) {
+      return 'false';
+    }
+    return checked === descendants.length ? 'true' : 'mixed';
+  }
+
   setExpanded(value: string, open: boolean): void {
     const current = this.expanded();
     const has = current.includes(value);
@@ -217,7 +261,14 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled()) {
       return;
     }
-    if (this.multiple() || this.selectionMode() === 'checkbox') {
+    if (this.selectionMode() === 'checkbox' && this.cascade()) {
+      const group = new Set([value, ...this.#resolveDescendants(value)]);
+      const current = this.value();
+      const allChecked = [...group].every((v) => current.includes(v));
+      this.value.set(
+        allChecked ? current.filter((v) => !group.has(v)) : [...new Set([...current, ...group])],
+      );
+    } else if (this.multiple() || this.selectionMode() === 'checkbox') {
       const current = this.value();
       this.value.set(
         current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
@@ -226,6 +277,16 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       this.value.set([value]);
     }
     this.#anchorValue.set(value);
+  }
+
+  #resolveDescendants(value: string): readonly string[] {
+    const fn = this.descendantsOf();
+    if (!fn) {
+      throw new Error(
+        '[forty-cdk/tree] `cascade` requires a `descendantsOf` descriptor returning the descendant values of a node.',
+      );
+    }
+    return fn(value);
   }
 
   #relocateActiveOnCollapse(value: string): void {

@@ -35,7 +35,7 @@ import {
   host: {
     role: 'treeitem',
     '[attr.aria-expanded]': 'expandable() ? (expanded() ? "true" : "false") : null',
-    '[attr.aria-checked]': 'checkboxMode() ? (selected() ? "true" : "false") : null',
+    '[attr.aria-checked]': 'checkboxMode() ? checkState() : null',
     '[attr.aria-selected]': 'checkboxMode() ? null : (selected() ? "true" : "false")',
     '[attr.aria-level]': 'level()',
     '[attr.aria-setsize]': 'setsize()',
@@ -46,7 +46,7 @@ import {
     '[attr.data-selected]': 'selected() ? "" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-checked]': 'checkboxMode() ? (selected() ? "true" : "false") : null',
+    '[attr.data-checked]': 'checkboxMode() ? checkState() : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
   },
@@ -79,6 +79,12 @@ export class ForTreeItem implements ForTreeItemContext {
   readonly selected = computed(() => this.#tree.isSelected(this.value()));
   /** True when the root tree is in `'checkbox'` selection mode. */
   readonly checkboxMode = computed(() => this.#tree.selectionMode() === 'checkbox');
+  /**
+   * Tri-state checkbox status of this node — `'true'` / `'false'`, or `'mixed'`
+   * when cascade is on and only some descendants are checked. Drives the
+   * checkbox anatomy; meaningful only in `selectionMode="checkbox"`.
+   */
+  readonly checkState = computed(() => this.#tree.checkState(this.value()));
 
   /** True when this node is the roving-tabindex active candidate. */
   readonly highlighted = computed(() => this.#tree.roving.active() === this.#host.nativeElement);

@@ -46,10 +46,17 @@ export interface ForTreeContext {
   readonly selectionFollowsFocus: Signal<boolean>;
   /** Selection presentation: `'highlight'` (aria-selected) or `'checkbox'` (aria-checked). */
   readonly selectionMode: Signal<'highlight' | 'checkbox'>;
+  /** Whether cascade selection is enabled (checkbox mode only). */
+  readonly cascade: Signal<boolean>;
   readonly roving: RovingTabindex;
 
   isExpanded(value: string): boolean;
   isSelected(value: string): boolean;
+  /**
+   * Tri-state check status of a node in checkbox mode: `'true'` / `'false'`, or
+   * `'mixed'` for a cascade parent with some-but-not-all descendants checked.
+   */
+  checkState(value: string): 'true' | 'false' | 'mixed';
   /** Open or close a node, mutating the `expanded` array immutably. */
   setExpanded(value: string, open: boolean): void;
   /** Single mode replaces the selection; multi mode toggles the value. */
@@ -130,6 +137,8 @@ export interface ForTreeItemContext {
   readonly expandable: Signal<boolean>;
   /** Whether this node is in the root's selection set (its `aria-checked` / `aria-selected` state). */
   readonly selected: Signal<boolean>;
+  /** Tri-state checkbox status of this node (`'true'` / `'false'` / `'mixed'`). */
+  readonly checkState: Signal<'true' | 'false' | 'mixed'>;
   /** Register a toggle. Presence makes the item expandable (D4). Returns an unregister fn. */
   registerToggle(): () => void;
   /** Set (or clear, on collapse) the nested `[forTreeGroup]` container. */

@@ -503,6 +503,39 @@ class TreeFixture {}
 class TreeCheckboxFixture {}
 
 @Component({
+  imports: [
+    ForTree,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemCheckbox,
+    ForTreeItemCheckboxIndicator,
+  ],
+  template: `
+    <ul forTree selectionMode="checkbox" cascade [descendantsOf]="descendantsFn" ariaLabel="Groups">
+      <li forTreeItem value="parent">
+        <div forTreeItemLabel>
+          <span forTreeItemCheckbox>
+            <span forTreeItemCheckboxIndicator>✓</span>
+          </span>
+          Parent
+        </div>
+      </li>
+      <li forTreeItem value="child">
+        <div forTreeItemLabel>
+          <span forTreeItemCheckbox>
+            <span forTreeItemCheckboxIndicator>✓</span>
+          </span>
+          Child
+        </div>
+      </li>
+    </ul>
+  `,
+})
+class TreeCascadeFixture {
+  readonly descendantsFn = (v: string): readonly string[] => (v === 'parent' ? ['child'] : []);
+}
+
+@Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -767,6 +800,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   OtpInputFixture,
   TreeFixture,
   TreeCheckboxFixture,
+  TreeCascadeFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
   CalendarSelectDirectivesFixture,
