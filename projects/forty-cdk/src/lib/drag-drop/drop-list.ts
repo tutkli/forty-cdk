@@ -2,17 +2,25 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { registerHandle } from '../_internal/collection/register-handle';
 import { buildDragSlots, indexOfSlot, stepSlot } from '../_internal/drag-session/drag-positions';
+import {
+  resolveDropTarget,
+  type DropContainerGeometry,
+} from '../_internal/drag-session/drag-geometry';
+import { createDragPreview, type DragPreview } from '../_internal/drag-session/drag-preview';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -35,8 +43,7 @@ import { FOR_DROP_LIST_GROUP } from './drop-list-group';
  * Root directive of the drag-drop primitive. Apply on any container element to
  * create a reorderable list. Items inside are declared with `[forDraggable]`.
  *
- * Phase 1 supports keyboard-only dragging. Pointer dragging lands in a
- * follow-up.
+ * Supports both keyboard dragging and pointer (mouse / touch / pen) dragging.
  */
 @Directive({
   selector: '[forDropList]',
@@ -55,6 +62,8 @@ export class ForDropList implements ForDropListContext {
   readonly #defaults = inject(FOR_DRAG_DROP_DEFAULTS);
   readonly #announcer = inject(LiveAnnouncer);
   readonly #group = inject(FOR_DROP_LIST_GROUP, { optional: true });
+  readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /** Layout orientation of the list. Affects which arrow keys move focus and the lifted item. */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
@@ -77,8 +86,8 @@ export class ForDropList implements ForDropListContext {
   readonly connectedTo = input<readonly ForDropListContext[]>([]);
 
   /**
-   * Emitted by the **source** list when a keyboard drop commits — whether the item
-   * stays in this list (reorder) or moves to a connected list (transfer). Apply
+   * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
+   * the item stays in this list (reorder) or moves to a connected list (transfer). Apply
    * `moveItemInArray` or `transferArrayItem` to your data signal inside the handler.
    */
   readonly dragDrop = output<ForDragDropEvent>();
@@ -96,10 +105,14 @@ export class ForDropList implements ForDropListContext {
   readonly #flatIndex = signal(0);
   readonly #dragOver = signal<number | null>(null);
 
-  /** Insertion index this list is the current keyboard drop target at, else `null`. */
+  #preview: DragPreview | null = null;
+  #grabOffsetX = 0;
+  #grabOffsetY = 0;
+
+  /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
 
-  /** `true` while a keyboard drag originating from this list is in progress. */
+  /** `true` while a drag originating from this list is in progress. */
   readonly isDragging = computed(() => this.#liftedHost() !== null);
 
   constructor() {
@@ -158,7 +171,7 @@ export class ForDropList implements ForDropListContext {
     items[next]?.host.focus();
   }
 
-  lift(el: HTMLElement): number {
+  #beginLift(el: HTMLElement): number {
     if (this.effectiveDisabled() || this.#liftedHost() !== null) {
       return -1;
     }
@@ -186,6 +199,67 @@ export class ForDropList implements ForDropListContext {
       'assertive',
     );
     return from;
+  }
+
+  lift(el: HTMLElement): number {
+    return this.#beginLift(el);
+  }
+
+  pointerLift(el: HTMLElement, point: { x: number; y: number }): number {
+    const from = this.#beginLift(el);
+    if (from < 0) {
+      return -1;
+    }
+    if (this.#isBrowser) {
+      const rect = el.getBoundingClientRect();
+      this.#grabOffsetX = point.x - rect.left;
+      this.#grabOffsetY = point.y - rect.top;
+      this.#preview = createDragPreview(el, this.#document);
+      this.#preview.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
+    }
+    return from;
+  }
+
+  pointerMove(point: { x: number; y: number }): void {
+    const lifted = this.#liftedHost();
+    if (lifted === null || !this.#isBrowser) {
+      return;
+    }
+    const connected = this.#effectiveConnected();
+    const containers = [this as ForDropListContext, ...connected];
+    const geoms: DropContainerGeometry[] = containers.map((ctx) => ({
+      rect: ctx.host.getBoundingClientRect(),
+      itemRects: ctx
+        .items()
+        .filter((h) => h.host !== lifted)
+        .map((h) => h.host.getBoundingClientRect()),
+    }));
+    const target = resolveDropTarget(point, geoms, this.orientation(), this.dir());
+    this.#preview?.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
+    if (!target) {
+      return;
+    }
+    const slots = buildDragSlots(
+      this.#items.items().length,
+      connected.map((c) => c.items().length),
+    );
+    const flat = indexOfSlot(slots, target.containerIndex, target.index);
+    if (flat < 0) {
+      return;
+    }
+    containers.forEach((ctx, i) =>
+      ctx.setDragOver(i === target.containerIndex ? target.index : null),
+    );
+    const changed = flat !== this.#flatIndex();
+    this.#flatIndex.set(flat);
+    if (changed) {
+      const targetCtx = containers[target.containerIndex]!;
+      const label = (lifted.textContent ?? '').trim();
+      this.#announcer.announce(
+        this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
+        'polite',
+      );
+    }
   }
 
   isLifted(el: HTMLElement): boolean {
@@ -308,5 +382,7 @@ export class ForDropList implements ForDropListContext {
     }
     this.#liftedHost.set(null);
     this.#flatIndex.set(0);
+    this.#preview?.destroy();
+    this.#preview = null;
   }
 }

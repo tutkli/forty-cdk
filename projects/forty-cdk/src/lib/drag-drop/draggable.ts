@@ -1,47 +1,62 @@
 import {
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
   output,
+  PLATFORM_ID,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { attachSwipeDismiss, type SwipeDirection } from '../_internal/swipe-dismiss/swipe-dismiss';
 import {
+  FOR_DRAGGABLE_CONTEXT,
   injectDropListContext,
   type ForDragEndEvent,
   type ForDragStartEvent,
+  type ForDraggableContext,
   type ForDraggableHandle,
 } from './drag-drop-context';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 
 /**
  * Marks an element as a draggable item inside a `[forDropList]`. Handles
- * keyboard interaction for lift, move, drop, and cancel.
- *
- * Phase 1 is keyboard-only. Pointer dragging lands in a follow-up.
+ * keyboard and pointer interaction for lift, move, drop, and cancel.
  */
 @Directive({
   selector: '[forDraggable]',
   exportAs: 'forDraggable',
+  providers: [{ provide: FOR_DRAGGABLE_CONTEXT, useExisting: ForDraggable }],
   host: {
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-roledescription]': 'roleDescription() || null',
     '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
     '[attr.data-dragging]': "lifted() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
+    '[style.touch-action]': 'touchAction()',
+    '(dragstart)': 'onNativeDragStart($event)',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
   },
 })
-export class ForDraggable {
+export class ForDraggable implements ForDraggableContext {
   readonly #list = injectDropListContext('ForDraggable');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_DRAG_DROP_DEFAULTS);
+  readonly #destroyRef = inject(DestroyRef);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #document = inject(DOCUMENT);
+  readonly #handles = new Set<HTMLElement>();
+  #downOnHandle = false;
+  #pointerDragging = false;
+  #escapeListener: ((event: KeyboardEvent) => void) | null = null;
 
   /** Data payload handed back in the `dragDrop` event when this item is dropped. */
   readonly dragData = input.required<unknown>();
@@ -49,10 +64,10 @@ export class ForDraggable {
   /** When true, this item cannot be lifted. The item remains focusable. */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
-  /** Emitted when a keyboard drag starts from this item. */
+  /** Emitted when a drag (keyboard or pointer) starts from this item. */
   readonly dragStart = output<ForDragStartEvent>();
 
-  /** Emitted when a keyboard drag originating from this item ends (committed or cancelled). */
+  /** Emitted when a drag originating from this item ends (committed or cancelled). */
   readonly dragEnd = output<ForDragEndEvent>();
 
   readonly effectiveDisabled = computed(() => this.dragDisabled() || this.#list.disabled());
@@ -79,6 +94,10 @@ export class ForDraggable {
     return this.#list.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
+  protected readonly touchAction = computed<'none' | null>(() =>
+    !this.effectiveDisabled() && this.#handles.size === 0 ? 'none' : null,
+  );
+
   constructor() {
     const handle: ForDraggableHandle = {
       host: this.#host.nativeElement,
@@ -90,6 +109,112 @@ export class ForDraggable {
       (h) => this.#list.registerItem(h),
       (h) => this.#list.unregisterItem(h),
     );
+
+    if (this.#isBrowser) {
+      const host = this.#host.nativeElement;
+      const onDown = (event: PointerEvent): void => {
+        const target = event.target as Node | null;
+        this.#downOnHandle =
+          this.#handles.size === 0 ||
+          (target !== null && [...this.#handles].some((h) => h.contains(target)));
+      };
+      host.addEventListener('pointerdown', onDown, { capture: true });
+      this.#destroyRef.onDestroy(() =>
+        host.removeEventListener('pointerdown', onDown, { capture: true }),
+      );
+
+      const cleanup = attachSwipeDismiss({
+        element: host,
+        getDirections: () => this.#dragDirections(),
+        getThreshold: () => 0,
+        onSwipeStart: (d) => this.#onPointerStart(d.originalEvent),
+        onSwipeMove: (d) => this.#onPointerMove(d.originalEvent),
+        onSwipeEnd: () => this.#onPointerEnd(),
+        onSwipeCancel: () => this.#onPointerCancel(),
+      });
+      this.#destroyRef.onDestroy(cleanup);
+      this.#destroyRef.onDestroy(() => this.#removeEscapeListener());
+    }
+  }
+
+  registerHandle(el: HTMLElement): void {
+    this.#handles.add(el);
+  }
+
+  unregisterHandle(el: HTMLElement): void {
+    this.#handles.delete(el);
+  }
+
+  readonly #allDirections: readonly SwipeDirection[] = ['left', 'right', 'up', 'down'];
+
+  #dragDirections(): readonly SwipeDirection[] {
+    return !this.effectiveDisabled() && this.#downOnHandle ? this.#allDirections : [];
+  }
+
+  #onPointerStart(event: PointerEvent): void {
+    const index = this.#list.pointerLift(this.#host.nativeElement, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    if (index < 0) {
+      return;
+    }
+    this.#pointerDragging = true;
+    this.dragStart.emit({ source: this.#list, index });
+    this.#addEscapeListener();
+  }
+
+  #onPointerMove(event: PointerEvent): void {
+    if (!this.#pointerDragging) {
+      return;
+    }
+    this.#list.pointerMove({ x: event.clientX, y: event.clientY });
+  }
+
+  #onPointerEnd(): void {
+    if (!this.#pointerDragging) {
+      return;
+    }
+    this.#pointerDragging = false;
+    this.#removeEscapeListener();
+    this.#list.drop();
+    this.dragEnd.emit({ dropped: true });
+  }
+
+  #onPointerCancel(): void {
+    if (!this.#pointerDragging) {
+      return;
+    }
+    this.#pointerDragging = false;
+    this.#removeEscapeListener();
+    this.#list.cancel();
+    this.dragEnd.emit({ dropped: false });
+  }
+
+  #addEscapeListener(): void {
+    const listener = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && this.#pointerDragging) {
+        this.#pointerDragging = false;
+        this.#removeEscapeListener();
+        this.#list.cancel();
+        this.dragEnd.emit({ dropped: false });
+      }
+    };
+    this.#escapeListener = listener;
+    this.#document.addEventListener('keydown', listener);
+  }
+
+  #removeEscapeListener(): void {
+    if (this.#escapeListener) {
+      this.#document.removeEventListener('keydown', this.#escapeListener);
+      this.#escapeListener = null;
+    }
+  }
+
+  protected onNativeDragStart(event: Event): void {
+    if (this.#pointerDragging) {
+      event.preventDefault();
+    }
   }
 
   protected onFocus(): void {
@@ -106,7 +231,7 @@ export class ForDraggable {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || this.#pointerDragging) {
       return;
     }
     const host = this.#host.nativeElement;
@@ -151,4 +276,3 @@ export class ForDraggable {
     }
   }
 }
-

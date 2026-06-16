@@ -162,7 +162,10 @@ export const routes: Routes = [
   },
   {
     path: 'time-picker',
-    loadComponent: () =>
-      import('./fixtures/time-picker.fixture').then((m) => m.TimePickerFixture),
+    loadComponent: () => import('./fixtures/time-picker.fixture').then((m) => m.TimePickerFixture),
+  },
+  {
+    path: 'drag-drop',
+    loadComponent: () => import('./fixtures/drag-drop.fixture').then((m) => m.DragDropFixture),
   },
 ];

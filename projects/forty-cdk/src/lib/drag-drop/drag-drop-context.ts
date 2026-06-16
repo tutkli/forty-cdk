@@ -1,5 +1,4 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
-
 import type {
   ListNavigationAction,
   WritingDirection,
@@ -27,7 +26,7 @@ export interface ForDropListContext {
   /** Effective disabled of the whole list. */
   readonly disabled: Signal<boolean>;
   readonly items: Signal<readonly ForDraggableHandle[]>;
-  /** Insertion index this list is the current keyboard drop target at, else `null`. */
+  /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex: Signal<number | null>;
 
   setDragOver(index: number | null): void;
@@ -54,6 +53,13 @@ export interface ForDropListContext {
   drop(): void;
   /** Abort the current drag without emitting `dragDrop`. */
   cancel(): void;
+  /**
+   * Begin a pointer drag for `el` at viewport point `point`. Sets up the same session state as a keyboard
+   * lift and creates the default preview. Returns the source index, or `-1` if it could not lift.
+   */
+  pointerLift(el: HTMLElement, point: { x: number; y: number }): number;
+  /** Update the live pointer drop target + preview position. No-op if nothing is lifted. */
+  pointerMove(point: { x: number; y: number }): void;
 }
 
 export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
@@ -63,14 +69,12 @@ export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
 export function injectDropListContext(piece: string): ForDropListContext {
   const ctx = inject(FOR_DRAG_DROP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/drag-drop] ${piece} must be used inside a [forDropList] element.`,
-    );
+    throw new Error(`[forty-cdk/drag-drop] ${piece} must be used inside a [forDropList] element.`);
   }
   return ctx;
 }
 
-/** Emitted by the **source** `ForDropList` on a committed keyboard drop. */
+/** Emitted by the **source** `ForDropList` on a committed drop (keyboard or pointer). */
 export interface ForDragDropEvent<T = unknown> {
   readonly item: T;
   readonly previousContainer: ForDropListContext;
@@ -79,14 +83,33 @@ export interface ForDragDropEvent<T = unknown> {
   readonly currentIndex: number;
 }
 
-/** Emitted by `ForDraggable` when a keyboard drag starts. */
+/** Emitted by `ForDraggable` when a drag (keyboard or pointer) starts. */
 export interface ForDragStartEvent {
   readonly source: ForDropListContext;
   readonly index: number;
 }
 
-/** Emitted by `ForDraggable` when a keyboard drag ends (committed or cancelled). */
+/** Emitted by `ForDraggable` when a drag ends (committed or cancelled). */
 export interface ForDragEndEvent {
   /** `true` on a committed drop, `false` on cancel. */
   readonly dropped: boolean;
+}
+
+/** Internal coordination surface a `ForDraggable` exposes to its `[forDragHandle]` children. */
+export interface ForDraggableContext {
+  /** Register a handle element; while any handle is registered, pointer drags may only start on one. */
+  registerHandle(el: HTMLElement): void;
+  unregisterHandle(el: HTMLElement): void;
+}
+
+export const FOR_DRAGGABLE_CONTEXT = new InjectionToken<ForDraggableContext>(
+  'FOR_DRAGGABLE_CONTEXT',
+);
+
+export function injectDraggableContext(piece: string): ForDraggableContext {
+  const ctx = inject(FOR_DRAGGABLE_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(`[forty-cdk/drag-drop] ${piece} must be used inside a [forDraggable] element.`);
+  }
+  return ctx;
 }
