@@ -181,7 +181,7 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 | `ForDialogTitle`       | `[forDialogTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                              |
 | `ForDialogDescription` | `[forDialogDescription]` | Same, for `aria-describedby`.                                                                                       |
 | `ForDialogClose`       | `[forDialogClose]`       | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode.                |
-| `ForDialogBackdrop`    | `[forDialogBackdrop]`    | Optional overlay portaled to body. Direct click requests close with reason `'backdrop'` when `dismissible`.         |
+| `ForDialogBackdrop`    | `[forDialogBackdrop]`    | Optional overlay portaled alongside the surface (to `container`, or `document.body` by default). Direct click requests close with reason `'backdrop'` when `dismissible`. |
 
 ## Inputs (`ForDialog`)
 
@@ -317,7 +317,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                             |
 | `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                               |
 | `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
-| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled to body, so use it to select the backdrop)    |
+| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
 | `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
 
 `[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
@@ -351,7 +351,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Behavior notes
 
 - **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
-- **Portal**: the dialog box is moved to `document.body` on first render. The backdrop too if you use `[forDialogBackdrop]`. CSS scoped to ancestors won't apply — use global styles or classes.
+- **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
 - **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
 - **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
 - **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
@@ -374,9 +374,7 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 </section>
 ```
 
-**CSS contract.** The container must be positioned (`position: relative`); the dialog surface must use `position: absolute` (not `fixed`) so it is bounded to the container's box.
-
-**v1 limitation — `[forDialogBackdrop]` still portals to `document.body`.** If you use a backdrop with a contained non-modal dialog, style your own absolutely-positioned backdrop or omit `[forDialogBackdrop]` and include a custom one inside the dialog surface.
+**CSS contract.** The container must be positioned (`position: relative`); the dialog surface must use `position: absolute` (not `fixed`) so it is bounded to the container's box. `[forDialogBackdrop]` portals to the same container — use `position: absolute` on the backdrop too so it fills the container rather than the viewport.
 
 **`container` + `modal: true` is NOT region-isolating.** `InertSiblingsStack` always inerts children of `document.body` and `BodyScrollLock` only knows `<body>`, so a contained modal dialog still locks and inerts the whole page. Use `modal: false`.
 

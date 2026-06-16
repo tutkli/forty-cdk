@@ -38,6 +38,7 @@ export interface ForDialogEntry {
   readonly returnFocus: boolean | undefined;
   readonly initialFocus: 'first' | 'container' | undefined;
   readonly ariaLabel: string | undefined;
+  readonly container: HTMLElement | null | undefined;
   readonly animateEnter: string | undefined;
   readonly autoFocusOnOpen: ((e: VetoableEvent) => void) | undefined;
   readonly autoFocusOnClose: ((e: VetoableEvent) => void) | undefined;
@@ -99,6 +100,7 @@ export class ForDialogContextInjector {
         [returnFocus]="entry.returnFocus ?? true"
         [initialFocus]="entry.initialFocus ?? 'first'"
         [ariaLabel]="entry.ariaLabel ?? null"
+        [container]="entry.container ?? null"
         [autoFocusOnOpen]="entry.autoFocusOnOpen"
         [autoFocusOnClose]="entry.autoFocusOnClose"
         (close)="entry.handleClose(fd.lastCloseValue())"

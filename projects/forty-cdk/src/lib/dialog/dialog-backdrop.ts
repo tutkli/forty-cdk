@@ -4,13 +4,14 @@ import { injectPortal } from '../_internal/portal/portal';
 import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**
- * Optional backdrop overlay. Portaled to `document.body` so it sits
- * underneath the dialog regardless of where it's declared. While mounted
- * the backdrop is visible; mount/unmount it alongside the dialog with
- * the same `@if` so `animate.enter` / `animate.leave` works on both.
+ * Optional backdrop overlay. Portaled to the dialog's `container` (the same
+ * target the surface uses) — `document.body` by default. While mounted the
+ * backdrop is visible; mount/unmount it alongside the dialog with the same
+ * `@if` so `animate.enter` / `animate.leave` works on both.
  *
  * The directive applies no visual styles — set `position: fixed; inset: 0;
- * background: rgba(0,0,0,0.5)` (or whatever) yourself.
+ * background: rgba(0,0,0,0.5)` (or whatever) yourself. For a backdrop inside a
+ * scoped `container`, use `position: absolute` so it is bounded to that box.
  */
 @Directive({
   selector: '[forDialogBackdrop]',
@@ -38,7 +39,7 @@ export class ForDialogBackdrop {
   protected readonly instanceId = inject(FOR_DIALOG_INSTANCE_ID, { optional: true });
 
   constructor() {
-    injectPortal();
+    injectPortal({ target: this.ctx.container });
   }
 
   protected onClick(event: MouseEvent): void {

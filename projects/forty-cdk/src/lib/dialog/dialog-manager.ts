@@ -70,6 +70,13 @@ export interface ForDialogOpenConfig<D = unknown> {
   ariaLabel?: string;
 
   /**
+   * Portal target for the surface + backdrop. Defaults to `document.body`.
+   * Pair with `modal: false` for a dialog scoped to a positioned region
+   * instead of the viewport.
+   */
+  container?: HTMLElement | null;
+
+  /**
    * CSS class applied (via `animate.enter`) to the overlay root the moment it
    * mounts, so a programmatic dialog plays an enter animation just like a
    * declarative `<div forDialog animate.enter="…">`. The class lands on the
@@ -314,6 +321,7 @@ export class ForDialogManager {
       returnFocus: config.returnFocus,
       initialFocus: config.initialFocus,
       ariaLabel: config.ariaLabel,
+      container: config.container,
       animateEnter,
       autoFocusOnOpen: config.autoFocusOnOpen,
       autoFocusOnClose: config.autoFocusOnClose,

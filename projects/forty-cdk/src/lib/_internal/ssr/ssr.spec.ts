@@ -39,6 +39,7 @@ import { ForDatePicker } from '../../date-picker/date-picker';
 import { ForDatePickerTrigger } from '../../date-picker/date-picker-trigger';
 import { ForDatePickerValue } from '../../date-picker/date-picker-value';
 import { ForDialog } from '../../dialog/dialog';
+import { ForDialogBackdrop } from '../../dialog/dialog-backdrop';
 import { ForDialogTitle } from '../../dialog/dialog-title';
 import { ForDisclosure } from '../../disclosure/disclosure';
 import { ForDisclosureContent } from '../../disclosure/disclosure-content';
@@ -367,6 +368,19 @@ class PopoverOpenFixture {}
   `,
 })
 class DialogOpenFixture {}
+
+@Component({
+  imports: [ForDialog, ForDialogBackdrop, ForDialogTitle],
+  template: `
+    <div #box style="position: relative">
+      <div forDialog [modal]="false" [container]="box" ariaLabel="d">
+        <div forDialogBackdrop></div>
+        <h2 forDialogTitle>title</h2>
+      </div>
+    </div>
+  `,
+})
+class DialogContainedFixture {}
 
 @Component({
   imports: [ForDrawer, ForDrawerTitle],
@@ -911,6 +925,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ScrollAreaFixture,
   PopoverOpenFixture,
   DialogOpenFixture,
+  DialogContainedFixture,
   DrawerOpenFixture,
   DrawerContainedFixture,
   ToastFixture,
@@ -1057,6 +1072,18 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(drawer)).toBe(true);
     expect(drawer.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forDrawer]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a contained (scoped) Dialog does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DialogContainedFixture);
+    f.detectChanges();
+    const dialog = f.nativeElement.querySelector('[forDialog]') as HTMLElement;
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(dialog)).toBe(true);
+    expect(dialog.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
     expect(document.body.style.overflow).toBe(overflowBefore);
   });
 
