@@ -111,6 +111,8 @@ import { ForTreeItemCheckboxIndicator } from '../../tree/tree-item-checkbox-indi
 import { ForTreeItemLabel } from '../../tree/tree-item-label';
 import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
 import { ForDragHandle } from '../../drag-drop/drag-handle';
+import { ForDragPlaceholder } from '../../drag-drop/drag-placeholder';
+import { ForDragPreview } from '../../drag-drop/drag-preview';
 import { ForDraggable } from '../../drag-drop/draggable';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
@@ -781,7 +783,14 @@ class DatePickerFixture {
 class TimePickerOpenFixture {}
 
 @Component({
-  imports: [ForDropListGroup, ForDropList, ForDraggable, ForDragHandle],
+  imports: [
+    ForDropListGroup,
+    ForDropList,
+    ForDraggable,
+    ForDragHandle,
+    ForDragPreview,
+    ForDragPlaceholder,
+  ],
   template: `
     <div forDropListGroup>
       <ul forDropList>
@@ -789,7 +798,11 @@ class TimePickerOpenFixture {}
           <span forDragHandle aria-hidden="true">::</span>
           Alpha
         </li>
-        <li forDraggable [dragData]="'b'">Beta</li>
+        <li forDraggable [dragData]="'b'">
+          Beta
+          <ng-template forDragPreview>preview</ng-template>
+          <ng-template forDragPlaceholder>gap</ng-template>
+        </li>
       </ul>
       <ul forDropList>
         <li forDraggable [dragData]="'c'">Gamma</li>

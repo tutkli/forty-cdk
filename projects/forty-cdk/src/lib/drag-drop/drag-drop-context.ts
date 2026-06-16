@@ -54,10 +54,16 @@ export interface ForDropListContext {
   /** Abort the current drag without emitting `dragDrop`. */
   cancel(): void;
   /**
-   * Begin a pointer drag for `el` at viewport point `point`. Sets up the same session state as a keyboard
-   * lift and creates the default preview. Returns the source index, or `-1` if it could not lift.
+   * Begin a pointer drag for `el` at viewport point `point`. Sets up the same session state as a
+   * keyboard lift. `preview` is the floating element supplied by the draggable (a consumer
+   * `[forDragPreview]` template); when omitted, the list creates the default cloned preview.
+   * Returns the source index, or `-1` if it could not lift.
    */
-  pointerLift(el: HTMLElement, point: { x: number; y: number }): number;
+  pointerLift(
+    el: HTMLElement,
+    point: { x: number; y: number },
+    preview?: { moveTo(x: number, y: number): void; destroy(): void } | null,
+  ): number;
   /** Update the live pointer drop target + preview position. No-op if nothing is lifted. */
   pointerMove(point: { x: number; y: number }): void;
 }

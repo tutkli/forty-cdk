@@ -168,4 +168,9 @@ export const routes: Routes = [
     path: 'drag-drop',
     loadComponent: () => import('./fixtures/drag-drop.fixture').then((m) => m.DragDropFixture),
   },
+  {
+    path: 'drag-drop-templates',
+    loadComponent: () =>
+      import('./fixtures/drag-drop-templates.fixture').then((m) => m.DragDropTemplatesFixture),
+  },
 ];
