@@ -110,6 +110,9 @@ import { ForTreeItemCheckbox } from '../../tree/tree-item-checkbox';
 import { ForTreeItemCheckboxIndicator } from '../../tree/tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from '../../tree/tree-item-label';
 import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
+import { ForDraggable } from '../../drag-drop/draggable';
+import { ForDropList } from '../../drag-drop/drop-list';
+import { ForDropListGroup } from '../../drag-drop/drop-list-group';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
@@ -776,6 +779,22 @@ class DatePickerFixture {
 })
 class TimePickerOpenFixture {}
 
+@Component({
+  imports: [ForDropListGroup, ForDropList, ForDraggable],
+  template: `
+    <div forDropListGroup>
+      <ul forDropList>
+        <li forDraggable [dragData]="'a'">Alpha</li>
+        <li forDraggable [dragData]="'b'">Beta</li>
+      </ul>
+      <ul forDropList>
+        <li forDraggable [dragData]="'c'">Gamma</li>
+      </ul>
+    </div>
+  `,
+})
+class DragDropFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -810,6 +829,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TimeFieldFixture,
   DatePickerFixture,
   TimePickerOpenFixture,
+  DragDropFixture,
 ];
 
 function configureServer(): void {

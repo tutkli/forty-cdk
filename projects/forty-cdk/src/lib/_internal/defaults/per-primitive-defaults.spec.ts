@@ -122,6 +122,11 @@ import {
   provideForTimePickerDefaults,
 } from '../../time-picker/time-picker-defaults';
 import {
+  FOR_DRAG_DROP_DEFAULTS,
+  FOR_DRAG_DROP_FALLBACK_DEFAULTS,
+  provideForDragDropDefaults,
+} from '../../drag-drop/drag-drop-defaults';
+import {
   FOR_TREE_DEFAULTS,
   FOR_TREE_FALLBACK_DEFAULTS,
   provideForTreeDefaults,
@@ -312,6 +317,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_TIME_PICKER_FALLBACK_DEFAULTS,
     provide: provideForTimePickerDefaults,
     override: { sideOffset: 12 },
+  }),
+  defaultsCase({
+    name: 'provideForDragDropDefaults',
+    token: FOR_DRAG_DROP_DEFAULTS,
+    fallback: FOR_DRAG_DROP_FALLBACK_DEFAULTS,
+    provide: provideForDragDropDefaults,
+    override: { itemRoleDescription: 'draggable' },
   }),
 ];
 
