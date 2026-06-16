@@ -207,6 +207,19 @@ test.describe('Tree', () => {
     await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test.describe('filtering', () => {
+    test('typing a query reveals a deep match by expanding its ancestors', async ({ page }) => {
+      await gotoFixture(page, 'tree', { filter: '1' });
+      await expect(el(page, 'item-alpha')).toHaveCount(0);
+
+      await el(page, 'filter').fill('alpha');
+
+      await expect(el(page, 'item-alpha')).toBeVisible();
+      await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'true');
+      await expect(el(page, 'item-projects')).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
   test.describe('cascade mode', () => {
     test('cascade reaches collapsed descendants', async ({ page }) => {
       await gotoFixture(page, 'tree', { checkbox: '1', cascade: '1' });
