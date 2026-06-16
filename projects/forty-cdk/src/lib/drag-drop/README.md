@@ -111,6 +111,31 @@ stays in the dragged item's source slot.
 `[liveSort]` has no visible effect without a `[forDragPlaceholder]` template, and has no effect
 on keyboard dragging.
 
+### Reorder & settle animations
+
+Add `[animateReorder]="true"` to `[forDropList]` to animate committed drops. When enabled:
+
+- **FLIP reorder** — displaced sibling items transition smoothly from their old positions to their
+  new ones instead of snapping.
+- **Drop-settle** — on a pointer drag, the floating preview transitions from its release position
+  into the final item slot before it is removed.
+
+Both are opt-in and fully skipped under `prefers-reduced-motion: reduce`. They work for both
+keyboard and pointer drags. The library publishes the styling hooks below — duration / easing are
+always provided by the consumer via CSS; the library imposes none.
+
+```html
+<ul forDropList [animateReorder]="true" (dragDrop)="onDrop($event)">…</ul>
+```
+
+```css
+[forDraggable][data-drag-animating] { transition: transform 200ms ease; }
+[data-for-drag-preview][data-settling] { transition: transform 200ms ease; }
+```
+
+With no such CSS, `animateReorder` is a graceful no-op — transforms clear instantly and the
+preview is destroyed promptly.
+
 ## Data attributes
 
 | Attribute               | Element           | Meaning                                                                             |
@@ -122,6 +147,8 @@ on keyboard dragging.
 | `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                          |
 | `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                             |
 | `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper |
+| `data-drag-animating`   | `[forDraggable]`  | Present while the item's FLIP reorder transition plays (requires `[animateReorder]`) |
+| `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)        |
 
 ## Sortable list
 

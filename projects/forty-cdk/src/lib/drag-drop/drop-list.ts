@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -6,6 +7,7 @@ import {
   DOCUMENT,
   ElementRef,
   inject,
+  Injector,
   input,
   output,
   PLATFORM_ID,
@@ -22,7 +24,13 @@ import {
   type DropContainerGeometry,
 } from '../_internal/drag-session/drag-geometry';
 import { placeholderInsertion } from '../_internal/drag-session/placeholder-position';
-import { createDragPreview, type DragPreview } from '../_internal/drag-session/drag-preview';
+import {
+  createDragPreview,
+  wrapPreview,
+  type DragPreview,
+} from '../_internal/drag-session/drag-preview';
+import { playFlip, type FlipRect } from '../_internal/drag-session/flip';
+import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -68,6 +76,8 @@ export class ForDropList implements ForDropListContext {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #destroyRef = inject(DestroyRef);
+  readonly #injector = inject(Injector);
+  readonly #prefersReducedMotion = injectPrefersReducedMotion();
 
   /** Layout orientation of the list. Affects which arrow keys move focus and the lifted item. */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
@@ -105,6 +115,16 @@ export class ForDropList implements ForDropListContext {
    * `[forDragPlaceholder]` template, and none on keyboard dragging.
    */
   readonly liveSort = input(false, { transform: booleanAttribute });
+
+  /**
+   * When true, a committed drop (keyboard or pointer) animates: displaced sibling items
+   * transition from their old positions to their new ones (FLIP), and — on a pointer drag — the
+   * floating preview settles into the final slot before it is removed. Opt-in and default off.
+   * Duration / easing are styled by the consumer via CSS on the published hooks
+   * (`[data-drag-animating]` on items, `[data-settling]` on the preview); the library imposes
+   * none. Fully skipped under `prefers-reduced-motion: reduce` (teardown stays instant).
+   */
+  readonly animateReorder = input(false, { transform: booleanAttribute });
 
   /**
    * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
@@ -252,7 +272,11 @@ export class ForDropList implements ForDropListContext {
       const rect = el.getBoundingClientRect();
       this.#grabOffsetX = point.x - rect.left;
       this.#grabOffsetY = point.y - rect.top;
-      this.#preview = preview ?? createDragPreview(el, this.#document);
+      this.#preview = preview
+        ? 'settle' in preview
+          ? (preview as DragPreview)
+          : wrapPreview(preview)
+        : createDragPreview(el, this.#document);
       this.#preview.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
     }
     return from;
@@ -392,6 +416,13 @@ export class ForDropList implements ForDropListContext {
     const item = handle ? handle.data() : undefined;
     const label = (liftedHost.textContent ?? '').trim();
     const targetItems = container.items();
+
+    const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
+    const animate =
+      this.animateReorder() && this.#isBrowser && !this.#prefersReducedMotion() && moved;
+    const preview = this.#preview;
+    const first = animate ? this.#captureFirstRects(connected) : null;
+
     this.dragDrop.emit({
       item,
       previousContainer: this,
@@ -403,7 +434,46 @@ export class ForDropList implements ForDropListContext {
       this.#defaults.announceDrop(label, currentIndex + 1, targetItems.length),
       'assertive',
     );
-    this.#teardown(connected);
+
+    if (animate && first) {
+      this.#scheduleReorderAnimation(first, liftedHost, preview);
+      this.#teardown(connected, true);
+    } else {
+      this.#teardown(connected);
+    }
+  }
+
+  #captureFirstRects(connected: readonly ForDropListContext[]): Map<HTMLElement, FlipRect> {
+    const map = new Map<HTMLElement, FlipRect>();
+    for (const ctx of [this as ForDropListContext, ...connected]) {
+      for (const h of ctx.items()) {
+        const r = h.host.getBoundingClientRect();
+        map.set(h.host, { left: r.left, top: r.top });
+      }
+    }
+    return map;
+  }
+
+  #scheduleReorderAnimation(
+    first: ReadonlyMap<HTMLElement, FlipRect>,
+    liftedHost: HTMLElement,
+    preview: DragPreview | null,
+  ): void {
+    const win = this.#document.defaultView;
+    afterNextRender(
+      () => {
+        playFlip({ first, win, exclude: preview ? liftedHost : null });
+        if (preview) {
+          if (liftedHost.isConnected && win) {
+            const r = liftedHost.getBoundingClientRect();
+            preview.settle(r.left, r.top, win);
+          } else {
+            preview.destroy();
+          }
+        }
+      },
+      { injector: this.#injector },
+    );
   }
 
   cancel(): void {
@@ -456,7 +526,7 @@ export class ForDropList implements ForDropListContext {
     return result;
   });
 
-  #teardown(connected: readonly ForDropListContext[]): void {
+  #teardown(connected: readonly ForDropListContext[], keepPreview = false): void {
     this.#autoScroller?.stop();
     this.#lastPoint = null;
     this.#dragOver.set(null);
@@ -465,7 +535,9 @@ export class ForDropList implements ForDropListContext {
     }
     this.#liftedHost.set(null);
     this.#flatIndex.set(0);
-    this.#preview?.destroy();
+    if (!keepPreview) {
+      this.#preview?.destroy();
+    }
     this.#preview = null;
     this.#placeholderNodes = null;
   }

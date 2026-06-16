@@ -2,8 +2,66 @@
 export interface DragPreview {
   /** Position the preview's top-left at `(x, y)` in viewport coordinates. */
   moveTo(x: number, y: number): void;
+  /**
+   * Transition the preview's top-left to `(x, y)`, then `destroy()` it once the transform
+   * transition ends (with a timeout fallback). Marks the element `data-settling` so a consumer
+   * CSS rule keyed on it governs duration / easing. If no transition is configured, destroys
+   * immediately. Caller must pass the browser `Window`.
+   */
+  settle(x: number, y: number, win: Window): void;
   /** Remove the preview from the DOM. Idempotent. */
   destroy(): void;
+}
+
+function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['settle'] {
+  return (x: number, y: number, win: Window): void => {
+    target.setAttribute('data-settling', '');
+    void target.offsetWidth;
+    const duration = win.getComputedStyle(target).transitionDuration;
+    const firstSegment = duration.split(',')[0]?.trim() ?? '';
+    if (!firstSegment || parseFloat(firstSegment) === 0) {
+      target.style.transform = `translate(${x}px, ${y}px)`;
+      destroyFn();
+      return;
+    }
+    let finished = false;
+    const finish = (): void => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      target.removeEventListener('transitionend', onEnd);
+      destroyFn();
+    };
+    const onEnd = (event: TransitionEvent): void => {
+      if (event.propertyName && event.propertyName !== 'transform') {
+        return;
+      }
+      finish();
+    };
+    target.addEventListener('transitionend', onEnd, { once: true });
+    win.setTimeout(finish, 500);
+    target.style.transform = `translate(${x}px, ${y}px)`;
+  };
+}
+
+/**
+ * Wraps a minimal preview (with only `moveTo` and `destroy`) into a full `DragPreview`.
+ * The `settle` implementation falls back to an immediate `destroy` call since the wrapped
+ * object carries no DOM element to animate. Used when a caller-supplied preview does not yet
+ * implement `settle`.
+ */
+export function wrapPreview(preview: {
+  moveTo(x: number, y: number): void;
+  destroy(): void;
+}): DragPreview {
+  return {
+    moveTo: (x, y) => preview.moveTo(x, y),
+    settle: (_x, _y, _win) => {
+      preview.destroy();
+    },
+    destroy: () => preview.destroy(),
+  };
 }
 
 /**
@@ -34,13 +92,16 @@ export function createDragPreview(source: HTMLElement, doc: Document): DragPrevi
 
   doc.body.appendChild(clone);
 
+  const destroy = (): void => {
+    clone.remove();
+  };
+
   return {
     moveTo(x: number, y: number): void {
       clone.style.transform = `translate(${x}px, ${y}px)`;
     },
-    destroy(): void {
-      clone.remove();
-    },
+    settle: attachSettle(clone, destroy),
+    destroy,
   };
 }
 
@@ -70,13 +131,16 @@ export function createTemplatePreview(
   }
   doc.body.appendChild(wrapper);
 
+  const destroy = (): void => {
+    onDestroy();
+    wrapper.remove();
+  };
+
   return {
     moveTo(x: number, y: number): void {
       wrapper.style.transform = `translate(${x}px, ${y}px)`;
     },
-    destroy(): void {
-      onDestroy();
-      wrapper.remove();
-    },
+    settle: attachSettle(wrapper, destroy),
+    destroy,
   };
 }

@@ -187,4 +187,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./fixtures/drag-drop-scroll.fixture').then((m) => m.DragDropScrollFixture),
   },
+  {
+    path: 'drag-drop-animate',
+    loadComponent: () =>
+      import('./fixtures/drag-drop-animate.fixture').then((m) => m.DragDropAnimateFixture),
+  },
 ];
