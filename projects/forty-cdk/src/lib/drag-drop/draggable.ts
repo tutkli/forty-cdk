@@ -253,9 +253,11 @@ export class ForDraggable implements ForDraggableContext {
     this.#placeholderView = this.#vcr.createEmbeddedView(placeholder.templateRef);
     this.#placeholderView.detectChanges();
     this.placeholderActive.set(true);
+    this.#list.setLivePlaceholder(this.#placeholderView.rootNodes);
   }
 
   #clearPlaceholder(): void {
+    this.#list.setLivePlaceholder(null);
     this.placeholderActive.set(false);
     this.#placeholderView?.destroy();
     this.#placeholderView = null;

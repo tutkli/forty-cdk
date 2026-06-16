@@ -88,6 +88,29 @@ children of `[forDraggable]` to override the default drag visuals during a point
   the item is revealed again. Keyboard dragging keeps the default behaviour — the lifted item
   stays in place reflecting `data-dragging`, and no placeholder is rendered.
 
+### Live-sort placeholder
+
+Add `[liveSort]="true"` to `[forDropList]` to make the `[forDragPlaceholder]` follow the live
+resolved drop index during a pointer drag — within the list and across connected lists — so
+siblings part to reveal where the item will land. When `false` (the default), the placeholder
+stays in the dragged item's source slot.
+
+```html
+<ul forDropList [liveSort]="true" (dragDrop)="onDrop($event)">
+  @for (item of items(); track item.id) {
+    <li forDraggable [dragData]="item">
+      {{ item.label }}
+      <ng-template forDragPlaceholder>
+        <div class="my-placeholder"></div>
+      </ng-template>
+    </li>
+  }
+</ul>
+```
+
+`[liveSort]` has no visible effect without a `[forDragPlaceholder]` template, and has no effect
+on keyboard dragging.
+
 ## Data attributes
 
 | Attribute               | Element           | Meaning                                                                             |

@@ -21,6 +21,7 @@ import {
   resolveDropTarget,
   type DropContainerGeometry,
 } from '../_internal/drag-session/drag-geometry';
+import { placeholderInsertion } from '../_internal/drag-session/placeholder-position';
 import { createDragPreview, type DragPreview } from '../_internal/drag-session/drag-preview';
 import {
   type ListNavigationAction,
@@ -97,6 +98,15 @@ export class ForDropList implements ForDropListContext {
   readonly autoScroll = input(true, { transform: booleanAttribute });
 
   /**
+   * When true, the `[forDragPlaceholder]` follows the live resolved drop index during a
+   * **pointer** drag — within this list and across connected lists — so siblings part to
+   * reveal where the item will land. When false (the default), the placeholder stays in the
+   * dragged item's source slot (the #806 behaviour). Has no effect without a
+   * `[forDragPlaceholder]` template, and none on keyboard dragging.
+   */
+  readonly liveSort = input(false, { transform: booleanAttribute });
+
+  /**
    * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
    * the item stays in this list (reorder) or moves to a connected list (transfer). Apply
    * `moveItemInArray` or `transferArrayItem` to your data signal inside the handler.
@@ -121,6 +131,7 @@ export class ForDropList implements ForDropListContext {
   #grabOffsetY = 0;
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
+  #placeholderNodes: readonly Node[] | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -291,6 +302,9 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flat);
     if (changed) {
       const targetCtx = containers[target.containerIndex]!;
+      if (this.liveSort()) {
+        this.#movePlaceholder(targetCtx, target.index, lifted);
+      }
       const label = (lifted.textContent ?? '').trim();
       this.#announcer.announce(
         this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
@@ -406,6 +420,27 @@ export class ForDropList implements ForDropListContext {
     this.#dragOver.set(index);
   }
 
+  setLivePlaceholder(nodes: readonly Node[] | null): void {
+    this.#placeholderNodes = nodes;
+  }
+
+  #movePlaceholder(targetCtx: ForDropListContext, index: number, lifted: HTMLElement): void {
+    const nodes = this.#placeholderNodes;
+    if (!this.#isBrowser || nodes === null || nodes.length === 0) {
+      return;
+    }
+    const fragment = this.#document.createDocumentFragment();
+    for (const node of nodes) {
+      fragment.appendChild(node);
+    }
+    const hosts = targetCtx
+      .items()
+      .map((h) => h.host)
+      .filter((h) => h !== lifted);
+    const { parent, ref } = placeholderInsertion(hosts, index, targetCtx.host);
+    parent.insertBefore(fragment, ref);
+  }
+
   readonly #effectiveConnected = computed((): readonly ForDropListContext[] => {
     const explicit = this.connectedTo();
     const groupMembers = this.#group?.members() ?? [];
@@ -432,5 +467,6 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(0);
     this.#preview?.destroy();
     this.#preview = null;
+    this.#placeholderNodes = null;
   }
 }

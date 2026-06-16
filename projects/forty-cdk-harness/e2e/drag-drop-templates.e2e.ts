@@ -102,3 +102,67 @@ test.describe('drag-drop custom preview & placeholder', () => {
     await expect(el(page, 'item-0')).toHaveText(/Alpha/);
   });
 });
+
+test.describe('drag-drop live-sort placeholder', () => {
+  test('liveSort ON — placeholder moves to live drop index before release', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop-templates', { liveSort: 'true' });
+
+    const item0 = el(page, 'item-0');
+    const item1 = el(page, 'item-1');
+
+    const box0 = await item0.boundingBox();
+    const box1 = await item1.boundingBox();
+    if (!box0 || !box1) throw new Error('Items not found');
+
+    const startX = box0.x + box0.width / 2;
+    const startY = box0.y + box0.height / 2;
+    const targetY = box1.y + box1.height - 4;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(startX, targetY);
+
+    const order = await page.locator('[data-testid="list"] > *').evaluateAll((nodes) =>
+      nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')),
+    );
+    const phIndex = order.indexOf('custom-placeholder');
+    const item1Index = order.indexOf('item-1');
+    expect(phIndex).toBeGreaterThan(item1Index);
+    expect(order).toContain('item-0');
+
+    await page.mouse.up();
+
+    await expect(el(page, 'item-0')).toHaveText(/Beta/);
+    await expect(el(page, 'item-1')).toHaveText(/Alpha/);
+  });
+
+  test('liveSort OFF (default) — placeholder stays at source slot mid-drag', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop-templates');
+
+    const item0 = el(page, 'item-0');
+    const item1 = el(page, 'item-1');
+
+    const box0 = await item0.boundingBox();
+    const box1 = await item1.boundingBox();
+    if (!box0 || !box1) throw new Error('Items not found');
+
+    const startX = box0.x + box0.width / 2;
+    const startY = box0.y + box0.height / 2;
+    const targetY = box1.y + box1.height - 4;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(startX, targetY);
+
+    const order = await page.locator('[data-testid="list"] > *').evaluateAll((nodes) =>
+      nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')),
+    );
+    const phIndex = order.indexOf('custom-placeholder');
+    const item1Index = order.indexOf('item-1');
+    expect(phIndex).toBeLessThan(item1Index);
+
+    await page.mouse.up();
+  });
+});

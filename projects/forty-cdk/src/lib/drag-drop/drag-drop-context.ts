@@ -66,6 +66,12 @@ export interface ForDropListContext {
   ): number;
   /** Update the live pointer drop target + preview position. No-op if nothing is lifted. */
   pointerMove(point: { x: number; y: number }): void;
+  /**
+   * Register the rendered placeholder's root nodes with the source list so it can reposition
+   * them to the live drop index during a `liveSort` pointer drag. Pass `null` to clear. The
+   * list ignores the nodes when `liveSort` is off. Called by `ForDraggable`.
+   */
+  setLivePlaceholder(nodes: readonly Node[] | null): void;
 }
 
 export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
