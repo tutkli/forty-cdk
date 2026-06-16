@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute } from '@angular/router';
 import {
   ForStepper,
+  ForStepperCompletedContent,
   ForStepperContent,
   ForStepperIndicator,
   ForStepperItem,
@@ -18,9 +19,11 @@ import {
  *
  * Renders 4 steps with `data-testid="trigger-0..3"`,
  * `data-testid="content-0..3"`, `data-testid="next"` / `data-testid="prev"`,
- * a `data-testid="before"` input for Tab-into tests, and
+ * a `data-testid="before"` input for Tab-into tests,
  * `data-testid="complete-0..3"` buttons to flip each step's `completed` flag
- * so linear-unblock paths can be exercised.
+ * so linear-unblock paths can be exercised,
+ * `data-testid="completed"` for the terminal completed panel, and
+ * `data-testid="complete-count"` showing how many times `(complete)` fired.
  *
  * Query params:
  *  - `?mode=progress` — switches to progress mode (default `interactive`).
@@ -40,6 +43,7 @@ import {
     ForStepperIndicator,
     ForStepperSeparator,
     ForStepperContent,
+    ForStepperCompletedContent,
     ForStepperNext,
     ForStepperPrevious,
   ],
@@ -54,6 +58,7 @@ import {
       [orientation]="orientation"
       [activationMode]="activationMode"
       [dir]="dir"
+      (complete)="onComplete()"
     >
       <ol forStepperList ariaLabel="Checkout steps">
         @for (step of steps; track step.index) {
@@ -81,9 +86,12 @@ import {
         </section>
       }
 
+      <section forStepperCompletedContent data-testid="completed">All steps complete</section>
       <button forStepperPrevious data-testid="prev">Back</button>
       <button forStepperNext data-testid="next">Next</button>
     </div>
+
+    <output data-testid="complete-count">{{ completeCount() }}</output>
 
     <div>
       @for (step of steps; track step.index) {
@@ -131,11 +139,17 @@ export class StepperFixture {
     { index: 3, label: 'Step Four' },
   ];
 
+  protected readonly completeCount = signal(0);
+
   protected toggleCompleted(index: number): void {
     this.completed.update((arr) => {
       const next = [...arr];
       next[index] = !next[index];
       return next;
     });
+  }
+
+  protected onComplete(): void {
+    this.completeCount.update((n) => n + 1);
   }
 }

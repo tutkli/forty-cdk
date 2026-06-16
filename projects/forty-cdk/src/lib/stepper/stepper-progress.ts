@@ -68,7 +68,8 @@ export class ForStepperProgress {
     if (total <= 1) {
       return total === 1 && this.#value() >= 1 ? 100 : 0;
     }
-    return Math.round((this.#value() / (total - 1)) * 100);
+    const raw = Math.round((this.#value() / (total - 1)) * 100);
+    return Math.min(100, Math.max(0, raw));
   });
 
   /**
@@ -78,6 +79,6 @@ export class ForStepperProgress {
   readonly valueText = computed<string>(() =>
     this.valueBy() === 'completed'
       ? `${this.percent()}% complete`
-      : `Step ${this.ctx.selectedIndex() + 1} of ${this.ctx.count()}`,
+      : `Step ${Math.min(this.ctx.selectedIndex() + 1, this.ctx.count())} of ${this.ctx.count()}`,
   );
 }

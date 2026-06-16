@@ -23,6 +23,7 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 | `ForStepperNext`       | `button[forStepperNext]`    | next-step button                       |
 | `ForStepperPrevious`   | `button[forStepperPrevious]`| previous-step button                   |
 | `ForStepperProgress`   | `[forStepperProgress]`      | `progressbar` (optional)               |
+| `ForStepperCompletedContent` | `[forStepperCompletedContent]` | `group` (terminal "all complete" panel) |
 
 ---
 
@@ -30,7 +31,7 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
 | Input / Model      | Type                              | Default       | Description                                              |
 | ------------------ | --------------------------------- | ------------- | -------------------------------------------------------- |
-| `selectedIndex`    | `model<number>`                   | `0`           | Two-way bindable selected step index.                    |
+| `selectedIndex`    | `model<number>`                   | `0`           | Two-way bindable selected step index, range `0 … count` (the terminal `=== count` is the completed state). |
 | `linear`           | `input<boolean>`                  | `false`       | Gate forward navigation until preceding steps complete.  |
 | `mode`             | `input<StepperMode>`              | `'interactive'` | Accessibility model.                                   |
 | `orientation`      | `input<'horizontal'\|'vertical'>` | `'horizontal'`| Layout axis; affects arrow-key semantics.                |
@@ -49,6 +50,28 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 | `hasError`  | `input<boolean>` | `false` | Emits `'error'` resolved state when not current (manual; wins over `field`). |
 | `field`     | `input<FieldTree<unknown>\|null>` | `null` | Optional Signal Forms field; drives `completed`/`hasError` from validity. |
 | `state`     | `input<string\|null>` | `null` | Custom state override — wins over derived state.   |
+
+## Outputs / completed state
+
+`ForStepper` exposes two members for the terminal completed state:
+
+- **`isCompleted`** (`Signal<boolean>`) — true when `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
+- **`(complete)`** — output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
+
+---
+
+## Completed-all content
+
+```html
+<div forStepper [(selectedIndex)]="step" (complete)="onDone()">
+  <!-- … list / content … -->
+  @if (step() >= steps.length) {
+    <section forStepperCompletedContent>All steps complete 🎉</section>
+  }
+</div>
+```
+
+When `Next` is pressed on the last step, `selectedIndex` advances to `count` (one past the last step) and `(complete)` fires once. `[forStepperPrevious]` returns to the last step. While completed, every `[forStepperContent]` panel is inactive and only `[forStepperCompletedContent]` carries `data-state="active"` (the others reflect `inert` + `aria-hidden`).
 
 ---
 
@@ -236,6 +259,7 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 | `[forStepperTrigger]`             | same as item                                        |
 | `[forStepperIndicator]`           | same as item                                        |
 | `[forStepperContent]`             | `active` `inactive`                                 |
+| `[forStepperCompletedContent]`    | `active` `inactive`                                 |
 | `[forStepperSeparator]`           | `completed` `pending`                               |
 
 ### Boolean `data-*`

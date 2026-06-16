@@ -5,6 +5,7 @@ export { ForStepperTrigger } from './stepper-trigger';
 export { ForStepperIndicator } from './stepper-indicator';
 export { ForStepperSeparator } from './stepper-separator';
 export { ForStepperContent } from './stepper-content';
+export { ForStepperCompletedContent } from './stepper-completed-content';
 export { ForStepperNext } from './stepper-next';
 export { ForStepperPrevious } from './stepper-previous';
 export { ForStepperProgress } from './stepper-progress';

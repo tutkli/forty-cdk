@@ -117,6 +117,7 @@ import { ForDraggable } from '../../drag-drop/draggable';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
 import { ForStepper } from '../../stepper/stepper';
+import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
 import { ForStepperIndicator } from '../../stepper/stepper-indicator';
 import { ForStepperItem } from '../../stepper/stepper-item';
@@ -856,11 +857,35 @@ class DragDropFixture {}
 })
 class StepperFixture {}
 
+@Component({
+  imports: [
+    ForStepper,
+    ForStepperList,
+    ForStepperItem,
+    ForStepperTrigger,
+    ForStepperContent,
+    ForStepperCompletedContent,
+  ],
+  template: `
+    <div forStepper [selectedIndex]="2">
+      <ol forStepperList ariaLabel="Checkout">
+        <li forStepperItem><button forStepperTrigger>One</button></li>
+        <li forStepperItem><button forStepperTrigger>Two</button></li>
+      </ol>
+      <section forStepperContent>One body</section>
+      <section forStepperContent>Two body</section>
+      <section forStepperCompletedContent>All steps complete</section>
+    </div>
+  `,
+})
+class StepperCompletedFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
   TabsFixture,
   StepperFixture,
+  StepperCompletedFixture,
   CarouselFixture,
   CarouselAutoplayFixture,
   SwitchFixture,

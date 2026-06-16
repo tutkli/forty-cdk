@@ -89,6 +89,11 @@ export interface ForStepperContext {
   readonly disabled: Signal<boolean>;
   /** Total number of registered step items. */
   readonly count: Signal<number>;
+  /**
+   * True when the stepper has reached the terminal completed state
+   * (`selectedIndex()` >= `count()`).
+   */
+  readonly isCompleted: Signal<boolean>;
   /** Roving tabindex tracker for interactive-mode triggers. */
   readonly roving: RovingTabindex;
 
@@ -110,9 +115,9 @@ export interface ForStepperContext {
    */
   select(index: number): void;
   /**
-   * Advances to the next step. No-op when the root is disabled, when the last
-   * step is already selected, or (in linear mode) when the current step is
-   * neither completed nor optional.
+   * Advances to the next step, or into the terminal completed state when on
+   * the last step. No-op when the root is disabled, when already in the terminal state, or
+   * (in linear mode) when the current step is neither completed nor optional.
    */
   next(): void;
   /**
@@ -122,8 +127,9 @@ export interface ForStepperContext {
    */
   previous(): void;
   /**
-   * Returns true when the Next button can advance. False when disabled, at the
-   * last step, or (in linear mode) the current step is not completed/optional.
+   * Returns true when the Next button can advance — including advancing the last
+   * step into the terminal completed state. False when disabled, already in the
+   * terminal state, or (in linear mode) the current step is not completed/optional.
    */
   canAdvance(): boolean;
   /** Returns true when the Previous button can retreat. False when disabled or at the first step. */
