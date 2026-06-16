@@ -1,6 +1,7 @@
 import {
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
   DOCUMENT,
   ElementRef,
@@ -36,6 +37,7 @@ import {
   type ForDraggableHandle,
   type ForDropListContext,
 } from './drag-drop-context';
+import { createAutoScroller, type AutoScroller } from '../_internal/drag-session/auto-scroll';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
 
@@ -64,6 +66,7 @@ export class ForDropList implements ForDropListContext {
   readonly #group = inject(FOR_DROP_LIST_GROUP, { optional: true });
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #destroyRef = inject(DestroyRef);
 
   /** Layout orientation of the list. Affects which arrow keys move focus and the lifted item. */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
@@ -84,6 +87,14 @@ export class ForDropList implements ForDropListContext {
    * members. Disabled lists are excluded from the effective connected set.
    */
   readonly connectedTo = input<readonly ForDropListContext[]>([]);
+
+  /**
+   * When true (the default), a pointer drag that nears the edge of the nearest scrollable
+   * container (the list, a scrollable ancestor, or the viewport) auto-scrolls it toward that
+   * edge so off-screen drop targets become reachable. Set `false` to opt out. Edge size and
+   * max speed are configured via `provideForDragDropDefaults`. Keyboard dragging is unaffected.
+   */
+  readonly autoScroll = input(true, { transform: booleanAttribute });
 
   /**
    * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
@@ -108,6 +119,8 @@ export class ForDropList implements ForDropListContext {
   #preview: DragPreview | null = null;
   #grabOffsetX = 0;
   #grabOffsetY = 0;
+  #autoScroller: AutoScroller | null = null;
+  #lastPoint: { x: number; y: number } | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -124,6 +137,16 @@ export class ForDropList implements ForDropListContext {
         (ctx) => group.register(ctx),
         (ctx) => group.unregister(ctx),
       );
+    }
+    if (this.#isBrowser) {
+      this.#autoScroller = createAutoScroller({
+        host: this.host,
+        win: this.#document.defaultView,
+        edgeSize: this.#defaults.autoScrollEdgeSize,
+        maxSpeed: this.#defaults.autoScrollMaxSpeed,
+        onFrame: () => this.#onAutoScrollFrame(),
+      });
+      this.#destroyRef.onDestroy(() => this.#autoScroller?.stop());
     }
   }
 
@@ -229,6 +252,16 @@ export class ForDropList implements ForDropListContext {
     if (lifted === null || !this.#isBrowser) {
       return;
     }
+    this.#lastPoint = point;
+    this.#resolveDrop(point, lifted);
+    if (this.autoScroll()) {
+      this.#autoScroller?.update(point);
+    } else {
+      this.#autoScroller?.stop();
+    }
+  }
+
+  #resolveDrop(point: { x: number; y: number }, lifted: HTMLElement): void {
     const connected = this.#effectiveConnected();
     const containers = [this as ForDropListContext, ...connected];
     const geoms: DropContainerGeometry[] = containers.map((ctx) => ({
@@ -264,6 +297,15 @@ export class ForDropList implements ForDropListContext {
         'polite',
       );
     }
+  }
+
+  #onAutoScrollFrame(): void {
+    const lifted = this.#liftedHost();
+    const point = this.#lastPoint;
+    if (lifted === null || point === null) {
+      return;
+    }
+    this.#resolveDrop(point, lifted);
   }
 
   isLifted(el: HTMLElement): boolean {
@@ -380,6 +422,8 @@ export class ForDropList implements ForDropListContext {
   });
 
   #teardown(connected: readonly ForDropListContext[]): void {
+    this.#autoScroller?.stop();
+    this.#lastPoint = null;
     this.#dragOver.set(null);
     for (const ctx of connected) {
       ctx.setDragOver(null);
