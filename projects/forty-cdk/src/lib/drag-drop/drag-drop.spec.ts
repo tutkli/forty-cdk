@@ -7,6 +7,8 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { withReducedMotion } from '../../test-utils/reduced-motion';
+
 import { flush, pressKey, renderHost } from '../../test-utils';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
 import { ForDragHandle } from './drag-handle';
@@ -36,6 +38,7 @@ interface Row {
       [orientation]="orientation()"
       [dir]="dir()"
       [disabled]="listDisabled()"
+      [animateReorder]="animate()"
       (dragDrop)="onDrop($event)"
     >
       @for (row of rows(); track row.id) {
@@ -60,6 +63,7 @@ class SingleListHost {
   readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly listDisabled = signal(false);
+  readonly animate = signal(false);
   readonly lastDrop = signal<ForDragDropEvent | null>(null);
   onDrop(event: ForDragDropEvent): void {
     this.lastDrop.set(event);
@@ -775,6 +779,73 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
+    });
+  });
+
+  describe('animateReorder', () => {
+    it('default off: keyboard reorder emits dragDrop and no item gains data-drag-animating', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      const animating = el.querySelectorAll('[data-drag-animating]');
+      expect(animating.length).toBe(0);
+    });
+
+    it('on + zoneless: keyboard reorder commits correct indices and flush completes without error', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.componentInstance.animate.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      await flush(fixture);
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    describe('reduced motion', () => {
+      let restore: () => void;
+      beforeEach(() => {
+        restore = withReducedMotion();
+      });
+      afterEach(() => {
+        restore();
+      });
+
+      it('skips animation under prefers-reduced-motion: no data-drag-animating appears', () => {
+        const { el, fixture } = renderHost(SingleListHost);
+        const comp = fixture.componentInstance;
+        comp.animate.set(true);
+        fixture.detectChanges();
+        const first = itemEl(el, 1);
+        first.focus();
+        pressKey(first, ' ');
+        pressKey(first, 'ArrowDown');
+        pressKey(first, ' ');
+        fixture.detectChanges();
+        const drop = comp.lastDrop();
+        expect(drop).not.toBeNull();
+        const animating = el.querySelectorAll('[data-drag-animating]');
+        expect(animating.length).toBe(0);
+      });
     });
   });
 

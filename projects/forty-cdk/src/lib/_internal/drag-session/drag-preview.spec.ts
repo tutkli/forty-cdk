@@ -1,4 +1,4 @@
-import { createTemplatePreview } from './drag-preview';
+import { createDragPreview, createTemplatePreview } from './drag-preview';
 
 describe('createTemplatePreview', () => {
   afterEach(() => {
@@ -47,5 +47,32 @@ describe('createTemplatePreview', () => {
     preview.destroy();
     expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
     expect(onDestroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('settle with no configured transition destroys the wrapper immediately and calls onDestroy once', () => {
+    const onDestroy = vi.fn();
+    const nodes = [document.createElement('span')];
+    const preview = createTemplatePreview(nodes, document, onDestroy);
+    preview.settle(10, 20, window);
+    expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
+    expect(onDestroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createDragPreview settle', () => {
+  afterEach(() => {
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  it('settle with no configured transition destroys the clone immediately', () => {
+    const source = document.createElement('div');
+    document.body.appendChild(source);
+    try {
+      const preview = createDragPreview(source, document);
+      preview.settle(5, 10, window);
+      expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
+    } finally {
+      source.remove();
+    }
   });
 });
