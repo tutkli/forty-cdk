@@ -23,6 +23,32 @@ When a pointer drag starts, the dragged item stays in place and reflects
 follows the pointer as the default preview. The clone carries
 `data-for-drag-preview` and `aria-hidden="true"`.
 
+### Auto-scroll
+
+While a pointer drag is in flight, `[forDropList]` automatically scrolls the
+nearest scrollable container (the list itself, a scrollable ancestor, or the
+viewport) toward whichever edge the pointer approaches. Speed scales with
+proximity — the closer the pointer is to the edge, the faster the scroll.
+
+The feature is **on by default**. Opt out with `[autoScroll]="false"`:
+
+```html
+<ul forDropList [autoScroll]="false" (dragDrop)="onDrop($event)">…</ul>
+```
+
+Configure the edge zone and max speed via `provideForDragDropDefaults`:
+
+```ts
+providers: [
+  provideForDragDropDefaults({
+    autoScrollEdgeSize: 80,
+    autoScrollMaxSpeed: 24,
+  }),
+]
+```
+
+Keyboard dragging is unaffected. SSR-safe — no-op when there is no browser window.
+
 ### Optional drag handle
 
 Apply `[forDragHandle]` on a child element of `[forDraggable]` to restrict

@@ -31,6 +31,10 @@ export interface ForDragDropDefaults {
   announceDrop: (label: string, index: number, total: number) => string;
   /** Announcement when a drag is cancelled. */
   announceCancel: (label: string) => string;
+  /** Distance in px from a scroll edge that arms auto-scroll during a pointer drag. */
+  autoScrollEdgeSize: number;
+  /** Maximum scroll delta in px applied per animation frame while auto-scrolling. */
+  autoScrollMaxSpeed: number;
 }
 
 /**
@@ -44,6 +48,8 @@ export const FOR_DRAG_DROP_FALLBACK_DEFAULTS: ForDragDropDefaults = {
   announceMove: (label, index, total) => `${label}, moved to position ${index} of ${total}.`,
   announceDrop: (label, index, total) => `${label}, dropped at position ${index} of ${total}.`,
   announceCancel: (label) => `${label}, movement cancelled.`,
+  autoScrollEdgeSize: 50,
+  autoScrollMaxSpeed: 16,
 };
 
 const { token, provideDefaults } = createDefaults<ForDragDropDefaults>(
