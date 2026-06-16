@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import { Component, computed, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../test-utils';
@@ -206,6 +206,77 @@ describe('ForTree', () => {
       expect(itemOf(el, 'a').getAttribute('tabindex')).toBe('0');
       expect(itemOf(el, 'a').hasAttribute('data-highlighted')).toBe(true);
       expect(itemOf(el, 'c').getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
+  describe('dynamic node set (consumer-owned filtering)', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+      template: `
+        <ul forTree [(expanded)]="open" [(value)]="picked">
+          @for (node of visible(); track node.id) {
+            <li forTreeItem [value]="node.id" [attr.data-test-id]="node.id">
+              <div forTreeItemLabel>
+                @if (node.children.length) {
+                  <span forTreeItemToggle>▸</span>
+                }
+                <span>{{ node.id }}</span>
+              </div>
+              @if (node.children.length && open().includes(node.id)) {
+                <ul forTreeGroup>
+                  @for (child of node.children; track child) {
+                    <li forTreeItem [value]="child" [attr.data-test-id]="child">
+                      <div forTreeItemLabel><span>{{ child }}</span></div>
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class FilterHost {
+      readonly nodes = [
+        { id: 'fruit', children: ['apple', 'pear'] },
+        { id: 'veg', children: ['carrot'] },
+        { id: 'misc', children: [] as string[] },
+      ];
+      readonly query = signal('');
+      readonly visible = computed(() => {
+        const q = this.query();
+        if (!q) {
+          return this.nodes;
+        }
+        return this.nodes.filter((n) => n.id.includes(q) || n.children.some((c) => c.includes(q)));
+      });
+      readonly open = signal<readonly string[]>(['fruit', 'veg']);
+      readonly picked = signal<readonly string[]>([]);
+    }
+
+    it('prunes then restores nodes at runtime without throwing when value inputs rebind', async () => {
+      const result = renderHost(FilterHost);
+      await flush(result.fixture);
+      const { el, fixture } = result;
+      const host = fixture.componentInstance;
+
+      // Arm the roving-tabindex effect, which walks every visible node's value.
+      pressKey(itemOf(el, 'fruit'), 'ArrowDown');
+      await flush(fixture);
+
+      // Filter down to a single branch — the active node is pruned away.
+      host.query.set('carrot');
+      await flush(fixture);
+      expect(el.querySelector('[data-test-id="fruit"]')).toBeNull();
+      expect(el.querySelector('[data-test-id="carrot"]')).not.toBeNull();
+
+      // Clear the filter, re-adding the pruned nodes (the reported repro path).
+      host.query.set('');
+      await flush(fixture);
+
+      expect(itemOf(el, 'fruit').getAttribute('aria-posinset')).toBe('1');
+      expect(itemOf(el, 'misc').getAttribute('aria-posinset')).toBe('3');
+      expect(itemOf(el, 'misc').getAttribute('aria-setsize')).toBe('3');
     });
   });
 

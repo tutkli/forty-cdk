@@ -124,6 +124,7 @@ export class ForTreeItem implements ForTreeItemContext {
       handle,
       (h) => this.#container.registerItem(h),
       (h) => this.#container.unregisterItem(h),
+      'afterNextRender',
     );
   }
 
