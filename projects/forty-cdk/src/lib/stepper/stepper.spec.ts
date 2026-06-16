@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { form, required } from '@angular/forms/signals';
 
 import { pressKey, renderHost } from '../../test-utils';
 import { assertRovingTabindexContract } from '../../test-utils/contract';
@@ -733,6 +734,82 @@ describe('ForStepper', () => {
       expect(t0.getAttribute('aria-selected')).toBe('false');
       expect(t1.getAttribute('aria-selected')).toBe('true');
       expect(c1.hasAttribute('inert')).toBe(false);
+    });
+  });
+
+  describe('Signal Forms field-driven completion', () => {
+    @Component({
+      imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+      template: `
+        <div forStepper [(selectedIndex)]="idx" [linear]="linear()">
+          <ol forStepperList>
+            <li forStepperItem [field]="signup.name" [completed]="manualComplete()" data-step="0">
+              <button type="button" forStepperTrigger data-trigger="0">A</button>
+            </li>
+            <li forStepperItem [field]="signup.email" data-step="1">
+              <button type="button" forStepperTrigger data-trigger="1">B</button>
+            </li>
+          </ol>
+          <section forStepperContent data-content="0">A</section>
+          <section forStepperContent data-content="1">B</section>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly idx = signal(0);
+      readonly linear = signal(true);
+      readonly manualComplete = signal(false);
+      readonly model = signal({ name: '', email: '' });
+      readonly signup = form(this.model, (s) => {
+        required(s.name);
+        required(s.email);
+      });
+    }
+
+    it('untouched field is not completed — linear gate stays closed', () => {
+      const { el, instance, fixture } = renderHost(FieldHost);
+      instance.model.update((m) => ({ ...m, name: 'Alice' }));
+      fixture.detectChanges();
+      expect(triggerAt(el, 1).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('valid + touched field completes the step and opens the linear gate', () => {
+      const { el, instance, fixture } = renderHost(FieldHost);
+      instance.model.update((m) => ({ ...m, name: 'Alice' }));
+      fixture.detectChanges();
+      instance.signup.name().markAsTouched();
+      fixture.detectChanges();
+      expect(triggerAt(el, 1).hasAttribute('aria-disabled')).toBe(false);
+      instance.idx.set(1);
+      fixture.detectChanges();
+      expect(itemAt(el, 0).getAttribute('data-state')).toBe('completed');
+    });
+
+    it('invalid + touched field reflects data-state="error" on a non-current step', () => {
+      const { el, instance, fixture } = renderHost(FieldHost);
+      instance.signup.email().markAsTouched();
+      fixture.detectChanges();
+      instance.idx.set(0);
+      fixture.detectChanges();
+      expect(itemAt(el, 1).getAttribute('data-state')).toBe('error');
+    });
+
+    it('manual [completed] overrides an invalid/untouched field', () => {
+      const { el, instance, fixture } = renderHost(FieldHost);
+      instance.manualComplete.set(true);
+      fixture.detectChanges();
+      expect(triggerAt(el, 1).hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('field-driven state updates after markAsTouched without Zone.js', () => {
+      const { el, instance, fixture } = renderHost(FieldHost);
+      expect(itemAt(el, 0).getAttribute('data-state')).toBe('active');
+      instance.model.update((m) => ({ ...m, name: 'Alice' }));
+      instance.signup.name().markAsTouched();
+      fixture.detectChanges();
+      instance.idx.set(1);
+      fixture.detectChanges();
+      expect(itemAt(el, 0).getAttribute('data-state')).toBe('completed');
     });
   });
 });

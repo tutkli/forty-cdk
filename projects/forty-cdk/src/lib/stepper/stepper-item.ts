@@ -6,6 +6,7 @@ import {
   inject,
   input,
 } from '@angular/core';
+import type { FieldTree } from '@angular/forms/signals';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import {
@@ -41,8 +42,11 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
   /** Host element — satisfies `ForStepperItemHandle.host` for collection registration. */
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  /** Marks this step as successfully completed. */
-  readonly completed = input(false, { transform: booleanAttribute });
+  /**
+   * Manual completion flag. When `true`, the step is completed regardless of any
+   * bound `field()`. Bind via `[completed]`.
+   */
+  readonly _completedInput = input(false, { transform: booleanAttribute, alias: 'completed' });
 
   /** Marks this step as optional (can be skipped in linear mode). */
   readonly optional = input(false, { transform: booleanAttribute });
@@ -50,8 +54,56 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
   /** When true, this step's trigger ignores clicks and the step is unreachable by keyboard. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  /** When true, the step reflects the `'error'` resolved state (unless it is current). */
-  readonly hasError = input(false, { transform: booleanAttribute });
+  /**
+   * Manual error flag. When `true`, the step reflects the `'error'` resolved state
+   * (unless current) regardless of any bound `field()`. Bind via `[hasError]`.
+   */
+  readonly _hasErrorInput = input(false, { transform: booleanAttribute, alias: 'hasError' });
+
+  /**
+   * Optional Signal Forms field. When bound, the step's `completed` and
+   * `hasError` derive from the field's reactive validity: `completed` is `true`
+   * when the field is valid and touched; `hasError` is `true` when the field is
+   * touched and invalid. A manual `[completed]` / `[hasError]` input always wins
+   * when set. Leave unset to drive completion manually.
+   *
+   * The `@angular/forms` peer is optional: the field *type* is imported with
+   * `import type`, so binding `[field]` requires the peer but the primitive
+   * compiles and tree-shakes without it for consumers who never use it.
+   */
+  readonly field = input<FieldTree<unknown> | null>(null);
+
+  /**
+   * Whether this step is completed. A manual `[completed]` input wins; otherwise,
+   * when a `field()` is bound, derives `true` from `field` valid + touched.
+   */
+  readonly completed = computed<boolean>(() => {
+    if (this._completedInput()) {
+      return true;
+    }
+    const f = this.field();
+    if (!f) {
+      return false;
+    }
+    const state = f();
+    return state.valid() && state.touched();
+  });
+
+  /**
+   * Whether this step has an error. A manual `[hasError]` input wins; otherwise,
+   * when a `field()` is bound, derives `true` from `field` touched + invalid.
+   */
+  readonly hasError = computed<boolean>(() => {
+    if (this._hasErrorInput()) {
+      return true;
+    }
+    const f = this.field();
+    if (!f) {
+      return false;
+    }
+    const state = f();
+    return state.touched() && state.invalid();
+  });
 
   /**
    * Custom state string override. When non-empty, wins over the derived resolved
