@@ -72,6 +72,11 @@ import {
   ForTimeField,
 } from './time-field';
 import {
+  FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
+  ForTimePicker,
+} from './time-picker';
+import {
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS,
   FOR_TOGGLE_HOST_DIRECTIVE_INPUTS,
@@ -176,6 +181,12 @@ const cases: readonly ConfigCase[] = [
     directive: ForTimeField,
     inputs: FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
     outputs: FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
+    name: 'ForTimePicker',
+    directive: ForTimePicker,
+    inputs: FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
   },
   {
     name: 'ForToggle',

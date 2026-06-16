@@ -23,6 +23,7 @@ import {
   type TimeGranularity,
   type TimeSegmentType,
 } from './build-time-segments';
+import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
 import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 
@@ -102,7 +103,10 @@ interface TimeParts {
     '[attr.data-empty]': 'value() === null ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [{ provide: FOR_TIME_FIELD_CONTEXT, useExisting: ForTimeField }],
+  providers: [
+    { provide: FOR_TIME_FIELD_CONTEXT, useExisting: ForTimeField },
+    { provide: FOR_TIME_VALUE_SOURCE, useExisting: ForTimeField },
+  ],
 })
 export class ForTimeField<D>
   extends FormUiControlBase
