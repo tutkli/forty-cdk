@@ -42,10 +42,11 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
 | Input       | Type             | Default | Description                                              |
 | ----------- | ---------------- | ------- | -------------------------------------------------------- |
-| `completed` | `input<boolean>` | `false` | Marks the step done (unlocks next in linear mode).       |
+| `completed` | `input<boolean>` | `false` | Marks the step done (manual; wins over `field`).         |
 | `optional`  | `input<boolean>` | `false` | Marks the step skippable in linear mode.                 |
 | `disabled`  | `input<boolean>` | `false` | Disables only this step.                                 |
-| `hasError`  | `input<boolean>` | `false` | Emits `'error'` resolved state when not current.        |
+| `hasError`  | `input<boolean>` | `false` | Emits `'error'` resolved state when not current (manual; wins over `field`). |
+| `field`     | `input<FieldTree<unknown>\|null>` | `null` | Optional Signal Forms field; drives `completed`/`hasError` from validity. |
 | `state`     | `input<string\|null>` | `null` | Custom state override — wins over derived state.   |
 
 ---
@@ -84,6 +85,51 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
   <button forStepperPrevious>Back</button>
   <button forStepperNext>Next</button>
 </div>
+```
+
+---
+
+## Signal Forms field-driven completion
+
+Bind a step to a [Signal Forms](https://angular.dev/) field and its completion and
+error state follow the field's validity automatically — no manual `[completed]`
+wiring. A step is `completed` when its field is **valid and touched**; it reflects
+`error` when the field is **touched and invalid**. A manual `[completed]` /
+`[hasError]` input always wins when set.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, required, email } from '@angular/forms/signals';
+import {
+  ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent,
+} from 'forty-cdk';
+
+@Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+  template: `
+    <div forStepper [(selectedIndex)]="step" [linear]="true">
+      <ol forStepperList ariaLabel="Sign up">
+        <li forStepperItem [field]="signup.account">
+          <button forStepperTrigger>Account</button>
+        </li>
+        <li forStepperItem [field]="signup.profile">
+          <button forStepperTrigger>Profile</button>
+        </li>
+      </ol>
+      <section forStepperContent>…</section>
+      <section forStepperContent>…</section>
+    </div>
+  `,
+})
+export class SignupWizard {
+  protected readonly step = signal(0);
+  private readonly model = signal({ account: '', profile: '' });
+  protected readonly signup = form(this.model, (s) => {
+    required(s.account);
+    email(s.account);
+    required(s.profile);
+  });
+}
 ```
 
 ---
