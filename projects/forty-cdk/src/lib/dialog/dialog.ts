@@ -27,7 +27,7 @@ import {
  *
  * ```html
  * @if (dialogOpen()) {
- *   <div forDialog (close)="dialogOpen.set(false)" animate.leave="fade-out">
+ *   <div forDialog (dismiss)="dialogOpen.set(false)" animate.leave="fade-out">
  *     <h2 forDialogTitle>Confirm</h2>
  *     <button forDialogClose>Cancel</button>
  *   </div>
@@ -63,7 +63,7 @@ import {
 export class ForDialog implements ForDialogContext {
   /**
    * When true (default), Escape, backdrop click, pointer-down outside, and
-   * focus outside emit `(close)`. Disable for critical confirm flows that
+   * focus outside emit `(dismiss)`. Disable for critical confirm flows that
    * must be answered explicitly via `[forDialogClose]`.
    */
   readonly dismissible = input(true, { transform: booleanAttribute });
@@ -104,12 +104,12 @@ export class ForDialog implements ForDialogContext {
    * `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`,
    * `'closeButton'`, `'programmatic'`.
    */
-  readonly close = output<ForDialogCloseReason>();
+  readonly dismiss = output<ForDialogCloseReason>();
 
   /**
    * Fires when the user presses Escape while this dialog is the topmost
    * dismissable layer. Call `preventDefault()` on the emitted veto to
-   * suppress the subsequent `(close)` emission (e.g. to ask for
+   * suppress the subsequent `(dismiss)` emission (e.g. to ask for
    * confirmation first). The original `KeyboardEvent` is available on
    * `.event` for inspection.
    */
@@ -117,7 +117,7 @@ export class ForDialog implements ForDialogContext {
 
   /**
    * Fires when a pointer goes down outside the dialog. Call
-   * `preventDefault()` on the emitted veto to suppress the auto `(close)`.
+   * `preventDefault()` on the emitted veto to suppress the auto `(dismiss)`.
    * The native `PointerEvent` is available on `.event`.
    */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
@@ -125,14 +125,14 @@ export class ForDialog implements ForDialogContext {
   /**
    * Fires when focus moves outside the dialog (e.g. user tabs out of a
    * non-modal dialog). `preventDefault()` on the veto suppresses the auto
-   * `(close)`. The native `FocusEvent` is available on `.event`.
+   * `(dismiss)`. The native `FocusEvent` is available on `.event`.
    */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
 
   /**
    * Composite event: fires alongside `pointerDownOutside` and
    * `focusOutside` and shares their veto state — `preventDefault()` on
-   * either one suppresses the auto `(close)`.
+   * either one suppresses the auto `(dismiss)`.
    */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
@@ -160,7 +160,7 @@ export class ForDialog implements ForDialogContext {
    *
    * Bound as a function reference (`[autoFocusOnClose]="onClose"`), not
    * as an event binding. Fires reliably on both close paths: the
-   * `(close)` output flow AND a direct `open.set(false)` from the
+   * `(dismiss)` output flow AND a direct `open.set(false)` from the
    * consumer. Symmetric with `ForDialogManager`'s
    * `config.autoFocusOnClose`.
    */
@@ -227,11 +227,11 @@ export class ForDialog implements ForDialogContext {
     }
     this.#lastCloseValue.set(value);
     // The `autoFocusOnClose` callback fires from the destroy hook (after
-    // the consumer's `(close)` listener flips the `@if`-gating signal),
+    // the consumer's `(dismiss)` listener flips the `@if`-gating signal),
     // so it stays consistent across both close paths: this output-driven
     // flow AND a direct `open.set(false)` that bypasses `requestClose`
     // entirely.
-    this.close.emit(reason);
+    this.dismiss.emit(reason);
   }
 
   /**

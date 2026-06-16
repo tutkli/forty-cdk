@@ -64,7 +64,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         [snapPoints]="snapPoints"
         [(activeSnapPoint)]="snapActive"
         [fadeFromIndex]="snapFade() ? 1 : undefined"
-        (close)="snapOpen.set(false)"
+        (dismiss)="snapOpen.set(false)"
         animate.enter="pg-drawer-in-bottom"
         animate.leave="pg-drawer-out-bottom"
       >

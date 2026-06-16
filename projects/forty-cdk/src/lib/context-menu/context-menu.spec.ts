@@ -22,8 +22,8 @@ const IMPORTS = [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuI
       </div>
       @if (open()) {
         <div forMenuContent>
-          <button id="cut" forMenuItem (select)="lastSelected.set('cut')">Cut</button>
-          <button id="copy" forMenuItem (select)="lastSelected.set('copy')">Copy</button>
+          <button id="cut" forMenuItem (activate)="lastSelected.set('cut')">Cut</button>
+          <button id="copy" forMenuItem (activate)="lastSelected.set('copy')">Copy</button>
         </div>
       }
     </div>
@@ -445,7 +445,7 @@ describe('ForContextMenu', () => {
   });
 
   describe('item selection', () => {
-    it('emits (select) and closes on click', async () => {
+    it('emits (activate) and closes on click', async () => {
       const r = renderHost(ContextMenuHost);
       rightClick(r.query<HTMLElement>('#region')!, 0, 0);
       await flush(r.fixture);

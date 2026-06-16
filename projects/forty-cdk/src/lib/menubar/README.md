@@ -22,18 +22,18 @@ import {
       <button forMenubarTrigger value="file">File</button>
       @if (open() === 'file') {
         <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (select)="newDoc()">New</button>
-          <button forMenuItem (select)="openDoc()">Open…</button>
+          <button forMenuItem (activate)="newDoc()">New</button>
+          <button forMenuItem (activate)="openDoc()">Open…</button>
           <hr forMenuSeparator />
-          <button forMenuItem (select)="quit()">Quit</button>
+          <button forMenuItem (activate)="quit()">Quit</button>
         </div>
       }
 
       <button forMenubarTrigger value="edit">Edit</button>
       @if (open() === 'edit') {
         <div forMenuContent>
-          <button forMenuItem (select)="undo()">Undo</button>
-          <button forMenuItem (select)="redo()">Redo</button>
+          <button forMenuItem (activate)="undo()">Undo</button>
+          <button forMenuItem (activate)="redo()">Redo</button>
         </div>
       }
 

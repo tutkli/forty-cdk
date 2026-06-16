@@ -22,9 +22,9 @@ import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } fr
       </div>
       @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (select)="rename()">Rename</button>
-          <button forMenuItem (select)="duplicate()">Duplicate</button>
-          <button forMenuItem (select)="delete()">Delete</button>
+          <button forMenuItem (activate)="rename()">Rename</button>
+          <button forMenuItem (activate)="duplicate()">Duplicate</button>
+          <button forMenuItem (activate)="delete()">Delete</button>
         </div>
       }
     </div>

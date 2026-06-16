@@ -134,7 +134,7 @@ export class ForDrawer implements ForDrawerContext {
 
   /**
    * When true (default), Escape, backdrop click, pointer-down outside,
-   * focus outside, and a swipe past the close threshold all emit `(close)`.
+   * focus outside, and a swipe past the close threshold all emit `(dismiss)`.
    * Disable for confirm flows that must be answered explicitly.
    */
   readonly dismissible = input(this.#defaults.dismissible ?? true, {
@@ -263,26 +263,26 @@ export class ForDrawer implements ForDrawerContext {
    * Emitted when the drawer wants to close. Consumer wires this to flip
    * the signal that gates the surrounding `@if`.
    */
-  readonly close = output<ForDrawerCloseReason>();
+  readonly dismiss = output<ForDrawerCloseReason>();
 
-  /** Vetoable Escape. `preventDefault()` suppresses the auto `(close)`. */
+  /** Vetoable Escape. `preventDefault()` suppresses the auto `(dismiss)`. */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
-  /** Vetoable pointer-down outside. `preventDefault()` suppresses the auto `(close)`. */
+  /** Vetoable pointer-down outside. `preventDefault()` suppresses the auto `(dismiss)`. */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
 
-  /** Vetoable focus-outside. `preventDefault()` suppresses the auto `(close)`. */
+  /** Vetoable focus-outside. `preventDefault()` suppresses the auto `(dismiss)`. */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
 
   /**
    * Composite event: fires alongside `pointerDownOutside` and `focusOutside`
    * and shares their veto state — `preventDefault()` on either suppresses
-   * the auto `(close)`.
+   * the auto `(dismiss)`.
    */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /** Drag stream. `percentageDragged` ∈ `[0, 1]`. */
-  readonly drag = output<ForDrawerDragEvent>();
+  readonly dragMove = output<ForDrawerDragEvent>();
 
   /** Release event. The directive has already updated `activeSnapPoint` / requested close. */
   readonly release = output<ForDrawerReleaseEvent>();
@@ -709,7 +709,7 @@ export class ForDrawer implements ForDrawerContext {
       return;
     }
     this.#lastCloseValue.set(value);
-    this.close.emit(reason);
+    this.dismiss.emit(reason);
   }
 
   /**
@@ -784,7 +784,7 @@ export class ForDrawer implements ForDrawerContext {
       this.#dragMinOffset = 0;
     }
 
-    this.drag.emit({ percentageDragged: 0, originalEvent: detail.originalEvent });
+    this.dragMove.emit({ percentageDragged: 0, originalEvent: detail.originalEvent });
   }
 
   /**
@@ -881,7 +881,7 @@ export class ForDrawer implements ForDrawerContext {
     // negative offset) reads as 0 rather than a negative number.
     const percentageDragged = Math.min(1, Math.max(0, nextOffset / dim));
     this.#dragProgress.set(percentageDragged);
-    this.drag.emit({ percentageDragged, originalEvent: event });
+    this.dragMove.emit({ percentageDragged, originalEvent: event });
   }
 
   #onSwipeRelease(detail: SwipeEventDetail): void {

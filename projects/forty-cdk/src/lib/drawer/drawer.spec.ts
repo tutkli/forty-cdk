@@ -43,7 +43,7 @@ import { ForDrawerWrapper } from './drawer-wrapper';
         [side]="side()"
         [dismissible]="dismissible()"
         [alert]="alert()"
-        (close)="onClose($event)"
+        (dismiss)="onClose($event)"
       >
         <div forDrawerBackdrop></div>
         <div forDrawerHandle></div>
@@ -74,7 +74,7 @@ class DrawerHost {
       <div
         forDrawer
         [dismissible]="dismissible()"
-        (close)="open.set(false)"
+        (dismiss)="open.set(false)"
         (escapeKeyDown)="onEscape($event)"
         (pointerDownOutside)="onPointer($event)"
         (focusOutside)="onFocus($event)"
@@ -119,7 +119,7 @@ class DismissableContractHost {
         [(activeSnapPoint)]="active"
         (activeSnapPointChange)="changes.push($event)"
         [fadeFromIndex]="fadeFromIndex()"
-        (close)="open.set(false)"
+        (dismiss)="open.set(false)"
         ariaLabel="t"
       >
         <div forDrawerBackdrop></div>
@@ -139,7 +139,7 @@ class SnapPointsHost {
   imports: [ForDrawer, ForDrawerTitle],
   template: `
     @if (open()) {
-      <div forDrawer (close)="open.set(false)" [ariaLabel]="''">
+      <div forDrawer (dismiss)="open.set(false)" [ariaLabel]="''">
         <h2 forDrawerTitle>Drawer title</h2>
       </div>
     }
@@ -319,7 +319,7 @@ describe('ForDrawer (declarative)', () => {
     it('does not arm the swipe when [handleOnly]="true" and pointerdown lands off the handle', async () => {
       // With `handleOnly` on, a pointerdown that does not originate on the
       // registered `[forDrawerHandle]` element must NOT flip `#dragging`,
-      // emit `(drag)`, or surface `data-dragging`. The drawer host fields
+      // emit `(dragMove)`, or surface `data-dragging`. The drawer host fields
       // pointer events the same as in the positive case — the gating lives
       // entirely in `#onSwipeStart`.
       @Component({
@@ -329,8 +329,8 @@ describe('ForDrawer (declarative)', () => {
             <div
               forDrawer
               [handleOnly]="true"
-              (drag)="onDrag()"
-              (close)="open.set(false)"
+              (dragMove)="onDrag()"
+              (dismiss)="open.set(false)"
               ariaLabel="t"
             >
               <div forDrawerHandle id="handle"></div>
@@ -499,7 +499,7 @@ describe('ForDrawer (declarative)', () => {
   });
 
   describe('Escape / close-button / backdrop', () => {
-    it('emits (close) with reason "escape"', async () => {
+    it('emits (dismiss) with reason "escape"', async () => {
       const r = renderHost(DrawerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -511,7 +511,7 @@ describe('ForDrawer (declarative)', () => {
       expect(r.instance.reasons).toEqual(['escape']);
     });
 
-    it('emits (close) with reason "closeButton" from [forDrawerClose]', async () => {
+    it('emits (dismiss) with reason "closeButton" from [forDrawerClose]', async () => {
       const r = renderHost(DrawerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -523,7 +523,7 @@ describe('ForDrawer (declarative)', () => {
       expect(r.instance.reasons).toEqual(['closeButton']);
     });
 
-    it('emits (close) with reason "backdrop" on direct backdrop click', async () => {
+    it('emits (dismiss) with reason "backdrop" on direct backdrop click', async () => {
       const r = renderHost(DrawerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -622,7 +622,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
+            <div forDrawer [snapPoints]="snaps" (dismiss)="open.set(false)" ariaLabel="t"></div>
           }
         `,
       })
@@ -690,7 +690,7 @@ describe('ForDrawer (declarative)', () => {
           imports: [ForDrawer],
           template: `
             @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
+              <div forDrawer [snapPoints]="snaps" (dismiss)="open.set(false)" ariaLabel="t"></div>
             }
           `,
         })
@@ -710,7 +710,7 @@ describe('ForDrawer (declarative)', () => {
           imports: [ForDrawer],
           template: `
             @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
+              <div forDrawer [snapPoints]="snaps" (dismiss)="open.set(false)" ariaLabel="t"></div>
             }
           `,
         })
@@ -730,7 +730,7 @@ describe('ForDrawer (declarative)', () => {
           imports: [ForDrawer],
           template: `
             @if (open()) {
-              <div forDrawer [snapPoints]="snaps" (close)="open.set(false)" ariaLabel="t"></div>
+              <div forDrawer [snapPoints]="snaps" (dismiss)="open.set(false)" ariaLabel="t"></div>
             }
           `,
         })
@@ -755,7 +755,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [closeThreshold]="2" (close)="open.set(false)" ariaLabel="t"></div>
+            <div forDrawer [closeThreshold]="2" (dismiss)="open.set(false)" ariaLabel="t"></div>
           }
         `,
       })
@@ -795,7 +795,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [closeThreshold]="bad" (close)="open.set(false)" ariaLabel="t"></div>
+            <div forDrawer [closeThreshold]="bad" (dismiss)="open.set(false)" ariaLabel="t"></div>
           }
         `,
       })
@@ -836,7 +836,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [closeThreshold]="0.5" (close)="open.set(false)" ariaLabel="t"></div>
+            <div forDrawer [closeThreshold]="0.5" (dismiss)="open.set(false)" ariaLabel="t"></div>
           }
         `,
       })
@@ -876,7 +876,7 @@ describe('ForDrawer (declarative)', () => {
               forDrawer
               [snapPoints]="snaps"
               [fadeFromIndex]="5"
-              (close)="open.set(false)"
+              (dismiss)="open.set(false)"
               ariaLabel="t"
             ></div>
           }
@@ -924,7 +924,7 @@ describe('ForDrawer (declarative)', () => {
               forDrawer
               [snapPoints]="snaps()"
               [fadeFromIndex]="fadeFromIndex()"
-              (close)="open.set(false)"
+              (dismiss)="open.set(false)"
               ariaLabel="t"
             ></div>
           }
@@ -1067,7 +1067,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerHandle],
         template: `
           @if (open()) {
-            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+            <div forDrawer (dismiss)="open.set(false)" ariaLabel="t">
               <div forDrawerHandle></div>
               <div forDrawerHandle></div>
             </div>
@@ -1090,7 +1090,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerBackdrop],
         template: `
           @if (open()) {
-            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+            <div forDrawer (dismiss)="open.set(false)" ariaLabel="t">
               <div forDrawerBackdrop></div>
               <div forDrawerBackdrop></div>
             </div>
@@ -1113,7 +1113,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerHandle],
         template: `
           @if (open()) {
-            <div forDrawer (close)="open.set(false)" ariaLabel="t">
+            <div forDrawer (dismiss)="open.set(false)" ariaLabel="t">
               @if (showFirst()) {
                 <div forDrawerHandle data-which="first"></div>
               }
@@ -1152,7 +1152,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer (close)="open.set(false)" [modal]="false" ariaLabel="t">
+            <div forDrawer (dismiss)="open.set(false)" [modal]="false" ariaLabel="t">
               <button id="inside">In</button>
             </div>
           }
@@ -1296,7 +1296,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+            <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
               <button id="inside">In</button>
             </div>
           }
@@ -1320,7 +1320,7 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerBackdrop],
         template: `
           @if (open()) {
-            <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+            <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
               <div forDrawerBackdrop></div>
               <button id="inside">In</button>
             </div>
@@ -1349,7 +1349,7 @@ describe('ForDrawer (declarative)', () => {
           imports: [ForDrawer],
           template: `
             @if (open()) {
-              <div forDrawer [modal]="false" [container]="box" (close)="open.set(false)" ariaLabel="t">
+              <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
                 <button id="inside">In</button>
               </div>
             }
@@ -1382,7 +1382,7 @@ describe('ForDrawer (declarative)', () => {
         template: `
           <input #q id="search" type="search" />
           @if (open()) {
-            <div forDrawer (close)="open.set(false)" [autoFocusOnOpen]="vetoOpen" ariaLabel="t">
+            <div forDrawer (dismiss)="open.set(false)" [autoFocusOnOpen]="vetoOpen" ariaLabel="t">
               <button id="inside">inside</button>
             </div>
           }
@@ -1530,7 +1530,7 @@ describe('ForDrawerTrigger', () => {
         Open
       </button>
       @if (open()) {
-        <div forDrawer [id]="drawerId" (close)="open.set(false)" ariaLabel="t"></div>
+        <div forDrawer [id]="drawerId" (dismiss)="open.set(false)" ariaLabel="t"></div>
       }
     `,
   })
@@ -1602,7 +1602,7 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
           id="drawer"
           [scaleBackground]="scaleBackground()"
           [setBackgroundColorOnScale]="setBackgroundColorOnScale()"
-          (close)="open.set(false)"
+          (dismiss)="open.set(false)"
           ariaLabel="Scaled drawer"
         ></div>
       }
@@ -1622,7 +1622,7 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
           forDrawer
           id="drawer"
           [scaleBackground]="true"
-          (close)="open.set(false)"
+          (dismiss)="open.set(false)"
           ariaLabel="Wrapperless"
         ></div>
       }
@@ -1701,7 +1701,7 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
       template: `
         <div forDrawerWrapper id="shell"></div>
         @if (open()) {
-          <div forDrawer [scaleBackground]="true" (close)="open.set(false)" ariaLabel="t"></div>
+          <div forDrawer [scaleBackground]="true" (dismiss)="open.set(false)" ariaLabel="t"></div>
         }
       `,
     })
@@ -1761,7 +1761,7 @@ describe('ForDrawer teardown order', () => {
     template: `
       <div forDrawerWrapper id="shell"></div>
       @if (open()) {
-        <div forDrawer [scaleBackground]="true" (close)="open.set(false)" ariaLabel="t"></div>
+        <div forDrawer [scaleBackground]="true" (dismiss)="open.set(false)" ariaLabel="t"></div>
       }
     `,
   })

@@ -16,8 +16,8 @@ Two ways to use the same primitive:
 | `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                                                                          |
 | `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                                                                     |
 | `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                                                                    |
-| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(close)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements.                                              |
-| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(close)` with reason `'manual'`. Carries `aria-label="Close"`.                                                                                                         |
+| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(dismiss)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements.                                              |
+| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(dismiss)` with reason `'manual'`. Carries `aria-label="Close"`.                                                                                                         |
 | `ForToastRef<R>`      | handle                                        | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state.                                                                                                   |
 
 ## Mount the viewport once
@@ -174,7 +174,7 @@ The template context is `{ $implicit: ForToastInstance, data: T }`. Use `toast.d
 </ng-template>
 ```
 
-`[forToastAction]` / `[forToastClose]` emit `(close)` (reason `'action'` / `'manual'`) through the same context as the default shape — no need to call `toast.dismiss()` manually for those. (`toast.dismiss()` from `$implicit` is still available for arbitrary buttons that aren't action / close.) This combines with per-toast `class`: add a `class` for the root and your own classes on the helper elements.
+`[forToastAction]` / `[forToastClose]` emit `(dismiss)` (reason `'action'` / `'manual'`) through the same context as the default shape — no need to call `toast.dismiss()` manually for those. (`toast.dismiss()` from `$implicit` is still available for arbitrary buttons that aren't action / close.) This combines with per-toast `class`: add a `class` for the root and your own classes on the helper elements.
 
 ## Declarative usage
 
@@ -186,7 +186,7 @@ For a toast driven by component state (e.g. an offline banner):
   forToast
   variant="warning"
   [duration]="0"
-  (close)="offline.set(false)"
+  (dismiss)="offline.set(false)"
   animate.leave="fade-out"
 >
   <div forToastTitle>Network unavailable</div>
@@ -195,14 +195,14 @@ For a toast driven by component state (e.g. an offline banner):
 }
 ```
 
-The directive doesn't manage its own visibility — `@if` does. The directive emits `(close)` when the timer / Escape / action / close button want it gone; the consumer reacts by flipping the gate.
+The directive doesn't manage its own visibility — `@if` does. The directive emits `(dismiss)` when the timer / Escape / action / close button want it gone; the consumer reacts by flipping the gate.
 
 ## Swipe-to-dismiss
 
 Optional, opt-in. Set `[swipeDirection]` on a declarative toast (or via `swipeDirection` in the programmatic config / on the viewport) to let the user drag the toast off-screen with a touch or mouse pointer. The gesture uses pointer events, so it works on every input device.
 
 ```html
-<div forToast swipeDirection="right" [swipeThreshold]="60" (close)="dismiss()">…</div>
+<div forToast swipeDirection="right" [swipeThreshold]="60" (dismiss)="dismiss()">…</div>
 ```
 
 `swipeDirection` accepts a single direction (`'left' | 'right' | 'up' | 'down'`) or an array of directions. The dominant axis of the user's drag picks which one wins; gestures perpendicular to every allowed direction are dropped. The dismiss commits when pointer-up happens past `swipeThreshold` pixels of pointer travel along the active direction (default `50`).
@@ -211,7 +211,7 @@ While the gesture is live the host carries:
 
 | Attribute / variable                | Values                                   | Purpose                                                                                                                                                                                                               |
 | ----------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(close)` with reason `swipe`". `"cancel"` is parked (with the released movement vars) so your CSS can spring the toast back, then cleared on the next `pointerdown`. |
+| `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker — `"end"` means "about to fire `(dismiss)` with reason `swipe`". `"cancel"` is parked (with the released movement vars) so your CSS can spring the toast back, then cleared on the next `pointerdown`. |
 | `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                                                                                                                                                       |
 | `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.                                                                                                                                          |
 | `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.                                                                                                                                            |
@@ -241,14 +241,14 @@ Outputs:
 
 - `(swipeStart)` — armed; emitted once with `{ direction, delta, originalEvent }`.
 - `(swipeMove)` — every pointer move while active.
-- `(swipeEnd)` — released past threshold (immediately followed by `(close)` with reason `'swipe'`).
+- `(swipeEnd)` — released past threshold (immediately followed by `(dismiss)` with reason `'swipe'`).
 - `(swipeCancel)` — released before threshold, or `pointercancel`.
 
 `closable=false` disables swipe entirely — a sticky / forced-action toast cannot be user-dismissed.
 
 ## Auto-dismiss + pause-on-hover
 
-- Timer starts on mount and fires `(close)` with reason `'auto'` after `duration` ms.
+- Timer starts on mount and fires `(dismiss)` with reason `'auto'` after `duration` ms.
 - Hovering or focusing inside the toast pauses the timer; leaving / blurring resumes with the remaining time.
 - The timer also pauses while `document.visibilityState !== 'visible'` (tab backgrounded, window hidden) and resumes when the page becomes visible again, so toasts don't silently expire while the user is not looking. The `visibilitychange` listener is shared across all live toasts (refcounted) — one document-level handler regardless of stack depth.
 - A hover/focus/visibility pause captures the **remaining** time and resumes with it. A `ref.update()` that re-renders the toast while it is paused does not reset that captured time — resume always continues the countdown, never restarts it at the full duration.

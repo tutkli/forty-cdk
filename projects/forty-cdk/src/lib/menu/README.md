@@ -28,18 +28,18 @@ For the recommended `[forceMount]` + `opacity` pattern that keeps indicator colu
 
 ## Item activation contract
 
-Every item type emits a vetoable `(select)` event — handlers receive a `VetoableEvent`. The default action is to close the menu after the item's state has been applied (toggle for checkbox, set value for radio). Call `event.preventDefault()` on the veto to keep the menu open.
+Every item type emits a vetoable `(activate)` event — handlers receive a `VetoableEvent`. The default action is to close the menu after the item's state has been applied (toggle for checkbox, set value for radio). Call `event.preventDefault()` on the veto to keep the menu open.
 
 ```html
 <!-- Closes menu by default -->
-<button forMenuItem class="menu-item" (select)="save()">Save</button>
+<button forMenuItem class="menu-item" (activate)="save()">Save</button>
 
 <!-- Stays open -->
 <button
   forMenuCheckboxItem
   class="menu-checkbox-item"
   [(checked)]="bold"
-  (select)="$event.preventDefault()"
+  (activate)="$event.preventDefault()"
 >
   Bold
 </button>
@@ -49,10 +49,10 @@ Every item type emits a vetoable `(select)` event — handlers receive a `Vetoab
 
 - **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
 - **Home / End** — jump to first / last enabled item.
-- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(select)`.
+- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(activate)`.
 - **Space** — activates the focused item:
   - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
-  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(select)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(select)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
+  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(activate)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(activate)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
 - **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
 - **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
@@ -78,13 +78,13 @@ Both `[forMenuSub]` (`exportAs: 'forMenuSub'`) and the parent `[forDropdownMenu]
   <button forDropdownMenuTrigger>File</button>
   @if (menu.open()) {
   <div forMenuContent>
-    <button forMenuItem class="menu-item" (select)="openFile()">Open</button>
+    <button forMenuItem class="menu-item" (activate)="openFile()">Open</button>
     <div forMenuSub #sub="forMenuSub">
       <button forMenuSubTrigger class="menu-sub-trigger">Open recent</button>
       @if (sub.open()) {
       <div forMenuSubContent>
-        <button forMenuItem class="menu-item" (select)="openFile('a.txt')">a.txt</button>
-        <button forMenuItem class="menu-item" (select)="openFile('b.txt')">b.txt</button>
+        <button forMenuItem class="menu-item" (activate)="openFile('a.txt')">a.txt</button>
+        <button forMenuItem class="menu-item" (activate)="openFile('b.txt')">b.txt</button>
       </div>
       }
     </div>

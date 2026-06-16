@@ -14,7 +14,7 @@ export { type ForDrawerSide };
 export type ForDrawerSnapPoint = number | `${number}%` | `${number}px`;
 
 /**
- * Reasons emitted via the `(close)` output. A single drawer instance can
+ * Reasons emitted via the `(dismiss)` output. A single drawer instance can
  * cycle through any of these — the consumer typically just flips its
  * `@if`-gating signal off, but may choose to skip the unmount on specific
  * reasons (e.g. ignore `'pointerDownOutside'` for a sticky drawer).
@@ -140,7 +140,7 @@ export function injectDrawerContext(piece: string): ForDrawerContext {
 }
 
 /**
- * Drag/release event payloads. Surfaced through `(drag)` / `(release)`
+ * Drag/release event payloads. Surfaced through `(dragMove)` / `(release)`
  * so consumers can drive bespoke visualizations (e.g. a separate "scaled
  * background" effect, a debug HUD); the directive itself owns transform
  * application and snap resolution.

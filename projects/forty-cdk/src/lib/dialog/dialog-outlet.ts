@@ -103,7 +103,7 @@ export class ForDialogContextInjector {
         [container]="entry.container ?? null"
         [autoFocusOnOpen]="entry.autoFocusOnOpen"
         [autoFocusOnClose]="entry.autoFocusOnClose"
-        (close)="entry.handleClose(fd.lastCloseValue())"
+        (dismiss)="entry.handleClose(fd.lastCloseValue())"
         (escapeKeyDown)="entry.escapeKeyDown?.($event)"
         (pointerDownOutside)="entry.pointerDownOutside?.($event)"
         (focusOutside)="entry.focusOutside?.($event)"

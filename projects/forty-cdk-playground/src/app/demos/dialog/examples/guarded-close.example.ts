@@ -27,7 +27,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
   template: `
     <playground-demo
       title="Guarded close"
-      subtitle="Vetoable dismissals: (escapeKeyDown) and (interactOutside) fire before (close). Calling preventDefault() on the event keeps the dialog open — here, while 'block dismiss' is on. The close button always closes regardless. Modal with no backdrop, so the page behind is inert but undimmed."
+      subtitle="Vetoable dismissals: (escapeKeyDown) and (interactOutside) fire before (dismiss). Calling preventDefault() on the event keeps the dialog open — here, while 'block dismiss' is on. The close button always closes regardless. Modal with no backdrop, so the page behind is inert but undimmed."
       sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/guarded-close.example.ts"
     >
       <div demo class="pg-center">
@@ -65,7 +65,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         class="pg-dialog"
         (escapeKeyDown)="onGuardEscape($event)"
         (interactOutside)="onGuardInteractOutside($event)"
-        (close)="onGuardClose($event)"
+        (dismiss)="onGuardClose($event)"
         animate.enter="pg-fade-in"
         animate.leave="pg-fade-out"
       >

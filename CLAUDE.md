@@ -75,7 +75,7 @@ These rules govern every change. They override habits from older Angular code or
 **Naming.**
 
 - Public classes use the `For` prefix (`ForAccordion`, `ForAccordionTrigger`). Selectors use the `for-` prefix and default to **attribute** selectors so consumers keep their own HTML semantics (`<button forAccordionTrigger>`); element selectors only when the primitive must inject its own structure via content projection.
-- `InjectionToken`s: `FOR_<PRIMITIVE>_CONTEXT`. Boolean inputs without `is`/`has` when natural (`disabled`, `open`, `multiple`). Outputs as present-tense verbs (`openChange`, `select`, `escapeKeyDown`) — never `onX`.
+- `InjectionToken`s: `FOR_<PRIMITIVE>_CONTEXT`. Boolean inputs without `is`/`has` when natural (`disabled`, `open`, `multiple`). Outputs as present-tense verbs (`openChange`, `activate`, `escapeKeyDown`) — never `onX`.
 - Reactive accessible name: one uniform `ariaLabel: input<string | null>` defaulting to `null`, host-bound truthy-only (`'[attr.aria-label]': 'ariaLabel() || null'`) on the piece carrying the labelled role.
 - Imperative overlay injectables: `For<Primitive>Manager` in `<primitive>-manager.ts`; per-instance handle stays `For<Primitive>Ref`. No plural class names (`ForDialogs`); `Service` suffix still banned.
 - Full accessible-labelling placement (per primitive) and the programmatic-services rationale → `.claude/rules/conventions.md`.

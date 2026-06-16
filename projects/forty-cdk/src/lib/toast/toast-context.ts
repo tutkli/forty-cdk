@@ -172,7 +172,7 @@ export interface ForToastContext {
   registerAction(handle: ForToastActionHandle): void;
   unregisterAction(handle: ForToastActionHandle): void;
 
-  /** Request close. Always honored — the directive emits `(close)` and the consumer unmounts. */
+  /** Request close. Always honored — the directive emits `(dismiss)` and the consumer unmounts. */
   requestClose(reason: ForToastCloseReason): void;
 }
 

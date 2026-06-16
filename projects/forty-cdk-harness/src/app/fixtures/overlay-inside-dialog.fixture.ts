@@ -80,7 +80,7 @@ import {
     <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">Open dialog</button>
 
     @if (dialogOpen()) {
-      <div forDialog ariaLabel="Form dialog" (close)="dialogOpen.set(false)">
+      <div forDialog ariaLabel="Form dialog" (dismiss)="dialogOpen.set(false)">
         <!-- A control behind the overlays. A click that falls through an
              inert overlay would land here and bump the counter. -->
         <button data-testid="behind-button" type="button" (click)="behindClicks.set(behindClicks() + 1)">

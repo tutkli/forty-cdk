@@ -57,7 +57,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         ariaLabel="Search results"
         [autoFocusOnOpen]="keepSearchFocused"
         [autoFocusOnClose]="refocusSearch"
-        (close)="searchOpen.set(false)"
+        (dismiss)="searchOpen.set(false)"
         animate.enter="pg-panel-in"
       >
         <div class="pg-result-list">

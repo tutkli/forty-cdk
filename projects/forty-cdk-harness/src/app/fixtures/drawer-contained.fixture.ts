@@ -42,7 +42,7 @@ import { ForDrawer, ForDrawerBackdrop, type ForDrawerCloseReason, ForDrawerClose
           ariaLabel="Contained drawer"
           [modal]="false"
           [container]="container"
-          (close)="onClose($event)"
+          (dismiss)="onClose($event)"
         >
           <div forDrawerBackdrop data-testid="backdrop"></div>
           <button data-testid="first">First</button>

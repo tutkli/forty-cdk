@@ -34,9 +34,9 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
 
 /**
  * One radio option inside `[forMenuRadioGroup]`. Click and Enter set the
- * group's `value` to this item's `value`, emit `(select)`, and close the
+ * group's `value` to this item's `value`, emit `(activate)`, and close the
  * menu — call `event.preventDefault()` on the emitted event to keep the
- * menu open. Per APG, **Space** sets the value and emits `(select)`
+ * menu open. Per APG, **Space** sets the value and emits `(activate)`
  * without closing the menu.
  */
 @Directive({
@@ -96,7 +96,7 @@ export class ForMenuRadioItem {
    * Fires on click / Enter / Space activation. Call `preventDefault()`
    * on the emitted veto to keep the menu open after activation.
    */
-  readonly select = output<VetoableEvent>();
+  readonly activate = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -122,7 +122,7 @@ export class ForMenuRadioItem {
       return;
     }
     this.group.select(this.value());
-    if (!emitVetoableEvent(this.select)) {
+    if (!emitVetoableEvent(this.activate)) {
       this.menu.closeMenu('select');
     }
   }
@@ -167,7 +167,7 @@ export class ForMenuRadioItem {
     if (event.key === ' ') {
       event.preventDefault();
       this.group.select(this.value());
-      this.select.emit(createVetoableEvent());
+      this.activate.emit(createVetoableEvent());
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });

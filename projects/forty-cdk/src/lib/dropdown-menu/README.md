@@ -34,8 +34,8 @@ import {
       <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
       @if (menu.open()) {
         <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (select)="cut()">Cut</button>
-          <button forMenuItem (select)="copy()">Copy</button>
+          <button forMenuItem (activate)="cut()">Cut</button>
+          <button forMenuItem (activate)="copy()">Copy</button>
           <button forMenuItem disabled>Paste</button>
           <hr forMenuSeparator />
           <div forMenuRadioGroup [(value)]="alignment">
@@ -174,4 +174,4 @@ The menu items, content surface, radio groups, separators, and groups live in th
 - **Mount equals open.** The directive does not toggle `[hidden]` — `@if (open())` controls presence so `animate.enter` / `animate.leave` fire on the natural mount cycle.
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
 - **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item.
-- **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(select)` handler.
+- **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(activate)` handler.

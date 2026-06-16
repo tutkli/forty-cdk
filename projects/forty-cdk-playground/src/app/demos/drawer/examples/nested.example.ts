@@ -56,7 +56,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
         forDrawer
         id="pg-nested-parent"
         class="pg-drawer"
-        (close)="nestedOpen.set(false)"
+        (dismiss)="nestedOpen.set(false)"
         animate.enter="pg-drawer-in-bottom"
         animate.leave="pg-drawer-out-bottom"
       >
@@ -83,7 +83,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
             forDrawer
             id="pg-nested-child"
             class="pg-drawer"
-            (close)="nestedChildOpen.set(false)"
+            (dismiss)="nestedChildOpen.set(false)"
             animate.enter="pg-drawer-in-bottom"
             animate.leave="pg-drawer-out-bottom"
           >

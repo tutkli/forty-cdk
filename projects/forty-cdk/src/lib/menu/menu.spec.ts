@@ -30,20 +30,20 @@ import { ForMenuSeparator } from './menu-separator';
       <button forDropdownMenuTrigger>Options</button>
       @if (open()) {
         <div forMenuContent>
-          <button id="cut" forMenuItem (select)="lastSelected.set('cut')">Cut</button>
-          <button id="copy" forMenuItem (select)="lastSelected.set('copy')">Copy</button>
+          <button id="cut" forMenuItem (activate)="lastSelected.set('cut')">Cut</button>
+          <button id="copy" forMenuItem (activate)="lastSelected.set('copy')">Copy</button>
           <button id="paste" forMenuItem disabled>Paste</button>
           <hr forMenuSeparator />
-          <button id="bold" forMenuCheckboxItem [(checked)]="bold" (select)="recordSelect('bold')">
+          <button id="bold" forMenuCheckboxItem [(checked)]="bold" (activate)="recordSelect('bold')">
             Bold
           </button>
           <button id="italic" forMenuCheckboxItem [(checked)]="italic">Italic</button>
           <hr forMenuSeparator />
           <div forMenuRadioGroup [(value)]="alignment">
-            <button id="left" forMenuRadioItem value="left" (select)="recordSelect('left')">
+            <button id="left" forMenuRadioItem value="left" (activate)="recordSelect('left')">
               Left
             </button>
-            <button id="center" forMenuRadioItem value="center" (select)="recordSelect('center')">
+            <button id="center" forMenuRadioItem value="center" (activate)="recordSelect('center')">
               Center
             </button>
             <button id="right" forMenuRadioItem value="right">Right</button>
@@ -331,7 +331,7 @@ describe('Menu items / content', () => {
   });
 
   describe('item activation', () => {
-    it('emits (select) on click and closes the menu', async () => {
+    it('emits (activate) on click and closes the menu', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -343,7 +343,7 @@ describe('Menu items / content', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('keeps the menu open when (select) calls preventDefault', async () => {
+    it('keeps the menu open when (activate) calls preventDefault', async () => {
       @Component({
         imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
         template: `
@@ -351,7 +351,7 @@ describe('Menu items / content', () => {
             <button forDropdownMenuTrigger>Options</button>
             @if (open()) {
               <div forMenuContent>
-                <button id="keep" forMenuItem (select)="$event.preventDefault()">Keep</button>
+                <button id="keep" forMenuItem (activate)="$event.preventDefault()">Keep</button>
               </div>
             }
           </div>
@@ -416,7 +416,7 @@ describe('Menu items / content', () => {
       return ev;
     };
 
-    it('Space on a checkbox item toggles checked, emits (select), and keeps the menu open', async () => {
+    it('Space on a checkbox item toggles checked, emits (activate), and keeps the menu open', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -473,7 +473,7 @@ describe('Menu items / content', () => {
       expect(r.instance.selects).toEqual([]);
     });
 
-    it('click on a checkbox item toggles, emits (select), and closes (Enter follows the same path via native button activation)', async () => {
+    it('click on a checkbox item toggles, emits (activate), and closes (Enter follows the same path via native button activation)', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -487,7 +487,7 @@ describe('Menu items / content', () => {
       expect(r.instance.selects).toEqual(['bold']);
     });
 
-    it('Space on a radio item sets the group value, emits (select), and keeps the menu open', async () => {
+    it('Space on a radio item sets the group value, emits (activate), and keeps the menu open', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -503,7 +503,7 @@ describe('Menu items / content', () => {
       expect(r.instance.selects).toEqual(['center']);
     });
 
-    it('Space on a radio item already selected re-emits (select) without closing', async () => {
+    it('Space on a radio item already selected re-emits (activate) without closing', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -540,7 +540,7 @@ describe('Menu items / content', () => {
       expect(r.instance.selects).toEqual([]);
     });
 
-    it('click on a radio item sets the value, emits (select), and closes', async () => {
+    it('click on a radio item sets the value, emits (activate), and closes', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -567,7 +567,7 @@ describe('Menu items / content', () => {
                   forMenuCheckboxItem
                   [(checked)]="checked"
                   disabled
-                  (select)="selects.update((c) => c + 1)"
+                  (activate)="selects.update((c) => c + 1)"
                 >
                   Locked
                 </button>

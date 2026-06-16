@@ -36,9 +36,9 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
 
 /**
  * Tri-state-free checkbox item. Click and Enter toggle `checked`, emit
- * `(select)`, and close the menu — `event.preventDefault()` on the emitted
+ * `(activate)`, and close the menu — `event.preventDefault()` on the emitted
  * event keeps the menu open. Per APG, **Space** toggles `checked` and
- * emits `(select)` without closing the menu, so users can flip several
+ * emits `(activate)` without closing the menu, so users can flip several
  * options in one open without consumer glue.
  */
 @Directive({
@@ -95,7 +95,7 @@ export class ForMenuCheckboxItem {
    * Fires on click / Enter / Space activation. Call `preventDefault()`
    * on the emitted veto to keep the menu open after activation.
    */
-  readonly select = output<VetoableEvent>();
+  readonly activate = output<VetoableEvent>();
 
   constructor() {
     const handle = {
@@ -121,7 +121,7 @@ export class ForMenuCheckboxItem {
       return;
     }
     this.checked.update((v) => !v);
-    if (!emitVetoableEvent(this.select)) {
+    if (!emitVetoableEvent(this.activate)) {
       this.ctx.closeMenu('select');
     }
   }
@@ -166,7 +166,7 @@ export class ForMenuCheckboxItem {
     if (event.key === ' ') {
       event.preventDefault();
       this.checked.update((v) => !v);
-      this.select.emit(createVetoableEvent());
+      this.activate.emit(createVetoableEvent());
       return;
     }
     const action = resolveListNavigation(event, { orientation: 'vertical' });

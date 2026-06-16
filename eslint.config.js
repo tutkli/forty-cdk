@@ -1320,10 +1320,12 @@ module.exports = tseslint.config(
       ],
 
       // ---- Angular rules CLAUDE.md overrides ----
-      // CLAUDE.md endorses verb-named outputs (`select`, `close`, `resize`) even
-      // when they collide with native DOM events — collisions are harmless on
-      // directives that do not emit those DOM events on their host element.
-      '@angular-eslint/no-output-native': 'off',
+      // Output names must not collide with native DOM event names: a collision
+      // (`close` / `select` / `resize` / `drag`, …) trips this rule on any
+      // consumer re-exposing the output via `hostDirectives` (even aliased),
+      // defeating the sanctioned wrapping story (#814). Enabled so the
+      // library's own outputs stay off the native-event set.
+      '@angular-eslint/no-output-native': 'error',
       // `onX` output names are still banned (React idiom, CLAUDE.md output rule).
       '@angular-eslint/no-output-on-prefix': 'error',
     },

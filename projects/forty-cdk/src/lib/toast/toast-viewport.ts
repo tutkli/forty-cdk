@@ -94,7 +94,7 @@ import { ForToastTitle } from './toast-title';
         [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
         [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
         [attr.data-front-stack-index]="i"
-        (close)="onClose(toast, $event)"
+        (dismiss)="onClose(toast, $event)"
       >
         @if (toast.config.template; as template) {
           <ng-container

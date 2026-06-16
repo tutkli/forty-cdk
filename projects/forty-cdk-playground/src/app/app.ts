@@ -89,7 +89,7 @@ function readInitialTheme(): Theme {
         class="pg-nav-drawer"
         side="left"
         ariaLabel="Primitives navigation"
-        (close)="navOpen.set(false)"
+        (dismiss)="navOpen.set(false)"
         animate.enter="pg-drawer-in-left"
         animate.leave="pg-drawer-out-left"
       >

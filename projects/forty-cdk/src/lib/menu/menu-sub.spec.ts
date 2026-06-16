@@ -33,19 +33,19 @@ const IMPORTS = [
       <button forDropdownMenuTrigger>Options</button>
       @if (open()) {
         <div id="parent-content" forMenuContent>
-          <button id="cut" forMenuItem (select)="lastSelected.set('cut')">Cut</button>
+          <button id="cut" forMenuItem (activate)="lastSelected.set('cut')">Cut</button>
           <div forMenuSub [(open)]="subOpen">
             <button id="more" forMenuSubTrigger>More</button>
             @if (subOpen()) {
               <div id="sub-content" forMenuSubContent>
-                <button id="advanced" forMenuItem (select)="lastSelected.set('advanced')">
+                <button id="advanced" forMenuItem (activate)="lastSelected.set('advanced')">
                   Advanced
                 </button>
-                <button id="reset" forMenuItem (select)="lastSelected.set('reset')">Reset</button>
+                <button id="reset" forMenuItem (activate)="lastSelected.set('reset')">Reset</button>
               </div>
             }
           </div>
-          <button id="paste" forMenuItem (select)="lastSelected.set('paste')">Paste</button>
+          <button id="paste" forMenuItem (activate)="lastSelected.set('paste')">Paste</button>
         </div>
       }
     </div>

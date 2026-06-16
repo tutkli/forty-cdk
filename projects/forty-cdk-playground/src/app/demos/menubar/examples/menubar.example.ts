@@ -43,38 +43,38 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button forMenubarTrigger value="file" class="pg-menubar-trigger">File</button>
           @if (openMenu() === 'file') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('New file')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('New file')">
                 New file
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Open…')">Open…</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Save')">Save</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Open…')">Open…</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Save')">Save</button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Quit')">Quit</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Quit')">Quit</button>
             </div>
           }
 
           <button forMenubarTrigger value="edit" class="pg-menubar-trigger">Edit</button>
           @if (openMenu() === 'edit') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Undo')">Undo</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Undo')">Undo</button>
               <button forMenuItem class="pg-menu-item" disabled>Redo</button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Cut')">Cut</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Copy')">Copy</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Paste')">Paste</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Cut')">Cut</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Copy')">Copy</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Paste')">Paste</button>
             </div>
           }
 
           <button forMenubarTrigger value="view" class="pg-menubar-trigger">View</button>
           @if (openMenu() === 'view') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Zoom in')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Zoom in')">
                 Zoom in
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Zoom out')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Zoom out')">
                 Zoom out
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Reset zoom')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Reset zoom')">
                 Reset zoom
               </button>
             </div>

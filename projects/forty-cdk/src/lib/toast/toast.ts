@@ -44,7 +44,7 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  * The directive does **not** control its own visibility. The consumer
  * mounts it (typically through `<for-toast-viewport>` for programmatic
  * toasts, or directly with `@if` for declarative ones) and unmounts it
- * when `(close)` fires. Pair the unmount with `animate.leave="…"` for
+ * when `(dismiss)` fires. Pair the unmount with `animate.leave="…"` for
  * exit animations.
  *
  * Behavior:
@@ -104,7 +104,7 @@ export class ForToast implements ForToastContext {
    * Set `false` for a sticky / forced-action toast: every ambient gesture is
    * suppressed, no auto-dismiss timer is scheduled, and a `[forToastClose]`
    * button (if present) becomes inert. The **action button stays live and is
-   * the sanctioned dismissal path** — `[forToastAction]` still emits `(close)`
+   * the sanctioned dismissal path** — `[forToastAction]` still emits `(dismiss)`
    * with reason `'action'` so a forced-action toast (e.g. "Update available —
    * Reload") can be dismissed by the only control the user is meant to use.
    * Programmatic close via `ForToastRef.dismiss()` is also always honored.
@@ -132,13 +132,13 @@ export class ForToast implements ForToastContext {
   readonly swipeThreshold = input(50, { transform: numberAttribute });
 
   /** Emitted when the toast wants to be unmounted. The consumer reacts by removing it from the rendered list. */
-  readonly close = output<ForToastCloseReason>();
+  readonly dismiss = output<ForToastCloseReason>();
 
   /** Fired once on the move that arms the swipe. */
   readonly swipeStart = output<SwipeEventDetail>();
   /** Fired on every pointer move while the swipe is active. */
   readonly swipeMove = output<SwipeEventDetail>();
-  /** Fired on pointer-up after the threshold is crossed (immediately followed by `(close)`). */
+  /** Fired on pointer-up after the threshold is crossed (immediately followed by `(dismiss)`). */
   readonly swipeEnd = output<SwipeEventDetail>();
   /** Fired on pointer-up before the threshold, or on `pointercancel`. */
   readonly swipeCancel = output<SwipeEventDetail>();
@@ -370,7 +370,7 @@ export class ForToast implements ForToastContext {
       return;
     }
     this.#cancelTimer();
-    this.close.emit(reason);
+    this.dismiss.emit(reason);
   }
 
   /**

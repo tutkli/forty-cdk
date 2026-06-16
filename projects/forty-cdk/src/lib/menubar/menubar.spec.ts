@@ -28,9 +28,9 @@ const IMPORTS = [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem];
       <button forMenubarTrigger value="file">File</button>
       @if (open() === 'file') {
         <div forMenuContent>
-          <button id="file-new" forMenuItem (select)="record('file-new')">New</button>
-          <button id="file-open" forMenuItem (select)="record('file-open')">Open</button>
-          <button id="file-quit" forMenuItem (select)="record('file-quit')">Quit</button>
+          <button id="file-new" forMenuItem (activate)="record('file-new')">New</button>
+          <button id="file-open" forMenuItem (activate)="record('file-open')">Open</button>
+          <button id="file-quit" forMenuItem (activate)="record('file-quit')">Quit</button>
         </div>
       }
 

@@ -44,17 +44,17 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button forDropdownMenuTrigger class="pg-btn pg-btn--primary">Actions</button>
           @if (open()) {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('New tab')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('New tab')">
                 New tab
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('New window')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('New window')">
                 New window
               </button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Downloads')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Downloads')">
                 Downloads
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Bookmarks')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Bookmarks')">
                 Bookmarks
               </button>
               <button forMenuItem class="pg-menu-item" disabled>Sync (signed out)</button>
@@ -62,7 +62,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
               <button
                 forMenuItem
                 class="pg-menu-item pg-menu-item--danger"
-                (select)="onAction('Clear browsing data')"
+                (activate)="onAction('Clear browsing data')"
               >
                 Clear browsing data
               </button>

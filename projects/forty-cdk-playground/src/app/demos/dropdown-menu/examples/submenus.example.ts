@@ -37,10 +37,10 @@ import { Icon } from '../../../ui/icon';
           <button forDropdownMenuTrigger class="pg-btn pg-btn--primary">Share</button>
           @if (open()) {
             <div forMenuContent class="pg-menu pg-menu--wide" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Copy link')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Copy link')">
                 Copy link
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Email')">Email</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Email')">Email</button>
 
               <hr forMenuSeparator class="pg-menu-separator" />
 
@@ -53,10 +53,10 @@ import { Icon } from '../../../ui/icon';
                 </button>
                 @if (inviteOpen()) {
                   <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Invite by email')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Invite by email')">
                       By email
                     </button>
-                    <button forMenuItem class="pg-menu-item" (select)="onAction('Invite by link')">
+                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Invite by link')">
                       By link
                     </button>
 
@@ -74,21 +74,21 @@ import { Icon } from '../../../ui/icon';
                           <button
                             forMenuItem
                             class="pg-menu-item"
-                            (select)="onAction('Role: Viewer')"
+                            (activate)="onAction('Role: Viewer')"
                           >
                             Viewer
                           </button>
                           <button
                             forMenuItem
                             class="pg-menu-item"
-                            (select)="onAction('Role: Editor')"
+                            (activate)="onAction('Role: Editor')"
                           >
                             Editor
                           </button>
                           <button
                             forMenuItem
                             class="pg-menu-item"
-                            (select)="onAction('Role: Admin')"
+                            (activate)="onAction('Role: Admin')"
                           >
                             Admin
                           </button>
@@ -101,7 +101,7 @@ import { Icon } from '../../../ui/icon';
 
               <hr forMenuSeparator class="pg-menu-separator" />
 
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Manage access')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Manage access')">
                 Manage access
               </button>
             </div>

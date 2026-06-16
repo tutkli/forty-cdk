@@ -81,7 +81,7 @@ class ProgrammaticHost {
         [closable]="closable()"
         [swipeDirection]="swipeDirection()"
         [swipeThreshold]="swipeThreshold()"
-        (close)="onClose($event)"
+        (dismiss)="onClose($event)"
         (swipeStart)="onSwipeStart($event)"
         (swipeMove)="onSwipeMove($event)"
         (swipeEnd)="onSwipeEnd($event)"
@@ -255,7 +255,7 @@ describe('ForToast (declarative)', () => {
       vi.useRealTimers();
     });
 
-    it('emits (close) with reason "auto" after duration', () => {
+    it('emits (dismiss) with reason "auto" after duration', () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       vi.advanceTimersByTime(4_999);
@@ -550,7 +550,7 @@ describe('ForToast (declarative)', () => {
       expect(spy).toHaveBeenCalledWith(expect.any(Function), 5000);
     });
 
-    it('closable=false does not emit (close) after the duration elapses', () => {
+    it('closable=false does not emit (dismiss) after the duration elapses', () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       r.instance.closable.set(false);
@@ -643,7 +643,7 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.swipeMoves.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('crosses the threshold → swipeEnd, data-swipe="end", and (close) with reason "swipe"', () => {
+    it('crosses the threshold → swipeEnd, data-swipe="end", and (dismiss) with reason "swipe"', () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(50);
@@ -658,7 +658,7 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual(['swipe']);
     });
 
-    it('releases under threshold → swipeCancel, data-swipe="cancel", no (close)', () => {
+    it('releases under threshold → swipeCancel, data-swipe="cancel", no (dismiss)', () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(80);

@@ -47,7 +47,7 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
  *   <button forMenubarTrigger value="file">File</button>
  *   @if (open() === 'file') {
  *     <div forMenuContent>
- *       <button forMenuItem (select)="newDoc()">New</button>
+ *       <button forMenuItem (activate)="newDoc()">New</button>
  *     </div>
  *   }
  *

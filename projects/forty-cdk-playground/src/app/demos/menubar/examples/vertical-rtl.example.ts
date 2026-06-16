@@ -40,14 +40,14 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button forMenubarTrigger value="workspace" class="pg-menubar-trigger">Workspace</button>
           @if (openMenu() === 'workspace') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('New project')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('New project')">
                 New project
               </button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Import…')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Import…')">
                 Import…
               </button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Settings')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Settings')">
                 Settings
               </button>
             </div>
@@ -56,9 +56,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button forMenubarTrigger value="insert" class="pg-menubar-trigger">Insert</button>
           @if (openMenu() === 'insert') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Image')">Image</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Table')">Table</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Code block')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Image')">Image</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Table')">Table</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Code block')">
                 Code block
               </button>
             </div>
@@ -67,9 +67,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
           <button forMenubarTrigger value="format" class="pg-menubar-trigger">Format</button>
           @if (openMenu() === 'format') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Bold')">Bold</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Italic')">Italic</button>
-              <button forMenuItem class="pg-menu-item" (select)="onAction('Clear formatting')">
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Bold')">Bold</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Italic')">Italic</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Clear formatting')">
                 Clear formatting
               </button>
             </div>
