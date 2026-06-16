@@ -37,7 +37,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
  * <div forDropdownMenu [(open)]="open">
  *   <button forDropdownMenuTrigger>Options</button>
  *   @if (open()) {
- *     <div forMenuContent (close)="open.set(false)">…</div>
+ *     <div forMenuContent>…</div>
  *   }
  * </div>
  * ```
