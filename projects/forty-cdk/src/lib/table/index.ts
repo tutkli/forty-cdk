@@ -10,6 +10,7 @@ export {
   type TableSortDirection,
   type TableSortDescriptor,
 } from './table-sort-header';
+export { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,

@@ -251,3 +251,94 @@ test.describe('Table (grid keyboard navigation)', () => {
     await expectFocused(el(page, 'cell-0-role'));
   });
 });
+
+test.describe('Table (column resizing)', () => {
+  test('pointer drag widens a column', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const beforeBox = await headerName.boundingBox();
+    expect(beforeBox).not.toBeNull();
+
+    const resizerBox = await resizer.boundingBox();
+    expect(resizerBox).not.toBeNull();
+
+    const cx = resizerBox!.x + resizerBox!.width / 2;
+    const cy = resizerBox!.y + resizerBox!.height / 2;
+
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 40, cy);
+    await page.mouse.move(cx + 80, cy);
+    await page.mouse.up();
+
+    const afterBox = await headerName.boundingBox();
+    expect(afterBox).not.toBeNull();
+    expect(afterBox!.width).toBeGreaterThan(beforeBox!.width);
+
+    const root = el(page, 'root');
+    const varValue = await root.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--for-table-col-name-width'),
+    );
+    expect(varValue.trim()).not.toBe('');
+  });
+
+  test('keyboard resize increases then decreases width', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const beforeBox = await headerName.boundingBox();
+    expect(beforeBox).not.toBeNull();
+
+    await resizer.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+
+    const afterRightBox = await headerName.boundingBox();
+    expect(afterRightBox).not.toBeNull();
+    expect(afterRightBox!.width).toBeGreaterThan(beforeBox!.width);
+
+    await page.keyboard.press('ArrowLeft');
+
+    const afterLeftBox = await headerName.boundingBox();
+    expect(afterLeftBox).not.toBeNull();
+    expect(afterLeftBox!.width).toBeLessThan(afterRightBox!.width);
+  });
+
+  test('dragging the handle does not trigger a sort', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    await expect(headerName).not.toHaveAttribute('aria-sort');
+
+    const resizerBox = await resizer.boundingBox();
+    expect(resizerBox).not.toBeNull();
+
+    const cx = resizerBox!.x + resizerBox!.width / 2;
+    const cy = resizerBox!.y + resizerBox!.height / 2;
+
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 40, cy);
+    await page.mouse.move(cx + 80, cy);
+    await page.mouse.up();
+
+    await expect(headerName).not.toHaveAttribute('aria-sort');
+  });
+});

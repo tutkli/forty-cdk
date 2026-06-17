@@ -85,6 +85,12 @@ export interface ForTableContext {
   readonly selectAllState: Signal<TableSelectAllState>;
   /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
   toggleSelectAll(): void;
+  /**
+   * Publishes a column's resolved width as the CSS custom property
+   * `--for-table-col-<column>-width` on the table root, so the consumer's layout
+   * can apply it. Called by `[forTableColumnResizer]`.
+   */
+  setColumnWidth(column: string, width: number): void;
 }
 
 export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_CONTEXT');

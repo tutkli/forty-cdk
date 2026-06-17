@@ -20,6 +20,7 @@ import {
   type TableSortDescriptor,
   type TableSortDirection,
 } from './table-sort-header';
+import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -28,6 +29,49 @@ const TABLE_IMPORTS = [
   ForTableHeaderCell,
   ForTableCell,
 ] as const;
+
+function pointerEvent(
+  type: string,
+  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
+): PointerEvent {
+  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
+  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
+  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
+  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
+  return ev;
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid" [dir]="dir()">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          Name
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            [min]="min()"
+            [max]="max()"
+            [step]="step()"
+            (resizeCommit)="lastResize = $event"
+            data-testid="resizer"
+          ></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class ResizeTableHost {
+  readonly dir = signal<'ltr' | 'rtl' | null>(null);
+  readonly width = signal<number>(100);
+  readonly min = signal<number>(0);
+  readonly max = signal<number>(Infinity);
+  readonly step = signal<number>(10);
+  lastResize: TableResizeDescriptor | null = null;
+}
 
 @Component({
   imports: [...TABLE_IMPORTS],
@@ -596,61 +640,6 @@ describe('ForTable', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects a mode change on the cell role without Zone.js', () => {
-      const { el, instance, flush } = renderHost(TableHost);
-      expect(cellEl(el).getAttribute('role')).toBe('cell');
-
-      instance.mode.set('grid');
-      flush();
-
-      expect(cellEl(el).getAttribute('role')).toBe('gridcell');
-    });
-
-    it('reflects an ariaLabel change without Zone.js', () => {
-      const { el, instance, flush } = renderHost(TableHost);
-      expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
-
-      instance.ariaLabel.set('My Table');
-      flush();
-
-      expect(rootEl(el).getAttribute('aria-label')).toBe('My Table');
-    });
-
-    it('grid navigation reacts without Zone.js', () => {
-      const { el, flush } = renderHost(GridTableHost);
-      const allCells = cells(el);
-      press(allCells[0], 'ArrowRight');
-      flush();
-      expect(allCells[1].getAttribute('data-highlighted')).toBe('');
-      expect(allCells[1].getAttribute('tabindex')).toBe('0');
-    });
-
-    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', () => {
-      const { el, flush } = renderHost(SelectionTableHost);
-      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
-      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
-
-      expect(row1.getAttribute('aria-selected')).toBe('false');
-      expect(row1.hasAttribute('data-selected')).toBe(false);
-
-      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
-
-      expect(row1.getAttribute('aria-selected')).toBe('true');
-      expect(row1.getAttribute('data-selected')).toBe('');
-      expect(selector1.getAttribute('data-state')).toBe('checked');
-    });
-
-    it('clicking the sort header reflects aria-sort without Zone.js', () => {
-      const { el, flush } = renderHost(SortTableHost);
-      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
-      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
-      expect(h.getAttribute('aria-sort')).toBe('ascending');
-    });
-  });
-
   describe('selection', () => {
     it('selectionMode="none": root has no aria-multiselectable, rows have no aria-selected, no data-selected', () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
@@ -988,6 +977,198 @@ describe('ForTable', () => {
       flush();
       expect(sortHeader(el).getAttribute('aria-sort')).toBe('descending');
       expect(instance.lastSort).toBeNull();
+    });
+  });
+
+  describe('column resizer', () => {
+    const resizerEl = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+    const tableRootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
+
+    it('ARIA: role=separator, aria-orientation=vertical, tabindex=0, aria-valuemin=0, aria-valuenow=100', () => {
+      const { el } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      expect(r.getAttribute('role')).toBe('separator');
+      expect(r.getAttribute('aria-orientation')).toBe('vertical');
+      expect(r.getAttribute('tabindex')).toBe('0');
+      expect(r.getAttribute('aria-valuemin')).toBe('0');
+      expect(r.getAttribute('aria-valuenow')).toBe('100');
+    });
+
+    it('no aria-valuemax attribute when max is Infinity (default)', () => {
+      const { el } = renderHost(ResizeTableHost);
+      expect(resizerEl(el).hasAttribute('aria-valuemax')).toBe(false);
+    });
+
+    it('aria-valuemax reflects a finite [max] input', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.max.set(400);
+      flush();
+      expect(resizerEl(el).getAttribute('aria-valuemax')).toBe('400');
+    });
+
+    it('ArrowRight increases width by step and emits resizeCommit; root publishes the CSS var', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('110px');
+    });
+
+    it('ArrowLeft decreases width by step; clamps at min', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.min.set(90);
+      flush();
+      const r = resizerEl(el);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(90);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(90);
+    });
+
+    it('RTL: ArrowLeft increases width, ArrowRight decreases', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.dir.set('rtl');
+      flush();
+      const r = resizerEl(el);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(100);
+    });
+
+    it('pointer drag: widens the column and emits resizeCommit on pointerup; data-resizing is present during and absent after', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      r.setPointerCapture = () => {};
+      r.hasPointerCapture = () => false;
+      r.releasePointerCapture = () => {};
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      r.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      flush();
+      expect(instance.width()).toBe(150);
+      expect(r.getAttribute('data-resizing')).toBe('');
+
+      r.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
+      flush();
+      expect(r.hasAttribute('data-resizing')).toBe(false);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 150 });
+    });
+
+    it('no-op click (dead-zone): 1px move does not change width, no resizeCommit, no data-resizing', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      r.setPointerCapture = () => {};
+      r.hasPointerCapture = () => false;
+      r.releasePointerCapture = () => {};
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      r.dispatchEvent(pointerEvent('pointermove', { clientX: 201 }));
+      r.dispatchEvent(pointerEvent('pointerup', { clientX: 201 }));
+      flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.lastResize).toBeNull();
+      expect(r.hasAttribute('data-resizing')).toBe(false);
+    });
+
+    it('aria-valuenow updates after a resize', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+      expect(r.getAttribute('aria-valuenow')).toBe('110');
+    });
+  });
+
+  describe('zoneless reactivity', () => {
+    it('reflects a mode change on the cell role without Zone.js', () => {
+      const { el, instance, flush } = renderHost(TableHost);
+      expect(cellEl(el).getAttribute('role')).toBe('cell');
+
+      instance.mode.set('grid');
+      flush();
+
+      expect(cellEl(el).getAttribute('role')).toBe('gridcell');
+    });
+
+    it('reflects an ariaLabel change without Zone.js', () => {
+      const { el, instance, flush } = renderHost(TableHost);
+      expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
+
+      instance.ariaLabel.set('My Table');
+      flush();
+
+      expect(rootEl(el).getAttribute('aria-label')).toBe('My Table');
+    });
+
+    it('grid navigation reacts without Zone.js', () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      press(allCells[0], 'ArrowRight');
+      flush();
+      expect(allCells[1].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1].getAttribute('tabindex')).toBe('0');
+    });
+
+    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row1.hasAttribute('data-selected')).toBe(false);
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row1.getAttribute('data-selected')).toBe('');
+      expect(selector1.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('clicking the sort header reflects aria-sort without Zone.js', () => {
+      const { el, flush } = renderHost(SortTableHost);
+      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('column resizer ArrowRight updates aria-valuenow and publishes CSS var without Zone.js', () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+      expect(r.getAttribute('aria-valuenow')).toBe('110');
+      expect(
+        el
+          .querySelector<HTMLElement>('[forTable]')!
+          .style.getPropertyValue('--for-table-col-name-width'),
+      ).toBe('110px');
     });
   });
 });
