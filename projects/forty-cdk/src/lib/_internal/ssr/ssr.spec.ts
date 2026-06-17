@@ -129,6 +129,28 @@ import { ForStepperPrevious } from '../../stepper/stepper-previous';
 import { ForStepperSeparator } from '../../stepper/stepper-separator';
 import { ForStepperProgress } from '../../stepper/stepper-progress';
 import { ForStepperTrigger } from '../../stepper/stepper-trigger';
+import { ForContextMenu } from '../../context-menu/context-menu';
+import { ForContextMenuTrigger } from '../../context-menu/context-menu-trigger';
+import { ForDropdownMenu } from '../../dropdown-menu/dropdown-menu';
+import { ForDropdownMenuTrigger } from '../../dropdown-menu/dropdown-menu-trigger';
+import { ForHoverCard } from '../../hover-card/hover-card';
+import { ForHoverCardContent } from '../../hover-card/hover-card-content';
+import { ForHoverCardTrigger } from '../../hover-card/hover-card-trigger';
+import { ForListbox } from '../../listbox/listbox';
+import { ForListboxOption } from '../../listbox/listbox-option';
+import { ForNumberInput } from '../../number-input/number-input';
+import { ForNumberInputDecrement } from '../../number-input/number-input-decrement';
+import { ForNumberInputGroup } from '../../number-input/number-input-group';
+import { ForNumberInputIncrement } from '../../number-input/number-input-increment';
+import { ForPaneResizer } from '../../pane-resizer/pane-resizer';
+import { ForSlider } from '../../slider/slider';
+import { ForSliderRange } from '../../slider/slider-range';
+import { ForSliderThumb } from '../../slider/slider-thumb';
+import { ForSliderTrack } from '../../slider/slider-track';
+import { ForToolbar } from '../../toolbar/toolbar';
+import { ForToolbarButton } from '../../toolbar/toolbar-button';
+import { ForToolbarLink } from '../../toolbar/toolbar-link';
+import { ForToolbarSeparator } from '../../toolbar/toolbar-separator';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
@@ -908,6 +930,104 @@ class StepperFixture {}
 })
 class StepperCompletedFixture {}
 
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forDropdownMenu [open]="true">
+      <button forDropdownMenuTrigger>Options</button>
+      <div forMenuContent>
+        <button forMenuItem>Cut</button>
+      </div>
+    </div>
+  `,
+})
+class DropdownMenuOpenFixture {}
+
+@Component({
+  imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forContextMenu [open]="true">
+      <div forContextMenuTrigger>Right-click here</div>
+      <div forMenuContent>
+        <button forMenuItem>Rename</button>
+      </div>
+    </div>
+  `,
+})
+class ContextMenuOpenFixture {}
+
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+  template: `
+    <span forHoverCard [open]="true">
+      <a forHoverCardTrigger href="/users/ada">Ada</a>
+      <div forHoverCardContent>Preview</div>
+    </span>
+  `,
+})
+class HoverCardOpenFixture {}
+
+@Component({
+  imports: [ForListbox, ForListboxOption],
+  template: `
+    <ul forListbox ariaLabel="Fruit">
+      <li><button type="button" forListboxOption value="apple">Apple</button></li>
+    </ul>
+  `,
+})
+class ListboxFixture {}
+
+@Component({
+  imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
+  template: `
+    <div forSlider [(value)]="value">
+      <span forSliderTrack>
+        <span forSliderRange></span>
+        <span forSliderThumb [index]="0" label="Volume"></span>
+      </span>
+    </div>
+  `,
+})
+class SliderFixture {
+  readonly value = signal<readonly number[]>([50]);
+}
+
+@Component({
+  imports: [ForPaneResizer],
+  template: `
+    <div forPaneResizer orientation="vertical" [(value)]="size" [min]="0" [max]="100"></div>
+  `,
+})
+class PaneResizerFixture {
+  readonly size = signal(50);
+}
+
+@Component({
+  imports: [ForNumberInputGroup, ForNumberInput, ForNumberInputIncrement, ForNumberInputDecrement],
+  template: `
+    <div forNumberInputGroup>
+      <button forNumberInputDecrement ariaLabel="Decrease">-</button>
+      <input forNumberInput [(value)]="qty" [min]="0" [max]="10" />
+      <button forNumberInputIncrement ariaLabel="Increase">+</button>
+    </div>
+  `,
+})
+class NumberInputFixture {
+  readonly qty = signal<number | null>(5);
+}
+
+@Component({
+  imports: [ForToolbar, ForToolbarButton, ForToolbarSeparator, ForToolbarLink],
+  template: `
+    <div forToolbar ariaLabel="Formatting">
+      <button forToolbarButton>Undo</button>
+      <span forToolbarSeparator></span>
+      <a forToolbarLink href="/help">Help</a>
+    </div>
+  `,
+})
+class ToolbarFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -947,6 +1067,14 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DatePickerFixture,
   TimePickerOpenFixture,
   DragDropFixture,
+  DropdownMenuOpenFixture,
+  ContextMenuOpenFixture,
+  HoverCardOpenFixture,
+  ListboxFixture,
+  SliderFixture,
+  PaneResizerFixture,
+  NumberInputFixture,
+  ToolbarFixture,
 ];
 
 function configureServer(): void {
@@ -1159,5 +1287,32 @@ describe('SSR smoke tests', () => {
     lock.unlock();
     expect(document.body.style.overflow).toBe('auto');
     document.body.style.overflow = '';
+  });
+
+  it('opening DropdownMenu does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(DropdownMenuOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forMenuContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('opening ContextMenu does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(ContextMenuOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forMenuContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('opening HoverCard does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(HoverCardOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forHoverCardContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forHoverCardContent]')).toBeNull();
   });
 });
