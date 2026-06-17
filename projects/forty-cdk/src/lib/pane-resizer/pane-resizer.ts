@@ -11,26 +11,11 @@ import {
 
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-
-/**
- * Round `value` to the decimal precision a `step` carries so repeated
- * `value ± step` keyboard arithmetic with a fractional step (e.g. `0.1`) can't
- * accumulate float noise that defeats the `next === value()` change guard.
- * Applied only to step-derived deltas — never to `min` / `max`, which the
- * consumer supplies at their own precision.
- */
-function roundToStepPrecision(value: number, step: number): number {
-  const stepText = String(step);
-  const dot = stepText.indexOf('.');
-  if (dot < 0) {
-    return value;
-  }
-  const factor = 10 ** (stepText.length - dot - 1);
-  return Math.round(value * factor) / factor;
-}
-
-/** Pointer travel (px) required before a drag starts mutating the value. */
-const DRAG_DEAD_ZONE_PX = 3;
+import {
+  clampToRange,
+  roundToStepPrecision,
+  startPointerResize,
+} from '../_internal/resize-geometry/resize-geometry';
 
 /**
  * Headless implementation of the
@@ -184,22 +169,13 @@ export class ForPaneResizer {
   /** Last value above `min` — used to restore size when `collapsible` Enter expands. */
   #lastNonMinValue = 0;
 
-  // Pointer drag state. Plain instance fields — drag lives outside the reactive graph.
-  #dragging = false;
-  #dragStartValue = 0;
-  #dragStartCoord = 0;
-  /**
-   * Whether the pointer has moved past the dead-zone since pressing. A plain
-   * click that fires a stray sub-threshold `pointermove` must not mutate the
-   * value, so the first applied delta is gated on crossing `DRAG_DEAD_ZONE_PX`.
-   */
-  #dragArmed = false;
+  #disposePointer: (() => void) | null = null;
 
   /** True between the first kbd-driven mutation and the next `keyup`. */
   #pendingKeyboardCommit = false;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.#endDrag());
+    inject(DestroyRef).onDestroy(() => this.#disposePointer?.());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -279,67 +255,19 @@ export class ForPaneResizer {
       return;
     }
     event.preventDefault();
-    this.#dragging = true;
-    this.#dragArmed = false;
-    this.#dragStartValue = this.value();
-    this.#dragStartCoord = this.orientation() === 'vertical' ? event.clientX : event.clientY;
-    this.#host.setPointerCapture(event.pointerId);
-    this.#host.addEventListener('pointermove', this.#onPointerMove);
-    this.#host.addEventListener('pointerup', this.#onPointerUp);
-    this.#host.addEventListener('pointercancel', this.#onPointerUp);
-  }
-
-  readonly #onPointerMove = (event: PointerEvent): void => {
-    if (!this.#dragging) {
-      return;
-    }
-    const orient = this.orientation();
     const ltr = this.dir() !== 'rtl';
-    const raw = orient === 'vertical' ? event.clientX : event.clientY;
-    let delta = raw - this.#dragStartCoord;
-    // Dead-zone: swallow sub-threshold travel so a plain click with a stray
-    // pointermove doesn't mutate the value. Once armed, every move applies.
-    if (!this.#dragArmed) {
-      if (Math.abs(delta) < DRAG_DEAD_ZONE_PX) {
-        return;
-      }
-      this.#dragArmed = true;
-    }
-    if (orient === 'vertical' && !ltr) {
-      // RTL inverts the horizontal drag axis so the visible end of the start
-      // pane still tracks the pointer.
-      delta = -delta;
-    }
-    const next = this.#clamp(this.#dragStartValue + delta);
-    if (next === this.value()) {
-      return;
-    }
-    this.value.set(next);
-    this.resizing.emit(next);
-  };
-
-  readonly #onPointerUp = (event: PointerEvent): void => {
-    if (!this.#dragging) {
-      return;
-    }
-    const armed = this.#dragArmed;
-    this.#endDrag();
-    if (this.#host.hasPointerCapture(event.pointerId)) {
-      this.#host.releasePointerCapture(event.pointerId);
-    }
-    if (armed) {
-      this.resizeCommit.emit(this.value());
-    }
-  };
-
-  #endDrag(): void {
-    if (!this.#dragging) {
-      return;
-    }
-    this.#dragging = false;
-    this.#host.removeEventListener('pointermove', this.#onPointerMove);
-    this.#host.removeEventListener('pointerup', this.#onPointerUp);
-    this.#host.removeEventListener('pointercancel', this.#onPointerUp);
+    this.#disposePointer = startPointerResize(event, {
+      host: this.#host,
+      axis: this.orientation() === 'vertical' ? 'x' : 'y',
+      startValue: this.value(),
+      invert: this.orientation() === 'vertical' && !ltr,
+      constrain: (n) => this.#clamp(n),
+      onResize: (v) => {
+        this.value.set(v);
+        this.resizing.emit(v);
+      },
+      onCommit: (v) => this.resizeCommit.emit(v),
+    });
   }
 
   #toggleCollapsed(): void {
@@ -363,7 +291,7 @@ export class ForPaneResizer {
   }
 
   #clamp(n: number): number {
-    return Math.max(this.min(), Math.min(this.max(), n));
+    return clampToRange(n, this.min(), this.max());
   }
 
   /** Clamp a step-derived value, rounding to the step's precision first. */

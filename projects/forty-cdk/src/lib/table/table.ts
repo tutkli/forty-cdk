@@ -1,4 +1,4 @@
-import { computed, Directive, input, model, signal } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, model, signal } from '@angular/core';
 
 import { SelectionModel } from '../_internal/selection-model/selection-model';
 import { injectElementSize } from '../_internal/element-size/element-size';
@@ -109,6 +109,8 @@ export class ForTable implements ForTableContext {
   /** Equality comparator for row values. Defaults to `===`; supply id-based for objects. */
   readonly compareWith = input<(a: unknown, b: unknown) => boolean>((a, b) => a === b);
 
+  readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
   readonly #headerRowEl = signal<HTMLElement | null>(null);
 
   protected readonly headerSize = injectElementSize(this.#headerRowEl);
@@ -161,6 +163,10 @@ export class ForTable implements ForTableContext {
 
   registerHeaderRow(el: HTMLElement): void {
     this.#headerRowEl.set(el);
+  }
+
+  setColumnWidth(column: string, width: number): void {
+    this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
   }
 
   unregisterHeaderRow(el: HTMLElement): void {

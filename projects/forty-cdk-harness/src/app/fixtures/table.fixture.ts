@@ -3,12 +3,14 @@ import { ActivatedRoute } from '@angular/router';
 import {
   ForTable,
   ForTableCell,
+  ForTableColumnResizer,
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
   ForTableRowSelector,
   ForTableSelectAll,
   ForTableSortHeader,
+  type TableResizeDescriptor,
   type TableSelectionMode,
   type TableSelectionBehavior,
   type TableSortDescriptor,
@@ -27,6 +29,7 @@ import {
     ForTableRowSelector,
     ForTableSelectAll,
     ForTableSortHeader,
+    ForTableColumnResizer,
   ],
   styles: [
     `
@@ -41,7 +44,9 @@ import {
       }
       [forTableHeaderRow] {
         display: grid;
-        grid-template-columns: 200px 200px 200px;
+        grid-template-columns:
+          var(--for-table-col-name-width, 200px) var(--for-table-col-role-width, 200px)
+          var(--for-table-col-dept-width, 200px);
         position: sticky;
         top: 0;
         z-index: 1;
@@ -51,11 +56,15 @@ import {
       }
       [forTableRow] {
         display: grid;
-        grid-template-columns: 200px 200px 200px;
+        grid-template-columns:
+          var(--for-table-col-name-width, 200px) var(--for-table-col-role-width, 200px)
+          var(--for-table-col-dept-width, 200px);
       }
       [forTableHeaderCell],
       [forTableCell] {
         padding: 8px;
+        position: relative;
+        overflow: hidden;
       }
       [forTableCell] {
         border-bottom: 1px solid #eee;
@@ -69,6 +78,20 @@ import {
         border: 1px solid #888;
         vertical-align: middle;
         cursor: pointer;
+      }
+      .resize-handle {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 8px;
+        height: 100%;
+        cursor: col-resize;
+        background: transparent;
+        border: none;
+        padding: 0;
+      }
+      .resize-handle[data-resizing] {
+        background: rgba(0, 0, 255, 0.15);
       }
     `,
   ],
@@ -100,6 +123,17 @@ import {
               <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
             }
             Name
+            @if (resizable()) {
+              <button
+                class="resize-handle"
+                forTableColumnResizer
+                column="name"
+                [width]="200"
+                data-testid="resizer-name"
+                aria-label="Resize Name column"
+                (resizeCommit)="onResize($event)"
+              ></button>
+            }
           </div>
           <div
             data-testid="header-role"
@@ -112,6 +146,17 @@ import {
             (sortChange)="onSort($event)"
           >
             Role
+            @if (resizable()) {
+              <button
+                class="resize-handle"
+                forTableColumnResizer
+                column="role"
+                [width]="200"
+                data-testid="resizer-role"
+                aria-label="Resize Role column"
+                (resizeCommit)="onResize($event)"
+              ></button>
+            }
           </div>
           <div
             data-testid="header-dept"
@@ -124,6 +169,17 @@ import {
             (sortChange)="onSort($event)"
           >
             Department
+            @if (resizable()) {
+              <button
+                class="resize-handle"
+                forTableColumnResizer
+                column="dept"
+                [width]="200"
+                data-testid="resizer-dept"
+                aria-label="Resize Department column"
+                (resizeCommit)="onResize($event)"
+              ></button>
+            }
           </div>
         </div>
         @for (row of rows; track row.id; let r = $index) {
@@ -168,6 +224,11 @@ export class TableFixture {
   protected readonly sortable = signal(
     this.route.snapshot.queryParamMap.get('sortable') === 'true',
   );
+  protected readonly resizable = signal(
+    this.route.snapshot.queryParamMap.get('resizable') === 'true',
+  );
+  protected readonly colWidths = signal<Record<string, number>>({});
+
   protected readonly sortDescriptor = signal<TableSortDescriptor>({
     column: '',
     direction: 'none',
@@ -179,6 +240,10 @@ export class TableFixture {
 
   protected onSort(descriptor: TableSortDescriptor): void {
     this.sortDescriptor.set(descriptor);
+  }
+
+  protected onResize(d: TableResizeDescriptor): void {
+    this.colWidths.update((prev) => ({ ...prev, [d.column]: d.width }));
   }
 
   protected readonly rows = Array.from({ length: 20 }, (_, i) => ({

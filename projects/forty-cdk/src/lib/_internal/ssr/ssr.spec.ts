@@ -124,6 +124,7 @@ import { ForTableHeaderCell } from '../../table/table-header-cell';
 import { ForTableHeaderRow } from '../../table/table-header-row';
 import { ForTableRow } from '../../table/table-row';
 import { ForTableSortHeader } from '../../table/table-sort-header';
+import { ForTableColumnResizer } from '../../table/table-column-resizer';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
@@ -259,6 +260,7 @@ class TableFixture {}
     ForTableHeaderCell,
     ForTableCell,
     ForTableSortHeader,
+    ForTableColumnResizer,
   ],
   template: `
     <div forTable mode="grid" aria-label="People" [rowCount]="100" selectionMode="multiple">
@@ -266,7 +268,15 @@ class TableFixture {}
         <div forTableHeaderCell name="name" forTableSortHeader column="name" direction="ascending">
           Name
         </div>
-        <div forTableHeaderCell name="role">Role</div>
+        <div forTableHeaderCell name="role">
+          Role
+          <button
+            forTableColumnResizer
+            column="role"
+            [width]="120"
+            aria-label="Resize role"
+          ></button>
+        </div>
       </div>
       <div forTableRow [value]="1">
         <div forTableCell name="name">Ada</div>
@@ -1386,5 +1396,10 @@ describe('SSR smoke tests', () => {
     const headerName = f.nativeElement.querySelector('[forTableHeaderCell]') as HTMLElement;
     expect(headerName.getAttribute('aria-sort')).toBe('ascending');
     expect(headerName.getAttribute('tabindex')).toBe('0');
+    const resizer = f.nativeElement.querySelector('[forTableColumnResizer]') as HTMLElement;
+    expect(resizer.getAttribute('role')).toBe('separator');
+    expect(resizer.getAttribute('aria-orientation')).toBe('vertical');
+    expect(resizer.getAttribute('tabindex')).toBe('0');
+    expect(resizer.getAttribute('aria-valuenow')).toBe('120');
   });
 });
