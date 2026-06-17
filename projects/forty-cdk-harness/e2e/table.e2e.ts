@@ -144,6 +144,51 @@ test.describe('Table (row selection)', () => {
   });
 });
 
+test.describe('Table (sortable headers)', () => {
+  test('click cycles aria-sort: absent → ascending → descending → absent', async ({ page }) => {
+    await gotoFixture(page, 'table', { sortable: 'true', selectionMode: 'none' });
+    const headerName = el(page, 'header-name');
+
+    await expect(headerName).not.toHaveAttribute('aria-sort');
+
+    await headerName.click();
+    await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
+
+    await headerName.click();
+    await expect(headerName).toHaveAttribute('aria-sort', 'descending');
+
+    await headerName.click();
+    await expect(headerName).not.toHaveAttribute('aria-sort');
+  });
+
+  test('single sorted column (consumer-coordinated): clicking a second header resets the first', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table', { sortable: 'true', selectionMode: 'none' });
+    const headerName = el(page, 'header-name');
+    const headerRole = el(page, 'header-role');
+
+    await headerName.click();
+    await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
+
+    await headerRole.click();
+    await expect(headerName).not.toHaveAttribute('aria-sort');
+    await expect(headerRole).toHaveAttribute('aria-sort', 'ascending');
+  });
+
+  test('keyboard activation: Enter sorts ascending, Space sorts descending', async ({ page }) => {
+    await gotoFixture(page, 'table', { sortable: 'true', selectionMode: 'none' });
+    const headerName = el(page, 'header-name');
+
+    await headerName.focus();
+    await page.keyboard.press('Enter');
+    await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
+
+    await page.keyboard.press('Space');
+    await expect(headerName).toHaveAttribute('aria-sort', 'descending');
+  });
+});
+
 test.describe('Table (grid keyboard navigation)', () => {
   test('Tab enters the grid on the first cell as a single tab stop, Tab leaves', async ({
     page,

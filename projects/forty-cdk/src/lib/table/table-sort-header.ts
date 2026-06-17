@@ -1,0 +1,99 @@
+import { booleanAttribute, computed, Directive, input, model, output } from '@angular/core';
+
+import { injectTableContext } from './table-context';
+
+/** Sort direction for a column header. `'none'` means unsorted (no aria-sort emitted). */
+export type TableSortDirection = 'ascending' | 'descending' | 'none';
+
+/** Payload of `sortChange`: which column changed and its new direction. */
+export interface TableSortDescriptor {
+  column: string;
+  direction: TableSortDirection;
+}
+
+/**
+ * Turns a `[forTableHeaderCell]` into a sortable affordance that emits `aria-sort`
+ * and fires `sortChange` on activation (click, Enter, Space). The directive is
+ * **self-contained**: it owns only its own `direction` state and does NOT register
+ * with the table context or auto-reset sibling headers. The "one sorted column at a
+ * time" guarantee is the consumer's responsibility — hold a single sort descriptor
+ * signal and derive each header's `direction` from it. Apply this directive on the
+ * same element as `[forTableHeaderCell]`.
+ *
+ * Cycle: `none → ascending → descending → none` (default).
+ * With `disableClear`: `none → ascending → descending → ascending`.
+ */
+@Directive({
+  selector: '[forTableSortHeader]',
+  exportAs: 'forTableSortHeader',
+  host: {
+    '[attr.aria-sort]': 'activeDirection()',
+    '[attr.data-sorted]': 'activeDirection()',
+    '[attr.tabindex]': 'sortable() ? "0" : null',
+    '(click)': 'activate()',
+    '(keydown)': 'onKeyDown($event)',
+  },
+})
+export class ForTableSortHeader {
+  protected readonly ctx = injectTableContext('ForTableSortHeader');
+
+  /** Column identity included in the `sortChange` payload. */
+  readonly column = input.required<string>();
+
+  /**
+   * Current sort direction. Acts as both the controlled value and the initial value.
+   * Its implicit `directionChange` output fires on every internal update (via
+   * `[(direction)]`). `sortChange` is the primary column-aware event consumers bind:
+   * it carries a `{ column, direction }` descriptor and fires on every activation,
+   * regardless of whether the consumer uses two-way binding.
+   */
+  readonly direction = model<TableSortDirection>('none');
+
+  /**
+   * When `true`, the cycle skips the `'none'` step: `ascending → descending → ascending`.
+   * Useful when clearing the sort is not allowed.
+   */
+  readonly disableClear = input(false, { transform: booleanAttribute });
+
+  /**
+   * When `false`, the header is fully inert: no `tabindex`, no `aria-sort`, and click /
+   * keyboard handlers are no-ops. Defaults to `true`.
+   */
+  readonly sortable = input(true, { transform: booleanAttribute });
+
+  /**
+   * Fires on every activation with the column identity and the new direction.
+   * Consumers bind this to update their own sort descriptor and reorder rows.
+   */
+  readonly sortChange = output<TableSortDescriptor>();
+
+  /**
+   * Truthy-only `aria-sort` / `data-sorted` value: `'ascending'` or `'descending'`
+   * while sorted, `null` (absent) when `direction` is `'none'` or `sortable` is `false`.
+   */
+  protected readonly activeDirection = computed<TableSortDirection | null>(() =>
+    this.sortable() && this.direction() !== 'none' ? this.direction() : null,
+  );
+
+  /** Activates the sort: computes the next direction, updates the model, and emits `sortChange`. */
+  protected activate(): void {
+    if (!this.sortable()) return;
+    const next = this.#next(this.direction());
+    this.direction.set(next);
+    this.sortChange.emit({ column: this.column(), direction: next });
+  }
+
+  /** Handles Enter and Space keyboard events, forwarding to `activate()`. */
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.activate();
+    }
+  }
+
+  #next(current: TableSortDirection): TableSortDirection {
+    if (current === 'none') return 'ascending';
+    if (current === 'ascending') return 'descending';
+    return this.disableClear() ? 'ascending' : 'none';
+  }
+}

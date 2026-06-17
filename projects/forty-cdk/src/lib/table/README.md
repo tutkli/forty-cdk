@@ -207,41 +207,81 @@ Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-st
 </div>
 ```
 
+## Sortable headers
+
+`[forTableSortHeader]` turns a `[forTableHeaderCell]` into a sortable affordance. It emits `aria-sort` and fires `sortChange` on activation (click, Enter, Space). **The directive never sorts data** — the consumer reorders their own rows from the `sortChange` payload.
+
+The directive is self-contained: it owns only its own `direction` state. The "one sorted column at a time" guarantee is the consumer's responsibility — hold a single sort descriptor signal and derive each header's `direction` from it:
+
+```html
+<div forTableHeaderRow>
+  <div
+    forTableHeaderCell
+    name="name"
+    forTableSortHeader
+    column="name"
+    [direction]="directionFor('name')"
+    (sortChange)="onSort($event)"
+  >
+    Name
+  </div>
+</div>
+```
+
+```ts
+protected readonly sort = signal<TableSortDescriptor>({ column: '', direction: 'none' });
+protected directionFor(column: string): TableSortDirection {
+  return this.sort().column === column ? this.sort().direction : 'none';
+}
+protected onSort(descriptor: TableSortDescriptor): void {
+  this.sort.set(descriptor);
+}
+protected readonly sortedRows = computed(() => /* the consumer sorts rows() by this.sort() */);
+```
+
+The direction cycles `none → ascending → descending → none`. Set `disableClear` to make the cycle skip `none`: `ascending ↔ descending`. When `sortable` is `false` the header is fully inert (no `tabindex`, no `aria-sort`, no-op handlers) — useful when sorting is conditionally enabled. Because the directive coordinates nothing across columns, the single-`sort` descriptor pattern above is what enforces that only one column is sorted at a time.
+
 ## Inputs
 
-| Directive              | Input               | Type                                  | Default        | Description                                                              |
-| ---------------------- | ------------------- | ------------------------------------- | -------------- | ------------------------------------------------------------------------ |
-| `[forTable]`           | `mode`              | `'table' \| 'grid' \| 'treegrid'`     | `'table'`      | ARIA role emitted on the host.                                           |
-| `[forTable]`           | `ariaLabel`         | `string \| null`                      | `null`         | Reactive accessible label.                                               |
-| `[forTable]`           | `dir`               | `'ltr' \| 'rtl' \| null`              | `null`         | Writing direction; resolves ambient when unset.                          |
-| `[forTable]`           | `rowCount`          | `number`                              | rendered count | True total data-row count for `aria-rowcount`. Ignored in `table` mode.  |
-| `[forTable]`           | `colCount`          | `number`                              | rendered count | True total column count for `aria-colcount`. Ignored in `table` mode.    |
-| `[forTable]`           | `selectionMode`     | `'none' \| 'single' \| 'multiple'`    | `'none'`       | Row selection mode.                                                      |
-| `[forTable]`           | `selectionBehavior` | `'toggle' \| 'replace'`               | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).    |
-| `[forTable]`           | `selection`         | `model<readonly unknown[]>([])`       | `[]`           | Two-way bindable selected row values.                                    |
-| `[forTable]`           | `compareWith`       | `(a: unknown, b: unknown) => boolean` | `===`          | Equality comparator for row values. Override for object rows.            |
-| `[forTableHeaderCell]` | `name`              | `string` (required)                   | —              | Column identifier, reflected as `data-column`.                           |
-| `[forTableHeaderCell]` | `sticky`            | `boolean \| 'end'`                    | `false`        | Sticky edge; reflected as `data-sticky`.                                 |
-| `[forTableCell]`       | `name`              | `string` (required)                   | —              | Column identifier, reflected as `data-column`.                           |
-| `[forTableCell]`       | `sticky`            | `boolean \| 'end'`                    | `false`        | Sticky edge; reflected as `data-sticky`.                                 |
-| `[forTableCell]`       | `disabled`          | `boolean`                             | `false`        | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.   |
-| `[forTableRow]`        | `value`             | `unknown`                             | `undefined`    | Selection identity for this row. Leave unset for non-selectable rows.    |
-| `[forTableSelectAll]`  | `ariaLabel`         | `string \| null`                      | `null`         | Accessible label for the select-all checkbox (e.g. `"Select all rows"`). |
+| Directive              | Input               | Type                                    | Default        | Description                                                              |
+| ---------------------- | ------------------- | --------------------------------------- | -------------- | ------------------------------------------------------------------------ |
+| `[forTable]`           | `mode`              | `'table' \| 'grid' \| 'treegrid'`       | `'table'`      | ARIA role emitted on the host.                                           |
+| `[forTable]`           | `ariaLabel`         | `string \| null`                        | `null`         | Reactive accessible label.                                               |
+| `[forTable]`           | `dir`               | `'ltr' \| 'rtl' \| null`                | `null`         | Writing direction; resolves ambient when unset.                          |
+| `[forTable]`           | `rowCount`          | `number`                                | rendered count | True total data-row count for `aria-rowcount`. Ignored in `table` mode.  |
+| `[forTable]`           | `colCount`          | `number`                                | rendered count | True total column count for `aria-colcount`. Ignored in `table` mode.    |
+| `[forTable]`           | `selectionMode`     | `'none' \| 'single' \| 'multiple'`      | `'none'`       | Row selection mode.                                                      |
+| `[forTable]`           | `selectionBehavior` | `'toggle' \| 'replace'`                 | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).    |
+| `[forTable]`           | `selection`         | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable selected row values.                                    |
+| `[forTable]`           | `compareWith`       | `(a: unknown, b: unknown) => boolean`   | `===`          | Equality comparator for row values. Override for object rows.            |
+| `[forTableHeaderCell]` | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                           |
+| `[forTableHeaderCell]` | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                 |
+| `[forTableCell]`       | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                           |
+| `[forTableCell]`       | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                 |
+| `[forTableCell]`       | `disabled`          | `boolean`                               | `false`        | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.   |
+| `[forTableRow]`        | `value`             | `unknown`                               | `undefined`    | Selection identity for this row. Leave unset for non-selectable rows.    |
+| `[forTableSelectAll]`  | `ariaLabel`         | `string \| null`                        | `null`         | Accessible label for the select-all checkbox (e.g. `"Select all rows"`). |
+| `[forTableSortHeader]` | `column`            | `string` (required)                     | —              | Column identity included in the `sortChange` payload.                    |
+| `[forTableSortHeader]` | `direction`         | `'ascending' \| 'descending' \| 'none'` | `'none'`       | Current sort direction (two-way bindable via `[(direction)]`).           |
+| `[forTableSortHeader]` | `disableClear`      | `boolean`                               | `false`        | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.          |
+| `[forTableSortHeader]` | `sortable`          | `boolean`                               | `true`         | When `false`, the header is fully inert (no tabindex, no aria-sort).     |
 
 ## CSS hooks
 
-| Token / attribute           | Emitted by              | Description                                                                     |
-| --------------------------- | ----------------------- | ------------------------------------------------------------------------------- |
-| `--for-table-header-height` | `[forTable]`            | Header row height in px. Updated on resize.                                     |
-| `data-mode`                 | `[forTable]`            | `'table' \| 'grid' \| 'treegrid'`                                               |
-| `data-column`               | header / data cell      | Column name from the `name` input.                                              |
-| `data-sticky`               | header / data cell      | `''` (start-edge) or `'end'` when sticky; absent otherwise.                     |
-| `data-highlighted`          | `[forTableCell]`        | Present on the currently roving-focused cell in grid / treegrid mode.           |
-| `aria-rowindex`             | `[forTableRow]`         | 1-based row index in the data row set. Absent in table mode.                    |
-| `aria-colindex`             | `[forTableCell]`        | 1-based column index within the row. Absent in table mode.                      |
-| `aria-selected`             | `[forTableRow]`         | `"true"` / `"false"` (always-emit) when `selectionMode` is not `'none'`.        |
-| `data-selected`             | `[forTableRow]`         | Present (`""`) when selected; absent when not. Boolean present/absent hook.     |
-| `aria-multiselectable`      | `[forTable]`            | `"true"` when `selectionMode="multiple"`; absent otherwise.                     |
-| `data-state`                | `[forTableRowSelector]` | `"checked"` or `"unchecked"`. The row owns `aria-selected`; this is decoration. |
-| `aria-checked`              | `[forTableSelectAll]`   | `"true"` / `"false"` / `"mixed"` (tri-state).                                   |
-| `data-state`                | `[forTableSelectAll]`   | `"checked"` / `"unchecked"` / `"indeterminate"`.                                |
+| Token / attribute           | Emitted by              | Description                                                                               |
+| --------------------------- | ----------------------- | ----------------------------------------------------------------------------------------- |
+| `--for-table-header-height` | `[forTable]`            | Header row height in px. Updated on resize.                                               |
+| `data-mode`                 | `[forTable]`            | `'table' \| 'grid' \| 'treegrid'`                                                         |
+| `data-column`               | header / data cell      | Column name from the `name` input.                                                        |
+| `data-sticky`               | header / data cell      | `''` (start-edge) or `'end'` when sticky; absent otherwise.                               |
+| `data-highlighted`          | `[forTableCell]`        | Present on the currently roving-focused cell in grid / treegrid mode.                     |
+| `aria-rowindex`             | `[forTableRow]`         | 1-based row index in the data row set. Absent in table mode.                              |
+| `aria-colindex`             | `[forTableCell]`        | 1-based column index within the row. Absent in table mode.                                |
+| `aria-selected`             | `[forTableRow]`         | `"true"` / `"false"` (always-emit) when `selectionMode` is not `'none'`.                  |
+| `data-selected`             | `[forTableRow]`         | Present (`""`) when selected; absent when not. Boolean present/absent hook.               |
+| `aria-multiselectable`      | `[forTable]`            | `"true"` when `selectionMode="multiple"`; absent otherwise.                               |
+| `data-state`                | `[forTableRowSelector]` | `"checked"` or `"unchecked"`. The row owns `aria-selected`; this is decoration.           |
+| `aria-checked`              | `[forTableSelectAll]`   | `"true"` / `"false"` / `"mixed"` (tri-state).                                             |
+| `data-state`                | `[forTableSelectAll]`   | `"checked"` / `"unchecked"` / `"indeterminate"`.                                          |
+| `aria-sort`                 | `[forTableSortHeader]`  | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only. |
+| `data-sorted`               | `[forTableSortHeader]`  | Same value as `aria-sort` — a CSS styling hook (e.g. for a sort arrow glyph).             |
