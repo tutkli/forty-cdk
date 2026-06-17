@@ -178,10 +178,22 @@ the real count:
 
 ## Returned handle
 
-| Member           | Type                             | Description                                              |
-| ---------------- | -------------------------------- | -------------------------------------------------------- |
-| `virtualItems`   | `Signal<readonly VirtualItem[]>` | Items in the current visible window plus overscan.       |
-| `totalSize`      | `Signal<number>`                 | Total scroll size in pixels (drives the spacer element). |
-| `scrollToIndex`  | method                           | Scroll the container so the item at `index` is in view.  |
-| `scrollToOffset` | method                           | Scroll to an absolute pixel offset.                      |
-| `measureElement` | method                           | Record the measured size of a rendered item element.     |
+| Member           | Type                                | Description                                                                                                        |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `virtualItems`   | `Signal<readonly VirtualItem[]>`    | Items in the current visible window plus overscan.                                                                 |
+| `totalSize`      | `Signal<number>`                    | Total scroll size in pixels (drives the spacer element).                                                           |
+| `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`. |
+| `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
+| `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
+| `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
+
+## Composing into a list primitive
+
+`range` lets the windowing core plug directly into a list primitive's `[visibleRange]` input without the consumer re-deriving the window from `virtualItems()`. The primitive uses `[visibleRange]` to keep `aria-setsize` / `aria-posinset` and `aria-activedescendant` correct across row recycling — it tracks option data by absolute index so options scrolled out of view are still reachable by keyboard.
+
+```html
+[totalCount]="filtered().length" [visibleRange]="v.range()"
+(scrollToIndex)="v.scrollToIndex($event)"
+```
+
+See the [Combobox README](../combobox/README.md#virtualization) for the complete worked example wiring `[forCombobox]` with `injectVirtualizer` over a 100k-item list.
