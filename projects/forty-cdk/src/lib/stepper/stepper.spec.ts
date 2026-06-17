@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, required } from '@angular/forms/signals';
+import { By } from '@angular/platform-browser';
 
 import { pressKey, renderHost } from '../../test-utils';
 import { assertRovingTabindexContract } from '../../test-utils/contract';
@@ -659,6 +660,18 @@ describe('ForStepper', () => {
       fixture.detectChanges();
       expect(completedEl(el).getAttribute('data-state')).toBe('active');
       expect(instance.completeCount()).toBe(1);
+    });
+
+    it('select(count) advances into the terminal completed state', async () => {
+      const { el, fixture, flush } = renderHost(StepperHost);
+      const stepper = fixture.debugElement.query(By.directive(ForStepper)).injector.get(ForStepper);
+
+      stepper.select(3);
+      await flush();
+
+      expect(completedEl(el).getAttribute('data-state')).toBe('active');
+      expect(completedEl(el).hasAttribute('aria-hidden')).toBe(false);
+      expect(completedEl(el).hasAttribute('inert')).toBe(false);
     });
   });
 

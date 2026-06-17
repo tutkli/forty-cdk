@@ -197,7 +197,7 @@ export class ForStepper implements ForStepperContext {
     if (count === 0) {
       return;
     }
-    const clamped = Math.max(0, Math.min(index, count - 1));
+    const clamped = Math.max(0, Math.min(index, count));
     if (!this.isReachable(clamped)) {
       return;
     }
