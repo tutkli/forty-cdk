@@ -130,6 +130,8 @@ import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForTableColumnResizer } from '../../table/table-column-resizer';
 import { ForTableColumnReorder } from '../../table/table-column-reorder';
 import { ForTableRowReorder } from '../../table/table-row-reorder';
+import { ForVirtualFor } from '../../virtualization/virtual-for';
+import { ForVirtualViewport } from '../../virtualization/virtual-viewport';
 import { injectVirtualizer } from '../../virtualization/virtualizer';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
@@ -1129,6 +1131,23 @@ class VirtualizerFixture {
   });
 }
 
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor],
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      style="height: 200px"
+    >
+      <div *forVirtualFor="let row of rows()">{{ row }}</div>
+    </div>
+  `,
+})
+class VirtualViewportFixture {
+  readonly rows = signal(Array.from({ length: 1000 }, (_, i) => `Row ${i}`));
+}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -1179,6 +1198,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   NumberInputFixture,
   ToolbarFixture,
   VirtualizerFixture,
+  VirtualViewportFixture,
 ];
 
 function configureServer(): void {
@@ -1426,6 +1446,15 @@ describe('SSR smoke tests', () => {
     const spacer = f.nativeElement.querySelector('[style*="position: relative"]') as HTMLElement;
     expect(f.nativeElement.querySelectorAll('[data-index]').length).toBe(0);
     expect(spacer.style.height).toBe('40000px');
+  });
+
+  it('VirtualViewport renders the sizer with the estimate total and no rows server-side', () => {
+    const f = TestBed.createComponent(VirtualViewportFixture);
+    f.detectChanges();
+    const host = f.nativeElement.querySelector('[forVirtualViewport]') as HTMLElement;
+    const sizer = host.firstElementChild as HTMLElement;
+    expect(f.nativeElement.querySelectorAll('[data-index]').length).toBe(0);
+    expect(sizer.style.height).toBe('40000px');
   });
 
   it('Table grid mode renders role=grid + aria indices server-side', () => {

@@ -9,6 +9,32 @@ owns no DOM.
 Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns
 an empty window and the estimate-based total without touching `document`/`window`.
 
+## Ergonomic layer (`[forVirtualViewport]` + `*forVirtualFor`)
+
+For the common "just virtualize this list" case, the optional Shape A layer wraps the manual
+wiring: `[forVirtualViewport]` owns the scroll container, the total-size sizer, and the windowing
+core, and `*forVirtualFor` renders the visible window with the position transform and
+`aria-setsize` / `aria-posinset` applied for you.
+
+```html
+<div forVirtualViewport [virtualCount]="rows().length" [estimateSize]="44" style="height: 400px">
+  <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
+</div>
+```
+
+```ts
+readonly rows = signal(Array.from({ length: 10000 }, (_, i) => ({ label: `Row ${i}` })));
+```
+
+The viewport forces `overflow: auto` on its host; give it a fixed size (e.g. `height: 400px`).
+`orientation`, `overscan`, and `getItemKey` are optional inputs on `[forVirtualViewport]`; set
+`orientation` / `overscan` before first render (they are read once when the viewport initializes).
+The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `count`. Do not set
+`position` / `transform` on the row yourself — the directive owns them.
+
+For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
+headless `injectVirtualizer` core directly, documented below.
+
 ## Vertical list (fixed item heights)
 
 ```html

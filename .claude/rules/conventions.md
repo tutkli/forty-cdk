@@ -222,3 +222,21 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   screen-reader counts correct by binding `aria-setsize` (the true total) and `aria-posinset`
   (`item.index + 1`) on each rendered row. SSR-safe by returning an empty window + estimate total
   off-browser. See [#782](https://github.com/tutkli/forty-cdk/issues/782).
+- **`[forVirtualViewport]` + `*forVirtualFor` (virtualization Shape A) are the library's only
+  layout-owning directive and only structural directive.** Every other primitive decorates
+  consumer markup without creating or positioning DOM; this opt-in pair deliberately does both,
+  because virtualization cannot be expressed by decorating existing markup — the layer must own
+  the scroll viewport, the total-size sizer, and the absolutely positioned window. The viewport is a
+  **component** (not a plain directive) exposing both an element selector (`<for-virtual-viewport>`)
+  and the attribute form (`[forVirtualViewport]`) — the element selector is the documented "injects
+  its own structure via content projection" exception — so it renders the sizer as a declarative,
+  hydration-safe template node (`<div [style.height]="totalSize()">`) and projects the consumer's
+  rows through `<ng-content>`; it forces `overflow: auto` on the host and builds the
+  `injectVirtualizer` core internally. `*forVirtualFor` is the library's only structural directive:
+  it owns a `ViewContainerRef`, renders one embedded view per `virtualItem()`, and imperatively sets
+  each row's `position: absolute` + `transform: translate{X,Y}(start)` and its `aria-setsize` (true
+  total) / `aria-posinset` (`index + 1`). It is also the one place the library uses `ngOnInit`: the
+  core reads `orientation` / `overscan` once at construction, so the viewport defers `injectVirtualizer`
+  to `ngOnInit` (via `runInInjectionContext`), where bound inputs are available yet the core's
+  `afterNextRender` still registers before the first render. Built entirely on the Shape B core — no
+  change to `injectVirtualizer`'s public API. See [#856](https://github.com/tutkli/forty-cdk/issues/856).
