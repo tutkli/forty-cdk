@@ -201,4 +201,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./fixtures/table-reorder.fixture').then((m) => m.TableReorderFixture),
   },
+  {
+    path: 'virtualization',
+    loadComponent: () =>
+      import('./fixtures/virtualization.fixture').then((m) => m.VirtualizationFixture),
+  },
+  {
+    path: 'virtualization-dynamic',
+    loadComponent: () =>
+      import('./fixtures/virtualization-dynamic.fixture').then(
+        (m) => m.VirtualizationDynamicFixture,
+      ),
+  },
 ];
