@@ -6,6 +6,11 @@ export { ForTableCell } from './table-cell';
 export { ForTableRowSelector } from './table-row-selector';
 export { ForTableSelectAll } from './table-select-all';
 export {
+  ForTableSortHeader,
+  type TableSortDirection,
+  type TableSortDescriptor,
+} from './table-sort-header';
+export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,
   type ForTableCellHandle,

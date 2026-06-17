@@ -8,8 +8,11 @@ import {
   ForTableRow,
   ForTableRowSelector,
   ForTableSelectAll,
+  ForTableSortHeader,
   type TableSelectionMode,
   type TableSelectionBehavior,
+  type TableSortDescriptor,
+  type TableSortDirection,
 } from 'forty-cdk';
 
 @Component({
@@ -23,6 +26,7 @@ import {
     ForTableCell,
     ForTableRowSelector,
     ForTableSelectAll,
+    ForTableSortHeader,
   ],
   styles: [
     `
@@ -81,14 +85,46 @@ import {
         [(selection)]="selection"
       >
         <div data-testid="header-row" forTableHeaderRow>
-          <div data-testid="header-name" forTableHeaderCell name="name" sticky>
+          <div
+            data-testid="header-name"
+            forTableHeaderCell
+            name="name"
+            sticky
+            forTableSortHeader
+            column="name"
+            [sortable]="sortable()"
+            [direction]="directionFor('name')"
+            (sortChange)="onSort($event)"
+          >
             @if (selectionMode() !== 'none') {
               <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
             }
             Name
           </div>
-          <div data-testid="header-role" forTableHeaderCell name="role">Role</div>
-          <div data-testid="header-dept" forTableHeaderCell name="dept">Department</div>
+          <div
+            data-testid="header-role"
+            forTableHeaderCell
+            name="role"
+            forTableSortHeader
+            column="role"
+            [sortable]="sortable()"
+            [direction]="directionFor('role')"
+            (sortChange)="onSort($event)"
+          >
+            Role
+          </div>
+          <div
+            data-testid="header-dept"
+            forTableHeaderCell
+            name="dept"
+            forTableSortHeader
+            column="dept"
+            [sortable]="sortable()"
+            [direction]="directionFor('dept')"
+            (sortChange)="onSort($event)"
+          >
+            Department
+          </div>
         </div>
         @for (row of rows; track row.id; let r = $index) {
           <div forTableRow [value]="row.id">
@@ -128,6 +164,22 @@ export class TableFixture {
       'toggle',
   );
   protected readonly selection = signal<readonly unknown[]>([]);
+
+  protected readonly sortable = signal(
+    this.route.snapshot.queryParamMap.get('sortable') === 'true',
+  );
+  protected readonly sortDescriptor = signal<TableSortDescriptor>({
+    column: '',
+    direction: 'none',
+  });
+
+  protected directionFor(column: string): TableSortDirection {
+    return this.sortDescriptor().column === column ? this.sortDescriptor().direction : 'none';
+  }
+
+  protected onSort(descriptor: TableSortDescriptor): void {
+    this.sortDescriptor.set(descriptor);
+  }
 
   protected readonly rows = Array.from({ length: 20 }, (_, i) => ({
     id: i,

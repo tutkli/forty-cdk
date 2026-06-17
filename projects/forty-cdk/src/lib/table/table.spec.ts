@@ -15,6 +15,11 @@ import {
   type TableSelectionMode,
   type TableSelectionBehavior,
 } from './table-context';
+import {
+  ForTableSortHeader,
+  type TableSortDescriptor,
+  type TableSortDirection,
+} from './table-sort-header';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -146,6 +151,35 @@ class SelectionTableHost {
     { id: 2, name: 'Bob' },
     { id: 3, name: 'Carol' },
   ];
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableSortHeader],
+  template: `
+    <div forTable>
+      <div forTableHeaderRow>
+        <div
+          forTableHeaderCell
+          name="name"
+          forTableSortHeader
+          column="name"
+          [(direction)]="direction"
+          [disableClear]="disableClear()"
+          [sortable]="sortable()"
+          (sortChange)="lastSort = $event"
+          data-testid="sort-name"
+        >
+          Name
+        </div>
+      </div>
+    </div>
+  `,
+})
+class SortTableHost {
+  readonly direction = signal<TableSortDirection>('none');
+  readonly disableClear = signal(false);
+  readonly sortable = signal(true);
+  lastSort: TableSortDescriptor | null = null;
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -607,6 +641,14 @@ describe('ForTable', () => {
       expect(row1.getAttribute('data-selected')).toBe('');
       expect(selector1.getAttribute('data-state')).toBe('checked');
     });
+
+    it('clicking the sort header reflects aria-sort without Zone.js', () => {
+      const { el, flush } = renderHost(SortTableHost);
+      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
   });
 
   describe('selection', () => {
@@ -834,6 +876,118 @@ describe('ForTable', () => {
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
+    });
+  });
+
+  describe('sort headers', () => {
+    const sortHeader = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+
+    it('aria-sort and data-sorted are absent initially (direction none)', () => {
+      const { el } = renderHost(SortTableHost);
+      const h = sortHeader(el);
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+      expect(h.hasAttribute('data-sorted')).toBe(false);
+    });
+
+    it('tabindex="0" when sortable (default)', () => {
+      const { el } = renderHost(SortTableHost);
+      expect(sortHeader(el).getAttribute('tabindex')).toBe('0');
+    });
+
+    it('click cycles aria-sort: absent → ascending → descending → absent', () => {
+      const { el, flush } = renderHost(SortTableHost);
+      const h = sortHeader(el);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('sortChange fires with correct payload and data-sorted mirrors direction', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      const h = sortHeader(el);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+      expect(h.getAttribute('data-sorted')).toBe('ascending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
+      expect(h.getAttribute('data-sorted')).toBe('descending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'none' });
+      expect(h.hasAttribute('data-sorted')).toBe(false);
+    });
+
+    it('disableClear=true: third click yields ascending again, never none', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      instance.disableClear.set(true);
+      flush();
+      const h = sortHeader(el);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('Enter activates the sort header', () => {
+      const { el, flush } = renderHost(SortTableHost);
+      const h = sortHeader(el);
+      press(h, 'Enter');
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('Space activates and prevents default', () => {
+      const { el, flush } = renderHost(SortTableHost);
+      const h = sortHeader(el);
+      const e = press(h, ' ');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('sortable=false: no tabindex, no aria-sort even when direction is ascending, click is no-op', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      instance.sortable.set(false);
+      instance.direction.set('ascending');
+      flush();
+      const h = sortHeader(el);
+      expect(h.hasAttribute('tabindex')).toBe(false);
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.lastSort).toBeNull();
+    });
+
+    it('controlled initial value: setting direction to descending reflects aria-sort without emitting sortChange', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      instance.direction.set('descending');
+      flush();
+      expect(sortHeader(el).getAttribute('aria-sort')).toBe('descending');
+      expect(instance.lastSort).toBeNull();
     });
   });
 });

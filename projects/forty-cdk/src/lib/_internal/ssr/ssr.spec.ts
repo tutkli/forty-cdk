@@ -123,6 +123,7 @@ import { ForTableCell } from '../../table/table-cell';
 import { ForTableHeaderCell } from '../../table/table-header-cell';
 import { ForTableHeaderRow } from '../../table/table-header-row';
 import { ForTableRow } from '../../table/table-row';
+import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
@@ -251,11 +252,20 @@ class TabsFixture {}
 class TableFixture {}
 
 @Component({
-  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableSortHeader,
+  ],
   template: `
     <div forTable mode="grid" aria-label="People" [rowCount]="100" selectionMode="multiple">
       <div forTableHeaderRow>
-        <div forTableHeaderCell name="name">Name</div>
+        <div forTableHeaderCell name="name" forTableSortHeader column="name" direction="ascending">
+          Name
+        </div>
         <div forTableHeaderCell name="role">Role</div>
       </div>
       <div forTableRow [value]="1">
@@ -1373,5 +1383,8 @@ describe('SSR smoke tests', () => {
     const cell = f.nativeElement.querySelector('[forTableCell]') as HTMLElement;
     expect(cell.getAttribute('aria-colindex')).toBe('1');
     expect(cell.getAttribute('role')).toBe('gridcell');
+    const headerName = f.nativeElement.querySelector('[forTableHeaderCell]') as HTMLElement;
+    expect(headerName.getAttribute('aria-sort')).toBe('ascending');
+    expect(headerName.getAttribute('tabindex')).toBe('0');
   });
 });
