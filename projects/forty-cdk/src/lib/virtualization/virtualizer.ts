@@ -1,0 +1,181 @@
+import { isPlatformBrowser } from '@angular/common';
+import {
+  DestroyRef,
+  type Signal,
+  computed,
+  effect,
+  inject,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
+import {
+  Virtualizer,
+  elementScroll,
+  observeElementOffset,
+  observeElementRect,
+} from '@tanstack/virtual-core';
+import type {
+  VirtualItem as CoreVirtualItem,
+  VirtualizerOptions as CoreVirtualizerOptions,
+} from '@tanstack/virtual-core';
+
+import { afterNextRenderCancellable } from '../_internal/after-next-render-cancellable/after-next-render-cancellable';
+
+/** Default number of items rendered beyond the visible window on each side. */
+const DEFAULT_OVERSCAN = 5;
+
+/**
+ * Configuration for {@link injectVirtualizer}. The consumer owns the data and
+ * the DOM; the virtualizer only computes which slice of the data is visible.
+ */
+export interface VirtualizerOptions {
+  /** Reactive total number of items in the list. */
+  readonly count: Signal<number>;
+  /**
+   * Estimated size, in CSS pixels, of the item at `index` along the scroll
+   * axis (height when vertical, width when horizontal). Used until an item is
+   * measured. Should be a stable function reference.
+   */
+  readonly estimateSize: (index: number) => number;
+  /** Reactive reference to the scroll container element (e.g. a `viewChild`). */
+  readonly scrollElement: Signal<HTMLElement | null>;
+  /** Scroll axis. Defaults to `'vertical'`. */
+  readonly orientation?: 'vertical' | 'horizontal';
+  /**
+   * Number of items to render beyond the visible window on each side, to
+   * reduce blank flashes while scrolling. Defaults to `5`.
+   */
+  readonly overscan?: number;
+  /** Stable key for the item at `index`. Defaults to the index itself. */
+  readonly getItemKey?: (index: number) => string | number;
+}
+
+/** A single item in the currently rendered window. */
+export interface VirtualItem {
+  /** Index of the item in the full list. */
+  readonly index: number;
+  /** Stable key (from `getItemKey`, or the index). */
+  readonly key: string | number;
+  /** Offset of the item from the start of the scroll container, in pixels. */
+  readonly start: number;
+  /** Size of the item along the scroll axis, in pixels. */
+  readonly size: number;
+}
+
+/** Reactive handle returned by {@link injectVirtualizer}. */
+export interface ForVirtualizer {
+  /** The items in the currently visible window plus overscan. */
+  readonly virtualItems: Signal<readonly VirtualItem[]>;
+  /** Total scroll size of all items, in pixels (drives the spacer element). */
+  readonly totalSize: Signal<number>;
+  /** Scroll the container so the item at `index` is in view. */
+  scrollToIndex(index: number, options?: { align?: 'start' | 'center' | 'end' | 'auto' }): void;
+  /** Scroll the container to an absolute pixel offset. */
+  scrollToOffset(offset: number): void;
+  /** Record the measured size of a rendered item element (dynamic sizes). */
+  measureElement(element: HTMLElement): void;
+}
+
+function estimateTotal(count: number, estimateSize: (index: number) => number): number {
+  let total = 0;
+  for (let index = 0; index < count; index++) {
+    total += estimateSize(index);
+  }
+  return total;
+}
+
+function toVirtualItem(item: CoreVirtualItem): VirtualItem {
+  return {
+    index: item.index,
+    key: item.key as string | number,
+    start: item.start,
+    size: item.size,
+  };
+}
+
+/**
+ * Headless windowing core: given a reactive item count, a size estimator and a
+ * scroll container, returns the slice of items currently visible (plus
+ * overscan), the total scroll size, and imperative scroll/measure helpers. The
+ * consumer renders the items with their own `@for` and applies the position
+ * transform — this primitive owns no DOM.
+ *
+ * Backed by `@tanstack/virtual-core`. SSR-safe: off-browser it returns an empty
+ * window and the estimate-based total without touching `document`/`window`; the
+ * first real window is produced after the first browser render.
+ *
+ * Must be called from an injection context (a component/directive constructor
+ * or field initializer).
+ *
+ * @param options Reactive count, size estimator, scroll element and tuning.
+ * @returns A {@link ForVirtualizer} handle of signals + imperative methods.
+ */
+export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return {
+      virtualItems: signal<readonly VirtualItem[]>([]).asReadonly(),
+      totalSize: computed(() => estimateTotal(options.count(), options.estimateSize)),
+      scrollToIndex: () => undefined,
+      scrollToOffset: () => undefined,
+      measureElement: () => undefined,
+    };
+  }
+
+  const horizontal = (options.orientation ?? 'vertical') === 'horizontal';
+  const overscan = options.overscan ?? DEFAULT_OVERSCAN;
+  const notify = signal(0, { equal: () => false });
+  const mounted = signal(false);
+
+  const buildCoreOptions = (
+    count: number,
+    scrollElement: HTMLElement | null,
+  ): CoreVirtualizerOptions<HTMLElement, HTMLElement> => ({
+    count,
+    getScrollElement: () => scrollElement,
+    estimateSize: options.estimateSize,
+    getItemKey: options.getItemKey,
+    overscan,
+    horizontal,
+    scrollToFn: elementScroll,
+    observeElementRect,
+    observeElementOffset,
+    onChange: () => notify.set(0),
+  });
+
+  const virtualizer = new Virtualizer<HTMLElement, HTMLElement>(
+    buildCoreOptions(options.count(), options.scrollElement()),
+  );
+
+  effect(() => {
+    virtualizer.setOptions(buildCoreOptions(options.count(), options.scrollElement()));
+    virtualizer._willUpdate();
+    notify.set(0);
+  });
+
+  let cleanup: (() => void) | undefined;
+  afterNextRenderCancellable(() => {
+    cleanup = virtualizer._didMount();
+    mounted.set(true);
+  });
+  inject(DestroyRef).onDestroy(() => cleanup?.());
+
+  const virtualItems = computed<readonly VirtualItem[]>(() => {
+    notify();
+    if (!mounted()) return [];
+    return virtualizer.getVirtualItems().map(toVirtualItem);
+  });
+
+  const totalSize = computed<number>(() => {
+    notify();
+    if (!mounted()) return estimateTotal(options.count(), options.estimateSize);
+    return virtualizer.getTotalSize();
+  });
+
+  return {
+    virtualItems,
+    totalSize,
+    scrollToIndex: (index, scrollOptions) => virtualizer.scrollToIndex(index, scrollOptions),
+    scrollToOffset: (offset) => virtualizer.scrollToOffset(offset),
+    measureElement: (element) => virtualizer.measureElement(element),
+  };
+}

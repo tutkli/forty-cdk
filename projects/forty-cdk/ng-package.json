@@ -4,5 +4,5 @@
   "lib": {
     "entryFile": "src/public-api.ts"
   },
-  "allowedNonPeerDependencies": ["@floating-ui/dom"]
+  "allowedNonPeerDependencies": ["@floating-ui/dom", "@tanstack/virtual-core"]
 }

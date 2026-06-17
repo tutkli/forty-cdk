@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.0",
+    "@tanstack/virtual-core": "^3.17.1",
     "tslib": "^2.3.0"
   },
   "sideEffects": false

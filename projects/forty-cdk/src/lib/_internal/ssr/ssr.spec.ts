@@ -1,10 +1,13 @@
 import { ɵPLATFORM_SERVER_ID, isPlatformServer } from '@angular/common';
 import {
   Component,
+  type ElementRef,
   PLATFORM_ID,
+  computed,
   provideZonelessChangeDetection,
   signal,
   type Type,
+  viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -127,6 +130,7 @@ import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForTableColumnResizer } from '../../table/table-column-resizer';
 import { ForTableColumnReorder } from '../../table/table-column-reorder';
 import { ForTableRowReorder } from '../../table/table-row-reorder';
+import { injectVirtualizer } from '../../virtualization/virtualizer';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
@@ -1096,6 +1100,35 @@ class NumberInputFixture {
 })
 class ToolbarFixture {}
 
+@Component({
+  template: `
+    <div #scroll style="overflow:auto; height:200px">
+      <div [style.height.px]="v.totalSize()" style="position:relative">
+        @for (item of v.virtualItems(); track item.key) {
+          <div
+            [attr.data-index]="item.index"
+            [attr.aria-setsize]="count()"
+            [attr.aria-posinset]="item.index + 1"
+            [style.height.px]="item.size"
+          >
+            Row {{ item.index }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizerFixture {
+  readonly count = signal(1000);
+  readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+  readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+  readonly v = injectVirtualizer({
+    count: this.count,
+    estimateSize: () => 40,
+    scrollElement: this.scrollElement,
+  });
+}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -1145,6 +1178,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   PaneResizerFixture,
   NumberInputFixture,
   ToolbarFixture,
+  VirtualizerFixture,
 ];
 
 function configureServer(): void {
@@ -1384,6 +1418,14 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forHoverCardContent]')).toBeNull();
+  });
+
+  it('Virtualizer renders an empty window with the estimate total server-side', () => {
+    const f = TestBed.createComponent(VirtualizerFixture);
+    f.detectChanges();
+    const spacer = f.nativeElement.querySelector('[style*="position: relative"]') as HTMLElement;
+    expect(f.nativeElement.querySelectorAll('[data-index]').length).toBe(0);
+    expect(spacer.style.height).toBe('40000px');
   });
 
   it('Table grid mode renders role=grid + aria indices server-side', () => {
