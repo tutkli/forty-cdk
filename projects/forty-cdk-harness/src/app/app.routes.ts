@@ -207,6 +207,11 @@ export const routes: Routes = [
       import('./fixtures/combobox-virtualized.fixture').then((m) => m.ComboboxVirtualizedFixture),
   },
   {
+    path: 'listbox-virtualized',
+    loadComponent: () =>
+      import('./fixtures/listbox-virtualized.fixture').then((m) => m.ListboxVirtualizedFixture),
+  },
+  {
     path: 'virtualization',
     loadComponent: () =>
       import('./fixtures/virtualization.fixture').then((m) => m.VirtualizationFixture),

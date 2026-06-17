@@ -183,14 +183,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Data attributes
 
-| Piece                         | Attribute          | Values                     |
-| ----------------------------- | ------------------ | -------------------------- |
-| `[forListbox]`                | `data-orientation` | `horizontal` \| `vertical` |
-| `[forListbox]`                | `data-disabled`    | present \| absent          |
-| `[forListboxOption]`          | `data-state`       | `checked` \| `unchecked`   |
-| `[forListboxOption]`          | `data-highlighted` | present \| absent          |
-| `[forListboxOption]`          | `data-disabled`    | present \| absent          |
-| `[forListboxOptionIndicator]` | `data-state`       | `checked` \| `unchecked`   |
+| Piece                         | Attribute          | Values                     | Notes                                                     |
+| ----------------------------- | ------------------ | -------------------------- | --------------------------------------------------------- |
+| `[forListbox]`                | `data-orientation` | `horizontal` \| `vertical` |                                                           |
+| `[forListbox]`                | `data-disabled`    | present \| absent          |                                                           |
+| `[forListboxOption]`          | `data-state`       | `checked` \| `unchecked`   |                                                           |
+| `[forListboxOption]`          | `data-highlighted` | present \| absent          | Works in both roving-tabindex and activedescendant paths. |
+| `[forListboxOption]`          | `data-disabled`    | present \| absent          |                                                           |
+| `[forListboxOptionIndicator]` | `data-state`       | `checked` \| `unchecked`   |                                                           |
 
 ```css
 .listbox-option[data-highlighted] {
@@ -205,6 +205,8 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Keyboard
 
 ### Single mode (and the basics for both)
+
+> **Virtualized path (`[totalCount]` set):** the listbox container is always the single Tab stop. Arrow / Home / End / Enter / Space all fire on the container (not individual options). See the [Virtualization](#virtualization) section for the full contract.
 
 - **Tab** moves focus into / out of the listbox; lands on the first selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction). With several preselected options in multi mode, only the first selected one is the tab stop — the group exposes a single `tabindex="0"`. When no option can serve as that entry point (the listbox is empty, or every option is disabled), the listbox host itself becomes the single Tab stop (`tabindex="0"`) so the control stays reachable; a disabled listbox is never tabbable.
 - **ArrowDown / ArrowUp** in vertical, **ArrowRight / ArrowLeft** in horizontal: move focus, wrap-around, skip disabled.
@@ -229,6 +231,108 @@ The **anchor** for `Shift+Space` is set on every unmodified activation (click, p
 
 When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection — same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
 
+## Virtualization
+
+Setting `[totalCount]` on `[forListbox]` enables the **activedescendant focus model**: the listbox container becomes the single Tab stop (`tabindex="0"`) and focus never moves to individual options. Keyboard navigation and selection work exactly as in the roving-tabindex path, but the active option is tracked by `aria-activedescendant` instead of DOM focus, so the active row can be unmounted as it scrolls out of the window.
+
+Without `[totalCount]` (the default), the roving-tabindex model is used unchanged.
+
+### Inputs and output
+
+| Input / Output                 | Type                                     | Description                                                                                                                  |
+| ------------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `[totalCount]`                 | `number \| undefined`                    | Total number of items in the source data. Setting this switches to the activedescendant model.                               |
+| `[visibleRange]`               | `readonly [number, number] \| undefined` | Inclusive-exclusive `[start, end)` range of rendered options. Provided by `injectVirtualizer`.                               |
+| `[forListboxOption][posInSet]` | `number \| null`                         | Zero-based absolute position of this option in the full data. Required in the virtualized path.                              |
+| `(scrollToIndex)`              | `number`                                 | Emitted when navigation lands on an off-window option. Pass to `injectVirtualizer`'s `scrollToIndex` to recenter the window. |
+
+### Focus-model switch
+
+| Mode                                | Tab stop          | Active option tracking                       |
+| ----------------------------------- | ----------------- | -------------------------------------------- |
+| Roving-tabindex (default)           | Active option     | DOM focus + `data-highlighted`               |
+| Activedescendant (`totalCount` set) | Listbox container | `aria-activedescendant` + `data-highlighted` |
+
+Both paths reflect `data-highlighted=""` on the active option, so consumer CSS for hover/focus rings works the same way in either mode.
+
+### Navigation flow
+
+1. Consumer provides `[totalCount]`, `[visibleRange]`, and handles `(scrollToIndex)`.
+2. On focus, the listbox seeds `aria-activedescendant` to the first selected enabled option, or the first enabled option ordered by `posInSet`.
+3. Arrow / Home / End navigation computes the target index against the full `totalCount`. If the target is inside `[visibleRange]`, `aria-activedescendant` is set immediately. If outside, `(scrollToIndex)` is emitted with the target index.
+4. When the consumer's virtualizer scrolls and the target option mounts, the listbox resolves the pending navigation and sets `aria-activedescendant`.
+
+### Example
+
+```ts
+import {
+  ChangeDetectionStrategy,
+  Component,
+  type ElementRef,
+  computed,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { ForListbox, ForListboxOption, injectVirtualizer } from 'forty-cdk';
+
+interface Item {
+  readonly id: string;
+  readonly label: string;
+}
+
+@Component({
+  selector: 'demo-virtualized-listbox',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForListbox, ForListboxOption],
+  template: `
+    <div
+      forListbox
+      #scroll
+      aria-label="Virtualized items"
+      [(value)]="picked"
+      [totalCount]="items.length"
+      [visibleRange]="v.range()"
+      (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
+      style="overflow: auto; max-height: 300px; position: relative"
+    >
+      <div [style.height.px]="v.totalSize()" style="position: relative">
+        @for (vi of v.virtualItems(); track vi.key) {
+          <button
+            type="button"
+            forListboxOption
+            [value]="items[vi.index]!.id"
+            [posInSet]="vi.index"
+            [style.transform]="'translateY(' + vi.start + 'px)'"
+            style="position: absolute; left: 0; right: 0;"
+          >
+            {{ items[vi.index]!.label }}
+          </button>
+        }
+      </div>
+    </div>
+  `,
+})
+export class DemoVirtualizedListbox {
+  protected readonly items: readonly Item[] = Array.from({ length: 10000 }, (_, i) => ({
+    id: `item-${i}`,
+    label: `Item ${i}`,
+  }));
+  protected readonly picked = signal<readonly string[]>([]);
+  private readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+  protected readonly v = injectVirtualizer({
+    count: computed(() => this.items.length),
+    estimateSize: () => 36,
+    scrollElement: this.scrollElement,
+  });
+}
+```
+
+### Intentional limitations
+
+- **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
+- **Typeahead** matches only the currently rendered window. Options outside the visible range cannot be reached by typing.
+
 ## Self-hiding pieces
 
 `[forListboxOptionIndicator]` hides itself while its option is unselected with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree. Because the inline style beats any author selector rule, you can give the indicator a custom `display` (e.g. `display: inline-flex` for a check icon) without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the option is unselected, and your `display` applies once it's selected.
@@ -239,7 +343,8 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
-- **`data-highlighted=""`** is reflected on the option that is the current roving-tabindex active item — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`.
+- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`.
+- **Virtualized path**: the listbox publishes `aria-activedescendant` on the container and each rendered option carries `aria-setsize` / `aria-posinset` so screen readers announce the true list size even when only a window is mounted.
 
 ## Wrapping in a design system
 

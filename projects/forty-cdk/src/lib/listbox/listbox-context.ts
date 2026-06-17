@@ -9,6 +9,8 @@ export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
   readonly value: Signal<T>;
   readonly disabled: Signal<boolean>;
+  readonly id: Signal<string>;
+  readonly posInSet: Signal<number | null>;
 }
 
 /**
@@ -42,6 +44,19 @@ export interface ForListboxContext<T = unknown> {
   readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
   readonly itemToFormValue: Signal<(item: T) => string>;
+
+  /**
+   * Full source length when virtualizing, `undefined` in the roving-tabindex
+   * path. Drives the option's `aria-setsize` / `aria-posinset` and the
+   * option's focus-model branch.
+   */
+  readonly totalCount: Signal<number | undefined>;
+  /**
+   * The active option's `id` when using the activedescendant focus model,
+   * `null` in the roving-tabindex path. Options read this to compute
+   * `data-highlighted`.
+   */
+  readonly activeDescendantId: Signal<string | null>;
 
   isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace in single-mode. No-op on disabled / readonly. */
@@ -96,6 +111,13 @@ export interface ForListboxContext<T = unknown> {
   optionTabindex(el: HTMLElement): -1 | 0 | null;
   /** Mark `el` as the roving-tabindex active option (called on option focus). */
   setActiveOption(el: HTMLElement): void;
+
+  /**
+   * Called by an option on click. In the virtualized path, moves
+   * `aria-activedescendant` to that option and returns DOM focus to the
+   * container. A no-op in the roving-tabindex path.
+   */
+  notifyOptionClick(optionId: string): void;
 
   registerOption(handle: ForListboxOptionHandle<T>): void;
   unregisterOption(handle: ForListboxOptionHandle<T>): void;
