@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture } from './_helpers';
 
 test.describe('Table (roles + sticky header)', () => {
   test('root has role=grid, header row has role=row, data cell has role=gridcell', async ({
@@ -68,5 +68,68 @@ test.describe('Table (roles + sticky header)', () => {
     await gotoFixture(page, 'table');
     await expect(el(page, 'header-role')).not.toHaveAttribute('data-sticky');
     await expect(el(page, 'header-dept')).not.toHaveAttribute('data-sticky');
+  });
+});
+
+test.describe('Table (grid keyboard navigation)', () => {
+  test('Tab enters the grid on the first cell as a single tab stop, Tab leaves', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'cell-0-name'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+  });
+
+  test('ArrowRight / ArrowLeft move focus horizontally', async ({ page }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'cell-0-role'));
+    await page.keyboard.press('ArrowLeft');
+    await expectFocused(el(page, 'cell-0-name'));
+  });
+
+  test('ArrowDown / ArrowUp move focus vertically', async ({ page }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'cell-1-name'));
+    await page.keyboard.press('ArrowUp');
+    await expectFocused(el(page, 'cell-0-name'));
+  });
+
+  test('Home / End jump to the row ends; Ctrl+Home / Ctrl+End to the grid corners', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('End');
+    await expectFocused(el(page, 'cell-0-dept'));
+    await page.keyboard.press('Home');
+    await expectFocused(el(page, 'cell-0-name'));
+    await page.keyboard.press('Control+End');
+    await expectFocused(el(page, 'cell-19-dept'));
+    await page.keyboard.press('Control+Home');
+    await expectFocused(el(page, 'cell-0-name'));
+  });
+
+  test('ArrowDown skips a disabled cell', async ({ page }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-role').focus();
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'cell-2-role'));
+  });
+
+  test('Shift+Tab re-enters the grid on the last focused cell', async ({ page }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'cell-0-role'));
+    await el(page, 'after').focus();
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'cell-0-role'));
   });
 });

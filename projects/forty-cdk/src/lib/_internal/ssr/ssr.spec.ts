@@ -251,6 +251,23 @@ class TabsFixture {}
 class TableFixture {}
 
 @Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
+  template: `
+    <div forTable mode="grid" aria-label="People" [rowCount]="100">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">Name</div>
+        <div forTableHeaderCell name="role">Role</div>
+      </div>
+      <div forTableRow>
+        <div forTableCell name="name">Ada</div>
+        <div forTableCell name="role">Engineer</div>
+      </div>
+    </div>
+  `,
+})
+class TableGridFixture {}
+
+@Component({
   imports: [
     ForCarousel,
     ForCarouselDrag,
@@ -1057,6 +1074,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   AccordionFixture,
   TabsFixture,
   TableFixture,
+  TableGridFixture,
   StepperFixture,
   StepperCompletedFixture,
   CarouselFixture,
@@ -1339,5 +1357,19 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forHoverCardContent]')).toBeNull();
+  });
+
+  it('Table grid mode renders role=grid + aria indices server-side', () => {
+    const f = TestBed.createComponent(TableGridFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
+    expect(root.getAttribute('role')).toBe('grid');
+    expect(root.getAttribute('aria-rowcount')).toBe('100');
+    expect(root.getAttribute('aria-colcount')).toBe('2');
+    const row = f.nativeElement.querySelector('[forTableRow]') as HTMLElement;
+    expect(row.getAttribute('aria-rowindex')).toBe('1');
+    const cell = f.nativeElement.querySelector('[forTableCell]') as HTMLElement;
+    expect(cell.getAttribute('aria-colindex')).toBe('1');
+    expect(cell.getAttribute('role')).toBe('gridcell');
   });
 });

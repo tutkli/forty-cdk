@@ -46,6 +46,7 @@ import {
     `,
   ],
   template: `
+    <button data-testid="before">before</button>
     <div class="scroll-container" data-testid="scroll-container">
       <div data-testid="root" forTable mode="grid" ariaLabel="Team members">
         <div data-testid="header-row" forTableHeaderRow>
@@ -53,15 +54,27 @@ import {
           <div data-testid="header-role" forTableHeaderCell name="role">Role</div>
           <div data-testid="header-dept" forTableHeaderCell name="dept">Department</div>
         </div>
-        @for (row of rows; track row.id) {
+        @for (row of rows; track row.id; let r = $index) {
           <div forTableRow>
-            <div forTableCell name="name">{{ row.name }}</div>
-            <div forTableCell name="role">{{ row.role }}</div>
-            <div forTableCell name="dept">{{ row.dept }}</div>
+            <div forTableCell name="name" [attr.data-testid]="'cell-' + r + '-name'">
+              {{ row.name }}
+            </div>
+            <div
+              forTableCell
+              name="role"
+              [disabled]="r === 1"
+              [attr.data-testid]="'cell-' + r + '-role'"
+            >
+              {{ row.role }}
+            </div>
+            <div forTableCell name="dept" [attr.data-testid]="'cell-' + r + '-dept'">
+              {{ row.dept }}
+            </div>
           </div>
         }
       </div>
     </div>
+    <button data-testid="after">after</button>
   `,
 })
 export class TableFixture {
