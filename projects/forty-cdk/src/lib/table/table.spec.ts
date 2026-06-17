@@ -2,6 +2,8 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { installObserverPolyfills, renderHost } from '../../test-utils';
+import { ForDraggable } from '../drag-drop/draggable';
+import { moveItemInArray } from '../drag-drop/move-item-in-array';
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';
 import { ForTableHeaderCell } from './table-header-cell';
@@ -21,6 +23,8 @@ import {
   type TableSortDirection,
 } from './table-sort-header';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
+import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
+import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -40,6 +44,66 @@ function pointerEvent(
   Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
   Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
   return ev;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableColumnReorder,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable mode="grid">
+      <div
+        forTableHeaderRow
+        forTableColumnReorder
+        orientation="horizontal"
+        (columnReorder)="lastColumn = $event; columns.set($event.columns)"
+      >
+        @for (col of columns(); track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forDraggable
+            [dragData]="col"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+          </div>
+        }
+      </div>
+      <div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
+        @for (row of rows(); track row.id) {
+          <div
+            forTableRow
+            [value]="row.id"
+            forDraggable
+            [dragData]="row.id"
+            [attr.data-testid]="'row-' + row.id"
+          >
+            @for (col of columns(); track col) {
+              <div forTableCell [name]="col">{{ row.id }}-{{ col }}</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ReorderTableHost {
+  readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
+  readonly rows = signal([{ id: 0 }, { id: 1 }, { id: 2 }]);
+  lastColumn: TableColumnReorderDescriptor | null = null;
+  lastRow: TableRowReorderDescriptor | null = null;
+  onRowReorder(d: TableRowReorderDescriptor): void {
+    this.lastRow = d;
+    this.rows.update((r) => moveItemInArray(r, d.from, d.to));
+  }
 }
 
 @Component({
@@ -1098,6 +1162,119 @@ describe('ForTable', () => {
       flush();
       expect(instance.width()).toBe(110);
       expect(r.getAttribute('aria-valuenow')).toBe('110');
+    });
+  });
+
+  describe('column reorder', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('keyboard lift→move→drop emits the new name order', async () => {
+      const { el, instance, flush } = renderHost(ReorderTableHost);
+      await flush();
+      const header = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      header.focus();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastColumn).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
+    });
+
+    it('aria-colindex recomputes after the move', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      await flush();
+      const header = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      header.focus();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      const headerCellsAfter = Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]'));
+      expect(headerCellsAfter[0].getAttribute('data-column')).toBe('role');
+      expect(headerCellsAfter[1].getAttribute('data-column')).toBe('name');
+      expect(headerCellsAfter[2].getAttribute('data-column')).toBe('dept');
+      const nameCell = el.querySelector<HTMLElement>('[forTableCell][data-column="name"]')!;
+      expect(nameCell.getAttribute('aria-colindex')).toBe('2');
+    });
+
+    it('the wrapped header row reflects data-orientation="horizontal"', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      await flush();
+      const headerRow = el.querySelector<HTMLElement>('[forTableHeaderRow]')!;
+      const rowgroup = el.querySelector<HTMLElement>('[forTableRowReorder]')!;
+      expect(headerRow.getAttribute('data-orientation')).toBe('horizontal');
+      expect(rowgroup.getAttribute('data-orientation')).toBe('vertical');
+    });
+  });
+
+  describe('row reorder', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('keyboard lift→move→drop emits {from,to} and reindexes', async () => {
+      const { el, instance, flush } = renderHost(ReorderTableHost);
+      await flush();
+      const row0 = el.querySelector<HTMLElement>('[data-testid="row-0"]')!;
+      row0.focus();
+      row0.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      row0.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+      );
+      row0.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 0, to: 1 });
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      expect(allRows[0].getAttribute('data-testid')).toBe('row-1');
+      expect(allRows[1].getAttribute('data-testid')).toBe('row-0');
+      expect(allRows[1].getAttribute('aria-rowindex')).toBe('2');
+    });
+  });
+
+  describe('column reorder zoneless', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('lift→move→drop emits the new name order without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const instance = fixture.componentInstance;
+      const header = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      header.focus();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      expect(instance.lastColumn).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
     });
   });
 
