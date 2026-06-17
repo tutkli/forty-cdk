@@ -87,6 +87,10 @@ export const routes: Routes = [
       import('./demos/scroll-area/scroll-area.page').then((m) => m.ScrollAreaPage),
   },
   {
+    path: 'table',
+    loadComponent: () => import('./demos/table/table.page').then((m) => m.TablePage),
+  },
+  {
     path: 'popover',
     loadComponent: () => import('./demos/popover/popover.page').then((m) => m.PopoverPage),
   },
