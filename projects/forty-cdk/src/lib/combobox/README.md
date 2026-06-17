@@ -404,29 +404,27 @@ How navigation flows when virtualizing:
 Typeahead, inline autocomplete, and `selected().label` all read from a merged snapshot that retains entries for options scrolled out of view, so completion against off-screen labels still works.
 
 ```html
-@let virtualItems = virtualizer.virtualItems(); @let total = virtualizer.totalCount();
-
 <div
   forCombobox
   [(query)]="query"
   [(value)]="value"
   [(open)]="open"
-  [totalCount]="total"
-  [visibleRange]="virtualizer.range()"
-  (scrollToIndex)="virtualizer.scrollToIndex($event)"
+  [totalCount]="filtered().length"
+  [visibleRange]="v.range()"
+  (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
 >
   <input forComboboxInput placeholder="Search 100k items…" />
   @if (open()) {
-  <div forComboboxContent #scroll>
-    <div [style.height.px]="virtualizer.totalSize()" style="position: relative">
-      @for (vi of virtualItems; track vi.key) {
+  <div forComboboxContent #scroll style="overflow: auto; max-height: 320px">
+    <div [style.height.px]="v.totalSize()" style="position: relative">
+      @for (vi of v.virtualItems(); track vi.key) {
       <div
         forComboboxOption
         [value]="filtered()[vi.index]!.id"
         [label]="filtered()[vi.index]!.label"
         [posInSet]="vi.index"
         [style.transform]="'translateY(' + vi.start + 'px)'"
-        style="position: absolute; left: 0; right: 0;"
+        style="position: absolute; left: 0; right: 0"
       >
         {{ filtered()[vi.index]!.label }}
       </div>
@@ -437,7 +435,22 @@ Typeahead, inline autocomplete, and `selected().label` all read from a merged sn
 </div>
 ```
 
-The above sketches a `@tanstack/virtual` integration: `virtualizer.virtualItems()` is the windowed slice, `virtualizer.totalSize()` is the spacer height, and `virtualizer.scrollToIndex(idx)` brings an absolute index into view. The directive does not own the scroll container — the consumer's virtualizer does.
+```ts
+readonly query = signal('');
+readonly value = signal<readonly string[]>([]);
+readonly open = signal(false);
+// `filtered()` is the consumer's own filtered source array (see "Filtering is the consumer's job").
+
+readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+readonly v = injectVirtualizer({
+  count: computed(() => this.filtered().length),
+  estimateSize: () => 36,
+  scrollElement: this.scrollElement,
+});
+```
+
+This uses the library's own [`injectVirtualizer`](../virtualization/README.md) core: `v.virtualItems()` is the windowed slice, `v.totalSize()` the spacer height, `v.range()` feeds `[visibleRange]`, and `v.scrollToIndex(idx)` brings an absolute index into view. The directive does not own the scroll container — the consumer's virtualizer does (here `[forComboboxContent]` is the scroll element).
 
 When `[totalCount]` is omitted, the directive falls back to `options().length` and behaves exactly as before — `aria-setsize` is left to the platform default and navigation never emits `(scrollToIndex)`.
 

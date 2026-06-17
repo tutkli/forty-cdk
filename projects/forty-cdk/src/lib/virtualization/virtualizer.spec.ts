@@ -240,6 +240,48 @@ describe('injectVirtualizer', () => {
     expect(fixture.componentInstance.v.totalSize()).toBe(100 + 999 * 40);
   });
 
+  it('range — populated window starts at index 0 and covers the visible items', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const { v } = fixture.componentInstance;
+    const items = v.virtualItems();
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(v.range()).toEqual([items[0]!.index, items[items.length - 1]!.index + 1]);
+    expect(v.range()[0]).toBe(0);
+  });
+
+  it('range — empty / zero count returns [0, 0]', async () => {
+    @Component({
+      selector: 'range-empty-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class RangeEmptyHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(0),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+      });
+    }
+
+    const fixture = TestBed.createComponent(RangeEmptyHost);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.v.range()).toEqual([0, 0]);
+  });
+
   it('empty / zero count — virtualItems is [] and totalSize is 0', async () => {
     @Component({
       selector: 'empty-host',
@@ -306,6 +348,7 @@ describe('injectVirtualizer', () => {
       const { v } = fixture.componentInstance;
       expect(v.virtualItems()).toEqual([]);
       expect(v.totalSize()).toBe(100 * 40);
+      expect(v.range()).toEqual([0, 0]);
       const fakeEl = document.createElement('div');
       const spyScrollTo = vi.fn();
       (fakeEl as HTMLElement & { scrollTo: unknown }).scrollTo = spyScrollTo;

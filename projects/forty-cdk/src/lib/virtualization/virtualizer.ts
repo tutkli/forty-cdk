@@ -68,6 +68,14 @@ export interface ForVirtualizer {
   readonly virtualItems: Signal<readonly VirtualItem[]>;
   /** Total scroll size of all items, in pixels (drives the spacer element). */
   readonly totalSize: Signal<number>;
+  /**
+   * The inclusive-exclusive `[firstIndex, lastIndex + 1)` index window currently
+   * rendered (visible window plus overscan), or `[0, 0]` when nothing is rendered.
+   * Plugs straight into a list primitive's `[visibleRange]`-style input (e.g.
+   * `[forCombobox][visibleRange]`) so windowing composes without the consumer
+   * re-deriving the range from {@link ForVirtualizer.virtualItems}.
+   */
+  readonly range: Signal<readonly [number, number]>;
   /** Scroll the container so the item at `index` is in view. */
   scrollToIndex(index: number, options?: { align?: 'start' | 'center' | 'end' | 'auto' }): void;
   /** Scroll the container to an absolute pixel offset. */
@@ -115,6 +123,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     return {
       virtualItems: signal<readonly VirtualItem[]>([]).asReadonly(),
       totalSize: computed(() => estimateTotal(options.count(), options.estimateSize)),
+      range: computed<readonly [number, number]>(() => [0, 0]),
       scrollToIndex: () => undefined,
       scrollToOffset: () => undefined,
       measureElement: () => undefined,
@@ -171,9 +180,16 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     return virtualizer.getTotalSize();
   });
 
+  const range = computed<readonly [number, number]>(() => {
+    const items = virtualItems();
+    if (items.length === 0) return [0, 0];
+    return [items[0]!.index, items[items.length - 1]!.index + 1];
+  });
+
   return {
     virtualItems,
     totalSize,
+    range,
     scrollToIndex: (index, scrollOptions) => virtualizer.scrollToIndex(index, scrollOptions),
     scrollToOffset: (offset) => virtualizer.scrollToOffset(offset),
     measureElement: (element) => virtualizer.measureElement(element),
