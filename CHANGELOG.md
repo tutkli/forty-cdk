@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - 2026-06-17
+
+### Added
+
+- **Stepper** — new headless primitive following the WAI-ARIA Tabs pattern, with a positional-index anatomy, a `pending` / `active` / `completed` / `error` `data-state` family, manual or automatic activation, Signal Forms step-completion gating, a `ForStepperProgress` part (`role="progressbar"`), and a completed-all content slot.
+- **Drag & Drop** — new primitive for keyboard- and pointer-driven sortable lists and cross-list transfer, with a default drag preview, a `[forDragHandle]` part, consumer `ng-template` preview / placeholder, auto-scroll near container edges, a live-sort placeholder that follows the drop index, and opt-in FLIP reflow + drop-settle animations.
+- **TimePicker** — new `ForTimePicker` slot-based listbox time picker; DST-safe and date-preserving.
+- **Tree** — checkbox-selection anatomy with cascade tri-state selection, plus an expand-to-reveal helper for consumer-owned filtering.
+- **Calendar** — direct month / year navigation, a view-switching month / year picker, and month / year `<select>` convenience directives.
+- **Dialog / Drawer** — programmatic backdrops now animate on close; the drawer can portal into a container element, and the dialog's `[forDialogBackdrop]` is container-aware.
+- **Floating** — `clipUntilPositioned` threads through anchored overlays, with a clip-path enter-baseline opt-out.
+
+### Changed
+
+- **BREAKING — outputs renamed to avoid colliding with native DOM events:** `ForDialog`, `ForDrawer`, and `ForToast` `(close)` → `(dismiss)`; `ForDrawer` `(drag)` → `(dragMove)`; `ForMenuItem`, `ForMenuCheckboxItem`, and `ForMenuRadioItem` `(select)` → `(activate)`; `ForPaneResizer` `(resize)` → `(resizing)`.
+
+### Fixed
+
+- **Drawer** — the snap-point close threshold now scales to the lowest snap point.
+- **Toggle** — dropped an invalid `aria-orientation` from `ForToggleGroup`.
+- **Tree** — item registration is deferred to `afterNextRender`, fixing an `NG0950` when a re-mounted node (e.g. after a filter clears) is read before its `value` input is bound.
+- **Overlays** — `translate` is retained through `animate.leave`, and portal teardown is deferred so portaled overlays can play their exit animation.
+
 ## [0.0.2] - 2026-06-14
 
 ### Added
@@ -71,5 +94,6 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
+[0.0.3]: https://github.com/tutkli/forty-cdk/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/tutkli/forty-cdk/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/tutkli/forty-cdk/releases/tag/v0.0.1
