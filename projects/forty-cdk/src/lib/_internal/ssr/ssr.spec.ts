@@ -1052,6 +1052,18 @@ class HoverCardOpenFixture {}
 class ListboxFixture {}
 
 @Component({
+  imports: [ForListbox, ForListboxOption],
+  template: `
+    <div forListbox ariaLabel="Virtualized" [totalCount]="3">
+      <button type="button" forListboxOption value="a" [posInSet]="0">A</button>
+      <button type="button" forListboxOption value="b" [posInSet]="1">B</button>
+      <button type="button" forListboxOption value="c" [posInSet]="2">C</button>
+    </div>
+  `,
+})
+class ListboxVirtualizedFixture {}
+
+@Component({
   imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
     <div forSlider [(value)]="value">
@@ -1193,6 +1205,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ContextMenuOpenFixture,
   HoverCardOpenFixture,
   ListboxFixture,
+  ListboxVirtualizedFixture,
   SliderFixture,
   PaneResizerFixture,
   NumberInputFixture,

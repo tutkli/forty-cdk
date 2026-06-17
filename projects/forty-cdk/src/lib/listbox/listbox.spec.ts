@@ -1715,4 +1715,246 @@ describe('ForListbox', () => {
       expect(fixture.componentInstance.prefs.priorities().valid()).toBe(true);
     });
   });
+
+  describe('virtualized option windowing (Shape C)', () => {
+    @Component({
+      imports: [ForListbox, ForListboxOption],
+      template: `
+        <div
+          forListbox
+          [(value)]="picked"
+          [multiple]="isMulti()"
+          [totalCount]="total()"
+          [visibleRange]="range()"
+          (scrollToIndex)="onScrollToIndex($event)"
+        >
+          @for (i of windowIndices(); track i) {
+            <button
+              type="button"
+              forListboxOption
+              [value]="'item-' + i"
+              [posInSet]="i"
+              [attr.data-test-id]="'opt-' + i"
+            >
+              Item {{ i }}
+            </button>
+          }
+        </div>
+      `,
+    })
+    class VirtualHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly isMulti = signal(false);
+      readonly total = signal<number | undefined>(50);
+      readonly range = signal<readonly [number, number]>([0, 10]);
+      readonly scrolled = signal<number | null>(null);
+      windowIndices() {
+        const [s, e] = this.range();
+        return Array.from({ length: e - s }, (_, k) => s + k);
+      }
+      onScrollToIndex(idx: number) {
+        this.scrolled.set(idx);
+        const start = Math.max(0, Math.min(idx - 4, (this.total() ?? 0) - 10));
+        this.range.set([start, start + 10]);
+      }
+    }
+
+    const lbOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[forListbox]')!;
+    const voptOf = (el: HTMLElement, idx: number) =>
+      el.querySelector<HTMLButtonElement>(`[data-test-id="opt-${idx}"]`)!;
+
+    it('focus model switch — virtualized host has tabindex=0, all options have tabindex=-1', () => {
+      const { el, flush } = renderHost(VirtualHost);
+      flush();
+      const lb = lbOf(el);
+      expect(lb.getAttribute('tabindex')).toBe('0');
+      for (const i of [0, 1, 2, 3, 4]) {
+        expect(voptOf(el, i).getAttribute('tabindex')).toBe('-1');
+      }
+
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        template: `
+          <div forListbox [(value)]="picked">
+            <button type="button" forListboxOption value="a" data-test-id="roving-a">A</button>
+            <button type="button" forListboxOption value="b" data-test-id="roving-b">B</button>
+          </div>
+        `,
+      })
+      class RovingHost {
+        readonly picked = signal<readonly string[]>([]);
+      }
+      TestBed.resetTestingModule();
+      const r = renderHost(RovingHost);
+      const rlb = r.el.querySelector<HTMLElement>('[forListbox]')!;
+      expect(rlb.hasAttribute('tabindex')).toBe(false);
+      expect(
+        r.el
+          .querySelector<HTMLButtonElement>('[data-test-id="roving-a"]')!
+          .getAttribute('tabindex'),
+      ).toBe('0');
+    });
+
+    it('aria-setsize / aria-posinset — set on virtualized options, absent in roving mode', () => {
+      const { el } = renderHost(VirtualHost);
+      expect(voptOf(el, 0).getAttribute('aria-setsize')).toBe('50');
+      expect(voptOf(el, 0).getAttribute('aria-posinset')).toBe('1');
+      expect(voptOf(el, 5).getAttribute('aria-posinset')).toBe('6');
+
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        template: `
+          <div forListbox>
+            <button type="button" forListboxOption value="a" data-test-id="nr-a">A</button>
+          </div>
+        `,
+      })
+      class NonVirtualRovingHost {}
+      TestBed.resetTestingModule();
+      const r = renderHost(NonVirtualRovingHost);
+      const opt = r.el.querySelector<HTMLButtonElement>('[data-test-id="nr-a"]')!;
+      expect(opt.hasAttribute('aria-setsize')).toBe(false);
+      expect(opt.hasAttribute('aria-posinset')).toBe(false);
+    });
+
+    it('focusin seeds aria-activedescendant to the first enabled option', () => {
+      const { el, flush } = renderHost(VirtualHost);
+      flush();
+      const lb = lbOf(el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      flush();
+      const activeId = lb.getAttribute('aria-activedescendant');
+      expect(activeId).toBeTruthy();
+      expect(activeId).toBe(voptOf(el, 0).getAttribute('id'));
+      expect(voptOf(el, 0).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('ArrowDown moves aria-activedescendant to the next rendered option', () => {
+      const { el, flush } = renderHost(VirtualHost);
+      flush();
+      const lb = lbOf(el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      flush();
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      flush();
+      const activeId = lb.getAttribute('aria-activedescendant');
+      expect(activeId).toBe(voptOf(el, 1).getAttribute('id'));
+      expect(voptOf(el, 1).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('End to an off-window index emits scrollToIndex, pending resolves when option mounts', async () => {
+      const result = renderHost(VirtualHost);
+      result.flush();
+      const lb = lbOf(result.el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      result.flush();
+
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await flush(result.fixture);
+
+      expect(result.fixture.componentInstance.scrolled()).toBe(49);
+
+      await flush(result.fixture);
+      const opt49 = result.el.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
+      expect(opt49).not.toBeNull();
+      expect(lb.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+    });
+
+    it('Enter activates the active descendant in single mode', () => {
+      const { el, fixture, flush } = renderHost(VirtualHost);
+      flush();
+      const lb = lbOf(el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      flush();
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      flush();
+
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      flush();
+      expect(fixture.componentInstance.picked()).toEqual(['item-1']);
+      expect(voptOf(el, 1).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('multi-select survives window recycling — selection is value-keyed', async () => {
+      const result = renderHost(VirtualHost);
+      result.fixture.componentInstance.isMulti.set(true);
+      result.flush();
+      const lb = lbOf(result.el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      result.flush();
+
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      result.flush();
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      result.flush();
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      result.flush();
+      expect(result.fixture.componentInstance.picked()).toContain('item-2');
+
+      result.fixture.componentInstance.range.set([20, 30]);
+      await flush(result.fixture);
+      expect(result.el.querySelector('[data-test-id="opt-2"]')).toBeNull();
+
+      result.fixture.componentInstance.range.set([0, 10]);
+      await flush(result.fixture);
+      const opt2 = voptOf(result.el, 2);
+      expect(opt2.getAttribute('data-state')).toBe('checked');
+      expect(opt2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('unmounting the active option clears aria-activedescendant', async () => {
+      const result = renderHost(VirtualHost);
+      result.flush();
+      const lb = lbOf(result.el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      result.flush();
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      result.flush();
+      expect(lb.getAttribute('aria-activedescendant')).toBe(
+        voptOf(result.el, 1).getAttribute('id'),
+      );
+
+      result.fixture.componentInstance.range.set([20, 30]);
+      await flush(result.fixture);
+      expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('non-virtualized path unchanged — no aria-activedescendant, arrow moves DOM focus', () => {
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        template: `
+          <div forListbox>
+            <button type="button" forListboxOption value="x" data-test-id="nv-x">X</button>
+            <button type="button" forListboxOption value="y" data-test-id="nv-y">Y</button>
+          </div>
+        `,
+      })
+      class NonVirtualHost {}
+      const { el } = renderHost(NonVirtualHost);
+      const lb = el.querySelector<HTMLElement>('[forListbox]')!;
+      expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
+      const x = el.querySelector<HTMLButtonElement>('[data-test-id="nv-x"]')!;
+      const y = el.querySelector<HTMLButtonElement>('[data-test-id="nv-y"]')!;
+      x.focus();
+      x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(y);
+    });
+
+    describe('zoneless reactivity', () => {
+      it('ArrowDown moves aria-activedescendant without Zone.js', async () => {
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const fixture = TestBed.createComponent(VirtualHost);
+        await flush(fixture);
+        const lb = fixture.nativeElement.querySelector('[forListbox]') as HTMLElement;
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await flush(fixture);
+        const opt1Id = (
+          fixture.nativeElement.querySelector('[data-test-id="opt-1"]') as HTMLButtonElement
+        ).getAttribute('id');
+        expect(lb.getAttribute('aria-activedescendant')).toBe(opt1Id);
+      });
+    });
+  });
 });

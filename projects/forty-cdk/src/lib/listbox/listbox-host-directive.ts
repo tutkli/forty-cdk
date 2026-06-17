@@ -42,7 +42,9 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
   'readonly',
   'required',
   'selectionFollowsFocus',
+  'totalCount',
   'touched',
+  'visibleRange',
 ] as const;
 
 /**
@@ -51,7 +53,8 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
  * {@link FOR_LISTBOX_HOST_DIRECTIVE_INPUTS}.
  */
 export const FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS = [
-  'valueChange',
-  'touchedChange',
+  'scrollToIndex',
   'touch',
+  'touchedChange',
+  'valueChange',
 ] as const;

@@ -2,10 +2,13 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
   model,
+  numberAttribute,
+  output,
   signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -17,6 +20,7 @@ import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
   moveIndex,
+  resolveListNavigation,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
@@ -35,6 +39,7 @@ import {
   type ForListboxOptionHandle,
 } from './listbox-context';
 import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
+import { ListboxVirtualizedNavigator } from './listbox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
@@ -74,10 +79,13 @@ import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
+    '[attr.aria-activedescendant]': 'activeDescendantId()',
     '[attr.tabindex]': 'hostTabindex()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
+    '(keydown)': 'onHostKeyDown($event)',
+    '(focusin)': 'onHostFocusIn()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],
@@ -148,6 +156,30 @@ export class ForListbox<T = string>
   readonly loop = input(true, { transform: booleanAttribute });
 
   /**
+   * Total number of items in the source data. When set, enables the
+   * virtualized activedescendant focus model and populates `aria-setsize`
+   * on each rendered option. Leave unset (default `undefined`) for the
+   * standard roving-tabindex model.
+   */
+  readonly totalCount = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /**
+   * Inclusive-exclusive `[start, end)` index range of the currently rendered
+   * options. The virtualizer provides this; the listbox uses it to decide
+   * whether a navigation target is in the visible window.
+   */
+  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
+
+  /**
+   * Emitted when keyboard navigation reaches an option outside the rendered
+   * window. The consumer passes this index to `injectVirtualizer`'s
+   * `scrollToIndex` so the correct option mounts.
+   */
+  readonly scrollToIndex = output<number>();
+
+  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -189,17 +221,32 @@ export class ForListbox<T = string>
     return null;
   });
 
+  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+
+  readonly #activeId = signal<string | null>(null);
+
   /**
-   * Tabindex for the listbox host. The roving entry point normally lives on an
-   * option (`tabindex="0"`), so the host stays out of the tab order (`null`).
-   * When no option qualifies as that entry point — an empty listbox or one whose
-   * options are all disabled — the host itself becomes the single Tab stop
-   * (`tabindex="0"`) so the (non-disabled) listbox is still reachable and can be
-   * announced by assistive tech. A disabled listbox is never tabbable.
+   * The active option's `id` when using the activedescendant focus model,
+   * `null` in the roving-tabindex path. The host reflects this as
+   * `aria-activedescendant`; options read it to compute `data-highlighted`.
+   */
+  readonly activeDescendantId = computed<string | null>(() =>
+    this.#virtualized() ? this.#activeId() : null,
+  );
+
+  /**
+   * Tabindex for the listbox host. In the virtualized path the host is always
+   * the single tab stop. In the roving path the host carries `tabindex="0"`
+   * only when no option qualifies — an empty listbox or one whose options are
+   * all disabled — so the control is still reachable. A disabled listbox is
+   * never tabbable.
    */
   protected readonly hostTabindex = computed<'0' | null>(() => {
     if (this.effectiveDisabled()) {
       return null;
+    }
+    if (this.#virtualized()) {
+      return '0';
     }
     const hasRovingEntry = this.#firstSelectedHost() !== null || this.#firstEnabledHost() !== null;
     return hasRovingEntry ? null : '0';
@@ -215,6 +262,20 @@ export class ForListbox<T = string>
    */
   readonly #anchorValue = signal<T | null>(null);
 
+  #navigator: ListboxVirtualizedNavigator<T> | null = null;
+
+  #requireNavigator(): ListboxVirtualizedNavigator<T> {
+    return (this.#navigator ??= new ListboxVirtualizedNavigator<T>({
+      items: this.#options.items,
+      totalCount: this.totalCount,
+      visibleRange: this.visibleRange,
+      loop: this.loop,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#activeId.set(id),
+      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+    }));
+  }
+
   constructor() {
     super();
     injectHiddenInput<T>({
@@ -224,6 +285,15 @@ export class ForListbox<T = string>
       disabled: this.effectiveDisabled,
     });
     reconcileRovingActive(this.roving, this.#options.items);
+    effect(() => {
+      this.#options.items();
+      if (!this.#virtualized()) {
+        return;
+      }
+      const navigator = this.#requireNavigator();
+      navigator.prime();
+      navigator.tryResolvePending();
+    });
   }
 
   isSelected(v: T): boolean {
@@ -434,6 +504,9 @@ export class ForListbox<T = string>
   }
 
   optionTabindex(el: HTMLElement): -1 | 0 | null {
+    if (this.#virtualized()) {
+      return -1;
+    }
     return this.roving.hasActive() ? this.roving.tabindexFor(el) : null;
   }
 
@@ -445,9 +518,107 @@ export class ForListbox<T = string>
     this.#options.register(handle);
   }
 
+  notifyOptionClick(optionId: string): void {
+    if (!this.#virtualized()) {
+      return;
+    }
+    this.#activeId.set(optionId);
+    this.#host.nativeElement.focus();
+  }
+
   unregisterOption(handle: ForListboxOptionHandle<T>): void {
     this.#options.unregister(handle);
     this.roving.unregister(handle.host);
+    if (this.#virtualized() && this.#activeId() === handle.id()) {
+      this.#activeId.set(null);
+    }
+  }
+
+  protected onHostKeyDown(event: KeyboardEvent): void {
+    if (!this.#virtualized() || this.effectiveDisabled()) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.#activateActiveDescendant();
+      return;
+    }
+    const action = resolveListNavigation(event, {
+      orientation: this.orientation(),
+      dir: this.dir(),
+    });
+    if (action) {
+      event.preventDefault();
+      this.#requireNavigator().navigate(action);
+      return;
+    }
+    this.#typeaheadVirtualized(event);
+  }
+
+  #activateActiveDescendant(): void {
+    const id = this.#activeId();
+    if (id === null) {
+      return;
+    }
+    const handle = this.#options.items().find((o) => o.id() === id);
+    if (!handle || handle.disabled()) {
+      return;
+    }
+    this.activate(handle.value());
+  }
+
+  #typeaheadVirtualized(event: KeyboardEvent): void {
+    if (!this.#typeahead.handle(event)) {
+      return;
+    }
+    const buffer = this.#typeahead.buffer().toLowerCase();
+    if (!buffer) {
+      return;
+    }
+    const options = this.#options.items();
+    if (options.length === 0) {
+      return;
+    }
+    const cycle = this.#typeahead.isRepeatedChar();
+    const query = cycle ? buffer[0]! : buffer;
+    const activeId = this.#activeId();
+    const anchor = activeId === null ? -1 : options.findIndex((o) => o.id() === activeId);
+    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
+    for (let offset = 0; offset < options.length; offset++) {
+      const option = options[(start + offset) % options.length]!;
+      if (option.disabled()) {
+        continue;
+      }
+      const text = (option.host.textContent ?? '').trim().toLowerCase();
+      if (text.startsWith(query)) {
+        this.#activeId.set(option.id());
+        option.host.scrollIntoView?.({ block: 'nearest' });
+        return;
+      }
+    }
+  }
+
+  protected onHostFocusIn(): void {
+    if (!this.#virtualized() || this.effectiveDisabled()) {
+      return;
+    }
+    if (this.#activeId() !== null) {
+      return;
+    }
+    const items = this.#options.items();
+    if (items.length === 0) {
+      return;
+    }
+    const ordered = [...items].sort((a, b) => (a.posInSet() ?? 0) - (b.posInSet() ?? 0));
+    const equals = this.isItemEqualToValue();
+    const value = this.value();
+    const selectedFirst = ordered.find(
+      (o) => !o.disabled() && value.some((v) => equals(v, o.value())),
+    );
+    const target = selectedFirst ?? ordered.find((o) => !o.disabled());
+    if (target) {
+      this.#activeId.set(target.id());
+    }
   }
 
   protected onFocusOut(event: FocusEvent): void {

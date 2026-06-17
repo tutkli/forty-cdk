@@ -45,6 +45,8 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
+    '[attr.aria-setsize]': 'ariaSetSize()',
+    '[attr.aria-posinset]': 'ariaPosInSet()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
@@ -52,6 +54,7 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
     '(click)': 'onClick()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
+    '(pointerdown)': 'onPointerDown($event)',
   },
 })
 export class ForListboxOption<T = string> {
@@ -68,16 +71,45 @@ export class ForListboxOption<T = string> {
   readonly value = input.required<T>();
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Zero-based absolute position of this option in the full source data.
+   * Required in the virtualized path — the listbox uses it to build the
+   * position snapshot and to emit `aria-posinset` (which is `posInSet + 1`).
+   * Leave unset (default `null`) outside the virtualized path.
+   */
+  readonly posInSet = input<number | null>(null);
+
   readonly id = hostId('for-listbox-option');
 
   readonly selected = computed(() => this.#group.isSelected(this.value()));
 
   /**
-   * True when this option is the keyboard-focused candidate (the
-   * roving-tabindex active item). Reflected as `data-highlighted` so
-   * consumers can style it uniformly with the other primitives.
+   * True when this option is the keyboard-focused / active candidate.
+   * In the roving-tabindex path this tracks the DOM-focused option.
+   * In the virtualized activedescendant path it tracks `aria-activedescendant`.
+   * Reflected as `data-highlighted` so consumers can style it uniformly
+   * with the other primitives.
    */
-  readonly highlighted = computed(() => this.#group.isOptionHighlighted(this.#host.nativeElement));
+  readonly highlighted = computed(() => {
+    const activeId = this.#group.activeDescendantId();
+    if (activeId !== null) {
+      return activeId === this.id();
+    }
+    return this.#group.isOptionHighlighted(this.#host.nativeElement);
+  });
+
+  protected readonly ariaSetSize = computed<string | null>(() => {
+    const total = this.#group.totalCount();
+    return total === undefined ? null : String(total);
+  });
+
+  protected readonly ariaPosInSet = computed<string | null>(() => {
+    if (this.#group.totalCount() === undefined) {
+      return null;
+    }
+    const pos = this.posInSet();
+    return pos === null ? null : String(pos + 1);
+  });
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.#group.effectiveDisabled());
 
@@ -97,6 +129,8 @@ export class ForListboxOption<T = string> {
       host: this.#host.nativeElement,
       value: this.value,
       disabled: this.effectiveDisabled,
+      id: this.id,
+      posInSet: this.posInSet,
     };
     registerHandle(
       handle,
@@ -110,6 +144,14 @@ export class ForListboxOption<T = string> {
       return;
     }
     this.#group.activate(this.value());
+    this.#group.notifyOptionClick(this.id());
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (this.#group.totalCount() === undefined) {
+      return;
+    }
+    event.preventDefault();
   }
 
   protected onFocus(): void {
