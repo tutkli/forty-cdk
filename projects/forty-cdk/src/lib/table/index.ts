@@ -6,6 +6,8 @@ export { ForTableCell } from './table-cell';
 export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,
+  type ForTableCellHandle,
+  type ForTableRowHandle,
   type TableMode,
   type TableStickyValue,
 } from './table-context';
