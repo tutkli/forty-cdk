@@ -71,11 +71,84 @@ test.describe('Table (roles + sticky header)', () => {
   });
 });
 
+test.describe('Table (row selection)', () => {
+  test('clicking a row selector toggles aria-selected on the row and data-state on the selector', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table');
+    const row0 = page.locator('[forTableRow]').nth(0);
+    const selector0 = el(page, 'selector-0');
+
+    await expect(row0).toHaveAttribute('aria-selected', 'false');
+    await expect(selector0).toHaveAttribute('data-state', 'unchecked');
+
+    await selector0.click();
+
+    await expect(row0).toHaveAttribute('aria-selected', 'true');
+    await expect(selector0).toHaveAttribute('data-state', 'checked');
+  });
+
+  test('select-all: click selects all, click again clears; one selector click shows mixed', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table');
+    const selectAll = el(page, 'select-all');
+    const allRows = page.locator('[forTableRow]');
+
+    await selectAll.click();
+    await expect(selectAll).toHaveAttribute('aria-checked', 'true');
+    const count = await allRows.count();
+    for (let i = 0; i < count; i++) {
+      await expect(allRows.nth(i)).toHaveAttribute('aria-selected', 'true');
+    }
+
+    await selectAll.click();
+    await expect(selectAll).toHaveAttribute('aria-checked', 'false');
+    for (let i = 0; i < count; i++) {
+      await expect(allRows.nth(i)).toHaveAttribute('aria-selected', 'false');
+    }
+
+    await el(page, 'selector-0').click();
+    await expect(selectAll).toHaveAttribute('aria-checked', 'mixed');
+  });
+
+  test('Space on a focused cell toggles its row', async ({ page }) => {
+    await gotoFixture(page, 'table');
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('Space');
+    const row0 = page.locator('[forTableRow]').nth(0);
+    await expect(row0).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('replace behavior: clicking a cell selects its row; second click moves selection; Ctrl+click toggles; Shift+click extends a range', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table', { selectionBehavior: 'replace' });
+    const rows = page.locator('[forTableRow]');
+
+    await el(page, 'cell-0-name').click();
+    await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'true');
+
+    await el(page, 'cell-2-name').click();
+    await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'false');
+    await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true');
+
+    await el(page, 'cell-4-name').click({ modifiers: ['Control'] });
+    await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true');
+    await expect(rows.nth(4)).toHaveAttribute('aria-selected', 'true');
+
+    await el(page, 'cell-6-name').click({ modifiers: ['Shift'] });
+    await expect(rows.nth(4)).toHaveAttribute('aria-selected', 'true');
+    await expect(rows.nth(5)).toHaveAttribute('aria-selected', 'true');
+    await expect(rows.nth(6)).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
 test.describe('Table (grid keyboard navigation)', () => {
   test('Tab enters the grid on the first cell as a single tab stop, Tab leaves', async ({
     page,
   }) => {
-    await gotoFixture(page, 'table');
+    await gotoFixture(page, 'table', { selectionMode: 'none' });
     await el(page, 'before').focus();
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'cell-0-name'));

@@ -1,16 +1,29 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   ForTable,
   ForTableCell,
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
+  ForTableRowSelector,
+  ForTableSelectAll,
+  type TableSelectionMode,
+  type TableSelectionBehavior,
 } from 'forty-cdk';
 
 @Component({
   selector: 'app-table-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableRowSelector,
+    ForTableSelectAll,
+  ],
   styles: [
     `
       :host {
@@ -43,20 +56,46 @@ import {
       [forTableCell] {
         border-bottom: 1px solid #eee;
       }
+      [forTableRowSelector],
+      [forTableSelectAll] {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        border: 1px solid #888;
+        vertical-align: middle;
+        cursor: pointer;
+      }
     `,
   ],
   template: `
     <button data-testid="before">before</button>
     <div class="scroll-container" data-testid="scroll-container">
-      <div data-testid="root" forTable mode="grid" ariaLabel="Team members">
+      <div
+        data-testid="root"
+        forTable
+        mode="grid"
+        ariaLabel="Team members"
+        [selectionMode]="selectionMode()"
+        [selectionBehavior]="selectionBehavior()"
+        [(selection)]="selection"
+      >
         <div data-testid="header-row" forTableHeaderRow>
-          <div data-testid="header-name" forTableHeaderCell name="name" sticky>Name</div>
+          <div data-testid="header-name" forTableHeaderCell name="name" sticky>
+            @if (selectionMode() !== 'none') {
+              <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
+            }
+            Name
+          </div>
           <div data-testid="header-role" forTableHeaderCell name="role">Role</div>
           <div data-testid="header-dept" forTableHeaderCell name="dept">Department</div>
         </div>
         @for (row of rows; track row.id; let r = $index) {
-          <div forTableRow>
+          <div forTableRow [value]="row.id">
             <div forTableCell name="name" [attr.data-testid]="'cell-' + r + '-name'">
+              @if (selectionMode() !== 'none') {
+                <span forTableRowSelector [attr.data-testid]="'selector-' + r"></span>
+              }
               {{ row.name }}
             </div>
             <div
@@ -78,6 +117,18 @@ import {
   `,
 })
 export class TableFixture {
+  private readonly route = inject(ActivatedRoute);
+
+  protected readonly selectionMode = signal<TableSelectionMode>(
+    (this.route.snapshot.queryParamMap.get('selectionMode') as TableSelectionMode | null) ??
+      'multiple',
+  );
+  protected readonly selectionBehavior = signal<TableSelectionBehavior>(
+    (this.route.snapshot.queryParamMap.get('selectionBehavior') as TableSelectionBehavior | null) ??
+      'toggle',
+  );
+  protected readonly selection = signal<readonly unknown[]>([]);
+
   protected readonly rows = Array.from({ length: 20 }, (_, i) => ({
     id: i,
     name: `Person ${i + 1}`,

@@ -3,6 +3,8 @@ export { ForTableHeaderRow } from './table-header-row';
 export { ForTableRow } from './table-row';
 export { ForTableHeaderCell } from './table-header-cell';
 export { ForTableCell } from './table-cell';
+export { ForTableRowSelector } from './table-row-selector';
+export { ForTableSelectAll } from './table-select-all';
 export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,
@@ -10,6 +12,9 @@ export {
   type ForTableRowHandle,
   type TableMode,
   type TableStickyValue,
+  type TableSelectionMode,
+  type TableSelectionBehavior,
+  type TableSelectAllState,
 } from './table-context';
 export {
   FOR_TABLE_DEFAULTS,

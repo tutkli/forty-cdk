@@ -1,4 +1,4 @@
-import { computed, Directive, ElementRef, inject } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type Signal } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { registerHandle } from '../_internal/collection/register-handle';
@@ -6,6 +6,7 @@ import {
   FOR_TABLE_ROW_CONTEXT,
   type ForTableCellHandle,
   type ForTableRowContext,
+  type TableSelectionMode,
   injectTableContext,
 } from './table-context';
 
@@ -21,6 +22,9 @@ import {
   host: {
     role: 'row',
     '[attr.aria-rowindex]': 'rowIndex()',
+    '[attr.aria-selected]': 'ariaSelected()',
+    '[attr.data-selected]': 'selected() ? "" : null',
+    '(click)': 'onClick($event)',
   },
   providers: [{ provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow }],
 })
@@ -29,12 +33,26 @@ export class ForTableRow implements ForTableRowContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #cells = new Collection<ForTableCellHandle>();
 
+  /** This row's selection identity, written into the table's `[(selection)]`. Leave unset for non-selectable rows. */
+  readonly value = input<unknown>();
+
   protected readonly rowIndex = computed<number | null>(() =>
     this.ctx.mode() === 'table' ? null : this.ctx.rowIndexOf(this.#host) + 1,
   );
 
+  readonly selectionMode: Signal<TableSelectionMode> = this.ctx.selectionMode;
+
+  readonly selected = computed(() => {
+    const v = this.value();
+    return v !== undefined && this.ctx.isRowSelected(v);
+  });
+
+  protected readonly ariaSelected = computed<'true' | 'false' | null>(() =>
+    this.ctx.selectionMode() === 'none' ? null : this.selected() ? 'true' : 'false',
+  );
+
   constructor() {
-    const handle = { host: this.#host, cells: this.#cells.items };
+    const handle = { host: this.#host, cells: this.#cells.items, value: this.value };
     registerHandle(
       handle,
       (h) => this.ctx.registerRow(h),
@@ -52,5 +70,24 @@ export class ForTableRow implements ForTableRowContext {
 
   cellIndexOf(host: HTMLElement): number {
     return this.#cells.indexOfHost(host);
+  }
+
+  toggleSelected(): void {
+    const v = this.value();
+    if (v !== undefined) {
+      this.ctx.toggleRowSelection(v);
+    }
+  }
+
+  protected onClick(event: MouseEvent): void {
+    const v = this.value();
+    if (this.ctx.selectionMode() === 'none' || v === undefined) {
+      return;
+    }
+    this.ctx.selectRow(v, {
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+    });
   }
 }
