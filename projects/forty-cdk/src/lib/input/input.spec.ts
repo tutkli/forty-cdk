@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
+import { flush } from '../../test-utils';
 import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';
 import { ForField } from '../field/field';
@@ -341,16 +343,20 @@ describe('ForInput', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', () => {
-      const { el, fixture, flush } = renderHost(InputHost);
-      const input = inputOf(el);
+    it('reflects an external set without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(InputHost);
+      await flush(fixture);
+      const input = inputOf(fixture.nativeElement);
 
       fixture.componentInstance.text.set('a');
-      flush();
+      await flush(fixture);
       expect(input.value).toBe('a');
 
       fixture.componentInstance.text.set('');
-      flush();
+      await flush(fixture);
       expect(input.getAttribute('data-empty')).toBe('');
     });
   });

@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../test-utils';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { assertRovingTabindexContract } from '../../test-utils/contract';
 import { ForToggleGroup } from '../toggle/toggle-group';
 import { ForToggleGroupItem } from '../toggle/toggle-group-item';
@@ -387,18 +388,22 @@ describe('ForToolbar', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
-      const { fixture, query, queryAll, flush } = renderHost(ToolbarHost);
-      flush();
+    it('reflects state changes after detectChanges without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(ToolbarHost);
+      await flush(fixture);
 
-      const root = query<HTMLElement>('[forToolbar]')!;
-      const buttons = queryAll<HTMLButtonElement>('button');
+      const host = fixture.nativeElement as HTMLElement;
+      const root = host.querySelector('[forToolbar]') as HTMLElement;
+      const buttons = host.querySelectorAll<HTMLButtonElement>('button');
 
       expect(root.getAttribute('aria-orientation')).toBe('horizontal');
       expect(buttons[0]!.getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush(fixture);
       expect(root.getAttribute('aria-orientation')).toBe('vertical');
     });
   });

@@ -1,5 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { flush } from '../../test-utils';
 import { renderHost } from '../../test-utils/render';
 import { ForAspectRatio } from './aspect-ratio';
 
@@ -128,14 +130,18 @@ describe('ForAspectRatio', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects ratio changes after detectChanges without Zone.js', () => {
-      const { fixture, query, flush } = renderHost(AspectRatioHost);
-      const el = query<HTMLElement>('[forAspectRatio]')!;
+    it('reflects ratio changes after detectChanges without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(AspectRatioHost);
+      await flush(fixture);
 
+      const el = fixture.nativeElement.querySelector('[forAspectRatio]') as HTMLElement;
       expect(boundAspectRatio(el)).toBe(String(16 / 9));
 
       fixture.componentInstance.ratio.set(2);
-      flush();
+      await flush(fixture);
 
       expect(boundAspectRatio(el)).toBe('2');
     });

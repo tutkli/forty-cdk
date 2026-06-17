@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, min as minRule, required } from '@angular/forms/signals';
 
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
+import { flush } from '../../test-utils';
 import { pressKey } from '../../test-utils/keyboard';
 import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';
@@ -701,17 +703,21 @@ describe('ForNumberInput', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', () => {
-      const { el, fixture, flush } = renderHost(NumberHost);
-      const input = inputOf(el);
+    it('reflects an external set without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(NumberHost);
+      await flush(fixture);
+      const input = inputOf(fixture.nativeElement);
 
       fixture.componentInstance.qty.set(7);
-      flush();
+      await flush(fixture);
       expect(input.value).toBe('7');
       expect(input.getAttribute('aria-valuenow')).toBe('7');
 
       fixture.componentInstance.qty.set(null);
-      flush();
+      await flush(fixture);
       expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
