@@ -456,7 +456,7 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 
 > **Disabled options off-screen.** The directive learns an option's `disabled` only when it's been rendered at least once. While the consumer can pre-mark disabled rows with their own filter (most apps do), arrow nav cannot skip an off-screen disabled option it has never seen — it will land on it, the option will mount, and the next arrow press skips. Mark disabled rows in the source array if this matters.
 
-> **Listbox virtualization** is intentionally not part of this release: `[forListbox]` uses roving tabindex (DOM focus on the actual option element), which can't be virtualized without flipping its keyboard model to `aria-activedescendant`. That's a separate opt-in (`selection="activedescendant"`) tracked elsewhere.
+> **Listbox virtualization** ships the same contract — `[forListbox]` defaults to roving tabindex (DOM focus on the actual option element) and switches to the `aria-activedescendant` model when you set `[totalCount]`. See the [Listbox README "Virtualization"](../listbox/README.md#virtualization) section.
 
 ## Writing direction
 
