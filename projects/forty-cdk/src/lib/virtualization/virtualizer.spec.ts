@@ -1,0 +1,318 @@
+import {
+  Component,
+  type ElementRef,
+  PLATFORM_ID,
+  computed,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { ɵPLATFORM_SERVER_ID } from '@angular/common';
+
+import { flush } from '../../test-utils';
+import { injectVirtualizer } from './virtualizer';
+
+function fakeLayoutProps(el: HTMLElement, height: number, width = 400): void {
+  Object.defineProperty(el, 'offsetHeight', { configurable: true, value: height });
+  Object.defineProperty(el, 'offsetWidth', { configurable: true, value: width });
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: height });
+  Object.defineProperty(el, 'clientWidth', { configurable: true, value: width });
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: height * 200 });
+  Object.defineProperty(el, 'scrollWidth', { configurable: true, value: width * 200 });
+}
+
+@Component({
+  selector: 'host-cmp',
+  template: `
+    <div #scroll style="overflow:auto; height:200px">
+      <div [style.height.px]="v.totalSize()" style="position:relative">
+        @for (item of v.virtualItems(); track item.key) {
+          <div [attr.data-index]="item.index" [style.height.px]="item.size">{{ item.index }}</div>
+        }
+      </div>
+    </div>
+  `,
+})
+class Host {
+  readonly count = signal(1000);
+  readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
+  readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+  readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+  readonly v = injectVirtualizer({
+    count: this.count,
+    estimateSize: () => 40,
+    scrollElement: this.scrollElement,
+    overscan: 5,
+  });
+}
+
+describe('injectVirtualizer', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('shape — returns virtualItems signal, totalSize signal, and three imperative methods', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const { v } = fixture.componentInstance;
+    expect(typeof v.virtualItems).toBe('function');
+    expect(typeof v.totalSize).toBe('function');
+    expect(typeof v.scrollToIndex).toBe('function');
+    expect(typeof v.scrollToOffset).toBe('function');
+    expect(typeof v.measureElement).toBe('function');
+  });
+
+  it('fixed-size totalSize — equals count * estimateSize after flush', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.v.totalSize()).toBe(40000);
+  });
+
+  it('totalSize reacts to count change (zoneless reactivity)', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await flush(fixture);
+    fixture.componentInstance.count.set(500);
+    await flush(fixture);
+    expect(fixture.componentInstance.v.totalSize()).toBe(20000);
+  });
+
+  it('variable estimate totalSize — sums heterogeneous item sizes', async () => {
+    @Component({
+      selector: 'variable-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class VariableHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(20),
+        estimateSize: (i) => (i < 10 ? 20 : 50),
+        scrollElement: this.scrollElement,
+      });
+    }
+
+    const fixture = TestBed.createComponent(VariableHost);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.v.totalSize()).toBe(10 * 20 + 10 * 50);
+  });
+
+  it('virtualItems offsets — items have correct start and size when viewport is visible', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const items = fixture.componentInstance.v.virtualItems();
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(items.length).toBeLessThanOrEqual(1000);
+    const first = items.find((item) => item.index === 0);
+    expect(first).toBeDefined();
+    for (const item of items) {
+      expect(item.start).toBe(item.index * 40);
+      expect(item.size).toBe(40);
+    }
+  });
+
+  it('getItemKey — item at index 0 gets the custom key when viewport is visible', async () => {
+    @Component({
+      selector: 'keyed-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.key }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class KeyedHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(100),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        getItemKey: (i) => 'row-' + i,
+      });
+    }
+
+    const fixture = TestBed.createComponent(KeyedHost);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const items = fixture.componentInstance.v.virtualItems();
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    const first = items.find((item) => item.index === 0);
+    expect(first?.key).toBe('row-0');
+  });
+
+  it('scrollToOffset wiring (vertical) — calls scrollTo with top offset', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const spy = vi.fn();
+    el.scrollTo = spy;
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ top: 120 }));
+  });
+
+  it('scrollToIndex wiring (align:start, fixed) — scrollTo called with top = index * size', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const spy = vi.fn();
+    el.scrollTo = spy;
+    fixture.componentInstance.v.scrollToIndex(10, { align: 'start' });
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ top: 400 }));
+  });
+
+  it('horizontal orientation — scrollToOffset calls scrollTo with left offset', async () => {
+    @Component({
+      selector: 'horiz-host',
+      template: `
+        <div #scroll style="overflow:auto; width:200px">
+          <div [style.width.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class HorizHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(100),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        orientation: 'horizontal',
+      });
+    }
+
+    const fixture = TestBed.createComponent(HorizHost);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    Object.defineProperty(el, 'offsetWidth', { configurable: true, value: 200 });
+    Object.defineProperty(el, 'offsetHeight', { configurable: true, value: 100 });
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 100 });
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: 4000 });
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 100 });
+    fixture.detectChanges();
+    await flush(fixture);
+    const spy = vi.fn();
+    el.scrollTo = spy;
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ left: 120 }));
+  });
+
+  it('dynamic measurement — measureElement records a larger size and grows totalSize', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.v.totalSize()).toBe(40000);
+
+    const el = document.createElement('div');
+    el.setAttribute('data-index', '0');
+    Object.defineProperty(el, 'offsetHeight', { configurable: true, value: 100 });
+    Object.defineProperty(el, 'offsetWidth', { configurable: true, value: 100 });
+    fixture.componentInstance.v.measureElement(el);
+    await flush(fixture);
+
+    expect(fixture.componentInstance.v.totalSize()).toBe(100 + 999 * 40);
+  });
+
+  it('empty / zero count — virtualItems is [] and totalSize is 0', async () => {
+    @Component({
+      selector: 'empty-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class EmptyHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(0),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+      });
+    }
+
+    const fixture = TestBed.createComponent(EmptyHost);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.v.virtualItems()).toEqual([]);
+    expect(fixture.componentInstance.v.totalSize()).toBe(0);
+  });
+
+  describe('SSR empty window', () => {
+    beforeEach(() => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: PLATFORM_ID, useValue: ɵPLATFORM_SERVER_ID },
+        ],
+      });
+    });
+
+    it('SSR — virtualItems is [], totalSize is estimate, methods do not throw', () => {
+      @Component({
+        selector: 'ssr-host',
+        template: `
+          <div #scroll style="overflow:auto; height:200px">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        `,
+      })
+      class SsrHost {
+        readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+        readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+        readonly v = injectVirtualizer({
+          count: signal(100),
+          estimateSize: () => 40,
+          scrollElement: this.scrollElement,
+        });
+      }
+
+      const fixture = TestBed.createComponent(SsrHost);
+      fixture.detectChanges();
+      const { v } = fixture.componentInstance;
+      expect(v.virtualItems()).toEqual([]);
+      expect(v.totalSize()).toBe(100 * 40);
+      const fakeEl = document.createElement('div');
+      const spyScrollTo = vi.fn();
+      (fakeEl as HTMLElement & { scrollTo: unknown }).scrollTo = spyScrollTo;
+      expect(() => v.scrollToOffset(50)).not.toThrow();
+      expect(() => v.scrollToIndex(5)).not.toThrow();
+      expect(() => v.measureElement(fakeEl)).not.toThrow();
+      expect(spyScrollTo).not.toHaveBeenCalled();
+    });
+  });
+});
