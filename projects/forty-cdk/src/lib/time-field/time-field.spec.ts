@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
@@ -534,16 +535,23 @@ describe('ForTimeField', () => {
 
   describe('zoneless reactivity', () => {
     it('reflects an external value write without Zone.js', async () => {
-      const r = renderHost(Host);
-      r.instance.value.set(new Date(2026, 0, 9, 8, 5));
-      await flush(r.fixture);
-      expect(seg(r, 'hour').textContent?.trim()).toBe('08');
-      expect(seg(r, 'minute').textContent?.trim()).toBe('05');
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+      const segEl = (type: string) => host.querySelector(`[data-testid="${type}"]`)!;
 
-      r.instance.value.set(null);
-      await flush(r.fixture);
-      expect(seg(r, 'hour').textContent?.trim()).toBe('hh');
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      fixture.componentInstance.value.set(new Date(2026, 0, 9, 8, 5));
+      await flush(fixture);
+      expect(segEl('hour').textContent?.trim()).toBe('08');
+      expect(segEl('minute').textContent?.trim()).toBe('05');
+
+      fixture.componentInstance.value.set(null);
+      await flush(fixture);
+      expect(segEl('hour').textContent?.trim()).toBe('hh');
+      expect(host.querySelector('[forTimeField]')!.getAttribute('data-empty')).toBe('');
     });
   });
 });

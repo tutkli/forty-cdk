@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 import { CalendarDateTime } from '@internationalized/date';
 
@@ -749,17 +750,24 @@ describe('ForDateField', () => {
 
   describe('zoneless reactivity', () => {
     it('reflects an external value write without Zone.js', async () => {
-      const r = renderHost(Host);
-      r.instance.value.set(new Date(2026, 0, 9));
-      await flush(r.fixture);
-      expect(seg(r, 'month').textContent?.trim()).toBe('01');
-      expect(seg(r, 'day').textContent?.trim()).toBe('09');
-      expect(seg(r, 'year').getAttribute('aria-valuenow')).toBe('2026');
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+      const segEl = (type: string) => host.querySelector(`[data-testid="${type}"]`)!;
 
-      r.instance.value.set(null);
-      await flush(r.fixture);
-      expect(seg(r, 'day').textContent?.trim()).toBe('dd');
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      fixture.componentInstance.value.set(new Date(2026, 0, 9));
+      await flush(fixture);
+      expect(segEl('month').textContent?.trim()).toBe('01');
+      expect(segEl('day').textContent?.trim()).toBe('09');
+      expect(segEl('year').getAttribute('aria-valuenow')).toBe('2026');
+
+      fixture.componentInstance.value.set(null);
+      await flush(fixture);
+      expect(segEl('day').textContent?.trim()).toBe('dd');
+      expect(host.querySelector('[forDateField]')!.getAttribute('data-empty')).toBe('');
     });
   });
 });

@@ -1,6 +1,8 @@
-import { Component, Directive, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
+import { flush } from '../../test-utils';
 import { renderHost } from '../../test-utils/render';
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { FOR_CHECKBOX, ForCheckbox } from './checkbox';
@@ -307,11 +309,20 @@ describe('ForCheckbox', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects external sets without Zone.js', () => {
-      const { el, fixture, flush } = renderHost(CheckboxHost);
+    it('reflects external sets without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(CheckboxHost);
+      await flush(fixture);
+
+      const checkbox = checkboxOf(fixture.nativeElement);
+      expect(checkbox.getAttribute('aria-checked')).toBe('false');
+
       fixture.componentInstance.agreed.set(true);
-      flush();
-      expect(checkboxOf(el).getAttribute('aria-checked')).toBe('true');
+      await flush(fixture);
+
+      expect(checkbox.getAttribute('aria-checked')).toBe('true');
     });
   });
 

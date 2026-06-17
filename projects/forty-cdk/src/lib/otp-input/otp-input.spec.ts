@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import type { ComponentFixture } from '@angular/core/testing';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
@@ -678,9 +678,16 @@ describe('ForOtpInput', () => {
 
   describe('zoneless reactivity', () => {
     it('reflects an external value set into the slots without Zone.js', async () => {
-      const { group, input, instance, flush } = await mountOtp();
-      instance.code.set('4242');
-      await flush();
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(OtpHost);
+      await flush(fixture);
+      const group = fixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+      const input = group.querySelector('input') as HTMLInputElement;
+
+      fixture.componentInstance.code.set('4242');
+      await flush(fixture);
       expect(input.value).toBe('4242');
       expect(slotChar(group, 0)).toBe('4');
       expect(slot(group, 3).getAttribute('data-empty')).toBe(null);

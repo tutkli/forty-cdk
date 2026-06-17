@@ -1,6 +1,7 @@
-import { Component, signal, viewChild } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { installObserverPolyfills, renderHost } from '../../test-utils';
+import { flush, installObserverPolyfills, renderHost } from '../../test-utils';
 import { ForScrollArea } from './scroll-area';
 import { ForScrollAreaContent } from './scroll-area-content';
 import { ForScrollAreaCorner } from './scroll-area-corner';
@@ -296,6 +297,24 @@ describe('ForScrollArea', () => {
       // The pending timeout was cleared on destroy; advancing past the delay
       // must not fire a stray callback on the destroyed directive.
       expect(() => vi.advanceTimersByTime(1_000)).not.toThrow();
+    });
+  });
+
+  describe('zoneless reactivity', () => {
+    it('reflects type changes after detectChanges without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(ScrollAreaHost);
+      await flush(fixture);
+
+      const vbar = fixture.nativeElement.querySelector('[data-testid="vbar"]') as HTMLElement;
+      expect(vbar.getAttribute('data-state')).toBe('visible');
+
+      fixture.componentInstance.type.set('hover');
+      await flush(fixture);
+
+      expect(vbar.getAttribute('data-state')).toBe('hidden');
     });
   });
 });

@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../test-utils';
+import { flush, pressKey, renderHost } from '../../test-utils';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -721,14 +722,18 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
-      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
-      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+    it('reflects state changes after detectChanges without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(NavMenuHost);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+      const triggers = host.querySelectorAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       expect(triggers[0]!.getAttribute('aria-expanded')).toBe('false');
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush(fixture);
       expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
     });
 
