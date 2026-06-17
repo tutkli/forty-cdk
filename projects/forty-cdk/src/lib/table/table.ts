@@ -1,5 +1,6 @@
-import { computed, Directive, input, signal } from '@angular/core';
+import { computed, Directive, input, model, signal } from '@angular/core';
 
+import { SelectionModel } from '../_internal/selection-model/selection-model';
 import { injectElementSize } from '../_internal/element-size/element-size';
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -17,6 +18,9 @@ import {
   type ForTableContext,
   type ForTableRowHandle,
   type TableMode,
+  type TableSelectionMode,
+  type TableSelectionBehavior,
+  type TableSelectAllState,
 } from './table-context';
 
 /**
@@ -43,6 +47,7 @@ import {
     '[style.--for-table-header-height.px]': 'headerSize()?.height ?? null',
     '[attr.aria-rowcount]': 'rowCountAttr()',
     '[attr.aria-colcount]': 'colCountAttr()',
+    '[attr.aria-multiselectable]': 'selectionMode() === "multiple" ? "true" : null',
   },
   providers: [{ provide: FOR_TABLE_CONTEXT, useExisting: ForTable }],
 })
@@ -84,6 +89,26 @@ export class ForTable implements ForTableContext {
    */
   readonly colCount = input<number>();
 
+  /** Row selection mode. `'none'` (default) disables selection entirely. */
+  readonly selectionMode = input<TableSelectionMode>('none');
+
+  /**
+   * How a row click changes the selection. `'toggle'` (default) flips the clicked
+   * row. `'replace'` replaces the selection with the clicked row; Ctrl/Cmd-click
+   * toggles a single row and Shift-click extends a range (multiple mode only).
+   */
+  readonly selectionBehavior = input<TableSelectionBehavior>('toggle');
+
+  /**
+   * Two-way bindable selected row values (each row's `[value]`). Single mode keeps
+   * 0–1 entries. The implicit `selectionChange` fires only on internal mutations
+   * (selector / row click / Space / select-all), never on consumer writes.
+   */
+  readonly selection = model<readonly unknown[]>([]);
+
+  /** Equality comparator for row values. Defaults to `===`; supply id-based for objects. */
+  readonly compareWith = input<(a: unknown, b: unknown) => boolean>((a, b) => a === b);
+
   readonly #headerRowEl = signal<HTMLElement | null>(null);
 
   protected readonly headerSize = injectElementSize(this.#headerRowEl);
@@ -94,6 +119,34 @@ export class ForTable implements ForTableContext {
   readonly #flatCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
   readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
   readonly #firstEnabledCell = computed(() => firstEnabledHost(this.#flatCells()));
+
+  readonly #selection = new SelectionModel<unknown>(this.selection, {
+    multiple: computed(() => this.selectionMode() === 'multiple'),
+    compareWith: (a, b) => this.compareWith()(a, b),
+  });
+  readonly #anchorValue = signal<unknown>(undefined);
+  readonly #selectableValues = computed<readonly unknown[]>(() =>
+    this.#rows
+      .items()
+      .map((row) => row.value())
+      .filter((v) => v !== undefined),
+  );
+  readonly selectAllState = computed<TableSelectAllState>(() => {
+    const values = this.#selectableValues();
+    if (values.length === 0) {
+      return 'none';
+    }
+    let count = 0;
+    for (const v of values) {
+      if (this.#selection.isSelected(v)) {
+        count += 1;
+      }
+    }
+    if (count === 0) {
+      return 'none';
+    }
+    return count === values.length ? 'all' : 'some';
+  });
 
   protected readonly rowCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.rowCount() ?? this.#rows.items().length),
@@ -145,9 +198,91 @@ export class ForTable implements ForTableContext {
     }
   }
 
+  isRowSelected(value: unknown): boolean {
+    return this.#selection.isSelected(value);
+  }
+
+  toggleRowSelection(value: unknown): void {
+    if (this.selectionMode() === 'none') {
+      return;
+    }
+    this.#selection.toggle(value);
+    this.#anchorValue.set(value);
+  }
+
+  selectRow(
+    value: unknown,
+    modifiers?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
+  ): void {
+    const mode = this.selectionMode();
+    if (mode === 'none') {
+      return;
+    }
+    if (this.selectionBehavior() === 'toggle') {
+      this.#selection.toggle(value);
+      this.#anchorValue.set(value);
+      return;
+    }
+    const multiple = mode === 'multiple';
+    if (multiple && modifiers?.shiftKey) {
+      this.#selectRange(value);
+      return;
+    }
+    if (multiple && (modifiers?.ctrlKey || modifiers?.metaKey)) {
+      this.#selection.toggle(value);
+      this.#anchorValue.set(value);
+      return;
+    }
+    this.#selection.setSelection(value);
+    this.#anchorValue.set(value);
+  }
+
+  toggleSelectAll(): void {
+    if (this.selectionMode() !== 'multiple') {
+      return;
+    }
+    if (this.selectAllState() === 'all') {
+      this.#selection.clear();
+    } else {
+      this.#selection.select(...this.#selectableValues());
+    }
+  }
+
+  #selectRange(toValue: unknown): void {
+    const values = this.#selectableValues();
+    const equals = this.compareWith();
+    const toIdx = values.findIndex((v) => equals(v, toValue));
+    if (toIdx < 0) {
+      return;
+    }
+    const anchor = this.#anchorValue();
+    const anchorIdx = anchor === undefined ? -1 : values.findIndex((v) => equals(v, anchor));
+    const start = anchorIdx < 0 ? toIdx : anchorIdx;
+    const [lo, hi] = start <= toIdx ? [start, toIdx] : [toIdx, start];
+    this.#selection.setSelection(...values.slice(lo, hi + 1));
+  }
+
+  #rowValueOfCell(cellHost: HTMLElement): unknown {
+    for (const row of this.#rows.items()) {
+      if (row.cells().some((cell) => cell.host === cellHost)) {
+        return row.value();
+      }
+    }
+    return undefined;
+  }
+
   handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void {
     if (this.mode() === 'table') {
       return;
+    }
+    if (event.key === ' ' && event.target === host && this.selectionMode() !== 'none') {
+      const value = this.#rowValueOfCell(host);
+      if (value !== undefined) {
+        event.preventDefault();
+        this.#selection.toggle(value);
+        this.#anchorValue.set(value);
+        return;
+      }
     }
     const cols = this.#cols();
     const cells = this.#flatCells();

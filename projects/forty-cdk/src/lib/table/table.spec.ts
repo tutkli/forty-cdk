@@ -7,8 +7,14 @@ import { ForTableCell } from './table-cell';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
 import { ForTableRow } from './table-row';
+import { ForTableRowSelector } from './table-row-selector';
+import { ForTableSelectAll } from './table-select-all';
 import { FOR_TABLE_DEFAULTS, provideForTableDefaults } from './table-defaults';
-import { type TableMode } from './table-context';
+import {
+  type TableMode,
+  type TableSelectionMode,
+  type TableSelectionBehavior,
+} from './table-context';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -96,6 +102,50 @@ class GridTableHost {
   readonly colCount = signal<number | undefined>(undefined);
   readonly disabledRow = signal<number | null>(null);
   readonly disabledCol = signal<string | null>(null);
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      [selectionMode]="selectionMode()"
+      [selectionBehavior]="behavior()"
+      [(selection)]="selection"
+    >
+      <div role="rowgroup">
+        <div role="row">
+          <div role="columnheader">
+            <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
+          </div>
+          <div role="columnheader">Name</div>
+        </div>
+      </div>
+      <div role="rowgroup">
+        @for (row of rows; track row.id) {
+          <div forTableRow [value]="row.id" [attr.data-testid]="'row-' + row.id">
+            <div forTableCell name="sel" [attr.data-testid]="'cell-sel-' + row.id">
+              <span forTableRowSelector [attr.data-testid]="'selector-' + row.id"></span>
+            </div>
+            <div forTableCell name="name" [attr.data-testid]="'cell-name-' + row.id">
+              {{ row.name }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SelectionTableHost {
+  readonly selectionMode = signal<TableSelectionMode>('multiple');
+  readonly behavior = signal<TableSelectionBehavior>('toggle');
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly rows = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Carol' },
+  ];
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -540,6 +590,250 @@ describe('ForTable', () => {
       flush();
       expect(allCells[1].getAttribute('data-highlighted')).toBe('');
       expect(allCells[1].getAttribute('tabindex')).toBe('0');
+    });
+
+    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row1.hasAttribute('data-selected')).toBe(false);
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row1.getAttribute('data-selected')).toBe('');
+      expect(selector1.getAttribute('data-state')).toBe('checked');
+    });
+  });
+
+  describe('selection', () => {
+    it('selectionMode="none": root has no aria-multiselectable, rows have no aria-selected, no data-selected', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.selectionMode.set('none');
+      flush();
+      expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      for (const row of allRows) {
+        expect(row.hasAttribute('aria-selected')).toBe(false);
+        expect(row.hasAttribute('data-selected')).toBe(false);
+      }
+    });
+
+    it('selectionMode="multiple": root has aria-multiselectable="true"', () => {
+      const { el } = renderHost(SelectionTableHost);
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+    });
+
+    it('selectionMode="single": root has no aria-multiselectable; rows render aria-selected="false" initially', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.selectionMode.set('single');
+      flush();
+      expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('false');
+      }
+    });
+
+    it('clicking a [forTableRowSelector] toggles its row: aria-selected, data-selected, and selector data-state update correctly; click again reverts', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row1.hasAttribute('data-selected')).toBe(false);
+      expect(selector1.getAttribute('data-state')).toBe('unchecked');
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row1.getAttribute('data-selected')).toBe('');
+      expect(selector1.getAttribute('data-state')).toBe('checked');
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row1.hasAttribute('data-selected')).toBe(false);
+      expect(selector1.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('single mode: selecting row 2 after row 1 leaves only row 2 selected', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.selectionMode.set('single');
+      flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+      const selector2 = el.querySelector<HTMLElement>('[data-testid="selector-2"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      selector2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('multiple mode: selecting row 1 then row 2 leaves both aria-selected="true"', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+      const selector2 = el.querySelector<HTMLElement>('[data-testid="selector-2"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      selector2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('selectionBehavior="replace" + row click replaces the selection; second click moves selection', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.behavior.set('replace');
+      flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+      const cell2 = el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      cell2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(row2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('selectionBehavior="replace" + Ctrl-click toggles a row without clearing others', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.behavior.set('replace');
+      flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+      const cell2 = el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      cell2.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }),
+      );
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('selectionBehavior="toggle" + row cell click toggles (adds then removes)', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('select-all: clicking selects all rows and sets aria-checked="true"; clicking again clears all', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('true');
+      }
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+      expect(selectAll.getAttribute('data-state')).toBe('checked');
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('false');
+      }
+      expect(selectAll.getAttribute('aria-checked')).toBe('false');
+      expect(selectAll.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('select-all tri-state: selecting one row via its selector shows aria-checked="mixed" on select-all', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(selectAll.getAttribute('aria-checked')).toBe('mixed');
+      expect(selectAll.getAttribute('data-state')).toBe('indeterminate');
+    });
+
+    it('select-all is no-op in single mode', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.selectionMode.set('single');
+      flush();
+
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('false');
+      }
+    });
+
+    it('Space on a focused cell toggles its row and prevents default; Space from an inner element does not toggle', () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+
+      const spaceOnCell = press(cell1, ' ');
+      flush();
+      expect(spaceOnCell.defaultPrevented).toBe(true);
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      const innerEl = document.createElement('span');
+      cell1.appendChild(innerEl);
+      innerEl.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('consumer write to the selection signal reflects on the DOM after flush', () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+
+      instance.selection.set([1]);
+      flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(row1.getAttribute('data-selected')).toBe('');
     });
   });
 });

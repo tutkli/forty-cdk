@@ -253,12 +253,12 @@ class TableFixture {}
 @Component({
   imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
   template: `
-    <div forTable mode="grid" aria-label="People" [rowCount]="100">
+    <div forTable mode="grid" aria-label="People" [rowCount]="100" selectionMode="multiple">
       <div forTableHeaderRow>
         <div forTableHeaderCell name="name">Name</div>
         <div forTableHeaderCell name="role">Role</div>
       </div>
-      <div forTableRow>
+      <div forTableRow [value]="1">
         <div forTableCell name="name">Ada</div>
         <div forTableCell name="role">Engineer</div>
       </div>
@@ -1366,8 +1366,10 @@ describe('SSR smoke tests', () => {
     expect(root.getAttribute('role')).toBe('grid');
     expect(root.getAttribute('aria-rowcount')).toBe('100');
     expect(root.getAttribute('aria-colcount')).toBe('2');
+    expect(root.getAttribute('aria-multiselectable')).toBe('true');
     const row = f.nativeElement.querySelector('[forTableRow]') as HTMLElement;
     expect(row.getAttribute('aria-rowindex')).toBe('1');
+    expect(row.getAttribute('aria-selected')).toBe('false');
     const cell = f.nativeElement.querySelector('[forTableCell]') as HTMLElement;
     expect(cell.getAttribute('aria-colindex')).toBe('1');
     expect(cell.getAttribute('role')).toBe('gridcell');

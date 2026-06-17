@@ -5,6 +5,15 @@ import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard
 /** ARIA pattern the table renders as. `'table'` is the static structure; `'grid'` / `'treegrid'` add roving + 2D keyboard navigation. */
 export type TableMode = 'table' | 'grid' | 'treegrid';
 
+/** Row-selection mode for `ForTable`. `'none'` disables selection. */
+export type TableSelectionMode = 'none' | 'single' | 'multiple';
+
+/** How a row click mutates selection. `'toggle'` flips it; `'replace'` replaces (modifier-aware), React-Aria semantics. */
+export type TableSelectionBehavior = 'toggle' | 'replace';
+
+/** Aggregate selection state across the table's selectable rows, for the select-all tri-state. */
+export type TableSelectAllState = 'none' | 'some' | 'all';
+
 /** Sticky placement for a cell: pinned to the start edge (`true`), the end edge (`'end'`), or not sticky (`false`). */
 export type TableStickyValue = boolean | 'end';
 
@@ -29,6 +38,8 @@ export interface ForTableRowHandle {
   readonly host: HTMLElement;
   /** This row's data cells, in DOM order. */
   readonly cells: Signal<readonly ForTableCellHandle[]>;
+  /** This row's selection identity, from its `[value]` input; `undefined` when unset (not selectable). */
+  readonly value: Signal<unknown>;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
@@ -37,6 +48,8 @@ export interface ForTableContext {
   readonly mode: Signal<TableMode>;
   /** The resolved writing direction (flips ArrowLeft / ArrowRight in `rtl`). */
   readonly dir: Signal<WritingDirection>;
+  /** The active row-selection mode. `'none'` means selection is disabled. */
+  readonly selectionMode: Signal<TableSelectionMode>;
   /** Registers the header row's host so the root can measure its height for the sticky-header CSS var. */
   registerHeaderRow(el: HTMLElement): void;
   /** Unregisters the header row's host. Reference-based; safe to call if never registered. */
@@ -55,6 +68,23 @@ export interface ForTableContext {
   activateCell(host: HTMLElement): void;
   /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
   handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
+  /** Returns whether `value` is currently in the selection. */
+  isRowSelected(value: unknown): boolean;
+  /** Toggles `value` in or out of the selection, respecting `selectionMode`. No-op in `'none'` mode. */
+  toggleRowSelection(value: unknown): void;
+  /**
+   * Applies a row selection click with optional modifier keys, honoring `selectionBehavior`:
+   * `'toggle'` always flips; `'replace'` replaces (Ctrl/Cmd toggles a single item,
+   * Shift extends a range in multiple mode).
+   */
+  selectRow(
+    value: unknown,
+    modifiers?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
+  ): void;
+  /** Aggregate selection state across all selectable rows (`'none'` / `'some'` / `'all'`). */
+  readonly selectAllState: Signal<TableSelectAllState>;
+  /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
+  toggleSelectAll(): void;
 }
 
 export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_CONTEXT');
@@ -67,6 +97,12 @@ export interface ForTableRowContext {
   unregisterCell(handle: ForTableCellHandle): void;
   /** 0-based index of a cell host within this row in DOM order, or -1 if not registered. */
   cellIndexOf(host: HTMLElement): number;
+  /** The active row-selection mode from the root table. */
+  readonly selectionMode: Signal<TableSelectionMode>;
+  /** Whether this row is currently selected. */
+  readonly selected: Signal<boolean>;
+  /** Toggles this row's selection. No-op when the row has no `[value]` or mode is `'none'`. */
+  toggleSelected(): void;
 }
 
 export const FOR_TABLE_ROW_CONTEXT = new InjectionToken<ForTableRowContext>(
