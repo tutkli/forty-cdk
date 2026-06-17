@@ -118,6 +118,11 @@ import { ForDragPreview } from '../../drag-drop/drag-preview';
 import { ForDraggable } from '../../drag-drop/draggable';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
+import { ForTable } from '../../table/table';
+import { ForTableCell } from '../../table/table-cell';
+import { ForTableHeaderCell } from '../../table/table-header-cell';
+import { ForTableHeaderRow } from '../../table/table-header-row';
+import { ForTableRow } from '../../table/table-row';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
@@ -225,6 +230,25 @@ class AccordionFixture {}
   `,
 })
 class TabsFixture {}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
+  template: `
+    <table forTable aria-label="People">
+      <thead>
+        <tr forTableHeaderRow>
+          <th forTableHeaderCell name="name" sticky>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr forTableRow>
+          <td forTableCell name="name">Ada</td>
+        </tr>
+      </tbody>
+    </table>
+  `,
+})
+class TableFixture {}
 
 @Component({
   imports: [
@@ -1032,6 +1056,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
   TabsFixture,
+  TableFixture,
   StepperFixture,
   StepperCompletedFixture,
   CarouselFixture,

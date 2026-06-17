@@ -192,4 +192,8 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./fixtures/drag-drop-animate.fixture').then((m) => m.DragDropAnimateFixture),
   },
+  {
+    path: 'table',
+    loadComponent: () => import('./fixtures/table.fixture').then((m) => m.TableFixture),
+  },
 ];
