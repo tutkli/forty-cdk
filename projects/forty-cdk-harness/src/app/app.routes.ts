@@ -196,4 +196,9 @@ export const routes: Routes = [
     path: 'table',
     loadComponent: () => import('./fixtures/table.fixture').then((m) => m.TableFixture),
   },
+  {
+    path: 'table-reorder',
+    loadComponent: () =>
+      import('./fixtures/table-reorder.fixture').then((m) => m.TableReorderFixture),
+  },
 ];

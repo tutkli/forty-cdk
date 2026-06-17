@@ -125,6 +125,8 @@ import { ForTableHeaderRow } from '../../table/table-header-row';
 import { ForTableRow } from '../../table/table-row';
 import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForTableColumnResizer } from '../../table/table-column-resizer';
+import { ForTableColumnReorder } from '../../table/table-column-reorder';
+import { ForTableRowReorder } from '../../table/table-row-reorder';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';
@@ -261,14 +263,17 @@ class TableFixture {}
     ForTableCell,
     ForTableSortHeader,
     ForTableColumnResizer,
+    ForTableColumnReorder,
+    ForTableRowReorder,
+    ForDraggable,
   ],
   template: `
     <div forTable mode="grid" aria-label="People" [rowCount]="100" selectionMode="multiple">
-      <div forTableHeaderRow>
+      <div forTableHeaderRow forTableColumnReorder orientation="horizontal">
         <div forTableHeaderCell name="name" forTableSortHeader column="name" direction="ascending">
           Name
         </div>
-        <div forTableHeaderCell name="role">
+        <div forTableHeaderCell name="role" forDraggable [dragData]="'role'">
           Role
           <button
             forTableColumnResizer
@@ -278,9 +283,11 @@ class TableFixture {}
           ></button>
         </div>
       </div>
-      <div forTableRow [value]="1">
-        <div forTableCell name="name">Ada</div>
-        <div forTableCell name="role">Engineer</div>
+      <div role="rowgroup" forTableRowReorder>
+        <div forTableRow [value]="1" forDraggable [dragData]="1">
+          <div forTableCell name="name">Ada</div>
+          <div forTableCell name="role">Engineer</div>
+        </div>
       </div>
     </div>
   `,
@@ -1401,5 +1408,14 @@ describe('SSR smoke tests', () => {
     expect(resizer.getAttribute('aria-orientation')).toBe('vertical');
     expect(resizer.getAttribute('tabindex')).toBe('0');
     expect(resizer.getAttribute('aria-valuenow')).toBe('120');
+    const headerRow = f.nativeElement.querySelector('[forTableHeaderRow]') as HTMLElement;
+    expect(headerRow.getAttribute('data-orientation')).toBe('horizontal');
+    const draggableHeaderCell = f.nativeElement.querySelector(
+      '[forTableHeaderCell][forDraggable]',
+    ) as HTMLElement;
+    expect(draggableHeaderCell.hasAttribute('tabindex')).toBe(true);
+    const rowgroup = f.nativeElement.querySelector('[forTableRowReorder]') as HTMLElement;
+    expect(rowgroup.getAttribute('data-orientation')).toBe('vertical');
+    expect(document.body.querySelector('[data-drag-preview]')).toBeNull();
   });
 });

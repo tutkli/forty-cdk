@@ -281,6 +281,87 @@ Seed the initial width through the bound signal (`nameWidth = signal(200)`); the
 
 Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels per press, respecting `[min]` / `[max]`. In RTL, the directions are mirrored.
 
+## Column & row reordering
+
+`[forTableColumnReorder]` and `[forTableRowReorder]` are opt-in companion directives that compose the **drag-drop** primitive to make table headers and data rows reorderable. Each wraps `[forDropList]` via `hostDirectives`, so every drag-drop capability — `[forDraggable]`, `[forDragHandle]`, `[forDragPreview]`, `[forDragPlaceholder]`, FLIP animations, live announce, keyboard and pointer drag — is available to the consumer exactly as with a standalone drop list. **The table never mutates the consumer's data.** Reorder handlers apply `moveItemInArray` to a local signal.
+
+### Column reordering
+
+Apply `[forTableColumnReorder]` on the `[forTableHeaderRow]` element and add `[forDraggable] [dragData]="col"` to each header cell. **You must set `orientation="horizontal"`** on the element — Angular cannot fix a host-directive input to a constant ([Angular #51691](https://github.com/angular/angular/issues/51691)), so the consumer must forward the axis explicitly.
+
+`columnReorder` fires once per committed drop (pointer or keyboard) with `{ from, to, columns }`. Apply `columns` directly to your column-name signal, or use `from`/`to` with `moveItemInArray` for object-shaped column configs.
+
+```html
+<div
+  forTableHeaderRow
+  forTableColumnReorder
+  orientation="horizontal"
+  (columnReorder)="columns.set($event.columns)"
+>
+  @for (col of columns(); track col) {
+  <div forTableHeaderCell [name]="col" forDraggable [dragData]="col">{{ col }}</div>
+  }
+</div>
+```
+
+```ts
+import { ForTableColumnReorder, ForDraggable, moveItemInArray } from 'forty-cdk';
+```
+
+### Row reordering
+
+Apply `[forTableRowReorder]` on the rowgroup element that wraps the data rows (`<div role="rowgroup">` in `<div>` mode, `<tbody>` in native `<table>` mode). The list orientation defaults to `vertical`. Add `[forDraggable] [dragData]="row.id"` to each `[forTableRow]`.
+
+`rowReorder` fires with `{ from, to }` — apply with `moveItemInArray`.
+
+```html
+<div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
+  @for (row of rows(); track row.id) {
+  <div forTableRow [value]="row.id" forDraggable [dragData]="row.id">…</div>
+  }
+</div>
+```
+
+```ts
+import { ForTableRowReorder, ForDraggable, moveItemInArray } from 'forty-cdk';
+
+onRowReorder(d: TableRowReorderDescriptor): void {
+  this.rows.update((r) => moveItemInArray(r, d.from, d.to));
+}
+```
+
+### Automatic ARIA reindexing
+
+`aria-rowindex` and `aria-colindex` recompute automatically after you apply the move. `ForTable` tracks DOM document order reactively via a `MutationObserver`; when Angular re-renders the `@for` in the new order, the indices update with no extra table code.
+
+### Caveats
+
+- Do **not** combine `[forTableSortHeader]` and `[forDraggable]` on the same header cell — both host-bind `[attr.tabindex]`, which creates a conflict.
+- Reorderable rows and cells must generate real boxes. Avoid `display: contents` on `[forTableRow]` or header cells used as drag targets — the drag-drop primitive needs a non-zero bounding box for pointer geometry.
+- In `mode="grid"`, both 2D cell roving and keyboard row dragging are keyboard-interactive. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
+- For all drag-drop CSS hooks (`data-dragging`, `data-drag-over`, `[forDragHandle]`, `[data-drag-preview]`, `data-settling`) see the [drag-drop README](../drag-drop/README.md).
+
+### Inputs
+
+| Directive                 | Input            | Type                         | Default      | Description                                                        |
+| ------------------------- | ---------------- | ---------------------------- | ------------ | ------------------------------------------------------------------ |
+| `[forTableColumnReorder]` | `orientation`    | `'horizontal' \| 'vertical'` | `'vertical'` | Passthrough to `[forDropList]`. **Must be set to `'horizontal'`.** |
+| `[forTableColumnReorder]` | `dir`            | `'ltr' \| 'rtl' \| null`     | `null`       | Writing direction passthrough.                                     |
+| `[forTableColumnReorder]` | `disabled`       | `boolean`                    | `false`      | Disables the whole list passthrough.                               |
+| `[forTableColumnReorder]` | `autoScroll`     | `boolean`                    | `true`       | Auto-scroll passthrough.                                           |
+| `[forTableColumnReorder]` | `animateReorder` | `boolean`                    | `false`      | FLIP animation passthrough.                                        |
+| `[forTableRowReorder]`    | `dir`            | `'ltr' \| 'rtl' \| null`     | `null`       | Writing direction passthrough.                                     |
+| `[forTableRowReorder]`    | `disabled`       | `boolean`                    | `false`      | Disables the whole list passthrough.                               |
+| `[forTableRowReorder]`    | `autoScroll`     | `boolean`                    | `true`       | Auto-scroll passthrough.                                           |
+| `[forTableRowReorder]`    | `animateReorder` | `boolean`                    | `false`      | FLIP animation passthrough.                                        |
+
+### Outputs
+
+| Directive                 | Output          | Payload                        | Description                                                          |
+| ------------------------- | --------------- | ------------------------------ | -------------------------------------------------------------------- |
+| `[forTableColumnReorder]` | `columnReorder` | `TableColumnReorderDescriptor` | `{ from, to, columns }` — fired once per committed column drag-drop. |
+| `[forTableRowReorder]`    | `rowReorder`    | `TableRowReorderDescriptor`    | `{ from, to }` — fired once per committed row drag-drop.             |
+
 ## Inputs
 
 | Directive                 | Input               | Type                                    | Default        | Description                                                                                                 |
