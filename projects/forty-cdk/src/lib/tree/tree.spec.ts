@@ -1,4 +1,10 @@
-import { Component, computed, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../test-utils';
@@ -226,7 +232,9 @@ describe('ForTree', () => {
                 <ul forTreeGroup>
                   @for (child of node.children; track child) {
                     <li forTreeItem [value]="child" [attr.data-test-id]="child">
-                      <div forTreeItemLabel><span>{{ child }}</span></div>
+                      <div forTreeItemLabel>
+                        <span>{{ child }}</span>
+                      </div>
                     </li>
                   }
                 </ul>
@@ -974,6 +982,342 @@ describe('ForTree', () => {
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/tree\] ForTreeGroup must be used inside a \[forTreeItem\] element\./,
       );
+    });
+  });
+
+  describe('virtualized node windowing (Shape C)', () => {
+    interface FlatNode {
+      readonly value: string;
+      readonly label: string;
+      readonly level: number;
+      readonly setSize: number;
+      readonly posInSet: number;
+      readonly itemIndex: number;
+      readonly expandable: boolean;
+    }
+
+    const ROOT_COUNT = 3;
+    const CHILD_COUNT = 2;
+
+    function buildFlat(expanded: readonly string[]): FlatNode[] {
+      const result: FlatNode[] = [];
+      for (let r = 0; r < ROOT_COUNT; r++) {
+        const rootValue = `root-${r}`;
+        result.push({
+          value: rootValue,
+          label: `Root ${r}`,
+          level: 1,
+          setSize: ROOT_COUNT,
+          posInSet: r + 1,
+          itemIndex: result.length,
+          expandable: true,
+        });
+        if (expanded.includes(rootValue)) {
+          for (let c = 0; c < CHILD_COUNT; c++) {
+            const childValue = `child-${r}-${c}`;
+            result.push({
+              value: childValue,
+              label: `Child ${r}-${c}`,
+              level: 2,
+              setSize: CHILD_COUNT,
+              posInSet: c + 1,
+              itemIndex: result.length,
+              expandable: false,
+            });
+          }
+        }
+      }
+      return result;
+    }
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+      template: `
+        <ul
+          forTree
+          data-test-tree
+          [(value)]="picked"
+          [(expanded)]="open"
+          [totalCount]="flat().length"
+          [visibleRange]="range()"
+          (scrollToIndex)="onScroll($event)"
+          [selectionMode]="selectionMode()"
+          [cascade]="cascade()"
+          [descendantsOf]="descendantsFn"
+          aria-label="Virtual"
+        >
+          @for (node of window(); track node.value) {
+            <li
+              forTreeItem
+              [value]="node.value"
+              [level]="node.level"
+              [setSize]="node.setSize"
+              [posInSet]="node.posInSet"
+              [itemIndex]="node.itemIndex"
+              [attr.data-test-id]="node.value"
+            >
+              @if (node.expandable) {
+                <span forTreeItemToggle [attr.data-test-toggle]="node.value">▸</span>
+              }
+              <div forTreeItemLabel [attr.data-test-label]="node.value">{{ node.label }}</div>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class VirtualHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>([]);
+      readonly scrolledToIndex = signal<number | null>(null);
+      readonly selectionMode = signal<'highlight' | 'checkbox'>('highlight');
+      readonly cascade = signal(false);
+
+      readonly flat = computed(() => buildFlat(this.open()));
+
+      readonly windowStart = signal(0);
+      readonly windowSize = signal(5);
+
+      readonly range = computed<readonly [number, number]>(() => {
+        const start = this.windowStart();
+        const end = Math.min(start + this.windowSize(), this.flat().length);
+        return [start, end];
+      });
+
+      readonly window = computed(() => {
+        const [start, end] = this.range();
+        return this.flat().slice(start, end);
+      });
+
+      onScroll(index: number): void {
+        this.scrolledToIndex.set(index);
+        const maxStart = Math.max(0, this.flat().length - this.windowSize());
+        this.windowStart.set(Math.min(index, maxStart));
+      }
+
+      readonly descendantsFn = (value: string): readonly string[] => {
+        if (value.startsWith('root-')) {
+          const r = value.split('-')[1];
+          return Array.from({ length: CHILD_COUNT }, (_, c) => `child-${r}-${c}`);
+        }
+        return [];
+      };
+    }
+
+    async function setupVirtual(configure?: (i: VirtualHost) => void) {
+      const result = renderHost(VirtualHost);
+      configure?.(result.instance);
+      await flush(result.fixture);
+      return result;
+    }
+
+    const treeEl = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-tree]')!;
+
+    it('1. focus-model switch — virtualized host has tabindex="0"; items have tabindex="-1"', async () => {
+      const { el } = await setupVirtual();
+      expect(treeEl(el).getAttribute('tabindex')).toBe('0');
+      const items = el.querySelectorAll('[forTreeItem]');
+      for (const item of Array.from(items)) {
+        expect(item.getAttribute('tabindex')).toBe('-1');
+      }
+    });
+
+    it('1b. non-virtualized host has no tabindex; first item has tabindex="0"', async () => {
+      const { el } = await setup();
+      const tree = treeOf(el);
+      expect(tree.hasAttribute('tabindex')).toBe(false);
+      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('2. per-level ARIA — consumer-supplied values are reflected on items', async () => {
+      const { el } = await setupVirtual();
+      const firstRoot = el.querySelector<HTMLElement>('[data-test-id="root-0"]')!;
+      expect(firstRoot.getAttribute('aria-level')).toBe('1');
+      expect(firstRoot.getAttribute('aria-setsize')).toBe(String(ROOT_COUNT));
+      expect(firstRoot.getAttribute('aria-posinset')).toBe('1');
+
+      const secondRoot = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(secondRoot.getAttribute('aria-posinset')).toBe('2');
+    });
+
+    it('2b. non-virtualized tree derives ARIA from container (unchanged)', async () => {
+      const { el } = await setup((i) => i.open.set(['documents']));
+      const report = itemOf(el, 'report');
+      expect(report.getAttribute('aria-level')).toBe('2');
+      expect(report.getAttribute('aria-setsize')).toBe('2');
+      expect(report.getAttribute('aria-posinset')).toBe('1');
+    });
+
+    it('3. focusin seeds aria-activedescendant to the first enabled item', async () => {
+      const { el, fixture } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      const activeId = tree.getAttribute('aria-activedescendant');
+      expect(activeId).toBeTruthy();
+      const firstItem = el.querySelector<HTMLElement>('[data-test-id="root-0"]')!;
+      expect(firstItem.id).toBe(activeId);
+      expect(firstItem.hasAttribute('data-highlighted')).toBe(true);
+    });
+
+    it('4. ArrowDown moves aria-activedescendant to the next rendered item', async () => {
+      const { el, fixture } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const activeId = tree.getAttribute('aria-activedescendant');
+      const secondRoot = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(activeId).toBe(secondRoot.id);
+      expect(secondRoot.hasAttribute('data-highlighted')).toBe(true);
+    });
+
+    it('5. End to off-window index emits scrollToIndex; item resolves after window update', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => {
+        i.windowSize.set(2);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'End');
+      await flush(fixture);
+      expect(instance.scrolledToIndex()).not.toBeNull();
+      await flush(fixture);
+      const lastIndex = instance.flat().length - 1;
+      const lastNode = instance.flat()[lastIndex]!;
+      const lastItem = el.querySelector<HTMLElement>(`[data-test-id="${lastNode.value}"]`)!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(lastItem.id);
+    });
+
+    it('6. ArrowRight on closed expandable calls setExpanded; ArrowRight on open enters child', async () => {
+      const { el, fixture, instance } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      expect(instance.open()).not.toContain('root-0');
+      await pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      expect(instance.open()).toContain('root-0');
+
+      await flush(fixture);
+      await pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      const activeId = tree.getAttribute('aria-activedescendant');
+      const firstChild = el.querySelector<HTMLElement>('[data-test-id="child-0-0"]')!;
+      expect(activeId).toBe(firstChild.id);
+    });
+
+    it('6b. ArrowLeft on open expandable collapses it', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => i.open.set(['root-0']));
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      expect(instance.open()).toContain('root-0');
+      await pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+      expect(instance.open()).not.toContain('root-0');
+    });
+
+    it('7. Enter activates the active descendant (single-select)', async () => {
+      const { el, fixture, instance } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toContain('root-0');
+    });
+
+    it('7b. Enter in checkbox+cascade mode cascades to off-window descendants', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => {
+        i.selectionMode.set('checkbox');
+        i.cascade.set(true);
+        i.open.set(['root-0']);
+        i.windowSize.set(1);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      expect(el.querySelector('[data-test-id="child-0-0"]')).toBeNull();
+
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toContain('root-0');
+      expect(instance.picked()).toContain('child-0-0');
+      expect(instance.picked()).toContain('child-0-1');
+    });
+
+    it('8. unmounting the active item (shrink window past it) clears aria-activedescendant', async () => {
+      const { el, fixture, instance } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+
+      instance.windowStart.set(0);
+      instance.windowSize.set(0);
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+    });
+
+    it('9. non-virtualized path unchanged — no aria-activedescendant; ArrowDown moves DOM focus', async () => {
+      const { el, fixture } = await setup();
+      const tree = treeOf(el);
+      expect(tree.hasAttribute('aria-activedescendant')).toBe(false);
+      const firstItem = itemOf(el, 'documents');
+      firstItem.focus();
+      await flush(fixture);
+      await pressKey(firstItem, 'ArrowDown');
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'downloads'));
+    });
+
+    it('10. zoneless — ArrowDown updates aria-activedescendant without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(VirtualHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const tree = el.querySelector<HTMLElement>('[data-test-tree]')!;
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const activeId = tree.getAttribute('aria-activedescendant');
+      const secondRoot = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(activeId).toBe(secondRoot.id);
+    });
+
+    it('static id on forTreeItem is preserved (hostId contract)', async () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        template: `
+          <ul forTree [totalCount]="1" aria-label="Static">
+            <li
+              forTreeItem
+              value="a"
+              id="my-node"
+              [itemIndex]="0"
+              [level]="1"
+              [setSize]="1"
+              [posInSet]="1"
+            >
+              <div forTreeItemLabel>A</div>
+            </li>
+          </ul>
+        `,
+      })
+      class StaticIdHost {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(StaticIdHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const item = (fixture.nativeElement as HTMLElement).querySelector('[forTreeItem]')!;
+      expect(item.id).toBe('my-node');
     });
   });
 });

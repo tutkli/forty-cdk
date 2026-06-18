@@ -3,9 +3,12 @@ import {
   computed,
   Directive,
   effect,
+  ElementRef,
   inject,
   input,
   model,
+  numberAttribute,
+  output,
   signal,
 } from '@angular/core';
 
@@ -14,6 +17,7 @@ import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
   moveIndex,
+  resolveListNavigation,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
@@ -27,6 +31,7 @@ import {
   type ForTreeItemHandle,
 } from './tree-context';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
+import { TreeVirtualizedNavigator } from './tree-virtualized-navigator';
 
 interface VisibleEntry {
   readonly handle: ForTreeItemHandle;
@@ -69,6 +74,10 @@ interface VisibleEntry {
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
+    '[attr.aria-activedescendant]': 'activeDescendantId()',
+    '[attr.tabindex]': 'hostTabindex()',
+    '(keydown)': 'onHostKeyDown($event)',
+    '(focusin)': 'onHostFocusIn()',
   },
   providers: [
     { provide: FOR_TREE_CONTEXT, useExisting: ForTree },
@@ -77,6 +86,7 @@ interface VisibleEntry {
 })
 export class ForTree implements ForTreeContext, ForTreeContainerContext {
   readonly #defaults = inject(FOR_TREE_DEFAULTS);
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
    * Two-way bindable. Selected node values. Single mode keeps the array at
@@ -125,6 +135,29 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * `true`; the tree throws a `[forty-cdk/tree]` error otherwise.
    */
   readonly descendantsOf = input<(value: string) => readonly string[]>();
+
+  /**
+   * Total number of nodes in the flattened visible-node list. When set, enables
+   * the virtualized activedescendant focus model. Leave unset (default
+   * `undefined`) for the standard roving-tabindex model.
+   */
+  readonly totalCount = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+
+  /**
+   * Inclusive-exclusive `[start, end)` index range of the currently rendered
+   * nodes. The virtualizer provides this; the tree uses it to decide whether a
+   * navigation target is in the visible window.
+   */
+  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
+
+  /**
+   * Emitted when keyboard navigation reaches a node outside the rendered
+   * window. The consumer passes this index to `injectVirtualizer`'s
+   * `scrollToIndex` so the correct node mounts.
+   */
+  readonly scrollToIndex = output<number>();
 
   /**
    * Manual `aria-label` for the tree. Use this when no visible label element
@@ -194,8 +227,45 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
+  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+
+  readonly #activeId = signal<string | null>(null);
+
+  /**
+   * The active node's `id` when using the activedescendant focus model,
+   * `null` in the roving-tabindex path. The host reflects this as
+   * `aria-activedescendant`; items read it to compute `data-highlighted`.
+   */
+  readonly activeDescendantId = computed<string | null>(() =>
+    this.#virtualized() ? this.#activeId() : null,
+  );
+
+  /**
+   * Tabindex for the tree host. In the virtualized path the host is always the
+   * single tab stop. In the roving path the host carries no tabindex (items own
+   * their own tab stop). A disabled tree is never tabbable.
+   */
+  protected readonly hostTabindex = computed<'0' | null>(() => {
+    if (this.disabled()) return null;
+    return this.#virtualized() ? '0' : null;
+  });
+
+  #navigator: TreeVirtualizedNavigator | null = null;
+
+  #requireNavigator(): TreeVirtualizedNavigator {
+    return (this.#navigator ??= new TreeVirtualizedNavigator({
+      items: this.#items.items,
+      totalCount: this.totalCount,
+      visibleRange: this.visibleRange,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#activeId.set(id),
+      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+    }));
+  }
+
   constructor() {
     effect(() => {
+      if (this.#virtualized()) return;
       const active = this.roving.active();
       if (active === null) {
         return;
@@ -207,6 +277,13 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       }
       const fallback = visible.find((e) => !e.handle.disabled());
       this.roving.setActive(fallback?.handle.host ?? null);
+    });
+    effect(() => {
+      this.#items.items();
+      if (!this.#virtualized()) return;
+      const navigator = this.#requireNavigator();
+      navigator.prime();
+      navigator.tryResolvePending();
     });
   }
 
@@ -504,13 +581,130 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     return this.#firstEnabledRoot() === el;
   }
 
+  protected onHostKeyDown(event: KeyboardEvent): void {
+    if (!this.#virtualized() || this.disabled()) return;
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      this.#activateActiveDescendant();
+      return;
+    }
+    const action = resolveListNavigation(event, {
+      orientation: this.orientation(),
+      dir: this.dir(),
+    });
+    if (action === 'next' || action === 'prev' || action === 'first' || action === 'last') {
+      event.preventDefault();
+      this.#requireNavigator().navigate(action);
+      return;
+    }
+    const intent = this.#resolveExpandCollapse(event);
+    if (intent === 'expand') {
+      event.preventDefault();
+      this.#expandOrEnterVirtualized();
+      return;
+    }
+    if (intent === 'collapse') {
+      event.preventDefault();
+      this.#collapseOrLeaveVirtualized();
+      return;
+    }
+    this.#typeaheadVirtualized(event);
+  }
+
+  protected onHostFocusIn(): void {
+    if (!this.#virtualized() || this.disabled()) return;
+    if (this.#activeId() !== null) return;
+    const items = this.#items.items();
+    if (items.length === 0) return;
+    const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
+    const value = this.value();
+    const selectedFirst = ordered.find((h) => !h.disabled() && value.includes(h.value()));
+    const target = selectedFirst ?? ordered.find((h) => !h.disabled());
+    if (target) this.#activeId.set(target.id());
+  }
+
+  #activateActiveDescendant(): void {
+    const id = this.#activeId();
+    if (id === null) return;
+    const handle = this.#items.items().find((o) => o.id() === id);
+    if (!handle || handle.disabled()) return;
+    this.select(handle.value());
+  }
+
+  #expandOrEnterVirtualized(): void {
+    const nav = this.#requireNavigator();
+    const cur = nav.currentEntry();
+    if (!cur || cur.disabled || !cur.expandable) return;
+    if (!this.isExpanded(cur.value)) {
+      this.setExpanded(cur.value, true);
+      return;
+    }
+    nav.enterChild();
+  }
+
+  #collapseOrLeaveVirtualized(): void {
+    const nav = this.#requireNavigator();
+    const cur = nav.currentEntry();
+    if (!cur) return;
+    if (cur.expandable && this.isExpanded(cur.value)) {
+      this.setExpanded(cur.value, false);
+      return;
+    }
+    nav.moveToParent();
+  }
+
+  #resolveExpandCollapse(event: KeyboardEvent): 'expand' | 'collapse' | null {
+    const dir = this.dir();
+    if (this.orientation() === 'vertical') {
+      if (event.key === 'ArrowRight') {
+        return dir === 'rtl' ? 'collapse' : 'expand';
+      }
+      if (event.key === 'ArrowLeft') {
+        return dir === 'rtl' ? 'expand' : 'collapse';
+      }
+      return null;
+    }
+    if (event.key === 'ArrowDown') {
+      return 'expand';
+    }
+    if (event.key === 'ArrowUp') {
+      return 'collapse';
+    }
+    return null;
+  }
+
+  #typeaheadVirtualized(event: KeyboardEvent): void {
+    if (!this.#typeahead.handle(event)) return;
+    const buffer = this.#typeahead.buffer().toLowerCase();
+    if (!buffer) return;
+    const items = this.#items.items();
+    const match = items.find((h) => {
+      if (h.disabled()) return false;
+      const text = (h.textValue() || h.labelEl()?.textContent || '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
+    if (match) {
+      this.#activeId.set(match.id());
+      match.host.scrollIntoView?.({ block: 'nearest' });
+    }
+  }
+
   registerItem(handle: ForTreeItemHandle): void {
     this.#items.register(handle);
+  }
+
+  notifyItemClick(itemId: string): void {
+    if (!this.#virtualized()) return;
+    this.#activeId.set(itemId);
+    this.#host.nativeElement.focus();
   }
 
   unregisterItem(handle: ForTreeItemHandle): void {
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
+    if (this.#virtualized() && this.#activeId() === handle.id()) {
+      this.#activeId.set(null);
+    }
   }
 
   indexOfHost(el: HTMLElement): number {

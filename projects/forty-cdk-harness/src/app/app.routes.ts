@@ -217,6 +217,11 @@ export const routes: Routes = [
       import('./fixtures/select-virtualized.fixture').then((m) => m.SelectVirtualizedFixture),
   },
   {
+    path: 'tree-virtualized',
+    loadComponent: () =>
+      import('./fixtures/tree-virtualized.fixture').then((m) => m.TreeVirtualizedFixture),
+  },
+  {
     path: 'virtualization',
     loadComponent: () =>
       import('./fixtures/virtualization.fixture').then((m) => m.VirtualizationFixture),

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
+import { hostId } from '../_internal/host-id/host-id';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   FOR_TREE_ITEM_CONTEXT,
@@ -34,6 +35,7 @@ import {
   exportAs: 'forTreeItem',
   host: {
     role: 'treeitem',
+    '[id]': 'id()',
     '[attr.aria-expanded]': 'expandable() ? (expanded() ? "true" : "false") : null',
     '[attr.aria-checked]': 'checkboxMode() ? checkState() : null',
     '[attr.aria-selected]': 'checkboxMode() ? null : (selected() ? "true" : "false")',
@@ -49,6 +51,7 @@ import {
     '[attr.data-checked]': 'checkboxMode() ? checkState() : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
+    '(pointerdown)': 'onPointerDown($event)',
   },
   providers: [{ provide: FOR_TREE_ITEM_CONTEXT, useExisting: ForTreeItem }],
 })
@@ -69,9 +72,38 @@ export class ForTreeItem implements ForTreeItemContext {
    */
   readonly textValue = input<string>('');
 
+  /**
+   * Virtualized path: zero-based absolute index in the flattened visible-node list.
+   * Leave unset (default `null`) outside the virtualized path.
+   */
+  readonly itemIndex = input<number | null>(null);
+
+  /**
+   * Virtualized path: tree depth of this node (1-based, matching `aria-level`).
+   * When set, overrides the container-derived level in the virtualized path.
+   * Leave unset outside the virtualized path.
+   */
+  readonly _levelInput = input<number | null>(null, { alias: 'level' });
+
+  /**
+   * Virtualized path: total number of siblings at this node's level (matching
+   * `aria-setsize`). When set, overrides the container-derived setsize in the
+   * virtualized path. Leave unset outside the virtualized path.
+   */
+  readonly _setSizeInput = input<number | null>(null, { alias: 'setSize' });
+
+  /**
+   * Virtualized path: 1-based position among siblings at this node's level
+   * (matching `aria-posinset`). When set, overrides the container-derived
+   * posinset in the virtualized path. Leave unset outside the virtualized path.
+   */
+  readonly _posInSetInput = input<number | null>(null, { alias: 'posInSet' });
+
   readonly #toggleCount = signal(0);
   readonly #childContainer = signal<ForTreeContainerContext | null>(null);
   readonly #labelEl = signal<HTMLElement | null>(null);
+
+  readonly id = hostId('for-tree-item');
 
   /** True once a `[forTreeItemToggle]` registers, marking the node a parent (D4). */
   readonly expandable = computed(() => this.#toggleCount() > 0);
@@ -86,16 +118,40 @@ export class ForTreeItem implements ForTreeItemContext {
    */
   readonly checkState = computed(() => this.#tree.checkState(this.value()));
 
-  /** True when this node is the roving-tabindex active candidate. */
-  readonly highlighted = computed(() => this.#tree.roving.active() === this.#host.nativeElement);
+  /**
+   * True when this node is the current keyboard-focused / active candidate.
+   * In the roving-tabindex path tracks DOM focus; in the virtualized
+   * activedescendant path tracks `aria-activedescendant`. Reflected as
+   * `data-highlighted`.
+   */
+  readonly highlighted = computed(() => {
+    const activeId = this.#tree.activeDescendantId();
+    if (activeId !== null) return activeId === this.id();
+    return this.#tree.roving.active() === this.#host.nativeElement;
+  });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#tree.disabled());
 
-  readonly level = computed(() => this.#container.level());
-  readonly posinset = computed(() => this.#container.indexOfHost(this.#host.nativeElement) + 1);
-  readonly setsize = computed(() => this.#container.items().length);
+  readonly level = computed(() =>
+    this.#tree.totalCount() !== undefined
+      ? (this._levelInput() ?? this.#container.level())
+      : this.#container.level(),
+  );
+  readonly posinset = computed(() =>
+    this.#tree.totalCount() !== undefined
+      ? (this._posInSetInput() ?? this.#container.indexOfHost(this.#host.nativeElement) + 1)
+      : this.#container.indexOfHost(this.#host.nativeElement) + 1,
+  );
+  readonly setsize = computed(() =>
+    this.#tree.totalCount() !== undefined
+      ? (this._setSizeInput() ?? this.#container.items().length)
+      : this.#container.items().length,
+  );
 
   protected readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
+      return -1;
+    }
+    if (this.#tree.totalCount() !== undefined) {
       return -1;
     }
     if (this.#tree.roving.hasActive()) {
@@ -119,6 +175,9 @@ export class ForTreeItem implements ForTreeItemContext {
       childContainer: this.#childContainer.asReadonly(),
       textValue: this.textValue,
       labelEl: this.#labelEl.asReadonly(),
+      id: this.id,
+      itemIndex: this.itemIndex,
+      level: this.level,
     };
     registerHandle(
       handle,
@@ -159,14 +218,23 @@ export class ForTreeItem implements ForTreeItemContext {
     if (this.effectiveDisabled()) {
       return;
     }
+    if (this.#tree.totalCount() !== undefined) {
+      this.#tree.notifyItemClick(this.id());
+      return;
+    }
     this.#tree.roving.focusActive(this.#host.nativeElement);
   }
 
   protected onFocus(): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || this.#tree.totalCount() !== undefined) {
       return;
     }
     this.#tree.roving.setActive(this.#host.nativeElement);
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (this.#tree.totalCount() === undefined) return;
+    event.preventDefault();
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

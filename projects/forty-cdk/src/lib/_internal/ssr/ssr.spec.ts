@@ -694,6 +694,24 @@ class TreeCascadeFixture {
 }
 
 @Component({
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree ariaLabel="Virtualized" [totalCount]="3">
+      <li forTreeItem value="a" [level]="1" [setSize]="3" [posInSet]="1" [itemIndex]="0">
+        <div forTreeItemLabel>A</div>
+      </li>
+      <li forTreeItem value="b" [level]="1" [setSize]="3" [posInSet]="2" [itemIndex]="1">
+        <div forTreeItemLabel>B</div>
+      </li>
+      <li forTreeItem value="c" [level]="1" [setSize]="3" [posInSet]="3" [itemIndex]="2">
+        <div forTreeItemLabel>C</div>
+      </li>
+    </ul>
+  `,
+})
+class TreeVirtualizedFixture {}
+
+@Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -1209,6 +1227,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TreeFixture,
   TreeCheckboxFixture,
   TreeCascadeFixture,
+  TreeVirtualizedFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
   CalendarSelectDirectivesFixture,

@@ -27,6 +27,12 @@ export interface ForTreeItemHandle {
   readonly textValue: Signal<string>;
   /** The `[forTreeItemLabel]` element, used as the default typeahead text source. */
   readonly labelEl: Signal<HTMLElement | null>;
+  /** Stable host id for the activedescendant focus model (virtualized path). */
+  readonly id: Signal<string>;
+  /** Absolute index in the flattened visible-node list; `null` outside the virtualized path. */
+  readonly itemIndex: Signal<number | null>;
+  /** Resolved tree depth (1-based). Used for flat-space parent/child navigation. */
+  readonly level: Signal<number>;
 }
 
 /**
@@ -49,6 +55,26 @@ export interface ForTreeContext {
   /** Whether cascade selection is enabled (checkbox mode only). */
   readonly cascade: Signal<boolean>;
   readonly roving: RovingTabindex;
+  /**
+   * Length of the flattened visible-node list when virtualizing, `undefined` in
+   * the roving-tabindex path. Setting it (via `[forTree][totalCount]`) switches
+   * the tree to the activedescendant focus model.
+   */
+  readonly totalCount: Signal<number | undefined>;
+  /** Inclusive-exclusive `[start, end)` rendered window; `undefined` when not virtualizing. */
+  readonly visibleRange: Signal<readonly [number, number] | undefined>;
+  /**
+   * The active node's id under the activedescendant focus model, `null` in the
+   * roving path. The root reflects it as `aria-activedescendant`; items read it
+   * for `data-highlighted`.
+   */
+  readonly activeDescendantId: Signal<string | null>;
+  /**
+   * Called by an item on pointer activation in the virtualized path: moves
+   * `aria-activedescendant` to that item and returns DOM focus to the tree
+   * container. A no-op in the roving path.
+   */
+  notifyItemClick(itemId: string): void;
 
   isExpanded(value: string): boolean;
   isSelected(value: string): boolean;
