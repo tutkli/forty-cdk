@@ -151,6 +151,14 @@ export class ForTable implements ForTableContext {
   /** Live registered data rows, exposed to `[forTableVirtualized]`'s cross-window navigation bridge. */
   readonly rows = this.#rows.items;
   readonly #virtualNav = signal<TableVirtualRowNavigation | null>(null);
+  readonly #reorderingRow = signal<number | null>(null);
+
+  /**
+   * Absolute index of the row currently being pointer-reordered, or `null`. Set by
+   * `[forTableRowReorder]` and read by `[forTableVirtualized]` to keep the lifted
+   * row mounted across recycling during a drag.
+   */
+  readonly reorderingRowIndex = this.#reorderingRow.asReadonly();
 
   readonly #flatCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
   readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
@@ -273,6 +281,10 @@ export class ForTable implements ForTableContext {
 
   registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void {
     this.#virtualNav.set(navigation);
+  }
+
+  setReorderingRow(index: number | null): void {
+    this.#reorderingRow.set(index);
   }
 
   registerRow(handle: ForTableRowHandle): void {

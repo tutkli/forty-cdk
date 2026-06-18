@@ -416,6 +416,77 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 }
 ```
 
+### Reordering under virtualization
+
+`[forTableRowReorder]` composes with `[forTableVirtualized]`. When virtualization is active, the
+drop list only sees the rows currently in the rendered window, so its raw `from` / `to` would be
+**window-relative**. `[forTableRowReorder]` translates them to **absolute** dataset indices using
+each rendered row's `[virtualIndex]`, so applying `moveItemInArray` to your **full** row array
+moves the right row. A non-virtualized table is unaffected — it emits rendered-order indices as
+before.
+
+Supported today:
+
+- **Pointer drag within the rendered window**, and **auto-scroll past the window edge** to reach
+  rows beyond it — the lifted row is pinned mounted for the duration of the drag so auto-scroll
+  cannot unmount it and desync the indices.
+- **Keyboard reorder (Space lift, Arrow steps, Space drop) within the mounted window.** Absolute
+  indices are emitted on drop.
+
+Deferred (a `[forTableVirtualized]` row is the only drag-drop composition with these gaps):
+
+- **Keyboard reorder _across_ the window boundary** — stepping a lifted row past the rendered
+  window to scroll an unmounted target into view mid-lift. Today keyboard reorder is bounded to
+  the mounted window; to move a row far by keyboard, scroll the destination into view first, then
+  reorder within the window.
+- **Single-gesture free pointer drag to an arbitrary far row** that auto-scroll cannot reach.
+
+```html
+<div
+  #scroll
+  forTable
+  forTableVirtualized
+  mode="grid"
+  ariaLabel="People"
+  [rowCount]="people().length"
+  [scrollElement]="scrollEl()"
+  #v="forTableVirtualized"
+  style="height: 400px; overflow: auto; position: relative;"
+>
+  <div forTableHeaderRow style="position: sticky; top: 0;">
+    <div forTableHeaderCell name="name">Name</div>
+  </div>
+  <div
+    role="rowgroup"
+    forTableRowReorder
+    lockAxis="y"
+    [style.height.px]="v.totalSize()"
+    style="position: relative"
+    (rowReorder)="onReorder($event)"
+  >
+    @for (vrow of v.virtualRows(); track vrow.index) {
+    <div
+      forTableRow
+      [virtualIndex]="vrow.index"
+      forDraggable
+      [dragData]="vrow.index"
+      [style.transform]="'translateY(' + vrow.start + 'px)'"
+      style="position: absolute; left: 0; right: 0;"
+    >
+      <div forTableCell name="name">{{ people()[vrow.index]!.name }}</div>
+    </div>
+    }
+  </div>
+</div>
+```
+
+```ts
+onReorder(d: TableRowReorderDescriptor): void {
+  // d.from / d.to are absolute indices into the full people() array.
+  this.people.update((p) => moveItemInArray(p, d.from, d.to));
+}
+```
+
 ### Live-sort placeholder
 
 Both companions forward `[liveSort]` to the wrapped `[forDropList]`. Combined with a

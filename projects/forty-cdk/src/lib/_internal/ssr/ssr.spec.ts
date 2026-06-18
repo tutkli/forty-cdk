@@ -348,6 +348,41 @@ class TableVirtualizedFixture {}
 
 @Component({
   imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      aria-label="Big reorder"
+      [rowCount]="1000"
+      #v="forTableVirtualized"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        style="position: relative"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div forTableRow [virtualIndex]="vrow.index" forDraggable [dragData]="vrow.index">
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TableVirtualizedReorderFixture {}
+
+@Component({
+  imports: [
     ForCarousel,
     ForCarouselDrag,
     ForCarouselViewport,
@@ -1249,6 +1284,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableGridFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
+  TableVirtualizedReorderFixture,
   StepperFixture,
   StepperCompletedFixture,
   CarouselFixture,

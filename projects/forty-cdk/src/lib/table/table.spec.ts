@@ -24,7 +24,11 @@ import {
 } from './table-sort-header';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
-import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
+import {
+  ForTableRowReorder,
+  translateRowReorderIndices,
+  type TableRowReorderDescriptor,
+} from './table-row-reorder';
 import { ForTableVirtualized } from './table-virtualized';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 import type { ForTableCellHandle, ForTableRowHandle } from './table-context';
@@ -458,6 +462,38 @@ class VirtualizedTableHost {
 })
 class CrossWindowTableHost {
   readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="1000" #v="forTableVirtualized">
+      <div role="rowgroup" forTableRowReorder (rowReorder)="lastRow = $event">
+        @for (vi of windowIndices(); track vi) {
+          <div
+            forTableRow
+            [virtualIndex]="vi"
+            forDraggable
+            [dragData]="vi"
+            [attr.data-testid]="'row-' + vi"
+          >
+            <div forTableCell name="a">{{ vi }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedReorderTableHost {
+  readonly windowIndices = signal<readonly number[]>([50, 51, 52, 53, 54]);
+  lastRow: TableRowReorderDescriptor | null = null;
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -1537,6 +1573,53 @@ describe('ForTable', () => {
     });
   });
 
+  describe('row reorder under virtualization', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('keyboard lift→move→drop emits ABSOLUTE {from,to} derived from virtualIndex', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
+      await flush();
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 51, to: 52 });
+    });
+
+    it('emits absolute indices without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(VirtualizedReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const instance = fixture.componentInstance;
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      expect(instance.lastRow).toEqual({ from: 51, to: 52 });
+    });
+  });
+
   describe('column reorder zoneless', () => {
     afterEach(() => {
       document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
@@ -1984,5 +2067,27 @@ describe('TableVirtualizedNavigator', () => {
     nav.navigateTo(5, 9);
 
     expect(lastCellSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('translateRowReorderIndices', () => {
+  it('is the identity when the window spans the whole dataset (contiguous from 0)', () => {
+    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 0, 2)).toEqual({ from: 0, to: 2 });
+    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 3, 1)).toEqual({ from: 3, to: 1 });
+    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 1, 4)).toEqual({ from: 1, to: 4 });
+  });
+
+  it('maps a contiguous mid-dataset window to absolute indices', () => {
+    expect(translateRowReorderIndices([50, 51, 52, 53, 54], 1, 2)).toEqual({ from: 51, to: 52 });
+    expect(translateRowReorderIndices([50, 51, 52, 53, 54], 0, 3)).toEqual({ from: 50, to: 53 });
+  });
+
+  it('handles a non-contiguous window (pinned lifted row far from the visible block)', () => {
+    expect(translateRowReorderIndices([3, 80, 81, 82, 83], 0, 2)).toEqual({ from: 3, to: 81 });
+    expect(translateRowReorderIndices([3, 80, 81, 82, 83], 0, 4)).toEqual({ from: 3, to: 83 });
+  });
+
+  it('returns a no-op move for a single-row window', () => {
+    expect(translateRowReorderIndices([7], 0, 0)).toEqual({ from: 7, to: 7 });
   });
 });

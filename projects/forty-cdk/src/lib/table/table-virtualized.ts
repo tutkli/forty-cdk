@@ -67,25 +67,37 @@ export class ForTableVirtualized {
   }
 
   /**
-   * The rows in the visible window plus overscan, augmented to always include the focused row even
-   * when it is scrolled out of view (so its roving-focused cell stays mounted). Render these with
+   * The rows in the visible window plus overscan, augmented to always include the focused row and
+   * the row being reordered even when they are scrolled out of view (so the roving-focused cell
+   * stays mounted, and a pointer reorder drag never unmounts the lifted row). Render these with
    * `@for (vrow of v.virtualRows(); track vrow.index)` and position each row absolutely with
    * `transform: translateY(vrow.start + 'px')`. Bind each row's `[virtualIndex]="vrow.index"`.
    */
   readonly virtualRows = computed<readonly VirtualItem[]>(() => {
     const items = this.#virtualizer.virtualItems();
+    const retain = new Set<number>();
     const focused = this.#ctx.focusedRowIndex();
-    if (focused === null || items.some((it) => it.index === focused)) {
+    if (focused !== null) {
+      retain.add(focused);
+    }
+    const reordering = this.#ctx.reorderingRowIndex();
+    if (reordering !== null) {
+      retain.add(reordering);
+    }
+    for (const it of items) {
+      retain.delete(it.index);
+    }
+    if (retain.size === 0) {
       return items;
     }
     const size = this.estimateRowSize();
-    const retained: VirtualItem = {
-      index: focused,
-      key: focused,
-      start: focused * size,
+    const retained: VirtualItem[] = [...retain].map((index) => ({
+      index,
+      key: index,
+      start: index * size,
       size,
-    };
-    return [...items, retained].sort((a, b) => a.index - b.index);
+    }));
+    return [...items, ...retained].sort((a, b) => a.index - b.index);
   });
 
   /** Total scroll size of all rows in px. Bind to the body container's height to size the scroll range. */
