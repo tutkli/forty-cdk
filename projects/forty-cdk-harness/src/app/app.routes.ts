@@ -197,6 +197,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/table.fixture').then((m) => m.TableFixture),
   },
   {
+    path: 'table-combined',
+    loadComponent: () =>
+      import('./fixtures/table-combined.fixture').then((m) => m.TableCombinedFixture),
+  },
+  {
     path: 'table-reorder',
     loadComponent: () =>
       import('./fixtures/table-reorder.fixture').then((m) => m.TableReorderFixture),
