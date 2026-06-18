@@ -11,11 +11,9 @@ export {
   type TableSortDescriptor,
 } from './table-sort-header';
 export { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
-export {
-  ForTableColumnReorder,
-  type TableColumnReorderDescriptor,
-} from './table-column-reorder';
+export { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 export { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
+export { ForTableVirtualized } from './table-virtualized';
 export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,

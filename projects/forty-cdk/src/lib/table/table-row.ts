@@ -56,9 +56,23 @@ export class ForTableRow implements ForTableRowContext {
   /** Marks this row as an expandable parent — emits `aria-expanded` + `data-state`. */
   readonly expandable = input(false, { transform: booleanAttribute });
 
-  protected readonly rowIndex = computed<number | null>(() =>
-    this.ctx.mode() === 'table' ? null : this.ctx.rowIndexOf(this.#host) + 1,
-  );
+  /**
+   * Absolute 0-based index of this row in the full virtualized dataset. Set by the
+   * consumer when rendering a window via `[forTableVirtualized]`; drives the absolute
+   * `aria-rowindex` and keeps the focused row mounted across recycling. Leave unset
+   * (default `null`) for non-virtualized tables. Ignored in `mode="table"`.
+   */
+  readonly virtualIndex = input<number | null, unknown>(null, {
+    transform: (v) => (v == null ? null : numberAttribute(v)),
+  });
+
+  protected readonly rowIndex = computed<number | null>(() => {
+    if (this.ctx.mode() === 'table') {
+      return null;
+    }
+    const vi = this.virtualIndex();
+    return vi !== null ? vi + 1 : this.ctx.rowIndexOf(this.#host) + 1;
+  });
 
   readonly selectionMode: Signal<TableSelectionMode> = this.ctx.selectionMode;
 
@@ -115,6 +129,7 @@ export class ForTableRow implements ForTableRowContext {
       value: this.value,
       level: this.level,
       expandable: this.expandable,
+      virtualIndex: this.virtualIndex,
     };
     registerHandle(
       handle,

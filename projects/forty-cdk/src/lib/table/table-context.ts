@@ -44,6 +44,8 @@ export interface ForTableRowHandle {
   readonly level: Signal<number>;
   /** Whether this row is an expandable parent (drives `aria-expanded` / `data-state`). */
   readonly expandable: Signal<boolean>;
+  /** Absolute 0-based index of this row in the full (virtualized) dataset, or `null` when not virtualized. */
+  readonly virtualIndex: Signal<number | null>;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
@@ -95,6 +97,14 @@ export interface ForTableContext {
    * can apply it. Called by `[forTableColumnResizer]`.
    */
   setColumnWidth(column: string, width: number): void;
+  /** The consumer-declared true total row count (`aria-rowcount`); `undefined` when defaulted to the rendered count. */
+  readonly rowCount: Signal<number | undefined>;
+  /**
+   * Absolute index of the row that owns the currently roving-focused cell, or `null`
+   * when no cell is focused (or the focused row carries no `virtualIndex`). Used by
+   * `[forTableVirtualized]` to keep the focused row mounted across recycling.
+   */
+  readonly focusedRowIndex: Signal<number | null>;
   /** Whether `value` is in the open-rows set (`treegrid` expansion). */
   isRowExpanded(value: unknown): boolean;
   /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */

@@ -130,6 +130,7 @@ import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForTableColumnResizer } from '../../table/table-column-resizer';
 import { ForTableColumnReorder } from '../../table/table-column-reorder';
 import { ForTableRowReorder } from '../../table/table-row-reorder';
+import { ForTableVirtualized } from '../../table/table-virtualized';
 import { ForVirtualFor } from '../../virtualization/virtual-for';
 import { ForVirtualViewport } from '../../virtualization/virtual-viewport';
 import { injectVirtualizer } from '../../virtualization/virtualizer';
@@ -321,6 +322,29 @@ class TableGridFixture {}
 class TableTreegridFixture {
   readonly expanded = ['a'];
 }
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      aria-label="Big"
+      [rowCount]="1000"
+      #v="forTableVirtualized"
+    >
+      <div role="rowgroup" [style.height.px]="v.totalSize()" style="position: relative">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div forTableRow [virtualIndex]="vrow.index">
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TableVirtualizedFixture {}
 
 @Component({
   imports: [
@@ -1224,6 +1248,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableFixture,
   TableGridFixture,
   TableTreegridFixture,
+  TableVirtualizedFixture,
   StepperFixture,
   StepperCompletedFixture,
   CarouselFixture,
@@ -1594,5 +1619,16 @@ describe('SSR smoke tests', () => {
     const rowgroup = f.nativeElement.querySelector('[forTableRowReorder]') as HTMLElement;
     expect(rowgroup.getAttribute('data-orientation')).toBe('vertical');
     expect(document.body.querySelector('[data-drag-preview]')).toBeNull();
+  });
+
+  it('virtualized Table renders an empty window with the estimate total + true aria-rowcount server-side', () => {
+    const f = TestBed.createComponent(TableVirtualizedFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
+    expect(root.getAttribute('role')).toBe('grid');
+    expect(root.getAttribute('aria-rowcount')).toBe('1000');
+    expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
+    const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
+    expect(body.style.height).toBe('44000px');
   });
 });

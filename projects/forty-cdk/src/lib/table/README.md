@@ -418,6 +418,83 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 | `[forTableColumnReorder]` | `columnReorder` | `TableColumnReorderDescriptor` | `{ from, to, columns }` — fired once per committed column drag-drop. |
 | `[forTableRowReorder]`    | `rowReorder`    | `TableRowReorderDescriptor`    | `{ from, to }` — fired once per committed row drag-drop.             |
 
+## Virtualized rows
+
+`[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body (the browser recalculates all column widths when any row is missing), so virtualization requires the `<div>` structure documented above.
+
+Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count — this drives both `aria-rowcount` and the window size.
+
+```html
+<div
+  #scroll
+  forTable
+  forTableVirtualized
+  mode="grid"
+  ariaLabel="Big table"
+  [rowCount]="10000"
+  [estimateRowSize]="44"
+  [scrollElement]="scrollEl()"
+  #v="forTableVirtualized"
+  style="height: 400px; overflow: auto; position: relative;"
+>
+  <div forTableHeaderRow style="position: sticky; top: 0;">
+    <div forTableHeaderCell name="name">Name</div>
+  </div>
+  <div role="rowgroup" [style.height.px]="v.totalSize()" style="position: relative">
+    @for (vrow of v.virtualRows(); track vrow.index) {
+    <div
+      forTableRow
+      [virtualIndex]="vrow.index"
+      [style.transform]="'translateY(' + vrow.start + 'px)'"
+      style="position: absolute; left: 0; right: 0;"
+    >
+      <div forTableCell name="name">{{ data()[vrow.index]!.name }}</div>
+    </div>
+    }
+  </div>
+</div>
+```
+
+Key points:
+
+- The sticky header rowgroup lives **outside** the absolutely-positioned body so it is not clipped by the scroll container's overflow.
+- The body rowgroup is `position: relative` and sized to `v.totalSize()` — this creates the full scroll range.
+- Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top` — `transform` avoids layout thrashing.
+- Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` (`vrow.index + 1`) rather than the DOM-order index.
+- The **focused row stays mounted** even when scrolled out of the window (React Aria pattern). The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
+- For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`.
+
+```ts
+import { afterEveryRender } from '@angular/core';
+import { ForTableVirtualized } from 'forty-cdk';
+
+afterEveryRender(() => {
+  for (const el of this.rowEls()) {
+    this.v.measureRow(el.nativeElement);
+  }
+});
+```
+
+### `[forTableVirtualized]` inputs
+
+| Input             | Type                  | Default | Description                                                                                                         |
+| ----------------- | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `estimateRowSize` | `number`              | `44`    | Estimated row height in px. Used as the fixed size in fixed-size mode and as the initial estimate in measured mode. |
+| `scrollElement`   | `HTMLElement \| null` | `null`  | Explicit scroll container. Defaults to the table root element.                                                      |
+
+### `[forTableVirtualized]` API (`#v="forTableVirtualized"`)
+
+| Member                         | Type                             | Description                                                               |
+| ------------------------------ | -------------------------------- | ------------------------------------------------------------------------- |
+| `virtualRows()`                | `Signal<readonly VirtualItem[]>` | The visible window plus overscan, always including the focused row.       |
+| `totalSize()`                  | `Signal<number>`                 | Total scroll height of all rows in px. Bind to the body container height. |
+| `scrollToRow(index, options?)` | method                           | Scroll the container so row `index` is in view.                           |
+| `measureRow(el)`               | method                           | Record a rendered row element's measured size (for dynamic row heights).  |
+
+### Tree-shaking
+
+`@tanstack/virtual-core` only loads when you import `ForTableVirtualized`. A plain `ForTable` never pulls in the virtualization core.
+
 ## Inputs
 
 | Directive                 | Input               | Type                                    | Default        | Description                                                                                                 |
