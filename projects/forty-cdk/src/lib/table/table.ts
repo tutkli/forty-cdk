@@ -23,7 +23,16 @@ import {
   type TableSelectionMode,
   type TableSelectionBehavior,
   type TableSelectAllState,
+  type TableVirtualRowNavigation,
 } from './table-context';
+
+/** Grid actions whose target may lie on a row outside the rendered virtualized window. */
+const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
+  'next-row',
+  'prev-row',
+  'first',
+  'last',
+]);
 
 /**
  * Root of the Table primitive. Sets the ARIA `role` from `mode`, reflects
@@ -127,6 +136,10 @@ export class ForTable implements ForTableContext {
 
   readonly #rows = new Collection<ForTableRowHandle>();
   readonly #roving = new RovingTabindex();
+
+  /** Live registered data rows, exposed to `[forTableVirtualized]`'s cross-window navigation bridge. */
+  readonly rows = this.#rows.items;
+  readonly #virtualNav = signal<TableVirtualRowNavigation | null>(null);
 
   readonly #flatCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
   readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
@@ -242,6 +255,10 @@ export class ForTable implements ForTableContext {
     if (this.#headerRowEl() === el) {
       this.#headerRowEl.set(null);
     }
+  }
+
+  registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void {
+    this.#virtualNav.set(navigation);
   }
 
   registerRow(handle: ForTableRowHandle): void {
@@ -394,6 +411,24 @@ export class ForTable implements ForTableContext {
     }
     event.preventDefault();
     const currentIndex = cells.findIndex((cell) => cell.host === host);
+
+    const navigation = this.#virtualNav();
+    const fromRow = this.focusedRowIndex();
+    const total = this.rowCount();
+    if (
+      navigation !== null &&
+      total !== undefined &&
+      fromRow !== null &&
+      ROW_CROSSING_ACTIONS.has(action)
+    ) {
+      const col = currentIndex < 0 ? 0 : currentIndex % cols;
+      const target = resolveCrossWindowRowTarget(action, fromRow, col, total, cols);
+      if (target !== null) {
+        navigation.navigateTo(target.row, target.col);
+      }
+      return;
+    }
+
     const next = moveGridIndex(currentIndex < 0 ? 0 : currentIndex, cells.length, action, {
       cols,
       isDisabled: (i) => cells[i]!.disabled(),
@@ -402,5 +437,32 @@ export class ForTable implements ForTableContext {
       return;
     }
     this.#roving.focusActive(cells[next]!.host);
+  }
+}
+
+/**
+ * Resolves the absolute `(row, 0-based column)` target for a row-crossing grid
+ * action against the true `total` row count. Arrow row-moves preserve the
+ * current column; `first` / `last` jump to the first / last cell of the whole
+ * grid. Returns `null` when the move would step past the dataset bounds.
+ */
+function resolveCrossWindowRowTarget(
+  action: GridNavigationAction,
+  fromRow: number,
+  col: number,
+  total: number,
+  cols: number,
+): { row: number; col: number } | null {
+  switch (action) {
+    case 'next-row':
+      return fromRow + 1 < total ? { row: fromRow + 1, col } : null;
+    case 'prev-row':
+      return fromRow - 1 >= 0 ? { row: fromRow - 1, col } : null;
+    case 'first':
+      return { row: 0, col: 0 };
+    case 'last':
+      return { row: total - 1, col: cols - 1 };
+    default:
+      return null;
   }
 }

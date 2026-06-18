@@ -26,6 +26,8 @@ import { ForTableColumnResizer, type TableResizeDescriptor } from './table-colum
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
 import { ForTableVirtualized } from './table-virtualized';
+import { TableVirtualizedNavigator } from './table-virtualized-navigator';
+import type { ForTableCellHandle, ForTableRowHandle } from './table-context';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -364,6 +366,25 @@ class TreegridTableHost {
 })
 class VirtualizedTableHost {
   readonly windowIndices = signal<readonly number[]>([50, 51, 52]);
+}
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          <div forTableRow [virtualIndex]="vi">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}a</div>
+            <div forTableCell name="b" [attr.data-testid]="'cell-' + vi + '-b'">{{ vi }}b</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class CrossWindowTableHost {
+  readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -1615,5 +1636,151 @@ describe('ForTable', () => {
       const { el } = renderHost(VirtualizedTableHost);
       expect(rootEl(el).hasAttribute('forTableVirtualized')).toBe(true);
     });
+
+    describe('cross-window keyboard navigation', () => {
+      const cell = (el: HTMLElement, id: string) =>
+        el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+
+      it('ArrowDown past the rendered window scrolls the target row in and lands focus on it, preserving the column', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const start = cell(el, 'cell-24-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowDown');
+        await flush();
+        // Row 25 is outside the rendered window: nothing to land on yet.
+        expect(cell(el, 'cell-25-b')).toBeNull();
+
+        // Simulate the virtualizer mounting the freshly scrolled-to row.
+        instance.windowIndices.set([23, 24, 25, 26]);
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-25-b'));
+      });
+
+      it('ArrowUp past the rendered window lands focus on the row above, preserving the column', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const start = cell(el, 'cell-20-a')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowUp');
+        await flush();
+
+        instance.windowIndices.set([18, 19, 20, 21]);
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-19-a'));
+      });
+
+      it('Ctrl+End reaches the last row of the dataset, outside the window', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const start = cell(el, 'cell-20-a')!;
+        start.focus();
+        await flush();
+
+        press(start, 'End', { ctrlKey: true });
+        await flush();
+
+        instance.windowIndices.set([197, 198, 199]);
+        await flush();
+
+        // `last` jumps to the final cell of the whole grid (last row, last column).
+        expect(document.activeElement).toBe(cell(el, 'cell-199-b'));
+      });
+
+      it('Ctrl+Home reaches the first row of the dataset, outside the window', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const start = cell(el, 'cell-24-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'Home', { ctrlKey: true });
+        await flush();
+
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+
+        // `first` jumps to the first cell of the whole grid (row 0, column 0).
+        expect(document.activeElement).toBe(cell(el, 'cell-0-a'));
+      });
+    });
+  });
+});
+
+describe('TableVirtualizedNavigator', () => {
+  function fakeRow(virtualIndex: number, columns: number): ForTableRowHandle {
+    const cells: ForTableCellHandle[] = Array.from({ length: columns }, () => ({
+      host: document.createElement('div'),
+      disabled: signal(false),
+    }));
+    return {
+      host: document.createElement('div'),
+      cells: signal(cells),
+      value: signal(undefined),
+      level: signal(1),
+      expandable: signal(false),
+      virtualIndex: signal(virtualIndex),
+    };
+  }
+
+  it('navigateTo focuses an already-rendered target cell immediately, without scrolling', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2), fakeRow(11, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({ rows, scrollToRow });
+    const focusSpy = vi.spyOn(rows()[1]!.cells()[1]!.host, 'focus');
+
+    nav.navigateTo(11, 1);
+
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    expect(scrollToRow).not.toHaveBeenCalled();
+  });
+
+  it('navigateTo stashes the pending target and scrolls when the row is outside the window', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2), fakeRow(11, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({ rows, scrollToRow });
+
+    nav.navigateTo(50, 0);
+
+    expect(scrollToRow).toHaveBeenCalledWith(50);
+    // No rendered row carries index 50 yet, so it cannot resolve.
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('tryResolvePending focuses the target cell and clears the pending target once the row mounts', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2)]);
+    const nav = new TableVirtualizedNavigator({ rows, scrollToRow: vi.fn() });
+    nav.navigateTo(50, 1);
+
+    const mounted = fakeRow(50, 2);
+    const focusSpy = vi.spyOn(mounted.cells()[1]!.host, 'focus');
+    rows.set([fakeRow(49, 2), mounted, fakeRow(51, 2)]);
+
+    expect(nav.tryResolvePending()).toBe(true);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    // The pending target is consumed: a second resolve is a no-op.
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('tryResolvePending is a no-op with no pending target', () => {
+    const nav = new TableVirtualizedNavigator({
+      rows: signal<readonly ForTableRowHandle[]>([]),
+      scrollToRow: vi.fn(),
+    });
+
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('falls back to the last cell when the requested column is out of range', () => {
+    const row = fakeRow(5, 2);
+    const rows = signal<readonly ForTableRowHandle[]>([row]);
+    const nav = new TableVirtualizedNavigator({ rows, scrollToRow: vi.fn() });
+    const lastCellSpy = vi.spyOn(row.cells()[1]!.host, 'focus');
+
+    nav.navigateTo(5, 9);
+
+    expect(lastCellSpy).toHaveBeenCalledTimes(1);
   });
 });

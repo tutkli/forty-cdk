@@ -74,6 +74,85 @@ test.describe('Table virtualized', () => {
     await expectFocused(focusedCell);
   });
 
+  test.describe('cross-window keyboard navigation', () => {
+    test('ArrowDown past the rendered window scrolls rows in and keeps focus on the same column', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const start = el(page, 'cell-0-name');
+      await start.click();
+      await expectFocused(start);
+
+      for (let i = 0; i < 25; i++) {
+        await page.keyboard.press('ArrowDown');
+        await page.waitForTimeout(40);
+      }
+
+      const target = el(page, 'cell-25-name');
+      await expect(target).toBeAttached();
+      await expectFocused(target);
+    });
+
+    test('ArrowUp past the top of the rendered window scrolls earlier rows in', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      await el(page, 'root').evaluate((node) => {
+        node.scrollTop = 300 * 44;
+      });
+      await page.waitForTimeout(200);
+
+      const baseIndex = parseInt(
+        (await page.locator('[forTableRow]').nth(4).getAttribute('data-index'))!,
+        10,
+      );
+      const start = el(page, `cell-${baseIndex}-id`);
+      await start.click();
+      await expectFocused(start);
+
+      for (let i = 0; i < 25; i++) {
+        await page.keyboard.press('ArrowUp');
+        await page.waitForTimeout(40);
+      }
+
+      const target = el(page, `cell-${baseIndex - 25}-id`);
+      await expect(target).toBeAttached();
+      await expectFocused(target);
+    });
+
+    test('Ctrl+End jumps to the last row and Ctrl+Home returns to the first', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const start = el(page, 'cell-0-id');
+      await start.click();
+      await expectFocused(start);
+
+      await page.keyboard.press('Control+End');
+      const last = el(page, 'cell-9999-name');
+      await expect(last).toBeAttached();
+      await expectFocused(last);
+
+      await page.keyboard.press('Control+Home');
+      await expectFocused(el(page, 'cell-0-id'));
+    });
+
+    test('PageDown reaches the last row and PageUp returns to the first', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const start = el(page, 'cell-0-id');
+      await start.click();
+      await expectFocused(start);
+
+      await page.keyboard.press('PageDown');
+      await expectFocused(el(page, 'cell-9999-name'));
+
+      await page.keyboard.press('PageUp');
+      await expectFocused(el(page, 'cell-0-id'));
+    });
+  });
+
   test.describe('measured row heights', () => {
     test('renders variable-height rows (non-uniform, driven by measurement)', async ({ page }) => {
       await gotoFixture(page, 'table-virtualized', { measured: 'true' });

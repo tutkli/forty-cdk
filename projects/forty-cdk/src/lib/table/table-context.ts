@@ -48,6 +48,19 @@ export interface ForTableRowHandle {
   readonly virtualIndex: Signal<number | null>;
 }
 
+/**
+ * Cross-window row-navigation delegate registered by `[forTableVirtualized]`.
+ * `ForTable` consults it when a grid keyboard action resolves a row outside the
+ * rendered window, keeping the virtualization bridge out of `ForTable` itself.
+ */
+export interface TableVirtualRowNavigation {
+  /**
+   * Move roving focus to the data cell at the absolute `(rowIndex, 0-based
+   * column)`, scrolling that row into the window first when it is not mounted.
+   */
+  navigateTo(rowIndex: number, column: number): void;
+}
+
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
 export interface ForTableContext {
   /** The resolved ARIA mode; cells derive `role` (`cell` vs `gridcell`) from it, and navigation engages when it is not `'table'`. */
@@ -105,6 +118,17 @@ export interface ForTableContext {
    * `[forTableVirtualized]` to keep the focused row mounted across recycling.
    */
   readonly focusedRowIndex: Signal<number | null>;
+  /**
+   * Live registered data rows in DOM order. `[forTableVirtualized]` reads this to
+   * resolve a pending cross-window navigation once the target row mounts.
+   */
+  readonly rows: Signal<readonly ForTableRowHandle[]>;
+  /**
+   * Registers (or clears, with `null`) the cross-window row-navigation delegate.
+   * `[forTableVirtualized]` registers itself so row-crossing grid keyboard actions
+   * targeting an unmounted row are handled by the virtualization bridge.
+   */
+  registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void;
   /** Whether `value` is in the open-rows set (`treegrid` expansion). */
   isRowExpanded(value: unknown): boolean;
   /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
