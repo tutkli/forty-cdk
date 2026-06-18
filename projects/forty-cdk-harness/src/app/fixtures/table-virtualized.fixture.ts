@@ -1,11 +1,15 @@
 import {
+  afterEveryRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   type ElementRef,
+  inject,
   signal,
   viewChild,
+  viewChildren,
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   ForTable,
   ForTableCell,
@@ -104,9 +108,12 @@ function buildRows(): readonly Row[] {
       >
         @for (vrow of v.virtualRows(); track vrow.index) {
           <div
+            #row
             forTableRow
             [virtualIndex]="vrow.index"
+            [attr.data-index]="vrow.index"
             [style.transform]="'translateY(' + vrow.start + 'px)'"
+            [style.height.px]="measured ? measuredRowHeight(vrow.index) : null"
             [attr.data-testid]="'row-' + vrow.index"
           >
             <div forTableCell name="id" [attr.data-testid]="'cell-' + vrow.index + '-id'">
@@ -125,8 +132,30 @@ export class TableVirtualizedFixture {
   protected readonly ROW_COUNT = ROW_COUNT;
   protected readonly ROW_HEIGHT = ROW_HEIGHT;
 
+  private readonly route = inject(ActivatedRoute);
+
   protected readonly data = signal<readonly Row[]>(buildRows());
+
+  protected readonly measured = this.route.snapshot.queryParamMap.get('measured') === 'true';
 
   private readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
   protected readonly scrollEl = computed(() => this.scrollRef()?.nativeElement ?? null);
+
+  private readonly virtualized = viewChild(ForTableVirtualized);
+  private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('row');
+
+  constructor() {
+    afterEveryRender(() => {
+      if (!this.measured) return;
+      const v = this.virtualized();
+      if (!v) return;
+      for (const row of this.rowEls()) {
+        v.measureRow(row.nativeElement);
+      }
+    });
+  }
+
+  protected measuredRowHeight(index: number): number {
+    return index % 2 === 0 ? 60 : 100;
+  }
 }
