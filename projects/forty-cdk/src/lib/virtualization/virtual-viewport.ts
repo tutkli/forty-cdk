@@ -8,6 +8,7 @@ import {
   computed,
   inject,
   input,
+  output,
   runInInjectionContext,
   signal,
 } from '@angular/core';
@@ -16,6 +17,7 @@ import {
   FOR_VIRTUAL_VIEWPORT_CONTEXT,
   type ForVirtualViewportContext,
 } from './virtual-viewport-context';
+import { injectInfiniteScroll } from './infinite-scroll';
 import { type ForVirtualizer, type VirtualItem, injectVirtualizer } from './virtualizer';
 
 /** Default estimated item size, in CSS pixels, when none is provided. */
@@ -76,6 +78,14 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /** Stable key for the item at `index`. Defaults to the index. */
   readonly getItemKey = input<((index: number) => string | number) | undefined>(undefined);
 
+  /**
+   * Emits when the rendered window comes within ~`overscan` items of the end of
+   * the list, signalling the consumer to load the next page. Built on
+   * {@link injectInfiniteScroll}; fires once per threshold crossing and re-arms
+   * when the bound count grows. The consumer owns the fetch (e.g. via `resource()`).
+   */
+  readonly endReached = output<void>();
+
   /** The total number of items in the full (non-windowed) list. */
   readonly count = computed(() => this.virtualCount());
 
@@ -100,6 +110,10 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /** Total scroll size of all items, in pixels (drives the sizer). */
   readonly totalSize = computed(() => this.#virtualizer()?.totalSize() ?? this.#estimateTotal());
 
+  readonly #range = computed<readonly [number, number]>(
+    () => this.#virtualizer()?.range() ?? [0, 0],
+  );
+
   protected readonly sizerWidth = computed(() =>
     this.orientation() === 'horizontal' ? `${this.totalSize()}px` : '100%',
   );
@@ -109,8 +123,8 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   );
 
   ngOnInit(): void {
-    this.#virtualizer.set(
-      runInInjectionContext(this.#injector, () =>
+    runInInjectionContext(this.#injector, () => {
+      this.#virtualizer.set(
         injectVirtualizer({
           count: this.count,
           estimateSize: (index) => {
@@ -122,8 +136,13 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
           overscan: this.overscan(),
           getItemKey: this.getItemKey(),
         }),
-      ),
-    );
+      );
+      injectInfiniteScroll({
+        range: this.#range,
+        count: this.count,
+        onLoadMore: () => this.endReached.emit(),
+      });
+    });
   }
 
   /** Scroll the container so the item at `index` is in view. No-op until initialized. */

@@ -173,3 +173,71 @@ describe('ForVirtualViewport + ForVirtualFor', () => {
     }).toThrow(/\[forty-cdk\/virtualization\]/);
   });
 });
+
+describe('ForVirtualViewport (endReached) output', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('emits when the window reaches the end of a short list', async () => {
+    @Component({
+      imports: [ForVirtualViewport, ForVirtualFor],
+      template: `
+        <div
+          forVirtualViewport
+          [virtualCount]="rows().length"
+          [estimateSize]="40"
+          (endReached)="onEnd()"
+          style="height: 200px; width: 200px"
+        >
+          <div *forVirtualFor="let row of rows()">{{ row }}</div>
+        </div>
+      `,
+    })
+    class ShortHost {
+      readonly rows = signal(['a', 'b', 'c', 'd', 'e']);
+      readonly endCount = signal(0);
+      onEnd(): void {
+        this.endCount.update((n) => n + 1);
+      }
+    }
+
+    const fixture = TestBed.createComponent(ShortHost);
+    const vpEl = fixture.nativeElement.querySelector('[forVirtualViewport]') as HTMLElement;
+    fakeLayout(vpEl, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.endCount()).toBe(1);
+  });
+
+  it('does not emit while the window sits at the top of a long list', async () => {
+    @Component({
+      imports: [ForVirtualViewport, ForVirtualFor],
+      template: `
+        <div
+          forVirtualViewport
+          [virtualCount]="rows().length"
+          [estimateSize]="40"
+          (endReached)="onEnd()"
+          style="height: 200px; width: 200px"
+        >
+          <div *forVirtualFor="let row of rows()">{{ row }}</div>
+        </div>
+      `,
+    })
+    class LongHost {
+      readonly rows = signal(makeRows(1000));
+      readonly endCount = signal(0);
+      onEnd(): void {
+        this.endCount.update((n) => n + 1);
+      }
+    }
+
+    const fixture = TestBed.createComponent(LongHost);
+    const vpEl = fixture.nativeElement.querySelector('[forVirtualViewport]') as HTMLElement;
+    fakeLayout(vpEl, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.endCount()).toBe(0);
+  });
+});
