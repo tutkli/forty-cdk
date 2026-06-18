@@ -53,7 +53,8 @@ import { injectSelectContext } from './select-context';
   exportAs: 'forSelectContent',
   host: {
     role: 'listbox',
-    tabindex: '-1',
+    '[attr.tabindex]': 'ctx.totalCount() !== undefined ? "0" : "-1"',
+    '[attr.aria-activedescendant]': 'ctx.activeDescendantId()',
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
@@ -62,6 +63,7 @@ import { injectSelectContext } from './select-context';
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-orientation]': 'ctx.orientation()',
+    '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForSelectContent {
@@ -80,6 +82,11 @@ export class ForSelectContent {
     // `'selected'` falls back to the first enabled option when nothing is
     // selected; returns `false` so the shell focuses the container on a miss.
     const focusInitial = (): boolean => {
+      if (ctx.totalCount() !== undefined) {
+        this.#host.nativeElement.focus();
+        ctx.seedVirtualizedInitialFocus();
+        return true;
+      }
       const target = ctx.initialFocus();
       if (target === 'selected') {
         return ctx.focusSelectedOption() || ctx.focusFirstEnabledOption();
@@ -187,5 +194,11 @@ export class ForSelectContent {
         skip: () => ctx.lastCloseReason() === 'tab',
       },
     });
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (this.ctx.totalCount() !== undefined) {
+      this.ctx.handleVirtualizedKeydown(event);
+    }
   }
 }

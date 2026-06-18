@@ -2135,4 +2135,303 @@ describe('ForSelectIndicator', () => {
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
+
+  describe('virtualized option windowing (Shape C)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div
+          forSelect
+          [(open)]="open"
+          [(value)]="value"
+          [totalCount]="total()"
+          [visibleRange]="range()"
+          (scrollToIndex)="onScrollToIndex($event)"
+        >
+          <button forSelectTrigger data-test-id="trigger">
+            <span forSelectValue></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent data-test-id="content">
+              @for (i of windowIndices(); track i) {
+                <button
+                  forSelectOption
+                  [value]="'item-' + i"
+                  [posInSet]="i"
+                  [attr.data-test-id]="'opt-' + i"
+                >
+                  Item {{ i }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtualSelectHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(50);
+      readonly range = signal<readonly [number, number]>([0, 10]);
+      readonly scrolled = signal<number | null>(null);
+      windowIndices() {
+        const [s, e] = this.range();
+        return Array.from({ length: e - s }, (_, k) => s + k);
+      }
+      onScrollToIndex(idx: number) {
+        this.scrolled.set(idx);
+        const start = Math.max(0, Math.min(idx - 4, (this.total() ?? 0) - 10));
+        this.range.set([start, start + 10]);
+      }
+    }
+
+    const contentEl = () => document.querySelector<HTMLElement>('[data-test-id="content"]')!;
+    const voptOf = (idx: number) =>
+      document.querySelector<HTMLButtonElement>(`[data-test-id="opt-${idx}"]`)!;
+
+    it('focus-model switch — content has tabindex=0 and aria-activedescendant when totalCount set; options have tabindex=-1', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      expect(content.getAttribute('tabindex')).toBe('0');
+      for (const i of [0, 1, 2, 3]) {
+        expect(voptOf(i).getAttribute('tabindex')).toBe('-1');
+      }
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open">
+            <button forSelectTrigger>T</button>
+            @if (open()) {
+              <div forSelectContent data-test-id="nv-content">
+                <button forSelectOption value="a" data-test-id="nv-a">A</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NonVirtualSelectHost {
+        readonly open = signal(true);
+      }
+      TestBed.resetTestingModule();
+      const r2 = renderHost(NonVirtualSelectHost);
+      await flush(r2.fixture);
+      const nvc = document.querySelector<HTMLElement>('[data-test-id="nv-content"]')!;
+      expect(nvc.getAttribute('tabindex')).toBe('-1');
+      expect(nvc.hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('aria-setsize / aria-posinset set on virtualized options, absent in non-virtualized', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(voptOf(0).getAttribute('aria-setsize')).toBe('50');
+      expect(voptOf(0).getAttribute('aria-posinset')).toBe('1');
+      expect(voptOf(5).getAttribute('aria-posinset')).toBe('6');
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open">
+            <button forSelectTrigger>T</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button forSelectOption value="a" data-test-id="nr-a">A</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NrHost {
+        readonly open = signal(true);
+      }
+      TestBed.resetTestingModule();
+      const r2 = renderHost(NrHost);
+      await flush(r2.fixture);
+      const opt = document.querySelector<HTMLButtonElement>('[data-test-id="nr-a"]')!;
+      expect(opt.hasAttribute('aria-setsize')).toBe(false);
+      expect(opt.hasAttribute('aria-posinset')).toBe(false);
+    });
+
+    it('initial focus on open seeds aria-activedescendant to the first enabled option', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+      const activeId = content.getAttribute('aria-activedescendant');
+      expect(activeId).toBeTruthy();
+      expect(activeId).toBe(voptOf(0).getAttribute('id'));
+      expect(voptOf(0).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('ArrowDown moves aria-activedescendant to the next rendered option', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush(r.fixture);
+      const activeId = content.getAttribute('aria-activedescendant');
+      expect(activeId).toBe(voptOf(1).getAttribute('id'));
+      expect(voptOf(1).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('End to an off-window index emits scrollToIndex, pending resolves when option mounts', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBe(49);
+
+      await flush(r.fixture);
+      const opt49 = document.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
+      expect(opt49).not.toBeNull();
+      expect(content.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+    });
+
+    it('Enter activates the active descendant in single mode', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.value()).toEqual(['item-1']);
+      expect(r.instance.open()).toBe(false);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(voptOf(1).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('selection survives window recycling — value-keyed (single mode)', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.value.set(['item-2']);
+      r.instance.open.set(true);
+      r.instance.range.set([0, 10]);
+      await flush(r.fixture);
+
+      expect(voptOf(2).getAttribute('data-state')).toBe('checked');
+      expect(voptOf(2).getAttribute('aria-selected')).toBe('true');
+
+      r.instance.range.set([20, 30]);
+      await flush(r.fixture);
+      expect(document.querySelector('[data-test-id="opt-2"]')).toBeNull();
+
+      r.instance.range.set([0, 10]);
+      await flush(r.fixture);
+      const opt2 = voptOf(2);
+      expect(opt2.getAttribute('data-state')).toBe('checked');
+      expect(opt2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('open-time scroll-to-selected emits scrollToIndex with the committed option index', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await flush(r.fixture);
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.value()).toContain('item-49');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      r.instance.range.set([0, 10]);
+      r.instance.scrolled.set(null);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBe(49);
+    });
+
+    it('unmounting the active option clears aria-activedescendant', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(1).getAttribute('id'));
+
+      r.instance.range.set([20, 30]);
+      await flush(r.fixture);
+      expect(content.hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('non-virtualized path unchanged — no aria-activedescendant, arrow moves DOM focus', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open">
+            <button forSelectTrigger>T</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button forSelectOption value="x" data-test-id="nv2-x">X</button>
+                <button forSelectOption value="y" data-test-id="nv2-y">Y</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NonVirtualHost2 {
+        readonly open = signal(true);
+      }
+      const r = renderHost(NonVirtualHost2);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.hasAttribute('aria-activedescendant')).toBe(false);
+      const x = document.querySelector<HTMLButtonElement>('[data-test-id="nv2-x"]')!;
+      const y = document.querySelector<HTMLButtonElement>('[data-test-id="nv2-y"]')!;
+      x.focus();
+      x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(document.activeElement).toBe(y);
+    });
+
+    describe('zoneless reactivity', () => {
+      it('ArrowDown moves aria-activedescendant without Zone.js', async () => {
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const fixture = TestBed.createComponent(VirtualSelectHost);
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+        const content = document.querySelector('[data-test-id="content"]') as HTMLElement;
+        content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await flush(fixture);
+        const opt1Id = (
+          document.querySelector('[data-test-id="opt-1"]') as HTMLButtonElement
+        ).getAttribute('id');
+        expect(content.getAttribute('aria-activedescendant')).toBe(opt1Id);
+      });
+    });
+  });
 });

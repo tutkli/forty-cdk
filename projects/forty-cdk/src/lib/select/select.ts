@@ -23,6 +23,7 @@ import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
   moveIndex,
+  resolveListNavigation,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
@@ -47,6 +48,7 @@ import {
   type ForSelectOptionHandle,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
+import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
 
 /** Sentinel for an option handle whose `input.required` `[value]` is not yet written. */
 const NO_VALUE = Symbol('forty-cdk/select:no-value');
@@ -259,6 +261,28 @@ export class ForSelect<T = string>
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
+   * Total number of items in the source data. When set, switches the listbox
+   * to the virtualized `aria-activedescendant` focus model and populates
+   * `aria-setsize` on each rendered option. Leave unset (default) for the
+   * standard DOM-focus model.
+   */
+  readonly totalCount = input(undefined, {
+    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
+  });
+  /**
+   * Inclusive-exclusive `[start, end)` index range of the currently rendered
+   * options, provided by `injectVirtualizer`. Used to decide whether a
+   * navigation target is in the visible window.
+   */
+  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
+  /**
+   * Emitted when navigation (or open-time scroll-to-selected) reaches an
+   * option outside the rendered window. Pass to `injectVirtualizer`'s
+   * `scrollToIndex` so the correct option mounts.
+   */
+  readonly scrollToIndex = output<number>();
+
+  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -330,6 +354,26 @@ export class ForSelect<T = string>
 
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
+
+  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+  readonly #activeId = signal<string | null>(null);
+  /** The active option's `id` in the virtualized path, `null` in the default path. */
+  readonly activeDescendantId = computed<string | null>(() =>
+    this.#virtualized() ? this.#activeId() : null,
+  );
+
+  #navigator: SelectVirtualizedNavigator<T> | null = null;
+  #requireNavigator(): SelectVirtualizedNavigator<T> {
+    return (this.#navigator ??= new SelectVirtualizedNavigator<T>({
+      items: this.#items.items,
+      totalCount: this.totalCount,
+      visibleRange: this.visibleRange,
+      loop: this.loop,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#activeId.set(id),
+      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+    }));
+  }
 
   readonly options = this.#items.items;
 
@@ -485,6 +529,16 @@ export class ForSelect<T = string>
         this.#cachedOptions();
       }
     });
+
+    effect(() => {
+      this.#items.items();
+      if (!this.#virtualized()) {
+        return;
+      }
+      const navigator = this.#requireNavigator();
+      navigator.prime();
+      navigator.tryResolvePending();
+    });
   }
 
   setInitialFocus(target: ForSelectInitialFocus): void {
@@ -531,6 +585,9 @@ export class ForSelect<T = string>
   }
   unregisterOption(handle: ForSelectOptionHandle<T>): void {
     this.#items.unregister(handle);
+    if (this.#virtualized() && this.#activeId() === handle.id()) {
+      this.#activeId.set(null);
+    }
   }
 
   isSelected(v: T): boolean {
@@ -689,6 +746,10 @@ export class ForSelect<T = string>
   closeMenu(reason: ForSelectCloseReason): void {
     this.#lastCloseReason.set(reason);
     this.open.set(false);
+    if (this.#virtualized()) {
+      this.#activeId.set(null);
+      this.#navigator?.resetPending();
+    }
   }
 
   commitOnTab(value: T): void {
@@ -757,5 +818,115 @@ export class ForSelect<T = string>
 
   override markTouched(): void {
     super.markTouched();
+  }
+
+  seedVirtualizedInitialFocus(): void {
+    if (!this.#virtualized()) {
+      return;
+    }
+    const navigator = this.#requireNavigator();
+    const committed = this.#committedIndex(navigator);
+    if (committed !== null) {
+      navigator.seedActive(committed);
+      return;
+    }
+    navigator.navigate('first');
+  }
+
+  handleVirtualizedKeydown(event: KeyboardEvent): void {
+    if (!this.#virtualized() || this.effectiveDisabled()) {
+      return;
+    }
+    if (event.key === 'Tab') {
+      if (this.modal()) {
+        return;
+      }
+      this.#commitActiveDescendantOnTab();
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.#activateActiveDescendant();
+      return;
+    }
+    const action = resolveListNavigation(event, {
+      orientation: this.orientation(),
+      dir: this.dir(),
+    });
+    if (action) {
+      event.preventDefault();
+      this.#requireNavigator().navigate(action);
+      return;
+    }
+    this.#typeaheadVirtualized(event);
+  }
+
+  notifyOptionClick(optionId: string): void {
+    if (!this.#virtualized()) {
+      return;
+    }
+    this.#activeId.set(optionId);
+    this.#contentEl()?.focus();
+  }
+
+  #committedIndex(navigator: SelectVirtualizedNavigator<T>): number | null {
+    const values = this.value();
+    if (values.length === 0) {
+      return null;
+    }
+    const equals = this.isItemEqualToValue();
+    const snapshot = navigator.snapshotByPos();
+    for (const v of values) {
+      for (const [pos, entry] of snapshot) {
+        if (!entry.disabled && equals(entry.value, v)) {
+          return pos;
+        }
+      }
+    }
+    return null;
+  }
+
+  #activateActiveDescendant(): void {
+    const id = this.#activeId();
+    if (id === null) {
+      return;
+    }
+    const handle = this.#items.items().find((o) => o.id() === id);
+    if (!handle || handle.disabled()) {
+      return;
+    }
+    this.activate(handle.value());
+  }
+
+  #commitActiveDescendantOnTab(): void {
+    const id = this.#activeId();
+    const handle = id === null ? undefined : this.#items.items().find((o) => o.id() === id);
+    if (handle && !handle.disabled()) {
+      this.commitOnTab(handle.value());
+      return;
+    }
+    this.closeMenu('tab');
+  }
+
+  #typeaheadVirtualized(event: KeyboardEvent): void {
+    if (!this.#typeahead.handle(event)) {
+      return;
+    }
+    const buffer = this.#typeahead.buffer().toLowerCase();
+    if (!buffer) {
+      return;
+    }
+    const items = this.#items.items();
+    const match = items.find((o) => {
+      if (o.disabled()) {
+        return false;
+      }
+      const text = (o.host.textContent ?? '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
+    if (match) {
+      this.#activeId.set(match.id());
+      match.host.scrollIntoView?.({ block: 'nearest' });
+    }
   }
 }

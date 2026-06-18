@@ -212,6 +212,11 @@ export const routes: Routes = [
       import('./fixtures/listbox-virtualized.fixture').then((m) => m.ListboxVirtualizedFixture),
   },
   {
+    path: 'select-virtualized',
+    loadComponent: () =>
+      import('./fixtures/select-virtualized.fixture').then((m) => m.SelectVirtualizedFixture),
+  },
+  {
     path: 'virtualization',
     loadComponent: () =>
       import('./fixtures/virtualization.fixture').then((m) => m.VirtualizationFixture),

@@ -406,6 +406,82 @@ Multi mode uses the same two inputs — `[(value)]` is a `readonly City[]` and o
 - **`data-highlighted=""`** is reflected on the focused `[forSelectOption]` so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives.
 - **Open highlights the selected option, regardless of how the listbox was opened — an intentional divergence from the menu family.** Initial focus on open lands on the currently-selected option (see [Initial focus on open](#initial-focus-on-open)), and `data-highlighted` follows that focus, so a mouse-opened Select renders the selected option highlighted. This is deliberate: the highlight **marks the current value** (Radix-aligned), it does not fake a "preselection" that isn't there. It contrasts with the `[forMenu*]` items, whose `data-highlighted` is intent-driven — a pointer open focuses the first item **without** highlighting it ([#644](https://github.com/tutkli/forty-cdk/issues/644) / [#662](https://github.com/tutkli/forty-cdk/issues/662)) — because a menu has no "current value" to mark. `[forListbox]` shows neither effect: it's an embedded roving surface with no open-driven programmatic focus, so its highlight only ever derives from the roving active option. Decided in [#661](https://github.com/tutkli/forty-cdk/issues/661).
 
+## Virtualization
+
+For selects with thousands of options, bind `[totalCount]` to enable the **virtualized activedescendant focus model** backed by `injectVirtualizer`. The non-virtualized path (no `[totalCount]`) is byte-for-byte unchanged.
+
+### Focus-model switch
+
+| Mode                             | Tab stop / focus                                   | Active-option tracking                                  |
+| -------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| Non-virtualized (default)        | real DOM focus on each `[forSelectOption]`         | DOM `:focus` + `data-highlighted`                       |
+| Virtualized (`[totalCount]` set) | DOM focus on `[forSelectContent]` (`tabindex="0"`) | `aria-activedescendant` on content + `data-highlighted` |
+
+### Inputs and output
+
+| Binding                | Type                        | Description                                                                                                 |
+| ---------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option. |
+| `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                           |
+| `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.      |
+| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.    |
+
+### Navigation flow
+
+Arrow / Home / End keys are handled by `[forSelectContent]` (not the individual options) in the virtualized path. The content delegates to an internal navigator that walks `moveIndex` against the full `totalCount`, using the persisted position snapshot to handle disabled options outside the rendered window. When navigation lands outside the current window, `(scrollToIndex)` fires with the target index; once the option mounts the bridge effect resolves the pending activedescendant.
+
+On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option (scrolling it into view), or the first enabled option when nothing is selected.
+
+### Example with `injectVirtualizer`
+
+```html
+<div
+  forSelect
+  #select="forSelect"
+  [(value)]="value"
+  [totalCount]="items.length"
+  [visibleRange]="v.range()"
+  (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
+>
+  <button forSelectTrigger>
+    <span forSelectValue placeholder="Pick an item"></span>
+  </button>
+  @if (select.open()) {
+  <div forSelectContent #scroll style="overflow:auto; max-height:300px; position:relative">
+    <div [style.height.px]="v.totalSize()" style="position:relative">
+      @for (vi of v.virtualItems(); track vi.key) {
+      <button
+        forSelectOption
+        [value]="items[vi.index]!.id"
+        [posInSet]="vi.index"
+        [style.transform]="'translateY(' + vi.start + 'px)'"
+        style="position:absolute; left:0; right:0"
+      >
+        {{ items[vi.index]!.label }}
+      </button>
+      }
+    </div>
+  </div>
+  }
+</div>
+```
+
+```ts
+readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+readonly v = injectVirtualizer({
+  count: computed(() => this.items.length),
+  estimateSize: () => 36,
+  scrollElement: this.scrollElement,
+});
+```
+
+### Intentional limitations
+
+- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, and Ctrl+A are not implemented — range operations require knowledge of every intermediate position, which is unavailable in a windowed render.
+- **Typeahead matches only the rendered window.** `[forSelect]` runs typeahead against the live registered options; options scrolled out of the window are unmounted and invisible to the buffer.
+- **Cold-open committed-index resolution.** On the very first open, if the committed value has never been rendered (the option has never scrolled into the window), the position snapshot is empty and `[forSelect]` falls back to focusing the first enabled option. This mirrors the `[forSelectValue]` / `[itemToLabel]` cold-cache limitation: supply `[itemToLabel]` to render the label and open the listbox once to prime the snapshot.
+
 ## Wrapping in a design system
 
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
