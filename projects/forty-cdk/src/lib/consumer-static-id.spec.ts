@@ -10,7 +10,12 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../test-utils/flush';
 import { afterEachOverlayCleanup } from '../test-utils/overlay-cleanup';
-import { ForAccordion, ForAccordionContent, ForAccordionItem, ForAccordionTrigger } from './accordion';
+import {
+  ForAccordion,
+  ForAccordionContent,
+  ForAccordionItem,
+  ForAccordionTrigger,
+} from './accordion';
 import { ForCalendar, ForCalendarCell, ForCalendarGrid, ForCalendarHeading } from './calendar';
 import { provideNativeDateAdapter } from './calendar/native-date-adapter';
 import {
@@ -70,6 +75,7 @@ import {
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from './tabs';
 import { ForToast, ForToastDescription, ForToastTitle } from './toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from './tooltip';
+import { ForTree, ForTreeItem, ForTreeItemLabel } from './tree';
 
 /**
  * Library-wide contract for #659: every piece that host-binds `[id]` for aria
@@ -97,8 +103,7 @@ function mount<T>(host: Type<T>, extraProviders: Provider[] = []): ComponentFixt
  * (overlay content / dialog / drawer).
  */
 function idOf<T>(fixture: ComponentFixture<T>, selector: string): string {
-  const el =
-    fixture.nativeElement.querySelector(selector) ?? document.body.querySelector(selector);
+  const el = fixture.nativeElement.querySelector(selector) ?? document.body.querySelector(selector);
   if (!el) {
     throw new Error(`No element matched "${selector}"`);
   }
@@ -652,6 +657,33 @@ describe('consumer-set static id preservation (#659)', () => {
       const fixture = mount(NoIdHost);
       await flush(fixture);
       expect(idOf(fixture, '[forToastTitle]')).toMatch(/^for-toast-title-/);
+    });
+  });
+
+  describe('Tree', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<ul forTree [totalCount]="1" ariaLabel="Static">
+        <li
+          forTreeItem
+          value="a"
+          id="my-node"
+          [itemIndex]="0"
+          [level]="1"
+          [setSize]="1"
+          [posInSet]="1"
+        >
+          <div forTreeItemLabel>A</div>
+        </li>
+      </ul>`,
+    })
+    class Host {}
+
+    it('treeitem preserves a consumer-set static id', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(idOf(fixture, '[forTreeItem]')).toBe('my-node');
     });
   });
 });

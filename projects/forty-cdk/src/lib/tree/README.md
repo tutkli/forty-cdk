@@ -364,3 +364,165 @@ A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemTo
 - **`data-highlighted=""`** marks the current roving-tabindex node, the same hook used across the listbox / menu / select primitives.
 - **Exactly one node is tabbable** at a time (the selected node, or the first enabled node). `Tab` enters and leaves the whole tree in one stop.
 - **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative — the `treeitem` itself is the accessible checkbox. With `cascade`, a parent reports `aria-checked="mixed"` (and `data-checked="mixed"`) when only some of its descendants are checked; the cascade reaches collapsed / unmounted descendants through the `descendantsOf` descriptor, so the tri-state is always correct even when children are not yet mounted.
+
+## Virtualization
+
+For very large trees (thousands of nodes) bind `[totalCount]` to switch to an **activedescendant focus model** over a consumer-owned virtualized window.
+
+### Opt-in API
+
+#### `ForTree` additions
+
+| API             | Type                                            | Description                                                                                                                      |
+| --------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `totalCount`    | `input<number \| undefined>`                    | Total flattened node count. Setting this switches the tree to the activedescendant focus model. Leave unset for roving-tabindex. |
+| `visibleRange`  | `input<readonly [number, number] \| undefined>` | Inclusive-exclusive `[start, end)` index range of the currently rendered nodes. Provided by `injectVirtualizer`.                 |
+| `scrollToIndex` | `output<number>`                                | Emitted when keyboard navigation reaches a node outside the rendered window. Forward to `injectVirtualizer`'s `scrollToIndex`.   |
+
+#### `ForTreeItem` additions (virtualized path only)
+
+| API         | Type                    | Description                                                                                                                                            |
+| ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `itemIndex` | `input<number \| null>` | Zero-based absolute index in the flattened node list. **Required** in the virtualized path. Leave unset (default `null`) outside the virtualized path. |
+| `level`     | `input<number \| null>` | Tree depth of this node (1-based). Overrides the container-derived `aria-level` in the virtualized path.                                               |
+| `setSize`   | `input<number \| null>` | Total siblings at this node's level. Overrides the container-derived `aria-setsize` in the virtualized path.                                           |
+| `posInSet`  | `input<number \| null>` | 1-based position among siblings (matches `aria-posinset`). Overrides the container-derived value in the virtualized path.                              |
+
+**Naming note:** `[posInSet]` is the per-level `aria-posinset` (position among siblings at this level, 1-based). It is **not** the absolute flat index — that is `[itemIndex]`. This matches the ARIA attribute name and is intentionally different from how some other APIs name it.
+
+### Focus-model switch
+
+| Mode                              | Tree host tabindex | Item tabindex   | Focus mechanism                     |
+| --------------------------------- | ------------------ | --------------- | ----------------------------------- |
+| Standard (no `totalCount`)        | none               | `0` on one item | DOM focus rides the item (roving)   |
+| Virtualized (`totalCount` is set) | `0`                | `-1` always     | `aria-activedescendant` on the host |
+
+### Navigation flow
+
+1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, `posInSet`, and `itemIndex` for each node (using the true sibling totals — off-window siblings contribute their real counts because the consumer knows them).
+2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement })` drives the render window.
+3. The tree host receives `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
+4. Once the target node mounts (carrying the requested `[itemIndex]`), the bridge effect resolves the pending activedescendant.
+
+### Consumer example
+
+```ts
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  signal,
+  viewChild,
+} from '@angular/core';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  injectVirtualizer,
+} from 'forty-cdk';
+
+interface TreeNode {
+  value: string;
+  label: string;
+  children?: TreeNode[];
+}
+
+interface FlatNode {
+  value: string;
+  label: string;
+  level: number;
+  setSize: number;
+  posInSet: number;
+  itemIndex: number;
+  expandable: boolean;
+}
+
+function flatten(nodes: TreeNode[], expanded: ReadonlySet<string>, level = 1): FlatNode[] {
+  const result: FlatNode[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!;
+    result.push({
+      value: node.value,
+      label: node.label,
+      level,
+      setSize: nodes.length,
+      posInSet: i + 1,
+      itemIndex: result.length,
+      expandable: !!node.children?.length,
+    });
+    if (node.children?.length && expanded.has(node.value)) {
+      result.push(...flatten(node.children, expanded, level + 1));
+    }
+  }
+  return result;
+}
+
+@Component({
+  selector: 'app-virtual-tree',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+  template: `
+    <ul
+      forTree
+      #scroll
+      aria-label="Files"
+      [(value)]="selected"
+      [(expanded)]="expanded"
+      [totalCount]="flat().length"
+      [visibleRange]="v.range()"
+      (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
+      style="overflow: auto; max-height: 400px; position: relative;"
+    >
+      <div [style.height.px]="v.totalSize()" style="position: relative">
+        @for (vi of v.virtualItems(); track vi.key) {
+          <li
+            forTreeItem
+            [value]="flat()[vi.index]!.value"
+            [level]="flat()[vi.index]!.level"
+            [setSize]="flat()[vi.index]!.setSize"
+            [posInSet]="flat()[vi.index]!.posInSet"
+            [itemIndex]="vi.index"
+            [style.transform]="'translateY(' + vi.start + 'px)'"
+            style="position: absolute; left: 0; right: 0;"
+          >
+            @if (flat()[vi.index]!.expandable) {
+              <span forTreeItemToggle>▸</span>
+            }
+            <div forTreeItemLabel>{{ flat()[vi.index]!.label }}</div>
+          </li>
+        }
+      </div>
+    </ul>
+  `,
+})
+export class VirtualTree {
+  readonly selected = signal<readonly string[]>([]);
+  readonly expanded = signal<readonly string[]>([]);
+
+  readonly roots: TreeNode[] = [
+    /* large tree data */
+  ];
+
+  readonly flat = computed(() => flatten(this.roots, new Set(this.expanded())));
+
+  private readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+
+  readonly v = injectVirtualizer({
+    count: computed(() => this.flat().length),
+    estimateSize: () => 32,
+    scrollElement: this.scrollElement,
+  });
+}
+```
+
+### Intentional limitations
+
+The following behaviors are unavailable in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
+
+- **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are dropped. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Provide a custom selection UI (checkboxes with `selectionMode="checkbox"`) for multi-select over large trees.
+- **Cross-window typeahead** only matches within the currently rendered window. Typeahead over unmounted nodes is not supported.
+- **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
+- **`moveToParent`** (ArrowLeft on a leaf / collapsed node) may no-op if the parent node has never been rendered and therefore has no snapshot entry. This is an accepted edge case; consumers who need reliable parent navigation should keep the parent's level window visible.
