@@ -25,6 +25,7 @@ import {
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
+import { ForTableVirtualized } from './table-virtualized';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -345,6 +346,24 @@ class TreegridTableHost {
     const openIds = this.expanded() as readonly string[];
     return TREEGRID_DATA.filter((row) => row.parentId === null || openIds.includes(row.parentId));
   });
+}
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="1000" #v="forTableVirtualized">
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          <div forTableRow [virtualIndex]="vi" [attr.data-testid]="'row-' + vi">
+            <div forTableCell name="a">{{ vi }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedTableHost {
+  readonly windowIndices = signal<readonly number[]>([50, 51, 52]);
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -1418,6 +1437,14 @@ describe('ForTable', () => {
       expect(parentRow.getAttribute('data-state')).toBe('open');
       expect(el.querySelector<HTMLElement>('[data-testid="row-a1"]')).not.toBeNull();
     });
+
+    it('virtualIndex change reflects aria-rowindex without Zone.js', () => {
+      const { el, instance, flush } = renderHost(VirtualizedTableHost);
+      instance.windowIndices.set([100, 101, 102]);
+      flush();
+      const row100 = el.querySelector<HTMLElement>('[data-testid="row-100"]')!;
+      expect(row100.getAttribute('aria-rowindex')).toBe('101');
+    });
   });
 
   describe('treegrid mode', () => {
@@ -1565,6 +1592,28 @@ describe('ForTable', () => {
       toggleA.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       flush();
       expect(instance.expanded()).not.toContain('a');
+    });
+  });
+
+  describe('virtualization', () => {
+    it('aria-rowcount is the declared true total, not the rendered row count', () => {
+      const { el } = renderHost(VirtualizedTableHost);
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('1000');
+    });
+
+    it('aria-rowindex is the absolute 1-based index driven by virtualIndex', () => {
+      const { el } = renderHost(VirtualizedTableHost);
+      const row50 = el.querySelector<HTMLElement>('[data-testid="row-50"]')!;
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      const row52 = el.querySelector<HTMLElement>('[data-testid="row-52"]')!;
+      expect(row50.getAttribute('aria-rowindex')).toBe('51');
+      expect(row51.getAttribute('aria-rowindex')).toBe('52');
+      expect(row52.getAttribute('aria-rowindex')).toBe('53');
+    });
+
+    it('the companion builds and coexists with ForTable without throwing', () => {
+      const { el } = renderHost(VirtualizedTableHost);
+      expect(rootEl(el).hasAttribute('forTableVirtualized')).toBe(true);
     });
   });
 });

@@ -185,6 +185,19 @@ export class ForTable implements ForTableContext {
     return this.#rows.items().find((row) => row.cells().some((cell) => cell.host === cellHost));
   }
 
+  /**
+   * Absolute index of the row that owns the currently roving-focused cell, or `null`
+   * when no cell is focused (or the focused row carries no `virtualIndex`). Used by
+   * `[forTableVirtualized]` to keep the focused row mounted across recycling.
+   */
+  readonly focusedRowIndex = computed<number | null>(() => {
+    const active = this.#roving.active();
+    if (active === null) {
+      return null;
+    }
+    return this.#rowOfCell(active)?.virtualIndex() ?? null;
+  });
+
   protected readonly rowCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.rowCount() ?? this.#rows.items().length),
   );
