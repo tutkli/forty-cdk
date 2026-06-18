@@ -20,11 +20,14 @@ export interface ForHoverCardContext {
   readonly clipUntilPositioned: Signal<boolean>;
   readonly trigger: Signal<HTMLElement | null>;
   readonly arrow: Signal<HTMLElement | null>;
+  readonly content: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
   unregisterArrow(el: HTMLElement): void;
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
 
   /** Schedule the card to open after `openDelay` ms (instant when delay is 0). */
   scheduleOpen(reason: HoverCardScheduleReason): void;

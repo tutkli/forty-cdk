@@ -192,6 +192,9 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
+  readonly #contentEl = signal<HTMLElement | null>(null);
+  readonly content = this.#contentEl.asReadonly();
+
   readonly #coordinator = inject(HoverCardCoordinator);
   readonly #hoverIntent: HoverIntentScheduler;
 
@@ -240,6 +243,16 @@ export class ForHoverCard implements ForHoverCardContext {
   unregisterArrow(el: HTMLElement): void {
     if (this.#arrowEl() === el) {
       this.#arrowEl.set(null);
+    }
+  }
+
+  registerContent(el: HTMLElement): void {
+    this.#contentEl.set(el);
+  }
+
+  unregisterContent(el: HTMLElement): void {
+    if (this.#contentEl() === el) {
+      this.#contentEl.set(null);
     }
   }
 

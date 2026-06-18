@@ -60,8 +60,11 @@ class HoverCardWithArrowHost {
   readonly isOpen = signal(false);
 }
 
-function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
-  return new PointerEvent(type, { bubbles: true });
+function pointerEvent(
+  type: 'pointerenter' | 'pointerleave',
+  relatedTarget: EventTarget | null = null,
+): PointerEvent {
+  return new PointerEvent(type, { bubbles: true, relatedTarget });
 }
 
 describe('ForHoverCard', () => {
@@ -178,6 +181,38 @@ describe('ForHoverCard', () => {
       vi.advanceTimersByTime(500);
       flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('stays open with closeDelay:0 when the pointer leaves the trigger into overlapping content', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      // Overlapping content: the browser fires pointerleave on the covered
+      // trigger with relatedTarget = the content element.
+      trigger.dispatchEvent(pointerEvent('pointerleave', content));
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('still closes with closeDelay:0 when the pointer leaves the trigger to an unrelated element', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
     it('closes after delay when the cursor leaves the content', () => {

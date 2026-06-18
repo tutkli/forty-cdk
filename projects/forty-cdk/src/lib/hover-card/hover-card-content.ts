@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectHoverCardContext } from './hover-card-context';
@@ -37,6 +37,10 @@ export class ForHoverCardContent {
   protected readonly ctx = injectHoverCardContext('ForHoverCardContent');
 
   constructor() {
+    const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    this.ctx.registerContent(el);
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(el));
+
     injectOverlayShell({
       positioner: {
         kind: 'floating',
