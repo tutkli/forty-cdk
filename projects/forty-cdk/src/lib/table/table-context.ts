@@ -129,6 +129,20 @@ export interface ForTableContext {
    * targeting an unmounted row are handled by the virtualization bridge.
    */
   registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void;
+  /**
+   * Absolute index of the row currently being pointer-reordered (set by
+   * `[forTableRowReorder]` on lift, cleared on release), or `null` when no row is
+   * being reordered. `[forTableVirtualized]` keeps this row mounted for the
+   * duration of the drag so auto-scroll cannot unmount the lifted row and desync
+   * the emitted drop indices. `null` and unused outside a virtualized table.
+   */
+  readonly reorderingRowIndex: Signal<number | null>;
+  /**
+   * Sets (or clears, with `null`) the absolute index of the row being
+   * pointer-reordered. Called by `[forTableRowReorder]`; read by
+   * `[forTableVirtualized]` to retain the lifted row in the rendered window.
+   */
+  setReorderingRow(index: number | null): void;
   /** Whether `value` is in the open-rows set (`treegrid` expansion). */
   isRowExpanded(value: unknown): boolean;
   /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
