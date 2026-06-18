@@ -1,4 +1,13 @@
-import { computed, Directive, ElementRef, inject, input, type Signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  numberAttribute,
+  type Signal,
+} from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
 import { registerHandle } from '../_internal/collection/register-handle';
@@ -24,6 +33,11 @@ import {
     '[attr.aria-rowindex]': 'rowIndex()',
     '[attr.aria-selected]': 'ariaSelected()',
     '[attr.data-selected]': 'selected() ? "" : null',
+    '[attr.aria-level]': 'ariaLevel()',
+    '[attr.aria-posinset]': 'posinset()',
+    '[attr.aria-setsize]': 'setsize()',
+    '[attr.aria-expanded]': 'ariaExpanded()',
+    '[attr.data-state]': 'expandState()',
     '(click)': 'onClick($event)',
   },
   providers: [{ provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow }],
@@ -35,6 +49,12 @@ export class ForTableRow implements ForTableRowContext {
 
   /** This row's selection identity, written into the table's `[(selection)]`. Leave unset for non-selectable rows. */
   readonly value = input<unknown>();
+
+  /** 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes. */
+  readonly level = input(1, { transform: numberAttribute });
+
+  /** Marks this row as an expandable parent — emits `aria-expanded` + `data-state`. */
+  readonly expandable = input(false, { transform: booleanAttribute });
 
   protected readonly rowIndex = computed<number | null>(() =>
     this.ctx.mode() === 'table' ? null : this.ctx.rowIndexOf(this.#host) + 1,
@@ -51,8 +71,51 @@ export class ForTableRow implements ForTableRowContext {
     this.ctx.selectionMode() === 'none' ? null : this.selected() ? 'true' : 'false',
   );
 
+  /** Whether this expandable row is currently open. False for non-expandable rows. */
+  readonly expanded = computed(() => {
+    const v = this.value();
+    return v !== undefined && this.ctx.isRowExpanded(v);
+  });
+
+  /** Toggles this row's expansion. No-op when the row is not expandable or has no `[value]`. */
+  toggleExpanded(): void {
+    if (this.expandable()) {
+      this.ctx.toggleRowExpansion(this.value());
+    }
+  }
+
+  protected readonly ariaLevel = computed<number | null>(() =>
+    this.ctx.mode() === 'treegrid' ? this.level() : null,
+  );
+  protected readonly posinset = computed<number | null>(() =>
+    this.ctx.mode() === 'treegrid' ? this.ctx.rowPosinset(this.#host) : null,
+  );
+  protected readonly setsize = computed<number | null>(() =>
+    this.ctx.mode() === 'treegrid' ? this.ctx.rowSetsize(this.#host) : null,
+  );
+  protected readonly ariaExpanded = computed<'true' | 'false' | null>(() =>
+    this.ctx.mode() === 'treegrid' && this.expandable()
+      ? this.expanded()
+        ? 'true'
+        : 'false'
+      : null,
+  );
+  protected readonly expandState = computed<'open' | 'closed' | null>(() =>
+    this.ctx.mode() === 'treegrid' && this.expandable()
+      ? this.expanded()
+        ? 'open'
+        : 'closed'
+      : null,
+  );
+
   constructor() {
-    const handle = { host: this.#host, cells: this.#cells.items, value: this.value };
+    const handle = {
+      host: this.#host,
+      cells: this.#cells.items,
+      value: this.value,
+      level: this.level,
+      expandable: this.expandable,
+    };
     registerHandle(
       handle,
       (h) => this.ctx.registerRow(h),

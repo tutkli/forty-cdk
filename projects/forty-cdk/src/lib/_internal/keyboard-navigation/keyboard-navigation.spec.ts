@@ -3,6 +3,7 @@ import {
   moveIndex,
   resolveGridNavigation,
   resolveListNavigation,
+  resolveTreegridExpandCollapse,
 } from './keyboard-navigation';
 
 const key = (k: string, init: KeyboardEventInit = {}) =>
@@ -141,6 +142,38 @@ describe('moveIndex', () => {
   it('returns null on empty list', () => {
     expect(moveIndex(0, 0, 'next')).toBe(null);
     expect(moveIndex(0, 0, 'first')).toBe(null);
+  });
+});
+
+describe('resolveTreegridExpandCollapse', () => {
+  it('ArrowRight → expand in ltr (default)', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowRight'))).toBe('expand');
+  });
+
+  it('ArrowLeft → collapse in ltr (default)', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowLeft'))).toBe('collapse');
+  });
+
+  it('ArrowRight → collapse in rtl', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowRight'), 'rtl')).toBe('collapse');
+  });
+
+  it('ArrowLeft → expand in rtl', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowLeft'), 'rtl')).toBe('expand');
+  });
+
+  it('ArrowDown → null', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowDown'))).toBe(null);
+  });
+
+  it('ArrowUp → null', () => {
+    expect(resolveTreegridExpandCollapse(key('ArrowUp'))).toBe(null);
+  });
+
+  it('unrelated keys → null', () => {
+    expect(resolveTreegridExpandCollapse(key('Enter'))).toBe(null);
+    expect(resolveTreegridExpandCollapse(key(' '))).toBe(null);
+    expect(resolveTreegridExpandCollapse(key('Tab'))).toBe(null);
   });
 });
 

@@ -231,6 +231,29 @@ export function moveGridIndex(
   }
 }
 
+/** A horizontal-arrow intent to expand or collapse a treegrid parent row. */
+export type ExpandCollapseAction = 'expand' | 'collapse';
+
+/**
+ * Maps a horizontal arrow keydown to an expand/collapse intent for a treegrid,
+ * RTL-mirrored: ArrowRight expands (collapses in `rtl`), ArrowLeft collapses
+ * (expands in `rtl`). Returns `null` for any other key. The caller decides
+ * whether the intent actually applies (row is an expandable parent in the right
+ * open/closed state) and otherwise falls through to grid navigation.
+ */
+export function resolveTreegridExpandCollapse(
+  event: KeyboardEvent,
+  dir: WritingDirection = 'ltr',
+): ExpandCollapseAction | null {
+  if (event.key === 'ArrowRight') {
+    return dir === 'rtl' ? 'collapse' : 'expand';
+  }
+  if (event.key === 'ArrowLeft') {
+    return dir === 'rtl' ? 'expand' : 'collapse';
+  }
+  return null;
+}
+
 function scanFirstEnabled(
   start: number,
   count: number,

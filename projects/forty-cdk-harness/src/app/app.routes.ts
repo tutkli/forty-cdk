@@ -202,6 +202,11 @@ export const routes: Routes = [
       import('./fixtures/table-reorder.fixture').then((m) => m.TableReorderFixture),
   },
   {
+    path: 'table-treegrid',
+    loadComponent: () =>
+      import('./fixtures/table-treegrid.fixture').then((m) => m.TableTreegridFixture),
+  },
+  {
     path: 'combobox-virtualized',
     loadComponent: () =>
       import('./fixtures/combobox-virtualized.fixture').then((m) => m.ComboboxVirtualizedFixture),
