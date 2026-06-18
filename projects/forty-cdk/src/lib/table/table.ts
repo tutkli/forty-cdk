@@ -121,6 +121,17 @@ export class ForTable implements ForTableContext {
   readonly compareWith = input<(a: unknown, b: unknown) => boolean>((a, b) => a === b);
 
   /**
+   * Full ordered set of selectable row values (each row's `[value]`), for a
+   * virtualized or server-paged table whose aggregate selection operations must
+   * span rows beyond the rendered window. When `null` (default), the select-all
+   * tri-state, `toggleSelectAll`, and Shift-click range selection compute against
+   * the registered (rendered) rows only. When supplied, they use this set as the
+   * universe of selectable values, so a range can span unmounted rows and the
+   * tri-state reflects the true dataset. Per-row selection is unaffected.
+   */
+  readonly selectableValues = input<readonly unknown[] | null>(null);
+
+  /**
    * Two-way bindable open parent-row values (each row's `[value]`), for
    * `mode="treegrid"`. The implicit `expandedChange` fires only on internal
    * expand/collapse (ArrowRight/ArrowLeft, `toggleRowExpansion`), never on
@@ -150,14 +161,17 @@ export class ForTable implements ForTableContext {
     compareWith: (a, b) => this.compareWith()(a, b),
   });
   readonly #anchorValue = signal<unknown>(undefined);
-  readonly #selectableValues = computed<readonly unknown[]>(() =>
+  readonly #registeredValues = computed<readonly unknown[]>(() =>
     this.#rows
       .items()
       .map((row) => row.value())
       .filter((v) => v !== undefined),
   );
+  readonly #aggregateValues = computed<readonly unknown[]>(
+    () => this.selectableValues() ?? this.#registeredValues(),
+  );
   readonly selectAllState = computed<TableSelectAllState>(() => {
-    const values = this.#selectableValues();
+    const values = this.#aggregateValues();
     if (values.length === 0) {
       return 'none';
     }
@@ -336,12 +350,12 @@ export class ForTable implements ForTableContext {
     if (this.selectAllState() === 'all') {
       this.#selection.clear();
     } else {
-      this.#selection.select(...this.#selectableValues());
+      this.#selection.select(...this.#aggregateValues());
     }
   }
 
   #selectRange(toValue: unknown): void {
-    const values = this.#selectableValues();
+    const values = this.#aggregateValues();
     const equals = this.compareWith();
     const toIdx = values.findIndex((v) => equals(v, toValue));
     if (toIdx < 0) {

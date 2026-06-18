@@ -232,6 +232,36 @@ Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-st
 </div>
 ```
 
+### Total-aware aggregates under virtualization: `[selectableValues]`
+
+By default the select-all tri-state, `toggleSelectAll`, and Shift-click range selection compute against the **registered (rendered)** rows. Under `[forTableVirtualized]` only the windowed rows are registered, so these aggregates would otherwise see only the visible slice — select-all would report "all" once every _visible_ row is selected, and a range could not span unmounted rows.
+
+Supply the full ordered set of selectable values via `[selectableValues]` so the aggregates compute against the true dataset instead of the window:
+
+- The select-all tri-state reflects `selection` vs. the full set, so it stays correct across scrolling.
+- `toggleSelectAll()` selects / clears every supplied value.
+- Shift-click range resolves against the supplied order, so a range can span rows that are not currently mounted.
+
+Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected — it persists in the bound `[(selection)]` array regardless of mount state. Leave `[selectableValues]` unset (`null`, the default) for non-virtualized tables to keep the registered-rows behaviour.
+
+```html
+<div
+  forTable
+  forTableVirtualized
+  mode="grid"
+  selectionMode="multiple"
+  [rowCount]="people().length"
+  [selectableValues]="peopleIds()"
+  [(selection)]="selection"
+>
+  <!-- header with [forTableSelectAll], windowed rows with [forTableRowSelector] -->
+</div>
+```
+
+```ts
+protected readonly peopleIds = computed(() => this.people().map((p) => p.id));
+```
+
 ### Minimal multiple-select example
 
 ```html
@@ -569,36 +599,37 @@ afterEveryRender(() => {
 
 ## Inputs
 
-| Directive                 | Input               | Type                                    | Default        | Description                                                                                                 |
-| ------------------------- | ------------------- | --------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| `[forTable]`              | `mode`              | `'table' \| 'grid' \| 'treegrid'`       | `'table'`      | ARIA role emitted on the host.                                                                              |
-| `[forTable]`              | `ariaLabel`         | `string \| null`                        | `null`         | Reactive accessible label.                                                                                  |
-| `[forTable]`              | `dir`               | `'ltr' \| 'rtl' \| null`                | `null`         | Writing direction; resolves ambient when unset.                                                             |
-| `[forTable]`              | `rowCount`          | `number`                                | rendered count | True total data-row count for `aria-rowcount`. Ignored in `table` mode.                                     |
-| `[forTable]`              | `colCount`          | `number`                                | rendered count | True total column count for `aria-colcount`. Ignored in `table` mode.                                       |
-| `[forTable]`              | `selectionMode`     | `'none' \| 'single' \| 'multiple'`      | `'none'`       | Row selection mode.                                                                                         |
-| `[forTable]`              | `selectionBehavior` | `'toggle' \| 'replace'`                 | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).                                       |
-| `[forTable]`              | `selection`         | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable selected row values.                                                                       |
-| `[forTable]`              | `compareWith`       | `(a: unknown, b: unknown) => boolean`   | `===`          | Equality comparator for row values. Override for object rows.                                               |
-| `[forTable]`              | `expanded`          | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.                      |
-| `[forTableHeaderCell]`    | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                              |
-| `[forTableHeaderCell]`    | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                    |
-| `[forTableCell]`          | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                              |
-| `[forTableCell]`          | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                    |
-| `[forTableCell]`          | `disabled`          | `boolean`                               | `false`        | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.                                      |
-| `[forTableRow]`           | `value`             | `unknown`                               | `undefined`    | Selection identity for this row. Leave unset for non-selectable rows.                                       |
-| `[forTableRow]`           | `level`             | `number`                                | `1`            | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.                           |
-| `[forTableRow]`           | `expandable`        | `boolean`                               | `false`        | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.                               |
-| `[forTableSelectAll]`     | `ariaLabel`         | `string \| null`                        | `null`         | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).                                    |
-| `[forTableSortHeader]`    | `column`            | `string` (required)                     | —              | Column identity included in the `sortChange` payload.                                                       |
-| `[forTableSortHeader]`    | `direction`         | `'ascending' \| 'descending' \| 'none'` | `'none'`       | Current sort direction (two-way bindable via `[(direction)]`).                                              |
-| `[forTableSortHeader]`    | `disableClear`      | `boolean`                               | `false`        | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.                                             |
-| `[forTableSortHeader]`    | `sortable`          | `boolean`                               | `true`         | When `false`, the header is fully inert (no tabindex, no aria-sort).                                        |
-| `[forTableColumnResizer]` | `column`            | `string` (required)                     | —              | Column identity; included in the `resizeCommit` payload and the CSS var name.                               |
-| `[forTableColumnResizer]` | `width`             | `model<number>()`                       | `undefined`    | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update. |
-| `[forTableColumnResizer]` | `min`               | `number`                                | `0`            | Minimum width in pixels.                                                                                    |
-| `[forTableColumnResizer]` | `max`               | `number`                                | `Infinity`     | Maximum width in pixels. No upper bound by default.                                                         |
-| `[forTableColumnResizer]` | `step`              | `number`                                | `10`           | Pixels applied per `ArrowLeft` / `ArrowRight` press.                                                        |
+| Directive                 | Input               | Type                                    | Default        | Description                                                                                                           |
+| ------------------------- | ------------------- | --------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `[forTable]`              | `mode`              | `'table' \| 'grid' \| 'treegrid'`       | `'table'`      | ARIA role emitted on the host.                                                                                        |
+| `[forTable]`              | `ariaLabel`         | `string \| null`                        | `null`         | Reactive accessible label.                                                                                            |
+| `[forTable]`              | `dir`               | `'ltr' \| 'rtl' \| null`                | `null`         | Writing direction; resolves ambient when unset.                                                                       |
+| `[forTable]`              | `rowCount`          | `number`                                | rendered count | True total data-row count for `aria-rowcount`. Ignored in `table` mode.                                               |
+| `[forTable]`              | `colCount`          | `number`                                | rendered count | True total column count for `aria-colcount`. Ignored in `table` mode.                                                 |
+| `[forTable]`              | `selectionMode`     | `'none' \| 'single' \| 'multiple'`      | `'none'`       | Row selection mode.                                                                                                   |
+| `[forTable]`              | `selectionBehavior` | `'toggle' \| 'replace'`                 | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).                                                 |
+| `[forTable]`              | `selection`         | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable selected row values.                                                                                 |
+| `[forTable]`              | `compareWith`       | `(a: unknown, b: unknown) => boolean`   | `===`          | Equality comparator for row values. Override for object rows.                                                         |
+| `[forTable]`              | `selectableValues`  | `readonly unknown[] \| null`            | `null`         | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows. |
+| `[forTable]`              | `expanded`          | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.                                |
+| `[forTableHeaderCell]`    | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                                        |
+| `[forTableHeaderCell]`    | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                              |
+| `[forTableCell]`          | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                                        |
+| `[forTableCell]`          | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                              |
+| `[forTableCell]`          | `disabled`          | `boolean`                               | `false`        | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.                                                |
+| `[forTableRow]`           | `value`             | `unknown`                               | `undefined`    | Selection identity for this row. Leave unset for non-selectable rows.                                                 |
+| `[forTableRow]`           | `level`             | `number`                                | `1`            | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.                                     |
+| `[forTableRow]`           | `expandable`        | `boolean`                               | `false`        | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.                                         |
+| `[forTableSelectAll]`     | `ariaLabel`         | `string \| null`                        | `null`         | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).                                              |
+| `[forTableSortHeader]`    | `column`            | `string` (required)                     | —              | Column identity included in the `sortChange` payload.                                                                 |
+| `[forTableSortHeader]`    | `direction`         | `'ascending' \| 'descending' \| 'none'` | `'none'`       | Current sort direction (two-way bindable via `[(direction)]`).                                                        |
+| `[forTableSortHeader]`    | `disableClear`      | `boolean`                               | `false`        | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.                                                       |
+| `[forTableSortHeader]`    | `sortable`          | `boolean`                               | `true`         | When `false`, the header is fully inert (no tabindex, no aria-sort).                                                  |
+| `[forTableColumnResizer]` | `column`            | `string` (required)                     | —              | Column identity; included in the `resizeCommit` payload and the CSS var name.                                         |
+| `[forTableColumnResizer]` | `width`             | `model<number>()`                       | `undefined`    | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.           |
+| `[forTableColumnResizer]` | `min`               | `number`                                | `0`            | Minimum width in pixels.                                                                                              |
+| `[forTableColumnResizer]` | `max`               | `number`                                | `Infinity`     | Maximum width in pixels. No upper bound by default.                                                                   |
+| `[forTableColumnResizer]` | `step`              | `number`                                | `10`           | Pixels applied per `ArrowLeft` / `ArrowRight` press.                                                                  |
 
 ## CSS hooks
 

@@ -265,6 +265,44 @@ class SelectionTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      selectionMode="multiple"
+      selectionBehavior="replace"
+      [selectableValues]="totalValues()"
+      [(selection)]="selection"
+    >
+      <div role="rowgroup">
+        <div role="row">
+          <div role="columnheader">
+            <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
+          </div>
+          <div role="columnheader">Name</div>
+        </div>
+      </div>
+      <div role="rowgroup">
+        @for (id of windowIds(); track id) {
+          <div forTableRow [value]="id" [attr.data-testid]="'row-' + id">
+            <div forTableCell name="sel" [attr.data-testid]="'cell-sel-' + id">
+              <span forTableRowSelector [attr.data-testid]="'selector-' + id"></span>
+            </div>
+            <div forTableCell name="name" [attr.data-testid]="'cell-name-' + id">{{ id }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TotalSelectionTableHost {
+  readonly totalValues = signal<readonly unknown[] | null>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  readonly windowIds = signal<readonly number[]>([0, 5, 9]);
+  readonly selection = signal<readonly unknown[]>([]);
+}
+
+@Component({
   imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableSortHeader],
   template: `
     <div forTable>
@@ -1064,6 +1102,88 @@ describe('ForTable', () => {
     });
   });
 
+  describe('total-aware selection (selectableValues)', () => {
+    const selectAllEl = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+    const sortedNums = (xs: readonly unknown[]) => [...xs].map(Number).sort((a, b) => a - b);
+
+    it('toggleSelectAll selects every supplied value, not just the rendered window', () => {
+      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
+      const selectAll = selectAllEl(el);
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(sortedNums(instance.selection())).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+      for (const id of instance.windowIds()) {
+        expect(
+          el.querySelector<HTMLElement>(`[data-testid="row-${id}"]`)!.getAttribute('aria-selected'),
+        ).toBe('true');
+      }
+    });
+
+    it('select-all tri-state is "mixed" when all rendered rows are selected but the dataset has more', () => {
+      const { el, flush } = renderHost(TotalSelectionTableHost);
+      for (const id of [0, 5, 9]) {
+        el.querySelector<HTMLElement>(`[data-testid="selector-${id}"]`)!.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true }),
+        );
+      }
+      flush();
+
+      const selectAll = selectAllEl(el);
+      expect(selectAll.getAttribute('aria-checked')).toBe('mixed');
+      expect(selectAll.getAttribute('data-state')).toBe('indeterminate');
+    });
+
+    it('toggleSelectAll clears the selection when every supplied value is already selected', () => {
+      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
+      instance.selection.set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      flush();
+      const selectAll = selectAllEl(el);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(instance.selection()).toEqual([]);
+      expect(selectAll.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('Shift-click range spans rows that are not currently mounted', () => {
+      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
+      const cell0 = el.querySelector<HTMLElement>('[data-testid="cell-name-0"]')!;
+      const cell9 = el.querySelector<HTMLElement>('[data-testid="cell-name-9"]')!;
+
+      cell0.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      cell9.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }),
+      );
+      flush();
+
+      expect(sortedNums(instance.selection())).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    });
+
+    it('unset selectableValues falls back to the registered rows (windowed behaviour preserved)', () => {
+      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
+      instance.totalValues.set(null);
+      flush();
+
+      for (const id of [0, 5, 9]) {
+        el.querySelector<HTMLElement>(`[data-testid="selector-${id}"]`)!.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true }),
+        );
+      }
+      flush();
+
+      const selectAll = selectAllEl(el);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+      expect(selectAll.getAttribute('data-state')).toBe('checked');
+    });
+  });
+
   describe('sort headers', () => {
     const sortHeader = (el: HTMLElement) =>
       el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
@@ -1490,6 +1610,17 @@ describe('ForTable', () => {
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
       expect(selector1.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('total-aware select-all selects the full supplied set without Zone.js', () => {
+      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+
+      expect(instance.selection().length).toBe(10);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
     });
 
     it('clicking the sort header reflects aria-sort without Zone.js', () => {
