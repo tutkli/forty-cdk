@@ -5,6 +5,7 @@ import { TreeCheckboxExample } from './examples/checkbox.example';
 import { TreeExpansionExample } from './examples/expansion.example';
 import { TreeExplorerExample } from './examples/explorer.example';
 import { TreeFilterExample } from './examples/filter.example';
+import { TreeVirtualizedExample } from './examples/virtualized.example';
 
 @Component({
   selector: 'app-tree-page',
@@ -15,6 +16,7 @@ import { TreeFilterExample } from './examples/filter.example';
     TreeExpansionExample,
     TreeCheckboxExample,
     TreeFilterExample,
+    TreeVirtualizedExample,
   ],
   template: `
     <primitive-page slug="tree">
@@ -22,6 +24,7 @@ import { TreeFilterExample } from './examples/filter.example';
       <app-tree-checkbox-example />
       <app-tree-filter-example />
       <app-tree-expansion-example />
+      <app-tree-virtualized-example />
     </primitive-page>
   `,
 })

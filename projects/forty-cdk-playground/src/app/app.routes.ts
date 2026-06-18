@@ -188,5 +188,14 @@ export const routes: Routes = [
     path: 'carousel',
     loadComponent: () => import('./demos/carousel/carousel.page').then((m) => m.CarouselPage),
   },
+  {
+    path: 'drag-drop',
+    loadComponent: () => import('./demos/drag-drop/drag-drop.page').then((m) => m.DragDropPage),
+  },
+  {
+    path: 'virtualization',
+    loadComponent: () =>
+      import('./demos/virtualization/virtualization.page').then((m) => m.VirtualizationPage),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];

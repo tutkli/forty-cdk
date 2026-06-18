@@ -4,16 +4,24 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { ListboxExample } from './examples/listbox.example';
 import { ListboxFormFieldExample } from './examples/form-field.example';
 import { ListboxGroupsExample } from './examples/groups.example';
+import { ListboxVirtualizedExample } from './examples/virtualized.example';
 
 @Component({
   selector: 'app-listbox-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, ListboxExample, ListboxGroupsExample, ListboxFormFieldExample],
+  imports: [
+    PrimitivePage,
+    ListboxExample,
+    ListboxGroupsExample,
+    ListboxFormFieldExample,
+    ListboxVirtualizedExample,
+  ],
   template: `
     <primitive-page slug="listbox">
       <app-listbox-example />
       <app-listbox-groups-example />
       <app-listbox-form-field-example />
+      <app-listbox-virtualized-example />
     </primitive-page>
   `,
 })
