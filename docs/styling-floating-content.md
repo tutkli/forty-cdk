@@ -41,7 +41,7 @@ CSS composes the individual `translate` / `rotate` / `scale` properties and the 
 }
 ```
 
-The `--for-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center. (`transform: scale(0.95)` with the same `transform-origin` is equivalent — use whichever fits your keyframes.)
+The `--for-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center. Like the positioner's `translate`, it is **retained through the close**, so a scale `animate.leave` keeps pivoting from the trigger edge instead of collapsing toward the surface's own center. (`transform: scale(0.95)` with the same `transform-origin` is equivalent — use whichever fits your keyframes.)
 
 ---
 
@@ -69,15 +69,15 @@ Typical usage: `-4px` to `-6px` so the arrow visually straddles the content bord
 
 ## CSS custom properties
 
-All floating content directives set these properties on the **content host element** while `open` is `true`. They are cleared on close.
+All floating content directives set these properties on the **content host element** while `open` is `true`. The sizing vars (`--for-anchor-width`, `--for-anchor-height`, `--for-available-width`, `--for-available-height`) are cleared on close; `--for-content-transform-origin` — like the positioner's `translate` — is **retained through the close** (so a scale `animate.leave` keeps its trigger-edge pivot) and recomputed on the next open.
 
-| Custom property                  | Direction | Meaning                                                                                           |
-| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | out       | Width (px) of the trigger / anchor element.                                                       |
-| `--for-anchor-height`            | out       | Height (px) of the trigger / anchor element.                                                      |
-| `--for-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-available-width)`.               |
-| `--for-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-available-height)`.               |
-| `--for-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here. |
+| Custom property                  | Direction | Meaning                                                                                                                                                                                               |
+| -------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | out       | Width (px) of the trigger / anchor element. Cleared on close.                                                                                                                                         |
+| `--for-anchor-height`            | out       | Height (px) of the trigger / anchor element. Cleared on close.                                                                                                                                        |
+| `--for-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-available-width)`. Cleared on close.                                                                                                 |
+| `--for-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-available-height)`. Cleared on close.                                                                                                 |
+| `--for-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here. Retained through the close (recomputed on next open) so a scale leave keeps its trigger-edge pivot. |
 
 Arrow elements additionally consume:
 

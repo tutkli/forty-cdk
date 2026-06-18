@@ -435,12 +435,15 @@ export function injectFloating(config: FloatingConfig): void {
 }
 
 /**
- * Strip the CSS custom properties, `data-*` attributes, and the `clip-path`
- * hide baseline `injectFloating` writes to the floating element. The resolved
- * `translate` is intentionally retained so a closing surface stays anchored to
- * its trigger through `animate.leave`; the next mount re-arms the `clip-path`
- * baseline in `afterNextRender` and recomputes `translate` before painting, so
- * a retained value never produces a stale-position flash.
+ * Strip the transient sizing CSS custom properties, the occlusion `data-*`
+ * attributes, and the `clip-path` hide baseline `injectFloating` writes to the
+ * floating element. The resolved `translate` and the resolved-placement outputs
+ * (`--for-content-transform-origin`, `data-placement`, `data-side`,
+ * `data-align`) are intentionally retained so a closing surface stays anchored
+ * to its trigger — and keeps pivoting its scale leave from the trigger edge —
+ * through `animate.leave`; the next mount re-arms the `clip-path` baseline in
+ * `afterNextRender` and recomputes all of them before painting, so a retained
+ * value never produces a stale-position flash.
  */
 function resetFloatingStyles(el: HTMLElement): void {
   // Clearing (not re-arming) the hide baseline keeps a closing surface
@@ -451,10 +454,6 @@ function resetFloatingStyles(el: HTMLElement): void {
   el.style.removeProperty('--for-anchor-height');
   el.style.removeProperty('--for-available-width');
   el.style.removeProperty('--for-available-height');
-  el.style.removeProperty('--for-content-transform-origin');
-  el.removeAttribute('data-placement');
-  el.removeAttribute('data-side');
-  el.removeAttribute('data-align');
   el.removeAttribute('data-occluded');
   el.removeAttribute('data-detached');
 }
