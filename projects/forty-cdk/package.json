@@ -28,9 +28,9 @@
   "license": "MIT",
   "author": "tutkli (https://github.com/tutkli)",
   "peerDependencies": {
-    "@angular/common": "^22.0.0",
-    "@angular/core": "^22.0.0",
-    "@angular/forms": "^22.0.0",
+    "@angular/common": "^22.0.1",
+    "@angular/core": "^22.0.1",
+    "@angular/forms": "^22.0.1",
     "@internationalized/date": "^3.0.0"
   },
   "peerDependenciesMeta": {
