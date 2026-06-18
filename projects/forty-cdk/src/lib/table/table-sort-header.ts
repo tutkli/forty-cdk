@@ -1,5 +1,6 @@
-import { booleanAttribute, computed, Directive, input, model, output } from '@angular/core';
+import { booleanAttribute, computed, Directive, inject, input, model, output } from '@angular/core';
 
+import { FOR_DRAGGABLE_CONTEXT } from '../drag-drop/drag-drop-context';
 import { injectTableContext } from './table-context';
 
 /** Sort direction for a column header. `'none'` means unsorted (no aria-sort emitted). */
@@ -20,6 +21,11 @@ export interface TableSortDescriptor {
  * signal and derive each header's `direction` from it. Apply this directive on the
  * same element as `[forTableHeaderCell]`.
  *
+ * When a `[forDraggable]` (column reorder) shares the same host cell, this directive
+ * yields its `tabindex` to the draggable's roving tab stop so the two never collide on
+ * the host attribute; `aria-sort` / `data-sorted` and click / keyboard activation stay
+ * on the cell.
+ *
  * Cycle: `none → ascending → descending → none` (default).
  * With `disableClear`: `none → ascending → descending → ascending`.
  */
@@ -29,13 +35,14 @@ export interface TableSortDescriptor {
   host: {
     '[attr.aria-sort]': 'activeDirection()',
     '[attr.data-sorted]': 'activeDirection()',
-    '[attr.tabindex]': 'sortable() ? "0" : null',
+    '[attr.tabindex]': 'tabindex()',
     '(click)': 'activate()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForTableSortHeader {
   protected readonly ctx = injectTableContext('ForTableSortHeader');
+  readonly #draggable = inject(FOR_DRAGGABLE_CONTEXT, { self: true, optional: true });
 
   /** Column identity included in the `sortChange` payload. */
   readonly column = input.required<string>();
@@ -73,6 +80,10 @@ export class ForTableSortHeader {
    */
   protected readonly activeDirection = computed<TableSortDirection | null>(() =>
     this.sortable() && this.direction() !== 'none' ? this.direction() : null,
+  );
+
+  protected readonly tabindex = computed<'0' | null>(() =>
+    !this.#draggable && this.sortable() ? '0' : null,
   );
 
   /** Activates the sort: computes the next direction, updates the model, and emits `sortChange`. */
