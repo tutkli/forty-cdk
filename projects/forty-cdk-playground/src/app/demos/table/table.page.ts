@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { PrimitivePage } from '../../ui/primitive-page';
+import { TableCombinedExample } from './examples/combined.example';
 import { TableGridExample } from './examples/grid.example';
 import { TableInfiniteScrollExample } from './examples/infinite-scroll.example';
 import { TableReorderingExample } from './examples/reordering.example';
@@ -21,6 +22,7 @@ import { TableVirtualizedExample } from './examples/virtualized.example';
     TableReorderingExample,
     TableVirtualizedExample,
     TableInfiniteScrollExample,
+    TableCombinedExample,
   ],
   template: `
     <primitive-page slug="table">
@@ -31,6 +33,7 @@ import { TableVirtualizedExample } from './examples/virtualized.example';
       <app-table-reordering-example />
       <app-table-virtualized-example />
       <app-table-infinite-scroll-example />
+      <app-table-combined-example />
     </primitive-page>
   `,
 })
