@@ -38,7 +38,15 @@ export interface TableRowReorderDescriptor {
   hostDirectives: [
     {
       directive: ForDropList,
-      inputs: ['dir', 'disabled', 'autoScroll', 'animateReorder', 'liveSort'],
+      inputs: [
+        'dir',
+        'disabled',
+        'autoScroll',
+        'animateReorder',
+        'liveSort',
+        'boundary',
+        'lockAxis',
+      ],
     },
   ],
 })

@@ -79,6 +79,69 @@ test.describe('table column reorder', () => {
   });
 });
 
+test.describe('table reorder boundary + lockAxis passthrough', () => {
+  test('column lockAxis="x" — preview y stays at lift-time y while x tracks pointer', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table-reorder', { lockAxis: 'x' });
+    const nameHeader = el(page, 'header-name');
+    const nameBox = await nameHeader.boundingBox();
+    if (!nameBox) throw new Error('Header cell not found');
+
+    const startX = nameBox.x + nameBox.width / 2;
+    const startY = nameBox.y + nameBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 5, startY);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    const before = await preview.boundingBox();
+    if (!before) throw new Error('Preview not found');
+
+    await page.mouse.move(startX + 85, startY + 60);
+    const after = await preview.boundingBox();
+    if (!after) throw new Error('Preview not found');
+
+    expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(after.x - before.x - 80)).toBeLessThanOrEqual(1.5);
+
+    await page.mouse.up();
+  });
+
+  test('string boundary — preview stays within table-root rect when dragged outside', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table-reorder', { boundary: 'true' });
+    const nameHeader = el(page, 'header-name');
+    const tableRoot = el(page, 'table-root');
+
+    const nameBox = await nameHeader.boundingBox();
+    const tBox = await tableRoot.boundingBox();
+    if (!nameBox || !tBox) throw new Error('Elements not found');
+
+    const startX = nameBox.x + nameBox.width / 2;
+    const startY = nameBox.y + nameBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 5, startY);
+    await page.mouse.move(tBox.x + tBox.width + 300, tBox.y + tBox.height + 300);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    const previewBox = await preview.boundingBox();
+    if (!previewBox) throw new Error('Preview not found');
+
+    const eps = 1.5;
+    expect(previewBox.x).toBeGreaterThanOrEqual(tBox.x - eps);
+    expect(previewBox.x + previewBox.width).toBeLessThanOrEqual(tBox.x + tBox.width + eps);
+    expect(previewBox.y).toBeGreaterThanOrEqual(tBox.y - eps);
+    expect(previewBox.y + previewBox.height).toBeLessThanOrEqual(tBox.y + tBox.height + eps);
+
+    await page.mouse.up();
+  });
+});
+
 test.describe('table reorder live-sort placeholder', () => {
   test.beforeEach(async ({ page }) => {
     await gotoFixture(page, 'table-reorder', { liveSort: 'true' });

@@ -594,6 +594,51 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
+  describe('[boundary] / [lockAxis]', () => {
+    @Component({
+      imports: [...DND_IMPORTS],
+      template: `
+        <ul forDropList #list="forDropList" lockAxis="x" (dragDrop)="onDrop($event)">
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">{{ row.label }}</li>
+          }
+        </ul>
+      `,
+    })
+    class LockAxisHost {
+      readonly rows: WritableSignal<Row[]> = signal([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      readonly listRef = viewChild.required<ForDropList>('list');
+      readonly lastDrop = signal<ForDragDropEvent | null>(null);
+      onDrop(event: ForDragDropEvent): void {
+        this.lastDrop.set(event);
+      }
+    }
+
+    it('pointer lift → move → drop with lockAxis="x" completes under provideZonelessChangeDetection', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(LockAxisHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const comp = fixture.componentInstance;
+      const list = comp.listRef();
+      const el = fixture.nativeElement as HTMLElement;
+      const first = itemEl(el, 1);
+      list.pointerLift(first, { x: 10, y: 10 });
+      fixture.detectChanges();
+      list.pointerMove({ x: 50, y: 200 });
+      fixture.detectChanges();
+      list.drop();
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+    });
+  });
+
   describe('[forDragHandle]', () => {
     it('renders data-drag-handle attribute and touch-action: none on the handle element', () => {
       const { el } = renderHost(HandleHost);

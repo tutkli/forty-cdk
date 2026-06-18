@@ -33,7 +33,9 @@ proximity — the closer the pointer is to the edge, the faster the scroll.
 The feature is **on by default**. Opt out with `[autoScroll]="false"`:
 
 ```html
-<ul forDropList [autoScroll]="false" (dragDrop)="onDrop($event)">…</ul>
+<ul forDropList [autoScroll]="false" (dragDrop)="onDrop($event)">
+  …
+</ul>
 ```
 
 Configure the edge zone and max speed via `provideForDragDropDefaults`:
@@ -44,7 +46,7 @@ providers: [
     autoScrollEdgeSize: 80,
     autoScrollMaxSpeed: 24,
   }),
-]
+];
 ```
 
 Keyboard dragging is unaffected. SSR-safe — no-op when there is no browser window.
@@ -98,18 +100,52 @@ stays in the dragged item's source slot.
 ```html
 <ul forDropList [liveSort]="true" (dragDrop)="onDrop($event)">
   @for (item of items(); track item.id) {
-    <li forDraggable [dragData]="item">
-      {{ item.label }}
-      <ng-template forDragPlaceholder>
-        <div class="my-placeholder"></div>
-      </ng-template>
-    </li>
+  <li forDraggable [dragData]="item">
+    {{ item.label }}
+    <ng-template forDragPlaceholder>
+      <div class="my-placeholder"></div>
+    </ng-template>
+  </li>
   }
 </ul>
 ```
 
 `[liveSort]` has no visible effect without a `[forDragPlaceholder]` template, and has no effect
 on keyboard dragging.
+
+### Boundary & axis lock
+
+`[forDropList]` supports two opt-in visual constraints on the pointer-drag preview. Both are
+`null` by default and have **no effect on keyboard dragging** (which has no floating preview).
+Neither changes the resolved drop index — they constrain the visual preview only.
+
+**`[boundary]`** — confine the preview within a boundary element. Accepts an `HTMLElement` or
+a CSS selector string resolved via `closest()` from the list host. The preview box is clamped so
+it stays fully inside the boundary. When the boundary is smaller than the preview on an axis,
+the preview is pinned to the boundary's start edge on that axis.
+
+**`[lockAxis]`** — constrain movement to one axis. `'x'` keeps the preview at its lift-time `y`
+(horizontal-only movement); `'y'` keeps it at its lift-time `x` (vertical-only movement).
+
+Both inputs may be combined:
+
+```html
+<div class="container" #container>
+  <ul forDropList [boundary]="container" lockAxis="x" (dragDrop)="onDrop($event)">
+    @for (item of items(); track item.id) {
+    <li forDraggable [dragData]="item">{{ item.label }}</li>
+    }
+  </ul>
+</div>
+```
+
+String selector form (resolved via `closest()` on the list host):
+
+```html
+<ul forDropList [boundary]="'.my-scroller'" (dragDrop)="onDrop($event)">
+  …
+</ul>
+```
 
 ### Reorder & settle animations
 
@@ -125,12 +161,18 @@ keyboard and pointer drags. The library publishes the styling hooks below — du
 always provided by the consumer via CSS; the library imposes none.
 
 ```html
-<ul forDropList [animateReorder]="true" (dragDrop)="onDrop($event)">…</ul>
+<ul forDropList [animateReorder]="true" (dragDrop)="onDrop($event)">
+  …
+</ul>
 ```
 
 ```css
-[forDraggable][data-drag-animating] { transition: transform 200ms ease; }
-[data-for-drag-preview][data-settling] { transition: transform 200ms ease; }
+[forDraggable][data-drag-animating] {
+  transition: transform 200ms ease;
+}
+[data-for-drag-preview][data-settling] {
+  transition: transform 200ms ease;
+}
 ```
 
 With no such CSS, `animateReorder` is a graceful no-op — transforms clear instantly and the
@@ -138,17 +180,17 @@ preview is destroyed promptly.
 
 ## Data attributes
 
-| Attribute               | Element           | Meaning                                                                             |
-| ----------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| `data-orientation`      | `[forDropList]`   | `"vertical"` or `"horizontal"`                                                      |
-| `data-disabled`         | both              | Present when the item or list is disabled                                           |
-| `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                |
-| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                   |
-| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                          |
-| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                             |
-| `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper |
+| Attribute               | Element           | Meaning                                                                              |
+| ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `data-orientation`      | `[forDropList]`   | `"vertical"` or `"horizontal"`                                                       |
+| `data-disabled`         | both              | Present when the item or list is disabled                                            |
+| `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                 |
+| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                    |
+| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                           |
+| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                              |
+| `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper  |
 | `data-drag-animating`   | `[forDraggable]`  | Present while the item's FLIP reorder transition plays (requires `[animateReorder]`) |
-| `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)        |
+| `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)         |
 
 ## Sortable list
 

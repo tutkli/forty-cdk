@@ -2,6 +2,92 @@ import { expect, test } from '@playwright/test';
 
 import { el, gotoFixture } from './_helpers';
 
+test.describe('drag-drop boundary + lockAxis', () => {
+  test('lockAxis="y" — preview y tracks pointer while x stays at lift-time x', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop', { lockAxis: 'y' });
+    const item1 = el(page, 'a-item-1');
+    const box1 = await item1.boundingBox();
+    if (!box1) throw new Error('Item not found');
+
+    const startX = box1.x + box1.width / 2;
+    const startY = box1.y + box1.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    const before = await preview.boundingBox();
+    if (!before) throw new Error('Preview not found');
+
+    await page.mouse.move(startX + 80, startY + 65);
+    const after = await preview.boundingBox();
+    if (!after) throw new Error('Preview not found');
+
+    expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(after.y - before.y - 60)).toBeLessThanOrEqual(1.5);
+
+    await page.mouse.up();
+  });
+
+  test('lockAxis="x" — preview x tracks pointer while y stays at lift-time y', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop', { lockAxis: 'x' });
+    const item1 = el(page, 'a-item-1');
+    const box1 = await item1.boundingBox();
+    if (!box1) throw new Error('Item not found');
+
+    const startX = box1.x + box1.width / 2;
+    const startY = box1.y + box1.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 5, startY);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    const before = await preview.boundingBox();
+    if (!before) throw new Error('Preview not found');
+
+    await page.mouse.move(startX + 85, startY + 60);
+    const after = await preview.boundingBox();
+    if (!after) throw new Error('Preview not found');
+
+    expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(after.x - before.x - 80)).toBeLessThanOrEqual(1.5);
+
+    await page.mouse.up();
+  });
+
+  test('boundary=true — preview stays within the boundary-box rect mid-drag', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop', { boundary: 'true' });
+    const item1 = el(page, 'a-item-1');
+    const boundaryBox = el(page, 'boundary-box');
+
+    const box1 = await item1.boundingBox();
+    const bBox = await boundaryBox.boundingBox();
+    if (!box1 || !bBox) throw new Error('Elements not found');
+
+    const startX = box1.x + box1.width / 2;
+    const startY = box1.y + box1.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(bBox.x + bBox.width + 200, bBox.y + bBox.height + 200);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    const previewBox = await preview.boundingBox();
+    if (!previewBox) throw new Error('Preview not found');
+
+    const eps = 1.5;
+    expect(previewBox.x).toBeGreaterThanOrEqual(bBox.x - eps);
+    expect(previewBox.x + previewBox.width).toBeLessThanOrEqual(bBox.x + bBox.width + eps);
+    expect(previewBox.y).toBeGreaterThanOrEqual(bBox.y - eps);
+    expect(previewBox.y + previewBox.height).toBeLessThanOrEqual(bBox.y + bBox.height + eps);
+
+    await page.mouse.up();
+  });
+});
+
 test.describe('drag-drop pointer dragging', () => {
   test.beforeEach(async ({ page }) => {
     await gotoFixture(page, 'drag-drop');
