@@ -29,6 +29,7 @@ import {
   wrapPreview,
   type DragPreview,
 } from '../_internal/drag-session/drag-preview';
+import { clampPreviewPosition } from '../_internal/drag-session/clamp-preview';
 import { playFlip, type FlipRect } from '../_internal/drag-session/flip';
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
@@ -127,6 +128,22 @@ export class ForDropList implements ForDropListContext {
   readonly animateReorder = input(false, { transform: booleanAttribute });
 
   /**
+   * Confine the pointer-drag preview within a boundary during a pointer drag. Accepts an
+   * `HTMLElement`, or a selector string resolved via `closest()` from the list host. `null`
+   * (the default) leaves the preview unbounded. Affects the visual preview only — the resolved
+   * drop index is unchanged. Has no effect on keyboard dragging (no floating preview).
+   */
+  readonly boundary = input<HTMLElement | string | null>(null);
+
+  /**
+   * Constrain pointer-drag preview movement to one axis. `'x'` keeps the preview at its lift-time
+   * `y` (horizontal movement); `'y'` keeps it at its lift-time `x` (vertical movement). `null`
+   * (the default) is free movement. Independent of `orientation` (which drives the drop index);
+   * this is a purely visual constraint, and has no effect on keyboard dragging.
+   */
+  readonly lockAxis = input<'x' | 'y' | null>(null);
+
+  /**
    * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
    * the item stays in this list (reorder) or moves to a connected list (transfer). Apply
    * `moveItemInArray` or `transferArrayItem` to your data signal inside the handler.
@@ -149,6 +166,9 @@ export class ForDropList implements ForDropListContext {
   #preview: DragPreview | null = null;
   #grabOffsetX = 0;
   #grabOffsetY = 0;
+  #previewSize: { width: number; height: number } = { width: 0, height: 0 };
+  #lockOrigin: { x: number; y: number } = { x: 0, y: 0 };
+  #boundaryEl: HTMLElement | null = null;
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
   #placeholderNodes: readonly Node[] | null = null;
@@ -272,12 +292,16 @@ export class ForDropList implements ForDropListContext {
       const rect = el.getBoundingClientRect();
       this.#grabOffsetX = point.x - rect.left;
       this.#grabOffsetY = point.y - rect.top;
+      this.#previewSize = { width: rect.width, height: rect.height };
+      this.#lockOrigin = { x: point.x - this.#grabOffsetX, y: point.y - this.#grabOffsetY };
+      this.#boundaryEl = this.#resolveBoundary();
       this.#preview = preview
         ? 'settle' in preview
           ? (preview as DragPreview)
           : wrapPreview(preview)
         : createDragPreview(el, this.#document);
-      this.#preview.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
+      const topLeft = this.#clampedPreviewTopLeft(point);
+      this.#preview.moveTo(topLeft.x, topLeft.y);
     }
     return from;
   }
@@ -307,7 +331,8 @@ export class ForDropList implements ForDropListContext {
         .map((h) => h.host.getBoundingClientRect()),
     }));
     const target = resolveDropTarget(point, geoms, this.orientation(), this.dir());
-    this.#preview?.moveTo(point.x - this.#grabOffsetX, point.y - this.#grabOffsetY);
+    const topLeft = this.#clampedPreviewTopLeft(point);
+    this.#preview?.moveTo(topLeft.x, topLeft.y);
     if (!target) {
       return;
     }
@@ -335,6 +360,26 @@ export class ForDropList implements ForDropListContext {
         'polite',
       );
     }
+  }
+
+  #resolveBoundary(): HTMLElement | null {
+    const boundary = this.boundary();
+    if (boundary === null) {
+      return null;
+    }
+    return typeof boundary === 'string' ? this.host.closest<HTMLElement>(boundary) : boundary;
+  }
+
+  #clampedPreviewTopLeft(point: { x: number; y: number }): { x: number; y: number } {
+    const desired = { x: point.x - this.#grabOffsetX, y: point.y - this.#grabOffsetY };
+    const boundaryRect = this.#boundaryEl?.getBoundingClientRect() ?? null;
+    return clampPreviewPosition(
+      desired,
+      this.#previewSize,
+      boundaryRect,
+      this.lockAxis(),
+      this.#lockOrigin,
+    );
   }
 
   #onAutoScrollFrame(): void {
@@ -540,5 +585,8 @@ export class ForDropList implements ForDropListContext {
     }
     this.#preview = null;
     this.#placeholderNodes = null;
+    this.#boundaryEl = null;
+    this.#previewSize = { width: 0, height: 0 };
+    this.#lockOrigin = { x: 0, y: 0 };
   }
 }

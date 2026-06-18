@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  type ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import {
   ForDragHandle,
@@ -53,36 +61,66 @@ interface Item {
         margin-right: 8px;
         user-select: none;
       }
+      .boundary-box {
+        position: relative;
+        width: 240px;
+        height: 220px;
+        overflow: hidden;
+        border: 2px solid #888;
+      }
     `,
   ],
   template: `
-    <div class="lists" forDropListGroup>
-      <ul forDropList #listA="forDropList" data-testid="list-a" (dragDrop)="onDrop($event)">
-        @for (item of itemsA(); track item.id; let i = $index) {
-          <li forDraggable [dragData]="item" [attr.data-testid]="'a-item-' + i">
-            @if (i === 0) {
-              <span forDragHandle [attr.data-testid]="'a-item-0-handle'" aria-hidden="true"
-                >::</span
-              >
-            }
-            {{ item.label }}
-          </li>
-        }
-      </ul>
+    <div [class.boundary-box]="boundaryActive" #boundaryBox data-testid="boundary-box">
+      <div class="lists" forDropListGroup>
+        <ul
+          forDropList
+          #listA="forDropList"
+          data-testid="list-a"
+          [lockAxis]="lockAxis"
+          [boundary]="boundaryEl"
+          (dragDrop)="onDrop($event)"
+        >
+          @for (item of itemsA(); track item.id; let i = $index) {
+            <li forDraggable [dragData]="item" [attr.data-testid]="'a-item-' + i">
+              @if (i === 0) {
+                <span forDragHandle [attr.data-testid]="'a-item-0-handle'" aria-hidden="true"
+                  >::</span
+                >
+              }
+              {{ item.label }}
+            </li>
+          }
+        </ul>
 
-      <ul forDropList #listB="forDropList" data-testid="list-b" (dragDrop)="onDrop($event)">
-        @for (item of itemsB(); track item.id; let i = $index) {
-          <li forDraggable [dragData]="item" [attr.data-testid]="'b-item-' + i">
-            {{ item.label }}
-          </li>
-        }
-      </ul>
+        <ul forDropList #listB="forDropList" data-testid="list-b" (dragDrop)="onDrop($event)">
+          @for (item of itemsB(); track item.id; let i = $index) {
+            <li forDraggable [dragData]="item" [attr.data-testid]="'b-item-' + i">
+              {{ item.label }}
+            </li>
+          }
+        </ul>
+      </div>
     </div>
   `,
 })
 export class DragDropFixture {
+  readonly #route = inject(ActivatedRoute);
+  private readonly boundaryBoxRef = viewChild.required<ElementRef<HTMLElement>>('boundaryBox');
+
   protected readonly listARef = viewChild.required<ForDropList>('listA');
   protected readonly listBRef = viewChild.required<ForDropList>('listB');
+
+  protected readonly lockAxis: 'x' | 'y' | null = (() => {
+    const v = this.#route.snapshot.queryParamMap.get('lockAxis');
+    return v === 'x' || v === 'y' ? v : null;
+  })();
+
+  protected readonly boundaryActive = this.#route.snapshot.queryParamMap.get('boundary') === 'true';
+
+  protected get boundaryEl(): HTMLElement | null {
+    return this.boundaryActive ? this.boundaryBoxRef().nativeElement : null;
+  }
 
   protected readonly itemsA = signal<Item[]>([
     { id: 1, label: 'Alpha' },

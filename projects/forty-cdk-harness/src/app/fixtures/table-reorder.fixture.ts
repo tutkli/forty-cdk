@@ -82,12 +82,14 @@ interface Row {
   template: `
     <button data-testid="before">Before</button>
 
-    <div forTable mode="grid" class="table-root" aria-label="Reorder demo">
+    <div forTable mode="grid" class="table-root" aria-label="Reorder demo" data-testid="table-root">
       <div
         forTableHeaderRow
         forTableColumnReorder
         orientation="horizontal"
         [liveSort]="liveSort"
+        [lockAxis]="columnLockAxis"
+        [boundary]="columnBoundary"
         class="header-row"
         data-testid="header-row"
         (columnReorder)="onColumnReorder($event)"
@@ -149,6 +151,16 @@ export class TableReorderFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly liveSort = this.#route.snapshot.queryParamMap.get('liveSort') === 'true';
+
+  protected readonly columnLockAxis: 'x' | null = (() => {
+    const v = this.#route.snapshot.queryParamMap.get('lockAxis');
+    return v === 'x' ? 'x' : null;
+  })();
+
+  protected readonly columnBoundary: string | null = (() => {
+    const useBoundary = this.#route.snapshot.queryParamMap.get('boundary') === 'true';
+    return useBoundary ? '[data-testid="table-root"]' : null;
+  })();
 
   readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
   readonly rows = signal<Row[]>([
