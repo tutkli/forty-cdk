@@ -73,4 +73,60 @@ test.describe('Table virtualized', () => {
     const focusedCell = retained.locator('[forTableCell]').first();
     await expectFocused(focusedCell);
   });
+
+  test.describe('measured row heights', () => {
+    test('renders variable-height rows (non-uniform, driven by measurement)', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized', { measured: 'true' });
+      await page.waitForTimeout(300);
+
+      const evenHeight = await el(page, 'row-0').evaluate(
+        (node) => (node as HTMLElement).offsetHeight,
+      );
+      const oddHeight = await el(page, 'row-1').evaluate(
+        (node) => (node as HTMLElement).offsetHeight,
+      );
+
+      expect(evenHeight).toBe(60);
+      expect(oddHeight).toBe(100);
+      expect(evenHeight).not.toBe(oddHeight);
+    });
+
+    test('totalSize reflects measured heights, not the flat estimate', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized', { measured: 'true' });
+      await page.waitForTimeout(300);
+
+      const flatEstimate = 10_000 * 44;
+      const measuredTotal = await el(page, 'scroll-body').evaluate((node) =>
+        Number.parseFloat((node as HTMLElement).style.height),
+      );
+      expect(measuredTotal).toBeGreaterThan(flatEstimate);
+    });
+
+    test('window renders and updates on scroll with variable heights', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized', { measured: 'true' });
+      await page.waitForTimeout(300);
+
+      const renderedBefore = await page.locator('[forTableRow]').count();
+      expect(renderedBefore).toBeGreaterThan(0);
+      expect(renderedBefore).toBeLessThan(60);
+
+      const firstBefore = await page.locator('[forTableRow]').first().getAttribute('data-testid');
+
+      await el(page, 'root').evaluate((node) => {
+        node.scrollTop = 5000 * 80;
+      });
+      await page.waitForTimeout(300);
+
+      const firstAfter = await page.locator('[forTableRow]').first().getAttribute('data-testid');
+      expect(firstAfter).not.toBe(firstBefore);
+
+      const rowAfter = page.locator('[forTableRow]').first();
+      const rowAfterIndex = parseInt(
+        (await rowAfter.getAttribute('data-testid'))!.replace('row-', ''),
+        10,
+      );
+      const rowAfterAriaIndex = await rowAfter.getAttribute('aria-rowindex');
+      expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 1));
+    });
+  });
 });
