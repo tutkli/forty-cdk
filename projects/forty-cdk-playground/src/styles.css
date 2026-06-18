@@ -1576,6 +1576,25 @@ a.pg-nav-link.active {
   box-sizing: border-box;
 }
 
+/*
+ * Virtualized select: the portaled [forSelectContent] is the scroll container;
+ * the relatively-positioned track sizes the full scroll range and each option
+ * is absolutely positioned at its translateY offset. Global for the same reason
+ * as the other select / combobox surfaces — the content portals to <body>.
+ */
+.pg-select-vtrack {
+  position: relative;
+  flex: none;
+  width: 100%;
+}
+
+.pg-select-option--virtual {
+  position: absolute;
+  inset-inline: 0;
+  height: 36px;
+  box-sizing: border-box;
+}
+
 .pg-listbox {
   display: flex;
   flex-direction: column;

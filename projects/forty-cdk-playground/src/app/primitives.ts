@@ -297,6 +297,23 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     ],
   },
   {
+    label: 'Utilities',
+    primitives: [
+      {
+        slug: 'drag-drop',
+        title: 'Drag & Drop',
+        description:
+          'Headless, accessible drag-and-drop for sortable lists and cross-list transfers, driven by both keyboard and pointer. Ships drag handles, custom preview / placeholder templates, live-sort, FLIP reorder animations, auto-scroll, and boundary / axis-lock constraints.',
+      },
+      {
+        slug: 'virtualization',
+        title: 'Virtualization',
+        description:
+          'A headless windowing core (injectVirtualizer) plus an ergonomic [forVirtualViewport] + *forVirtualFor layer that render only the visible slice of huge lists. Fixed or measured item sizes, horizontal lists, scroll-to-index, and an infinite-scroll detector. List primitives (Select, Combobox, Listbox, Tree, Table) compose it directly.',
+      },
+    ],
+  },
+  {
     label: 'Display & feedback',
     primitives: [
       {
