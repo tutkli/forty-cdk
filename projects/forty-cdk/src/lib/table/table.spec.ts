@@ -293,6 +293,41 @@ class SortTableHost {
   lastSort: TableSortDescriptor | null = null;
 }
 
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableColumnReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable>
+      <div forTableHeaderRow forTableColumnReorder orientation="horizontal">
+        @for (col of columns(); track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forTableSortHeader
+            [column]="col"
+            forDraggable
+            [dragData]="col"
+            (sortChange)="lastSort = $event"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SortReorderTableHost {
+  readonly columns = signal<readonly string[]>(['name', 'role']);
+  lastSort: TableSortDescriptor | null = null;
+}
+
 interface TreegridRow {
   id: string;
   level: number;
@@ -1138,6 +1173,42 @@ describe('ForTable', () => {
       flush();
       expect(sortHeader(el).getAttribute('aria-sort')).toBe('descending');
       expect(instance.lastSort).toBeNull();
+    });
+  });
+
+  describe('sort header + column-reorder co-location', () => {
+    const headerCell = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+
+    it('emits a single coherent tabindex (the draggable roving value), not the sort header "0"', () => {
+      const { el } = renderHost(SortReorderTableHost);
+      expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('0');
+      expect(headerCell(el, 'role').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('keeps aria-sort / data-sorted on the cell and still cycles the sort on click', () => {
+      const { el, instance, flush } = renderHost(SortReorderTableHost);
+      const h = headerCell(el, 'name');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+      expect(h.getAttribute('data-sorted')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
+    });
+
+    it('yields its tabindex to the draggable without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SortReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="h-name"]')!.getAttribute('tabindex')).toBe('0');
+      expect(el.querySelector('[data-testid="h-role"]')!.getAttribute('tabindex')).toBe('-1');
     });
   });
 

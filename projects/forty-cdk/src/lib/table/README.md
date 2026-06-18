@@ -458,7 +458,7 @@ host element:
 
 ### Caveats
 
-- Do **not** combine `[forTableSortHeader]` and `[forDraggable]` on the same header cell — both host-bind `[attr.tabindex]`, which creates a conflict.
+- `[forTableSortHeader]` and `[forDraggable]` (column reorder) **may** share the same header cell. When co-located, the draggable's roving tabindex owns the single tab stop and the sort header yields its own `[tabindex]`, so the two no longer collide on the host attribute; `aria-sort` / `data-sorted` stay on the cell and clicking it still cycles the sort. Because both directives also handle Enter / Space, activating a focused co-located cell from the keyboard cycles the sort **and** starts a keyboard drag-lift — keep keyboard sorting and keyboard reorder on separate cells if you need the two interactions distinct.
 - Reorderable rows and cells must generate real boxes. Avoid `display: contents` on `[forTableRow]` or header cells used as drag targets — the drag-drop primitive needs a non-zero bounding box for pointer geometry.
 - In `mode="grid"`, both 2D cell roving and keyboard row dragging are keyboard-interactive. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
 - For all drag-drop CSS hooks (`data-dragging`, `data-drag-over`, `[forDragHandle]`, `[data-drag-preview]`, `data-settling`) see the [drag-drop README](../drag-drop/README.md).
