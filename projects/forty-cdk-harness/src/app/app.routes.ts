@@ -233,4 +233,11 @@ export const routes: Routes = [
         (m) => m.VirtualizationDynamicFixture,
       ),
   },
+  {
+    path: 'virtualization-infinite',
+    loadComponent: () =>
+      import('./fixtures/virtualization-infinite.fixture').then(
+        (m) => m.VirtualizationInfiniteFixture,
+      ),
+  },
 ];

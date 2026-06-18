@@ -187,6 +187,56 @@ the real count:
 | `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
 | `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
 
+## Infinite scroll
+
+Two shapes are available: a turnkey output on `[forVirtualViewport]` (Shape A) and a
+composable `injectInfiniteScroll` core for manual wiring (Shape B).
+
+### Shape A — `(endReached)` output
+
+Wire directly onto `[forVirtualViewport]`; the viewport builds the detector internally:
+
+```html
+<div
+  forVirtualViewport
+  [virtualCount]="rows().length"
+  [estimateSize]="44"
+  (endReached)="loadMore()"
+  style="height: 400px"
+>
+  <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
+</div>
+```
+
+### Shape B — `injectInfiniteScroll`
+
+Compose with the headless core when you need `pending` state or custom `threshold`/`disabled`.
+The consumer owns the fetch and the data accumulation; the library decides _when_ to ask:
+
+```ts
+readonly v = injectVirtualizer({ count: this.count, estimateSize: () => 40, scrollElement: this.scrollEl });
+
+readonly loader = injectInfiniteScroll({
+  range: this.v.range,
+  count: this.count,
+  disabled: computed(() => !this.hasMore()),
+  onLoadMore: () => this.fetchNextPage(),
+});
+```
+
+The detector fires once per threshold crossing, is suppressed while the `onLoadMore` promise is
+pending (`loader.pending()` reflects the in-flight state), and re-arms when `count` grows (a page
+was appended). An empty `[0, 0]` window (including SSR off-browser) never fires. The consumer owns
+the fetch, deduplication, and retry — Angular `resource()` / `httpResource()` are a natural fit.
+
+| Option       | Type                                | Default  | Description                                                             |
+| ------------ | ----------------------------------- | -------- | ----------------------------------------------------------------------- |
+| `range`      | `Signal<readonly [number, number]>` | required | The rendered window from `injectVirtualizer(...).range`.                |
+| `count`      | `Signal<number>`                    | required | Reactive total number of currently-loaded items.                        |
+| `threshold`  | `number`                            | `5`      | Fire when the window's last index is within this many items of `count`. |
+| `disabled`   | `Signal<boolean>`                   | —        | When `true` the detector never fires.                                   |
+| `onLoadMore` | `() => void \| Promise<unknown>`    | required | Called once per threshold crossing; returning a promise arms `pending`. |
+
 ## Composing into a list primitive
 
 `range` lets the windowing core plug directly into a list primitive's `[visibleRange]` input without the consumer re-deriving the window from `virtualItems()`. The primitive uses `[visibleRange]` to keep `aria-setsize` / `aria-posinset` and `aria-activedescendant` correct across row recycling — it tracks option data by absolute index so options scrolled out of view are still reachable by keyboard.
