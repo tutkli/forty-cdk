@@ -36,7 +36,8 @@ export class ForCarouselSlide {
    * Override the default positional `aria-label` (`"N of M"`). Use this to
    * provide a semantically richer label when the slide's content has a
    * meaningful title (e.g. the product name). When `null` (default), the
-   * positional label is used automatically.
+   * positional label is used automatically. Localize that default format
+   * app-wide via `provideForCarouselDefaults`'s `slideLabel`.
    */
   readonly ariaLabel = input<string | null>(null);
 
@@ -51,7 +52,7 @@ export class ForCarouselSlide {
   /** The positional `"N of M"` label used when no explicit `ariaLabel` is set. */
   protected readonly positionLabel = computed(() => {
     const i = this.#index();
-    return i < 0 ? null : `${i + 1} of ${this.ctx.slideCount()}`;
+    return i < 0 ? null : this.ctx.slideLabel(i + 1);
   });
 
   constructor() {

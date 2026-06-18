@@ -37,6 +37,18 @@ export interface ForCarouselDefaults {
   autoplay: boolean;
   /** Milliseconds between automatic slide advances. Default `5000`. */
   autoplayInterval: number;
+  /**
+   * Builds the default positional `aria-label` for each slide (`"N of M"`).
+   * Override to localize centrally. `position` is the 1-based slide index and
+   * `total` is the slide count. A per-slide `ariaLabel` still takes precedence.
+   */
+  slideLabel: (position: number, total: number) => string;
+  /**
+   * Builds the default `aria-label` for each indicator dot (`"Go to slide N"`).
+   * Override to localize centrally. `position` is the 1-based slide index. A
+   * per-indicator `ariaLabel` still takes precedence.
+   */
+  indicatorLabel: (position: number) => string;
 }
 
 /**
@@ -51,6 +63,8 @@ export const FOR_CAROUSEL_FALLBACK_DEFAULTS: ForCarouselDefaults = {
   containScroll: false,
   autoplay: false,
   autoplayInterval: 5000,
+  slideLabel: (position, total) => `${position} of ${total}`,
+  indicatorLabel: (position) => `Go to slide ${position}`,
 };
 
 const { token, provideDefaults } = createDefaults<ForCarouselDefaults>(

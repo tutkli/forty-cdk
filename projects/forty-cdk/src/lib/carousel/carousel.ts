@@ -344,6 +344,24 @@ export class ForCarousel implements ForCarouselContext {
     return this.#indicators.indexOfHost(host);
   }
 
+  /**
+   * Resolve the positional slide `aria-label` from the scope's defaults
+   * (`"N of M"` unless localized via `provideForCarouselDefaults`).
+   * `position` is the 1-based slide index.
+   */
+  slideLabel(position: number): string {
+    return this.#defaults.slideLabel(position, this.slideCount());
+  }
+
+  /**
+   * Resolve the indicator `aria-label` from the scope's defaults
+   * (`"Go to slide N"` unless localized via `provideForCarouselDefaults`).
+   * `position` is the 1-based slide index.
+   */
+  indicatorLabel(position: number): string {
+    return this.#defaults.indicatorLabel(position);
+  }
+
   /** Returns `true` when `index` is the current active slide index. */
   isCurrent(index: number): boolean {
     return index === this.activeIndex();
