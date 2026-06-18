@@ -69,7 +69,9 @@ test.describe('Popover leave stays anchored (#772)', () => {
     expect(midLeave.rect.x > 2 || midLeave.rect.y > 2).toBe(true);
   });
 
-  test('scale leave retains translate mid-leave so surface stays anchored', async ({ page }) => {
+  test('scale leave retains translate and transform-origin mid-leave so surface stays anchored and pivots from the trigger edge', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'popover-animation', { leave: 'scale' });
     await el(page, 'trigger-anim').click();
     await expect(el(page, 'popover-anim')).toBeVisible();
@@ -78,6 +80,9 @@ test.describe('Popover leave stays anchored (#772)', () => {
       const el = node as HTMLElement;
       return {
         translate: el.style.translate,
+        transformOrigin: getComputedStyle(el).transformOrigin,
+        inlineOrigin: el.style.getPropertyValue('--for-content-transform-origin'),
+        side: el.dataset['side'],
       };
     });
 
@@ -88,6 +93,9 @@ test.describe('Popover leave stays anchored (#772)', () => {
       const el = node as HTMLElement;
       return {
         translate: el.style.translate,
+        transformOrigin: getComputedStyle(el).transformOrigin,
+        inlineOrigin: el.style.getPropertyValue('--for-content-transform-origin'),
+        side: el.dataset['side'],
         hasLeaveClass: el.classList.contains('popover-leaving'),
         rect: el.getBoundingClientRect(),
       };
@@ -97,5 +105,10 @@ test.describe('Popover leave stays anchored (#772)', () => {
     expect(midLeave.translate).toBe(openState.translate);
     expect(midLeave.hasLeaveClass).toBe(true);
     expect(midLeave.rect.x > 2 || midLeave.rect.y > 2).toBe(true);
+
+    expect(openState.inlineOrigin).not.toBe('');
+    expect(midLeave.inlineOrigin).toBe(openState.inlineOrigin);
+    expect(midLeave.side).toBe(openState.side);
+    expect(midLeave.transformOrigin).toBe(openState.transformOrigin);
   });
 });

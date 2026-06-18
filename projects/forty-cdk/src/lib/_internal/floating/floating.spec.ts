@@ -342,7 +342,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
 
-    it('clears every style, CSS var, and data-* attr on close — except the resolved translate (retained for animate.leave)', async () => {
+    it('clears the transient styles, CSS vars, and data-* attrs on close — except the resolved-placement outputs (translate, transform-origin, data-side/align/placement) retained for animate.leave', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -371,18 +371,18 @@ describe('injectFloating', () => {
       bubble.open.set(false);
       await flushPositioning(fixture);
 
-      // Floating element is wiped — except the retained translate (kept for animate.leave).
-      expect(bubbleEl.dataset['placement']).toBeUndefined();
-      expect(bubbleEl.dataset['side']).toBeUndefined();
-      expect(bubbleEl.dataset['align']).toBeUndefined();
+      // Transient outputs are wiped; the resolved-placement set (translate, transform-origin, data-side/align/placement) is retained for animate.leave.
+      expect(bubbleEl.dataset['placement']).toBe('top');
+      expect(bubbleEl.dataset['side']).toBe('top');
+      expect(bubbleEl.dataset['align']).toBe('center');
       expect(bubbleEl.dataset['occluded']).toBeUndefined();
       expect(bubbleEl.dataset['detached']).toBeUndefined();
       expect(bubbleEl.style.translate).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).not.toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-available-width')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-available-height')).toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('');
 
       // Arrow is wiped too.
       expect(arrowEl.style.position).toBe('');
