@@ -8,6 +8,7 @@ import {
   withReducedMotion,
 } from '../../test-utils';
 import { ForCarousel } from './carousel';
+import { provideForCarouselDefaults } from './carousel-defaults';
 import { ForCarouselIndicator } from './carousel-indicator';
 import { ForCarouselIndicators } from './carousel-indicators';
 import { ForCarouselNext } from './carousel-next';
@@ -76,6 +77,54 @@ class CarouselHost {
   readonly containScroll = signal(false);
   readonly autoplay = signal(false);
   readonly autoplayInterval = signal(5000);
+}
+
+@Component({
+  imports: [
+    ForCarousel,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+    ForCarouselIndicators,
+    ForCarouselIndicator,
+  ],
+  providers: [
+    provideForCarouselDefaults({
+      slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
+      indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
+    }),
+  ],
+  template: `
+    <div forCarousel ariaLabel="Carrusel">
+      <div forCarouselViewport>
+        <div forCarouselTrack>
+          @for (s of slides(); track s; let i = $index) {
+            <div
+              forCarouselSlide
+              [attr.data-slide]="i"
+              [ariaLabel]="i === 1 ? slideOverride() : null"
+            >
+              Slide {{ i }}
+            </div>
+          }
+        </div>
+      </div>
+      <div forCarouselIndicators>
+        @for (s of slides(); track s; let i = $index) {
+          <button
+            forCarouselIndicator
+            [attr.data-indicator]="i"
+            [ariaLabel]="i === 1 ? indicatorOverride() : null"
+          ></button>
+        }
+      </div>
+    </div>
+  `,
+})
+class LocalizedCarouselHost {
+  readonly slides = signal([0, 1, 2]);
+  readonly slideOverride = signal<string | null>(null);
+  readonly indicatorOverride = signal<string | null>(null);
 }
 
 const slide = (host: HTMLElement, i: number) =>
@@ -500,6 +549,39 @@ describe('ForCarousel', () => {
       Array.from(slides).forEach((s, i) => {
         expect(s.getAttribute('aria-label')).toBe(`${i + 1} of 5`);
       });
+    });
+  });
+
+  describe('central label localization (provideForCarouselDefaults)', () => {
+    it('localizes the default slide and indicator labels', () => {
+      const { el } = renderHost(LocalizedCarouselHost);
+      for (let i = 0; i < 3; i++) {
+        expect(slide(el, i).getAttribute('aria-label')).toBe(`Diapositiva ${i + 1} de 3`);
+        expect(indicator(el, i).getAttribute('aria-label')).toBe(`Ir a la diapositiva ${i + 1}`);
+      }
+    });
+
+    it('per-element ariaLabel still overrides the localized default', async () => {
+      const { el, instance, flush } = renderHost(LocalizedCarouselHost);
+      instance.slideOverride.set('Producto destacado');
+      instance.indicatorOverride.set('Saltar al destacado');
+      await flush();
+
+      expect(slide(el, 1).getAttribute('aria-label')).toBe('Producto destacado');
+      expect(indicator(el, 1).getAttribute('aria-label')).toBe('Saltar al destacado');
+      expect(slide(el, 0).getAttribute('aria-label')).toBe('Diapositiva 1 de 3');
+      expect(indicator(el, 0).getAttribute('aria-label')).toBe('Ir a la diapositiva 1');
+    });
+
+    it('localized slide label reflects the live slide count', async () => {
+      const { el, instance, flush } = renderHost(LocalizedCarouselHost);
+      expect(slide(el, 0).getAttribute('aria-label')).toBe('Diapositiva 1 de 3');
+
+      instance.slides.set([0, 1, 2, 3]);
+      await flush();
+
+      expect(slide(el, 0).getAttribute('aria-label')).toBe('Diapositiva 1 de 4');
+      expect(slide(el, 3).getAttribute('aria-label')).toBe('Diapositiva 4 de 4');
     });
   });
 

@@ -60,6 +60,12 @@ export interface ForCarouselContext {
 
   indexOfSlide(host: HTMLElement): number;
   indexOfIndicator(host: HTMLElement): number;
+
+  /** Resolve the positional slide `aria-label` (`"N of M"` by default). `position` is 1-based. */
+  slideLabel(position: number): string;
+  /** Resolve the indicator `aria-label` (`"Go to slide N"` by default). `position` is 1-based. */
+  indicatorLabel(position: number): string;
+
   isCurrent(index: number): boolean;
   isInView(index: number): boolean;
   isFirstEnabledIndicator(el: HTMLElement): boolean;

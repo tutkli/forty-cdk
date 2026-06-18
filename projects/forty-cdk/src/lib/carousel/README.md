@@ -68,15 +68,15 @@ so they cascade to the track. The consumer applies the transform and transition.
 The following properties are set on the `[forCarousel]` host and cascade to
 children, unless noted otherwise:
 
-| Property                         | Host                    | Value        | Notes                                                                             |
-| -------------------------------- | ----------------------- | ------------ | --------------------------------------------------------------------------------- |
-| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%` | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                     |
-| `--for-carousel-active-index`    | `[forCarousel]`         | integer      | Current `activeIndex`.                                                            |
-| `--for-carousel-slide-count`     | `[forCarousel]`         | integer      | Total registered slides.                                                          |
-| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer      | From the `slidesPerView` input.                                                   |
-| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px` | Measured via `ResizeObserver`. Absent on the server and before first measurement. |
-| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px` | Same as above, for the block axis.                                                |
-| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px`| Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
+| Property                         | Host                    | Value         | Notes                                                                                                           |
+| -------------------------------- | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                   |
+| `--for-carousel-active-index`    | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                          |
+| `--for-carousel-slide-count`     | `[forCarousel]`         | integer       | Total registered slides.                                                                                        |
+| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                 |
+| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                               |
+| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px`  | Same as above, for the block axis.                                                                              |
+| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px` | Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
 
 ## Autoplay
 
@@ -217,37 +217,37 @@ captured, so page scrolling on the perpendicular axis is unaffected.
 
 ### Styling hooks
 
-| Attribute       | Host                    | When present                              |
-| --------------- | ----------------------- | ----------------------------------------- |
-| `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed.    |
+| Attribute       | Host                    | When present                           |
+| --------------- | ----------------------- | -------------------------------------- |
+| `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed. |
 
 ### Inputs on `[forCarouselDrag]`
 
-| Input      | Type      | Default | Description                                       |
-| ---------- | --------- | ------- | ------------------------------------------------- |
+| Input      | Type      | Default | Description                                                                  |
+| ---------- | --------- | ------- | ---------------------------------------------------------------------------- |
 | `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
 
 ## Inputs
 
 All inputs are on `[forCarousel]` unless noted.
 
-| Input                                            | Type                           | Default                        | Description                                                            |
-| ------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
-| `activeIndex`                                    | `model<number>`                | `0`                            | Two-way bindable current slide index.                                  |
-| `orientation`                                    | `'horizontal' \| 'vertical'`   | `'horizontal'`                 | Scroll axis.                                                           |
-| `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                         |
-| `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                         |
-| `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                |
+| Input                                            | Type                           | Default                        | Description                                                                                                                        |
+| ------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `activeIndex`                                    | `model<number>`                | `0`                            | Two-way bindable current slide index.                                                                                              |
+| `orientation`                                    | `'horizontal' \| 'vertical'`   | `'horizontal'`                 | Scroll axis.                                                                                                                       |
+| `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                                                                                     |
+| `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                                                                                     |
+| `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                                                                            |
 | `containScroll`                                  | `boolean`                      | `false`                        | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping. |
-| `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`). |
-| `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.        |
-| `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                |
-| `dir`                                            | `'ltr' \| 'rtl' \| null`       | `null` (inherits)              | Writing direction.                                                     |
-| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | `null`                         | Label for the picker group.                                            |
-| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | `null`                         | Override the positional "N of M" label.                                |
-| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                |
-| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                             |
-| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                             |
+| `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`).                                                             |
+| `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.                                                                    |
+| `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                                                                            |
+| `dir`                                            | `'ltr' \| 'rtl' \| null`       | `null` (inherits)              | Writing direction.                                                                                                                 |
+| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | `null`                         | Label for the picker group.                                                                                                        |
+| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | `null`                         | Override the positional "N of M" label.                                                                                            |
+| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                                                                            |
+| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                                                                                         |
+| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                                                                                         |
 
 ### Contain scroll
 
@@ -258,15 +258,34 @@ by empty space. Adding the `containScroll` attribute to `[forCarousel]` clamps
 viewport's trailing edge:
 
 ```html
-<div forCarousel containScroll [slidesPerView]="3" ariaLabel="Featured products">
-  …
-</div>
+<div forCarousel containScroll [slidesPerView]="3" ariaLabel="Featured products">…</div>
 ```
 
 Every slide still has its own indicator; trailing indicators that would map to the
 same clamped view simply share the same visual position. The clamp has no effect
 when `loop` is enabled (the entire range is valid when wrapping) or when
 `slidesPerView` is `1` (a single-view carousel never overscrolls).
+
+## Localizing the default labels
+
+Each slide's default `aria-label` is the positional `"N of M"` string, and each
+indicator's is `"Go to slide N"`. Localize both centrally with
+`provideForCarouselDefaults` instead of setting `ariaLabel` on every slide and
+indicator:
+
+```ts
+providers: [
+  provideForCarouselDefaults({
+    slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
+    indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
+  }),
+];
+```
+
+`position` is the 1-based slide index and `total` is the slide count. Overrides
+merge with the parent scope, so you can localize just the labels and inherit the
+rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
+`[forCarouselIndicator]` still takes precedence over the localized default.
 
 ## Keyboard interaction (indicator group)
 
@@ -287,7 +306,9 @@ automatically.
 - The root carries `role="group"` and `aria-roledescription="carousel"`. The `ariaLabel` input
   should describe the carousel's purpose without using the word "carousel" (APG guidance).
 - Each slide carries `role="group"`, `aria-roledescription="slide"`, and
-  `aria-label="N of M"` by default. Override with the `ariaLabel` input.
+  `aria-label="N of M"` by default. Override per slide with the `ariaLabel` input,
+  or localize the default format app-wide with `provideForCarouselDefaults` (see
+  [Localizing the default labels](#localizing-the-default-labels)).
 - Off-view slides receive `aria-hidden="true"` and `inert` to remove them from the
   accessibility tree and focus order.
 - The indicator group should be labelled (e.g. `ariaLabel="Choose slide to display"`).

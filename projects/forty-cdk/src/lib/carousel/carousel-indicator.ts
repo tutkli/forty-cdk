@@ -38,6 +38,8 @@ export class ForCarouselIndicator {
   /**
    * Override the default positional `aria-label` (e.g. `"Go to slide 1"`).
    * Use this to provide a more descriptive label when the slide has a title.
+   * Localize that default format app-wide via `provideForCarouselDefaults`'s
+   * `indicatorLabel`.
    */
   readonly ariaLabel = input<string | null>(null);
 
@@ -55,7 +57,7 @@ export class ForCarouselIndicator {
   /** Default positional label used when no explicit `ariaLabel` is set. */
   protected readonly positionLabel = computed(() => {
     const i = this.#index();
-    return i < 0 ? null : `Go to slide ${i + 1}`;
+    return i < 0 ? null : this.ctx.indicatorLabel(i + 1);
   });
 
   /**
