@@ -36,7 +36,7 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
   host: {
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter()',
-    '(pointerleave)': 'onPointerLeave()',
+    '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
   },
@@ -78,8 +78,12 @@ export class ForHoverCardTrigger {
     this.ctx().scheduleOpen('hover-trigger');
   }
 
-  protected onPointerLeave(): void {
+  protected onPointerLeave(event: PointerEvent): void {
     this.#hovered = false;
+    const content = this.ctx().content();
+    if (content?.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
     this.#scheduleCloseIfInactive('hover-trigger');
   }
 
