@@ -78,3 +78,70 @@ test.describe('table column reorder', () => {
     await expect(nameCell).toHaveAttribute('aria-colindex', '2');
   });
 });
+
+test.describe('table reorder live-sort placeholder', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'table-reorder', { liveSort: 'true' });
+  });
+
+  test('liveSort column — placeholder follows the live drop index past the target before release', async ({
+    page,
+  }) => {
+    const nameHeader = el(page, 'header-name');
+    const roleHeader = el(page, 'header-role');
+
+    const nameBox = await nameHeader.boundingBox();
+    const roleBox = await roleHeader.boundingBox();
+    if (!nameBox || !roleBox) throw new Error('Header cells not found');
+
+    const startX = nameBox.x + nameBox.width / 2;
+    const startY = nameBox.y + nameBox.height / 2;
+    const targetX = roleBox.x + roleBox.width - 4;
+    const targetY = roleBox.y + roleBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 5, startY);
+    await page.mouse.move(targetX, targetY);
+
+    const order = await page
+      .locator('[data-testid="header-row"] > *')
+      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+    const phIndex = order.indexOf('col-placeholder');
+    const roleIndex = order.indexOf('header-role');
+    expect(phIndex).toBeGreaterThan(roleIndex);
+    expect(order).toContain('header-name');
+
+    await page.mouse.up();
+  });
+
+  test('liveSort row — placeholder follows the live drop index past the target before release', async ({
+    page,
+  }) => {
+    const row0 = el(page, 'row-0');
+    const row1 = el(page, 'row-1');
+
+    const box0 = await row0.boundingBox();
+    const box1 = await row1.boundingBox();
+    if (!box0 || !box1) throw new Error('Rows not found');
+
+    const startX = box0.x + box0.width / 2;
+    const startY = box0.y + box0.height / 2;
+    const targetY = box1.y + box1.height - 4;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(startX, targetY);
+
+    const order = await page
+      .locator('[data-testid="rowgroup"] > *')
+      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+    const phIndex = order.indexOf('row-placeholder');
+    const row1Index = order.indexOf('row-1');
+    expect(phIndex).toBeGreaterThan(row1Index);
+    expect(order).toContain('row-0');
+
+    await page.mouse.up();
+  });
+});
