@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import {
   ForDraggable,
+  ForDragPlaceholder,
   ForTable,
   ForTableCell,
   ForTableColumnReorder,
@@ -33,6 +35,7 @@ interface Row {
     ForTableColumnReorder,
     ForTableRowReorder,
     ForDraggable,
+    ForDragPlaceholder,
   ],
   styles: `
     .table-root {
@@ -61,6 +64,20 @@ interface Row {
       padding: 8px;
       border: 1px solid #eee;
     }
+
+    .col-ph {
+      height: 100%;
+      min-height: 2rem;
+      border: 2px dashed #4a90e2;
+      box-sizing: border-box;
+    }
+
+    .row-ph {
+      width: 100%;
+      height: 2.5rem;
+      border: 2px dashed #4a90e2;
+      box-sizing: border-box;
+    }
   `,
   template: `
     <button data-testid="before">Before</button>
@@ -70,7 +87,9 @@ interface Row {
         forTableHeaderRow
         forTableColumnReorder
         orientation="horizontal"
+        [liveSort]="liveSort"
         class="header-row"
+        data-testid="header-row"
         (columnReorder)="onColumnReorder($event)"
       >
         @for (col of columns(); track col) {
@@ -83,10 +102,19 @@ interface Row {
             [attr.data-testid]="'header-' + col"
           >
             {{ col }}
+            <ng-template forDragPlaceholder>
+              <div class="col-ph" data-testid="col-placeholder"></div>
+            </ng-template>
           </div>
         }
       </div>
-      <div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [liveSort]="liveSort"
+        data-testid="rowgroup"
+        (rowReorder)="onRowReorder($event)"
+      >
         @for (row of rows(); track row.id; let r = $index) {
           <div
             forTableRow
@@ -106,6 +134,9 @@ interface Row {
                 {{ cellValue(row, col) }}
               </div>
             }
+            <ng-template forDragPlaceholder>
+              <div class="row-ph" data-testid="row-placeholder"></div>
+            </ng-template>
           </div>
         }
       </div>
@@ -115,6 +146,10 @@ interface Row {
   `,
 })
 export class TableReorderFixture {
+  readonly #route = inject(ActivatedRoute);
+
+  protected readonly liveSort = this.#route.snapshot.queryParamMap.get('liveSort') === 'true';
+
   readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
   readonly rows = signal<Row[]>([
     { id: 0, name: 'Ada', role: 'Engineer', dept: 'Platform' },

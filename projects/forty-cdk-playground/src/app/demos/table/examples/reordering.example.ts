@@ -46,6 +46,7 @@ import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } fr
                 forTableHeaderRow
                 forTableColumnReorder
                 orientation="horizontal"
+                [liveSort]="true"
                 class="tbl-row tbl-head"
                 (columnReorder)="onColumnReorder($event)"
               >
@@ -66,7 +67,12 @@ import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } fr
                 }
               </div>
             </div>
-            <div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
+            <div
+              role="rowgroup"
+              forTableRowReorder
+              [liveSort]="true"
+              (rowReorder)="onRowReorder($event)"
+            >
               @for (person of rows(); track person.id) {
                 <div
                   forTableRow
@@ -93,9 +99,10 @@ import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } fr
       <div controls class="pg-controls">
         <button type="button" class="pg-btn" (click)="reset()">Reset order</button>
         <p class="pg-hint">
-          Drag a header cell sideways to reorder columns, or drag a row up / down to reorder rows. A
-          [forDragPlaceholder] marks the dragged item's slot with a dashed gap. Keyboard: focus a
-          draggable, press Space to lift, arrow keys to move, Space to drop.
+          Drag a header cell sideways to reorder columns, or drag a row up / down to reorder rows.
+          With [liveSort]="true", the [forDragPlaceholder] follows the live drop index so the
+          neighbours part to reveal where the item will land. Keyboard: focus a draggable, press
+          Space to lift, arrow keys to move, Space to drop.
         </p>
         <p class="pg-state">
           columns: <b>{{ columns().join(', ') }}</b>

@@ -386,6 +386,34 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 }
 ```
 
+### Live-sort placeholder
+
+Both companions forward `[liveSort]` to the wrapped `[forDropList]`. Combined with a
+`[forDragPlaceholder]` template on each draggable header cell / row, `[liveSort]="true"` makes
+the placeholder follow the **live resolved drop index** during a pointer drag, so the
+surrounding cells / rows part to reveal where the item will land — instead of only marking the
+dragged item's source slot. It has no effect without a `[forDragPlaceholder]` template, and none
+on keyboard dragging. See the [drag-drop README](../drag-drop/README.md) for the full behaviour.
+
+```html
+<div
+  forTableHeaderRow
+  forTableColumnReorder
+  orientation="horizontal"
+  [liveSort]="true"
+  (columnReorder)="columns.set($event.columns)"
+>
+  @for (col of columns(); track col) {
+  <div forTableHeaderCell [name]="col" forDraggable [dragData]="col">
+    {{ col }}
+    <ng-template forDragPlaceholder>
+      <div class="placeholder"></div>
+    </ng-template>
+  </div>
+  }
+</div>
+```
+
 ### Automatic ARIA reindexing
 
 `aria-rowindex` and `aria-colindex` recompute automatically after you apply the move. `ForTable` tracks DOM document order reactively via a `MutationObserver`; when Angular re-renders the `@for` in the new order, the indices update with no extra table code.
@@ -406,10 +434,12 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 | `[forTableColumnReorder]` | `disabled`       | `boolean`                    | `false`      | Disables the whole list passthrough.                               |
 | `[forTableColumnReorder]` | `autoScroll`     | `boolean`                    | `true`       | Auto-scroll passthrough.                                           |
 | `[forTableColumnReorder]` | `animateReorder` | `boolean`                    | `false`      | FLIP animation passthrough.                                        |
+| `[forTableColumnReorder]` | `liveSort`       | `boolean`                    | `false`      | Live-sort placeholder passthrough.                                 |
 | `[forTableRowReorder]`    | `dir`            | `'ltr' \| 'rtl' \| null`     | `null`       | Writing direction passthrough.                                     |
 | `[forTableRowReorder]`    | `disabled`       | `boolean`                    | `false`      | Disables the whole list passthrough.                               |
 | `[forTableRowReorder]`    | `autoScroll`     | `boolean`                    | `true`       | Auto-scroll passthrough.                                           |
 | `[forTableRowReorder]`    | `animateReorder` | `boolean`                    | `false`      | FLIP animation passthrough.                                        |
+| `[forTableRowReorder]`    | `liveSort`       | `boolean`                    | `false`      | Live-sort placeholder passthrough.                                 |
 
 ### Outputs
 
