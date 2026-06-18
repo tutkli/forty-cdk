@@ -40,6 +40,10 @@ export interface ForTableRowHandle {
   readonly cells: Signal<readonly ForTableCellHandle[]>;
   /** This row's selection identity, from its `[value]` input; `undefined` when unset (not selectable). */
   readonly value: Signal<unknown>;
+  /** 1-based tree depth of this row (`aria-level`); always `1` outside treegrid mode. */
+  readonly level: Signal<number>;
+  /** Whether this row is an expandable parent (drives `aria-expanded` / `data-state`). */
+  readonly expandable: Signal<boolean>;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
@@ -91,6 +95,14 @@ export interface ForTableContext {
    * can apply it. Called by `[forTableColumnResizer]`.
    */
   setColumnWidth(column: string, width: number): void;
+  /** Whether `value` is in the open-rows set (`treegrid` expansion). */
+  isRowExpanded(value: unknown): boolean;
+  /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
+  toggleRowExpansion(value: unknown): void;
+  /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */
+  rowPosinset(host: HTMLElement): number;
+  /** Total `aria-setsize` of a row host's same-level sibling set (treegrid). */
+  rowSetsize(host: HTMLElement): number;
 }
 
 export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_CONTEXT');

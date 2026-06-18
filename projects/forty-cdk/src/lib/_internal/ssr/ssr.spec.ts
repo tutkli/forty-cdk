@@ -301,6 +301,28 @@ class TableFixture {}
 class TableGridFixture {}
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <div forTable mode="treegrid" [expanded]="expanded">
+      <div role="rowgroup">
+        <div forTableRow [value]="'a'" [level]="1" [expandable]="true">
+          <div forTableCell name="name">Parent A</div>
+        </div>
+        <div forTableRow [value]="'a1'" [level]="2">
+          <div forTableCell name="name">Child A1</div>
+        </div>
+        <div forTableRow [value]="'b'" [level]="1">
+          <div forTableCell name="name">Leaf B</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class TableTreegridFixture {
+  readonly expanded = ['a'];
+}
+
+@Component({
   imports: [
     ForCarousel,
     ForCarouselDrag,
@@ -1201,6 +1223,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TabsFixture,
   TableFixture,
   TableGridFixture,
+  TableTreegridFixture,
   StepperFixture,
   StepperCompletedFixture,
   CarouselFixture,
@@ -1514,6 +1537,30 @@ describe('SSR smoke tests', () => {
     const sizer = host.firstElementChild as HTMLElement;
     expect(f.nativeElement.querySelectorAll('[data-index]').length).toBe(0);
     expect(sizer.style.height).toBe('40000px');
+  });
+
+  it('Table treegrid mode renders role=treegrid + hierarchy ARIA server-side', () => {
+    const f = TestBed.createComponent(TableTreegridFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
+    expect(root.getAttribute('role')).toBe('treegrid');
+    const rows = Array.from(f.nativeElement.querySelectorAll('[forTableRow]')) as HTMLElement[];
+    const parentRow = rows[0];
+    const childRow = rows[1];
+    const leafRow = rows[2];
+    expect(parentRow.getAttribute('aria-expanded')).toBe('true');
+    expect(parentRow.getAttribute('data-state')).toBe('open');
+    expect(parentRow.getAttribute('aria-level')).toBe('1');
+    expect(parentRow.getAttribute('aria-posinset')).toBe('1');
+    expect(parentRow.getAttribute('aria-setsize')).toBe('2');
+    expect(childRow.getAttribute('aria-level')).toBe('2');
+    expect(childRow.getAttribute('aria-posinset')).toBe('1');
+    expect(childRow.getAttribute('aria-setsize')).toBe('1');
+    expect(leafRow.getAttribute('aria-level')).toBe('1');
+    expect(leafRow.getAttribute('aria-posinset')).toBe('2');
+    expect(leafRow.getAttribute('aria-setsize')).toBe('2');
+    expect(leafRow.hasAttribute('aria-expanded')).toBe(false);
+    expect(leafRow.hasAttribute('data-state')).toBe(false);
   });
 
   it('Table grid mode renders role=grid + aria indices server-side', () => {

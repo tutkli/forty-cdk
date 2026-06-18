@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { installObserverPolyfills, renderHost } from '../../test-utils';
@@ -288,6 +288,63 @@ class SortTableHost {
   readonly disableClear = signal(false);
   readonly sortable = signal(true);
   lastSort: TableSortDescriptor | null = null;
+}
+
+interface TreegridRow {
+  id: string;
+  level: number;
+  expandable: boolean;
+  parentId: string | null;
+}
+
+const TREEGRID_DATA: readonly TreegridRow[] = [
+  { id: 'a', level: 1, expandable: true, parentId: null },
+  { id: 'a1', level: 2, expandable: false, parentId: 'a' },
+  { id: 'a2', level: 2, expandable: false, parentId: 'a' },
+  { id: 'b', level: 1, expandable: true, parentId: null },
+  { id: 'b1', level: 2, expandable: false, parentId: 'b' },
+];
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <div forTable mode="treegrid" [(expanded)]="expanded" [dir]="dir()">
+      <div role="rowgroup">
+        @for (row of visibleRows(); track row.id) {
+          <div
+            forTableRow
+            #r="forTableRow"
+            [value]="row.id"
+            [level]="row.level"
+            [expandable]="row.expandable"
+            [attr.data-testid]="'row-' + row.id"
+          >
+            <div forTableCell name="name" [attr.data-testid]="'cell-' + row.id">
+              @if (row.expandable) {
+                <button
+                  type="button"
+                  [attr.data-testid]="'toggle-' + row.id"
+                  (click)="r.toggleExpanded()"
+                >
+                  t
+                </button>
+              }
+              {{ row.id }}
+            </div>
+            <div forTableCell name="val">v</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TreegridTableHost {
+  readonly dir = signal<'ltr' | 'rtl' | null>(null);
+  readonly expanded = signal<readonly unknown[]>([]);
+  readonly visibleRows = computed(() => {
+    const openIds = this.expanded() as readonly string[];
+    return TREEGRID_DATA.filter((row) => row.parentId === null || openIds.includes(row.parentId));
+  });
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -1346,6 +1403,168 @@ describe('ForTable', () => {
           .querySelector<HTMLElement>('[forTable]')!
           .style.getPropertyValue('--for-table-col-name-width'),
       ).toBe('110px');
+    });
+
+    it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', () => {
+      const { el, flush } = renderHost(TreegridTableHost);
+      const parentRow = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const parentCell = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      expect(parentRow.getAttribute('aria-expanded')).toBe('false');
+      expect(parentRow.getAttribute('data-state')).toBe('closed');
+      const e = press(parentCell, 'ArrowRight');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(parentRow.getAttribute('aria-expanded')).toBe('true');
+      expect(parentRow.getAttribute('data-state')).toBe('open');
+      expect(el.querySelector<HTMLElement>('[data-testid="row-a1"]')).not.toBeNull();
+    });
+  });
+
+  describe('treegrid mode', () => {
+    it('sets role=treegrid on root', () => {
+      const { el } = renderHost(TreegridTableHost);
+      expect(rootEl(el).getAttribute('role')).toBe('treegrid');
+    });
+
+    it('collapsed initial state: parent rows emit aria-expanded="false" and data-state="closed"; only top-level rows rendered', () => {
+      const { el } = renderHost(TreegridTableHost);
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const rowB = el.querySelector<HTMLElement>('[data-testid="row-b"]')!;
+      expect(rowA.getAttribute('aria-expanded')).toBe('false');
+      expect(rowA.getAttribute('data-state')).toBe('closed');
+      expect(rowB.getAttribute('aria-expanded')).toBe('false');
+      expect(rowB.getAttribute('data-state')).toBe('closed');
+      expect(el.querySelector('[data-testid="row-a1"]')).toBeNull();
+      expect(el.querySelector('[data-testid="row-b1"]')).toBeNull();
+    });
+
+    it('aria-level on rows equals their level; non-treegrid mode emits no aria-level', () => {
+      const { el } = renderHost(TreegridTableHost);
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const rowB = el.querySelector<HTMLElement>('[data-testid="row-b"]')!;
+      expect(rowA.getAttribute('aria-level')).toBe('1');
+      expect(rowB.getAttribute('aria-level')).toBe('1');
+    });
+
+    it('grid mode emits no aria-level, aria-expanded, or data-state on rows', () => {
+      const { el } = renderHost(GridTableHost);
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      for (const row of allRows) {
+        expect(row.hasAttribute('aria-level')).toBe(false);
+        expect(row.hasAttribute('aria-expanded')).toBe(false);
+        expect(row.hasAttribute('data-state')).toBe(false);
+        expect(row.hasAttribute('aria-posinset')).toBe(false);
+        expect(row.hasAttribute('aria-setsize')).toBe(false);
+      }
+    });
+
+    it('after expanding parent a: child rows appear, parent a emits aria-expanded="true" + data-state="open"', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      flush();
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      expect(rowA.getAttribute('aria-expanded')).toBe('true');
+      expect(rowA.getAttribute('data-state')).toBe('open');
+      expect(el.querySelector('[data-testid="row-a1"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="row-a2"]')).not.toBeNull();
+    });
+
+    it('aria-posinset / aria-setsize correct in expanded tree and recompute after collapse', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      flush();
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const rowA1 = el.querySelector<HTMLElement>('[data-testid="row-a1"]')!;
+      const rowA2 = el.querySelector<HTMLElement>('[data-testid="row-a2"]')!;
+      const rowB = el.querySelector<HTMLElement>('[data-testid="row-b"]')!;
+      expect(rowA.getAttribute('aria-posinset')).toBe('1');
+      expect(rowA.getAttribute('aria-setsize')).toBe('2');
+      expect(rowA1.getAttribute('aria-posinset')).toBe('1');
+      expect(rowA1.getAttribute('aria-setsize')).toBe('2');
+      expect(rowA2.getAttribute('aria-posinset')).toBe('2');
+      expect(rowA2.getAttribute('aria-setsize')).toBe('2');
+      expect(rowB.getAttribute('aria-posinset')).toBe('2');
+      expect(rowB.getAttribute('aria-setsize')).toBe('2');
+
+      instance.expanded.set([]);
+      flush();
+      const rowBAfter = el.querySelector<HTMLElement>('[data-testid="row-b"]')!;
+      expect(rowBAfter.getAttribute('aria-posinset')).toBe('2');
+      expect(rowBAfter.getAttribute('aria-setsize')).toBe('2');
+      expect(el.querySelector('[data-testid="row-a1"]')).toBeNull();
+    });
+
+    it('ArrowRight on collapsed parent expands it (no cell move); ArrowRight again moves to next cell', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e = press(cellA, 'ArrowRight');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(instance.expanded()).toContain('a');
+      const expandedCellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e2 = press(expandedCellA, 'ArrowRight');
+      flush();
+      expect(e2.defaultPrevented).toBe(true);
+      expect(expandedCellA.getAttribute('data-highlighted')).toBe(null);
+    });
+
+    it('ArrowLeft on expanded parent collapses it; ArrowLeft on collapsed/leaf navigates', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      flush();
+      const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e = press(cellA, 'ArrowLeft');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(instance.expanded()).not.toContain('a');
+    });
+
+    it('ArrowRight preventDefault is called when it expands', () => {
+      const { el, flush } = renderHost(TreegridTableHost);
+      const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e = press(cellA, 'ArrowRight');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+    });
+
+    it('RTL: ArrowLeft expands, ArrowRight collapses', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.dir.set('rtl');
+      flush();
+      const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e = press(cellA, 'ArrowLeft');
+      flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(instance.expanded()).toContain('a');
+
+      instance.expanded.set(['a']);
+      flush();
+      const cellAExp = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
+      const e2 = press(cellAExp, 'ArrowRight');
+      flush();
+      expect(e2.defaultPrevented).toBe(true);
+      expect(instance.expanded()).not.toContain('a');
+    });
+
+    it('non-expandable (leaf) rows emit no aria-expanded and no data-state', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      flush();
+      const rowA1 = el.querySelector<HTMLElement>('[data-testid="row-a1"]')!;
+      expect(rowA1.hasAttribute('aria-expanded')).toBe(false);
+      expect(rowA1.hasAttribute('data-state')).toBe(false);
+    });
+
+    it('pointer: clicking the toggle button expands/collapses the expanded model', () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      const toggleA = el.querySelector<HTMLElement>('[data-testid="toggle-a"]')!;
+      toggleA.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.expanded()).toContain('a');
+
+      toggleA.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.expanded()).not.toContain('a');
     });
   });
 });

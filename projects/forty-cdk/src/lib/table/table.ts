@@ -8,8 +8,10 @@ import {
   type GridNavigationAction,
   moveGridIndex,
   resolveGridNavigation,
+  resolveTreegridExpandCollapse,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { computeFlatHierarchy } from '../_internal/flat-hierarchy/flat-hierarchy';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
@@ -109,6 +111,14 @@ export class ForTable implements ForTableContext {
   /** Equality comparator for row values. Defaults to `===`; supply id-based for objects. */
   readonly compareWith = input<(a: unknown, b: unknown) => boolean>((a, b) => a === b);
 
+  /**
+   * Two-way bindable open parent-row values (each row's `[value]`), for
+   * `mode="treegrid"`. The implicit `expandedChange` fires only on internal
+   * expand/collapse (ArrowRight/ArrowLeft, `toggleRowExpansion`), never on
+   * consumer writes through `[(expanded)]`. Ignored outside `treegrid` mode.
+   */
+  readonly expanded = model<readonly unknown[]>([]);
+
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly #headerRowEl = signal<HTMLElement | null>(null);
@@ -150,6 +160,31 @@ export class ForTable implements ForTableContext {
     return count === values.length ? 'all' : 'some';
   });
 
+  readonly #rowHierarchy = computed(() =>
+    computeFlatHierarchy(this.#rows.items().map((row) => row.level())),
+  );
+
+  #isExpanded(value: unknown): boolean {
+    return this.expanded().some((v) => this.compareWith()(v, value));
+  }
+
+  #setExpanded(value: unknown, open: boolean): void {
+    if (value === undefined) {
+      return;
+    }
+    const current = this.expanded();
+    const has = this.#isExpanded(value);
+    if (open && !has) {
+      this.expanded.set([...current, value]);
+    } else if (!open && has) {
+      this.expanded.set(current.filter((v) => !this.compareWith()(v, value)));
+    }
+  }
+
+  #rowOfCell(cellHost: HTMLElement): ForTableRowHandle | undefined {
+    return this.#rows.items().find((row) => row.cells().some((cell) => cell.host === cellHost));
+  }
+
   protected readonly rowCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.rowCount() ?? this.#rows.items().length),
   );
@@ -167,6 +202,27 @@ export class ForTable implements ForTableContext {
 
   setColumnWidth(column: string, width: number): void {
     this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
+  }
+
+  isRowExpanded(value: unknown): boolean {
+    return this.#isExpanded(value);
+  }
+
+  toggleRowExpansion(value: unknown): void {
+    if (value === undefined) {
+      return;
+    }
+    this.#setExpanded(value, !this.#isExpanded(value));
+  }
+
+  rowPosinset(host: HTMLElement): number {
+    const index = this.#rows.indexOfHost(host);
+    return index < 0 ? 1 : (this.#rowHierarchy()[index]?.posinset ?? 1);
+  }
+
+  rowSetsize(host: HTMLElement): number {
+    const index = this.#rows.indexOfHost(host);
+    return index < 0 ? 1 : (this.#rowHierarchy()[index]?.setsize ?? 1);
   }
 
   unregisterHeaderRow(el: HTMLElement): void {
@@ -288,6 +344,26 @@ export class ForTable implements ForTableContext {
         this.#selection.toggle(value);
         this.#anchorValue.set(value);
         return;
+      }
+    }
+    if (this.mode() === 'treegrid') {
+      const intent = resolveTreegridExpandCollapse(event, this.dir());
+      if (intent !== null) {
+        const row = this.#rowOfCell(host);
+        if (row?.expandable()) {
+          const value = row.value();
+          const open = this.#isExpanded(value);
+          if (intent === 'expand' && !open) {
+            event.preventDefault();
+            this.#setExpanded(value, true);
+            return;
+          }
+          if (intent === 'collapse' && open) {
+            event.preventDefault();
+            this.#setExpanded(value, false);
+            return;
+          }
+        }
       }
     }
     const cols = this.#cols();

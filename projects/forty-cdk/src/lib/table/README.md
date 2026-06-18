@@ -116,6 +116,62 @@ The root emits `aria-rowcount` and `aria-colcount` (defaulting to the rendered d
 }
 ```
 
+## Treegrid mode (expandable hierarchical rows)
+
+`mode="treegrid"` sets `role="treegrid"` on the root. Rows are a flat sibling list in the DOM; hierarchy is expressed through ARIA attributes, not DOM nesting.
+
+- **`[level]`** — 1-based tree depth, reflected as `aria-level`. Default `1`.
+- **`[expandable]`** — marks a row as a parent; emits `aria-expanded="true"|"false"` and `data-state="open"|"closed"`. Leaf rows emit neither.
+- **`[(expanded)]`** — two-way bindable array of open parent-row values (keyed by row `[value]`). Use `compareWith` for object values.
+- **`aria-posinset` / `aria-setsize`** — auto-recomputed from the rendered flat list on every expand/collapse.
+- **ArrowRight** — expands a collapsed parent (RTL: collapses); if already expanded or the row is a leaf, falls through to grid cell navigation.
+- **ArrowLeft** — collapses an expanded parent (RTL: expands); otherwise navigates left.
+- Consumer mounts/unmounts child rows with `@if` driven by `expanded()`. A `#r="forTableRow"` template ref exposes `r.toggleExpanded()` for pointer-driven expand buttons.
+
+```html
+<div forTable mode="treegrid" [(expanded)]="expanded">
+  <div role="rowgroup">
+    @for (row of visibleRows(); track row.id) {
+    <div
+      forTableRow
+      #r="forTableRow"
+      [value]="row.id"
+      [level]="row.level"
+      [expandable]="row.expandable"
+    >
+      <div forTableCell name="name">
+        @if (row.expandable) {
+        <button type="button" (click)="r.toggleExpanded()">▶</button>
+        } {{ row.name }}
+      </div>
+    </div>
+    }
+  </div>
+</div>
+```
+
+```ts
+readonly expanded = signal<readonly unknown[]>([]);
+readonly visibleRows = computed(() => {
+  const openIds = this.expanded() as readonly string[];
+  return this.allRows.filter((row) => row.parentId === null || openIds.includes(row.parentId));
+});
+```
+
+Style hooks:
+
+```css
+[forTableRow][data-state='open'] {
+  background: #f0fff0;
+}
+[forTableRow][data-state='closed'] {
+  background: #fff0f0;
+}
+[forTableRow][aria-level='2'] {
+  padding-left: 2rem;
+}
+```
+
 ## Row selection
 
 Add `selectionMode` to `[forTable]` to enable row selection. Use `[forTableRowSelector]` for a per-row decorative affordance and `[forTableSelectAll]` in the header for a tri-state select-all checkbox.
@@ -375,12 +431,15 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 | `[forTable]`              | `selectionBehavior` | `'toggle' \| 'replace'`                 | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).                                       |
 | `[forTable]`              | `selection`         | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable selected row values.                                                                       |
 | `[forTable]`              | `compareWith`       | `(a: unknown, b: unknown) => boolean`   | `===`          | Equality comparator for row values. Override for object rows.                                               |
+| `[forTable]`              | `expanded`          | `model<readonly unknown[]>([])`         | `[]`           | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.                      |
 | `[forTableHeaderCell]`    | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                              |
 | `[forTableHeaderCell]`    | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                    |
 | `[forTableCell]`          | `name`              | `string` (required)                     | —              | Column identifier, reflected as `data-column`.                                                              |
 | `[forTableCell]`          | `sticky`            | `boolean \| 'end'`                      | `false`        | Sticky edge; reflected as `data-sticky`.                                                                    |
 | `[forTableCell]`          | `disabled`          | `boolean`                               | `false`        | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.                                      |
 | `[forTableRow]`           | `value`             | `unknown`                               | `undefined`    | Selection identity for this row. Leave unset for non-selectable rows.                                       |
+| `[forTableRow]`           | `level`             | `number`                                | `1`            | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.                           |
+| `[forTableRow]`           | `expandable`        | `boolean`                               | `false`        | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.                               |
 | `[forTableSelectAll]`     | `ariaLabel`         | `string \| null`                        | `null`         | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).                                    |
 | `[forTableSortHeader]`    | `column`            | `string` (required)                     | —              | Column identity included in the `sortChange` payload.                                                       |
 | `[forTableSortHeader]`    | `direction`         | `'ascending' \| 'descending' \| 'none'` | `'none'`       | Current sort direction (two-way bindable via `[(direction)]`).                                              |
@@ -394,22 +453,27 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 
 ## CSS hooks
 
-| Token / attribute              | Emitted by                                      | Description                                                                               |
-| ------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `--for-table-header-height`    | `[forTable]`                                    | Header row height in px. Updated on resize.                                               |
-| `data-mode`                    | `[forTable]`                                    | `'table' \| 'grid' \| 'treegrid'`                                                         |
-| `data-column`                  | header / data cell                              | Column name from the `name` input.                                                        |
-| `data-sticky`                  | header / data cell                              | `''` (start-edge) or `'end'` when sticky; absent otherwise.                               |
-| `data-highlighted`             | `[forTableCell]`                                | Present on the currently roving-focused cell in grid / treegrid mode.                     |
-| `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index in the data row set. Absent in table mode.                              |
-| `aria-colindex`                | `[forTableCell]`                                | 1-based column index within the row. Absent in table mode.                                |
-| `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) when `selectionMode` is not `'none'`.                  |
-| `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.               |
-| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"`; absent otherwise.                               |
-| `data-state`                   | `[forTableRowSelector]`                         | `"checked"` or `"unchecked"`. The row owns `aria-selected`; this is decoration.           |
-| `aria-checked`                 | `[forTableSelectAll]`                           | `"true"` / `"false"` / `"mixed"` (tri-state).                                             |
-| `data-state`                   | `[forTableSelectAll]`                           | `"checked"` / `"unchecked"` / `"indeterminate"`.                                          |
-| `aria-sort`                    | `[forTableSortHeader]`                          | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only. |
-| `data-sorted`                  | `[forTableSortHeader]`                          | Same value as `aria-sort` — a CSS styling hook (e.g. for a sort arrow glyph).             |
-| `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                     |
-| `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                            |
+| Token / attribute              | Emitted by                                      | Description                                                                                 |
+| ------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `--for-table-header-height`    | `[forTable]`                                    | Header row height in px. Updated on resize.                                                 |
+| `data-mode`                    | `[forTable]`                                    | `'table' \| 'grid' \| 'treegrid'`                                                           |
+| `data-column`                  | header / data cell                              | Column name from the `name` input.                                                          |
+| `data-sticky`                  | header / data cell                              | `''` (start-edge) or `'end'` when sticky; absent otherwise.                                 |
+| `data-highlighted`             | `[forTableCell]`                                | Present on the currently roving-focused cell in grid / treegrid mode.                       |
+| `aria-expanded`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on expandable rows in `treegrid` mode; absent on leaves. |
+| `data-state`                   | `[forTableRow]`                                 | `"open"` / `"closed"` on expandable rows in `treegrid` mode; absent on leaves.              |
+| `aria-level`                   | `[forTableRow]`                                 | 1-based depth in `treegrid` mode; absent otherwise.                                         |
+| `aria-posinset`                | `[forTableRow]`                                 | 1-based position among same-level siblings in `treegrid` mode; absent otherwise.            |
+| `aria-setsize`                 | `[forTableRow]`                                 | Total same-level sibling count in `treegrid` mode; absent otherwise.                        |
+| `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index in the data row set. Absent in table mode.                                |
+| `aria-colindex`                | `[forTableCell]`                                | 1-based column index within the row. Absent in table mode.                                  |
+| `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) when `selectionMode` is not `'none'`.                    |
+| `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.                 |
+| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"`; absent otherwise.                                 |
+| `data-state`                   | `[forTableRowSelector]`                         | `"checked"` or `"unchecked"`. The row owns `aria-selected`; this is decoration.             |
+| `aria-checked`                 | `[forTableSelectAll]`                           | `"true"` / `"false"` / `"mixed"` (tri-state).                                               |
+| `data-state`                   | `[forTableSelectAll]`                           | `"checked"` / `"unchecked"` / `"indeterminate"`.                                            |
+| `aria-sort`                    | `[forTableSortHeader]`                          | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only.   |
+| `data-sorted`                  | `[forTableSortHeader]`                          | Same value as `aria-sort` — a CSS styling hook (e.g. for a sort arrow glyph).               |
+| `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                       |
+| `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                              |
