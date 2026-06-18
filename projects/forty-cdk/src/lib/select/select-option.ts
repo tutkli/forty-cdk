@@ -62,11 +62,14 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'selected() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.aria-setsize]': 'ariaSetSize()',
+    '[attr.aria-posinset]': 'ariaPosInSet()',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
+    '(pointerdown)': 'onPointerDown($event)',
   },
 })
 export class ForSelectOption<T = string> {
@@ -82,15 +85,43 @@ export class ForSelectOption<T = string> {
    */
   readonly value = input.required<T>();
   readonly disabled = input(false, { transform: booleanAttribute });
+  /**
+   * Zero-based absolute position of this option in the full source data.
+   * Required in the virtualized path — drives `aria-posinset` and the parent's
+   * position snapshot. Leave unset (default `null`) outside it.
+   */
+  readonly posInSet = input<number | null>(null);
 
   readonly id = hostId('for-select-option');
 
   readonly selected = computed(() => this.#ctx.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
-  readonly #highlighted = signal(false);
-  /** True while this option has DOM focus. Reflected as `data-highlighted`. */
-  readonly highlighted = this.#highlighted.asReadonly();
+  protected readonly ariaSetSize = computed<string | null>(() => {
+    const total = this.#ctx.totalCount();
+    return total === undefined ? null : String(total);
+  });
+  protected readonly ariaPosInSet = computed<string | null>(() => {
+    if (this.#ctx.totalCount() === undefined) {
+      return null;
+    }
+    const pos = this.posInSet();
+    return pos === null ? null : String(pos + 1);
+  });
+
+  readonly #focused = signal(false);
+  /**
+   * True when this option is the active candidate — DOM-focused in the
+   * default path, or `aria-activedescendant` in the virtualized path.
+   * Reflected as `data-highlighted`.
+   */
+  readonly highlighted = computed(() => {
+    const activeId = this.#ctx.activeDescendantId();
+    if (activeId !== null) {
+      return activeId === this.id();
+    }
+    return this.#focused();
+  });
 
   /**
    * Reactive effective label exposed on the handle — the trimmed `textContent`
@@ -109,6 +140,8 @@ export class ForSelectOption<T = string> {
       value: this.value,
       label: this.#effectiveLabel,
       disabled: this.effectiveDisabled,
+      id: this.id,
+      posInSet: this.posInSet,
     };
     registerHandle(
       handle,
@@ -122,14 +155,15 @@ export class ForSelectOption<T = string> {
       return;
     }
     this.#ctx.activate(this.value());
+    this.#ctx.notifyOptionClick(this.id());
   }
 
   protected onFocus(): void {
-    this.#highlighted.set(true);
+    this.#focused.set(true);
   }
 
   protected onBlur(): void {
-    this.#highlighted.set(false);
+    this.#focused.set(false);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -163,5 +197,12 @@ export class ForSelectOption<T = string> {
     }
 
     this.#ctx.handleTypeahead(event);
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (this.#ctx.totalCount() === undefined) {
+      return;
+    }
+    event.preventDefault();
   }
 }

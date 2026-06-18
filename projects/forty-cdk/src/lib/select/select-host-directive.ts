@@ -59,7 +59,9 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'side',
   'sideOffset',
   'sticky',
+  'totalCount',
   'touched',
+  'visibleRange',
 ] as const;
 
 /**
@@ -76,6 +78,7 @@ export const FOR_SELECT_HOST_DIRECTIVE_OUTPUTS = [
   'interactOutside',
   'autoFocusOnOpen',
   'autoFocusOnClose',
+  'scrollToIndex',
   'touchedChange',
   'touch',
 ] as const;

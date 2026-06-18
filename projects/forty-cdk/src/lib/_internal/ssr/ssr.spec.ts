@@ -531,6 +531,23 @@ class SelectOpenFixture {
 }
 
 @Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  template: `
+    <div forSelect [open]="true" [totalCount]="3" [(value)]="value">
+      <button forSelectTrigger>T</button>
+      <div forSelectContent>
+        <button forSelectOption value="a" [posInSet]="0">A</button>
+        <button forSelectOption value="b" [posInSet]="1">B</button>
+        <button forSelectOption value="c" [posInSet]="2">C</button>
+      </div>
+    </div>
+  `,
+})
+class SelectVirtualizedOpenFixture {
+  readonly value = signal<readonly string[]>([]);
+}
+
+@Component({
   imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
   template: `
     <div forCombobox [open]="true">
@@ -1184,6 +1201,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DrawerContainedFixture,
   ToastFixture,
   SelectOpenFixture,
+  SelectVirtualizedOpenFixture,
   ComboboxOpenFixture,
   NavigationMenuOpenFixture,
   MenubarOpenFixture,
@@ -1359,6 +1377,15 @@ describe('SSR smoke tests', () => {
     expect(content.getAttribute('role')).toBe('listbox');
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forSelectContent]')).toBeNull();
+  });
+
+  it('opening a virtualized Select does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(SelectVirtualizedOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forSelectContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('listbox');
+    expect(f.nativeElement.contains(content)).toBe(true);
     expect(document.body.querySelector(':scope > [forSelectContent]')).toBeNull();
   });
 

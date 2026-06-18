@@ -47,6 +47,14 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
    */
   readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
+  /** Stable host `id` — the activedescendant target in the virtualized path. */
+  readonly id: Signal<string>;
+  /**
+   * Zero-based absolute position in the full source data. Required in the
+   * virtualized path (drives the position snapshot + `aria-posinset`); `null`
+   * outside it.
+   */
+  readonly posInSet: Signal<number | null>;
 }
 
 /**
@@ -231,6 +239,39 @@ export interface ForSelectContext<T = unknown> {
    */
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
+
+  /**
+   * Full source length when virtualizing, `undefined` in the default
+   * DOM-focus path. Drives each option's `aria-setsize` / `aria-posinset`
+   * and the focus-model branch.
+   */
+  readonly totalCount: Signal<number | undefined>;
+  /**
+   * The active option's `id` in the virtualized activedescendant model,
+   * `null` in the default path. The content surface reflects it as
+   * `aria-activedescendant`; options read it for `data-highlighted`.
+   */
+  readonly activeDescendantId: Signal<string | null>;
+  /**
+   * Virtualized-path open hook. Called by `[forSelectContent]` after it
+   * focuses its own surface on open: seeds `aria-activedescendant` to the
+   * committed option (scrolling it into view via `(scrollToIndex)`), or the
+   * first enabled option when nothing is selected.
+   */
+  seedVirtualizedInitialFocus(): void;
+  /**
+   * Virtualized-path keyboard handler. Called by `[forSelectContent]`'s host
+   * keydown only when `totalCount()` is set: Arrow/Home/End navigation,
+   * Enter/Space activation of the active descendant, single-mode Tab commit,
+   * and typeahead — all in the activedescendant model.
+   */
+  handleVirtualizedKeydown(event: KeyboardEvent): void;
+  /**
+   * Called by an option on click in the virtualized path: moves
+   * `aria-activedescendant` to that option and returns DOM focus to the
+   * content surface. No-op in the default path.
+   */
+  notifyOptionClick(optionId: string): void;
 
   /** Flip the `touched` model. Called by trigger on blur-to-outside and on dismiss events. */
   markTouched(): void;
