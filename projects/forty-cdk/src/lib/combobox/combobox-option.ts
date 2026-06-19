@@ -176,7 +176,7 @@ export class ForComboboxOption<T = string> {
   }
 
   protected onPointerMove(): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || this.#ctx.isPointerSuppressed()) {
       return;
     }
     if (!this.#ctx.isActive(this.id())) {

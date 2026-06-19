@@ -34,6 +34,12 @@ export interface VirtualizedNavigatorDeps<T> {
   readonly setActiveId: (id: string | null) => void;
   /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
   readonly emitScrollToIndex: (idx: number) => void;
+  /**
+   * Scroll the active option's host into view, opening the host's
+   * pointer-suppression window first so the scroll cannot hijack the
+   * activedescendant via a synthetic `pointermove`.
+   */
+  readonly scrollActiveIntoView: (host: HTMLElement) => void;
 }
 
 /**
@@ -146,7 +152,7 @@ export class VirtualizedNavigator<T> {
     }
     this.#deps.setActiveId(match.id());
     this.#pendingActivePos.set(null);
-    match.host.scrollIntoView?.({ block: 'nearest' });
+    this.#deps.scrollActiveIntoView(match.host);
     return true;
   }
 
@@ -248,7 +254,7 @@ export class VirtualizedNavigator<T> {
       if (live) {
         this.#pendingActivePos.set(null);
         this.#deps.setActiveId(live.id());
-        live.host.scrollIntoView?.({ block: 'nearest' });
+        this.#deps.scrollActiveIntoView(live.host);
         return;
       }
       // Range claims it's in-window but the option hasn't mounted yet — fall

@@ -595,6 +595,20 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       expect(getInput().getAttribute('aria-activedescendant')).toBe(banana.id);
     });
+
+    it('keyboard navigation suppresses a hover synthesized by the scroll under a stationary cursor', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      pressKey(input, 'ArrowDown');
+      getOption('banana').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apricot').id);
+      expect(getOption('banana').hasAttribute('data-highlighted')).toBe(false);
+    });
   });
 
   describe('typing + filtering', () => {

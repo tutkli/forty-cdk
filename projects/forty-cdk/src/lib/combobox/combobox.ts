@@ -26,6 +26,10 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
+  createPointerSuppression,
+  type PointerSuppression,
+} from '../_internal/pointer-suppression/pointer-suppression';
+import {
   defaultItemToFormValue,
   isInArray,
   singleSelected,
@@ -441,6 +445,8 @@ export class ForCombobox<T = string>
   });
   readonly activeId = this.#activeId.asReadonly();
 
+  readonly #pointerSuppression: PointerSuppression = createPointerSuppression();
+
   /**
    * Always-on label cache — keeps `{ id, value, label }` tuples across
    * close/open and scroll-out-of-view to drive inline autocomplete matching
@@ -468,6 +474,7 @@ export class ForCombobox<T = string>
       getActiveId: () => this.#activeId(),
       setActiveId: (id) => this.#activeId.set(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+      scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
     }));
   }
 
@@ -667,6 +674,10 @@ export class ForCombobox<T = string>
     return this.#activeId() === id;
   }
 
+  isPointerSuppressed(): boolean {
+    return this.#pointerSuppression.isSuppressed();
+  }
+
   activate(handle: ForComboboxOptionHandle<T>): void {
     if (this.effectiveDisabled() || this.readonly() || handle.disabled()) {
       return;
@@ -767,9 +778,7 @@ export class ForCombobox<T = string>
       return;
     }
     this.#activeId.set(target.id());
-    // Scroll the active option into view inside the listbox surface
-    // (`scrollIntoView` is missing in some test environments — safe-call).
-    target.host.scrollIntoView?.({ block: 'nearest' });
+    this.#scrollActiveIntoView(target.host);
   }
 
   setQueryFromInput(query: string): void {
@@ -789,6 +798,11 @@ export class ForCombobox<T = string>
 
   setActiveId(id: string | null): void {
     this.#activeId.set(id);
+  }
+
+  #scrollActiveIntoView(host: HTMLElement): void {
+    this.#pointerSuppression.suppress();
+    host.scrollIntoView?.({ block: 'nearest' });
   }
 
   readonly #cachedOptionsMemo = computed<readonly { id: string; value: T; label: string }[]>(() => {
