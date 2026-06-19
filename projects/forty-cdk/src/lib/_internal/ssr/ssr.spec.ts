@@ -583,6 +583,34 @@ class DrawerOpenFixture {}
 class DrawerContainedFixture {}
 
 @Component({
+  standalone: true,
+  imports: [ForDrawer, ForDrawerBackdrop, ForDrawerTitle],
+  template: `
+    <section #box style="position: relative">
+      <div forDrawer [modal]="true" [container]="box" ariaLabel="d">
+        <div forDrawerBackdrop></div>
+        <h2 forDrawerTitle>title</h2>
+      </div>
+    </section>
+  `,
+})
+class DrawerContainedModalFixture {}
+
+@Component({
+  standalone: true,
+  imports: [ForDialog, ForDialogBackdrop, ForDialogTitle],
+  template: `
+    <section #box style="position: relative">
+      <div forDialog [modal]="true" [container]="box" ariaLabel="d">
+        <div forDialogBackdrop></div>
+        <h2 forDialogTitle>title</h2>
+      </div>
+    </section>
+  `,
+})
+class DialogContainedModalFixture {}
+
+@Component({
   imports: [ForToastViewport, ForToast, ForToastTitle],
   template: `
     <for-toast-viewport>
@@ -1299,8 +1327,10 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   PopoverOpenFixture,
   DialogOpenFixture,
   DialogContainedFixture,
+  DialogContainedModalFixture,
   DrawerOpenFixture,
   DrawerContainedFixture,
+  DrawerContainedModalFixture,
   ToastFixture,
   SelectOpenFixture,
   SelectVirtualizedOpenFixture,
@@ -1469,6 +1499,32 @@ describe('SSR smoke tests', () => {
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(f.nativeElement.contains(dialog)).toBe(true);
     expect(dialog.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a contained modal Drawer does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DrawerContainedModalFixture);
+    f.detectChanges();
+    const drawer = f.nativeElement.querySelector('[forDrawer]') as HTMLElement;
+    expect(drawer.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(drawer)).toBe(true);
+    const section = f.nativeElement.querySelector('section') as HTMLElement;
+    expect(section.contains(drawer)).toBe(true);
+    expect(document.body.querySelector(':scope > [forDrawer]')).toBeNull();
+    expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a contained modal Dialog does not portal or mutate <body> server-side', () => {
+    const overflowBefore = document.body.style.overflow;
+    const f = TestBed.createComponent(DialogContainedModalFixture);
+    f.detectChanges();
+    const dialog = f.nativeElement.querySelector('[forDialog]') as HTMLElement;
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(dialog)).toBe(true);
+    const section = f.nativeElement.querySelector('section') as HTMLElement;
+    expect(section.contains(dialog)).toBe(true);
     expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
     expect(document.body.style.overflow).toBe(overflowBefore);
   });

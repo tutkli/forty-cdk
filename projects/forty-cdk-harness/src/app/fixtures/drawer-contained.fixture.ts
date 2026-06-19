@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, type ForDrawerCloseReason, ForDrawerClose } from 'forty-cdk';
 
 @Component({
@@ -35,12 +36,13 @@ import { ForDrawer, ForDrawerBackdrop, type ForDrawerCloseReason, ForDrawerClose
   ],
   template: `
     <div data-testid="container" #container>
+      <button data-testid="in-container-bg" type="button">In-container bg</button>
       @if (open()) {
         <div
           forDrawer
           data-testid="drawer"
           ariaLabel="Contained drawer"
-          [modal]="false"
+          [modal]="modal()"
           [container]="container"
           (dismiss)="onClose($event)"
         >
@@ -58,8 +60,10 @@ import { ForDrawer, ForDrawerBackdrop, type ForDrawerCloseReason, ForDrawerClose
   `,
 })
 export class DrawerContainedFixture {
+  readonly #route = inject(ActivatedRoute);
   readonly open = signal(false);
   readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
+  protected readonly modal = signal(this.#route.snapshot.queryParamMap.get('modal') === 'true');
 
   onClose(reason: ForDrawerCloseReason): void {
     this.lastCloseReason.set(reason);

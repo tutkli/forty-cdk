@@ -164,7 +164,12 @@ export interface ModalShellHandle {
  *      (so the trap's imperative focus move lands on an already-isolated
  *      tree), activates the trap with `initialFocus` + `preventInitialFocus`
  *      (the `(autoFocusOnOpen)` veto) + the synchronously-captured
- *      `returnFocus` target, then locks body scroll. When `initialFocus` is a
+ *      `returnFocus` target, then locks scroll. When `config.container` is
+ *      set, inert-siblings is scoped to that container (only the container's
+ *      other children are inerted; body siblings stay interactive) and scroll
+ *      lock targets the container instead of `<body>` (#819). Focus trap is
+ *      already subtree-scoped to the host regardless of portal target — no
+ *      change there. When `initialFocus` is a
  *      {@link ModalShellInitialFocusConfig}, the trap is activated with
  *      `preventInitialFocus: true` and the shell runs the primitive's
  *      `move()` instead (falling back to the container on a miss).
@@ -243,6 +248,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   // instance.
   let activatedAsModal = false;
   let inertHandle: InertSiblingsHandle | null = null;
+  let activatedContainer: HTMLElement | null = null;
 
   // 3. Side-effect setup runs after Angular has applied input bindings.
   //    Reading `config.modal()` etc. in the constructor would always see the
@@ -334,7 +340,9 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       //     activates so the trap's `focus()` call lands on an
       //     already-isolated tree. The return-focus target was captured
       //     synchronously above (#136).
-      inertHandle = inertStack.activate(host.nativeElement);
+      const containerEl = config.container?.() ?? null;
+      inertHandle = inertStack.activate(host.nativeElement, containerEl ?? undefined);
+      activatedContainer = containerEl;
       if (moveCfg) {
         // The primitive owns the focus move. Set up Tab cycling + return
         // capture WITHOUT the trap's own imperative focus, then run the
@@ -353,7 +361,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
           returnFocus: returnFocusTarget,
         });
       }
-      scrollLock.lock();
+      scrollLock.lock(containerEl ?? undefined);
     } else if (!skipInitialFocus) {
       // 3e. Non-modal mode. No trap, no scroll lock, no inert. Still respect
       //     the configured initial focus: the primitive's `move()` algorithm
@@ -405,7 +413,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
           returnFocus: config.returnFocus() && !skipReturnFocus,
         });
       });
-      scrollLock.unlock();
+      scrollLock.unlock(activatedContainer ?? undefined);
     }
   });
 

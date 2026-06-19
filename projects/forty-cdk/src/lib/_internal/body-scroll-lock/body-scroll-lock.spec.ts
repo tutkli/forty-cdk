@@ -179,6 +179,55 @@ describe('BodyScrollLock', () => {
     });
   });
 
+  describe('element-scoped lock', () => {
+    let container: HTMLElement;
+
+    beforeEach(() => {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+      container.style.overflow = '';
+      container.remove();
+    });
+
+    it('lock(container) sets overflow:hidden on the container, not body', () => {
+      lock.lock(container);
+      expect(container.style.overflow).toBe('hidden');
+      expect(document.body.style.overflow).toBe('');
+    });
+
+    it('unlock(container) clears container overflow back to empty string', () => {
+      lock.lock(container);
+      lock.unlock(container);
+      expect(container.style.overflow).toBe('');
+    });
+
+    it('refcounts per element: two locks then one unlock keeps it hidden', () => {
+      lock.lock(container);
+      lock.lock(container);
+      lock.unlock(container);
+      expect(container.style.overflow).toBe('hidden');
+      lock.unlock(container);
+      expect(container.style.overflow).toBe('');
+    });
+
+    it('body lock and container lock are independent', () => {
+      lock.lock();
+      lock.lock(container);
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(container.style.overflow).toBe('hidden');
+
+      lock.unlock();
+      expect(document.body.style.overflow).toBe('');
+      expect(container.style.overflow).toBe('hidden');
+
+      lock.unlock(container);
+      expect(container.style.overflow).toBe('');
+    });
+  });
+
   it('isolates state across application bootstraps', () => {
     lock.lock();
     expect(document.body.style.overflow).toBe('hidden');

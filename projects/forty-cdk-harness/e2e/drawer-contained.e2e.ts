@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture, tabN } from './_helpers';
 
 test.describe('Drawer (contained / scoped)', () => {
   test('surface renders inside the container, not document.body', async ({ page }) => {
@@ -77,5 +77,74 @@ test.describe('Drawer (contained / scoped)', () => {
 
     const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
     expect(bodyOverflow).not.toBe('hidden');
+  });
+});
+
+test.describe('Drawer (contained, modal)', () => {
+  test('focus is trapped within the drawer surface', async ({ page }) => {
+    await gotoFixture(page, 'drawer-contained', { modal: 'true' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+
+    await expectFocused(el(page, 'first'));
+
+    await tabN(page, 1);
+    await expectFocused(el(page, 'second'));
+
+    await tabN(page, 1);
+    await expectFocused(el(page, 'close-btn'));
+
+    await tabN(page, 1);
+    await expectFocused(el(page, 'first'));
+
+    const focusedId = await page.evaluate(() =>
+      document.activeElement?.getAttribute('data-testid'),
+    );
+    expect(focusedId).not.toBe('in-container-bg');
+    expect(focusedId).not.toBe('outside');
+  });
+
+  test('only container siblings are inerted; body-level outside stays interactive', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drawer-contained', { modal: 'true' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+
+    const inContainerBgInert = await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="in-container-bg"]');
+      return btn?.hasAttribute('inert') ?? false;
+    });
+    expect(inContainerBgInert).toBe(true);
+
+    const outsideInert = await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="outside"]');
+      return btn?.hasAttribute('inert') ?? false;
+    });
+    expect(outsideInert).toBe(false);
+  });
+
+  test('scroll lock is scoped to the container, not body', async ({ page }) => {
+    await gotoFixture(page, 'drawer-contained', { modal: 'true' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+
+    const containerOverflow = await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="container"]') as HTMLElement | null;
+      return container?.style.overflow ?? '';
+    });
+    expect(containerOverflow).toBe('hidden');
+
+    const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
+    expect(bodyOverflow).not.toBe('hidden');
+
+    await el(page, 'close-btn').click();
+    await expect(el(page, 'drawer')).toHaveCount(0);
+
+    const containerOverflowAfter = await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="container"]') as HTMLElement | null;
+      return container?.style.overflow ?? '';
+    });
+    expect(containerOverflowAfter).toBe('');
   });
 });

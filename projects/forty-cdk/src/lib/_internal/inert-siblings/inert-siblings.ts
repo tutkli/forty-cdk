@@ -2,11 +2,13 @@ import { DOCUMENT, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 /**
- * Marks every direct child of `document.body` other than the topmost active
- * owner (and any element flagged as a peer-of-owner via the
- * `data-for-modal-peer` attribute) as `inert` and `aria-hidden="true"` while
- * at least one owner is active. Restores each touched element to its exact
- * prior state once the last owner deactivates.
+ * Marks every direct child of a **root element** (default `document.body`,
+ * or a positioned container when a region-scoped modal passes one — #819)
+ * other than the topmost active owner (and any element flagged as a
+ * peer-of-owner via the `data-for-modal-peer` attribute) as `inert` and
+ * `aria-hidden="true"` while at least one owner is active on that root.
+ * Restores each touched element to its exact prior state once the last
+ * owner deactivates.
  *
  * Why this exists: `aria-modal="true"` alone is insufficient. Safari +
  * VoiceOver and several other AT combinations still announce siblings of an
@@ -14,10 +16,14 @@ import { isPlatformBrowser } from '@angular/common';
  * WAI-ARIA APG modal-dialog pattern recommends combining `aria-modal` with
  * isolating the rest of the page; both Radix and Base UI ship this.
  *
- * Stacking model (LIFO with safe out-of-order teardown):
+ * Stacking model (LIFO with safe out-of-order teardown) — per root:
  *
- * - A stack of active owners is maintained. The element-level outcome is
- *   computed from the *current topmost owner* every time the stack changes.
+ * - Each root has its own owner-stack, applied snapshot, and
+ *   `MutationObserver`. A `document.body` root and a container root are
+ *   fully independent — locking one does not affect the other.
+ * - A stack of active owners is maintained per root. The element-level
+ *   outcome is computed from the *current topmost owner* every time the
+ *   stack changes.
  * - When the topmost owner changes, the previous outcome is fully reverted
  *   to the snapshot captured before it was applied, then a fresh outcome is
  *   computed and applied for the new topmost.
@@ -25,23 +31,22 @@ import { isPlatformBrowser } from '@angular/common';
  *   in a coherent state: the topmost remaining dialog gets its expected
  *   isolation, and full restoration runs only when the stack empties.
  *
- * Portal compatibility: the owner does not need to be a direct child of
- * `document.body`. We resolve the *body-level ancestor* of the owner and
- * exclude that subtree, so an in-place (non-portaled) dialog still keeps
+ * Portal compatibility: the owner does not need to be a direct child of the
+ * root. We resolve the *root-level child* that is an ancestor of the owner
+ * and exclude that subtree, so an in-place (non-portaled) dialog still keeps
  * its enclosing app shell interactive while everything else is inerted.
  *
  * Peers: any element carrying the `data-for-modal-peer` attribute is
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
  * alongside the dialog).
  *
- * Late siblings: an element portaled to `body` *after* the topmost owner
- * activated (e.g. a toast shown while a Dialog is open) would otherwise
- * escape the isolation, since the initial sweep only sees the children
- * present at activation. While any owner is active a `MutationObserver`
- * watches `body`'s child list and inerts each newly added sibling under
- * the same skip/snapshot rules, so it is restored on teardown too. The
- * observer starts on the 0→1 owner transition and disconnects when the
- * stack empties.
+ * Late siblings: an element portaled to the root *after* the topmost owner
+ * activated would otherwise escape the isolation, since the initial sweep
+ * only sees the children present at activation. While any owner is active a
+ * `MutationObserver` watches the root's child list and inerts each newly
+ * added sibling under the same skip/snapshot rules, so it is restored on
+ * teardown too. The observer starts on the 0→1 owner transition and
+ * disconnects when the stack empties.
  *
  * SSR: the registry is `providedIn: 'root'` so its state is scoped to a
  * single Angular bootstrap (one per SSR request). On the server, every
@@ -50,8 +55,8 @@ import { isPlatformBrowser } from '@angular/common';
  */
 
 /**
- * Attribute that exempts a `document.body` child from the modal inert pass.
- * Carried by dialog / drawer backdrops (portaled to body alongside the modal)
+ * Attribute that exempts a root-level child from the modal inert pass.
+ * Carried by dialog / drawer backdrops (portaled alongside the modal)
  * and stamped by `injectOverlayShell` onto anchored-overlay hosts that were
  * opened from inside the protected root (#676), so the initial sweep and the
  * late-sibling observer skip them instead of inerting them like background
@@ -73,22 +78,31 @@ export interface InertSiblingsHandle {
   readonly isActive: boolean;
 }
 
+interface RootState {
+  readonly root: HTMLElement;
+  readonly stack: HTMLElement[];
+  appliedSnapshot: SnapshotEntry[];
+  observer: MutationObserver | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InertSiblingsStack {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #stack: HTMLElement[] = [];
-  #appliedSnapshot: SnapshotEntry[] = [];
-  #observer: MutationObserver | null = null;
+  readonly #roots = new Map<HTMLElement, RootState>();
 
   /**
-   * Push `owner` onto the inert-siblings stack and (re)apply the isolation
-   * outcome for the new topmost owner. Returns a handle whose
-   * `deactivate()` pops this specific owner — order-safe, so closing out
-   * of LIFO order works.
+   * Push `owner` onto the inert-siblings stack for `root` (default
+   * `document.body`) and (re)apply the isolation outcome for the new topmost
+   * owner. Returns a handle whose `deactivate()` pops this specific owner —
+   * order-safe, so closing out of LIFO order works.
+   *
+   * When `root` is a positioned container (e.g. a region-scoped modal), only
+   * that container's other children are inerted; body siblings outside the
+   * container stay fully interactive (#819).
    */
-  activate(owner: HTMLElement): InertSiblingsHandle {
+  activate(owner: HTMLElement, root: HTMLElement = this.#document.body): InertSiblingsHandle {
     if (!this.#isBrowser) {
       return {
         deactivate: () => {},
@@ -97,16 +111,13 @@ export class InertSiblingsStack {
         },
       };
     }
-    // Always revert before mutating the stack so the recompute below
-    // starts from a clean DOM state — otherwise a sibling inerted by the
-    // previous topmost would accumulate a second snapshot entry on the
-    // next push.
-    this.#revertAppliedSnapshot();
-    if (this.#stack.length === 0) {
-      this.#startObserving();
+    const state = this.#stateFor(root);
+    this.#revertAppliedSnapshot(state);
+    if (state.stack.length === 0) {
+      this.#startObserving(state);
     }
-    this.#stack.push(owner);
-    this.#applyForCurrentTopmost();
+    state.stack.push(owner);
+    this.#applyForCurrentTopmost(state);
 
     let active = true;
     return {
@@ -118,16 +129,17 @@ export class InertSiblingsStack {
           return;
         }
         active = false;
-        const idx = this.#stack.indexOf(owner);
+        const idx = state.stack.indexOf(owner);
         if (idx === -1) {
           return;
         }
-        this.#revertAppliedSnapshot();
-        this.#stack.splice(idx, 1);
-        if (this.#stack.length > 0) {
-          this.#applyForCurrentTopmost();
+        this.#revertAppliedSnapshot(state);
+        state.stack.splice(idx, 1);
+        if (state.stack.length > 0) {
+          this.#applyForCurrentTopmost(state);
         } else {
-          this.#stopObserving();
+          this.#stopObserving(state);
+          this.#roots.delete(root);
         }
       },
     };
@@ -137,9 +149,9 @@ export class InertSiblingsStack {
    * Whether an overlay anchored to `anchor` should be left interactive over
    * the active modal — i.e. treated as a peer of the topmost owner instead of
    * inerted. Returns `true` only while at least one owner is active AND
-   * `anchor` lives inside the current protected root, which means the overlay
-   * was opened from within the modal (e.g. a Select / DropdownMenu opened from
-   * a form inside a Dialog).
+   * `anchor` lives inside the current protected root for any active root,
+   * which means the overlay was opened from within a modal (e.g. a Select /
+   * DropdownMenu opened from a form inside a Dialog).
    *
    * Returns `false` when no owner is active — so an overlay opened with no
    * modal present is never pre-marked, and a modal opened later inerts it like
@@ -149,32 +161,40 @@ export class InertSiblingsStack {
    * `injectOverlayShell` calls this when an anchored-overlay host is portaled,
    * to decide whether to stamp `MODAL_PEER_ATTRIBUTE` on it so the
    * inert-siblings observer skips forty's own overlays instead of swallowing
-   * them (#676). SSR-safe: on the server the stack is always empty (no owner
-   * activates), so this returns `false`.
+   * them (#676). SSR-safe: on the server the roots map is always empty (no
+   * owner activates), so this returns `false`.
    */
   ownsAnchor(anchor: Element): boolean {
-    const protectedRoot = this.#currentProtectedRoot();
-    return protectedRoot !== null && protectedRoot.contains(anchor);
+    for (const state of this.#roots.values()) {
+      const protectedRoot = this.#currentProtectedRoot(state);
+      if (protectedRoot !== null && protectedRoot.contains(anchor)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  #applyForCurrentTopmost(): void {
-    const protectedRoot = this.#currentProtectedRoot();
+  #stateFor(root: HTMLElement): RootState {
+    let state = this.#roots.get(root);
+    if (!state) {
+      state = { root, stack: [], appliedSnapshot: [], observer: null };
+      this.#roots.set(root, state);
+    }
+    return state;
+  }
+
+  #applyForCurrentTopmost(state: RootState): void {
+    const protectedRoot = this.#currentProtectedRoot(state);
     if (!protectedRoot) {
       return;
     }
 
-    for (const child of Array.from(this.#document.body.children)) {
-      this.#inertChild(child, protectedRoot);
+    for (const child of Array.from(state.root.children)) {
+      this.#inertChild(child, protectedRoot, state);
     }
   }
 
-  /**
-   * Inert + `aria-hidden` a single direct `body` child and snapshot its prior
-   * state, unless it is the protected root, a peer, a non-element, or already
-   * snapshotted. Shared by the initial sweep and the observer callback so the
-   * skip/snapshot rules stay identical.
-   */
-  #inertChild(child: Element, protectedRoot: HTMLElement): void {
+  #inertChild(child: Element, protectedRoot: HTMLElement, state: RootState): void {
     if (!(child instanceof HTMLElement)) {
       return;
     }
@@ -184,11 +204,11 @@ export class InertSiblingsStack {
     if (child.hasAttribute(MODAL_PEER_ATTRIBUTE)) {
       return;
     }
-    if (this.#appliedSnapshot.some((entry) => entry.el === child)) {
+    if (state.appliedSnapshot.some((entry) => entry.el === child)) {
       return;
     }
 
-    this.#appliedSnapshot.push({
+    state.appliedSnapshot.push({
       el: child,
       hadInert: child.hasAttribute('inert'),
       prevAriaHidden: child.getAttribute('aria-hidden'),
@@ -198,42 +218,42 @@ export class InertSiblingsStack {
     child.setAttribute('aria-hidden', 'true');
   }
 
-  #currentProtectedRoot(): HTMLElement | null {
-    const top = this.#stack[this.#stack.length - 1];
+  #currentProtectedRoot(state: RootState): HTMLElement | null {
+    const top = state.stack[state.stack.length - 1];
     if (!top) {
       return null;
     }
-    return this.#bodyLevelAncestor(top) ?? top;
+    return this.#rootLevelChild(top, state.root) ?? top;
   }
 
-  #startObserving(): void {
+  #startObserving(state: RootState): void {
     const win = this.#document.defaultView;
-    if (this.#observer || !win || typeof win.MutationObserver !== 'function') {
+    if (state.observer || !win || typeof win.MutationObserver !== 'function') {
       return;
     }
-    this.#observer = new win.MutationObserver((records) => {
-      const protectedRoot = this.#currentProtectedRoot();
+    state.observer = new win.MutationObserver((records) => {
+      const protectedRoot = this.#currentProtectedRoot(state);
       if (!protectedRoot) {
         return;
       }
       for (const record of records) {
         for (const node of Array.from(record.addedNodes)) {
-          if (node instanceof HTMLElement && node.parentElement === this.#document.body) {
-            this.#inertChild(node, protectedRoot);
+          if (node instanceof HTMLElement && node.parentElement === state.root) {
+            this.#inertChild(node, protectedRoot, state);
           }
         }
       }
     });
-    this.#observer.observe(this.#document.body, { childList: true });
+    state.observer.observe(state.root, { childList: true });
   }
 
-  #stopObserving(): void {
-    this.#observer?.disconnect();
-    this.#observer = null;
+  #stopObserving(state: RootState): void {
+    state.observer?.disconnect();
+    state.observer = null;
   }
 
-  #revertAppliedSnapshot(): void {
-    for (const entry of this.#appliedSnapshot) {
+  #revertAppliedSnapshot(state: RootState): void {
+    for (const entry of state.appliedSnapshot) {
       if (!entry.hadInert) {
         entry.el.removeAttribute('inert');
       }
@@ -243,15 +263,14 @@ export class InertSiblingsStack {
         entry.el.setAttribute('aria-hidden', entry.prevAriaHidden);
       }
     }
-    this.#appliedSnapshot = [];
+    state.appliedSnapshot = [];
   }
 
-  #bodyLevelAncestor(el: HTMLElement): HTMLElement | null {
-    const body = this.#document.body;
+  #rootLevelChild(el: HTMLElement, root: HTMLElement): HTMLElement | null {
     let cur: HTMLElement | null = el;
-    while (cur && cur.parentElement && cur.parentElement !== body) {
+    while (cur && cur.parentElement && cur.parentElement !== root) {
       cur = cur.parentElement;
     }
-    return cur && cur.parentElement === body ? cur : null;
+    return cur && cur.parentElement === root ? cur : null;
   }
 }

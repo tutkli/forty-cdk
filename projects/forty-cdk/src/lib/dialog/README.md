@@ -176,13 +176,13 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 
 ## Pieces (declarative)
 
-| Class                  | Selector                 | Role                                                                                                                |
-| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `ForDialog`            | `[forDialog]`            | The dialog box. Owns `dismissible`, `modal`, `alert`, focus, scroll lock.                                           |
-| `ForDialogTrigger`     | `[forDialogTrigger]`     | Optional. Button that toggles `[(open)]` and reflects `aria-haspopup`/`aria-expanded`/`aria-controls`/`data-state`. |
-| `ForDialogTitle`       | `[forDialogTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                              |
-| `ForDialogDescription` | `[forDialogDescription]` | Same, for `aria-describedby`.                                                                                       |
-| `ForDialogClose`       | `[forDialogClose]`       | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode.                |
+| Class                  | Selector                 | Role                                                                                                                                                                      |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForDialog`            | `[forDialog]`            | The dialog box. Owns `dismissible`, `modal`, `alert`, focus, scroll lock.                                                                                                 |
+| `ForDialogTrigger`     | `[forDialogTrigger]`     | Optional. Button that toggles `[(open)]` and reflects `aria-haspopup`/`aria-expanded`/`aria-controls`/`data-state`.                                                       |
+| `ForDialogTitle`       | `[forDialogTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                                                                                    |
+| `ForDialogDescription` | `[forDialogDescription]` | Same, for `aria-describedby`.                                                                                                                                             |
+| `ForDialogClose`       | `[forDialogClose]`       | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode.                                                                      |
 | `ForDialogBackdrop`    | `[forDialogBackdrop]`    | Optional overlay portaled alongside the surface (to `container`, or `document.body` by default). Direct click requests close with reason `'backdrop'` when `dismissible`. |
 
 ## Inputs (`ForDialog`)
@@ -313,14 +313,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Data attributes
 
-| Piece                 | Attribute                  | Values                                                                         |
-| --------------------- | -------------------------- | ------------------------------------------------------------------------------ |
-| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`) |
-| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                             |
-| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                               |
-| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
+| Piece                 | Attribute                  | Values                                                                                   |
+| --------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`)           |
+| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                                       |
+| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                                         |
+| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
 | `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
-| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                 |
+| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
 
 `[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
 
@@ -368,17 +368,17 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 ```html
 <section #panel style="position: relative; height: 300px; overflow: hidden;">
   @if (open()) {
-    <div forDialog [modal]="false" [container]="panel" (dismiss)="open.set(false)">
-      <h2 forDialogTitle>Details</h2>
-      <button forDialogClose>Close</button>
-    </div>
+  <div forDialog [modal]="false" [container]="panel" (dismiss)="open.set(false)">
+    <h2 forDialogTitle>Details</h2>
+    <button forDialogClose>Close</button>
+  </div>
   }
 </section>
 ```
 
 **CSS contract.** The container must be positioned (`position: relative`); the dialog surface must use `position: absolute` (not `fixed`) so it is bounded to the container's box. `[forDialogBackdrop]` portals to the same container — use `position: absolute` on the backdrop too so it fills the container rather than the viewport.
 
-**`container` + `modal: true` is NOT region-isolating.** `InertSiblingsStack` always inerts children of `document.body` and `BodyScrollLock` only knows `<body>`, so a contained modal dialog still locks and inerts the whole page. Use `modal: false`.
+**`[container]` + `[modal]="true"` — region-isolating modal.** When both are set, the dialog isolates **within the container**: focus trap stays scoped to the dialog surface; inert siblings are applied to the container's other children only (body-level siblings outside the container stay interactive); and scroll lock targets the container's own `overflow`, not `<body>`. Programmatically: `ForDialogManager.open(Cmp, { modal: true, container: panelEl })`.
 
 ## Accessibility notes
 
