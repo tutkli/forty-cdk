@@ -26,6 +26,7 @@
  */
 export const FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS = [
   'value',
+  'autosize',
   'dirty',
   'disabled',
   'errors',

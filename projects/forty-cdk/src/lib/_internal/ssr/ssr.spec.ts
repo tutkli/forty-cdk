@@ -60,6 +60,7 @@ import { ForNavigationMenuItem } from '../../navigation-menu/navigation-menu-ite
 import { ForNavigationMenuLink } from '../../navigation-menu/navigation-menu-link';
 import { ForNavigationMenuList } from '../../navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../../navigation-menu/navigation-menu-trigger';
+import { ForTextarea } from '../../input/textarea';
 import { ForOtpInput } from '../../otp-input/otp-input';
 import { ForOtpInputSlot } from '../../otp-input/otp-input-slot';
 import { ForPopover } from '../../popover/popover';
@@ -450,6 +451,12 @@ class SwitchFixture {}
   template: `<button forCheckbox>cb</button>`,
 })
 class CheckboxFixture {}
+
+@Component({
+  imports: [ForTextarea],
+  template: `<textarea forTextarea autosize></textarea>`,
+})
+class TextareaFixture {}
 
 @Component({
   imports: [ForButton],
@@ -1365,6 +1372,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   CarouselAutoplayFixture,
   SwitchFixture,
   CheckboxFixture,
+  TextareaFixture,
   ButtonFixture,
   RadioFixture,
   TooltipFixture,

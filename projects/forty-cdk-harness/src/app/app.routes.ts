@@ -133,6 +133,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/scroll-area.fixture').then((m) => m.ScrollAreaFixture),
   },
   {
+    path: 'textarea',
+    loadComponent: () => import('./fixtures/textarea.fixture').then((m) => m.TextareaFixture),
+  },
+  {
     path: 'tabs',
     loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
   },
