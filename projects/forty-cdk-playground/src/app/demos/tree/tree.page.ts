@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { PrimitivePage } from '../../ui/primitive-page';
 import { TreeCheckboxExample } from './examples/checkbox.example';
+import { TreeDndExample } from './examples/dnd.example';
 import { TreeExpansionExample } from './examples/expansion.example';
 import { TreeExplorerExample } from './examples/explorer.example';
 import { TreeFilterExample } from './examples/filter.example';
@@ -13,6 +14,7 @@ import { TreeVirtualizedExample } from './examples/virtualized.example';
   imports: [
     PrimitivePage,
     TreeExplorerExample,
+    TreeDndExample,
     TreeExpansionExample,
     TreeCheckboxExample,
     TreeFilterExample,
@@ -21,6 +23,7 @@ import { TreeVirtualizedExample } from './examples/virtualized.example';
   template: `
     <primitive-page slug="tree">
       <app-tree-explorer-example />
+      <app-tree-dnd-example />
       <app-tree-checkbox-example />
       <app-tree-filter-example />
       <app-tree-expansion-example />

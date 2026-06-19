@@ -4,6 +4,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DrawerBasicExample } from './examples/basic.example';
 import { DrawerNestedExample } from './examples/nested.example';
 import { DrawerProgrammaticExample } from './examples/programmatic.example';
+import { DrawerRegionScopedExample } from './examples/region-scoped.example';
 import { DrawerScaleBackgroundExample } from './examples/scale-background.example';
 import { DrawerSnapPointsExample } from './examples/snap-points.example';
 
@@ -16,6 +17,7 @@ import { DrawerSnapPointsExample } from './examples/snap-points.example';
     DrawerSnapPointsExample,
     DrawerScaleBackgroundExample,
     DrawerNestedExample,
+    DrawerRegionScopedExample,
     DrawerProgrammaticExample,
   ],
   template: `
@@ -24,6 +26,7 @@ import { DrawerSnapPointsExample } from './examples/snap-points.example';
       <app-drawer-snap-points-example />
       <app-drawer-scale-background-example />
       <app-drawer-nested-example />
+      <app-drawer-region-scoped-example />
       <app-drawer-programmatic-example />
     </primitive-page>
   `,

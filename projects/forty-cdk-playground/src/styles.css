@@ -714,6 +714,66 @@ a.pg-nav-link.active {
   font-size: 0.9rem;
 }
 
+.pg-region {
+  position: relative;
+  overflow: clip !important;
+  box-sizing: border-box;
+  width: min(520px, 100%);
+  min-height: 300px;
+  box-shadow: inset 0 0 0 1px var(--pg-border);
+  border-radius: var(--pg-radius);
+  background: var(--pg-surface-2);
+}
+
+.pg-region-content {
+  padding: 1.5rem;
+}
+
+.pg-region-heading {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+}
+
+.pg-region-text {
+  margin: 0 0 1rem;
+  max-width: 38ch;
+  color: var(--pg-text-muted);
+  font-size: 0.9rem;
+}
+
+.pg-region-text code {
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--pg-radius-sm);
+  background: var(--pg-surface);
+  font-size: 0.85em;
+}
+
+.pg-region-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.25rem 0;
+}
+
+.pg-region-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.pg-region .pg-drawer:not([data-active-snap-point])[data-side='right'] {
+  position: absolute;
+  width: min(280px, 80%);
+  border-radius: 0;
+  box-shadow: -8px 0 24px rgba(10, 12, 16, 0.18);
+}
+
+.pg-region .pg-drawer-backdrop {
+  position: absolute;
+}
+
 @keyframes pg-drawer-in-bottom {
   from {
     transform: translateY(100%);
@@ -1721,6 +1781,27 @@ a.pg-nav-link.active {
 .pg-tree-item[aria-disabled='true'] > .pg-tree-label {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.pg-tree-handle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  color: var(--pg-text-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pg-tree-handle:active {
+  cursor: grabbing;
+}
+
+.pg-tree[data-dragging] .pg-tree-label {
+  cursor: grabbing;
 }
 
 .pg-tree-toggle {
