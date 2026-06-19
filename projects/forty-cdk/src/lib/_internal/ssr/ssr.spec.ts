@@ -187,6 +187,7 @@ import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
 import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import { ForVisuallyHidden } from '../visually-hidden/visually-hidden';
 
 /**
  * SSR smoke tests. Forces `PLATFORM_ID` to `'server'` and asserts:
@@ -1423,6 +1424,15 @@ class VirtualViewportFixture {
   readonly rows = signal(Array.from({ length: 1000 }, (_, i) => `Row ${i}`));
 }
 
+@Component({
+  imports: [ForVisuallyHidden],
+  template: `
+    <span forVisuallyHidden>Loading complete</span>
+    <a href="#main" forVisuallyHidden focusable>Skip to content</a>
+  `,
+})
+class VisuallyHiddenFixture {}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -1489,6 +1499,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   FileUploadFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
+  VisuallyHiddenFixture,
 ];
 
 function configureServer(): void {
@@ -1885,6 +1896,20 @@ describe('SSR smoke tests', () => {
       '[forBreadcrumbSeparator]',
     ) as NodeListOf<HTMLElement>;
     separators.forEach((sep) => expect(sep.getAttribute('aria-hidden')).toBe('true'));
+  });
+
+  it('VisuallyHidden clips its host inline server-side (hydration-stable markup)', () => {
+    const f = TestBed.createComponent(VisuallyHiddenFixture);
+    f.detectChanges();
+    const hosts = Array.from(
+      f.nativeElement.querySelectorAll('[forVisuallyHidden]'),
+    ) as HTMLElement[];
+    expect(hosts.length).toBe(2);
+    hosts.forEach((host) => {
+      expect(host.style.position).toBe('absolute');
+      expect(host.style.width).toBe('1px');
+      expect(host.hasAttribute('hidden')).toBe(false);
+    });
   });
 
   it('Button renders role/tabindex on a non-button host and type on a native button server-side', () => {
