@@ -275,4 +275,8 @@ export const routes: Routes = [
         (m) => m.VirtualizationInfiniteFixture,
       ),
   },
+  {
+    path: 'pagination',
+    loadComponent: () => import('./fixtures/pagination.fixture').then((m) => m.PaginationFixture),
+  },
 ];

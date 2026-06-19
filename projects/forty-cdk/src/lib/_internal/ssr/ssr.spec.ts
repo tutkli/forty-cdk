@@ -167,6 +167,10 @@ import { ForSlider } from '../../slider/slider';
 import { ForSliderRange } from '../../slider/slider-range';
 import { ForSliderThumb } from '../../slider/slider-thumb';
 import { ForSliderTrack } from '../../slider/slider-track';
+import { ForPagination } from '../../pagination/pagination';
+import { ForPaginationItem } from '../../pagination/pagination-item';
+import { ForPaginationNext } from '../../pagination/pagination-next';
+import { ForPaginationPrevious } from '../../pagination/pagination-previous';
 import { ForToolbar } from '../../toolbar/toolbar';
 import { ForToolbarButton } from '../../toolbar/toolbar-button';
 import { ForToolbarLink } from '../../toolbar/toolbar-link';
@@ -1312,6 +1316,24 @@ class NumberInputFixture {
 class ToolbarFixture {}
 
 @Component({
+  imports: [ForPagination, ForPaginationItem, ForPaginationPrevious, ForPaginationNext],
+  template: `
+    <nav forPagination [count]="11" ariaLabel="Pagination" #pg="forPagination">
+      <button forPaginationPrevious aria-label="Previous">‹</button>
+      @for (item of pg.items(); track $index) {
+        @if (item.type === 'page') {
+          <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
+        } @else {
+          <span aria-hidden="true">…</span>
+        }
+      }
+      <button forPaginationNext aria-label="Next">›</button>
+    </nav>
+  `,
+})
+class PaginationFixture {}
+
+@Component({
   template: `
     <div #scroll style="overflow:auto; height:200px">
       <div [style.height.px]="v.totalSize()" style="position:relative">
@@ -1417,6 +1439,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   PaneResizerFixture,
   NumberInputFixture,
   ToolbarFixture,
+  PaginationFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
 ];
@@ -1778,6 +1801,18 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
     const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
     expect(body.style.height).toBe('44000px');
+  });
+
+  it('Pagination renders role="navigation" + aria-label + exactly one aria-current="page" server-side', () => {
+    const f = TestBed.createComponent(PaginationFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forPagination]') as HTMLElement;
+    expect(root.getAttribute('role')).toBe('navigation');
+    expect(root.getAttribute('aria-label')).toBe('Pagination');
+    const currentButtons = Array.from(
+      f.nativeElement.querySelectorAll('[aria-current="page"]'),
+    ) as HTMLElement[];
+    expect(currentButtons.length).toBe(1);
   });
 
   it('Button renders role/tabindex on a non-button host and type on a native button server-side', () => {
