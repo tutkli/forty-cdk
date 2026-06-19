@@ -375,6 +375,21 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
     });
 
+    it('PageDown / PageUp jump to last / first enabled', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const input = getInput();
+
+      pressKey(input, 'PageDown');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
+
+      pressKey(input, 'PageUp');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+    });
+
     it('Enter activates the activedescendant: commits value + label and closes', async () => {
       const r = renderHost(ComboboxHost);
       r.instance.open.set(true);
@@ -2343,7 +2358,12 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
             <div forComboboxContent>
               <input forComboboxInput data-test-id="picker-input" />
               <div forComboboxList>
-                <div data-test-id="add" forComboboxOption [value]="sentinel" [label]="sentinelLabel">
+                <div
+                  data-test-id="add"
+                  forComboboxOption
+                  [value]="sentinel"
+                  [label]="sentinelLabel"
+                >
                   {{ sentinelLabel }}
                 </div>
                 @for (it of filtered(); track it.id) {

@@ -17,6 +17,15 @@ test.describe('Listbox', () => {
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
 
+  test('PageDown / PageUp jump to last / first enabled option', async ({ page }) => {
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+    await page.keyboard.press('PageDown');
+    await expect(el(page, 'opt-date')).toBeFocused();
+    await page.keyboard.press('PageUp');
+    await expect(el(page, 'opt-apple')).toBeFocused();
+  });
+
   test('Space selects the focused option', async ({ page }) => {
     await gotoFixture(page, 'listbox');
     await el(page, 'opt-apple').focus();

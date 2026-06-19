@@ -217,6 +217,7 @@ export class ForListboxOption<T = string> {
     const action = resolveListNavigation(event, {
       orientation: this.#group.orientation(),
       dir: this.#group.dir(),
+      pageKeys: true,
     });
     if (action) {
       event.preventDefault();

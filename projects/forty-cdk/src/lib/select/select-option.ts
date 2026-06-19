@@ -189,6 +189,7 @@ export class ForSelectOption<T = string> {
     const action = resolveListNavigation(event, {
       orientation: this.#ctx.orientation(),
       dir: this.#ctx.dir(),
+      pageKeys: true,
     });
     if (action) {
       event.preventDefault();

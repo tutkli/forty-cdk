@@ -453,6 +453,7 @@ export class ForListbox<T = string>
       return;
     }
     target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
       this.value.set([target.value()]);
     }
@@ -546,6 +547,7 @@ export class ForListbox<T = string>
     const action = resolveListNavigation(event, {
       orientation: this.orientation(),
       dir: this.dir(),
+      pageKeys: true,
     });
     if (action) {
       event.preventDefault();

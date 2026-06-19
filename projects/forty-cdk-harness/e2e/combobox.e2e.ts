@@ -37,6 +37,20 @@ test.describe('Combobox', () => {
     await expect(el(page, 'opt-cherry')).not.toHaveAttribute('data-highlighted', '');
   });
 
+  test('PageDown / PageUp jump to last / first enabled option', async ({ page }) => {
+    await gotoFixture(page, 'combobox');
+    const input = el(page, 'combo-input');
+    await input.click();
+    await input.press('ArrowDown');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+
+    await input.press('PageDown');
+    await expect(el(page, 'opt-date')).toHaveAttribute('data-highlighted', '');
+
+    await input.press('PageUp');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+  });
+
   test('Escape closes the listbox', async ({ page }) => {
     await gotoFixture(page, 'combobox');
     const input = el(page, 'combo-input');

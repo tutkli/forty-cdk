@@ -20,6 +20,17 @@ test.describe('Select', () => {
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
 
+  test('PageDown / PageUp jump to last / first enabled option', async ({ page }) => {
+    await gotoFixture(page, 'select');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'opt-apple')).toBeFocused();
+
+    await page.keyboard.press('PageDown');
+    await expect(el(page, 'opt-date')).toBeFocused();
+    await page.keyboard.press('PageUp');
+    await expect(el(page, 'opt-apple')).toBeFocused();
+  });
+
   test('Enter on a focused option selects, closes, and returns focus to trigger', async ({
     page,
   }) => {

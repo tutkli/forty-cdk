@@ -405,6 +405,24 @@ describe('ForSelect', () => {
       expect(activeTestId()).toBe('apple');
     });
 
+    it('PageDown / PageUp jump to last / first enabled', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'PageDown');
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('date');
+
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }),
+      );
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('apple');
+    });
+
     it('navigation skips disabled options', async () => {
       const r = renderHost(SelectHost);
       r.instance.cherryDisabled.set(true);
@@ -2299,6 +2317,28 @@ describe('ForSelectIndicator', () => {
       const opt49 = document.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
       expect(opt49).not.toBeNull();
       expect(content.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+    });
+
+    it('PageDown jumps to the last index like End; PageUp returns to the first', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.scrolled()).toBe(49);
+      await flush(r.fixture);
+      const opt49 = document.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
+      expect(content.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.scrolled()).toBe(0);
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(0).getAttribute('id'));
     });
 
     it('Enter activates the active descendant in single mode', async () => {

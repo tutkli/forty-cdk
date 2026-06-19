@@ -183,6 +183,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 - **ArrowDown / ArrowUp** — move focus to next / previous enabled option, wrapping by default.
 - **Home / End** — jump to first / last enabled option.
+- **PageUp / PageDown** — jump to first / last enabled option.
 - **Enter / Space** — activate the focused option (native `<button>` semantics): select + close in single mode, toggle (stay open) in multi mode.
 - **Escape** — close without changing selection. Returns focus to the trigger.
 - **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
