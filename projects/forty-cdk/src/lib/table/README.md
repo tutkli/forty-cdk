@@ -430,15 +430,15 @@ Supported today:
 - **Pointer drag within the rendered window**, and **auto-scroll past the window edge** to reach
   rows beyond it — the lifted row is pinned mounted for the duration of the drag so auto-scroll
   cannot unmount it and desync the indices.
-- **Keyboard reorder (Space lift, Arrow steps, Space drop) within the mounted window.** Absolute
-  indices are emitted on drop.
+- **Keyboard reorder across the entire dataset.** Space lifts the focused row; Arrow keys step
+  the target one row at a time; Home / Ctrl+Home jumps to the dataset start (index 0); End /
+  Ctrl+End jumps to the dataset end (last absolute index); PageUp / PageDown jump by one rendered
+  window; Space drops and emits absolute `from` / `to`. As the target steps past the rendered
+  window the target row is scrolled into view and the lifted row stays pinned mounted throughout.
+  `rowReorder` always emits absolute `from` / `to`.
 
-Deferred (a `[forTableVirtualized]` row is the only drag-drop composition with these gaps):
+Deferred (a `[forTableVirtualized]` row is the only drag-drop composition with this gap):
 
-- **Keyboard reorder _across_ the window boundary** — stepping a lifted row past the rendered
-  window to scroll an unmounted target into view mid-lift. Today keyboard reorder is bounded to
-  the mounted window; to move a row far by keyboard, scroll the destination into view first, then
-  reorder within the window.
 - **Single-gesture free pointer drag to an arbitrary far row** that auto-scroll cannot reach.
 
 ```html

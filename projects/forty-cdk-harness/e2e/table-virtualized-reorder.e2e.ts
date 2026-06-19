@@ -72,6 +72,26 @@ test.describe('Table virtualized row reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${from + 1}`);
   });
 
+  test('keyboard End jump moves target to dataset end (9999) with absolute indices', async ({
+    page,
+  }) => {
+    await el(page, 'root').evaluate((node) => {
+      node.scrollTop = 100 * 44;
+    });
+    await page.waitForTimeout(200);
+
+    const indices = await renderedIndices(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    await el(page, `row-${from}`).focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
+  });
+
   test('pointer auto-scroll past the window reaches a row beyond it, with absolute indices', async ({
     page,
   }) => {

@@ -1618,6 +1618,85 @@ describe('ForTable', () => {
       fixture.detectChanges();
       expect(instance.lastRow).toEqual({ from: 51, to: 52 });
     });
+
+    it('End key jumps target to the dataset end (count-1)', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
+      await flush();
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 51, to: 999 });
+    });
+
+    it('Home key jumps target to the dataset start (0)', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
+      await flush();
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }),
+      );
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 51, to: 0 });
+    });
+
+    it('multiple ArrowDown past the window count tracks absolute index', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
+      await flush();
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      for (let i = 0; i < 10; i++) {
+        row51.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+        );
+      }
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 51, to: 61 });
+    });
+
+    it('End jump emits absolute indices without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(VirtualizedReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const instance = fixture.componentInstance;
+      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+      row51.focus();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      row51.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+      expect(instance.lastRow).toEqual({ from: 51, to: 999 });
+    });
   });
 
   describe('column reorder zoneless', () => {
