@@ -11,24 +11,52 @@ These are thin wrappers, not re-implementations: the native `<input>` / `<textar
 | `ForInput`    | `[forInput]`    | `<input>`    | Single-line text control. |
 | `ForTextarea` | `[forTextarea]` | `<textarea>` | Multi-line text control.  |
 
-Both expose the identical API below.
+Both expose the identical API below; `[forTextarea]` adds the optional `autosize` input.
 
 ## Inputs / models
 
-| API        | Type                                                      | Description                                                                                              |
-| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.                    |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.                                   |
-| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.                                   |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                         |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.                                                         |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.                        |
-| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.                                                                                   |
-| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.                                            |
-| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.                                            |
+| API        | Type                                                      | Description                                                                                                   |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.                         |
+| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.                                        |
+| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.                                        |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                              |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.                                                              |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.                             |
+| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.                                                                                        |
+| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.                                                 |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory.      |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.                                                 |
+| `autosize` | `input<boolean>`                                          | `[forTextarea]` only. Grows/shrinks the height to fit content; reflects `data-autosize`. Defaults to `false`. |
 
 The host gets `data-empty` (while the value is `''`), `data-disabled`, and `data-readonly` for CSS hooks, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
+
+## Auto-resizing textarea
+
+`[forTextarea]` accepts an optional `autosize` input. When set, the textarea's height tracks its content — it grows as the value gets taller and shrinks back as it gets shorter, recomputed on every edit, on programmatic `value` writes, and on width reflow. The directive only sets the element's `height`; pair it with `resize: none; overflow: hidden;` (key off the reflected `data-autosize`) so the native resize grip and scrollbar don't fight the measured height.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { ForTextarea } from 'forty-cdk';
+
+@Component({
+  selector: 'demo-comment',
+  imports: [ForTextarea],
+  template: `<textarea forTextarea autosize class="textarea" [(value)]="comment"></textarea>`,
+})
+export class DemoComment {
+  readonly comment = signal('');
+}
+```
+
+```css
+.textarea[data-autosize] {
+  resize: none;
+  overflow: hidden;
+}
+```
+
+Auto-resize is a browser-only DOM side effect, so it is inert under server-side rendering and hydrates without a layout jump.
 
 ## Stand-alone usage
 
@@ -103,6 +131,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forInput]`, `[forTextarea]` | `data-dirty`    | present / absent                 |
 | `[forInput]`, `[forTextarea]` | `data-pending`  | present / absent                 |
 | `[forInput]`, `[forTextarea]` | `data-invalid`  | present / absent                 |
+| `[forTextarea]`               | `data-autosize` | present (`autosize` on) / absent |
 
 ```css
 .input[data-invalid] {

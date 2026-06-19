@@ -4,6 +4,7 @@ import { form, FormField, required } from '@angular/forms/signals';
 
 import { assertFormControlContract, type FormControlMountResult } from '../../test-utils/contract';
 import { flush } from '../../test-utils';
+import { installObserverPolyfills } from '../../test-utils/observers';
 import { renderHost } from '../../test-utils/render';
 import { ForFieldDescription } from '../field/field-description';
 import { ForField } from '../field/field';
@@ -72,6 +73,14 @@ class TextareaHost {
   readonly isTouched = signal(false);
   readonly isDirty = signal(false);
   readonly fieldName = signal<string>('');
+}
+
+@Component({
+  imports: [ForTextarea],
+  template: `<textarea forTextarea [autosize]="autosize()"></textarea>`,
+})
+class AutosizeTextareaHost {
+  readonly autosize = signal(false);
 }
 
 const inputOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('input')!;
@@ -431,6 +440,39 @@ describe('ForTextarea', () => {
       flush();
 
       expect(textarea.value).toBe('note');
+    });
+  });
+
+  describe('autosize', () => {
+    let restoreObservers: () => void;
+    beforeAll(() => {
+      restoreObservers = installObserverPolyfills();
+    });
+    afterAll(() => restoreObservers());
+
+    it('reflects data-autosize only while enabled', () => {
+      const { el, fixture, flush } = renderHost(AutosizeTextareaHost);
+      const textarea = textareaOf(el);
+      expect(textarea.hasAttribute('data-autosize')).toBe(false);
+
+      fixture.componentInstance.autosize.set(true);
+      flush();
+      expect(textarea.getAttribute('data-autosize')).toBe('');
+
+      fixture.componentInstance.autosize.set(false);
+      flush();
+      expect(textarea.hasAttribute('data-autosize')).toBe(false);
+    });
+
+    it('reflects data-autosize without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AutosizeTextareaHost);
+      await flush(fixture);
+      const textarea = textareaOf(fixture.nativeElement);
+
+      fixture.componentInstance.autosize.set(true);
+      await flush(fixture);
+      expect(textarea.getAttribute('data-autosize')).toBe('');
     });
   });
 });
