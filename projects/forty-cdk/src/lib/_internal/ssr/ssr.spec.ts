@@ -61,6 +61,8 @@ import { ForNavigationMenuLink } from '../../navigation-menu/navigation-menu-lin
 import { ForNavigationMenuList } from '../../navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../../navigation-menu/navigation-menu-trigger';
 import { ForTextarea } from '../../input/textarea';
+import { ForSearch } from '../../search/search';
+import { ForSearchClear } from '../../search/search-clear';
 import { ForOtpInput } from '../../otp-input/otp-input';
 import { ForOtpInputSlot } from '../../otp-input/otp-input-slot';
 import { ForPopover } from '../../popover/popover';
@@ -464,6 +466,15 @@ class CheckboxFixture {}
   template: `<textarea forTextarea autosize></textarea>`,
 })
 class TextareaFixture {}
+
+@Component({
+  imports: [ForSearch, ForSearchClear],
+  template: `
+    <input forSearch #s="forSearch" />
+    <button [forSearchClear]="s" aria-label="Clear search">×</button>
+  `,
+})
+class SearchFixture {}
 
 @Component({
   imports: [ForButton],
@@ -1414,6 +1425,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   SwitchFixture,
   CheckboxFixture,
   TextareaFixture,
+  SearchFixture,
   ButtonFixture,
   RadioFixture,
   TooltipFixture,
@@ -1859,5 +1871,16 @@ describe('SSR smoke tests', () => {
     expect(native.getAttribute('type')).toBe('button');
     expect(custom.getAttribute('role')).toBe('button');
     expect(custom.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('Search renders role="searchbox" + a hidden clear button server-side', () => {
+    const f = TestBed.createComponent(SearchFixture);
+    f.detectChanges();
+    const input = f.nativeElement.querySelector('input[role="searchbox"]') as HTMLInputElement;
+    expect(input.getAttribute('role')).toBe('searchbox');
+    const clear = f.nativeElement.querySelector(
+      'button[aria-label="Clear search"]',
+    ) as HTMLButtonElement;
+    expect(clear.hasAttribute('hidden')).toBe(true);
   });
 });
