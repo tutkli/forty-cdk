@@ -34,6 +34,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/disclosure.fixture').then((m) => m.DisclosureFixture),
   },
   {
+    path: 'button',
+    loadComponent: () => import('./fixtures/button.fixture').then((m) => m.ButtonFixture),
+  },
+  {
     path: 'popover',
     loadComponent: () => import('./fixtures/popover.fixture').then((m) => m.PopoverFixture),
   },

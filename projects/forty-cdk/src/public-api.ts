@@ -29,6 +29,7 @@ export * from './lib/dialog';
 export * from './lib/drawer';
 export * from './lib/popover';
 export * from './lib/toggle';
+export * from './lib/button';
 export * from './lib/menu';
 export * from './lib/dropdown-menu';
 export * from './lib/context-menu';

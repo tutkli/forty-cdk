@@ -79,6 +79,7 @@ import { ForSelectContent } from '../../select/select-content';
 import { ForSelectOption } from '../../select/select-option';
 import { ForSelectTrigger } from '../../select/select-trigger';
 import { ForSelectValue } from '../../select/select-value';
+import { ForButton } from '../../button/button';
 import { ForSwitch } from '../../switch/switch';
 import { ForCarousel } from '../../carousel/carousel';
 import { ForCarouselDrag } from '../../carousel/carousel-drag';
@@ -449,6 +450,15 @@ class SwitchFixture {}
   template: `<button forCheckbox>cb</button>`,
 })
 class CheckboxFixture {}
+
+@Component({
+  imports: [ForButton],
+  template: `
+    <button forButton>native</button>
+    <div forButton>custom</div>
+  `,
+})
+class ButtonFixture {}
 
 @Component({
   imports: [ForRadioGroup, ForRadio],
@@ -1355,6 +1365,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   CarouselAutoplayFixture,
   SwitchFixture,
   CheckboxFixture,
+  ButtonFixture,
   RadioFixture,
   TooltipFixture,
   DialogFixture,
@@ -1759,5 +1770,15 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
     const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
     expect(body.style.height).toBe('44000px');
+  });
+
+  it('Button renders role/tabindex on a non-button host and type on a native button server-side', () => {
+    const f = TestBed.createComponent(ButtonFixture);
+    f.detectChanges();
+    const native = f.nativeElement.querySelector('button[forButton]') as HTMLElement;
+    const custom = f.nativeElement.querySelector('div[forButton]') as HTMLElement;
+    expect(native.getAttribute('type')).toBe('button');
+    expect(custom.getAttribute('role')).toBe('button');
+    expect(custom.getAttribute('tabindex')).toBe('0');
   });
 });
