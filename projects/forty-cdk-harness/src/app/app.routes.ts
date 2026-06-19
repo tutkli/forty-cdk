@@ -145,6 +145,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/tree.fixture').then((m) => m.TreeFixture),
   },
   {
+    path: 'tree-drag-drop',
+    loadComponent: () =>
+      import('./fixtures/tree-drag-drop.fixture').then((m) => m.TreeDragDropFixture),
+  },
+  {
     path: 'carousel',
     loadComponent: () => import('./fixtures/carousel.fixture').then((m) => m.CarouselFixture),
   },

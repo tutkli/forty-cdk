@@ -115,6 +115,8 @@ import { ForTreeItemCheckbox } from '../../tree/tree-item-checkbox';
 import { ForTreeItemCheckboxIndicator } from '../../tree/tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from '../../tree/tree-item-label';
 import { ForTreeItemToggle } from '../../tree/tree-item-toggle';
+import { ForTreeNodeDrag } from '../../tree/tree-node-drag';
+import { ForTreeNodeDragHandle } from '../../tree/tree-node-drag-handle';
 import { ForDragHandle } from '../../drag-drop/drag-handle';
 import { ForDragPlaceholder } from '../../drag-drop/drag-placeholder';
 import { ForDragPreview } from '../../drag-drop/drag-preview';
@@ -821,6 +823,40 @@ class TreeCascadeFixture {
 class TreeVirtualizedFixture {}
 
 @Component({
+  imports: [
+    ForTree,
+    ForTreeNodeDrag,
+    ForTreeNodeDragHandle,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemToggle,
+    ForTreeGroup,
+  ],
+  template: `
+    <ul forTree forTreeNodeDrag ariaLabel="Files">
+      <li forTreeItem value="root">
+        <div forTreeItemLabel>
+          <span forTreeNodeDragHandle aria-hidden="true">⠿</span>
+          <span forTreeItemToggle>▸</span>
+          Root
+        </div>
+        @if (true) {
+          <ul forTreeGroup>
+            <li forTreeItem value="child">
+              <div forTreeItemLabel>
+                <span forTreeNodeDragHandle aria-hidden="true">⠿</span>
+                Child
+              </div>
+            </li>
+          </ul>
+        }
+      </li>
+    </ul>
+  `,
+})
+class TreeNodeDragFixture {}
+
+@Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -1342,6 +1378,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TreeCheckboxFixture,
   TreeCascadeFixture,
   TreeVirtualizedFixture,
+  TreeNodeDragFixture,
   CalendarFixture,
   CalendarDropdownsFixture,
   CalendarSelectDirectivesFixture,

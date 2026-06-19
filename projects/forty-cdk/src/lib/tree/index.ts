@@ -11,8 +11,17 @@ export {
   type ForTreeContainerContext,
   type ForTreeItemContext,
   type ForTreeItemHandle,
+  type ForTreeVisibleNode,
 } from './tree-context';
 export { FOR_TREE_DEFAULTS, provideForTreeDefaults, type ForTreeDefaults } from './tree-defaults';
 export { ForTreeItemCheckbox } from './tree-item-checkbox';
 export { ForTreeItemCheckboxIndicator } from './tree-item-checkbox-indicator';
 export { expandToReveal } from './tree-filter';
+export {
+  ForTreeNodeDrag,
+  FOR_TREE_NODE_DRAG_CONTEXT,
+  type ForTreeNodeDragContext,
+} from './tree-node-drag';
+export { ForTreeNodeDragHandle } from './tree-node-drag-handle';
+export { type ForTreeDragDropEvent } from './tree-drag-drop-event';
+export { moveTreeNode, type MoveTreeNodeOptions } from './move-tree-node';

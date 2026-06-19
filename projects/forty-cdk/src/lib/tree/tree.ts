@@ -10,6 +10,7 @@ import {
   numberAttribute,
   output,
   signal,
+  type Signal,
 } from '@angular/core';
 
 import { Collection } from '../_internal/collection/collection';
@@ -29,14 +30,12 @@ import {
   type ForTreeContainerContext,
   type ForTreeContext,
   type ForTreeItemHandle,
+  type ForTreeVisibleNode,
 } from './tree-context';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
 import { TreeVirtualizedNavigator } from './tree-virtualized-navigator';
 
-interface VisibleEntry {
-  readonly handle: ForTreeItemHandle;
-  readonly parentHost: HTMLElement | null;
-}
+type VisibleEntry = ForTreeVisibleNode;
 
 /**
  * Headless implementation of the
@@ -222,6 +221,12 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     walk(this, null);
     return result;
   });
+
+  /**
+   * Flattened currently-visible nodes in DOM order, each with its resolved parent host. Exposed for
+   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent.
+   */
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]> = this.#visibleEntries;
 
   readonly #visibleHandles = computed(() => this.#visibleEntries().map((entry) => entry.handle));
 

@@ -525,4 +525,154 @@ The following behaviors are unavailable in the virtualized path and are document
 - **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are dropped. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Provide a custom selection UI (checkboxes with `selectionMode="checkbox"`) for multi-select over large trees.
 - **Cross-window typeahead** only matches within the currently rendered window. Typeahead over unmounted nodes is not supported.
 - **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
-- **`moveToParent`** (ArrowLeft on a leaf / collapsed node) may no-op if the parent node has never been rendered and therefore has no snapshot entry. This is an accepted edge case; consumers who need reliable parent navigation should keep the parent's level window visible.
+
+## Drag & drop
+
+Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and keyboard drag reordering and re-parenting.
+
+### Pieces
+
+| Class                   | Selector                  | Description                                                                                          |
+| ----------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ForTreeNodeDrag`       | `[forTreeNodeDrag]`       | Root coordinator. Apply on the same element as `[forTree]`.                                          |
+| `ForTreeNodeDragHandle` | `[forTreeNodeDragHandle]` | Optional grab-area constraint inside an item. When present, pointer drags start only from within it. |
+
+### Inputs / outputs
+
+| API        | Type                                              | Description                                                                                             |
+| ---------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>`                                  | Disables all drag interactions. Default `false`.                                                        |
+| `canDrop`  | `input<(event: ForTreeDragDropEvent) => boolean>` | Optional veto callback. Return `false` to reject a specific move. When omitted, all drops are accepted. |
+| `nodeDrop` | `output<ForTreeDragDropEvent>`                    | Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.               |
+
+### Keyboard interaction
+
+| Key               | Behavior while **not** lifted | Behavior while **lifted**                                        |
+| ----------------- | ----------------------------- | ---------------------------------------------------------------- |
+| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                |
+| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                          |
+| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                            |
+| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).         |
+| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).        |
+| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position.                 |
+| `Escape`          | —                             | Cancels the drag; the node is returned to its original position. |
+| `Tab`             | Normal focus leave.           | Cancels the drag.                                                |
+
+### Minimal example
+
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForTree,
+  ForTreeGroup,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  ForTreeNodeDrag,
+  ForTreeNodeDragHandle,
+  moveTreeNode,
+  type ForTreeDragDropEvent,
+} from 'forty-cdk';
+
+interface Node {
+  id: string;
+  name: string;
+  children?: Node[];
+}
+
+@Component({
+  selector: 'app-tree-node',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemToggle,
+    ForTreeGroup,
+    ForTreeNodeDragHandle,
+    TreeNode,
+  ],
+  host: { style: 'display: contents' },
+  template: `
+    <li forTreeItem [value]="node().id">
+      <div forTreeItemLabel>
+        <span forTreeNodeDragHandle aria-hidden="true">⠿</span>
+        @if (node().children?.length) {
+          <span forTreeItemToggle>▸</span>
+        }
+        {{ node().name }}
+      </div>
+      @if (node().children?.length && expanded().includes(node().id)) {
+        <ul forTreeGroup>
+          @for (child of node().children ?? []; track child.id) {
+            <app-tree-node [node]="child" [expanded]="expanded()" />
+          }
+        </ul>
+      }
+    </li>
+  `,
+})
+export class TreeNode {
+  readonly node = input.required<Node>();
+  readonly expanded = input.required<readonly string[]>();
+}
+
+@Component({
+  selector: 'app-files',
+  imports: [ForTree, ForTreeNodeDrag, TreeNode],
+  template: `
+    <ul
+      forTree
+      forTreeNodeDrag
+      [(value)]="selected"
+      [(expanded)]="expanded"
+      [canDrop]="canDrop"
+      (nodeDrop)="onDrop($event)"
+      aria-label="File system"
+    >
+      @for (n of roots(); track n.id) {
+        <app-tree-node [node]="n" [expanded]="expanded()" />
+      }
+    </ul>
+  `,
+})
+export class Files {
+  readonly selected = signal<readonly string[]>([]);
+  readonly expanded = signal<readonly string[]>([]);
+  readonly roots = signal<Node[]>([
+    {
+      id: 'documents',
+      name: 'Documents',
+      children: [
+        { id: 'resume', name: 'Resume' },
+        { id: 'projects', name: 'Projects', children: [{ id: 'alpha', name: 'Alpha' }] },
+      ],
+    },
+    { id: 'readme', name: 'Readme' },
+  ]);
+
+  readonly canDrop = (event: ForTreeDragDropEvent): boolean => {
+    return event.newParent !== event.node;
+  };
+
+  onDrop(event: ForTreeDragDropEvent): void {
+    this.roots.update((r) =>
+      moveTreeNode(r, {
+        event,
+        trackBy: (n) => n.id,
+        children: (n) => n.children,
+        withChildren: (n, children) => ({ ...n, children: children as Node[] }),
+      }),
+    );
+  }
+}
+```
+
+### Data attributes on `[forTreeNodeDrag]`
+
+| Attribute               | Values       | When present                                  |
+| ----------------------- | ------------ | --------------------------------------------- |
+| `data-dragging`         | `""` (empty) | A drag session is live (pointer or keyboard). |
+| `data-drop-target`      | `""` (empty) | A valid drop target has been resolved.        |
+| `--for-tree-drop-level` | integer 1–N  | The resolved depth of the current target.     |
+
+On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable and structurally prevents dropping a node into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
