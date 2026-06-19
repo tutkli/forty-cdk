@@ -279,4 +279,8 @@ export const routes: Routes = [
     path: 'pagination',
     loadComponent: () => import('./fixtures/pagination.fixture').then((m) => m.PaginationFixture),
   },
+  {
+    path: 'file-upload',
+    loadComponent: () => import('./fixtures/file-upload.fixture').then((m) => m.FileUploadFixture),
+  },
 ];
