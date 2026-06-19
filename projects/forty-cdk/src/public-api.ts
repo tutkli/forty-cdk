@@ -14,6 +14,11 @@ export type {
 
 export { FOR_ID_SALT, provideForIdSalt } from './lib/_internal/id-generator/id-generator';
 
+export {
+  FOR_TIME_VALUE_SOURCE,
+  type TimeValueSource,
+} from './lib/_internal/datetime/time-value-source';
+
 export * from './lib/disclosure';
 export * from './lib/accordion';
 export * from './lib/field';

@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
@@ -11,12 +11,14 @@ import {
   type RenderResult,
 } from '../../test-utils';
 import { assertTimeCapable, type DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
 import { ForCalendar } from '../calendar/calendar';
 import { ForCalendarCell } from '../calendar/calendar-cell';
 import { ForCalendarGrid } from '../calendar/calendar-grid';
 import { ForCalendarGridHeader } from '../calendar/calendar-grid-header';
 import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import { ForTimeField } from '../time-field/time-field';
+import { FOR_TIME_FIELD_CONTEXT } from '../time-field/time-field-context';
 import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
 import { ForTimeFieldSegment } from '../time-field/time-field-segment';
 import { ForTimePicker } from '../time-picker/time-picker';
@@ -781,8 +783,14 @@ describe('ForDatePicker', () => {
                 @if (tp.open()) {
                   <div forTimePickerContent>
                     @for (slot of tp.slots(); track slot.id) {
-                      <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled"
-                        [attr.data-testid]="'tp-slot-' + slot.id">{{ slot.label }}</div>
+                      <div
+                        forTimePickerOption
+                        [value]="slot.value"
+                        [disabled]="slot.disabled"
+                        [attr.data-testid]="'tp-slot-' + slot.id"
+                      >
+                        {{ slot.label }}
+                      </div>
                     }
                   </div>
                 }
@@ -817,6 +825,82 @@ describe('ForDatePicker', () => {
       expect(value).not.toBeNull();
       expect(adapter.getHours(value!)).toBe(9);
       expect(adapter.getDate(value!)).toBe(15);
+    });
+  });
+
+  describe('date-time bridge resolves a subclassed time source', () => {
+    @Directive({
+      selector: '[mtxTimeField]',
+      exportAs: 'mtxTimeField',
+      providers: [
+        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MtxTimeField },
+        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MtxTimeField },
+      ],
+    })
+    class MtxTimeField extends ForTimeField<Date> {}
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        MtxTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDatePicker [(value)]="value" [(open)]="open" granularity="minute" [hourCycle]="24">
+          <button data-testid="trigger" forDatePickerTrigger>
+            <span forDatePickerValue [placeholder]="'Pick date & time'"></span>
+          </button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div
+                mtxTimeField
+                [value]="value()"
+                [hourCycle]="24"
+                [locale]="'en-US'"
+                #tf="mtxTimeField"
+              >
+                @for (seg of tf.segments(); track seg.id) {
+                  @if (seg.isLiteral) {
+                    <span forTimeFieldLiteral>{{ seg.text }}</span>
+                  } @else {
+                    <span
+                      forTimeFieldSegment
+                      [segment]="seg.type!"
+                      [attr.data-testid]="'time-' + seg.type"
+                      >{{ seg.text }}</span
+                    >
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('mirrors a subclassed time-field edit into the picker via the re-provided FOR_TIME_VALUE_SOURCE token', async () => {
+      const r = renderHost(SubclassHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const hourSeg = document.querySelector<HTMLElement>('[data-testid="time-hour"]')!;
+      pressKey(hourSeg, 'ArrowUp');
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(adapter.getHours(value)).toBe(15);
+      expect(adapter.getDate(value)).toBe(15);
+      expect(adapter.getMinutes(value)).toBe(30);
     });
   });
 

@@ -194,6 +194,37 @@ export class MtxSelectOption extends ForSelectOption {}
 the wrapper projects `[forCheckboxIndicator]` into it. The other parts always carry their
 indicator inside the same wrapper, so re-provide the token whenever you subclass them.
 
+### Projected time sources self-provide a bridge token
+
+`ForDatePicker` builds a date-time picker by querying its projected time control through
+`contentChild(FOR_TIME_VALUE_SOURCE)`. Both `ForTimeField` and `ForTimePicker` satisfy that
+bridge by providing the token from their own decorator (`{ provide: FOR_TIME_VALUE_SOURCE,
+useExisting: ForTimeField | ForTimePicker }`). A subclass wrapper projected into a date-time
+`ForDatePicker` must re-provide the token, pointing `useExisting` at itself, or the bridge
+finds no time source and the time component is silently dropped:
+
+```ts
+import { Directive } from '@angular/core';
+import { FOR_TIME_VALUE_SOURCE, ForTimeField } from 'forty-cdk';
+
+@Directive({
+  selector: '[mtxTimeField]',
+  exportAs: 'mtxTimeField',
+  providers: [{ provide: FOR_TIME_VALUE_SOURCE, useExisting: MtxTimeField }],
+})
+export class MtxTimeField extends ForTimeField {}
+```
+
+| Subclassed primitive | Bridge that resolves it                      | Token to re-provide     |
+| -------------------- | -------------------------------------------- | ----------------------- |
+| `ForTimeField`       | `ForDatePicker`'s `contentChild` time bridge | `FOR_TIME_VALUE_SOURCE` |
+| `ForTimePicker`      | `ForDatePicker`'s `contentChild` time bridge | `FOR_TIME_VALUE_SOURCE` |
+
+For `ForTimeField` this is **in addition to** the `FOR_TIME_FIELD_CONTEXT` re-provide from the
+table above — its decorator provides both tokens, and a subclass that projects the time field's
+own segment pieces _and_ feeds a date-time picker re-provides each. A subclass that only feeds
+the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_SOURCE` alone.
+
 ## Choosing a pattern
 
 - **`hostDirectives`** composes without touching the class hierarchy: the wrapper is a
