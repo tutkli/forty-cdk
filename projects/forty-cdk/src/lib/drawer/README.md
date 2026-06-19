@@ -238,7 +238,7 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 | Name                 | Payload                                           | Notes                                                           |
 | -------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
-| `dismiss`            | `ForDrawerCloseReason`                            | Wire to `(dismiss)="open.set(false)"`.                            |
+| `dismiss`            | `ForDrawerCloseReason`                            | Wire to `(dismiss)="open.set(false)"`.                          |
 | `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | `preventDefault()` suppresses auto-close.                       |
 | `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | "                                                               |
 | `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | "                                                               |
@@ -473,15 +473,19 @@ Per-component overrides nest:
 Pass `[container]` to portal the surface **and** the backdrop into a specific element instead of `document.body`. The supported shape is `[container]` paired with `[modal]="false"`.
 
 ```html
-<section #listBox data-testid="container" style="position: relative; height: 400px; overflow: hidden;">
+<section
+  #listBox
+  data-testid="container"
+  style="position: relative; height: 400px; overflow: hidden;"
+>
   <button forDrawerTrigger [(open)]="open">Open</button>
 
   @if (open()) {
-    <div forDrawer side="right" [modal]="false" [container]="listBox" (dismiss)="open.set(false)">
-      <div forDrawerBackdrop></div>
-      <h2 forDrawerTitle>Filters</h2>
-      <button forDrawerClose>Close</button>
-    </div>
+  <div forDrawer side="right" [modal]="false" [container]="listBox" (dismiss)="open.set(false)">
+    <div forDrawerBackdrop></div>
+    <h2 forDrawerTitle>Filters</h2>
+    <button forDrawerClose>Close</button>
+  </div>
   }
 </section>
 ```
@@ -489,20 +493,53 @@ Pass `[container]` to portal the surface **and** the backdrop into a specific el
 **CSS contract.** The container must be positioned (`position: relative`); the surface and backdrop must use `position: absolute` (not `fixed`) so they are bounded to the container's box:
 
 ```css
-section[data-testid='container'] { position: relative; }
-[forDrawer]          { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; background: #fff; }
-[forDrawerBackdrop]  { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+section[data-testid='container'] {
+  position: relative;
+}
+[forDrawer] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  background: #fff;
+}
+[forDrawerBackdrop] {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
 ```
 
-**Why `[modal]="false"`?** Non-modal mode skips `BodyScrollLock`, `InertSiblingsStack`, and `FocusTrap` — the three body-anchored behaviours that do not make sense for a region-scoped drawer. A modal drawer portaled to a container would still lock the entire page scroll and inert all body siblings, which is not what a scoped drawer is for.
+**`[container]` + `[modal]="true"` — region-isolating modal.** When `modal` is `true` alongside `container`, the drawer isolates **within the container**:
 
-**`container` + `modal: true` is NOT region-isolating.** `InertSiblingsStack` always inerts children of `document.body` and `BodyScrollLock` only knows `<body>`, so a contained modal drawer still locks and inerts the whole page. Use `modal: false`.
+- **Focus trap** stays scoped to the drawer surface (unchanged from non-contained modal mode).
+- **Inert siblings** are applied to the container's other children only — body-level siblings outside the container stay fully interactive.
+- **Scroll lock** targets the container's own `overflow`, not `<body>` — the rest of the page keeps scrolling.
+
+```html
+<section
+  #listBox
+  data-testid="container"
+  style="position: relative; height: 400px; overflow: auto;"
+>
+  <button forDrawerTrigger [(open)]="open">Open</button>
+
+  @if (open()) {
+  <div forDrawer side="right" [modal]="true" [container]="listBox" (dismiss)="open.set(false)">
+    <div forDrawerBackdrop></div>
+    <h2 forDrawerTitle>Filters</h2>
+    <button forDrawerClose>Close</button>
+  </div>
+  }
+</section>
+```
+
+**Programmatic equivalent.** `ForDrawerManager.open(Cmp, { modal: true, container: boxEl })` portals both the surface and any `[forDrawerBackdrop]` inside the opened component into `boxEl` and scopes all three isolation behaviours to it.
 
 **Swipe-to-dismiss and snap points** keep working inside a container — the math is dimension-based (`getBoundingClientRect`), not viewport-based.
 
 **`scaleBackground` / nested visual transforms** assume a full-screen model and are not meaningful inside a container.
-
-**Programmatic equivalent.** `ForDrawerManager.open(Cmp, { modal: false, container: boxEl })` portals both the surface and any `[forDrawerBackdrop]` inside the opened component into `boxEl`.
 
 ## Mount/unmount and animations
 

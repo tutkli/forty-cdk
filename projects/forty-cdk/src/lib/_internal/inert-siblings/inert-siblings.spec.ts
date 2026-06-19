@@ -309,6 +309,132 @@ describe('InertSiblingsStack', () => {
     expect(otherTopLevel.hasAttribute('inert')).toBe(false);
   });
 
+  describe('container-scoped (region) modal', () => {
+    let container: HTMLElement;
+
+    beforeEach(() => {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      cleanup.push(container);
+    });
+
+    it('inerts only the container children; a body-level sibling stays interactive', () => {
+      const sibInContainer = document.createElement('div');
+      container.appendChild(sibInContainer);
+
+      const owner = document.createElement('div');
+      container.appendChild(owner);
+
+      const sibBody = appendChild();
+      track(sibBody);
+
+      const handle = stack.activate(owner, container);
+
+      expect(sibInContainer.hasAttribute('inert')).toBe(true);
+      expect(sibInContainer.getAttribute('aria-hidden')).toBe('true');
+      expect(owner.hasAttribute('inert')).toBe(false);
+      expect(container.hasAttribute('inert')).toBe(false);
+      expect(sibBody.hasAttribute('inert')).toBe(false);
+      expect(sibBody.hasAttribute('aria-hidden')).toBe(false);
+
+      handle.deactivate();
+    });
+
+    it('restores the container child on deactivate', () => {
+      const sib = document.createElement('div');
+      container.appendChild(sib);
+
+      const owner = document.createElement('div');
+      container.appendChild(owner);
+
+      const handle = stack.activate(owner, container);
+      expect(sib.hasAttribute('inert')).toBe(true);
+
+      handle.deactivate();
+
+      expect(sib.hasAttribute('inert')).toBe(false);
+      expect(sib.hasAttribute('aria-hidden')).toBe(false);
+    });
+
+    it('LIFO within the same container: second owner inerts the first; pop restores', () => {
+      const sib = document.createElement('div');
+      container.appendChild(sib);
+
+      const ownerA = document.createElement('div');
+      container.appendChild(ownerA);
+      const handleA = stack.activate(ownerA, container);
+
+      expect(sib.hasAttribute('inert')).toBe(true);
+      expect(ownerA.hasAttribute('inert')).toBe(false);
+
+      const ownerB = document.createElement('div');
+      container.appendChild(ownerB);
+      const handleB = stack.activate(ownerB, container);
+
+      expect(ownerA.hasAttribute('inert')).toBe(true);
+      expect(ownerA.getAttribute('aria-hidden')).toBe('true');
+      expect(ownerB.hasAttribute('inert')).toBe(false);
+
+      handleB.deactivate();
+
+      expect(ownerA.hasAttribute('inert')).toBe(false);
+      expect(ownerA.hasAttribute('aria-hidden')).toBe(false);
+      expect(sib.hasAttribute('inert')).toBe(true);
+
+      handleA.deactivate();
+      expect(sib.hasAttribute('inert')).toBe(false);
+    });
+
+    it('skips a container child flagged data-for-modal-peer', () => {
+      const peer = document.createElement('div');
+      peer.setAttribute('data-for-modal-peer', '');
+      container.appendChild(peer);
+
+      const owner = document.createElement('div');
+      container.appendChild(owner);
+
+      const handle = stack.activate(owner, container);
+
+      expect(peer.hasAttribute('inert')).toBe(false);
+      expect(peer.hasAttribute('aria-hidden')).toBe(false);
+
+      handle.deactivate();
+    });
+
+    it('inerts a child appended to the container while an owner is active', async () => {
+      const owner = document.createElement('div');
+      container.appendChild(owner);
+
+      const handle = stack.activate(owner, container);
+
+      const late = document.createElement('div');
+      container.appendChild(late);
+
+      await Promise.resolve();
+
+      expect(late.hasAttribute('inert')).toBe(true);
+      expect(late.getAttribute('aria-hidden')).toBe('true');
+
+      handle.deactivate();
+      expect(late.hasAttribute('inert')).toBe(false);
+    });
+
+    it('ownsAnchor returns true inside the container root; false after deactivate', () => {
+      const anchor = document.createElement('button');
+      const owner = document.createElement('div');
+      owner.appendChild(anchor);
+      container.appendChild(owner);
+
+      const handle = stack.activate(owner, container);
+
+      expect(stack.ownsAnchor(anchor)).toBe(true);
+
+      handle.deactivate();
+
+      expect(stack.ownsAnchor(anchor)).toBe(false);
+    });
+  });
+
   describe('ownsAnchor', () => {
     it('returns false when no owner is active', () => {
       const anchor = appendChild('button');
