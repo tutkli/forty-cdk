@@ -24,6 +24,7 @@ export * from './lib/accordion';
 export * from './lib/field';
 export * from './lib/fieldset';
 export * from './lib/input';
+export * from './lib/search';
 export * from './lib/switch';
 export * from './lib/checkbox';
 export * from './lib/radio-group';
