@@ -199,6 +199,7 @@ export class ForDraggable implements ForDraggableContext {
     this.#pointerDragging = false;
     this.#removeEscapeListener();
     this.#clearPlaceholder();
+    this.#suppressNextClick();
     this.#list.drop();
     this.dragEnd.emit({ dropped: true });
   }
@@ -210,8 +211,23 @@ export class ForDraggable implements ForDraggableContext {
     this.#pointerDragging = false;
     this.#removeEscapeListener();
     this.#clearPlaceholder();
+    this.#suppressNextClick();
     this.#list.cancel();
     this.dragEnd.emit({ dropped: false });
+  }
+
+  #suppressNextClick(): void {
+    const onClick = (event: Event): void => {
+      event.stopPropagation();
+      event.preventDefault();
+      this.#document.removeEventListener('click', onClick, { capture: true });
+    };
+    this.#document.addEventListener('click', onClick, { capture: true });
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() =>
+        this.#document.removeEventListener('click', onClick, { capture: true }),
+      );
+    }
   }
 
   #addEscapeListener(): void {
