@@ -119,6 +119,7 @@ function createNavigator(
     emitScrollToIndex: (idx) => {
       emitted.push(idx);
     },
+    scrollActiveIntoView: () => undefined,
   });
 
   return {

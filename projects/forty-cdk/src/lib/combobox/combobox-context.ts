@@ -229,6 +229,16 @@ export interface ForComboboxContext<T = unknown> {
   isActive(id: string): boolean;
 
   /**
+   * Whether a pointer-suppression window is currently open. Opened whenever the
+   * directive scrolls the active option into view during keyboard navigation,
+   * so a synthetic `pointermove` fired because the scroll slid a different
+   * option under a stationary cursor does not hijack the activedescendant.
+   * Options consult this from their hover handler and skip the move while it
+   * returns `true`.
+   */
+  isPointerSuppressed(): boolean;
+
+  /**
    * Activate by handle. Single mode replaces + closes + commits label. Multi
    * mode toggles in/out + stays open + (when `commitOnSelect`) clears the
    * query so the user can search the next item. No-op on disabled / readonly.
