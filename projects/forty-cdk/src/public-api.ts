@@ -68,3 +68,4 @@ export * from './lib/stepper';
 export * from './lib/table';
 export * from './lib/virtualization';
 export * from './lib/pagination';
+export * from './lib/breadcrumbs';

@@ -171,6 +171,9 @@ import { ForPagination } from '../../pagination/pagination';
 import { ForPaginationItem } from '../../pagination/pagination-item';
 import { ForPaginationNext } from '../../pagination/pagination-next';
 import { ForPaginationPrevious } from '../../pagination/pagination-previous';
+import { ForBreadcrumbs } from '../../breadcrumbs/breadcrumbs';
+import { ForBreadcrumbItem } from '../../breadcrumbs/breadcrumb-item';
+import { ForBreadcrumbSeparator } from '../../breadcrumbs/breadcrumb-separator';
 import { ForToolbar } from '../../toolbar/toolbar';
 import { ForToolbarButton } from '../../toolbar/toolbar-button';
 import { ForToolbarLink } from '../../toolbar/toolbar-link';
@@ -1334,6 +1337,22 @@ class ToolbarFixture {}
 class PaginationFixture {}
 
 @Component({
+  imports: [ForBreadcrumbs, ForBreadcrumbItem, ForBreadcrumbSeparator],
+  template: `
+    <nav forBreadcrumbs>
+      <ol>
+        <li><a forBreadcrumbItem href="/">Home</a></li>
+        <li forBreadcrumbSeparator>/</li>
+        <li><a forBreadcrumbItem href="/library">Library</a></li>
+        <li forBreadcrumbSeparator>/</li>
+        <li><a forBreadcrumbItem href="/library/data" current>Data</a></li>
+      </ol>
+    </nav>
+  `,
+})
+class BreadcrumbsFixture {}
+
+@Component({
   template: `
     <div #scroll style="overflow:auto; height:200px">
       <div [style.height.px]="v.totalSize()" style="position:relative">
@@ -1440,6 +1459,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   NumberInputFixture,
   ToolbarFixture,
   PaginationFixture,
+  BreadcrumbsFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
 ];
@@ -1813,6 +1833,22 @@ describe('SSR smoke tests', () => {
       f.nativeElement.querySelectorAll('[aria-current="page"]'),
     ) as HTMLElement[];
     expect(currentButtons.length).toBe(1);
+  });
+
+  it('Breadcrumbs renders role="navigation" + default label + one aria-current="page" link server-side', () => {
+    const f = TestBed.createComponent(BreadcrumbsFixture);
+    f.detectChanges();
+    const nav = f.nativeElement.querySelector('[forBreadcrumbs]') as HTMLElement;
+    expect(nav.getAttribute('role')).toBe('navigation');
+    expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
+    const current = Array.from(
+      f.nativeElement.querySelectorAll('[forBreadcrumbItem][aria-current="page"]'),
+    ) as HTMLElement[];
+    expect(current.length).toBe(1);
+    const separators = f.nativeElement.querySelectorAll(
+      '[forBreadcrumbSeparator]',
+    ) as NodeListOf<HTMLElement>;
+    separators.forEach((sep) => expect(sep.getAttribute('aria-hidden')).toBe('true'));
   });
 
   it('Button renders role/tabindex on a non-button host and type on a native button server-side', () => {
