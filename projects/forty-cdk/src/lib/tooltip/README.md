@@ -54,7 +54,7 @@ Per-instance inputs always win over the scope defaults.
 ```ts
 import { provideForTooltipDefaults } from 'forty-cdk';
 
-// Material-style bottom tooltips app-wide
+// Bottom-anchored tooltips app-wide
 bootstrapApplication(App, {
   providers: [provideForTooltipDefaults({ side: 'bottom', sideOffset: 4 })],
 });

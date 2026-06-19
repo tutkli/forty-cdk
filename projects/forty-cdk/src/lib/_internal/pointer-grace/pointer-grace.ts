@@ -5,8 +5,8 @@ import type { FloatingSide } from '../floating/floating';
  *
  * When a mouse leaves a submenu trigger heading toward the submenu content,
  * a naive "close on pointer-leave" would dismiss the submenu the moment the
- * cursor crosses the gap between the trigger and the content. Radix, Base UI,
- * and native desktop menus solve this with a *safe triangle*: a polygon drawn
+ * cursor crosses the gap between the trigger and the content. The fix native
+ * desktop menus use is a *safe triangle*: a polygon drawn
  * from the cursor's exit point to the near edge of the submenu content. While
  * the pointer stays inside that polygon it is assumed to be travelling toward
  * the submenu, so the close is held off.
@@ -68,8 +68,7 @@ export type Polygon = readonly Point[];
 /**
  * Pixels the cursor apex is pulled *back* (away from the content) when the
  * polygon is built, so the exit point sits reliably inside the polygon even
- * after sub-pixel rounding of the pointer-leave coordinates. Mirrors Radix's
- * `bleed` constant.
+ * after sub-pixel rounding of the pointer-leave coordinates.
  */
 const GRACE_BLEED_PX = 5;
 

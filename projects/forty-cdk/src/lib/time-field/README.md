@@ -1,6 +1,6 @@
 # TimeField
 
-Headless, segmented, spin-editable **time-of-day** input — the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a labelled `role="group"`, exactly as React Aria's [`useTimeField`](https://react-aria.adobe.com/TimeField/useTimeField.html) models it. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
+Headless, segmented, spin-editable **time-of-day** input — the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a labelled `role="group"`. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
 
 `ForTimeField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every visible segment is filled.
 

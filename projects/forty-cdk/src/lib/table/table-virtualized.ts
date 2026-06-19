@@ -22,7 +22,7 @@ import { TableVirtualizedNavigator } from './table-virtualized-navigator';
  * `ForTableVirtualized` bundle `@tanstack/virtual-core`.
  *
  * The focused row is kept mounted even when scrolled out of the window so the roving-focused
- * `gridcell` is never unmounted (React Aria pattern). SSR-safe: off-browser the window is empty and
+ * `gridcell` is never unmounted. SSR-safe: off-browser the window is empty and
  * `totalSize` is the estimate-based total.
  *
  * Also drives cross-window keyboard navigation: when an Arrow / Page / Ctrl+Home / Ctrl+End grid

@@ -100,7 +100,7 @@ export class ForPopover implements ForPopoverContext {
   /**
    * Per-popover override for the gap (px) between trigger and content along
    * the *main* axis (perpendicular to `side`). Forwarded to floating-ui's
-   * `offset` middleware. Mirrors Radix's `sideOffset`. When `undefined`
+   * `offset` middleware. When `undefined`
    * (default), falls back to `ForPopoverDefaults.sideOffset` from the
    * surrounding `provideForPopoverDefaults` scope (`8` unless configured).
    *
@@ -128,8 +128,8 @@ export class ForPopover implements ForPopoverContext {
 
   /**
    * Per-popover override for the padding (px) applied uniformly to the
-   * `flip`, `shift`, and `size` middlewares. Mirrors Radix's
-   * `collisionPadding`. When `undefined` (default), falls back to
+   * `flip`, `shift`, and `size` middlewares. When `undefined` (default),
+   * falls back to
    * `ForPopoverDefaults.collisionPadding` from the surrounding
    * `provideForPopoverDefaults` scope (`8` unless configured).
    *

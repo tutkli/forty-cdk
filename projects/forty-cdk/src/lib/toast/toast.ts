@@ -127,7 +127,7 @@ export class ForToast implements ForToastContext {
 
   /**
    * Pixels of pointer travel along the active swipe direction needed
-   * to commit a dismissal. Defaults to `50` — matches Radix.
+   * to commit a dismissal. Defaults to `50`.
    */
   readonly swipeThreshold = input(50, { transform: numberAttribute });
 

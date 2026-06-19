@@ -136,7 +136,7 @@ describe('ForScrollArea', () => {
 
   // The single non-geometry carve-out: `type="always"` short-circuits the
   // scrollbar / corner self-hide so the track stays painted regardless of
-  // overflow (Radix parity). jsdom returns zeros for layout, so `hasOverflow()`
+  // overflow. jsdom returns zeros for layout, so `hasOverflow()`
   // is always false here — which is exactly why the `always` branch (a literal
   // short-circuit, no measurement) is assertable in Vitest while thumb sizing
   // stays in `scroll-area.e2e.ts`. See testing.md rule #8.

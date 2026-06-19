@@ -20,7 +20,7 @@ import {
  * Optional shared surface for mega-menu style navigation. When present,
  * `[forNavigationMenuContent]` re-parents itself into this host on mount,
  * so all active content panels live inside a single visual container that
- * can animate width/height between trigger groups (Radix `Viewport`).
+ * can animate width/height between trigger groups.
  *
  * The viewport exposes the active content's natural size as CSS custom
  * properties:

@@ -105,7 +105,7 @@ Inside an open menu, the standard `[forMenuContent]` keyboard applies — see [`
 | `Escape`                                                          | Close the menu and return focus to its trigger.                                                         |
 | `Tab` / `Shift+Tab`                                               | Close the menu and return focus to its trigger; the natural tab sequence then exits the menubar.        |
 
-Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape collapses one level at a time, the open-key opens, the close-key collapses upward. When the submenu's parent is the top of a menubar, the close-key collapses the parent and switches to the previous sibling menu (matching Radix).
+Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape collapses one level at a time, the open-key opens, the close-key collapses upward. When the submenu's parent is the top of a menubar, the close-key collapses the parent and switches to the previous sibling menu.
 
 ## Styling
 

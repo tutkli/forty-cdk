@@ -189,9 +189,8 @@ export class ForCombobox<T = string>
   /**
    * Auto-highlight the first enabled option whenever the listbox is open
    * and no activedescendant is set (e.g. after the consumer's filter
-   * removed the previously-active option). On by default — matches the
-   * Headless UI / Material Autocomplete behavior. Set `false` for
-   * Radix-style "user must arrow before anything is highlighted".
+   * removed the previously-active option). On by default. Set `false` for
+   * "user must arrow before anything is highlighted" behavior.
    */
   readonly autoHighlight = input(true, { transform: booleanAttribute });
 
@@ -677,8 +676,7 @@ export class ForCombobox<T = string>
       // Toggle in/out of the array. Stay open so the user can keep picking.
       this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
       if (this.commitOnSelect()) {
-        // Reset query so the next typed prefix searches afresh — matches
-        // Base UI / Material Autocomplete multi behavior.
+        // Reset query so the next typed prefix searches afresh.
         this.query.set('');
         this.#syncInputValue('');
       }

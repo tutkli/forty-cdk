@@ -219,7 +219,7 @@ export class ForSelect<T = string>
 
   /**
    * Gap (px) between trigger and listbox along the main axis. Default `4`.
-   * Mirrors Radix's `sideOffset`. The default is read from
+   * The default is read from
    * `provideForSelectDefaults` for the surrounding scope.
    */
   readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });

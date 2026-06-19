@@ -1,7 +1,8 @@
 # forty-cdk
 
 Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.
-Inspired by Radix UI and Base UI but reinterpreted idiomatically for modern Angular.
+Designed from the ground up for modern Angular — the API is built around signals, standalone
+directives, and dependency-injection composition.
 
 **New here?** [Your first overlay](../../docs/your-first-overlay.md) walks one Popover from empty markup to styled-and-animated and explains the two concepts every overlay shares: the `@if` / open-state model and the portal → global CSS requirement.
 

@@ -43,7 +43,7 @@ export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_CO
  * `data-state="checked" | "unchecked"` always reflects membership in
  * `value()` regardless of mode, so consumers can paint a checkmark with
  * pure CSS in either mode. `data-highlighted` marks the option that is
- * the current activedescendant — Radix-aligned and shared across the
+ * the current activedescendant — shared across the
  * library's roving / activedescendant primitives.
  *
  * Hovering an option also makes it the activedescendant, mirroring native

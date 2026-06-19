@@ -15,7 +15,7 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 | `ForNavigationMenuContent`   | `[forNavigationMenuContent]`   | Panel mounted via `@if`. Carries `aria-labelledby`.                   |
 | `ForNavigationMenuLink`      | `[forNavigationMenuLink]`      | Decorative wrapper that reflects `aria-current` on active links.      |
 | `ForNavigationMenuIndicator` | `[forNavigationMenuIndicator]` | Optional follower (underline / pill) positioned via CSS custom props. |
-| `ForNavigationMenuViewport`  | `[forNavigationMenuViewport]`  | Optional shared surface for mega-menu animations (Radix Viewport).    |
+| `ForNavigationMenuViewport`  | `[forNavigationMenuViewport]`  | Optional shared surface for mega-menu animations.                     |
 
 ## Inputs (root)
 
@@ -250,4 +250,4 @@ Measurement always tracks the **active** panel. The Viewport's `--for-navigation
 
 ## Limitations (v1)
 
-- Submenús anidados (Radix `Sub`) — not implemented; tracked separately.
+- Submenús anidados — not implemented; tracked separately.

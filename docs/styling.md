@@ -48,9 +48,6 @@ but don't:
   manager (see below) or rendered inside the library's own view (Toast) don't expose the
   `[for…]` attribute in the DOM at all — a class is the only reliable hook there.
 
-> Radix and Base UI take the same stance: style by your `className` / `data-*`, never by
-> the component's internal name.
-
 ### 2. `data-*` attributes — for state
 
 The library reflects logical state onto every piece you might want to style, as `data-*`

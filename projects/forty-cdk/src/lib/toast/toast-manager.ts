@@ -32,7 +32,7 @@ interface ToastEntry<R = unknown, D = unknown> {
 }
 
 /**
- * Programmatic toast opener — the headless equivalent of CDK's snackbar.
+ * Programmatic toast opener — show a transient notification from TypeScript.
  * Inject anywhere, call `show({ title, ... })` and get a `ForToastRef`
  * back. Toasts render through `<for-toast-viewport>`, which the consumer
  * mounts once near the root of their app.

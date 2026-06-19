@@ -32,7 +32,7 @@ export interface ForHoverCardDefaults {
   align: FloatingAlign;
   /**
    * Gap (px) between trigger and card along the main axis for cards that
-   * don't override `sideOffset` locally. Mirrors Radix's `sideOffset`.
+   * don't override `sideOffset` locally.
    * Library fallback `8`.
    */
   sideOffset: number;

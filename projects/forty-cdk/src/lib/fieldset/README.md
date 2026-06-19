@@ -1,6 +1,6 @@
 # Fieldset
 
-Headless grouping wiring — the styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It gives a set of related fields (an address block, a preferences group) a **shared accessible name** and an optional shared `disabled` state. It renders nothing and imposes no layout. Mirrors Base UI `Fieldset`.
+Headless grouping wiring — the styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It gives a set of related fields (an address block, a preferences group) a **shared accessible name** and an optional shared `disabled` state. It renders nothing and imposes no layout.
 
 Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
 

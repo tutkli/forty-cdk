@@ -178,8 +178,7 @@ export class ForComboboxInput {
     }
     // Use the option's full label as the visible text (preserving its case),
     // with chars [prefixLen..end] selected so the next keystroke replaces
-    // the appended suggestion. Matches native browser autocomplete and the
-    // Headless UI / Material Autocomplete behavior.
+    // the appended suggestion. Matches native browser autocomplete behavior.
     const composed = match.label;
     el.value = composed;
     el.setSelectionRange(prefix.length, composed.length);
@@ -191,9 +190,8 @@ export class ForComboboxInput {
     }
 
     // Multi-mode Backspace heuristic: an empty input sends focus to the
-    // last chip so a second Backspace there removes it. Matches Base UI /
-    // Material Autocomplete multi behavior. Skip when there's a non-empty
-    // selection in the input (the user's mid-edit) — Backspace falls
+    // last chip so a second Backspace there removes it. Skip when there's a
+    // non-empty selection in the input (the user's mid-edit) — Backspace falls
     // through to the native delete-char handler.
     if (
       event.key === 'Backspace' &&

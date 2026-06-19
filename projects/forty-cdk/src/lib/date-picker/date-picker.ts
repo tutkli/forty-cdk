@@ -44,8 +44,7 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
 
 /**
  * Headless date picker — the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)
- * reinterpreted idiomatically for modern Angular, the way React Aria's
- * `DatePicker` and Ark UI's `DatePicker` do it: a focusable trigger that opens
+ * reinterpreted idiomatically for modern Angular: a focusable trigger that opens
  * a floating surface wrapping a projected `ForCalendar`.
  *
  * `ForDatePicker` is the root and the form value: it implements
@@ -55,9 +54,8 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
  * state flows root → projected calendar via `[(value)]`.
  *
  * The surface defaults to a **non-modal popover** (anchored to the trigger,
- * dismiss on Escape / outside-pointer, return focus on close), matching React
- * Aria / Ark UI; set `modal` for the trapped / inert / scroll-locked dialog
- * variant. Mount/unmount of the surface is the consumer's job — wrap
+ * dismiss on Escape / outside-pointer, return focus on close); set `modal`
+ * for the trapped / inert / scroll-locked dialog variant. Mount/unmount of the surface is the consumer's job — wrap
  * `[forDatePickerContent]` with `@if (open())`.
  *
  * The projected `ForCalendar` is two-way bound by the consumer (`[(value)]`)

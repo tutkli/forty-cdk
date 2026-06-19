@@ -24,8 +24,8 @@ export interface ForNavigationMenuContentHandle extends CollectionHandle {
 }
 
 /**
- * Per-viewport handle. Only one viewport is expected per menu (Radix
- * mirror). The host element is the destination for re-parented active
+ * Per-viewport handle. Only one viewport is expected per menu. The host
+ * element is the destination for re-parented active
  * content panels, and the viewport owns their ordering.
  */
 export interface ForNavigationMenuViewportHandle {

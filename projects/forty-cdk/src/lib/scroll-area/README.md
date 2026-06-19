@@ -115,8 +115,8 @@ export class DemoScroll {}
 
 ## Notes
 
-- **`type="always"` keeps a stable, always-painted track (Radix parity).** Unlike `auto` / `scroll` / `hover` — which render a scrollbar only for an axis that actually overflows and self-hide otherwise — `always` keeps both scrollbars (and the corner) mounted and `data-state="visible"` regardless of overflow. When the axis does not overflow the thumb fills the full track and dragging it is a no-op, so the track never appears/disappears as content crosses the overflow boundary.
-- **Reserving the gutter with `type="always"` is the consumer's layout job.** forty-cdk is headless and does not own layout, so it cannot literally reserve a gutter — `always` only guarantees the track stays painted. To get Radix's "no content shift" behavior, lay the scrollbar out _in flow_ (a grid column) rather than `position: absolute`, so the always-present track occupies real space:
+- **`type="always"` keeps a stable, always-painted track.** Unlike `auto` / `scroll` / `hover` — which render a scrollbar only for an axis that actually overflows and self-hide otherwise — `always` keeps both scrollbars (and the corner) mounted and `data-state="visible"` regardless of overflow. When the axis does not overflow the thumb fills the full track and dragging it is a no-op, so the track never appears/disappears as content crosses the overflow boundary.
+- **Reserving the gutter with `type="always"` is the consumer's layout job.** forty-cdk is headless and does not own layout, so it cannot literally reserve a gutter — `always` only guarantees the track stays painted. To get "no content shift" behavior, lay the scrollbar out _in flow_ (a grid column) rather than `position: absolute`, so the always-present track occupies real space:
 
   ```css
   .scroll-area {

@@ -22,8 +22,8 @@ export interface MenuSiblingNavigator {
 }
 
 /**
- * Why a menu requested close. Mirrors Radix's `onCloseAutoFocus` reasons
- * but without the focus-routing decision baked in. `'programmatic'` also
+ * Why a menu requested close. Enumerates the close reasons without the
+ * focus-routing decision baked in. `'programmatic'` also
  * covers the user-initiated trigger toggle-close (clicking an open menu's
  * trigger): the toggle path reuses this reason by design rather than
  * exposing a distinct `'trigger'` reason.
@@ -161,7 +161,7 @@ export interface ForMenuContext {
   /**
    * Clear `data-highlighted` from every item without moving focus. Called by
    * `[forMenuContent]` on `pointerleave` so the hover highlight follows the
-   * pointer off the surface (Radix-style hover-follows-pointer).
+   * pointer off the surface (hover-follows-pointer).
    */
   clearItemHighlights(): void;
   /** Returns `true` if focus moved; `false` when no enabled items exist. */

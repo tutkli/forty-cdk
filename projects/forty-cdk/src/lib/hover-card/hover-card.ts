@@ -106,7 +106,7 @@ export class ForHoverCard implements ForHoverCardContext {
 
   /**
    * Per-card override for the gap (px) between trigger and card along the
-   * main axis. Mirrors Radix's `sideOffset`. When `undefined` (default),
+   * main axis. When `undefined` (default),
    * falls back to `ForHoverCardDefaults.sideOffset` from the surrounding
    * `provideForHoverCardDefaults` scope (`8` unless configured).
    *

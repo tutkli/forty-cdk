@@ -12,7 +12,7 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
  *
  * **Intentional ARIA exception.** The trigger exposes no `aria-controls`,
  * `aria-expanded`, or `aria-describedby`, and `[forHoverCardContent]` carries
- * no role. This is deliberate, mirroring Radix: the trigger must already be
+ * no role. This is deliberate: the trigger must already be
  * self-meaningful (a link or button that conveys the underlying action on its
  * own — the card adds preview, not meaning), and the card is non-essential
  * supplementary content that is hover/focus-revealed and not part of the

@@ -6,7 +6,7 @@ import type { OutputEmitterRef } from '@angular/core';
  * (close, focus move, etc.) when set.
  *
  * Replaces the prior pattern of passing a real DOM `CustomEvent`, which
- * was a Radix transplant: Angular `output()` is a synchronous in-process
+ * was a poor fit: Angular `output()` is a synchronous in-process
  * emitter — events don't bubble, don't propagate, and have no `target` /
  * `currentTarget`. `CustomEvent` cost an allocation per emit and gave
  * consumers a misleading "looks like a DOM event" surface.

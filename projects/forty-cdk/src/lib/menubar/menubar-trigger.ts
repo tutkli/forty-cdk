@@ -40,7 +40,7 @@ import { injectMenubarContext } from './menubar-context';
  *   starts with the buffered string.
  *
  * While some other trigger's menu is open, hovering this trigger opens it
- * immediately (no delay) — Radix-style "first open is intentional, subsequent
+ * immediately (no delay) — "first open is intentional, subsequent
  * are hover". Keyboard focus alone never opens a menu.
  *
  * Pointer-driven opens (click — detected by the `pointerdown` preceding it —
@@ -207,7 +207,7 @@ export class ForMenubarTrigger {
     // Keyboard traversal across triggers (ArrowLeft / ArrowRight, typeahead)
     // only moves focus; opening is reserved for hover (pointerenter),
     // click, and the open keys. Cross-menu nav while a menu is open is driven
-    // by the items, not by trigger focus. (Radix-aligned.)
+    // by the items, not by trigger focus.
     this.menubar.setFocusedTrigger(this.#host.nativeElement);
   }
 

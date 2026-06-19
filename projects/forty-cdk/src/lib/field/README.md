@@ -1,8 +1,8 @@
 # Field
 
-Headless form-field wiring — the styleless counterpart to Radix `Label` + `Form` and Base UI `Field`. It renders **nothing** and imposes no layout: it only associates a label, a description, and an error region with a single control (via `id` / `aria-labelledby` / `aria-describedby` / `aria-errormessage`) and reflects the control's validation state as `data-*` styling hooks.
+Headless form-field wiring. It renders **nothing** and imposes no layout: it only associates a label, a description, and an error region with a single control (via `id` / `aria-labelledby` / `aria-describedby` / `aria-errormessage`) and reflects the control's validation state as `data-*` styling hooks.
 
-Unlike Angular Material's `MatFormField`, there is no rendered chrome, no appearance variants, and **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs, so wrapping one in a `[forField]` auto-associates it with zero extra markup.
+There is no rendered chrome, no appearance variants, and **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs, so wrapping one in a `[forField]` auto-associates it with zero extra markup.
 
 ## Pieces
 

@@ -33,7 +33,7 @@ export interface ForTooltipDefaults {
   align: FloatingAlign;
   /**
    * Gap (px) between trigger and content along the main axis for tooltips
-   * that don't override `sideOffset` locally. Mirrors Radix's `sideOffset`.
+   * that don't override `sideOffset` locally.
    * Library fallback `8`.
    */
   sideOffset: number;

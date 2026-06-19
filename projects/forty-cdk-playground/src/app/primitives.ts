@@ -25,7 +25,7 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         slug: 'drawer',
         title: 'Drawer',
         description:
-          'A side or bottom sheet built on the modal dialog pattern, adding pointer-driven swipe-to-dismiss and Vaul-style snap points.',
+          'A side or bottom sheet built on the modal dialog pattern, adding pointer-driven swipe-to-dismiss and snap points.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/',
       },
       {

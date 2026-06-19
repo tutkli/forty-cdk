@@ -16,7 +16,7 @@ import {
 
 /**
  * Tagged-union positioner config. The shell delegates to either
- * `injectFloating` (the standard Radix-style anchored placement) or
+ * `injectFloating` (the standard anchored placement) or
  * `injectItemAlignedPositioner` (the macOS-style overlay used by Select's
  * `position="item-aligned"` mode). Both helpers portal by default, so the
  * shell never calls `injectPortal` itself — that responsibility stays with

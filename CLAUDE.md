@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Inspired by Radix UI and Base UI but reinterpreted **idiomatically for modern Angular** — not a port. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles. New primitives are added under `projects/forty-cdk/src/lib/<primitive>/` following the rules below.
+`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Designed from the ground up **idiomatically for modern Angular** — not a port of another framework's patterns. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles. New primitives are added under `projects/forty-cdk/src/lib/<primitive>/` following the rules below.
 
 ## Commands
 

@@ -28,8 +28,7 @@ import { isPlatformBrowser } from '@angular/common';
  * `unlock()` would otherwise be silently clobbered when we restored the
  * stale snapshot. Clearing on unlock means the lock owns the inline style
  * only while it exists; intervening mutations win, and the resting state
- * is whatever stylesheet rules apply. This matches Radix / Floating UI
- * semantics. See #149.
+ * is whatever stylesheet rules apply. See #149.
  *
  * The scrollbar-width compensation prevents content jumping when overflow
  * goes from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).

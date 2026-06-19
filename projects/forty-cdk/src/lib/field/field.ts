@@ -7,8 +7,7 @@ import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from
 
 /**
  * Headless form-field container that wires accessible labelling, description,
- * and error association for a single control — the styleless counterpart to
- * Radix `Label` + `Form` / Base UI `Field`. It renders nothing and imposes no
+ * and error association for a single control. It renders nothing and imposes no
  * layout: its only job is to connect a `[forLabel]`, `[forFieldDescription]`,
  * and `[forFieldError]` to the control via `id` / `aria-labelledby` /
  * `aria-describedby` / `aria-errormessage`, and to reflect the control's

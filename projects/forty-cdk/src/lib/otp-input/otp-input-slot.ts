@@ -4,7 +4,7 @@ import { injectOtpInputContext } from './otp-input-context';
 
 /**
  * One slot of a `[forOtpInput]` — a pure **styling surface** painted over the
- * single real input, mirroring Spartan `BrnInputOtpSlot`. Apply one per index
+ * single real input. Apply one per index
  * inside the `[forOtpInput]` wrapper, passing the 0-based `index`. It renders
  * nothing structural: it exposes the slot's character and active state, and
  * reflects boolean `data-active` / `data-empty` for CSS.

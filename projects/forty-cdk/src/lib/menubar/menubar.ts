@@ -314,7 +314,7 @@ export class ForMenubar implements ForMenubarContext {
     // Entering any trigger aborts a pending hover-leave close — the pointer
     // is still travelling across the bar, so keep the open menu alive.
     this.#clearCloseTimer();
-    // Per Radix: hover-after-open opens siblings instantly; while no menu is
+    // Hover-after-open opens siblings instantly; while no menu is
     // open, hover does nothing (first open requires keyboard / click).
     if (this.value() === '' || this.value() === value) {
       return;

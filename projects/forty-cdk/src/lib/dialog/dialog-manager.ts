@@ -192,8 +192,8 @@ interface InternalDialogEntry extends ForDialogEntry {
 }
 
 /**
- * Programmatic dialog opener — the headless equivalent of CDK's `Dialog`.
- * Inject anywhere, call `open(MyComponent, { data, ... })` and get a
+ * Programmatic dialog opener — open a component as a modal dialog from
+ * TypeScript. Inject anywhere, call `open(MyComponent, { data, ... })` and get a
  * `ForDialogRef<R>` back. Internally the manager renders the user component
  * inside a manager-owned `@for` outlet, so Angular's control-flow unmount
  * fires `animate.leave` before the node leaves the DOM — identical to the

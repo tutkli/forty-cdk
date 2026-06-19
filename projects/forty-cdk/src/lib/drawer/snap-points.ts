@@ -42,7 +42,7 @@ function classifySnapPoint(p: ForDrawerSnapPoint): SnapPointKind {
 
 /**
  * Convert a snap point to its fractional position along the dismissal axis.
- * Returns `[0, 1]` (or beyond, for fractional values > 1, which Vaul allows
+ * Returns `[0, 1]` (or beyond, for fractional values > 1, allowed
  * as overshoot). Throws on malformed strings or values that aren't finite.
  */
 export function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): number {

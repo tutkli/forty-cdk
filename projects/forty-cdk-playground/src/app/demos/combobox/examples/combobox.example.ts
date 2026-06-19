@@ -138,7 +138,7 @@ const COUNTRIES = [
         />
         <app-control-switch
           label="autoHighlight"
-          hint="Highlights the first enabled option whenever the listbox is open with nothing active, so Enter commits a match immediately. Off gives Radix-style 'arrow first' behavior."
+          hint="Highlights the first enabled option whenever the listbox is open with nothing active, so Enter commits a match immediately. Off requires the user to arrow to an option first."
           [(checked)]="autoHighlight"
         />
 

@@ -16,7 +16,7 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * is not re-forwarded, so a label-wrapping layout toggles once, matching native
  * `<label>` semantics.
  *
- * Usable standalone (Radix-style) outside a field — there it is an inert
+ * Usable standalone outside a field — there it is an inert
  * marker and the consumer wires native `for` themselves.
  *
  * @example

@@ -4,12 +4,12 @@
 
 Headless combobox with editable input + portaled listbox popup. Implements the [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) (`role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
-Supports both single (default) and multi-select. Multi mode renders the selected values as chips next to the input (Base UI / Material Autocomplete style).
+Supports both single (default) and multi-select. Multi mode renders the selected values as chips next to the input.
 
 Two anatomies share the same core:
 
 - **Editable** _(default)_ — the input is the visible field, the floating anchor, and the keyboard owner; `[forComboboxContent]` is the listbox. This is the APG editable combobox.
-- **Picker** — a `[forComboboxTrigger]` `<button>` keeps showing the committed selection while the search input lives **inside** the panel (shadcn / cmdk / Base UI "combobox with trigger"). Add a `[forComboboxList]` so the popup can hold an input without violating ARIA owned-elements. See [Picker anatomy](#picker-anatomy-trigger--input-inside-the-panel).
+- **Picker** — a `[forComboboxTrigger]` `<button>` keeps showing the committed selection while the search input lives **inside** the panel (a "combobox with trigger" picker). Add a `[forComboboxList]` so the popup can hold an input without violating ARIA owned-elements. See [Picker anatomy](#picker-anatomy-trigger--input-inside-the-panel).
 
 `[forCombobox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forComboboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
@@ -102,7 +102,7 @@ By default the listbox is positioned against `[forComboboxInput]`. When the inpu
 
 ## Picker anatomy (trigger + input inside the panel)
 
-The default (editable) anatomy is a text field that filters in place. A **picker** is the other common shape: a button shows the committed selection (label + icon), and clicking it opens a panel whose search input filters a list — shadcn / cmdk / Base UI's "combobox with trigger". Reach for it when the closed control should read as "the selected thing", not as an editable field.
+The default (editable) anatomy is a text field that filters in place. A **picker** is the other common shape: a button shows the committed selection (label + icon), and clicking it opens a panel whose search input filters a list — a "combobox with trigger" picker. Reach for it when the closed control should read as "the selected thing", not as an editable field.
 
 Add two parts:
 
@@ -136,7 +136,7 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
 
 **Picking which anatomy.** Use the editable anatomy for type-to-filter text fields and tag inputs (the input is always visible). Use the picker anatomy for select-like pickers where the closed state shows a chosen value and search is an in-panel affordance. Everything else — filtering being the consumer's job, `[(value)]` / `[(query)]` / object values / multi mode / virtualization — works identically in both.
 
-**Transient query.** In the picker anatomy the in-panel `[forComboboxInput]` is a _transient filter_, not the value display — the committed selection lives on the `[forComboboxTrigger]`. So the combobox resets `query` to `''` every time the panel closes, and single-mode activation never copies the option label into `query` (the editable anatomy's `commitOnSelect` is effectively off here). Reopen the panel and the search starts empty with the full option list, the previously-picked option carrying `data-state="checked"` — matching cmdk / shadcn / Radix Command. `commitOnSelect` governs the **editable** anatomy only; to keep a typed filter across reopen in the picker, drive `query` yourself from `(openChange)`.
+**Transient query.** In the picker anatomy the in-panel `[forComboboxInput]` is a _transient filter_, not the value display — the committed selection lives on the `[forComboboxTrigger]`. So the combobox resets `query` to `''` every time the panel closes, and single-mode activation never copies the option label into `query` (the editable anatomy's `commitOnSelect` is effectively off here). Reopen the panel and the search starts empty with the full option list, the previously-picked option carrying `data-state="checked"`. `commitOnSelect` governs the **editable** anatomy only; to keep a typed filter across reopen in the picker, drive `query` yourself from `(openChange)`.
 
 **Triggers stamped from outside-declared templates.** Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forComboboxTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forCombobox"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
@@ -244,17 +244,17 @@ In RTL the chip cluster lays out right-to-left, so **ArrowRight** moves to the v
 
 ### Multi-mode Backspace heuristic
 
-When the input is empty (no query) and the user presses Backspace, focus jumps to the last chip — Base UI / Material Autocomplete behavior. A second Backspace there removes it. While typing (input non-empty), Backspace falls through to the native delete-char.
+When the input is empty (no query) and the user presses Backspace, focus jumps to the last chip. A second Backspace there removes it. While typing (input non-empty), Backspace falls through to the native delete-char.
 
 ## Open / close behavior
 
-| Behavior                                | Default                                          | Override                                                          |
-| --------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
-| Open on focus                           | `false` (matches Radix / Headless UI / Material) | `[openOnFocus]="true"`                                            |
-| Open on query                           | `true`                                           | `[openOnQuery]="false"`                                           |
-| Auto-highlight first option             | `true` (matches Headless UI / Material)          | `[autoHighlight]="false"` for Radix-style "user must arrow first" |
-| Commit label / clear query on select    | `true`                                           | `[commitOnSelect]="false"`                                        |
-| Clear value on query edit (single only) | `false`                                          | `[clearOnQueryChange]="true"`                                     |
+| Behavior                                | Default | Override                                                         |
+| --------------------------------------- | ------- | ---------------------------------------------------------------- |
+| Open on focus                           | `false` | `[openOnFocus]="true"`                                           |
+| Open on query                           | `true`  | `[openOnQuery]="false"`                                          |
+| Auto-highlight first option             | `true`  | `[autoHighlight]="false"` to require arrowing to an option first |
+| Commit label / clear query on select    | `true`  | `[commitOnSelect]="false"`                                       |
+| Clear value on query edit (single only) | `false` | `[clearOnQueryChange]="true"`                                    |
 
 ## Autocomplete modes
 
@@ -523,7 +523,7 @@ Focus stays on the `<input>` the whole time the listbox is open, so options neve
 - `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` (the popup surface, while open), and native `disabled` from the combobox's effective disabled. It is exempt from the popup's outside-pointer dismissal layer, like the input.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()` — every selected option carries `aria-selected="true"` simultaneously.
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.
-- `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style — `data-highlighted` is the canonical CSS hook (Radix-aligned).
+- `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style — `data-highlighted` is the canonical CSS hook.
 - Disabled options keep the host `aria-disabled="true"`. Click and hover (activedescendant pinning) are no-ops on disabled options.
 - `[forComboboxSeparator]` is decorative and never registers with the listbox's option collection — keyboard navigation skips it automatically.
 - `[forComboboxGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.

@@ -16,7 +16,7 @@ import { injectPrefersReducedMotion } from '../media-query/media-query';
  * the viewport edge. Disabled by drawers that already paint a full-bleed
  * backdrop or apply their own body-level styling.
  *
- * The remaining keys mirror Vaul's magic numbers (scale `0.95`, +14 px Y,
+ * The remaining keys default to a tuned set of values (scale `0.95`, +14 px Y,
  * 8 px corner radius, black body) but are tunable via
  * `provideForDrawerDefaults`.
  */
@@ -48,10 +48,9 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
 /**
  * App-scoped coordinator that synchronises a registered
  * `[forDrawerWrapper]` element with the LIFO stack of active drawers
- * opted into the scale-background effect. Mirrors the visual contract of
- * [Vaul's `shouldScaleBackground`](https://vaul.emilkowal.ski/api#shouldscalebackground)
- * but with explicit DI: the consumer chooses _which_ element wraps the
- * rest of the app instead of relying on a global selector / data attribute.
+ * opted into the scale-background effect. The consumer chooses _which_
+ * element wraps the rest of the app via explicit DI, instead of relying on a
+ * global selector / data attribute.
  *
  * Stacking model: at most one wrapper is registered at any time; multiple
  * drawers may be registered concurrently. The topmost (most recently
@@ -214,9 +213,8 @@ export class ForDrawerScaleCoordinator {
 
   /**
    * Register the consumer's app-shell wrapper. Only one wrapper may be
-   * registered at a time; a second registration throws — Vaul has the
-   * same restriction and the multi-wrapper case has no defined visual
-   * outcome. Returns a cleanup that the caller wires to its
+   * registered at a time; a second registration throws — the multi-wrapper
+   * case has no defined visual outcome. Returns a cleanup that the caller wires to its
    * `DestroyRef.onDestroy`.
    */
   registerWrapper(host: HTMLElement): () => void {

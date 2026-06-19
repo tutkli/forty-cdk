@@ -11,7 +11,7 @@ import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-
  * The element is fully removed (`hidden`) when the corresponding axis has
  * no overflow *and* `type` is not `'always'` — there is no scrollbar to
  * render. Under `type="always"` the track stays painted regardless of
- * overflow (Radix parity), so the consumer's reserved gutter is never empty.
+ * overflow, so the consumer's reserved gutter is never empty.
  * Visibility is enforced with an inline `display: none` (which beats any
  * author `display` rule a consumer applies via a class) in addition to the
  * `hidden` attribute that removes it from the a11y tree.
@@ -68,7 +68,7 @@ export class ForScrollAreaScrollbar {
 
   /**
    * Whether the track is rendered at all. `'always'` keeps it painted
-   * unconditionally (a stable, always-present track — Radix parity); every
+   * unconditionally (a stable, always-present track); every
    * other `type` paints only the axis that actually overflows. An in-flight
    * thumb drag also pins it painted so the gesture is never aborted by the
    * track self-removing. Gates both the `hidden` attribute and the inline

@@ -1,7 +1,8 @@
 # forty-cdk
 
 Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.
-Inspired by Radix UI and Base UI but reinterpreted idiomatically for modern Angular.
+Designed from the ground up for modern Angular — the API is built around signals, standalone
+directives, and dependency-injection composition.
 
 The library exposes state, behavior, focus management, and keyboard interaction; you apply
 your own styles. Every primitive is standalone, `OnPush`, signal-based, and works under

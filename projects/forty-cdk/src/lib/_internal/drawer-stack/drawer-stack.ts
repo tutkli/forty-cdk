@@ -26,7 +26,7 @@ export interface DrawerStackNode {
   readonly dragging: Signal<boolean>;
   /**
    * Scale factor applied to *this* drawer's host while it owns one or
-   * more direct child drawers (Vaul's nested-state visual). Resolved from
+   * more direct child drawers (the nested-drawer visual). Resolved from
    * the drawer's own injector scope at push time so per-scope
    * `provideForDrawerDefaults` overrides flow through.
    */

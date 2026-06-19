@@ -530,7 +530,7 @@ a.pg-nav-link.active {
 }
 
 /*
- * Vaul-style backdrop fade: the directive publishes the live drag progress
+ * Backdrop drag-fade: the directive publishes the live drag progress
  * toward the edge as --for-drawer-drag-progress (0 at rest → 1 dragged
  * off-screen) and mirrors data-dragging. Fade the backdrop out as the sheet
  * is swiped away; kill the transition mid-gesture so it tracks the pointer.
@@ -569,7 +569,7 @@ a.pg-nav-link.active {
   transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
   /*
    * A mouse drag on selectable text starts a native text selection that
-   * fights the swipe gesture (and can block it entirely). Match Vaul: the
+   * fights the swipe gesture (and can block it entirely), so the
    * sheet chrome is not selectable; selectable content opts back in below.
    */
   user-select: none;

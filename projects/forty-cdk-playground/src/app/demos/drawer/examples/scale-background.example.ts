@@ -27,7 +27,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
   template: `
     <playground-demo
       title="Scale background"
-      subtitle="Vaul's shouldScaleBackground: [forDrawerWrapper] lives on the playground app shell, so opening this drawer scales and rounds the corners of the whole screen behind it — exactly the real-app effect. Watch the entire playground recede."
+      subtitle="Scale-background effect: [forDrawerWrapper] lives on the playground app shell, so opening this drawer scales and rounds the corners of the whole screen behind it — exactly the real-app effect. Watch the entire playground recede."
       sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/scale-background.example.ts"
     >
       <div demo class="pg-center">

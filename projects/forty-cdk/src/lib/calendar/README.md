@@ -22,7 +22,7 @@ bootstrapApplication(App, {
 });
 ```
 
-`@internationalized/date` is the immutable date primitive React Aria and Ark UI build on; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly. Both `@internationalized/date` adapters operate on the **Gregorian** calendar today — `createDate` always builds a Gregorian date, so the grid stays Gregorian regardless of the runtime locale. True non-Gregorian calendar systems are deferred to the planned `Temporal.PlainDate` adapter ([#354](https://github.com/tutkli/forty-cdk/issues/354)), a non-breaking addition once the Temporal API is broadly available across browsers — the `DateAdapter<D>` seam means adopting it later is a drop-in, not a migration.
+`@internationalized/date` is a widely-used immutable date primitive; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly. Both `@internationalized/date` adapters operate on the **Gregorian** calendar today — `createDate` always builds a Gregorian date, so the grid stays Gregorian regardless of the runtime locale. True non-Gregorian calendar systems are deferred to the planned `Temporal.PlainDate` adapter ([#354](https://github.com/tutkli/forty-cdk/issues/354)), a non-breaking addition once the Temporal API is broadly available across browsers — the `DateAdapter<D>` seam means adopting it later is a drop-in, not a migration.
 
 ## Pieces
 
@@ -38,21 +38,21 @@ bootstrapApplication(App, {
 
 ## Inputs / models — `ForCalendar`
 
-| API                 | Type                                   | Description                                                                                                                  |
-| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| API                 | Type                                   | Description                                                                                                                                    |
+| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection. Default `null`. |
-| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.         |
+| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.                            |
 | `range`             | `model<CalendarDateRange<D> \| null>`  | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears. Default `null`. |
-| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op. Default `null` (no minimum).                            |
-| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op. Default `null` (no maximum).                             |
-| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                          |
-| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                            |
-| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                           |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date). Default: localized full date, outside-month days suffixed.      |
-| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                 |
-| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                         |
-| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).      |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows. |
+| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op. Default `null` (no minimum).                                               |
+| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op. Default `null` (no maximum).                                                |
+| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                                            |
+| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                                              |
+| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                                             |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date). Default: localized full date, outside-month days suffixed.                        |
+| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                                   |
+| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                                           |
+| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).                        |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows.                   |
 
 ## Usage
 
@@ -137,12 +137,12 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 **Cell facets (range mode).** Four boolean `data-*` attributes are added to `[forCalendarCell]`:
 
-| Attribute            | Present when                                                                      |
-| -------------------- | --------------------------------------------------------------------------------- |
-| `data-range-start`   | Cell is the start of the effective range (committed idle, or preview selecting)   |
-| `data-range-end`     | Cell is the end of the effective range                                            |
-| `data-in-range`      | Cell is within the **committed** range, inclusive (idle only)                     |
-| `data-range-preview` | Cell is within the **preview** band, inclusive (selecting only)                   |
+| Attribute            | Present when                                                                    |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `data-range-start`   | Cell is the start of the effective range (committed idle, or preview selecting) |
+| `data-range-end`     | Cell is the end of the effective range                                          |
+| `data-in-range`      | Cell is within the **committed** range, inclusive (idle only)                   |
+| `data-range-preview` | Cell is within the **preview** band, inclusive (selecting only)                 |
 
 `data-in-range` and `data-range-preview` are mutually exclusive. Endpoints carry both the endpoint attribute and the band attribute (inclusive). All four are absent in single mode.
 
@@ -166,7 +166,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 }
 ```
 
-**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive), matching React Aria's range calendar semantics. During selecting (range null), it is `"false"` everywhere.
+**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive). During selecting (range null), it is `"false"` everywhere.
 
 **v1 scope.** Range mode is day-granular only — `granularity` / time is orthogonal and not supported in v1.
 
@@ -176,23 +176,23 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 ### Navigation methods
 
-| Method                        | Description                                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `goTo(year, month)`           | Set the visible month to `(year, month)` without selecting a date. `month` is **1-12**.                                      |
-| `goToMonth(month)`            | Set the visible month within the current visible year. `month` is **1-12**.                                                   |
-| `goToYear(year)`              | Set the visible year, keeping the current visible month.                                                                      |
+| Method              | Description                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| `goTo(year, month)` | Set the visible month to `(year, month)` without selecting a date. `month` is **1-12**. |
+| `goToMonth(month)`  | Set the visible month within the current visible year. `month` is **1-12**.             |
+| `goToYear(year)`    | Set the visible year, keeping the current visible month.                                |
 
 All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the visible month changes. They keep DOM focus on the caller — they do not move focus into the grid. They are a no-op while the calendar is `disabled`.
 
 ### Read accessors and predicates
 
-| API                         | Type                                    | Description                                                                       |
-| --------------------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
-| `visibleYear()`             | `Signal<number>`                        | The visible month's full year (e.g. `2026`).                                     |
-| `visibleMonthNumber()`      | `Signal<number>`                        | The visible month, **1-12**.                                                      |
-| `monthOptions()`            | `Signal<readonly CalendarMonthOption[]>`| Twelve localized, bounds-aware entries for the visible year. See `CalendarMonthOption`. |
-| `isMonthDisabled(month)`    | `(month: number) => boolean`            | Whether every day of `month` (**1-12**) in the visible year is outside `[min, max]`. |
-| `isYearDisabled(year)`      | `(year: number) => boolean`             | Whether every day of `year` is outside `[min, max]`.                             |
+| API                      | Type                                     | Description                                                                             |
+| ------------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| `visibleYear()`          | `Signal<number>`                         | The visible month's full year (e.g. `2026`).                                            |
+| `visibleMonthNumber()`   | `Signal<number>`                         | The visible month, **1-12**.                                                            |
+| `monthOptions()`         | `Signal<readonly CalendarMonthOption[]>` | Twelve localized, bounds-aware entries for the visible year. See `CalendarMonthOption`. |
+| `isMonthDisabled(month)` | `(month: number) => boolean`             | Whether every day of `month` (**1-12**) in the visible year is outside `[min, max]`.    |
+| `isYearDisabled(year)`   | `(year: number) => boolean`              | Whether every day of `year` is outside `[min, max]`.                                    |
 
 `CalendarMonthOption` has three fields: `value: number` (1-12), `label: string` (localized month name via the adapter), and `disabled: boolean`.
 
@@ -208,33 +208,35 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
     <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
     <select forCalendarMonthSelect #m="forCalendarMonthSelect">
       @for (opt of m.options(); track opt.value) {
-        <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
+      <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
       }
     </select>
     <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="1900" [maxYear]="2100">
       @for (opt of y.years(); track opt.value) {
-        <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+      <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
       }
     </select>
     <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
     <h2 forCalendarHeading class="sr-only" #h="forCalendarHeading">{{ h.label() }}</h2>
   </header>
-  <table forCalendarGrid>…</table>
+  <table forCalendarGrid>
+    …
+  </table>
 </div>
 ```
 
 #### `ForCalendarMonthSelect` API
 
-| API | Description |
-| --- | --- |
+| API         | Description                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
 | `options()` | `Signal<readonly CalendarMonthOption[]>` — twelve localized, bounds-aware month options for the visible year. |
 
 #### `ForCalendarYearSelect` API
 
-| API | Description |
-| --- | --- |
-| `minYear` | `input<number \| null>` — lowest listed year. Defaults to `currentYear - 100` when `null`. |
-| `maxYear` | `input<number \| null>` — highest listed year. Defaults to `currentYear + 10` when `null`. |
+| API       | Description                                                                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `minYear` | `input<number \| null>` — lowest listed year. Defaults to `currentYear - 100` when `null`.                                                             |
+| `maxYear` | `input<number \| null>` — highest listed year. Defaults to `currentYear + 10` when `null`.                                                             |
 | `years()` | `Signal<readonly CalendarYearOption[]>` — years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
 
 The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
@@ -249,20 +251,20 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
 
 ### Pieces
 
-| Class                   | Selector                  | Role                                                                                                              |
-| ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `ForCalendarViewTrigger`| `[forCalendarViewTrigger]`| Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                    |
-| `ForCalendarMonthGrid`  | `[forCalendarMonthGrid]`  | 4×3 month grid (`role="grid"`). Exposes `rows()` — array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
-| `ForCalendarMonthCell`  | `[forCalendarMonthCell]`  | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.         |
-| `ForCalendarYearGrid`   | `[forCalendarYearGrid]`   | 4×3 year grid (`role="grid"`). Exposes `rows()` — array of `CalendarYearRow`, each with three `CalendarYearOption`. |
-| `ForCalendarYearCell`   | `[forCalendarYearCell]`   | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                  |
+| Class                    | Selector                   | Role                                                                                                                  |
+| ------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                         |
+| `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()` — array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
+| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.               |
+| `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()` — array of `CalendarYearRow`, each with three `CalendarYearOption`.   |
+| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                       |
 
 ### `view` model — `ForCalendar`
 
-| API            | Type                                          | Description                                                            |
-| -------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
-| `view`         | `model<CalendarView>` (`'day' \| 'month' \| 'year'`) | Active view. Default `'day'`. `[(view)]` for two-way binding or read `cal.view()`. |
-| `yearBlockSize`| `input<number>`                               | Years per year-grid page (must be a multiple of 3). Default `12`.      |
+| API             | Type                                                 | Description                                                                        |
+| --------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `view`          | `model<CalendarView>` (`'day' \| 'month' \| 'year'`) | Active view. Default `'day'`. `[(view)]` for two-way binding or read `cal.view()`. |
+| `yearBlockSize` | `input<number>`                                      | Years per year-grid page (must be a multiple of 3). Default `12`.                  |
 
 ### Usage
 
@@ -276,95 +278,91 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
     <h2 forCalendarHeading #h="forCalendarHeading" class="sr-only">{{ h.label() }}</h2>
   </header>
 
-  @switch (cal.view()) {
-    @case ('day') {
-      <table forCalendarGrid #grid="forCalendarGrid">
-        <thead forCalendarGridHeader>
-          <tr>
-            @for (day of grid.weekDays(); track day.key) {
-              <th scope="col" [attr.aria-label]="day.long">{{ day.narrow }}</th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (week of grid.weeks(); track week.key) {
-            <tr>
-              @for (cell of week.days; track cell.key) {
-                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-    @case ('month') {
-      <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
-        <tbody>
-          @for (row of mg.rows(); track row.key) {
-            <tr>
-              @for (m of row.months; track m.value) {
-                <td forCalendarMonthCell [month]="m.value">{{ m.label }}</td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-    @case ('year') {
-      <table forCalendarYearGrid #yg="forCalendarYearGrid">
-        <tbody>
-          @for (row of yg.rows(); track row.key) {
-            <tr>
-              @for (y of row.years; track y.value) {
-                <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  }
+  @switch (cal.view()) { @case ('day') {
+  <table forCalendarGrid #grid="forCalendarGrid">
+    <thead forCalendarGridHeader>
+      <tr>
+        @for (day of grid.weekDays(); track day.key) {
+        <th scope="col" [attr.aria-label]="day.long">{{ day.narrow }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (week of grid.weeks(); track week.key) {
+      <tr>
+        @for (cell of week.days; track cell.key) {
+        <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+        }
+      </tr>
+      }
+    </tbody>
+  </table>
+  } @case ('month') {
+  <table forCalendarMonthGrid #mg="forCalendarMonthGrid">
+    <tbody>
+      @for (row of mg.rows(); track row.key) {
+      <tr>
+        @for (m of row.months; track m.value) {
+        <td forCalendarMonthCell [month]="m.value">{{ m.label }}</td>
+        }
+      </tr>
+      }
+    </tbody>
+  </table>
+  } @case ('year') {
+  <table forCalendarYearGrid #yg="forCalendarYearGrid">
+    <tbody>
+      @for (row of yg.rows(); track row.key) {
+      <tr>
+        @for (y of row.years; track y.value) {
+        <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
+        }
+      </tr>
+      }
+    </tbody>
+  </table>
+  } }
 </div>
 ```
 
 ### Keyboard (month / year grids)
 
-| Key                        | Behavior                                                             |
-| -------------------------- | -------------------------------------------------------------------- |
-| **ArrowLeft / ArrowRight** | Previous / next cell (RTL-mirrored).                                 |
-| **ArrowUp / ArrowDown**    | Previous / next row (three cells per row).                           |
-| **Home / End**             | First / last cell in the current row.                                |
+| Key                        | Behavior                                                                |
+| -------------------------- | ----------------------------------------------------------------------- |
+| **ArrowLeft / ArrowRight** | Previous / next cell (RTL-mirrored).                                    |
+| **ArrowUp / ArrowDown**    | Previous / next row (three cells per row).                              |
+| **Home / End**             | First / last cell in the current row.                                   |
 | **PageUp / PageDown**      | Previous / next year (month grid) or previous / next block (year grid). |
-| **Enter / Space**          | Select the focused month or year and drill down.                     |
-| **Escape**                 | (handled by consumer via `[(view)]`).                                |
+| **Enter / Space**          | Select the focused month or year and drill down.                        |
+| **Escape**                 | (handled by consumer via `[(view)]`).                                   |
 
 ### Prev / next behavior per view
 
 The prev and next buttons (`[forCalendarPrevButton]` / `[forCalendarNextButton]`) are view-aware:
 
-| View  | Prev / Next pages by                            |
-| ----- | ----------------------------------------------- |
-| `day` | One month (as before).                          |
-| `month`| One year.                                      |
-| `year` | One `yearBlockSize` block (default 12 years).  |
+| View    | Prev / Next pages by                          |
+| ------- | --------------------------------------------- |
+| `day`   | One month (as before).                        |
+| `month` | One year.                                     |
+| `year`  | One `yearBlockSize` block (default 12 years). |
 
 Auto-disabled when the entire previous / next page would be outside `[min, max]`.
 
 ### Data attributes (view switching)
 
-| Piece                    | Attribute       | Values            |
-| ------------------------ | --------------- | ----------------- |
-| `[forCalendar]`          | `data-view`     | `"day"` \| `"month"` \| `"year"` |
-| `[forCalendarMonthGrid]` | `data-view`     | `"month"` (static) |
-| `[forCalendarYearGrid]`  | `data-view`     | `"year"` (static)  |
-| `[forCalendarMonthCell]` | `data-selected` | present \| absent  |
-| `[forCalendarMonthCell]` | `data-today`    | present \| absent  |
-| `[forCalendarMonthCell]` | `data-highlighted` | present \| absent |
-| `[forCalendarMonthCell]` | `data-disabled` | present \| absent  |
-| `[forCalendarYearCell]`  | `data-selected` | present \| absent  |
-| `[forCalendarYearCell]`  | `data-today`    | present \| absent  |
-| `[forCalendarYearCell]`  | `data-highlighted` | present \| absent |
-| `[forCalendarYearCell]`  | `data-disabled` | present \| absent  |
+| Piece                    | Attribute          | Values                           |
+| ------------------------ | ------------------ | -------------------------------- |
+| `[forCalendar]`          | `data-view`        | `"day"` \| `"month"` \| `"year"` |
+| `[forCalendarMonthGrid]` | `data-view`        | `"month"` (static)               |
+| `[forCalendarYearGrid]`  | `data-view`        | `"year"` (static)                |
+| `[forCalendarMonthCell]` | `data-selected`    | present \| absent                |
+| `[forCalendarMonthCell]` | `data-today`       | present \| absent                |
+| `[forCalendarMonthCell]` | `data-highlighted` | present \| absent                |
+| `[forCalendarMonthCell]` | `data-disabled`    | present \| absent                |
+| `[forCalendarYearCell]`  | `data-selected`    | present \| absent                |
+| `[forCalendarYearCell]`  | `data-today`       | present \| absent                |
+| `[forCalendarYearCell]`  | `data-highlighted` | present \| absent                |
+| `[forCalendarYearCell]`  | `data-disabled`    | present \| absent                |
 
 ## Styling
 

@@ -120,8 +120,8 @@ function itemAligned(
  * Item-aligned positioner for `[forSelectContent]` (the `position="item-aligned"`
  * mode). The listbox overlays the trigger so the *selected option*'s center
  * lines up with the trigger's center on the cross axis — visually the menu
- * "snaps over" the trigger when opened, mirroring macOS native `<select>` and
- * Radix's `Select.Content` `position: 'item-aligned'`.
+ * "snaps over" the trigger when opened, mirroring macOS native `<select>`
+ * dropdowns.
  *
  * Owns:
  * 1. Optional portal — `appendChild` to `document.body` on first render,
@@ -138,8 +138,8 @@ function itemAligned(
  *    correct when the listbox is taller than the viewport.
  *
  * `side`, `align`, `sideOffset`, `alignOffset`, `placement`, `flip`, `shift`,
- * and `arrow` are intentionally **not** part of this API — Radix's spec for
- * item-aligned mode treats them as no-ops.
+ * and `arrow` are intentionally **not** part of this API — item-aligned mode
+ * treats them as no-ops.
  */
 export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);

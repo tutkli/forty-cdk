@@ -21,7 +21,7 @@ import { injectHoverCardContext } from './hover-card-context';
  *
  * **Intentional ARIA exception.** The content carries no role (only
  * `data-state` for styling) and the trigger exposes no ARIA linkage — the
- * card is non-essential supplementary content, mirroring Radix. See
+ * card is non-essential supplementary content. See
  * `ForHoverCardTrigger` for the full rationale.
  */
 @Directive({

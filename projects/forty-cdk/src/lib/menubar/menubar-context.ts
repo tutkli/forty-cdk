@@ -104,7 +104,7 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
    * Hover-after-open. When some menu is open and pointer enters a sibling
    * trigger, that sibling's menu opens immediately. No-op while no menu
-   * is open (per Radix: first open requires keyboard / click).
+   * is open (first open requires keyboard / click).
    */
   pointerEnterTrigger(value: string): void;
 

@@ -11,13 +11,13 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
  *
  * Reflects `data-fade-from-active` when `fadeFromIndex` on the drawer root
  * is set and the active snap point is at or past that index — consumers
- * tie this to a CSS opacity transition for the Vaul-style "backdrop fades
+ * tie this to a CSS opacity transition for the "backdrop fades
  * in once you snap up past N" effect.
  *
  * Publishes the live drag progress toward the anchored edge as the
  * `--for-drawer-drag-progress` custom property (`0` at rest → `1` fully
  * dragged off-screen) and mirrors the surface's `data-dragging` attribute.
- * Together these drive the Vaul-style "backdrop fades out as you swipe to
+ * Together these drive the "backdrop fades out as you swipe to
  * dismiss" effect with pure CSS:
  *
  * ```css
