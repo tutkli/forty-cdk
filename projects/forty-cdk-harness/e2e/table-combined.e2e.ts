@@ -64,7 +64,7 @@ test.describe('Table combined composition', () => {
     await page.mouse.up();
 
     await expect.poll(() => headerOrder(page)).toEqual(['role', 'name', 'dept', 'location']);
-    await expect(headerName).toHaveAttribute('aria-sort', /ascending|descending/);
+    await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
     const widthVarAfter = await root.evaluate((node) =>
       getComputedStyle(node).getPropertyValue('--for-table-col-name-width').trim(),
     );

@@ -990,4 +990,107 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
   });
+
+  describe('synthetic click suppression after pointer drag', () => {
+    function firePointer(
+      target: HTMLElement,
+      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      clientX: number,
+      clientY: number,
+    ): void {
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX,
+          clientY,
+          pointerId: 1,
+          button: 0,
+          pointerType: 'mouse',
+        }),
+      );
+    }
+
+    it('cancels the trailing click on the dragged item after a committed pointer drag', () => {
+      const { el } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+      const hostClick = vi.fn();
+      first.addEventListener('click', hostClick);
+      try {
+        firePointer(first, 'pointerdown', 0, 0);
+        firePointer(first, 'pointermove', 20, 0);
+        firePointer(first, 'pointerup', 20, 0);
+
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        first.dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(true);
+        expect(hostClick).not.toHaveBeenCalled();
+      } finally {
+        first.removeEventListener('click', hostClick);
+      }
+    });
+
+    it('suppresses only the first click — a later click activates the host normally', () => {
+      const { el } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+      const hostClick = vi.fn();
+      first.addEventListener('click', hostClick);
+      try {
+        firePointer(first, 'pointerdown', 0, 0);
+        firePointer(first, 'pointermove', 20, 0);
+        firePointer(first, 'pointerup', 20, 0);
+
+        first.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        expect(hostClick).not.toHaveBeenCalled();
+
+        const second = new MouseEvent('click', { bubbles: true, cancelable: true });
+        first.dispatchEvent(second);
+        expect(second.defaultPrevented).toBe(false);
+        expect(hostClick).toHaveBeenCalledTimes(1);
+      } finally {
+        first.removeEventListener('click', hostClick);
+      }
+    });
+
+    it('does not suppress a plain click (no movement past the drag threshold)', () => {
+      const { el } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+      const hostClick = vi.fn();
+      first.addEventListener('click', hostClick);
+      try {
+        firePointer(first, 'pointerdown', 0, 0);
+        firePointer(first, 'pointerup', 0, 0);
+
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        first.dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(false);
+        expect(hostClick).toHaveBeenCalledTimes(1);
+      } finally {
+        first.removeEventListener('click', hostClick);
+      }
+    });
+
+    it('cancels the trailing click under provideZonelessChangeDetection', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const first = itemEl(el, 1);
+      const hostClick = vi.fn();
+      first.addEventListener('click', hostClick);
+      try {
+        firePointer(first, 'pointerdown', 0, 0);
+        firePointer(first, 'pointermove', 20, 0);
+        firePointer(first, 'pointerup', 20, 0);
+
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        first.dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(true);
+        expect(hostClick).not.toHaveBeenCalled();
+      } finally {
+        first.removeEventListener('click', hostClick);
+      }
+    });
+  });
 });
