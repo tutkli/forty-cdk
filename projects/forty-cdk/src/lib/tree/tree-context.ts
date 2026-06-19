@@ -6,6 +6,12 @@ import type {
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 
+/** A visible tree node plus its resolved parent host — the flattened list the root walks. */
+export interface ForTreeVisibleNode {
+  readonly handle: ForTreeItemHandle;
+  readonly parentHost: HTMLElement | null;
+}
+
 /**
  * Handle a `ForTreeItem` registers with its enclosing container so the root
  * can flatten the currently-visible nodes, run typeahead, and resolve the
@@ -128,6 +134,11 @@ export interface ForTreeContext {
   handleTypeahead(event: KeyboardEvent): boolean;
   /** Whether `el` is the first enabled root node — the default roving-tabindex entry point. */
   isFirstFocusableItem(el: HTMLElement): boolean;
+  /**
+   * Flattened currently-visible nodes in DOM order, each with its resolved parent host. Exposed for
+   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent.
+   */
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]>;
 }
 
 export const FOR_TREE_CONTEXT = new InjectionToken<ForTreeContext>('FOR_TREE_CONTEXT');
