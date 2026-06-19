@@ -62,3 +62,4 @@ export * from './lib/drag-drop';
 export * from './lib/stepper';
 export * from './lib/table';
 export * from './lib/virtualization';
+export * from './lib/pagination';

@@ -127,6 +127,11 @@ import {
   provideForDragDropDefaults,
 } from '../../drag-drop/drag-drop-defaults';
 import {
+  FOR_PAGINATION_DEFAULTS,
+  FOR_PAGINATION_FALLBACK_DEFAULTS,
+  provideForPaginationDefaults,
+} from '../../pagination/pagination-defaults';
+import {
   FOR_STEPPER_DEFAULTS,
   FOR_STEPPER_FALLBACK_DEFAULTS,
   provideForStepperDefaults,
@@ -336,6 +341,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_STEPPER_FALLBACK_DEFAULTS,
     provide: provideForStepperDefaults,
     override: { activationMode: 'automatic' },
+  }),
+  defaultsCase({
+    name: 'provideForPaginationDefaults',
+    token: FOR_PAGINATION_DEFAULTS,
+    fallback: FOR_PAGINATION_FALLBACK_DEFAULTS,
+    provide: provideForPaginationDefaults,
+    override: { siblingCount: 2 },
   }),
 ];
 
