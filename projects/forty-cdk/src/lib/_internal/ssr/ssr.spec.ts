@@ -176,6 +176,9 @@ import { ForPaginationPrevious } from '../../pagination/pagination-previous';
 import { ForBreadcrumbs } from '../../breadcrumbs/breadcrumbs';
 import { ForBreadcrumbItem } from '../../breadcrumbs/breadcrumb-item';
 import { ForBreadcrumbSeparator } from '../../breadcrumbs/breadcrumb-separator';
+import { ForFileUpload } from '../../file-upload/file-upload';
+import { ForFileUploadInput } from '../../file-upload/file-upload-input';
+import { ForFileUploadTrigger } from '../../file-upload/file-upload-trigger';
 import { ForToolbar } from '../../toolbar/toolbar';
 import { ForToolbarButton } from '../../toolbar/toolbar-button';
 import { ForToolbarLink } from '../../toolbar/toolbar-link';
@@ -1364,6 +1367,17 @@ class PaginationFixture {}
 class BreadcrumbsFixture {}
 
 @Component({
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  template: `
+    <div forFileUpload>
+      <button forFileUploadTrigger>Choose files</button>
+      <input forFileUploadInput aria-label="Upload" />
+    </div>
+  `,
+})
+class FileUploadFixture {}
+
+@Component({
   template: `
     <div #scroll style="overflow:auto; height:200px">
       <div [style.height.px]="v.totalSize()" style="position:relative">
@@ -1472,6 +1486,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ToolbarFixture,
   PaginationFixture,
   BreadcrumbsFixture,
+  FileUploadFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
 ];
@@ -1845,6 +1860,15 @@ describe('SSR smoke tests', () => {
       f.nativeElement.querySelectorAll('[aria-current="page"]'),
     ) as HTMLElement[];
     expect(currentButtons.length).toBe(1);
+  });
+
+  it('FileUpload renders the native input with type="file" and the trigger with type="button" server-side', () => {
+    const f = TestBed.createComponent(FileUploadFixture);
+    f.detectChanges();
+    const input = f.nativeElement.querySelector('input[forFileUploadInput]') as HTMLInputElement;
+    expect(input.getAttribute('type')).toBe('file');
+    const trigger = f.nativeElement.querySelector('[forFileUploadTrigger]') as HTMLButtonElement;
+    expect(trigger.getAttribute('type')).toBe('button');
   });
 
   it('Breadcrumbs renders role="navigation" + default label + one aria-current="page" link server-side', () => {
