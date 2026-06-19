@@ -5,9 +5,7 @@ import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scal
 /**
  * Marks the consumer's app-shell wrapper so {@link ForDrawer}'s
  * `scaleBackground` effect can transform the rest of the page when a
- * drawer opens — inspired by Vaul's `[data-vaul-drawer-wrapper]` and
- * Base UI's `Drawer.Indent`, but wired through Angular DI instead of a
- * global selector.
+ * drawer opens — applied through Angular DI rather than a global selector.
  *
  * Apply on the element that contains everything the drawer should appear
  * to recede behind (typically the root shell). Reflects

@@ -14,7 +14,7 @@ import { isPlatformBrowser } from '@angular/common';
  * VoiceOver and several other AT combinations still announce siblings of an
  * aria-modal node unless the rest of the document is explicitly hidden. The
  * WAI-ARIA APG modal-dialog pattern recommends combining `aria-modal` with
- * isolating the rest of the page; both Radix and Base UI ship this.
+ * isolating the rest of the page.
  *
  * Stacking model (LIFO with safe out-of-order teardown) — per root:
  *

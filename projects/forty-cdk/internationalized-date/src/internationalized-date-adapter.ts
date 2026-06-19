@@ -5,8 +5,8 @@ import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk';
 
 /**
  * {@link DateAdapter} over `@internationalized/date`'s immutable `CalendarDate`.
- * This is the recommended adapter: it is the same date primitive React Aria and
- * Ark UI build on, it works in every browser today with no polyfill, and its
+ * This is the recommended adapter: it is a widely-used immutable date primitive,
+ * it works in every browser today with no polyfill, and its
  * reference-equality-on-mutation makes it signal-friendly.
  *
  * **Gregorian only.** `createDate` always builds a Gregorian `CalendarDate`, so

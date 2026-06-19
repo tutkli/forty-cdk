@@ -84,7 +84,7 @@ function dragDirections(side: ForDrawerSide, hasSnapPoints: boolean): readonly S
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),
  * specialised as a side / bottom-sheet drawer with optional swipe-to-dismiss
- * and Vaul-style snap points.
+ * and snap points.
  *
  * Apply `[forDrawer]` on the drawer surface itself — not on a wrapper. The
  * directive moves the host to `document.body` (portal), traps focus, locks
@@ -197,7 +197,7 @@ export class ForDrawer implements ForDrawerContext {
 
   /**
    * Fraction past which a release dismisses instead of snapping back.
-   * Vaul-aligned default `0.25`. Without `snapPoints` it is a fraction of the
+   * Default `0.25`. Without `snapPoints` it is a fraction of the
    * full drawer dimension along the dismissal axis (dragged > 25% of the
    * surface size toward the edge dismisses); with `snapPoints` it is a
    * fraction of the **lowest snap's** extent, so a small "peek" snap stays
@@ -214,7 +214,7 @@ export class ForDrawer implements ForDrawerContext {
 
   /**
    * When true, asks the registered `[forDrawerWrapper]` to scale and
-   * translate behind this drawer (Vaul-style "shouldScaleBackground"). No
+   * translate behind this drawer (the "scale background" effect). No
    * effect under `prefers-reduced-motion: reduce`, and a no-op if no
    * wrapper is mounted. Default `false` so existing consumers are
    * untouched.
@@ -234,7 +234,7 @@ export class ForDrawer implements ForDrawerContext {
   });
 
   /**
-   * Snap points (Vaul semantics): each entry is a `number ∈ [0, 1]`,
+   * Snap points: each entry is a `number ∈ [0, 1]`,
    * a `'NN%'` string, or a `'NNpx'` string. Strictly increasing
    * (closest-to-edge first). The surface settles at the nearest snap on
    * release; dragging past the lowest snap by `closeThreshold` of that

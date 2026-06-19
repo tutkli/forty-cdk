@@ -229,7 +229,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   /**
    * Clears `data-highlighted` from every item without moving focus. The shared
    * `[forMenuContent]` calls this on `pointerleave` so the hover highlight
-   * follows the pointer off the surface (Radix-style).
+   * follows the pointer off the surface.
    */
   clearItemHighlights(): void {
     this.#itemList.clearHighlights();

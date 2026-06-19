@@ -11,7 +11,7 @@ import { createDefaults } from '../_internal/defaults/defaults';
 export interface ForDatePickerDefaults {
   /**
    * Distance (px) between the trigger and the floating surface along the
-   * resolved `side` axis. Mirrors Radix's `sideOffset`. Ignored in `modal`
+   * resolved `side` axis. Ignored in `modal`
    * mode (the dialog is centered, not anchored).
    */
   sideOffset: number;

@@ -89,7 +89,7 @@ export class ForTooltip implements ForTooltipContext {
 
   /**
    * Per-tooltip override for the gap (px) between trigger and content along
-   * the main axis. Mirrors Radix's `sideOffset`. When `undefined` (default),
+   * the main axis. When `undefined` (default),
    * falls back to `ForTooltipDefaults.sideOffset` from the surrounding
    * `provideForTooltipDefaults` scope (`8` unless configured).
    *

@@ -29,7 +29,7 @@ import { injectSelectContext } from './select-context';
  * - **non-modal (default)** — `injectOverlayShell` anchors the listbox to the
  *   trigger and branches on `[forSelect].position`:
  *   - `'popper'` (default) — standard `injectFloating` path with full
- *     Radix-style anchored placement (`side`, `align`, `sideOffset`,
+ *     anchored placement (`side`, `align`, `sideOffset`,
  *     `alignOffset`, `flip`, `shift`, `arrow`, `hideWhenDetached`).
  *   - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
  *     the selected option's center aligns with the trigger's center. The

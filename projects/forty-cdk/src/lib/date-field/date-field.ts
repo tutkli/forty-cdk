@@ -58,7 +58,7 @@ const RESOLVER_YEAR = 2001;
  * counterpart to `ForCalendar`. There is no single WAI-ARIA APG pattern for a
  * date field; it is a composition of
  * [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a
- * labelled `role="group"`, exactly as React Aria's `useDateField` models it.
+ * labelled `role="group"`.
  * Each day / month / year part is an independent `role="spinbutton"` segment
  * (`[forDateFieldSegment]`) so entry is unambiguous and locale-correct — no
  * free-text parsing, no `03/04`-is-it-March-4th guesswork.

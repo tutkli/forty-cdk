@@ -1,6 +1,6 @@
 # OTP Input
 
-Headless OTP / PIN input on the **single-input** model: one real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP — this approach (shadcn [`input-otp`](https://github.com/guilhermerodz/input-otp), Spartan `BrnInputOtp`) gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection.
+Headless OTP / PIN input on the **single-input** model: one real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP — this approach gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection.
 
 It implements Angular's `FormValueControl<string>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup.
 

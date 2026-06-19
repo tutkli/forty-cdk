@@ -1,6 +1,6 @@
 # Drawer
 
-Headless side / bottom-sheet drawer with optional swipe-to-dismiss and Vaul-style snap points. Built on top of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) — same focus trap, scroll lock, Escape-to-close, dismissable-layer, and portal behaviors as `ForDialog`, plus pointer-driven drag.
+Headless side / bottom-sheet drawer with optional swipe-to-dismiss and snap points. Built on top of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) — same focus trap, scroll lock, Escape-to-close, dismissable-layer, and portal behaviors as `ForDialog`, plus pointer-driven drag.
 
 ## Anatomy
 
@@ -304,7 +304,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 ### Backdrop drag-fade (CSS contract)
 
-`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the Vaul-style "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(dragMove)` listener required:
+`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(dragMove)` listener required:
 
 ```css
 .drawer-backdrop {
@@ -323,14 +323,14 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 - Pointer drag toward the anchored edge translates the surface and resolves to the nearest snap (or a dismiss) on release.
 - With `snapPoints`, the drag is bidirectional: a drag **away** from the anchored edge grows the surface toward a larger snap (bounded by the largest snap), and a drag toward the edge shrinks it / dismisses past the lowest one. Without `snapPoints` the gesture is one-way (toward the edge to dismiss).
-- `closeThreshold` (default `0.25`) is the Vaul-aligned fraction past which a release from the lowest snap dismisses — measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissable without dragging it off-screen.
+- `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses — measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissable without dragging it off-screen.
 - `handleOnly: true` confines the gesture to a registered `[forDrawerHandle]`, leaving the rest of the surface free for content scroll.
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
 - **`prefers-reduced-motion: reduce`** disables the swipe listener entirely. Escape, backdrop, outside-pointer, and close button continue to work.
 
-## Scale background (Vaul `shouldScaleBackground`)
+## Scale background
 
-Opt in to the "viewport recedes behind the drawer" effect popularised by Vaul: when the drawer opens, the rest of the app shrinks slightly and rounds its corners to read as a layered surface. Two pieces required:
+Opt in to the "viewport recedes behind the drawer" effect: when the drawer opens, the rest of the app shrinks slightly and rounds its corners to read as a layered surface. Two pieces required:
 
 1. Apply `[forDrawerWrapper]` on the element that wraps the rest of the app (typically the root shell). Only one wrapper may be registered at a time.
 2. Set `[scaleBackground]="true"` on the drawer that should drive the effect.

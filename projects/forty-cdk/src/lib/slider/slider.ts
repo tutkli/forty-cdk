@@ -173,8 +173,8 @@ export class ForSlider
   /**
    * Emitted at the end of a value-changing interaction — pointerup /
    * pointercancel after a drag, or keyup after one or more keyboard
-   * adjustments — with the final value array. Mirrors Radix / Base UI
-   * `onValueCommit`. Use it to defer expensive work (network calls,
+   * adjustments — with the final value array. Use it to defer expensive work
+   * (network calls,
    * history entries) to the trailing edge of the interaction instead of
    * running it per step. Stays silent when nothing changed (e.g. press +
    * release without movement, or a non-navigation key on a focused thumb).

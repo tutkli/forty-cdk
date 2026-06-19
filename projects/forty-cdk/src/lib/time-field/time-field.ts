@@ -39,7 +39,7 @@ interface TimeParts {
  * to `ForDateField`. There is no single WAI-ARIA APG pattern for a time field;
  * it is a composition of
  * [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a
- * labelled `role="group"`, exactly as React Aria's `useTimeField` models it.
+ * labelled `role="group"`.
  * Each hour / minute / second / AM·PM part is an independent
  * `role="spinbutton"` segment (`[forTimeFieldSegment]`) so entry is unambiguous
  * and locale-correct.

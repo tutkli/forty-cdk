@@ -10,13 +10,15 @@ import {
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from '../_internal/fieldset/fieldset-context';
+import {
+  FOR_FIELDSET_CONTEXT,
+  type ForFieldsetContext,
+} from '../_internal/fieldset/fieldset-context';
 
 /**
  * Headless grouping container that gives a set of related fields a shared
  * accessible name — the styleless counterpart to a native `<fieldset>` +
- * `<legend>`, and the grouping companion to `ForField`. Mirrors Base UI
- * `Fieldset`.
+ * `<legend>`, and the grouping companion to `ForField`.
  *
  * On a native `<fieldset>` it relies on the implicit grouping and emits no
  * role; on any other element it emits `role="group"` + `aria-labelledby`

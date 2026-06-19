@@ -48,7 +48,7 @@ export interface FloatingConfig {
   /**
    * Side the floating element is anchored to (`'top'`/`'right'`/`'bottom'`/
    * `'left'`). When omitted (or the signal returns `undefined`), defaults
-   * to `'bottom'`. Pair with `align` for the full Radix-style positioning
+   * to `'bottom'`. Pair with `align` for the full positioning
    * API.
    */
   readonly side?: Signal<FloatingSide | undefined>;
@@ -104,8 +104,7 @@ export interface FloatingConfig {
   /**
    * Padding (px or per-side rect) applied to both `flip` and `shift`. When
    * unset, `flip` uses padding 0 (legacy behavior) and `shift` uses
-   * `shiftPadding` (default 8). Setting this overrides both uniformly,
-   * matching Radix's `collisionPadding` semantics.
+   * `shiftPadding` (default 8). Setting this overrides both uniformly.
    */
   readonly collisionPadding?: Signal<number | Padding>;
 
@@ -280,7 +279,7 @@ export function injectFloating(config: FloatingConfig): void {
     const alignOffsetVal = config.alignOffset?.() ?? 0;
     const avoidCollisions = config.avoidCollisions?.() ?? true;
     // `collisionPadding`, when set, applies uniformly to flip + shift +
-    // size (matches Radix). When unset, preserve the historical defaults:
+    // size. When unset, preserve the historical defaults:
     // `flip` had no padding, `shift` had `shiftPadding ?? 8`.
     const collisionPaddingExplicit = config.collisionPadding?.();
     const flipPaddingValue = collisionPaddingExplicit ?? 0;

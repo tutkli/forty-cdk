@@ -1,6 +1,6 @@
 # DatePicker
 
-Headless date picker following the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) — reinterpreted idiomatically for modern Angular the way [React Aria](https://react-aria.adobe.com/DatePicker/) and [Ark UI](https://ark-ui.com/docs/components/date-picker) do it: a focusable trigger that opens a floating surface wrapping a projected [`ForCalendar`](../calendar/README.md).
+Headless date picker following the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) — reinterpreted idiomatically for modern Angular: a focusable trigger that opens a floating surface wrapping a projected [`ForCalendar`](../calendar/README.md).
 
 `ForDatePicker` is the root **and** the form value — it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `name` / `disabled` / `invalid`; selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissable layer, return-focus) rather than re-implementing positioning, dismissal, or focus return — and the modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
 
@@ -168,7 +168,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ## Modal vs non-modal
 
-By default the surface is a **non-modal popover**: anchored to the trigger, no background inert, no scroll lock — matching React Aria / Ark UI. Set `[modal]="true"` to route through the modal shell instead: focus is trapped inside the dialog, the background is inert, and body scroll is locked (a centered dialog you position with CSS, not trigger-anchored). Either way the surface is `role="dialog"` and `aria-haspopup="dialog"`-anchored; modal mode adds `aria-modal="true"`.
+By default the surface is a **non-modal popover**: anchored to the trigger, no background inert, no scroll lock. Set `[modal]="true"` to route through the modal shell instead: focus is trapped inside the dialog, the background is inert, and body scroll is locked (a centered dialog you position with CSS, not trigger-anchored). Either way the surface is `role="dialog"` and `aria-haspopup="dialog"`-anchored; modal mode adds `aria-modal="true"`.
 
 The mode is read once when the surface mounts (it is structurally different per mode), so toggle `modal` while the surface is closed.
 
@@ -239,11 +239,11 @@ readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
   </button>
 
   @if (open()) {
-    <div forDatePickerContent>
-      <div forCalendar selectionMode="range" [(range)]="dateRange">
-        <!-- …header + grid… -->
-      </div>
+  <div forDatePickerContent>
+    <div forCalendar selectionMode="range" [(range)]="dateRange">
+      <!-- …header + grid… -->
     </div>
+  </div>
   }
 </div>
 ```
@@ -254,11 +254,11 @@ readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
 
 **v1 scope.** Range mode is day-granular only (`granularity` / time is not supported in v1). The `[(range)]` model is not a `FormValueControl` target — it does not integrate with `[formField]` in v1. `minRangeLength` / `maxRangeLength` are configured on the projected `[forCalendar]` directly.
 
-| New input / model  | Type                                       | Description                                                                                                    |
-| ------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `selectionMode`    | `input<'single' \| 'range'>`               | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                                  |
-| `range`            | `model<CalendarDateRange<D> \| null>`      | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`.                |
-| `rangeSeparator`   | `input<string>`                            | String placed between start and end in the formatted display. Default `' – '`.                                 |
+| New input / model | Type                                  | Description                                                                                     |
+| ----------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `selectionMode`   | `input<'single' \| 'range'>`          | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                   |
+| `range`           | `model<CalendarDateRange<D> \| null>` | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`. |
+| `rangeSeparator`  | `input<string>`                       | String placed between start and end in the formatted display. Default `' – '`.                  |
 
 ## Styling
 

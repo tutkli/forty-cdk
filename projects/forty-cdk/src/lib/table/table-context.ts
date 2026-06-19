@@ -8,7 +8,7 @@ export type TableMode = 'table' | 'grid' | 'treegrid';
 /** Row-selection mode for `ForTable`. `'none'` disables selection. */
 export type TableSelectionMode = 'none' | 'single' | 'multiple';
 
-/** How a row click mutates selection. `'toggle'` flips it; `'replace'` replaces (modifier-aware), React-Aria semantics. */
+/** How a row click mutates selection. `'toggle'` flips it; `'replace'` replaces (modifier-aware). */
 export type TableSelectionBehavior = 'toggle' | 'replace';
 
 /** Aggregate selection state across the table's selectable rows, for the select-all tri-state. */

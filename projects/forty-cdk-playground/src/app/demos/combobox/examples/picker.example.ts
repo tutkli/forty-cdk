@@ -49,7 +49,7 @@ const COUNTRIES = [
   template: `
     <playground-demo
       title="Picker (trigger + search inside the panel)"
-      subtitle="The other anatomy: a button shows the committed selection while the search input lives inside the panel (shadcn / cmdk style). [forComboboxTrigger] opens the panel, becomes the positioning anchor and takes focus back on close; [forComboboxList] carries role=listbox so the input can sit beside it. Focus hands off into the input on open and returns to the trigger on close."
+      subtitle="The other anatomy: a button shows the committed selection while the search input lives inside the panel. [forComboboxTrigger] opens the panel, becomes the positioning anchor and takes focus back on close; [forComboboxList] carries role=listbox so the input can sit beside it. Focus hands off into the input on open and returns to the trigger on close."
       sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/picker.example.ts"
     >
       <div demo class="combobox-demo">

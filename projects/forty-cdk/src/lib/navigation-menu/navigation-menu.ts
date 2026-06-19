@@ -44,7 +44,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
  * item's id, or `''` when nothing is open). The `model()` change emitter
  * fires only on internal transitions, never on consumer writes.
  *
- * Submenús anidados (Radix-style `Sub`) están fuera de scope para v1.
+ * Submenús anidados están fuera de scope para v1.
  *
  * @example
  * ```html
@@ -384,7 +384,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   /**
    * `data-motion` direction for the content with the given `value`.
    *
-   * Mirrors Radix's `NavigationMenu.Content` convention: when the user
+   * Sets the slide direction by index comparison: when the user
    * moves rightward from A (index 0) to B (index 2), the entering panel
    * slides in from the end side (`from-end`) and the leaving panel slides
    * out to the start side (`to-start`) — both shift in the same logical

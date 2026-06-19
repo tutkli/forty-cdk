@@ -6,7 +6,7 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
 /**
  * Button that opens the listbox and keeps showing the committed selection
  * (label + icon) while the search input lives **inside** the panel — the
- * "combobox with trigger" / picker anatomy (shadcn / cmdk / Base UI). Apply on
+ * "combobox with trigger" / picker anatomy. Apply on
  * a real `<button>` so Space / Enter dispatch native click events that toggle
  * via `(click)`.
  *

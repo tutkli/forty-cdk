@@ -187,7 +187,7 @@ Add `selectionMode` to `[forTable]` to enable row selection. Use `[forTableRowSe
 Controls how a row click (on the row or on a cell) mutates the selection:
 
 - `'toggle'` (default) — clicking a row always flips its selected state.
-- `'replace'` (React-Aria semantics) — clicking a row replaces the selection with that single row. Modifier keys in `'multiple'` mode: **Ctrl/Cmd-click** toggles the clicked row without clearing others; **Shift-click** extends a range from the last anchor to the clicked row.
+- `'replace'` — clicking a row replaces the selection with that single row. Modifier keys in `'multiple'` mode: **Ctrl/Cmd-click** toggles the clicked row without clearing others; **Shift-click** extends a range from the last anchor to the clicked row.
 
 ### `[(selection)]`
 
@@ -634,7 +634,7 @@ Key points:
 - The body rowgroup is `position: relative` and sized to `v.totalSize()` — this creates the full scroll range.
 - Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top` — `transform` avoids layout thrashing.
 - Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` (`vrow.index + 1`) rather than the DOM-order index.
-- The **focused row stays mounted** even when scrolled out of the window (React Aria pattern). The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
+- The **focused row stays mounted** even when scrolled out of the window. The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
 - For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`.
 
 ```ts

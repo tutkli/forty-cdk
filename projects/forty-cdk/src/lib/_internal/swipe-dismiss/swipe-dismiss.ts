@@ -1,8 +1,8 @@
 /**
  * Pointer-based swipe-to-dismiss helper.
  *
- * Used by `ForToast` (and any future primitive that wants Radix-style
- * swipe semantics: a horizontal/vertical drag that, when released past
+ * Used by `ForToast` (and any future primitive that wants swipe-to-dismiss
+ * semantics: a horizontal/vertical drag that, when released past
  * the configured threshold, triggers a dismissal).
  *
  * The helper keeps no Angular DI surface — it's a plain function that
@@ -316,11 +316,11 @@ export interface ResolveSnapTargetOptions<S> {
    * Pointer velocity at release in CSS pixels per millisecond, signed so
    * positive == moving away from the anchored edge (i.e. toward larger
    * `position`). The threshold for "fast flick" is hard-coded to
-   * `0.4` px/ms inside the helper, matching Vaul.
+   * `0.4` px/ms inside the helper.
    */
   readonly velocity: number;
   /**
-   * Vaul-style fraction of the **lowest snap point's** extent past which a
+   * Fraction of the **lowest snap point's** extent past which a
    * release from that snap dismisses the drawer. Default `0.25` — a release
    * that has dragged more than 25% of the lowest snap's size past it (toward
    * the edge) closes. Measuring against the lowest snap rather than the full
@@ -338,7 +338,7 @@ const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
  * `_internal/` so the Drawer directive doesn't have to embed the algorithm
  * (which is mildly involved and well-tested in isolation).
  *
- * Algorithm (closest-to-Vaul without the React-isms):
+ * Algorithm:
  *
  *   1. Pick the snap point with `snapPositions[i]` closest to `position`.
  *   2. If the velocity is fast enough (`|velocity| >= 0.4 px/ms`), bias one
@@ -386,7 +386,7 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
   }
 
   // 2) Velocity bias. The active snap point is the anchor for the velocity
-  // step — Vaul biases relative to where the user *was* before the gesture,
+  // step — bias relative to where the user *was* before the gesture,
   // not relative to the geometric closest. Falls back to closestIdx if the
   // active is unknown.
   const activeIdx = activeSnapPoint != null ? snapPoints.indexOf(activeSnapPoint) : -1;

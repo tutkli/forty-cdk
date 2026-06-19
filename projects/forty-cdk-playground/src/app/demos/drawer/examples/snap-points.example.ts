@@ -26,7 +26,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
   template: `
     <playground-demo
       title="Snap points"
-      subtitle="Vaul-style snap points: drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off data-active-snap-point; data-dragging disables the transition mid-gesture."
+      subtitle="Snap points: drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off data-active-snap-point; data-dragging disables the transition mid-gesture."
       sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/snap-points.example.ts"
     >
       <div demo class="pg-center">

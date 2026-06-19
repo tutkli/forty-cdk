@@ -31,7 +31,7 @@ export class ForStepperProgress {
 
   /**
    * Basis for the reported percent. `'index'` (default) derives progress from
-   * the current step index (matches Ark UI's `Steps.Progress`); `'completed'`
+   * the current step index; `'completed'`
    * derives it from the count of steps whose resolved state is `completed`.
    */
   readonly valueBy = input<'index' | 'completed'>('index');

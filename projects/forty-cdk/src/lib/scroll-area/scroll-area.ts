@@ -55,7 +55,7 @@ export class ForScrollArea implements ForScrollAreaContext {
    *   self-hides when the content fits.
    * - `always`: the scrollbar (and corner) stay mounted and
    *   `data-state="visible"` regardless of overflow — a stable, always-painted
-   *   track, matching Radix. When the axis does not overflow the thumb fills
+   *   track. When the axis does not overflow the thumb fills
    *   the full track and dragging is a no-op. The library is headless and does
    *   not own layout, so to actually *reserve* the gutter (no content shift
    *   when crossing the overflow boundary) the consumer lays the scrollbar out

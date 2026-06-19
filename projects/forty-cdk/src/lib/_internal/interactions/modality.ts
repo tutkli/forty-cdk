@@ -11,8 +11,8 @@ import {
 
 /**
  * Application-scoped tracker for the last input modality the user employed —
- * the in-house, CDK-free replacement for `@angular/cdk/a11y`'s `FocusMonitor`
- * modality detection. Created once per Angular bootstrap (one per SSR
+ * the in-house implementation of input-modality (pointer vs keyboard)
+ * detection. Created once per Angular bootstrap (one per SSR
  * request), tied to the root injector lifetime.
  *
  * It installs exactly **one** capture-phase `keydown` and **one** capture-phase

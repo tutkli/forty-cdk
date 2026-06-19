@@ -32,7 +32,7 @@ import {
  * Headless group of toggle buttons: a `role="group"` container whose items
  * each carry `aria-pressed`, modelled on the
  * [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)
- * (toggle-button variant) — mirroring Radix's ToggleGroup. Owns the
+ * (toggle-button variant). Owns the
  * selected-values set, navigation policy, and the registry of
  * `[forToggleGroupItem]` children. Implements
  * `FormValueControl<readonly string[]>` from `@angular/forms/signals` for

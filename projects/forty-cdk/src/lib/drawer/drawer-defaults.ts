@@ -21,7 +21,7 @@ export interface ForDrawerDefaults {
   /**
    * Default `0.25`. Fraction past which a release dismisses instead of
    * snapping back: of the full dimension without snap points, of the lowest
-   * snap's extent with them. Vaul semantics (see
+   * snap's extent with them (see
    * `_internal/swipe-dismiss/resolveSnapTarget`).
    */
   closeThreshold?: number;
@@ -36,8 +36,8 @@ export interface ForDrawerDefaults {
   handleOnly?: boolean;
   /**
    * Default `false`. When `true`, an open drawer asks
-   * `[forDrawerWrapper]` to scale + translate behind it (Vaul-style
-   * "shouldScaleBackground"). Suppressed under
+   * `[forDrawerWrapper]` to scale + translate behind it (the "scale
+   * background" effect). Suppressed under
    * `prefers-reduced-motion: reduce`.
    */
   scaleBackground?: boolean;

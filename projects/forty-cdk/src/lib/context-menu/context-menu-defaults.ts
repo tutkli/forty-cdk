@@ -11,8 +11,8 @@ import { createDefaults } from '../_internal/defaults/defaults';
 export interface ForContextMenuDefaults {
   /**
    * Distance (px) between the virtual anchor (pointer position) and the
-   * floating content along the resolved `side` axis. Mirrors Radix's
-   * `sideOffset`. Defaults to `0` since context menus open at the cursor.
+   * floating content along the resolved `side` axis. Defaults to `0`
+   * since context menus open at the cursor.
    */
   sideOffset: number;
   /**

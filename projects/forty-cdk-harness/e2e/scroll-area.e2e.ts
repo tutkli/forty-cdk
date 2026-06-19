@@ -222,7 +222,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
 
   // #480 — `type="auto"` and `type="always"` diverge when content fits: `auto`
   // self-hides the non-overflowing scrollbar, `always` keeps a stable,
-  // always-painted track (Radix parity) with the thumb filling the full track.
+  // always-painted track with the thumb filling the full track.
   // The contract is observable only against a real browser layout, since
   // `data-state` combines overflow presence (geometry, zero in jsdom) with the
   // `type` rule, and the full-track thumb is pure geometry.

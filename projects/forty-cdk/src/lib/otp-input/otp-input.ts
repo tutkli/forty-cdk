@@ -33,9 +33,9 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
 }
 
 /**
- * Headless OTP / PIN input following the **single-input** model (shadcn
- * `input-otp` / Spartan `BrnInputOtp`): one real `<input maxlength=N>` carries
- * the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure
+ * Headless OTP / PIN input following the **single-input** model: one real
+ * `<input maxlength=N>` carries the whole code as a `string`, and the
+ * `[forOtpInputSlot]` pieces are a pure
  * styling surface painted over it. There is **no** WAI-ARIA APG pattern for
  * OTP; this gives the cleanest screen-reader experience (one ordinary text
  * field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill

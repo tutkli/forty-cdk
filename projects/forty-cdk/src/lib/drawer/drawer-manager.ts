@@ -120,7 +120,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /** When true (default), pointer drag past `closeThreshold` dismisses. */
   swipeToDismiss?: boolean;
 
-  /** Vaul-style fraction of dimension past which a release dismisses. Default `0.25`. */
+  /** Fraction of dimension past which a release dismisses. Default `0.25`. */
   closeThreshold?: number;
 
   /** When true, swipe only arms on a registered handle element. Default `false`. */
@@ -128,7 +128,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
 
   /**
    * When true, asks the registered `[forDrawerWrapper]` to scale and translate
-   * behind this drawer (Vaul-style "shouldScaleBackground"). No effect under
+   * behind this drawer (the "scale background" effect). No effect under
    * `prefers-reduced-motion: reduce`, and a no-op if no wrapper is mounted.
    */
   scaleBackground?: boolean;
@@ -140,7 +140,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
    */
   setBackgroundColorOnScale?: boolean;
 
-  /** Snap points (Vaul semantics). Optional. */
+  /** Snap points. Optional. */
   snapPoints?: ReadonlyArray<ForDrawerSnapPoint>;
 
   /** Initial snap point at open time. Defaults to `snapPoints?.[0]`. */

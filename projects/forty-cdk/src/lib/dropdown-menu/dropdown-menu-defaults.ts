@@ -11,7 +11,7 @@ import { createDefaults } from '../_internal/defaults/defaults';
 export interface ForDropdownMenuDefaults {
   /**
    * Distance (px) between the dropdown trigger and the floating content
-   * along the resolved `side` axis. Mirrors Radix's `sideOffset`.
+   * along the resolved `side` axis.
    */
   sideOffset: number;
   /**

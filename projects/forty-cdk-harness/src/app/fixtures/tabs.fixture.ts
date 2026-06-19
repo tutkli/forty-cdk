@@ -95,7 +95,7 @@ export class TabsFixture {
     this.#route.snapshot.queryParamMap.get('disabled') ?? 'b';
 
   // Seed the selection so the roving entry trigger is deterministic ('a') —
-  // matches Radix / APG behaviour where a tablist with an explicit selection
+  // per the APG, a tablist with an explicit selection
   // owns the tab stop at that trigger. The `data-state="active"` /
   // `aria-selected="true"` start state lets the activation specs compare
   // against "before navigation".

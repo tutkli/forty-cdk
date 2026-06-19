@@ -5,7 +5,7 @@ import { type ForDrawerSide } from '../_internal/drawer-stack/drawer-side';
 export { type ForDrawerSide };
 
 /**
- * A snap point. Three accepted shapes (Vaul-aligned):
+ * A snap point. Three accepted shapes:
  *
  * - `number ∈ [0, 1]` — fraction of the dimension along the dismissal axis.
  * - `'NN%'` — equivalent to a fraction, e.g. `'50%' === 0.5`.

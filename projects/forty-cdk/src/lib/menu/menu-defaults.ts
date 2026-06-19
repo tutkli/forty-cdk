@@ -39,7 +39,7 @@ export interface ForMenuDefaults {
   subMenuPointerGraceDuration: number;
   /**
    * Distance (px) between the sub-trigger and the submenu content along the
-   * resolved `side` axis. Mirrors Radix's `sideOffset`. Default `0` — a
+   * resolved `side` axis. Default `0` — a
    * submenu sits flush against its parent item.
    */
   sideOffset: number;

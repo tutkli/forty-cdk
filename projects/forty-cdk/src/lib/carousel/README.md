@@ -289,7 +289,7 @@ rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
 
 ## Keyboard interaction (indicator group)
 
-Keyboard navigation lives on the indicator group (Ark-UI style). Only the current
+Keyboard navigation lives on the indicator group. Only the current
 indicator is in the tab order. Arrow keys move focus and activate the target slide
 automatically.
 
