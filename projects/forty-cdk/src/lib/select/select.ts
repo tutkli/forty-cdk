@@ -637,6 +637,7 @@ export class ForSelect<T = string>
       return;
     }
     target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
       this.#setSingle(target.value());
     }
@@ -852,6 +853,7 @@ export class ForSelect<T = string>
     const action = resolveListNavigation(event, {
       orientation: this.orientation(),
       dir: this.dir(),
+      pageKeys: true,
     });
     if (action) {
       event.preventDefault();

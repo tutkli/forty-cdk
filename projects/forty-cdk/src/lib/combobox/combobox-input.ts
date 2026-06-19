@@ -18,6 +18,7 @@ import { injectComboboxContext } from './combobox-context';
  * Keyboard:
  * - **ArrowDown / ArrowUp** — open + move activedescendant.
  * - **Home / End** (when open) — first / last enabled option.
+ * - **PageUp / PageDown** (when open) — first / last enabled option.
  * - **Enter** (when open) — activate the activedescendant; no-op otherwise.
  * - **Escape** (when open) — close (focus stays in input). On the
  *   open→closed transition the input value is re-synced to `query()` even
@@ -241,6 +242,20 @@ export class ForComboboxInput {
         break;
 
       case 'End':
+        if (this.ctx.open()) {
+          event.preventDefault();
+          this.ctx.navigate('last');
+        }
+        break;
+
+      case 'PageUp':
+        if (this.ctx.open()) {
+          event.preventDefault();
+          this.ctx.navigate('first');
+        }
+        break;
+
+      case 'PageDown':
         if (this.ctx.open()) {
           event.preventDefault();
           this.ctx.navigate('last');

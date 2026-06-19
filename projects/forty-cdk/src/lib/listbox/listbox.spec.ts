@@ -370,6 +370,15 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
+    it('PageDown / PageUp jump to last / first', () => {
+      const { el } = renderHost(ListboxHost);
+      optOf(el, 'banana').focus();
+      pressKey(optOf(el, 'banana'), 'PageDown');
+      expect(document.activeElement).toBe(optOf(el, 'cherry'));
+      pressKey(optOf(el, 'cherry'), 'PageUp');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+
     it('skips disabled options', () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
@@ -1858,6 +1867,29 @@ describe('ForListbox', () => {
       const opt49 = result.el.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
       expect(opt49).not.toBeNull();
       expect(lb.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+    });
+
+    it('PageDown jumps to the last index like End; PageUp returns to the first', async () => {
+      const result = renderHost(VirtualHost);
+      result.flush();
+      const lb = lbOf(result.el);
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      result.flush();
+
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+      await flush(result.fixture);
+      expect(result.fixture.componentInstance.scrolled()).toBe(49);
+      await flush(result.fixture);
+      const opt49 = result.el.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
+      expect(lb.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+
+      lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }));
+      await flush(result.fixture);
+      expect(result.fixture.componentInstance.scrolled()).toBe(0);
+      await flush(result.fixture);
+      expect(lb.getAttribute('aria-activedescendant')).toBe(
+        voptOf(result.el, 0).getAttribute('id'),
+      );
     });
 
     it('Enter activates the active descendant in single mode', () => {
