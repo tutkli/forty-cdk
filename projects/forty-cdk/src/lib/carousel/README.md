@@ -35,6 +35,15 @@ supply the markup and CSS.
 </div>
 ```
 
+### Indicators map 1:1 to slides
+
+The picker assumes **one `[forCarouselIndicator]` per `[forCarouselSlide]`**: the
+indicator at DOM index `i` targets slide `i`. Iterate the same collection that
+drives the slides (as above) so the counts always match. A mismatched count
+desynchronizes the active-indicator state and is dev-guarded by a `console.warn`
+in development builds. Grouped or summarized indicators (fewer dots than slides)
+are not supported.
+
 ## Example CSS
 
 The directive publishes geometry as CSS custom properties on the root element

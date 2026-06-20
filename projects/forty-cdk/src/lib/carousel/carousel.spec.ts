@@ -604,6 +604,66 @@ describe('ForCarousel', () => {
     });
   });
 
+  describe('indicator/slide count mismatch (dev guard)', () => {
+    @Component({
+      imports: [
+        ForCarousel,
+        ForCarouselViewport,
+        ForCarouselTrack,
+        ForCarouselSlide,
+        ForCarouselIndicators,
+        ForCarouselIndicator,
+      ],
+      template: `
+        <div forCarousel ariaLabel="test">
+          <div forCarouselViewport>
+            <div forCarouselTrack>
+              @for (s of slides(); track s; let i = $index) {
+                <div forCarouselSlide [attr.data-slide]="i">Slide {{ i }}</div>
+              }
+            </div>
+          </div>
+          <div forCarouselIndicators>
+            @for (d of dots(); track d; let i = $index) {
+              <button forCarouselIndicator [attr.data-indicator]="i"></button>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class MismatchHost {
+      readonly slides = signal([0, 1, 2, 3]);
+      readonly dots = signal([0, 1, 2, 3]);
+    }
+
+    it('warns when fewer indicators than slides are rendered', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { instance, flush } = renderHost(MismatchHost);
+      instance.dots.set([0, 1]);
+      await flush();
+
+      expect(warn).toHaveBeenCalled();
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/carousel]');
+    });
+
+    it('does not warn when indicators and slides are 1:1', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { flush } = renderHost(MismatchHost);
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not warn when no indicators are rendered', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { instance, flush } = renderHost(MismatchHost);
+      instance.dots.set([]);
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('rotation control wiring', () => {
     it('default aria-label is "Start automatic slide show" and type=button', () => {
       const { el } = renderHost(CarouselHost);
