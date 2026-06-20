@@ -29,3 +29,39 @@ export function placeholderInsertion(
   }
   return { parent: container, ref: null };
 }
+
+/**
+ * Clamps a live-sort placeholder insertion index so it cannot cross a `dragDisabled`
+ * (pinned) item. Each disabled host is a hard wall bounding the contiguous run of enabled
+ * positions that contains `origin` — the gap the dragged item was lifted from — so the
+ * placeholder stops at the first pinned item instead of travelling past it.
+ *
+ * Visual only: the committed drop index is resolved separately and is left unaffected. With
+ * no disabled host the input index is returned unchanged (clamped to the valid range).
+ *
+ * @param index Raw insertion index resolved from pointer geometry (`0 .. disabled.length`).
+ * @param disabled Disabled flag per non-lifted host, in DOM order.
+ * @param origin Insertion index the dragged item was lifted from (its source gap).
+ * @returns `index` clamped to the enabled run around `origin`.
+ */
+export function fencePlaceholderIndex(
+  index: number,
+  disabled: readonly boolean[],
+  origin: number,
+): number {
+  let lower = 0;
+  for (let i = origin - 1; i >= 0; i--) {
+    if (disabled[i]) {
+      lower = i + 1;
+      break;
+    }
+  }
+  let upper = disabled.length;
+  for (let i = origin; i < disabled.length; i++) {
+    if (disabled[i]) {
+      upper = i;
+      break;
+    }
+  }
+  return Math.max(lower, Math.min(upper, index));
+}

@@ -77,7 +77,11 @@ export class ForDraggable implements ForDraggableContext {
   /** Data payload handed back in the `dragDrop` event when this item is dropped. */
   readonly dragData = input.required<unknown>();
 
-  /** When true, this item cannot be lifted. The item remains focusable. */
+  /**
+   * When true, this item cannot be lifted. The item remains focusable. It also acts as a
+   * hard fence for the `liveSort` placeholder: a sibling being dragged cannot move its
+   * placeholder across a pinned item (the committed drop index is unaffected).
+   */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
   /** Emitted when a drag (keyboard or pointer) starts from this item. */
