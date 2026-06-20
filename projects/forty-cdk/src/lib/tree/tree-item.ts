@@ -19,6 +19,7 @@ import {
   injectTreeContainerContext,
   injectTreeContext,
 } from './tree-context';
+import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
 
 /**
  * A single node in a `ForTree`. Carries the `role="treeitem"`, its ARIA state
@@ -49,6 +50,7 @@ import {
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-checked]': 'checkboxMode() ? checkState() : null',
+    '[attr.data-drop-position]': '_dropPosition()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(pointerdown)': 'onPointerDown($event)',
@@ -59,6 +61,7 @@ export class ForTreeItem implements ForTreeItemContext {
   readonly #tree = injectTreeContext('ForTreeItem');
   readonly #container = injectTreeContainerContext('ForTreeItem');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #drag = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
 
   /** Stable identifier for this node, mirrored into `[(value)]` / `[(expanded)]`. */
   readonly value = input.required<string>();
@@ -130,6 +133,19 @@ export class ForTreeItem implements ForTreeItemContext {
     return this.#tree.roving.active() === this.#host.nativeElement;
   });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#tree.disabled());
+
+  /**
+   * Drop-indicator hook for `[forTreeNodeDrag]`: `'before'` / `'after'` when a live drag would
+   * land adjacent to this row, `null` otherwise (and always `null` without a drag coordinator).
+   * Reflected as `data-drop-position`.
+   */
+  protected readonly _dropPosition = computed<'before' | 'after' | null>(() => {
+    const indicator = this.#drag?.dropIndicator();
+    if (!indicator || indicator.anchor !== this.value()) {
+      return null;
+    }
+    return indicator.position;
+  });
 
   readonly level = computed(() =>
     this.#tree.totalCount() !== undefined

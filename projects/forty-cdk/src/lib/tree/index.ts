@@ -21,6 +21,7 @@ export {
   ForTreeNodeDrag,
   FOR_TREE_NODE_DRAG_CONTEXT,
   type ForTreeNodeDragContext,
+  type ForTreeDropIndicator,
 } from './tree-node-drag';
 export { ForTreeNodeDragHandle } from './tree-node-drag-handle';
 export { type ForTreeDragDropEvent } from './tree-drag-drop-event';

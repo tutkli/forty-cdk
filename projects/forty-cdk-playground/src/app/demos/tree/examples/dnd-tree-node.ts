@@ -24,7 +24,7 @@ import { type TreeNodeData } from './tree-node';
   ],
   host: { style: 'display: contents' },
   template: `
-    <li forTreeItem class="pg-tree-item" [value]="node().id">
+    <li forTreeItem class="pg-tree-item" [value]="node().id" [style.--pg-tree-node-level]="level()">
       <div forTreeItemLabel class="pg-tree-label">
         <span forTreeNodeDragHandle class="pg-tree-handle" aria-hidden="true">⠿</span>
         @if (node().children?.length) {
@@ -40,7 +40,7 @@ import { type TreeNodeData } from './tree-node';
       @if (node().children?.length && expandedIds().includes(node().id)) {
         <ul forTreeGroup class="pg-tree-group">
           @for (child of node().children ?? []; track child.id) {
-            <app-dnd-tree-node [node]="child" [expandedIds]="expandedIds()" />
+            <app-dnd-tree-node [node]="child" [expandedIds]="expandedIds()" [level]="level() + 1" />
           }
         </ul>
       }
@@ -50,4 +50,5 @@ import { type TreeNodeData } from './tree-node';
 export class DndTreeNode {
   readonly node = input.required<TreeNodeData>();
   readonly expandedIds = input.required<readonly string[]>();
+  readonly level = input(1);
 }
