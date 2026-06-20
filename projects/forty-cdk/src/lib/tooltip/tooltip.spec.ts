@@ -1076,6 +1076,30 @@ describe('ForTooltip', () => {
       r.fixture.detectChanges();
       expect(r.instance.isOpen()).toBe(false);
     });
+
+    it('reflects data-reduced-motion on the root and content', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+
+      const root = r.query<HTMLElement>('[forTooltip]')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(root.getAttribute('data-reduced-motion')).toBe('');
+      expect(content.getAttribute('data-reduced-motion')).toBe('');
+    });
+  });
+
+  describe('reduced-motion styling hook (default)', () => {
+    it('omits data-reduced-motion when reduced motion is not requested', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+
+      const root = r.query<HTMLElement>('[forTooltip]')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(root.hasAttribute('data-reduced-motion')).toBe(false);
+      expect(content.hasAttribute('data-reduced-motion')).toBe(false);
+    });
   });
 
   describe('zoneless reactivity', () => {

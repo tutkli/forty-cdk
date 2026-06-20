@@ -34,6 +34,8 @@ export interface ForPopoverContext {
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
+  /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
+  readonly reducedMotion: Signal<boolean>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 

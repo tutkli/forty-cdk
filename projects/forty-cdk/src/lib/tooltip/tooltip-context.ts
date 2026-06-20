@@ -32,6 +32,8 @@ export interface ForTooltipContext {
   readonly clipUntilPositioned: Signal<boolean>;
   /** Whether the pointer may move into the content without dismissing the tooltip. */
   readonly hoverableContent: Signal<boolean>;
+  /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
+  readonly reducedMotion: Signal<boolean>;
   /** Trigger element id — a consumer-set host `id` is adopted, else a generated one. */
   readonly triggerId: Signal<string>;
   /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */

@@ -191,14 +191,16 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Data attributes
 
-| Piece                 | Attribute            | Values             |
-| --------------------- | -------------------- | ------------------ |
-| `[forPopover]`        | `data-state`         | `open` \| `closed` |
-| `[forPopover]`        | `data-disabled`      | present \| absent  |
-| `[forPopoverTrigger]` | `data-state`         | `open` \| `closed` |
-| `[forPopoverTrigger]` | `data-disabled`      | present \| absent  |
-| `[forPopoverContent]` | `data-state`         | `open` \| `closed` |
-| `[forPopoverArrow]`   | `data-popover-arrow` | present            |
+| Piece                 | Attribute             | Values             |
+| --------------------- | --------------------- | ------------------ |
+| `[forPopover]`        | `data-state`          | `open` \| `closed` |
+| `[forPopover]`        | `data-disabled`       | present \| absent  |
+| `[forPopover]`        | `data-reduced-motion` | present \| absent  |
+| `[forPopoverTrigger]` | `data-state`          | `open` \| `closed` |
+| `[forPopoverTrigger]` | `data-disabled`       | present \| absent  |
+| `[forPopoverContent]` | `data-state`          | `open` \| `closed` |
+| `[forPopoverContent]` | `data-reduced-motion` | present \| absent  |
+| `[forPopoverArrow]`   | `data-popover-arrow`  | present            |
 
 ### CSS custom properties
 
@@ -223,6 +225,16 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 }
 .popover-trigger[data-state='open'] .chevron {
   transform: rotate(180deg);
+}
+```
+
+### Reduced motion
+
+`[forPopover]` and `[forPopoverContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own `animate.enter` / `animate.leave` and CSS transitions out without re-deriving the query. The attribute flips reactively if the preference changes mid-session. The popover toggles open / closed synchronously on click, so there is no JS-coordinated timing to skip — only the visual transitions (which are yours) opt out.
+
+```css
+.popover-content[data-reduced-motion] {
+  transition: none;
 }
 ```
 

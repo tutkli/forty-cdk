@@ -30,6 +30,7 @@ import { injectTooltipContext } from './tooltip-context';
     role: 'tooltip',
     '[id]': 'ctx.contentId()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     '[style.pointer-events]': 'ctx.hoverableContent() ? null : "none"',
     '(pointerenter)': 'ctx.pointerEnterContent()',
     '(pointerleave)': 'ctx.pointerLeaveContent()',
