@@ -640,12 +640,55 @@ afterEveryRender(() => {
 });
 ```
 
+### Scroll container (table root vs. ancestor)
+
+By default the **table root** is the scroll container — the element carrying `[forTableVirtualized]` scrolls its own rows (the `overflow: auto` element in the examples above), so `[scrollElement]` can be left unset.
+
+When the element that actually scrolls is an **ancestor** of the table — e.g. an app-shell viewport that scrolls projected content — the table cannot inject a scroll container it does not own. Bind `[scrollElement]` to that ancestor by hand (a template reference variable is the simplest source):
+
+```html
+<div #shell style="height: 100vh; overflow: auto;">
+  <!-- other app-shell content scrolls together with the table -->
+  <div
+    forTable
+    forTableVirtualized
+    mode="grid"
+    ariaLabel="Big table"
+    [rowCount]="10000"
+    [scrollElement]="shell"
+    #v="forTableVirtualized"
+    style="position: relative;"
+  >
+    <!-- header + windowed rows exactly as above -->
+  </div>
+</div>
+```
+
+#### Wrapping: re-exposing / renaming `scrollElement`
+
+A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirectives` can surface `scrollElement` directly, or rename it, via input aliasing — no bridging `effect` is needed because the value flows straight through:
+
+```ts
+@Component({
+  selector: 'app-data-grid',
+  hostDirectives: [
+    {
+      directive: ForTableVirtualized,
+      inputs: ['scrollElement: scrollContainer'],
+    },
+  ],
+})
+export class DataGrid {}
+```
+
+Consumers of the wrapper then bind `[scrollContainer]="shell"`.
+
 ### `[forTableVirtualized]` inputs
 
 | Input             | Type                  | Default | Description                                                                                                         |
 | ----------------- | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
 | `estimateRowSize` | `number`              | `44`    | Estimated row height in px. Used as the fixed size in fixed-size mode and as the initial estimate in measured mode. |
-| `scrollElement`   | `HTMLElement \| null` | `null`  | Explicit scroll container. Defaults to the table root element.                                                      |
+| `scrollElement`   | `HTMLElement \| null` | `null`  | Explicit scroll container. Defaults to the table root element; bind to an ancestor when it owns the scroll.         |
 
 ### `[forTableVirtualized]` API (`#v="forTableVirtualized"`)
 

@@ -41,7 +41,14 @@ export class ForTableVirtualized {
   /** Estimated row size in px along the scroll axis (the fixed-size fast path). Read for the size estimate. */
   readonly estimateRowSize = input(44, { transform: numberAttribute });
 
-  /** Scroll container. Defaults to the table root element (the scroll container in `<div>` grid mode). */
+  /**
+   * Scroll container. Defaults to the table root element (the scroll container in `<div>` grid
+   * mode). Bind it explicitly when the scroll container is an **ancestor** of the table — e.g. an
+   * app-shell viewport that scrolls projected content — since the table cannot inject an ancestor
+   * it does not own. A design-system wrapper can re-expose or rename this input through
+   * `hostDirectives` input aliasing (`inputs: ['scrollElement: scrollContainer']`) with no bridging
+   * effect required.
+   */
   readonly scrollElement = input<HTMLElement | null>(null);
 
   readonly #scrollElement = computed(() => this.scrollElement() ?? this.#rootEl);
