@@ -26,6 +26,27 @@ Headless drag-and-drop / dialog file-selection primitive. No ARIA role is impose
 </div>
 ```
 
+### Directory (folder) selection
+
+Set `directory` to switch the native picker into folder-selection mode (mirrored onto the input as `webkitdirectory`). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
+
+```html
+<div forFileUpload directory (filesChange)="onFolder($event)">
+  <input forFileUploadInput aria-label="Upload folder" class="sr-only" />
+  <button forFileUploadTrigger>Choose folder</button>
+</div>
+```
+
+```ts
+onFolder(files: FileList): void {
+  for (const file of Array.from(files)) {
+    console.log(file.webkitRelativePath); // e.g. "photos/2024/img.jpg"
+  }
+}
+```
+
+Despite the `webkit-` prefix the attribute is supported across modern Chromium, Firefox, and WebKit. Directory drag-and-drop (`DataTransferItem.webkitGetAsEntry`) is out of scope — drop continues to surface `DataTransfer.files` only.
+
 ### Disabled
 
 ```html
@@ -34,6 +55,15 @@ Headless drag-and-drop / dialog file-selection primitive. No ARIA role is impose
   <button forFileUploadTrigger>Choose files</button>
 </div>
 ```
+
+## Inputs
+
+| Input       | Type             | Default | Description                                                                    |
+| ----------- | ---------------- | ------- | ------------------------------------------------------------------------------ |
+| `accept`    | `string \| null` | `null`  | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`). |
+| `multiple`  | `boolean`        | `false` | Whether multiple files can be selected at once.                                |
+| `directory` | `boolean`        | `false` | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).     |
+| `disabled`  | `boolean`        | `false` | Whether the zone and all its pieces are disabled.                              |
 
 ## Data attributes
 

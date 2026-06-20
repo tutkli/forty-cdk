@@ -13,6 +13,7 @@ import { queryFlag } from './_query-flag';
       data-testid="zone"
       [disabled]="disabled"
       [multiple]="multiple"
+      [directory]="directory"
       (filesChange)="onFiles($event)"
     >
       <button forFileUploadTrigger data-testid="trigger">Choose files</button>
@@ -25,6 +26,7 @@ import { queryFlag } from './_query-flag';
 export class FileUploadFixture {
   protected readonly disabled = queryFlag('disabled');
   protected readonly multiple = queryFlag('multiple');
+  protected readonly directory = queryFlag('directory');
 
   protected readonly fileNames = signal('');
   protected readonly fileCount = signal('0');
