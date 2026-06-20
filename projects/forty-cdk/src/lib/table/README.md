@@ -631,7 +631,7 @@ Key points:
 
 ```ts
 import { afterEveryRender } from '@angular/core';
-import { ForTableVirtualized } from 'forty-cdk';
+import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 afterEveryRender(() => {
   for (const el of this.rowEls()) {
