@@ -30,7 +30,13 @@ export class ForAccordionItem implements ForAccordionItemContext {
   /** Unique identifier of this item within the accordion. Required. */
   readonly value = input.required<string>();
 
-  /** When true, the trigger ignores clicks and reflects `disabled`. */
+  /**
+   * When true, the trigger ignores clicks and reflects the native `disabled`
+   * attribute (not `aria-disabled`). The trigger is therefore dropped from the
+   * Tab order and skipped by arrow-key navigation, but stays in the
+   * accessibility tree so screen readers still announce it. See
+   * `ForAccordionTrigger` for the rationale (rule #561 D2).
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly #triggerId = signal(this.#idGen.next('for-accordion-trigger'));
