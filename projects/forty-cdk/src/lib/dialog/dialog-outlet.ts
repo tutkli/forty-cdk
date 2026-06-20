@@ -4,12 +4,17 @@ import {
   DestroyRef,
   Directive,
   inject,
-  Injector,
-  type Signal,
+  type Injector,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
+import { OverlayContextInjector } from '../_internal/overlay-manager/overlay-context-injector';
+import type {
+  OverlayManagerEntry,
+  OverlayManagerOutlet,
+  OverlayManagerOutletHost,
+} from '../_internal/overlay-manager/overlay-manager';
 import type {
   VetoableEvent,
   VetoableNativeEvent,
@@ -20,16 +25,14 @@ import { ForDialog } from './dialog';
  * @internal Minimal surface the outlet needs from `ForDialogManager` — avoids
  * a circular import between the outlet file and the manager file.
  */
-export interface ForDialogOutletHost {
-  readonly entries: Signal<readonly ForDialogEntry[]>;
-  closeAllForDestroy(): void;
-}
+export type ForDialogOutletHost = OverlayManagerOutletHost<ForDialogEntry>;
 
 /**
- * @internal Shape of a single open dialog entry stored in the manager.
+ * Shape of a single open dialog entry stored in the manager.
+ *
+ * Internal — not re-exported from `public-api.ts`.
  */
-export interface ForDialogEntry {
-  readonly id: string;
+export interface ForDialogEntry extends OverlayManagerEntry {
   readonly component: Type<unknown>;
   readonly hostClass: string;
   readonly dismissible: boolean | undefined;
@@ -55,24 +58,14 @@ export interface ForDialogEntry {
 /**
  * @internal Exposes the element injector at a child of the row's `[forDialog]`
  * element so the user component rendered via `NgComponentOutlet` resolves
- * `FOR_DIALOG_CONTEXT` from the enclosing `[forDialog]` host.
- *
- * Mirrors `ForToastOutlet` — sits inside the `[forDialog]` element, so its
- * own element injector already resolves `FOR_DIALOG_CONTEXT`. The outlet feeds
- * that injector to `entry.injectorFor(ctx.injector)`, making the user
- * component's injector inherit `FOR_DIALOG_CONTEXT` alongside `FOR_DIALOG_DATA`
- * / `ForDialogRef` / consumer providers — so `[forDialogClose]`,
- * `[forDialogTitle]`, `[forDialogDescription]`, `[forDialogBackdrop]`, and
- * `inject(ForDialogRef)` / `injectDialogData()` all resolve exactly as in the
- * declarative path.
+ * `FOR_DIALOG_CONTEXT` from the enclosing `[forDialog]` host. The shared body
+ * lives in `OverlayContextInjector`; this only carries the dialog selector.
  */
 @Directive({
   selector: '[forDialogContextInjector]',
   exportAs: 'forDialogContextInjector',
 })
-export class ForDialogContextInjector {
-  readonly injector = inject(Injector);
-}
+export class ForDialogContextInjector extends OverlayContextInjector {}
 
 /**
  * @internal Outlet component created once by `ForDialogManager` on the first
@@ -120,7 +113,7 @@ export class ForDialogContextInjector {
     }
   `,
 })
-export class ForDialogOutlet {
+export class ForDialogOutlet implements OverlayManagerOutlet<ForDialogEntry> {
   readonly #destroyRef = inject(DestroyRef);
   #host: ForDialogOutletHost | null = null;
 

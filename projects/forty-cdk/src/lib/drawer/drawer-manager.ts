@@ -1,20 +1,14 @@
 import {
-  ApplicationRef,
-  computed,
   createComponent,
-  DOCUMENT,
-  EnvironmentInjector,
   inject,
   Injectable,
   InjectionToken,
-  Injector,
   type Provider,
-  signal,
   type Type,
 } from '@angular/core';
 
 import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { OverlayManagerCore } from '../_internal/overlay-manager/overlay-manager';
 import {
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -264,75 +258,16 @@ interface InternalDrawerEntry extends ForDrawerEntry {
  * `injectDrawerData<T>()`) for the payload.
  */
 @Injectable({ providedIn: 'root' })
-export class ForDrawerManager {
-  readonly #appRef = inject(ApplicationRef);
-  readonly #envInjector = inject(EnvironmentInjector);
-  readonly #idGen = inject(IdGenerator);
+export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
-  readonly #document = inject(DOCUMENT);
 
-  readonly #entries = signal<readonly InternalDrawerEntry[]>([]);
-
-  /** Reactive count of currently open programmatic drawers. */
-  readonly openCount = computed(() => this.#entries().length);
-
-  #outletRef: ReturnType<typeof createComponent<ForDrawerOutlet>> | null = null;
-  #destroying = false;
-
-  #closeAllForDestroy(): void {
-    this.#destroying = true;
-    for (const entry of this.#entries()) {
-      entry.ref.close();
-    }
-  }
-
-  #beginLeave(
-    id: string,
-    leaveClass: string | undefined,
-    backdropLeaveClass: string | undefined,
-    remove: () => void,
-  ): void {
-    if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
-      remove();
-      return;
-    }
-    // Drive the exit animation on the host and, in lockstep, on the portaled
-    // backdrop. The backdrop is matched by the same per-instance id (it
-    // reflects `data-for-drawer-id` from FOR_DRAWER_INSTANCE_ID) because its
-    // template `animate.leave` never fires under the manager's
-    // `ngComponentOutlet` mount — see ForDrawerBackdrop / backdropAnimateLeave.
-    const targets: HTMLElement[] = [];
-    if (leaveClass) {
-      const host = this.#document.querySelector<HTMLElement>(
-        `[data-for-drawer-id="${id}"]:not([data-for-drawer-backdrop])`,
-      );
-      if (host && typeof host.getAnimations === 'function') {
-        host.classList.add(leaveClass);
-        targets.push(host);
-      }
-    }
-    if (backdropLeaveClass) {
-      const backdrop = this.#document.querySelector<HTMLElement>(
-        `[data-for-drawer-backdrop][data-for-drawer-id="${id}"]`,
-      );
-      if (backdrop && typeof backdrop.getAnimations === 'function') {
-        backdrop.classList.add(backdropLeaveClass);
-        targets.push(backdrop);
-      }
-    }
-    if (targets.length === 0) {
-      remove();
-      return;
-    }
-    requestAnimationFrame(() => {
-      const animations = targets.flatMap((el) => el.getAnimations());
-      if (animations.length === 0) {
-        remove();
-        return;
-      }
-      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
-        () => remove(),
-      );
+  constructor() {
+    super({
+      idPrefix: 'for-drawer-instance',
+      idAttribute: 'data-for-drawer-id',
+      backdropAttribute: 'data-for-drawer-backdrop',
+      createOutlet: (environmentInjector) =>
+        createComponent(ForDrawerOutlet, { environmentInjector }),
     });
   }
 
@@ -347,32 +282,18 @@ export class ForDrawerManager {
       }
     }
 
-    this.#ensureOutlet();
-
-    const id = this.#idGen.next('for-drawer-instance');
-    let removed = false;
-    const remove = (): void => {
-      if (removed) {
-        return;
-      }
-      removed = true;
-      this.#entries.update((arr) => arr.filter((e) => e.id !== id));
-    };
+    const { id, remove } = this.nextId();
 
     const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
     const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
     const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
 
     const ref = new ForDrawerRef<R>(() =>
-      this.#beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+      this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
     );
 
     const hostClass = resolveConfigClass(config) ?? '';
-    const consumerProviders = config.providers ?? [];
     const data = config.data ?? null;
-
-    let cachedInjector: Injector | null = null;
-    let cachedParent: Injector | null = null;
 
     const entry: InternalDrawerEntry = {
       id,
@@ -409,42 +330,16 @@ export class ForDrawerManager {
       handleClose(value: unknown): void {
         ref.close(value as R);
       },
-      injectorFor(parent: Injector): Injector {
-        if (cachedInjector && cachedParent === parent) {
-          return cachedInjector;
-        }
-        cachedParent = parent;
-        cachedInjector = Injector.create({
-          parent,
-          providers: [
-            { provide: FOR_DRAWER_DATA, useValue: data },
-            { provide: FOR_DRAWER_INSTANCE_ID, useValue: id },
-            { provide: ForDrawerRef, useValue: ref },
-            ...consumerProviders,
-          ],
-        });
-        return cachedInjector;
-      },
+      injectorFor: this.createInjectorFactory([
+        { provide: FOR_DRAWER_DATA, useValue: data },
+        { provide: FOR_DRAWER_INSTANCE_ID, useValue: id },
+        { provide: ForDrawerRef, useValue: ref },
+        ...(config.providers ?? []),
+      ]),
     };
 
-    this.#entries.update((arr) => [...arr, entry]);
-    this.#appRef.tick();
+    this.register(entry);
 
     return ref;
-  }
-
-  #ensureOutlet(): void {
-    if (this.#outletRef) {
-      return;
-    }
-    const outletRef = createComponent(ForDrawerOutlet, {
-      environmentInjector: this.#envInjector,
-    });
-    this.#appRef.attachView(outletRef.hostView);
-    outletRef.instance.init({
-      entries: this.#entries.asReadonly(),
-      closeAllForDestroy: () => this.#closeAllForDestroy(),
-    });
-    this.#outletRef = outletRef;
   }
 }
