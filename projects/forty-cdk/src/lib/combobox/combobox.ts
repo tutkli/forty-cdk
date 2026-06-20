@@ -5,12 +5,10 @@ import {
   effect,
   inject,
   input,
-  linkedSignal,
   model,
   numberAttribute,
   output,
   signal,
-  untracked,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -42,6 +40,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
+import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxAutocomplete,
@@ -52,7 +51,6 @@ import {
   type ForComboboxOptionHandle,
 } from './combobox-context';
 import { OptionLabelCache } from './combobox-label-cache';
-import { tryReadHandle } from './combobox-snapshot-fold';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
@@ -371,77 +369,22 @@ export class ForCombobox<T = string>
   readonly lastCloseReason = this.#lastCloseReason.asReadonly();
 
   /**
-   * The activedescendant pointer. A `linkedSignal` so the
-   * "what should be highlighted given open / items / autoHighlight" decision
-   * is a **pure derivation**, never a write from an `effect` (the banned
-   * state-propagation pattern). It is still writable for the genuinely
-   * imperative moves that own their own scroll — arrow / Home / End
-   * navigation, pointer-move hover, multi-mode activation, and the virtualized
-   * pending-nav resolution (`navigate` / `seedFromIndexedSnapshot` /
-   * `tryResolvePending` in `combobox-virtualized-navigator.ts`).
-   *
-   * The reset/seed rule, in order:
-   * - On a `query` change the previously-active option may have been filtered
-   *   out, so the prior pointer is dropped.
-   * - A pointer that no longer matches a registered option is dropped
-   *   (covers the consumer mutating the list without touching `query`).
-   * - When a valid pointer survives, it is preserved (arrow nav, hover).
-   * - Otherwise, in the **non-virtualized** case, auto-highlight seeds the
-   *   first / last enabled option (per `initialFocus`) while the listbox is
-   *   open. The virtualized case returns `null` here and the effect seeds it
-   *   imperatively, because that seed must order options by absolute
-   *   `posInSet` and must lose to a pending `(scrollToIndex)` resolution.
+   * The activedescendant pointer. Built by {@link createActiveIdSignal} as a
+   * `linkedSignal` so the highlight decision is a pure derivation, never a write
+   * from an `effect`; it stays writable for the imperative moves that own their
+   * own scroll (arrow / Home / End navigation, hover, multi-mode activation, and
+   * the virtualized pending-nav resolution). The reset/seed rule lives with the
+   * factory in `combobox-auto-highlight.ts`.
    */
-  readonly #activeId = linkedSignal<
-    {
-      query: string;
-      open: boolean;
-      autoHighlight: boolean;
-      virtualized: boolean;
-      initialFocus: ForComboboxInitialFocus;
-      items: readonly ForComboboxOptionHandle<T>[];
-      value: readonly T[];
-      equals: (a: T, b: T) => boolean;
-    },
-    string | null
-  >({
-    source: () => ({
-      query: this.query(),
-      open: this.open(),
-      autoHighlight: this.autoHighlight(),
-      virtualized: this.totalCount() !== undefined,
-      initialFocus: this.#initialFocus(),
-      items: this.#items.items(),
-      value: this.value(),
-      equals: this.isItemEqualToValue(),
-    }),
-    computation: (
-      { query, open, autoHighlight, virtualized, initialFocus, items, value, equals },
-      prev,
-    ) => {
-      const queryChanged = prev !== undefined && prev.source.query !== query;
-      let current = queryChanged ? null : (prev?.value ?? null);
-      if (current !== null && !items.some((o) => o.id() === current)) {
-        current = null;
-      }
-      if (current !== null) {
-        return current;
-      }
-      if (virtualized || !autoHighlight || !open || items.length === 0) {
-        return null;
-      }
-      if (initialFocus === 'selected') {
-        const selected = findSelectedEnabled(items, value, equals);
-        if (selected === NOT_READY) {
-          return null;
-        }
-        if (selected) {
-          return selected.id();
-        }
-      }
-      const target = initialFocus === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
-      return target?.id() ?? null;
-    },
+  readonly #activeId = createActiveIdSignal<T>({
+    query: this.query,
+    open: this.open,
+    autoHighlight: this.autoHighlight,
+    virtualized: () => this.totalCount() !== undefined,
+    initialFocus: this.#initialFocus,
+    items: this.#items.items,
+    value: this.value,
+    equals: this.isItemEqualToValue,
   });
   readonly activeId = this.#activeId.asReadonly();
 
@@ -531,71 +474,24 @@ export class ForCombobox<T = string>
       disabled: this.effectiveDisabled,
     });
 
-    // This effect owns only the *imperative* tail of the auto-highlight flow;
-    // the activedescendant decision itself is a pure derivation inside the
-    // `#activeId` linkedSignal above. It reacts to `#items.items()`,
-    // `autoHighlight()` and `open()` and:
-    //
-    // 1. Primes the label cache. `#labelCache.prime()` eagerly pulls the label
-    //    cache so its `linkedSignal` `prev` slot gets seeded while the listbox
-    //    is open — without it the lazy cache never runs during the open cycle
-    //    in non-virtualized usage and persistence across close→re-open would
-    //    start from an empty `prev`. The virtualization navigator (and its
-    //    position-map) is primed only when the consumer set `totalCount()`, so
-    //    a plain combobox never builds it.
-    // 2. Virtualized only: resolves a pending `(scrollToIndex)` navigation —
-    //    once the option for the requested posInSet mounts, `tryResolvePending`
-    //    seeds activedescendant to its id and scrolls it into view. This is the
-    //    single sanctioned `#activeId` write from an effect, and it is a
-    //    legitimate side effect (not state propagation): it integrates the
-    //    consumer's virtualizer mounting a row asynchronously, and it must win
-    //    over the auto-highlight seed — which is why the virtualized seed can't
-    //    live in the linkedSignal. `seedFromIndexedSnapshot` then seeds the
-    //    topmost / bottommost *rendered* enabled option (ordered by absolute
-    //    `posInSet`) deliberately passively — it only moves the pointer, never
-    //    the consumer's scroll position (see `combobox-virtualized-navigator.ts`).
-    // 3. Non-virtualized: scrolls the auto-highlight-seeded option into view so
-    //    a seed that lands below the fold is visible, for parity with
-    //    `navigate()`. The seed itself comes from the linkedSignal; this is its
-    //    imperative tail. `#activeId` is read `untracked` so the scroll never
-    //    re-triggers the effect, and pointer-move hover doesn't reach here (it
-    //    changes none of the tracked reads), so hovering never scrolls.
+    // The activedescendant *decision* is a pure derivation in `#activeId`; this
+    // effect runs only its imperative tail (label-cache priming, virtualized
+    // pending-nav resolution + passive seed, non-virtualized scroll-into-view).
+    // Full rationale lives with `runAutoHighlightBridge` in
+    // `combobox-auto-highlight.ts`.
     effect(() => {
-      this.#labelCache.prime();
-      const items = this.#items.items();
-      const open = this.open();
-      const autoHighlight = this.autoHighlight();
-      const virtualized = this.totalCount() !== undefined;
-
-      if (virtualized) {
-        const navigator = this.#requireNavigator();
-        navigator.prime();
-        if (navigator.tryResolvePending()) {
-          return;
-        }
-        if (
-          autoHighlight &&
-          open &&
-          untracked(() => this.#activeId()) === null &&
-          items.length > 0
-        ) {
-          navigator.seedFromIndexedSnapshot(this.#initialFocus() === 'last' ? 'last' : 'first');
-        }
-        return;
-      }
-
-      if (!open) {
-        this.#lastPositionedId = null;
-        return;
-      }
-      const activeId = untracked(() => this.#activeId());
-      if (activeId === null || activeId === this.#lastPositionedId) {
-        return;
-      }
-      const active = items.find((o) => o.id() === activeId);
-      // `scrollIntoView` is missing in some test environments — safe-call.
-      active?.host.scrollIntoView?.({ block: 'nearest' });
-      this.#lastPositionedId = activeId;
+      runAutoHighlightBridge<T>({
+        labelCache: this.#labelCache,
+        requireNavigator: () => this.#requireNavigator(),
+        items: this.#items.items,
+        open: this.open,
+        autoHighlight: this.autoHighlight,
+        virtualized: () => this.totalCount() !== undefined,
+        initialFocus: this.#initialFocus,
+        getActiveId: () => this.#activeId(),
+        getLastPositionedId: () => this.#lastPositionedId,
+        setLastPositionedId: (id) => (this.#lastPositionedId = id),
+      });
     });
   }
 
@@ -812,27 +708,10 @@ export class ForCombobox<T = string>
   }
 
   readonly #cachedOptionsMemo = computed<readonly { id: string; value: T; label: string }[]>(() => {
-    const live = this.#labelCache.entries();
     if (this.totalCount() === undefined) {
-      return live;
+      return this.#labelCache.entries();
     }
-    // Virtualized: merge in entries that previously rendered so typeahead and
-    // inline autocomplete can match against options scrolled out of view. The
-    // live entries take precedence (freshest data) and appear first, followed
-    // by off-window indexed entries sorted by absolute position.
-    const indexed = this.#requireNavigator().snapshotByPos();
-    if (indexed.size === 0) {
-      return live;
-    }
-    const seen = new Set(live.map((o) => o.id));
-    const merged: { id: string; value: T; label: string }[] = [...live];
-    const positions = [...indexed.keys()].sort((a, b) => a - b);
-    for (const pos of positions) {
-      const entry = indexed.get(pos)!;
-      if (seen.has(entry.id)) continue;
-      merged.push({ id: entry.id, value: entry.value, label: entry.label });
-    }
-    return merged;
+    return this.#labelCache.mergedEntries(this.#requireNavigator().snapshotByPos());
   });
 
   cachedOptions(): readonly { id: string; value: T; label: string }[] {
@@ -959,52 +838,4 @@ export class ForCombobox<T = string>
     }
     this.markTouched();
   }
-}
-
-function findFirstEnabled<T>(
-  items: readonly ForComboboxOptionHandle<T>[],
-): ForComboboxOptionHandle<T> | null {
-  for (const item of items) {
-    if (!item.disabled()) {
-      return item;
-    }
-  }
-  return null;
-}
-
-function findLastEnabled<T>(
-  items: readonly ForComboboxOptionHandle<T>[],
-): ForComboboxOptionHandle<T> | null {
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    if (item && !item.disabled()) {
-      return item;
-    }
-  }
-  return null;
-}
-
-const NOT_READY = Symbol('forty-cdk/combobox:not-ready');
-
-function findSelectedEnabled<T>(
-  items: readonly ForComboboxOptionHandle<T>[],
-  values: readonly T[],
-  equals: (a: T, b: T) => boolean,
-): ForComboboxOptionHandle<T> | null | typeof NOT_READY {
-  if (values.length === 0) {
-    return null;
-  }
-  for (const item of items) {
-    if (item.disabled()) {
-      continue;
-    }
-    const read = tryReadHandle(() => ({ value: item.value() }));
-    if (read === null) {
-      return NOT_READY;
-    }
-    if (values.some((sel) => equals(read.value, sel))) {
-      return item;
-    }
-  }
-  return null;
 }
