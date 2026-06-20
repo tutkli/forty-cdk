@@ -318,6 +318,7 @@ class TotalSelectionTableHost {
           column="name"
           [(direction)]="direction"
           [disableClear]="disableClear()"
+          [firstClickDirection]="firstClickDirection()"
           [sortable]="sortable()"
           (sortChange)="lastSort = $event"
           data-testid="sort-name"
@@ -331,6 +332,7 @@ class TotalSelectionTableHost {
 class SortTableHost {
   readonly direction = signal<TableSortDirection>('none');
   readonly disableClear = signal(false);
+  readonly firstClickDirection = signal<'ascending' | 'descending'>('ascending');
   readonly sortable = signal(true);
   lastSort: TableSortDescriptor | null = null;
 }
@@ -1290,6 +1292,48 @@ describe('ForTable', () => {
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('firstClickDirection=descending: fresh column cycles descending → ascending → none', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      instance.firstClickDirection.set('descending');
+      flush();
+      const h = sortHeader(el);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'none' });
+    });
+
+    it('firstClickDirection=descending + disableClear: cycles descending ↔ ascending, never none', () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      instance.firstClickDirection.set('descending');
+      instance.disableClear.set(true);
+      flush();
+      const h = sortHeader(el);
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
     });
 
     it('Enter activates the sort header', () => {
