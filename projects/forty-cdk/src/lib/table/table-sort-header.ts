@@ -26,8 +26,13 @@ export interface TableSortDescriptor {
  * the host attribute; `aria-sort` / `data-sorted` and click / keyboard activation stay
  * on the cell.
  *
- * Cycle: `none → ascending → descending → none` (default).
+ * Cycle (default `firstClickDirection='ascending'`): `none → ascending → descending → none`.
  * With `disableClear`: `none → ascending → descending → ascending`.
+ *
+ * `firstClickDirection='descending'` flips the entry pole, so a freshly activated
+ * column starts descending: `none → descending → ascending → none` (and with
+ * `disableClear`: `none → descending → ascending → descending`) — the descending-first
+ * behavior used by single-always-active sort descriptors.
  */
 @Directive({
   selector: '[forTableSortHeader]',
@@ -61,6 +66,14 @@ export class ForTableSortHeader {
    * Useful when clearing the sort is not allowed.
    */
   readonly disableClear = input(false, { transform: booleanAttribute });
+
+  /**
+   * Direction a previously-unsorted column enters on its first activation (the
+   * `'none' → ?` step of the cycle). Defaults to `'ascending'`. Set to `'descending'`
+   * for descending-first columns. The toggle between the two sorted directions and the
+   * optional `'none'` step (`disableClear`) are unchanged.
+   */
+  readonly firstClickDirection = input<'ascending' | 'descending'>('ascending');
 
   /**
    * When `false`, the header is fully inert: no `tabindex`, no `aria-sort`, and click /
@@ -103,8 +116,10 @@ export class ForTableSortHeader {
   }
 
   #next(current: TableSortDirection): TableSortDirection {
-    if (current === 'none') return 'ascending';
-    if (current === 'ascending') return 'descending';
-    return this.disableClear() ? 'ascending' : 'none';
+    const first = this.firstClickDirection();
+    const second = first === 'ascending' ? 'descending' : 'ascending';
+    if (current === 'none') return first;
+    if (current === first) return second;
+    return this.disableClear() ? first : 'none';
   }
 }
