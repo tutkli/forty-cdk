@@ -41,7 +41,16 @@ export class ForAccordionTrigger {
   /**
    * APG: aria-disabled is true only when the panel is open AND the accordion
    * disallows collapse. A real `disabled` item is reflected via the native
-   * `disabled` attribute instead.
+   * `disabled` attribute instead — the sanctioned exception in rule #561 (D2):
+   * the trigger is a real single-purpose `<button>`, not a roving collection
+   * item (every trigger stays independently in the Tab order; the arrow-key
+   * navigation is an APG-optional enhancement layered on top, not a
+   * roving-tabindex collection), so native `disabled` is correct here. The
+   * button stays in the accessibility tree — screen readers still announce it
+   * as unavailable in browse mode — while being dropped from the Tab order and
+   * the arrow-key navigation (which `focusByOffset` already skips), keeping
+   * disabled triggers uniformly unreachable. The APG Accordion pattern does not
+   * require disabled headers to remain focusable.
    */
   protected readonly ariaDisabled = computed(() => {
     if (this.item.disabled()) {
