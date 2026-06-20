@@ -445,6 +445,8 @@ export class ForCombobox<T = string>
   });
   readonly activeId = this.#activeId.asReadonly();
 
+  #lastPositionedId: string | null = null;
+
   readonly #pointerSuppression: PointerSuppression = createPointerSuppression();
 
   /**
@@ -583,15 +585,17 @@ export class ForCombobox<T = string>
       }
 
       if (!open) {
+        this.#lastPositionedId = null;
         return;
       }
       const activeId = untracked(() => this.#activeId());
-      if (activeId === null) {
+      if (activeId === null || activeId === this.#lastPositionedId) {
         return;
       }
       const active = items.find((o) => o.id() === activeId);
       // `scrollIntoView` is missing in some test environments — safe-call.
       active?.host.scrollIntoView?.({ block: 'nearest' });
+      this.#lastPositionedId = activeId;
     });
   }
 
@@ -779,6 +783,7 @@ export class ForCombobox<T = string>
     }
     this.#activeId.set(target.id());
     this.#scrollActiveIntoView(target.host);
+    this.#lastPositionedId = target.id();
   }
 
   setQueryFromInput(query: string): void {
@@ -798,6 +803,7 @@ export class ForCombobox<T = string>
 
   setActiveId(id: string | null): void {
     this.#activeId.set(id);
+    this.#lastPositionedId = id;
   }
 
   #scrollActiveIntoView(host: HTMLElement): void {

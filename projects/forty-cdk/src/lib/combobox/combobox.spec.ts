@@ -849,6 +849,103 @@ describe('ForCombobox', () => {
         }
       }
     });
+
+    describe('append vs filter scroll-into-view (#931)', () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forCombobox [(query)]="query" [(open)]="open" [autoHighlight]="true">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                @for (it of items(); track it.id) {
+                  <div
+                    [attr.data-test-id]="it.id"
+                    forComboboxOption
+                    [value]="it.id"
+                    [label]="it.label"
+                  >
+                    {{ it.label }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class AppendHost {
+        readonly query = signal('');
+        readonly open = signal(false);
+        readonly items = signal<readonly FruitItem[]>([
+          { id: 'apple', label: 'Apple' },
+          { id: 'apricot', label: 'Apricot' },
+        ]);
+      }
+
+      function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
+        const had = 'scrollIntoView' in Element.prototype;
+        const stub = vi.fn();
+        Element.prototype.scrollIntoView = stub;
+        return run(stub).finally(() => {
+          if (!had) {
+            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+          }
+        });
+      }
+
+      it('does not re-scroll the activedescendant when options are appended, not filtered', () =>
+        withScrollStub(async (stub) => {
+          const r = renderHost(AppendHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          const apple = getOption('apple');
+          expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
+          expect(stub.mock.contexts).toContain(apple);
+          const afterOpen = stub.mock.calls.length;
+
+          r.instance.items.update((prev) => [...prev, { id: 'banana', label: 'Banana' }]);
+          await flush(r.fixture);
+
+          expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
+          expect(stub.mock.calls.length).toBe(afterOpen);
+        }));
+
+      it('leaves the scroll untouched when an option is hovered and then a page is appended', () =>
+        withScrollStub(async (stub) => {
+          const r = renderHost(AppendHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          const apricot = getOption('apricot');
+          apricot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+          await flush(r.fixture);
+          expect(getInput().getAttribute('aria-activedescendant')).toBe(apricot.id);
+          const afterHover = stub.mock.calls.length;
+
+          r.instance.items.update((prev) => [...prev, { id: 'banana', label: 'Banana' }]);
+          await flush(r.fixture);
+
+          expect(getInput().getAttribute('aria-activedescendant')).toBe(apricot.id);
+          expect(stub.mock.calls.length).toBe(afterHover);
+        }));
+
+      it('scrolls the new seed into view when a filter re-seeds the auto-highlight', () =>
+        withScrollStub(async (stub) => {
+          const r = renderHost(AppendHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+          expect(stub.mock.contexts).toContain(getOption('apple'));
+
+          r.instance.query.set('b');
+          r.instance.items.set([{ id: 'banana', label: 'Banana' }]);
+          await flush(r.fixture);
+
+          const banana = getOption('banana');
+          expect(getInput().getAttribute('aria-activedescendant')).toBe(banana.id);
+          expect(stub.mock.contexts).toContain(banana);
+        }));
+    });
   });
 
   describe('hidden input (form submit)', () => {
