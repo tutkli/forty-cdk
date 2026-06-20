@@ -14,8 +14,6 @@ export type {
 
 export { FOR_ID_SALT, provideForIdSalt } from './lib/_internal/id-generator/id-generator';
 
-export { afterNextRenderCancellable } from './lib/_internal/after-next-render-cancellable/after-next-render-cancellable';
-
 export {
   FOR_TIME_VALUE_SOURCE,
   type TimeValueSource,
