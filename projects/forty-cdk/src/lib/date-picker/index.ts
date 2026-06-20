@@ -1,4 +1,5 @@
 export { ForDatePicker } from './date-picker';
+export { ForDatePickerAnchor } from './date-picker-anchor';
 export { ForDatePickerTrigger } from './date-picker-trigger';
 export { ForDatePickerContent } from './date-picker-content';
 export { ForDatePickerValue } from './date-picker-value';

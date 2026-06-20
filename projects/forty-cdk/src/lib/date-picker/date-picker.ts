@@ -314,7 +314,20 @@ export class ForDatePicker<D>
 
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
-  readonly reference = computed<ReferenceElement | null>(() => this.#triggerEl());
+
+  readonly #anchorEl = signal<HTMLElement | null>(null);
+
+  /**
+   * Element floating-ui anchors the surface against. Prefers an optional
+   * `[forDatePickerAnchor]` when registered, otherwise falls back to the
+   * trigger so existing pickers without an anchor keep their behavior.
+   * Decoupled from `trigger` so the trigger keeps driving `aria-controls`, the
+   * click toggle, focus return, and its dismissal exemption regardless of where
+   * the surface paints.
+   */
+  readonly reference = computed<ReferenceElement | null>(
+    () => this.#anchorEl() ?? this.#triggerEl(),
+  );
 
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
@@ -552,6 +565,21 @@ export class ForDatePicker<D>
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
+    }
+  }
+
+  registerAnchor(el: HTMLElement): void {
+    const current = this.#anchorEl();
+    if (current !== null && current !== el) {
+      throw new Error(
+        '[forty-cdk/date-picker] Multiple [forDatePickerAnchor] inside the same [forDatePicker]; only one is allowed.',
+      );
+    }
+    this.#anchorEl.set(el);
+  }
+  unregisterAnchor(el: HTMLElement): void {
+    if (this.#anchorEl() === el) {
+      this.#anchorEl.set(null);
     }
   }
 

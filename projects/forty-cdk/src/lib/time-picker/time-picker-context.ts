@@ -77,6 +77,8 @@ export interface ForTimePickerContext<D = unknown> {
   readonly trigger: Signal<HTMLElement | null>;
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
   readonly content: Signal<HTMLElement | null>;
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;

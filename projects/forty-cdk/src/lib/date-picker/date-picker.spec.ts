@@ -26,6 +26,7 @@ import { ForTimePickerContent } from '../time-picker/time-picker-content';
 import { ForTimePickerOption } from '../time-picker/time-picker-option';
 import { ForTimePickerTrigger } from '../time-picker/time-picker-trigger';
 import { ForDatePicker } from './date-picker';
+import { ForDatePickerAnchor } from './date-picker-anchor';
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
@@ -202,6 +203,126 @@ describe('ForDatePicker', () => {
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forDatePickerTrigger\]="root"/);
       expect(message).toMatch(/#root="forDatePicker"/);
+    });
+
+    it('throws when [forDatePickerAnchor] is used outside [forDatePicker]', () => {
+      @Component({
+        imports: [ForDatePickerAnchor],
+        template: `<div forDatePickerAnchor></div>`,
+      })
+      class Orphan {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(Orphan)).toThrow(
+        /\[forty-cdk\/date-picker\] ForDatePickerAnchor must be used inside a \[forDatePicker\] element\./,
+      );
+    });
+  });
+
+  describe('anchor (separate positioning element)', () => {
+    @Component({
+      imports: [ForDatePicker, ForDatePickerAnchor, ForDatePickerTrigger, ForDatePickerContent],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDatePicker [(open)]="open" [(value)]="value">
+          @if (showAnchor()) {
+            <div data-testid="anchor" forDatePickerAnchor>
+              <button forDatePickerTrigger>Open</button>
+            </div>
+          } @else {
+            <button forDatePickerTrigger>Open</button>
+          }
+          @if (open()) {
+            <div forDatePickerContent>surface</div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly open = signal(false);
+      readonly value = signal<Date | null>(null);
+      readonly showAnchor = signal(true);
+    }
+
+    it('mounts the surface with [forDatePickerAnchor] registered alongside the trigger', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(r.query<HTMLButtonElement>('[forDatePickerTrigger]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
+    });
+
+    it('lets the trigger keep driving aria-controls and the toggle even with an anchor', async () => {
+      const r = renderHost(AnchorHost);
+      const t = r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
+      expect(t.getAttribute('aria-haspopup')).toBe('dialog');
+
+      t.click();
+      await flush(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[forDatePickerContent]')!;
+      expect(t.getAttribute('aria-expanded')).toBe('true');
+      expect(t.getAttribute('aria-controls')).toBe(surface.id);
+    });
+
+    it('restores the trigger fallback after the anchor is torn down inside @if', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).toBeNull();
+
+      r.query<HTMLButtonElement>('[forDatePickerTrigger]')!.click();
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
+    });
+
+    it('reacts to anchor registration without zone.js', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(r.query<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
+    });
+
+    it('throws when two [forDatePickerAnchor] are registered inside the same [forDatePicker]', () => {
+      @Component({
+        imports: [ForDatePicker, ForDatePickerAnchor, ForDatePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          @if (show()) {
+            <div forDatePicker>
+              <div forDatePickerAnchor></div>
+              <div forDatePickerAnchor></div>
+              <button forDatePickerTrigger>Open</button>
+            </div>
+          }
+        `,
+      })
+      class TwoAnchorsHost {
+        readonly show = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoAnchorsHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/date-picker\] Multiple \[forDatePickerAnchor\]/,
+      );
     });
   });
 

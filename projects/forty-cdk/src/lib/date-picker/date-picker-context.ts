@@ -63,12 +63,27 @@ export interface ForDatePickerContext {
   /** Placeholder shown by `[forDatePickerValue]` when no date is selected. */
   readonly placeholder: Signal<string>;
 
-  /** Element floating-ui anchors against (the trigger). */
+  /**
+   * Element floating-ui anchors the surface against. Prefers an optional
+   * `[forDatePickerAnchor]` when registered, otherwise falls back to the
+   * trigger. Decoupled from `trigger` so the trigger keeps driving
+   * `aria-controls`, the click toggle, focus return, and its outside-pointer
+   * exemption regardless of where the surface paints.
+   */
   readonly reference: Signal<ReferenceElement | null>;
   /** The trigger button — exempt from outside-pointer checks and the return-focus target. */
   readonly trigger: Signal<HTMLElement | null>;
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+
+  /**
+   * Register / unregister an optional `[forDatePickerAnchor]` positioning
+   * element. At most one anchor per root; a second registration throws.
+   * Reference-based unregister, so an anchor torn down inside `@if` restores
+   * the trigger fallback cleanly.
+   */
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
 
   /** The mounted `[forDatePickerContent]` element. */
   readonly content: Signal<HTMLElement | null>;
