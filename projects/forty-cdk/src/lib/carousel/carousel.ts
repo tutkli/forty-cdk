@@ -7,6 +7,7 @@ import {
   ElementRef,
   inject,
   input,
+  isDevMode,
   model,
   numberAttribute,
   PLATFORM_ID,
@@ -247,6 +248,24 @@ export class ForCarousel implements ForCarouselContext {
     if (isPageHidden()) {
       this.#applyPause('visibility');
     }
+
+    if (isDevMode()) {
+      let warned = false;
+      effect(() => {
+        const slides = this.slideCount();
+        const indicators = this.#indicators.items().length;
+        if (indicators === 0 || indicators === slides) {
+          warned = false;
+        } else if (!warned) {
+          warned = true;
+          console.warn(
+            `[forty-cdk/carousel] ${indicators} [forCarouselIndicator] element(s) registered for ${slides} slide(s). ` +
+              `The picker assumes one indicator per slide (indicator at DOM index i targets slide i); a mismatched count ` +
+              `desynchronizes the active-indicator state. Render exactly one [forCarouselIndicator] per [forCarouselSlide].`,
+          );
+        }
+      });
+    }
   }
 
   /** Returns `true` when scrolling backward is possible given the current loop/index state. */
@@ -388,6 +407,10 @@ export class ForCarousel implements ForCarouselContext {
    * Returns `true` when at least one registered, non-disabled indicator
    * matches the current `activeIndex`. Used by the tabindex ladder to decide
    * whether the first-enabled fallback must reclaim the tab stop.
+   *
+   * Assumes the one-indicator-per-slide mapping the rest of the picker is built
+   * on: the indicator at DOM index `i` targets slide `i`. A mismatched indicator
+   * count is dev-guarded by a `console.warn` at construction.
    */
   hasCurrentIndicator(): boolean {
     const active = this.activeIndex();
