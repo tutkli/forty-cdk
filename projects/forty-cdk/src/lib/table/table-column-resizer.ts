@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   computed,
   DestroyRef,
   Directive,
@@ -8,8 +9,10 @@ import {
   input,
   model,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { clampToRange, startPointerResize } from '../_internal/resize-geometry/resize-geometry';
 import { injectTableContext } from './table-context';
@@ -33,7 +36,10 @@ export interface TableResizeDescriptor {
  *
  * Reflects `data-resizing` (empty string) while a pointer drag is active. Carries
  * `role="separator"` with `aria-orientation="vertical"` and live `aria-value*`,
- * mirroring `[forPaneResizer]`. The consumer supplies `aria-label`.
+ * mirroring `[forPaneResizer]`. The consumer supplies `aria-label`. Before the first
+ * gesture, `aria-valuenow` falls back to the header-cell width measured once on mount
+ * (browser-only), so a separator with no `[width]` is never announced without a
+ * current value; an explicit `[width]` always takes precedence.
  *
  * @example
  * ```html
@@ -51,7 +57,7 @@ export interface TableResizeDescriptor {
     role: 'separator',
     'aria-orientation': 'vertical',
     '[attr.tabindex]': '"0"',
-    '[attr.aria-valuenow]': 'width() ?? null',
+    '[attr.aria-valuenow]': 'width() ?? measuredWidth() ?? null',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'ariaValueMax()',
     '[attr.data-resizing]': 'resizing() ? "" : null',
@@ -102,6 +108,15 @@ export class ForTableColumnResizer {
   /** Whether a pointer drag is currently active (drives `data-resizing`). */
   protected readonly resizing = this.#resizing.asReadonly();
 
+  readonly #measuredWidth = signal<number | null>(null);
+
+  /**
+   * Header-cell width measured once on mount (browser-only). Backs `aria-valuenow`
+   * before any explicit `[width]` so the focusable separator never ships without a
+   * current value on the measured-fallback path; an explicit `[width]` still wins.
+   */
+  protected readonly measuredWidth = this.#measuredWidth.asReadonly();
+
   #disposePointer: (() => void) | null = null;
 
   constructor() {
@@ -112,6 +127,9 @@ export class ForTableColumnResizer {
         this.ctx.setColumnWidth(this.column(), w);
       }
     });
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
+    }
   }
 
   protected onPointerDown(event: PointerEvent): void {

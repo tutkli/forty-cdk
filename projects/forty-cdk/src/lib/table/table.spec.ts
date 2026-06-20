@@ -145,6 +145,21 @@ class ResizeTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          Name
+          <button forTableColumnResizer column="name" data-testid="resizer"></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class UnseededResizeTableHost {}
+
+@Component({
   imports: [...TABLE_IMPORTS],
   template: `
     <table forTable [mode]="mode()" [ariaLabel]="ariaLabel()" [dir]="dir()">
@@ -1530,6 +1545,24 @@ describe('ForTable', () => {
       flush();
       expect(instance.width()).toBe(110);
       expect(r.getAttribute('aria-valuenow')).toBe('110');
+    });
+
+    it('emits a numeric aria-valuenow from the measured header-cell width when [width] is unbound', async () => {
+      const { el, flush } = renderHost(UnseededResizeTableHost);
+      await flush();
+      const r = resizerEl(el);
+      expect(r.hasAttribute('aria-valuenow')).toBe(true);
+      expect(Number.isNaN(Number(r.getAttribute('aria-valuenow')))).toBe(false);
+    });
+
+    it('explicit [width] takes precedence over the measured header-cell width', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      await flush();
+      const r = resizerEl(el);
+      expect(r.getAttribute('aria-valuenow')).toBe('100');
+      instance.width.set(250);
+      await flush();
+      expect(r.getAttribute('aria-valuenow')).toBe('250');
     });
   });
 

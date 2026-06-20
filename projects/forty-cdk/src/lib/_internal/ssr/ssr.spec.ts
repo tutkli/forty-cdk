@@ -296,6 +296,7 @@ class TableFixture {}
       <div forTableHeaderRow forTableColumnReorder orientation="horizontal">
         <div forTableHeaderCell name="name" forTableSortHeader column="name" direction="ascending">
           Name
+          <button forTableColumnResizer column="name" aria-label="Resize name"></button>
         </div>
         <div forTableHeaderCell name="role" forDraggable [dragData]="'role'">
           Role
@@ -1834,11 +1835,17 @@ describe('SSR smoke tests', () => {
     const headerName = f.nativeElement.querySelector('[forTableHeaderCell]') as HTMLElement;
     expect(headerName.getAttribute('aria-sort')).toBe('ascending');
     expect(headerName.getAttribute('tabindex')).toBe('0');
-    const resizer = f.nativeElement.querySelector('[forTableColumnResizer]') as HTMLElement;
+    const resizer = f.nativeElement.querySelector(
+      '[forTableColumnResizer][column="role"]',
+    ) as HTMLElement;
     expect(resizer.getAttribute('role')).toBe('separator');
     expect(resizer.getAttribute('aria-orientation')).toBe('vertical');
     expect(resizer.getAttribute('tabindex')).toBe('0');
     expect(resizer.getAttribute('aria-valuenow')).toBe('120');
+    const unseededResizer = f.nativeElement.querySelector(
+      '[forTableColumnResizer][column="name"]',
+    ) as HTMLElement;
+    expect(unseededResizer.hasAttribute('aria-valuenow')).toBe(false);
     const headerRow = f.nativeElement.querySelector('[forTableHeaderRow]') as HTMLElement;
     expect(headerRow.getAttribute('data-orientation')).toBe('horizontal');
     const draggableHeaderCell = f.nativeElement.querySelector(

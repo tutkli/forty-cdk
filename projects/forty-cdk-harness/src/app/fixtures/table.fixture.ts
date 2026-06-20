@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
   ForTable,
@@ -128,7 +128,7 @@ import {
                 class="resize-handle"
                 forTableColumnResizer
                 column="name"
-                [width]="200"
+                [width]="resizerWidth()"
                 data-testid="resizer-name"
                 aria-label="Resize Name column"
                 (resizeCommit)="onResize($event)"
@@ -151,7 +151,7 @@ import {
                 class="resize-handle"
                 forTableColumnResizer
                 column="role"
-                [width]="200"
+                [width]="resizerWidth()"
                 data-testid="resizer-role"
                 aria-label="Resize Role column"
                 (resizeCommit)="onResize($event)"
@@ -174,7 +174,7 @@ import {
                 class="resize-handle"
                 forTableColumnResizer
                 column="dept"
-                [width]="200"
+                [width]="resizerWidth()"
                 data-testid="resizer-dept"
                 aria-label="Resize Department column"
                 (resizeCommit)="onResize($event)"
@@ -226,6 +226,12 @@ export class TableFixture {
   );
   protected readonly resizable = signal(
     this.route.snapshot.queryParamMap.get('resizable') === 'true',
+  );
+  protected readonly seedWidth = signal(
+    this.route.snapshot.queryParamMap.get('seedWidth') !== 'false',
+  );
+  protected readonly resizerWidth = computed<number | undefined>(() =>
+    this.seedWidth() ? 200 : undefined,
   );
   protected readonly colWidths = signal<Record<string, number>>({});
 

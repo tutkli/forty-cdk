@@ -341,4 +341,18 @@ test.describe('Table (column resizing)', () => {
 
     await expect(headerName).not.toHaveAttribute('aria-sort');
   });
+
+  test('exposes a measured aria-valuenow when [width] is unbound', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+      seedWidth: 'false',
+    });
+    const resizer = el(page, 'resizer-name');
+
+    await expect(resizer).toHaveAttribute('aria-valuenow', /^\d+(\.\d+)?$/);
+    const valuenow = Number(await resizer.getAttribute('aria-valuenow'));
+    expect(valuenow).toBeGreaterThan(0);
+  });
 });
