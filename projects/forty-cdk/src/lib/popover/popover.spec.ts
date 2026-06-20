@@ -13,6 +13,7 @@ import {
   flushPositioning,
   pressKey,
   renderHost,
+  withReducedMotion,
 } from '../../test-utils';
 import { assertDismissableLayerContract } from '../../test-utils/contract';
 import { ForPopover } from './popover';
@@ -1052,6 +1053,42 @@ describe('ForPopover', () => {
       await flush(r.fixture);
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
+    });
+  });
+
+  describe('reduced-motion styling hook', () => {
+    it('omits data-reduced-motion when reduced motion is not requested', async () => {
+      const r = renderHost(PopoverHost);
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      trigger.click();
+      await flush(r.fixture);
+
+      const root = r.query<HTMLElement>('[forPopover]')!;
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      expect(root.hasAttribute('data-reduced-motion')).toBe(false);
+      expect(content.hasAttribute('data-reduced-motion')).toBe(false);
+    });
+
+    describe('prefers-reduced-motion: reduce', () => {
+      let restoreReducedMotion: () => void;
+      beforeEach(() => {
+        restoreReducedMotion = withReducedMotion();
+      });
+      afterEach(() => {
+        restoreReducedMotion();
+      });
+
+      it('reflects data-reduced-motion on the root and content', async () => {
+        const r = renderHost(PopoverHost);
+        const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+        trigger.click();
+        await flush(r.fixture);
+
+        const root = r.query<HTMLElement>('[forPopover]')!;
+        const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+        expect(root.getAttribute('data-reduced-motion')).toBe('');
+        expect(content.getAttribute('data-reduced-motion')).toBe('');
+      });
     });
   });
 });

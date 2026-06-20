@@ -132,12 +132,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Data attributes
 
-| Piece                 | Attribute       | Values             |
-| --------------------- | --------------- | ------------------ |
-| `[forTooltip]`        | `data-state`    | `open` \| `closed` |
-| `[forTooltip]`        | `data-disabled` | present \| absent  |
-| `[forTooltipTrigger]` | `data-state`    | `open` \| `closed` |
-| `[forTooltipContent]` | `data-state`    | `open` \| `closed` |
+| Piece                 | Attribute             | Values             |
+| --------------------- | --------------------- | ------------------ |
+| `[forTooltip]`        | `data-state`          | `open` \| `closed` |
+| `[forTooltip]`        | `data-disabled`       | present \| absent  |
+| `[forTooltip]`        | `data-reduced-motion` | present \| absent  |
+| `[forTooltipTrigger]` | `data-state`          | `open` \| `closed` |
+| `[forTooltipContent]` | `data-state`          | `open` \| `closed` |
+| `[forTooltipContent]` | `data-reduced-motion` | present \| absent  |
 
 ### CSS custom properties
 
@@ -171,7 +173,17 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 }
 ```
 
-## Gating empty content (wrapper authors)
+### Reduced motion
+
+`[forTooltip]` and `[forTooltipContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own transitions out without re-deriving the query in CSS or TypeScript. The attribute flips reactively if the preference changes mid-session.
+
+```css
+.my-tooltip[data-reduced-motion] {
+  transition: none;
+}
+```
+
+The tooltip's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion — only the visual transitions (which are yours) should opt out.
 
 Tooltip content is template-provided and mounts via the consumer's own markup, so the tooltip cannot know the content would be empty before opening — it would happily open an empty bubble on hover/focus. The supported gate is the existing `disabled` input: drive it from whatever signal feeds the content. This is the recipe for design-system wrappers that take the tooltip text as a string input:
 

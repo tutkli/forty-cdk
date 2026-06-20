@@ -35,6 +35,7 @@ import { injectPopoverContext } from './popover-context';
     '[attr.aria-labelledby]': 'ctx.labelledBy()',
     '[attr.aria-describedby]': 'ctx.describedBy()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     tabindex: '-1',
   },
 })

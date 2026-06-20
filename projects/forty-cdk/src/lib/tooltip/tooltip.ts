@@ -19,6 +19,7 @@ import {
 } from '../_internal/hover-intent/hover-intent';
 import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
@@ -49,6 +50,7 @@ import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from './tooltip-defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-reduced-motion]': 'reducedMotion() ? "" : null',
   },
   providers: [{ provide: FOR_TOOLTIP_CONTEXT, useExisting: ForTooltip }],
 })
@@ -231,6 +233,17 @@ export class ForTooltip implements ForTooltipContext {
   readonly hoverableContent = computed<boolean>(
     () => this._hoverableContentInput() ?? this.#defaults.hoverableContent,
   );
+
+  /**
+   * Whether the user has requested reduced motion via the OS
+   * `prefers-reduced-motion: reduce` media query. Reflected as the boolean
+   * `data-reduced-motion` attribute on the root and content so consumers can
+   * disable their own `animate.enter` / `animate.leave` and CSS transitions
+   * without re-deriving the media query. Tooltip's JS-coordinated timing (the
+   * open / close hover-intent delays) is intent debouncing, not motion, so it
+   * is deliberately unchanged under reduced motion.
+   */
+  readonly reducedMotion = injectPrefersReducedMotion();
 
   readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
 

@@ -13,6 +13,7 @@ import {
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
@@ -53,6 +54,7 @@ import { FOR_POPOVER_DEFAULTS } from './popover-defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-reduced-motion]': 'reducedMotion() ? "" : null',
   },
   providers: [{ provide: FOR_POPOVER_CONTEXT, useExisting: ForPopover }],
 })
@@ -203,6 +205,16 @@ export class ForPopover implements ForPopoverContext {
 
   /** Manual `aria-label` on the content. Use this when no visible title element exists. */
   readonly ariaLabel = input<string | null>(null);
+
+  /**
+   * Whether the user has requested reduced motion via the OS
+   * `prefers-reduced-motion: reduce` media query. Reflected as the boolean
+   * `data-reduced-motion` attribute on the root and content so consumers can
+   * disable their own `animate.enter` / `animate.leave` and CSS transitions
+   * without re-deriving the media query. The popover toggles open / closed
+   * synchronously on trigger click, so it has no JS-coordinated timing to skip.
+   */
+  readonly reducedMotion = injectPrefersReducedMotion();
 
   /**
    * Fires when the user presses Escape while this popover is the topmost
