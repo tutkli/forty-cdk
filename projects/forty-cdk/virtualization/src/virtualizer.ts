@@ -1,6 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  afterNextRender,
   DestroyRef,
   type Signal,
   computed,
@@ -19,6 +18,8 @@ import type {
   VirtualItem as CoreVirtualItem,
   VirtualizerOptions as CoreVirtualizerOptions,
 } from '@tanstack/virtual-core';
+
+import { afterNextRenderCancellable } from './after-next-render-cancellable';
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;
@@ -161,17 +162,11 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   });
 
   let cleanup: (() => void) | undefined;
-  let destroyed = false;
-  const renderRef = afterNextRender(() => {
-    if (destroyed) return;
+  afterNextRenderCancellable(() => {
     cleanup = virtualizer._didMount();
     mounted.set(true);
   });
-  inject(DestroyRef).onDestroy(() => {
-    destroyed = true;
-    renderRef.destroy();
-    cleanup?.();
-  });
+  inject(DestroyRef).onDestroy(() => cleanup?.());
 
   const virtualItems = computed<readonly VirtualItem[]>(() => {
     notify();
