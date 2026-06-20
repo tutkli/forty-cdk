@@ -14,8 +14,50 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
       }
     </span>
     <input data-testid="after" placeholder="after-trigger" />
+
+    <!-- showOnOverflow: a truncated trigger shows; a non-truncated one is suppressed. -->
+    <span forTooltip [(open)]="overflowOpen" [openDelay]="0" [closeDelay]="0" showOnOverflow>
+      <button
+        data-testid="overflow-trigger"
+        forTooltipTrigger
+        style="display:inline-block;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+      >
+        A very long label that does not fit
+      </button>
+      @if (overflowOpen()) {
+        <div forTooltipContent data-testid="overflow-tooltip">
+          A very long label that does not fit
+        </div>
+      }
+    </span>
+
+    <span forTooltip [(open)]="fitOpen" [openDelay]="0" [closeDelay]="0" showOnOverflow>
+      <button
+        data-testid="fit-trigger"
+        forTooltipTrigger
+        style="display:inline-block;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+      >
+        Fits
+      </button>
+      @if (fitOpen()) {
+        <div forTooltipContent data-testid="fit-tooltip">Fits</div>
+      }
+    </span>
+
+    <!-- hoverableContent: moving the pointer into the content keeps it open. -->
+    <span forTooltip [(open)]="hoverOpen" [openDelay]="0" [closeDelay]="200" hoverableContent>
+      <button data-testid="hoverable-trigger" forTooltipTrigger>Hoverable</button>
+      @if (hoverOpen()) {
+        <div forTooltipContent data-testid="hoverable-tooltip" style="padding:24px;">
+          Hoverable content
+        </div>
+      }
+    </span>
   `,
 })
 export class TooltipFixture {
   protected readonly open = signal(false);
+  protected readonly overflowOpen = signal(false);
+  protected readonly fitOpen = signal(false);
+  protected readonly hoverOpen = signal(false);
 }

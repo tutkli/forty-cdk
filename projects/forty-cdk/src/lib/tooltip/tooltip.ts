@@ -20,6 +20,12 @@ import {
 import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
+  attachPointerGrace,
+  buildSubmenuGracePolygon,
+  type Point,
+  resolveGraceSide,
+} from '../_internal/pointer-grace/pointer-grace';
+import {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,
   type TooltipScheduleReason,
@@ -178,6 +184,54 @@ export class ForTooltip implements ForTooltipContext {
   /** When true, all hover / focus interaction is ignored and any open tooltip is forced closed. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Per-tooltip override for whether the tooltip shows only when the
+   * trigger's own text is truncated (`scrollWidth > clientWidth`) — the
+   * common pattern for ellipsized labels where the tooltip adds nothing once
+   * the full text is visible. When `undefined` (default), falls back to
+   * `ForTooltipDefaults.showOnOverflow` from the surrounding
+   * `provideForTooltipDefaults` scope (`false` unless configured).
+   *
+   * The input is aliased to `showOnOverflow`; consumers bind
+   * `[showOnOverflow]="..."` (or the bare attribute) and read the effective
+   * value via the public `showOnOverflow` computed below.
+   */
+  readonly _showOnOverflowInput = input(undefined, {
+    alias: 'showOnOverflow',
+    transform: (v: unknown): boolean | undefined => (v == null ? undefined : booleanAttribute(v)),
+  });
+
+  /** Effective overflow gate: the `showOnOverflow` input when set, else the scope default. */
+  readonly showOnOverflow = computed<boolean>(
+    () => this._showOnOverflowInput() ?? this.#defaults.showOnOverflow,
+  );
+
+  /**
+   * Per-tooltip override for whether the pointer may move into the content
+   * without dismissing the tooltip. When `true`, the content drops its
+   * default `pointer-events: none` while open and a pointer-grace "safe
+   * triangle" bridges the gap between trigger and content so a slow diagonal
+   * traversal doesn't close it. When `undefined` (default), falls back to
+   * `ForTooltipDefaults.hoverableContent` from the surrounding
+   * `provideForTooltipDefaults` scope (`false` unless configured).
+   *
+   * Per APG the content must stay non-interactive; this only allows the
+   * pointer to rest over descriptive text (e.g. to select it).
+   *
+   * The input is aliased to `hoverableContent`; consumers bind
+   * `[hoverableContent]="..."` (or the bare attribute) and read the effective
+   * value via the public `hoverableContent` computed below.
+   */
+  readonly _hoverableContentInput = input(undefined, {
+    alias: 'hoverableContent',
+    transform: (v: unknown): boolean | undefined => (v == null ? undefined : booleanAttribute(v)),
+  });
+
+  /** Effective hoverable-content flag: the `hoverableContent` input when set, else the scope default. */
+  readonly hoverableContent = computed<boolean>(
+    () => this._hoverableContentInput() ?? this.#defaults.hoverableContent,
+  );
+
   readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
 
   /**
@@ -193,11 +247,18 @@ export class ForTooltip implements ForTooltipContext {
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
 
+  readonly #contentEl = signal<HTMLElement | null>(null);
+
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
   readonly #coordinator = inject(TooltipCoordinator);
   readonly #hoverIntent: HoverIntentScheduler;
+
+  #triggerHovered = false;
+  #triggerFocused = false;
+  #contentHovered = false;
+  #detachGrace: (() => void) | null = null;
 
   constructor() {
     // Force-close when `disabled` flips to true. The scheduler already
@@ -243,6 +304,17 @@ export class ForTooltip implements ForTooltipContext {
     }
   }
 
+  /** Registers the content host element so the hoverable-content grace polygon can measure it. */
+  registerContent(el: HTMLElement): void {
+    this.#contentEl.set(el);
+  }
+
+  unregisterContent(el: HTMLElement): void {
+    if (this.#contentEl() === el) {
+      this.#contentEl.set(null);
+    }
+  }
+
   /** Adopts a consumer-set static `id` on the content host into `contentId`. */
   adoptContentId(el: HTMLElement): void {
     adoptHostId(el, this.contentId);
@@ -258,15 +330,115 @@ export class ForTooltip implements ForTooltipContext {
     }
   }
 
+  pointerEnterTrigger(): void {
+    this.#triggerHovered = true;
+    this.#disarmContentGrace();
+    if (this.#suppressedByOverflow()) {
+      return;
+    }
+    this.#hoverIntent.scheduleOpen();
+  }
+
+  pointerLeaveTrigger(cursor: Point): void {
+    this.#triggerHovered = false;
+    if (this.#triggerFocused) {
+      return;
+    }
+    if (this.hoverableContent() && this.open() && this.#contentEl()) {
+      this.#armContentGrace(cursor);
+      return;
+    }
+    this.#scheduleCloseIfInactive();
+  }
+
+  focusTrigger(): void {
+    this.#triggerFocused = true;
+    if (this.#suppressedByOverflow()) {
+      return;
+    }
+    this.#hoverIntent.scheduleOpen();
+  }
+
+  blurTrigger(): void {
+    this.#triggerFocused = false;
+    this.#scheduleCloseIfInactive();
+  }
+
+  pointerEnterContent(): void {
+    if (!this.hoverableContent()) {
+      return;
+    }
+    this.#contentHovered = true;
+    this.#disarmContentGrace();
+    this.#hoverIntent.cancelPending();
+  }
+
+  pointerLeaveContent(): void {
+    if (!this.hoverableContent()) {
+      return;
+    }
+    this.#contentHovered = false;
+    this.#scheduleCloseIfInactive();
+  }
+
   scheduleOpen(_reason: TooltipScheduleReason): void {
     this.#hoverIntent.scheduleOpen();
   }
 
   scheduleClose(reason: TooltipScheduleReason): void {
+    this.#disarmContentGrace();
     this.#hoverIntent.scheduleClose(reason === 'escape');
   }
 
   cancelPending(): void {
+    this.#disarmContentGrace();
     this.#hoverIntent.cancelPending();
+  }
+
+  /** Close only when no keep-alive source (trigger hover/focus, content hover) is active. */
+  #scheduleCloseIfInactive(): void {
+    if (this.#triggerHovered || this.#triggerFocused || this.#contentHovered) {
+      return;
+    }
+    this.#hoverIntent.scheduleClose(false);
+  }
+
+  /** True when `showOnOverflow` is on and the trigger's text is NOT truncated. */
+  #suppressedByOverflow(): boolean {
+    if (!this.showOnOverflow()) {
+      return false;
+    }
+    const el = this.#triggerEl();
+    return el !== null && el.scrollWidth <= el.clientWidth;
+  }
+
+  /**
+   * Arms a pointer-grace "safe triangle" from `cursor` toward the content so
+   * the pointer can travel across the trigger / content gap without closing.
+   * On exit (or when content hover takes over) the grace disarms and a close
+   * is scheduled if nothing else keeps the tooltip alive.
+   */
+  #armContentGrace(cursor: Point): void {
+    const content = this.#contentEl();
+    if (!content) {
+      this.#scheduleCloseIfInactive();
+      return;
+    }
+    const rect = content.getBoundingClientRect();
+    const trigger = this.#triggerEl();
+    const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
+    const polygon = buildSubmenuGracePolygon(cursor, rect, side);
+    this.#disarmContentGrace();
+    this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
+      this.#disarmContentGrace();
+      this.#scheduleCloseIfInactive();
+    });
+  }
+
+  #disarmContentGrace(): void {
+    if (this.#detachGrace) {
+      this.#detachGrace();
+      this.#detachGrace = null;
+    }
   }
 }
