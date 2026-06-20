@@ -11,21 +11,18 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
   type ListNavigationAction,
-  moveIndex,
   resolveListNavigation,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { ListboxOverlayController } from '../_internal/listbox-overlay/listbox-overlay-controller';
 import {
   defaultItemToFormValue,
   isInArray,
@@ -36,11 +33,9 @@ import { isRequiredInputUnset } from '../_internal/signal-graph/read-handle';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { findTypeaheadMatch } from '../_internal/typeahead/match-options';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import {
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import {
   FOR_SELECT_CONTEXT,
@@ -98,7 +93,6 @@ export class ForSelect<T = string>
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
-  readonly #items = new Collection<ForSelectOptionHandle<T>>();
   readonly #defaults = inject(FOR_SELECT_DEFAULTS);
 
   /**
@@ -317,19 +311,64 @@ export class ForSelect<T = string>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly triggerId = signal(this.#idGen.next('for-select-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-select-content'));
+  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+  readonly #activeId = signal<string | null>(null);
 
-  readonly #initialFocus = signal<ForSelectInitialFocus>('selected');
-  readonly initialFocus = this.#initialFocus.asReadonly();
+  /**
+   * Shared overlay-listbox state machine: option collection, trigger / anchor /
+   * content registries + ids, DOM-focus navigation, the open / close machine,
+   * the initial-focus / close-reason state, and the dismiss / auto-focus emit
+   * forwarders. The value-specific behaviour (`isSelected`, `activate`,
+   * `focusSelectedOption`, typeahead, the virtualized activedescendant path,
+   * `commitOnTab`'s value set) stays in this root; close-time virtualized
+   * cleanup and the post-navigate scroll / `selectionFollowsFocus` move are
+   * threaded through the controller's side-effect callbacks.
+   */
+  readonly #controller = new ListboxOverlayController<
+    ForSelectOptionHandle<T>,
+    ForSelectInitialFocus,
+    ForSelectCloseReason
+  >(this.#idGen, {
+    idPrefix: 'for-select',
+    multipleAnchorsError:
+      '[forty-cdk/select] Multiple [forSelectAnchor] inside the same [forSelect]; only one is allowed.',
+    defaultInitialFocus: 'selected',
+    effectiveDisabled: this.effectiveDisabled,
+    setOpen: (open) => this.open.set(open),
+    isOpen: () => this.open(),
+    emit: {
+      escapeKeyDown: this.escapeKeyDown,
+      pointerDownOutside: this.pointerDownOutside,
+      focusOutside: this.focusOutside,
+      interactOutside: this.interactOutside,
+      autoFocusOnOpen: this.autoFocusOnOpen,
+      autoFocusOnClose: this.autoFocusOnClose,
+    },
+    markTouched: () => this.markTouched(),
+    onClose: () => {
+      if (this.#virtualized()) {
+        this.#activeId.set(null);
+        this.#navigator?.resetPending();
+      }
+    },
+    onNavigateFocus: (target) => {
+      target.host.scrollIntoView?.({ block: 'nearest' });
+      if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
+        this.#setSingle(target.value());
+      }
+    },
+    onUnregisterOption: (handle) => {
+      if (this.#virtualized() && this.#activeId() === handle.id()) {
+        this.#activeId.set(null);
+      }
+    },
+  });
 
-  readonly #lastCloseReason = signal<ForSelectCloseReason | null>(null);
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
-
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly triggerId = this.#controller.triggerId;
+  readonly contentId = this.#controller.contentId;
+  readonly initialFocus = this.#controller.initialFocus;
+  readonly lastCloseReason = this.#controller.lastCloseReason;
+  readonly trigger = this.#controller.trigger;
 
   /**
    * Element floating-ui anchors the listbox against. Prefers an optional
@@ -339,13 +378,12 @@ export class ForSelect<T = string>
    * focus return, and its dismissal exemption regardless of where the listbox
    * paints.
    */
-  readonly anchor = computed<ReferenceElement | null>(() => this.#anchorEl() ?? this.#triggerEl());
+  readonly anchor = this.#controller.anchor;
 
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly content = this.#controller.content;
 
-  readonly #virtualized = computed(() => this.totalCount() !== undefined);
-  readonly #activeId = signal<string | null>(null);
+  readonly options = this.#controller.options;
+
   /** The active option's `id` in the virtualized path, `null` in the default path. */
   readonly activeDescendantId = computed<string | null>(() =>
     this.#virtualized() ? this.#activeId() : null,
@@ -354,7 +392,7 @@ export class ForSelect<T = string>
   #navigator: SelectVirtualizedNavigator<T> | null = null;
   #requireNavigator(): SelectVirtualizedNavigator<T> {
     return (this.#navigator ??= new SelectVirtualizedNavigator<T>({
-      items: this.#items.items,
+      items: this.options,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
       loop: this.loop,
@@ -364,16 +402,14 @@ export class ForSelect<T = string>
     }));
   }
 
-  readonly options = this.#items.items;
-
   /**
    * Persisted snapshot of the registered options as `{ value, label }` tuples,
    * keyed internally by serialized form value. Drives closed-state typeahead
-   * and `[forSelectValue]` label rendering — the live `#items` registry is
+   * and `[forSelectValue]` label rendering — the live `options` registry is
    * empty whenever `[forSelectContent]` is unmounted, so the snapshot carries
    * the last non-empty option set across close → re-open cycles.
    *
-   * A `linkedSignal` that folds the live option set on every `#items.items()`
+   * A `linkedSignal` that folds the live option set on every `options()`
    * change: when the listbox unmounts (`items().length === 0`) it returns the
    * previous accumulator unchanged so labels stay resolvable while closed. Each
    * option's `label` is itself a `Signal<string>`, so this never reads
@@ -387,7 +423,7 @@ export class ForSelect<T = string>
     readonly ForSelectOptionHandle<T>[],
     readonly { value: T; label: string }[]
   >({
-    source: () => this.#items.items(),
+    source: () => this.options(),
     computation: (items, prev) => {
       if (items.length === 0) {
         return prev?.value ?? [];
@@ -453,7 +489,7 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const items = this.#items.items();
+    const items = this.options();
     const toFormValue = this.itemToFormValue();
     const byKey = new Map<string, ForSelectOptionHandle<T>>();
     for (const o of items) {
@@ -520,7 +556,7 @@ export class ForSelect<T = string>
     });
 
     effect(() => {
-      this.#items.items();
+      this.options();
       if (!this.#virtualized()) {
         return;
       }
@@ -531,52 +567,35 @@ export class ForSelect<T = string>
   }
 
   setInitialFocus(target: ForSelectInitialFocus): void {
-    this.#initialFocus.set(target);
+    this.#controller.setInitialFocus(target);
   }
 
   registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
+    this.#controller.registerTrigger(el);
   }
   unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+    this.#controller.unregisterTrigger(el);
   }
 
   registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/select] Multiple [forSelectAnchor] inside the same [forSelect]; only one is allowed.',
-      );
-    }
-    this.#anchorEl.set(el);
+    this.#controller.registerAnchor(el);
   }
   unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
+    this.#controller.unregisterAnchor(el);
   }
 
   registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.contentId);
-    this.#contentEl.set(el);
+    this.#controller.registerContent(el);
   }
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
+    this.#controller.unregisterContent(el);
   }
 
   registerOption(handle: ForSelectOptionHandle<T>): void {
-    this.#items.register(handle);
+    this.#controller.registerOption(handle);
   }
   unregisterOption(handle: ForSelectOptionHandle<T>): void {
-    this.#items.unregister(handle);
-    if (this.#virtualized() && this.#activeId() === handle.id()) {
-      this.#activeId.set(null);
-    }
+    this.#controller.unregisterOption(handle);
   }
 
   isSelected(v: T): boolean {
@@ -606,30 +625,7 @@ export class ForSelect<T = string>
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((o) => o.host === currentOption);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
-      return;
-    }
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
-    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-      this.#setSingle(target.value());
-    }
+    this.#controller.navigate(currentOption, action, this.loop());
   }
 
   handleTypeahead(event: KeyboardEvent): void {
@@ -637,7 +633,7 @@ export class ForSelect<T = string>
       return;
     }
     const match = findTypeaheadMatch(
-      this.#items.items(),
+      this.options(),
       { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
       (o) => o.host.textContent ?? '',
       (o) => o.disabled(),
@@ -659,7 +655,7 @@ export class ForSelect<T = string>
       return true;
     }
     // Closed-state lookup goes through the cached snapshot — `[forSelectContent]`
-    // is unmounted, so the live `#items` registry is empty here. The cache
+    // is unmounted, so the live `options` registry is empty here. The cache
     // populates the first time the listbox opens and renders options.
     const cached = this.#cachedOptions();
     const match = cached.find((o) => o.label.toLowerCase().startsWith(buffer));
@@ -670,24 +666,11 @@ export class ForSelect<T = string>
   }
 
   focusFirstEnabledOption(): boolean {
-    const target = this.#items.items().find((o) => !o.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
+    return this.#controller.focusFirstEnabledOption();
   }
 
   focusLastEnabledOption(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
+    return this.#controller.focusLastEnabledOption();
   }
 
   focusSelectedOption(): boolean {
@@ -696,7 +679,7 @@ export class ForSelect<T = string>
       return false;
     }
     const equals = this.isItemEqualToValue();
-    const items = this.#items.items();
+    const items = this.options();
     for (const v of values) {
       const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
@@ -708,32 +691,15 @@ export class ForSelect<T = string>
   }
 
   toggle(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    if (this.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(initialFocus);
-    }
+    this.#controller.toggle(initialFocus);
   }
 
   openMenu(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    this.#initialFocus.set(initialFocus);
-    this.#lastCloseReason.set(null);
-    this.open.set(true);
+    this.#controller.openMenu(initialFocus);
   }
 
   closeMenu(reason: ForSelectCloseReason): void {
-    this.#lastCloseReason.set(reason);
-    this.open.set(false);
-    if (this.#virtualized()) {
-      this.#activeId.set(null);
-      this.#navigator?.resetPending();
-    }
+    this.#controller.closeMenu(reason);
   }
 
   commitOnTab(value: T): void {
@@ -748,17 +714,12 @@ export class ForSelect<T = string>
     // content's `DestroyRef` reads `lastCloseReason() === 'tab'` and skips
     // its own re-focus — otherwise it would steal focus back from wherever
     // the browser advanced it.
-    this.#triggerEl()?.focus();
+    this.#controller.focusTrigger();
     this.closeMenu('tab');
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-    if (!vetoed && this.dismissible()) {
-      event.stopPropagation();
-      this.markTouched();
-      this.closeMenu('escape');
-    }
+    this.#controller.emitEscapeKeyDown(event, this.dismissible(), 'escape');
   }
 
   /**
@@ -768,18 +729,18 @@ export class ForSelect<T = string>
    * matching output with the veto the shell built.
    */
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.pointerDownOutside.emit(veto);
+    this.#controller.emitPointerDownOutside(veto);
   }
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.focusOutside.emit(veto);
+    this.#controller.emitFocusOutside(veto);
   }
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.interactOutside.emit(veto);
+    this.#controller.emitInteractOutside(veto);
   }
 
   /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.escapeKeyDown.emit(veto);
+    this.#controller.forwardEscapeKeyDown(veto);
   }
 
   /**
@@ -788,16 +749,15 @@ export class ForSelect<T = string>
    * closes with the channel's reason.
    */
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.markTouched();
-    this.closeMenu(reason);
+    this.#controller.requestClose(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return this.#controller.emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return this.#controller.emitAutoFocusOnClose();
   }
 
   override markTouched(): void {
@@ -851,7 +811,7 @@ export class ForSelect<T = string>
       return;
     }
     this.#activeId.set(optionId);
-    this.#contentEl()?.focus();
+    this.content()?.focus();
   }
 
   #committedIndex(navigator: SelectVirtualizedNavigator<T>): number | null {
@@ -876,7 +836,7 @@ export class ForSelect<T = string>
     if (id === null) {
       return;
     }
-    const handle = this.#items.items().find((o) => o.id() === id);
+    const handle = this.options().find((o) => o.id() === id);
     if (!handle || handle.disabled()) {
       return;
     }
@@ -885,7 +845,7 @@ export class ForSelect<T = string>
 
   #commitActiveDescendantOnTab(): void {
     const id = this.#activeId();
-    const handle = id === null ? undefined : this.#items.items().find((o) => o.id() === id);
+    const handle = id === null ? undefined : this.options().find((o) => o.id() === id);
     if (handle && !handle.disabled()) {
       this.commitOnTab(handle.value());
       return;
@@ -898,7 +858,7 @@ export class ForSelect<T = string>
       return;
     }
     const match = findTypeaheadMatch(
-      this.#items.items(),
+      this.options(),
       { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
       (o) => o.host.textContent ?? '',
       (o) => o.disabled(),
