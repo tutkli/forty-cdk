@@ -206,7 +206,6 @@ function makeRows(start: number, length: number): Row[] {
       <div
         forTableHeaderRow
         forTableColumnReorder
-        orientation="horizontal"
         [liveSort]="true"
         data-testid="header-row"
         [style.gridTemplateColumns]="gridCols()"

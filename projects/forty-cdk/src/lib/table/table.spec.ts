@@ -69,7 +69,6 @@ function pointerEvent(
       <div
         forTableHeaderRow
         forTableColumnReorder
-        orientation="horizontal"
         (columnReorder)="lastColumn = $event; columns.set($event.columns)"
       >
         @for (col of columns(); track col) {
@@ -363,7 +362,7 @@ class SortTableHost {
   ],
   template: `
     <div forTable>
-      <div forTableHeaderRow forTableColumnReorder orientation="horizontal">
+      <div forTableHeaderRow forTableColumnReorder>
         @for (col of columns(); track col) {
           <div
             forTableHeaderCell
@@ -385,6 +384,22 @@ class SortTableHost {
 class SortReorderTableHost {
   readonly columns = signal<readonly string[]>(['name', 'role']);
   lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnReorder, ForDraggable],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow forTableColumnReorder orientation="vertical">
+        @for (col of columns(); track col) {
+          <div forTableHeaderCell [name]="col" forDraggable [dragData]="col">{{ col }}</div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ColumnReorderVerticalHost {
+  readonly columns = signal<readonly string[]>(['name', 'role']);
 }
 
 interface TreegridRow {
@@ -1612,13 +1627,20 @@ describe('ForTable', () => {
       expect(nameCell.getAttribute('aria-colindex')).toBe('2');
     });
 
-    it('the wrapped header row reflects data-orientation="horizontal"', async () => {
+    it('defaults the wrapped list to horizontal with no orientation binding', async () => {
       const { el, flush } = renderHost(ReorderTableHost);
       await flush();
       const headerRow = el.querySelector<HTMLElement>('[forTableHeaderRow]')!;
       const rowgroup = el.querySelector<HTMLElement>('[forTableRowReorder]')!;
       expect(headerRow.getAttribute('data-orientation')).toBe('horizontal');
       expect(rowgroup.getAttribute('data-orientation')).toBe('vertical');
+    });
+
+    it('an explicit orientation binding overrides the horizontal table default', async () => {
+      const { el, flush } = renderHost(ColumnReorderVerticalHost);
+      await flush();
+      const headerRow = el.querySelector<HTMLElement>('[forTableHeaderRow]')!;
+      expect(headerRow.getAttribute('data-orientation')).toBe('vertical');
     });
   });
 

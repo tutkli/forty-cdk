@@ -7,6 +7,7 @@ import {
   DOCUMENT,
   ElementRef,
   inject,
+  InjectionToken,
   Injector,
   input,
   output,
@@ -52,6 +53,18 @@ import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
 
 /**
+ * Optional DI seam overriding the fallback `orientation` of every `[forDropList]` in scope.
+ * `ForDropList`'s `orientation` input falls back to this token's value (`'vertical'` when the
+ * token is not provided); a consumer `orientation` binding always wins over it. Wrappers
+ * compose a horizontal list without leaking `orientation="horizontal"` boilerplate into the
+ * consumer's template — `ForTableColumnReorder` provides `'horizontal'` so column reordering
+ * resolves along the row axis out of the box.
+ */
+export const FOR_DROP_LIST_DEFAULT_ORIENTATION = new InjectionToken<'horizontal' | 'vertical'>(
+  'FOR_DROP_LIST_DEFAULT_ORIENTATION',
+);
+
+/**
  * Root directive of the drag-drop primitive. Apply on any container element to
  * create a reorderable list. Items inside are declared with `[forDraggable]`.
  *
@@ -79,9 +92,15 @@ export class ForDropList implements ForDropListContext {
   readonly #destroyRef = inject(DestroyRef);
   readonly #injector = inject(Injector);
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
+  readonly #defaultOrientation =
+    inject(FOR_DROP_LIST_DEFAULT_ORIENTATION, { optional: true }) ?? 'vertical';
 
-  /** Layout orientation of the list. Affects which arrow keys move focus and the lifted item. */
-  readonly orientation = input<'horizontal' | 'vertical'>('vertical');
+  /**
+   * Layout orientation of the list. Affects which arrow keys move focus and the lifted item.
+   * Defaults to `'vertical'`, or to `FOR_DROP_LIST_DEFAULT_ORIENTATION` when an in-scope
+   * provider sets it (e.g. `ForTableColumnReorder` defaults it to `'horizontal'`).
+   */
+  readonly orientation = input<'horizontal' | 'vertical'>(this.#defaultOrientation);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient direction is

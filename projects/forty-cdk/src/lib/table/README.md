@@ -373,17 +373,12 @@ Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels
 
 ### Column reordering
 
-Apply `[forTableColumnReorder]` on the `[forTableHeaderRow]` element and add `[forDraggable] [dragData]="col"` to each header cell. **You must set `orientation="horizontal"`** on the element — Angular cannot fix a host-directive input to a constant ([Angular #51691](https://github.com/angular/angular/issues/51691)), so the consumer must forward the axis explicitly.
+Apply `[forTableColumnReorder]` on the `[forTableHeaderRow]` element and add `[forDraggable] [dragData]="col"` to each header cell. The wrapped list defaults to `orientation="horizontal"` (a column reorder is always along the row axis), so no `orientation` binding is needed. Bind `orientation="vertical"` to override for the rare case.
 
 `columnReorder` fires once per committed drop (pointer or keyboard) with `{ from, to, columns }`. Apply `columns` directly to your column-name signal, or use `from`/`to` with `moveItemInArray` for object-shaped column configs.
 
 ```html
-<div
-  forTableHeaderRow
-  forTableColumnReorder
-  orientation="horizontal"
-  (columnReorder)="columns.set($event.columns)"
->
+<div forTableHeaderRow forTableColumnReorder (columnReorder)="columns.set($event.columns)">
   @for (col of columns(); track col) {
   <div forTableHeaderCell [name]="col" forDraggable [dragData]="col">{{ col }}</div>
   }
@@ -500,7 +495,6 @@ on keyboard dragging. See the [drag-drop README](../drag-drop/README.md) for the
 <div
   forTableHeaderRow
   forTableColumnReorder
-  orientation="horizontal"
   [liveSort]="true"
   (columnReorder)="columns.set($event.columns)"
 >
@@ -528,7 +522,6 @@ Because Angular cannot fix a host-directive input to a constant
 <div
   forTableHeaderRow
   forTableColumnReorder
-  orientation="horizontal"
   lockAxis="x"
   [boundary]="tableEl"
   (columnReorder)="columns.set($event.columns)"
@@ -544,7 +537,6 @@ host element:
 <div
   forTableHeaderRow
   forTableColumnReorder
-  orientation="horizontal"
   lockAxis="x"
   [boundary]="'[data-testid=\"table-root\"]'"
   (columnReorder)="columns.set($event.columns)"
@@ -566,23 +558,23 @@ host element:
 
 ### Inputs
 
-| Directive                 | Input            | Type                            | Default      | Description                                                                                                          |
-| ------------------------- | ---------------- | ------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `[forTableColumnReorder]` | `orientation`    | `'horizontal' \| 'vertical'`    | `'vertical'` | Passthrough to `[forDropList]`. **Must be set to `'horizontal'`.**                                                   |
-| `[forTableColumnReorder]` | `dir`            | `'ltr' \| 'rtl' \| null`        | `null`       | Writing direction passthrough.                                                                                       |
-| `[forTableColumnReorder]` | `disabled`       | `boolean`                       | `false`      | Disables the whole list passthrough.                                                                                 |
-| `[forTableColumnReorder]` | `autoScroll`     | `boolean`                       | `true`       | Auto-scroll passthrough.                                                                                             |
-| `[forTableColumnReorder]` | `animateReorder` | `boolean`                       | `false`      | FLIP animation passthrough.                                                                                          |
-| `[forTableColumnReorder]` | `liveSort`       | `boolean`                       | `false`      | Live-sort placeholder passthrough.                                                                                   |
-| `[forTableColumnReorder]` | `boundary`       | `HTMLElement \| string \| null` | `null`       | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
-| `[forTableColumnReorder]` | `lockAxis`       | `'x' \| 'y' \| null`            | `null`       | Axis-lock passthrough. Set `'x'` for column drag (holds vertical position). Must be set explicitly — Angular #51691. |
-| `[forTableRowReorder]`    | `dir`            | `'ltr' \| 'rtl' \| null`        | `null`       | Writing direction passthrough.                                                                                       |
-| `[forTableRowReorder]`    | `disabled`       | `boolean`                       | `false`      | Disables the whole list passthrough.                                                                                 |
-| `[forTableRowReorder]`    | `autoScroll`     | `boolean`                       | `true`       | Auto-scroll passthrough.                                                                                             |
-| `[forTableRowReorder]`    | `animateReorder` | `boolean`                       | `false`      | FLIP animation passthrough.                                                                                          |
-| `[forTableRowReorder]`    | `liveSort`       | `boolean`                       | `false`      | Live-sort placeholder passthrough.                                                                                   |
-| `[forTableRowReorder]`    | `boundary`       | `HTMLElement \| string \| null` | `null`       | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
-| `[forTableRowReorder]`    | `lockAxis`       | `'x' \| 'y' \| null`            | `null`       | Axis-lock passthrough. Set `'y'` for row drag (holds horizontal position). Must be set explicitly — Angular #51691.  |
+| Directive                 | Input            | Type                            | Default        | Description                                                                                                          |
+| ------------------------- | ---------------- | ------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `[forTableColumnReorder]` | `orientation`    | `'horizontal' \| 'vertical'`    | `'horizontal'` | Passthrough to `[forDropList]`, defaulted to `'horizontal'` (column axis). Bind `'vertical'` to override.            |
+| `[forTableColumnReorder]` | `dir`            | `'ltr' \| 'rtl' \| null`        | `null`         | Writing direction passthrough.                                                                                       |
+| `[forTableColumnReorder]` | `disabled`       | `boolean`                       | `false`        | Disables the whole list passthrough.                                                                                 |
+| `[forTableColumnReorder]` | `autoScroll`     | `boolean`                       | `true`         | Auto-scroll passthrough.                                                                                             |
+| `[forTableColumnReorder]` | `animateReorder` | `boolean`                       | `false`        | FLIP animation passthrough.                                                                                          |
+| `[forTableColumnReorder]` | `liveSort`       | `boolean`                       | `false`        | Live-sort placeholder passthrough.                                                                                   |
+| `[forTableColumnReorder]` | `boundary`       | `HTMLElement \| string \| null` | `null`         | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
+| `[forTableColumnReorder]` | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'x'` for column drag (holds vertical position). Must be set explicitly — Angular #51691. |
+| `[forTableRowReorder]`    | `dir`            | `'ltr' \| 'rtl' \| null`        | `null`         | Writing direction passthrough.                                                                                       |
+| `[forTableRowReorder]`    | `disabled`       | `boolean`                       | `false`        | Disables the whole list passthrough.                                                                                 |
+| `[forTableRowReorder]`    | `autoScroll`     | `boolean`                       | `true`         | Auto-scroll passthrough.                                                                                             |
+| `[forTableRowReorder]`    | `animateReorder` | `boolean`                       | `false`        | FLIP animation passthrough.                                                                                          |
+| `[forTableRowReorder]`    | `liveSort`       | `boolean`                       | `false`        | Live-sort placeholder passthrough.                                                                                   |
+| `[forTableRowReorder]`    | `boundary`       | `HTMLElement \| string \| null` | `null`         | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
+| `[forTableRowReorder]`    | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'y'` for row drag (holds horizontal position). Must be set explicitly — Angular #51691.  |
 
 ### Outputs
 

@@ -1,7 +1,7 @@
 import { DestroyRef, Directive, inject, output } from '@angular/core';
 
 import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
-import { ForDropList } from '../drag-drop/drop-list';
+import { ForDropList, FOR_DROP_LIST_DEFAULT_ORIENTATION } from '../drag-drop/drop-list';
 import { moveItemInArray } from '../drag-drop/move-item-in-array';
 import { injectTableContext } from './table-context';
 
@@ -26,18 +26,13 @@ export interface TableColumnReorderDescriptor {
  * new column-name order; the consumer applies it to their own column array. **It never
  * reorders columns itself** (BYO-data).
  *
- * Angular cannot fix a host-directive input to a constant, so set
- * `orientation="horizontal"` on this element so the wrapped list resolves drops along
- * the row (horizontal) axis.
+ * The wrapped list defaults to `orientation="horizontal"` (a column reorder is always along
+ * the row axis), so no `orientation` binding is needed. Bind `orientation="vertical"` to
+ * override for the rare case.
  *
  * @example
  * ```html
- * <div
- *   forTableHeaderRow
- *   forTableColumnReorder
- *   orientation="horizontal"
- *   (columnReorder)="columns.set($event.columns)"
- * >
+ * <div forTableHeaderRow forTableColumnReorder (columnReorder)="columns.set($event.columns)">
  *   @for (col of columns(); track col) {
  *     <div forTableHeaderCell [name]="col" forDraggable [dragData]="col">{{ col }}</div>
  *   }
@@ -47,6 +42,7 @@ export interface TableColumnReorderDescriptor {
 @Directive({
   selector: '[forTableColumnReorder]',
   exportAs: 'forTableColumnReorder',
+  providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'horizontal' }],
   hostDirectives: [
     {
       directive: ForDropList,
