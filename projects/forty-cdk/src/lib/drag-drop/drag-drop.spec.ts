@@ -199,6 +199,15 @@ function listEl(host: HTMLElement, index = 0): HTMLElement {
 }
 
 describe('ForDropList + ForDraggable', () => {
+  describe('orientation default', () => {
+    it('a plain [forDropList] reflects data-orientation="vertical" with no binding', () => {
+      const { el } = renderHost(TwoListGroupHost);
+      const lists = el.querySelectorAll<HTMLElement>('[forDropList]');
+      expect(lists).toHaveLength(2);
+      lists.forEach((list) => expect(list.getAttribute('data-orientation')).toBe('vertical'));
+    });
+  });
+
   describe('registration and roving tabindex', () => {
     it('gives exactly one item tabindex="0" — the first enabled item', () => {
       const { el } = renderHost(SingleListHost);

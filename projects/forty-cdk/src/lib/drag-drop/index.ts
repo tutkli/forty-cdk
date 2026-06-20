@@ -1,4 +1,4 @@
-export { ForDropList } from './drop-list';
+export { ForDropList, FOR_DROP_LIST_DEFAULT_ORIENTATION } from './drop-list';
 export { ForDraggable } from './draggable';
 export { ForDragHandle } from './drag-handle';
 export { ForDragPreview } from './drag-preview';

@@ -86,7 +86,6 @@ interface Row {
       <div
         forTableHeaderRow
         forTableColumnReorder
-        orientation="horizontal"
         [liveSort]="liveSort"
         [lockAxis]="columnLockAxis"
         [boundary]="columnBoundary"
