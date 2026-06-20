@@ -296,6 +296,67 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('touch interaction', () => {
+    it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('still opens on a mouse-induced focus (hover/focus conflation kept for non-touch)', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('ignores a touch pointerenter so a tap never opens via the hover path', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'touch' }));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('reopens on a later keyboard focus after a suppressed touch tap', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+    });
+  });
+
   describe('hover / focus interplay', () => {
     it('does not close on pointerleave while the trigger is still focused', async () => {
       const r = renderHost(TooltipHost);

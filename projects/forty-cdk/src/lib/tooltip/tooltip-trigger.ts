@@ -3,9 +3,15 @@ import { Directive, effect, ElementRef, inject, input } from '@angular/core';
 import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-context';
 
 /**
- * Element that activates the tooltip on hover or focus. Apply on a focusable
- * element — preferably a `<button>` so keyboard users can reach it. Receives
- * `aria-describedby` only while the tooltip is open, per APG.
+ * Element that activates the tooltip on mouse hover or keyboard focus. Apply on
+ * a focusable element — preferably a `<button>` so keyboard users can reach it.
+ * Receives `aria-describedby` only while the tooltip is open, per APG.
+ *
+ * A touch tap does NOT open the tooltip: touch pointers are filtered out of
+ * both the hover-open path and the focus-open path, because a tap is not a
+ * hover and the APG flags hover-tooltips as problematic on touch (no hover, no
+ * separate focus affordance, no obvious dismiss). Keyboard focus stays the
+ * touch-accessible fallback for descriptive content.
  *
  * The root is normally resolved via DI from the enclosing `[forTooltip]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
@@ -20,7 +26,8 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
     '[id]': 'ctx().triggerId()',
     '[attr.aria-describedby]': 'ctx().open() ? ctx().contentId() : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
-    '(pointerenter)': 'onPointerEnter()',
+    '(pointerenter)': 'onPointerEnter($event)',
+    '(pointerdown)': 'onPointerDown($event)',
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -43,6 +50,8 @@ export class ForTooltipTrigger {
 
   protected readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
 
+  #lastPointerType: string | null = null;
+
   constructor() {
     const el = this.#host.nativeElement;
     // Registration is an imperative call into the resolved root's registry,
@@ -55,8 +64,15 @@ export class ForTooltipTrigger {
     });
   }
 
-  protected onPointerEnter(): void {
+  protected onPointerEnter(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      return;
+    }
     this.ctx().pointerEnterTrigger();
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    this.#lastPointerType = event.pointerType;
   }
 
   protected onPointerLeave(event: PointerEvent): void {
@@ -64,10 +80,16 @@ export class ForTooltipTrigger {
   }
 
   protected onFocus(): void {
+    const touchInduced = this.#lastPointerType === 'touch';
+    this.#lastPointerType = null;
+    if (touchInduced) {
+      return;
+    }
     this.ctx().focusTrigger();
   }
 
   protected onBlur(): void {
+    this.#lastPointerType = null;
     this.ctx().blurTrigger();
   }
 
