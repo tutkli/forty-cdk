@@ -29,7 +29,8 @@
           "options": {
             "tsConfig": "projects/forty-cdk/tsconfig.spec.json",
             "runnerConfig": true,
-            "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"]
+            "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
+            "include": ["**/*.spec.ts", "../virtualization/src/**/*.spec.ts"]
           }
         }
       }

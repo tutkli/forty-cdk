@@ -5,9 +5,8 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-  ForTableVirtualized,
-  injectInfiniteScroll,
 } from 'forty-cdk';
+import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { makePeople } from './big-people';

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

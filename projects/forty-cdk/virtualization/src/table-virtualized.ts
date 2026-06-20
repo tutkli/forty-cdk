@@ -9,9 +9,20 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { injectVirtualizer, type VirtualItem } from '../virtualization/virtualizer';
-import { injectTableContext } from './table-context';
+import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk';
+
+import { injectVirtualizer, type VirtualItem } from './virtualizer';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
+
+function injectTableContext(): ForTableContext {
+  const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(
+      '[forty-cdk/table] ForTableVirtualized must be used inside a [forTable] element.',
+    );
+  }
+  return ctx;
+}
 
 /**
  * Opt-in row-virtualization companion for `[forTable]` in `<div role>` grid mode. Place it on the
@@ -35,7 +46,7 @@ import { TableVirtualizedNavigator } from './table-virtualized-navigator';
   exportAs: 'forTableVirtualized',
 })
 export class ForTableVirtualized {
-  readonly #ctx = injectTableContext('ForTableVirtualized');
+  readonly #ctx = injectTableContext();
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /** Estimated row size in px along the scroll axis (the fixed-size fast path). Read for the size estimate. */

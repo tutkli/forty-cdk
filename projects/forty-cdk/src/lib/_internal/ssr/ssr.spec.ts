@@ -136,10 +136,12 @@ import { ForTableSortHeader } from '../../table/table-sort-header';
 import { ForTableColumnResizer } from '../../table/table-column-resizer';
 import { ForTableColumnReorder } from '../../table/table-column-reorder';
 import { ForTableRowReorder } from '../../table/table-row-reorder';
-import { ForTableVirtualized } from '../../table/table-virtualized';
-import { ForVirtualFor } from '../../virtualization/virtual-for';
-import { ForVirtualViewport } from '../../virtualization/virtual-viewport';
-import { injectVirtualizer } from '../../virtualization/virtualizer';
+import {
+  ForTableVirtualized,
+  ForVirtualFor,
+  ForVirtualViewport,
+  injectVirtualizer,
+} from 'forty-cdk/virtualization';
 import { ForStepper } from '../../stepper/stepper';
 import { ForStepperCompletedContent } from '../../stepper/stepper-completed-content';
 import { ForStepperContent } from '../../stepper/stepper-content';

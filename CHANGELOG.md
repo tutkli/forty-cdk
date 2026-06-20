@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Virtualization — moved to the `forty-cdk/virtualization` secondary entry point (BREAKING).** The windowing core (`injectVirtualizer`), the declarative `[forVirtualViewport]` + `*forVirtualFor` layer, infinite-scroll detection (`injectInfiniteScroll`), the `[forTableVirtualized]` companion, and their related types / context now ship from `forty-cdk/virtualization` instead of the main `forty-cdk` entry point. This isolates `@tanstack/virtual-core` to its own bundle chunk, so apps that don't virtualize — and lazy routes that don't, even when a sibling route in the same app does — no longer pull it into the shared `forty-cdk` chunk. **Migration:** update imports of `injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`, `injectInfiniteScroll`, `ForTableVirtualized` (and their related types) from `'forty-cdk'` to `'forty-cdk/virtualization'`. No API shapes changed.
+
 ## [0.0.4] - 2026-06-19
 
 ### Added
@@ -116,6 +122,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/tutkli/forty-cdk/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/tutkli/forty-cdk/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/tutkli/forty-cdk/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/tutkli/forty-cdk/releases/tag/v0.0.1

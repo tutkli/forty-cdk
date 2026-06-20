@@ -8,7 +8,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { injectVirtualizer } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

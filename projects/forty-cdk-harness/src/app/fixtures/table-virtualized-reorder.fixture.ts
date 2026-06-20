@@ -14,10 +14,10 @@ import {
   ForTableHeaderRow,
   ForTableRow,
   ForTableRowReorder,
-  ForTableVirtualized,
   moveItemInArray,
   type TableRowReorderDescriptor,
 } from 'forty-cdk';
+import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 const ROW_COUNT = 10_000;
 const ROW_HEIGHT = 44;

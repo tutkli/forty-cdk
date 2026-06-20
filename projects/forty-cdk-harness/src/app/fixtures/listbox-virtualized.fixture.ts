@@ -6,7 +6,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForListbox, ForListboxOption, injectVirtualizer } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {
   readonly id: string;

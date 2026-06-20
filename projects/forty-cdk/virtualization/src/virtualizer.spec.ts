@@ -10,7 +10,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { ɵPLATFORM_SERVER_ID } from '@angular/common';
 
-import { flush } from '../../test-utils';
+import { flush } from '../../src/test-utils';
 import { injectVirtualizer } from './virtualizer';
 
 function fakeLayoutProps(el: HTMLElement, height: number, width = 400): void {

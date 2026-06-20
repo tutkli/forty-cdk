@@ -20,13 +20,12 @@ import {
   ForTableRowSelector,
   ForTableSelectAll,
   ForTableSortHeader,
-  ForTableVirtualized,
-  injectInfiniteScroll,
   type TableColumnReorderDescriptor,
   type TableSelectionMode,
   type TableSortDescriptor,
   type TableSortDirection,
 } from 'forty-cdk';
+import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 const ROW_HEIGHT = 44;
 

@@ -5,8 +5,8 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-  ForTableVirtualized,
 } from 'forty-cdk';
+import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { makePeople } from './big-people';

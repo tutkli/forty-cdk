@@ -19,7 +19,7 @@ import type {
   VirtualizerOptions as CoreVirtualizerOptions,
 } from '@tanstack/virtual-core';
 
-import { afterNextRenderCancellable } from '../_internal/after-next-render-cancellable/after-next-render-cancellable';
+import { afterNextRenderCancellable } from './after-next-render-cancellable';
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;

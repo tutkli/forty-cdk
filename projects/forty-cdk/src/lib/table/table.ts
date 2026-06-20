@@ -159,6 +159,7 @@ export class ForTable implements ForTableContext {
    * row mounted across recycling during a drag.
    */
   readonly reorderingRowIndex = this.#reorderingRow.asReadonly();
+  readonly virtualRowNavigation = this.#virtualNav.asReadonly();
 
   readonly #flatCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
   readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);

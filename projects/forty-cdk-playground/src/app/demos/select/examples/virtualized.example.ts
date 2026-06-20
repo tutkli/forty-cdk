@@ -13,8 +13,8 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
-  injectVirtualizer,
 } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

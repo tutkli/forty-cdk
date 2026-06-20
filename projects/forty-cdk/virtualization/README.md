@@ -9,6 +9,12 @@ owns no DOM.
 Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns
 an empty window and the estimate-based total without touching `document`/`window`.
 
+> Ships from the **`forty-cdk/virtualization`** secondary entry point — import every
+> symbol below (`injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`,
+> `injectInfiniteScroll`, `ForTableVirtualized`) from `forty-cdk/virtualization`, not
+> `forty-cdk`. This keeps `@tanstack/virtual-core` out of the main `forty-cdk` bundle for
+> apps and routes that don't virtualize.
+
 ## Ergonomic layer (`[forVirtualViewport]` + `*forVirtualFor`)
 
 For the common "just virtualize this list" case, the optional Shape A layer wraps the manual

@@ -6,13 +6,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {
-  ForTree,
-  ForTreeItem,
-  ForTreeItemLabel,
-  ForTreeItemToggle,
-  injectVirtualizer,
-} from 'forty-cdk';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface TreeNode {
   readonly value: string;

@@ -7,8 +7,14 @@
     "types": ["vitest/globals"],
     "paths": {
       "forty-cdk": ["./src/public-api.ts"],
-      "forty-cdk/internationalized-date": ["./internationalized-date/src/public-api.ts"]
+      "forty-cdk/internationalized-date": ["./internationalized-date/src/public-api.ts"],
+      "forty-cdk/virtualization": ["./virtualization/src/public-api.ts"]
     }
   },
-  "include": ["src/**/*.d.ts", "src/**/*.spec.ts", "src/test-utils/**/*.ts"]
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.spec.ts",
+    "src/test-utils/**/*.ts",
+    "virtualization/src/**/*.spec.ts"
+  ]
 }

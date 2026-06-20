@@ -14,7 +14,6 @@ import { ForDropList } from '../drag-drop/drop-list';
 import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import { injectTableContext } from './table-context';
-import { ForTableVirtualized } from './table-virtualized';
 
 /** Payload of `rowReorder`: the previous and new row index. */
 export interface TableRowReorderDescriptor {
@@ -104,7 +103,6 @@ export class ForTableRowReorder {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #virtualized = inject(ForTableVirtualized, { optional: true });
   readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
@@ -151,7 +149,7 @@ export class ForTableRowReorder {
   }
 
   #onCaptureKeydown(event: KeyboardEvent): void {
-    if (this.#virtualized === null) {
+    if (this.ctx.virtualRowNavigation() === null) {
       return;
     }
     if (this.#kbLiftedHost !== null) {
@@ -228,7 +226,7 @@ export class ForTableRowReorder {
   }
 
   #kbApplyTarget(): void {
-    this.#virtualized?.scrollToRow(this.#kbTarget);
+    this.ctx.virtualRowNavigation()?.scrollToRow(this.#kbTarget);
     this.#announcer.announce(
       this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.#count()),
       'polite',
