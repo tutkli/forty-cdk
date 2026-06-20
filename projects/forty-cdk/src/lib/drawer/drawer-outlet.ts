@@ -4,12 +4,17 @@ import {
   DestroyRef,
   Directive,
   inject,
-  Injector,
-  type Signal,
+  type Injector,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
+import { OverlayContextInjector } from '../_internal/overlay-manager/overlay-context-injector';
+import type {
+  OverlayManagerEntry,
+  OverlayManagerOutlet,
+  OverlayManagerOutletHost,
+} from '../_internal/overlay-manager/overlay-manager';
 import type {
   VetoableEvent,
   VetoableNativeEvent,
@@ -26,16 +31,14 @@ import type {
  * @internal Minimal surface the outlet needs from `ForDrawerManager` — avoids
  * a circular import between the outlet file and the manager file.
  */
-export interface ForDrawerOutletHost {
-  readonly entries: Signal<readonly ForDrawerEntry[]>;
-  closeAllForDestroy(): void;
-}
+export type ForDrawerOutletHost = OverlayManagerOutletHost<ForDrawerEntry>;
 
 /**
- * @internal Shape of a single open drawer entry stored in the manager.
+ * Shape of a single open drawer entry stored in the manager.
+ *
+ * Internal — not re-exported from `public-api.ts`.
  */
-export interface ForDrawerEntry {
-  readonly id: string;
+export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly component: Type<unknown>;
   readonly hostClass: string;
   readonly side: ForDrawerSide | undefined;
@@ -73,24 +76,14 @@ export interface ForDrawerEntry {
 /**
  * @internal Exposes the element injector at a child of the row's `[forDrawer]`
  * element so the user component rendered via `NgComponentOutlet` resolves
- * `FOR_DRAWER_CONTEXT` from the enclosing `[forDrawer]` host.
- *
- * Mirrors `ForToastOutlet` — sits inside the `[forDrawer]` element, so its
- * own element injector already resolves `FOR_DRAWER_CONTEXT`. The outlet feeds
- * that injector to `entry.injectorFor(ctx.injector)`, making the user
- * component's injector inherit `FOR_DRAWER_CONTEXT` alongside `FOR_DRAWER_DATA`
- * / `ForDrawerRef` / consumer providers — so `[forDrawerClose]`,
- * `[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`,
- * `[forDrawerHandle]`, and `inject(ForDrawerRef)` / `injectDrawerData()` all
- * resolve exactly as in the declarative path.
+ * `FOR_DRAWER_CONTEXT` from the enclosing `[forDrawer]` host. The shared body
+ * lives in `OverlayContextInjector`; this only carries the drawer selector.
  */
 @Directive({
   selector: '[forDrawerContextInjector]',
   exportAs: 'forDrawerContextInjector',
 })
-export class ForDrawerContextInjector {
-  readonly injector = inject(Injector);
-}
+export class ForDrawerContextInjector extends OverlayContextInjector {}
 
 /**
  * @internal Outlet component created once by `ForDrawerManager` on the first
@@ -150,7 +143,7 @@ export class ForDrawerContextInjector {
     }
   `,
 })
-export class ForDrawerOutlet {
+export class ForDrawerOutlet implements OverlayManagerOutlet<ForDrawerEntry> {
   readonly #destroyRef = inject(DestroyRef);
   #host: ForDrawerOutletHost | null = null;
 
