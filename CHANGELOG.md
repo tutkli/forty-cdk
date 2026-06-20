@@ -7,9 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-21
+
+First minor release. From this version on, `forty-cdk` follows a `0.MINOR.PATCH`
+scheme while pre-1.0: feature and breaking changes bump the minor (`0.x.0`),
+bugfixes bump the patch (`0.x.y`). This keeps the npm caret (`^0.1.0`) flowing
+patches automatically while holding back across a minor that may carry breaking
+changes.
+
+### Added
+
+- **Breadcrumbs** — new headless primitive for breadcrumb trails, following the WAI-ARIA breadcrumb pattern.
+- **Search** — new headless search-field primitive.
+- **Pagination** — new headless pagination primitive.
+- **FileUpload** — new headless file-upload primitive, including directory (folder) upload support.
+- **Button** — new `ForButton` interaction primitive, backed by shared focus-visible / pressed / hovered interaction-state helpers.
+- **Tooltip** — `showOnOverflow` and `hoverableContent` options.
+- **Listbox / Select / Combobox** — `PageUp` / `PageDown` keyboard navigation.
+- **Textarea** — opt-in autosize on `ForTextarea`.
+- **Table** — `firstClickDirection` on sortable column headers, and the virtualization `range` is now exposed on `ForTableVirtualized`.
+- **DatePicker / TimePicker** — an `anchor` part for positioning against the field box, and `FOR_TIME_VALUE_SOURCE` is exported so wrappers can supply the time value.
+- **Tree** — drop-indicator hook for tree-node drag & drop.
+- **A11y** — `data-reduced-motion` hook on tooltip and popover.
+
 ### Changed
 
-- **Virtualization — moved to the `forty-cdk/virtualization` secondary entry point (BREAKING).** The windowing core (`injectVirtualizer`), the declarative `[forVirtualViewport]` + `*forVirtualFor` layer, infinite-scroll detection (`injectInfiniteScroll`), the `[forTableVirtualized]` companion, and their related types / context now ship from `forty-cdk/virtualization` instead of the main `forty-cdk` entry point. This isolates `@tanstack/virtual-core` to its own bundle chunk, so apps that don't virtualize — and lazy routes that don't, even when a sibling route in the same app does — no longer pull it into the shared `forty-cdk` chunk. **Migration:** update imports of `injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`, `injectInfiniteScroll`, `ForTableVirtualized` (and their related types) from `'forty-cdk'` to `'forty-cdk/virtualization'`. No API shapes changed.
+- **BREAKING — Virtualization moved to the `forty-cdk/virtualization` secondary entry point.** The windowing core (`injectVirtualizer`), the declarative `[forVirtualViewport]` + `*forVirtualFor` layer, infinite-scroll detection (`injectInfiniteScroll`), the `[forTableVirtualized]` companion, and their related types / context now ship from `forty-cdk/virtualization` instead of the main `forty-cdk` entry point. This isolates `@tanstack/virtual-core` to its own bundle chunk, so apps that don't virtualize — and lazy routes that don't, even when a sibling route in the same app does — no longer pull it into the shared `forty-cdk` chunk. **Migration:** update imports of `injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`, `injectInfiniteScroll`, `ForTableVirtualized` (and their related types) from `'forty-cdk'` to `'forty-cdk/virtualization'`. No API shapes changed.
+- **Table** — `ForTableColumnReorder`'s wrapped drop list now defaults to a horizontal orientation.
+
+### Fixed
+
+- **Tooltip** — a tap no longer opens the tooltip on touch.
+- **Combobox** — the active descendant no longer re-scrolls when options are appended, and hover is suppressed during keyboard-driven scrolling.
+- **Table** — the column resizer's `aria-valuenow` is now derived from the measured column width.
+- **Drag & Drop** — `dragDisabled` now fences the live-sort placeholder.
+- **NumberInput** — fractional stepping (e.g. a `0.1` step) no longer emits floating-point artifacts such as `0.30000000000000004`; emitted values are now rounded to the step's precision, matching the slider.
 
 ## [0.0.4] - 2026-06-19
 
@@ -122,7 +154,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/tutkli/forty-cdk/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/tutkli/forty-cdk/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/tutkli/forty-cdk/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/tutkli/forty-cdk/compare/v0.0.1...v0.0.2
