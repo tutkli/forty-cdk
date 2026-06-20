@@ -10,7 +10,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { injectVirtualizer } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 const ESTIMATE = 30;
 

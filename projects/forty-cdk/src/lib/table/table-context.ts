@@ -59,6 +59,12 @@ export interface TableVirtualRowNavigation {
    * column)`, scrolling that row into the window first when it is not mounted.
    */
   navigateTo(rowIndex: number, column: number): void;
+  /**
+   * Scroll the virtualizer so the row at the absolute `index` is in the window.
+   * Used by `[forTableRowReorder]` to follow a keyboard reorder target across
+   * the rendered window without taking a direct dependency on `ForTableVirtualized`.
+   */
+  scrollToRow(index: number): void;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
@@ -129,6 +135,13 @@ export interface ForTableContext {
    * targeting an unmounted row are handled by the virtualization bridge.
    */
   registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void;
+  /**
+   * The currently registered cross-window row-navigation delegate, or `null`
+   * when the table is not virtualized. `[forTableRowReorder]` reads this to gate
+   * keyboard reordering to virtualized tables and to scroll the reorder target
+   * into view, without taking a direct dependency on `ForTableVirtualized`.
+   */
+  readonly virtualRowNavigation: Signal<TableVirtualRowNavigation | null>;
   /**
    * Absolute index of the row currently being pointer-reordered (set by
    * `[forTableRowReorder]` on lift, cleared on release), or `null` when no row is

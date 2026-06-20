@@ -12,8 +12,8 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
-  injectVirtualizer,
 } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {
   readonly id: string;

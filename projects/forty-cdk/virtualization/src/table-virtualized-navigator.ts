@@ -1,6 +1,6 @@
 import { signal, type Signal } from '@angular/core';
 
-import type { ForTableRowHandle } from './table-context';
+import type { ForTableRowHandle } from 'forty-cdk';
 
 /** An absolute (rowIndex, 0-based column) target awaiting the row to mount. */
 interface PendingTarget {
@@ -59,6 +59,11 @@ export class TableVirtualizedNavigator {
     }
     this.#pending.set({ row, col });
     this.#deps.scrollToRow(row);
+  }
+
+  /** Scroll the virtualizer so the row at the absolute `index` is in the window. */
+  scrollToRow(index: number): void {
+    this.#deps.scrollToRow(index);
   }
 
   /**

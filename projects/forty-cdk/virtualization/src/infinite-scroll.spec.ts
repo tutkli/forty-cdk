@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../test-utils';
+import { flush } from '../../src/test-utils';
 import { injectInfiniteScroll } from './infinite-scroll';
 
 @Component({ template: '' })

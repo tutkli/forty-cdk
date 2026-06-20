@@ -6,12 +6,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {
-  ForListbox,
-  ForListboxOption,
-  ForListboxOptionIndicator,
-  injectVirtualizer,
-} from 'forty-cdk';
+import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk';
+import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

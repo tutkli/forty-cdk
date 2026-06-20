@@ -12,12 +12,11 @@ import {
   ForTableRowSelector,
   ForTableSelectAll,
   ForTableSortHeader,
-  ForTableVirtualized,
-  injectInfiniteScroll,
   type TableColumnReorderDescriptor,
   type TableSortDescriptor,
   type TableSortDirection,
 } from 'forty-cdk';
+import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { makePeople } from './big-people';

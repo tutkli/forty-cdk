@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
 interface Row {
   readonly index: number;

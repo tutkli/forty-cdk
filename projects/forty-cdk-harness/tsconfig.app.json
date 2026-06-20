@@ -6,7 +6,8 @@
     "outDir": "../../out-tsc/app",
     "types": [],
     "paths": {
-      "forty-cdk": ["../forty-cdk/src/public-api.ts"]
+      "forty-cdk": ["../forty-cdk/src/public-api.ts"],
+      "forty-cdk/virtualization": ["../forty-cdk/virtualization/src/public-api.ts"]
     }
   },
   "include": ["src/**/*.ts"],
