@@ -7,9 +7,7 @@ import {
   model,
   numberAttribute,
   output,
-  signal,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -17,22 +15,18 @@ import {
   injectDateAdapter,
   type TimeCapableDateAdapter,
 } from '../_internal/date-adapter/date-adapter';
-import { Collection } from '../_internal/collection/collection';
-import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
   type ListNavigationAction,
-  moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { ListboxOverlayController } from '../_internal/listbox-overlay/listbox-overlay-controller';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import {
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
+import type {
+  VetoableEvent,
+  VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
@@ -76,7 +70,6 @@ export class ForTimePicker<D>
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
   readonly #idGen = inject(IdGenerator);
-  readonly #items = new Collection<ForTimePickerOptionHandle>();
   readonly #defaults = inject(FOR_TIME_PICKER_DEFAULTS);
 
   /**
@@ -259,19 +252,41 @@ export class ForTimePicker<D>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly triggerId = signal(this.#idGen.next('for-time-picker-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-time-picker-content'));
+  /**
+   * Shared overlay-listbox state machine: option collection, trigger / anchor /
+   * content registries + ids, DOM-focus navigation, the open / close machine,
+   * the initial-focus / close-reason state, and the dismiss / auto-focus emit
+   * forwarders. The value-specific behaviour (`isSelected`, `activate`,
+   * `focusSelectedOption`, `commitOnTab`) stays in this root.
+   */
+  readonly #controller = new ListboxOverlayController<
+    ForTimePickerOptionHandle,
+    ForTimePickerInitialFocus,
+    ForTimePickerCloseReason
+  >(this.#idGen, {
+    idPrefix: 'for-time-picker',
+    multipleAnchorsError:
+      '[forty-cdk/time-picker] Multiple [forTimePickerAnchor] inside the same [forTimePicker]; only one is allowed.',
+    defaultInitialFocus: 'selected',
+    effectiveDisabled: this.effectiveDisabled,
+    setOpen: (open) => this.open.set(open),
+    isOpen: () => this.open(),
+    emit: {
+      escapeKeyDown: this.escapeKeyDown,
+      pointerDownOutside: this.pointerDownOutside,
+      focusOutside: this.focusOutside,
+      interactOutside: this.interactOutside,
+      autoFocusOnOpen: this.autoFocusOnOpen,
+      autoFocusOnClose: this.autoFocusOnClose,
+    },
+    markTouched: () => this.markTouched(),
+  });
 
-  readonly #initialFocus = signal<ForTimePickerInitialFocus>('selected');
-  readonly initialFocus = this.#initialFocus.asReadonly();
-
-  readonly #lastCloseReason = signal<ForTimePickerCloseReason | null>(null);
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
-
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly triggerId = this.#controller.triggerId;
+  readonly contentId = this.#controller.contentId;
+  readonly initialFocus = this.#controller.initialFocus;
+  readonly lastCloseReason = this.#controller.lastCloseReason;
+  readonly trigger = this.#controller.trigger;
 
   /**
    * Element floating-ui anchors the listbox against. Prefers an optional
@@ -281,12 +296,11 @@ export class ForTimePicker<D>
    * click toggle, focus return, and its dismissal exemption regardless of where
    * the listbox paints.
    */
-  readonly anchor = computed<ReferenceElement | null>(() => this.#anchorEl() ?? this.#triggerEl());
+  readonly anchor = this.#controller.anchor;
 
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly content = this.#controller.content;
 
-  readonly options = this.#items.items;
+  readonly options = this.#controller.options;
 
   readonly #sentinel = computed(() => this.adapter.createDate(2000, 1, 1));
 
@@ -371,49 +385,35 @@ export class ForTimePicker<D>
   }
 
   setInitialFocus(target: ForTimePickerInitialFocus): void {
-    this.#initialFocus.set(target);
+    this.#controller.setInitialFocus(target);
   }
 
   registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
+    this.#controller.registerTrigger(el);
   }
   unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+    this.#controller.unregisterTrigger(el);
   }
 
   registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/time-picker] Multiple [forTimePickerAnchor] inside the same [forTimePicker]; only one is allowed.',
-      );
-    }
-    this.#anchorEl.set(el);
+    this.#controller.registerAnchor(el);
   }
   unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
+    this.#controller.unregisterAnchor(el);
   }
 
   registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.contentId);
-    this.#contentEl.set(el);
+    this.#controller.registerContent(el);
   }
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
+    this.#controller.unregisterContent(el);
   }
 
   registerOption(handle: ForTimePickerOptionHandle): void {
-    this.#items.register(handle);
+    this.#controller.registerOption(handle);
   }
   unregisterOption(handle: ForTimePickerOptionHandle): void {
-    this.#items.unregister(handle);
+    this.#controller.unregisterOption(handle);
   }
 
   #sameTimeOfDay(a: D, b: D): boolean {
@@ -448,47 +448,15 @@ export class ForTimePicker<D>
   }
 
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((o) => o.host === currentOption);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
-      return;
-    }
-    target.host.focus();
+    this.#controller.navigate(currentOption, action, this.loop());
   }
 
   focusFirstEnabledOption(): boolean {
-    const target = this.#items.items().find((o) => !o.disabled());
-    if (!target) {
-      return false;
-    }
-    target.host.focus();
-    return true;
+    return this.#controller.focusFirstEnabledOption();
   }
 
   focusLastEnabledOption(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
-    }
-    return false;
+    return this.#controller.focusLastEnabledOption();
   }
 
   focusSelectedOption(): boolean {
@@ -496,7 +464,7 @@ export class ForTimePicker<D>
     if (current === null) {
       return false;
     }
-    const items = this.#items.items();
+    const items = this.options();
     const opt = items.find((o) => {
       if (o.disabled()) {
         return false;
@@ -512,28 +480,15 @@ export class ForTimePicker<D>
   }
 
   toggle(initialFocus: ForTimePickerInitialFocus = 'selected'): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    if (this.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(initialFocus);
-    }
+    this.#controller.toggle(initialFocus);
   }
 
   openMenu(initialFocus: ForTimePickerInitialFocus = 'selected'): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    this.#initialFocus.set(initialFocus);
-    this.#lastCloseReason.set(null);
-    this.open.set(true);
+    this.#controller.openMenu(initialFocus);
   }
 
   closeMenu(reason: ForTimePickerCloseReason): void {
-    this.#lastCloseReason.set(reason);
-    this.open.set(false);
+    this.#controller.closeMenu(reason);
   }
 
   commitOnTab(value: D): void {
@@ -543,44 +498,38 @@ export class ForTimePicker<D>
     if (!this.readonly()) {
       this.value.set(value);
     }
-    this.#triggerEl()?.focus();
+    this.#controller.focusTrigger();
     this.closeMenu('tab');
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-    if (!vetoed && this.dismissible()) {
-      event.stopPropagation();
-      this.markTouched();
-      this.closeMenu('escape');
-    }
+    this.#controller.emitEscapeKeyDown(event, this.dismissible(), 'escape');
   }
 
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.pointerDownOutside.emit(veto);
+    this.#controller.emitPointerDownOutside(veto);
   }
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.focusOutside.emit(veto);
+    this.#controller.emitFocusOutside(veto);
   }
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.interactOutside.emit(veto);
+    this.#controller.emitInteractOutside(veto);
   }
 
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.escapeKeyDown.emit(veto);
+    this.#controller.forwardEscapeKeyDown(veto);
   }
 
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.markTouched();
-    this.closeMenu(reason);
+    this.#controller.requestClose(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return this.#controller.emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return this.#controller.emitAutoFocusOnClose();
   }
 
   override markTouched(): void {
