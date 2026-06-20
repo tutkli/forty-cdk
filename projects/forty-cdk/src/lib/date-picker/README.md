@@ -15,12 +15,13 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 
 ## Pieces
 
-| Class                  | Selector                 | Role                                                                                                            |
-| ---------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `ForDatePicker`        | `[forDatePicker]`        | Root + `FormValueControl<D \| null>`. Owns `value`, `open`, the shared context, and the close-on-select bridge. |
-| `ForDatePickerTrigger` | `[forDatePickerTrigger]` | The focusable button (`aria-haspopup="dialog"`). Opens the surface; carries the form-control ARIA state.        |
-| `ForDatePickerContent` | `[forDatePickerContent]` | The floating `role="dialog"` surface. Non-modal popover by default; modal dialog when `[modal]`.                |
-| `ForDatePickerValue`   | `[forDatePickerValue]`   | Renders the formatted value (or the placeholder) inside the trigger, via the adapter's `format`.                |
+| Class                  | Selector                 | Role                                                                                                                                                                                                   |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ForDatePicker`        | `[forDatePicker]`        | Root + `FormValueControl<D \| null>`. Owns `value`, `open`, the shared context, and the close-on-select bridge.                                                                                        |
+| `ForDatePickerTrigger` | `[forDatePickerTrigger]` | The focusable button (`aria-haspopup="dialog"`). Opens the surface; carries the form-control ARIA state.                                                                                               |
+| `ForDatePickerContent` | `[forDatePickerContent]` | The floating `role="dialog"` surface. Non-modal popover by default; modal dialog when `[modal]`.                                                                                                       |
+| `ForDatePickerValue`   | `[forDatePickerValue]`   | Renders the formatted value (or the placeholder) inside the trigger, via the adapter's `format`.                                                                                                       |
+| `ForDatePickerAnchor`  | `[forDatePickerAnchor]`  | Optional. Positions the surface against this element instead of the trigger — wrap a decorated field box so it aligns to the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
 
 ## Inputs / models — `ForDatePicker`
 
@@ -165,6 +166,29 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
   </button>
 </ng-template>
 ```
+
+## Anchoring to a field box
+
+By default the surface is positioned against `[forDatePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button offsets the surface from the visible field's edge. Wrap the field box in `[forDatePickerAnchor]` so floating-ui positions the surface against the box instead:
+
+```html
+<div forDatePicker #picker="forDatePicker" [(value)]="date">
+  <div forDatePickerAnchor class="field-box">
+    <icon name="calendar" />
+    <button forDatePickerTrigger>
+      <span forDatePickerValue placeholder="Pick a date"></span>
+    </button>
+    <button class="clear" (click)="date.set(null)">×</button>
+  </div>
+  @if (picker.open()) {
+  <div forDatePickerContent>
+    <div forCalendar [(value)]="date"><!-- …header + grid… --></div>
+  </div>
+  }
+</div>
+```
+
+`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. At most one `[forDatePickerAnchor]` per `[forDatePicker]` — a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
 
 ## Modal vs non-modal
 

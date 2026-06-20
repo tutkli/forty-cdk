@@ -2,19 +2,12 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { disabled, form, FormField, required } from '@angular/forms/signals';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pressKey,
-  renderHost,
-} from '../../test-utils';
-import {
-  type DateAdapter,
-  FOR_DATE_ADAPTER,
-} from '../_internal/date-adapter/date-adapter';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
+import { type DateAdapter, FOR_DATE_ADAPTER } from '../_internal/date-adapter/date-adapter';
 import { provideNativeDateAdapter } from '../calendar/native-date-adapter';
 import {
   ForTimePicker,
+  ForTimePickerAnchor,
   ForTimePickerContent,
   ForTimePickerOption,
   ForTimePickerTrigger,
@@ -58,7 +51,9 @@ const BASE_IMPORTS = [
               [value]="slot.value"
               [disabled]="slot.disabled"
               [attr.data-testid]="'slot-' + slot.id"
-            >{{ slot.label }}</div>
+            >
+              {{ slot.label }}
+            </div>
           }
         </div>
       }
@@ -563,11 +558,9 @@ describe('ForTimePicker', () => {
           @if (open()) {
             <div forTimePickerContent>
               @for (slot of picker.slots(); track slot.id) {
-                <div
-                  forTimePickerOption
-                  [value]="slot.value"
-                  [disabled]="slot.disabled"
-                >{{ slot.label }}</div>
+                <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+                  {{ slot.label }}
+                </div>
               }
             </div>
           }
@@ -595,7 +588,8 @@ describe('ForTimePicker', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      const nineAm = document.querySelector<HTMLElement>('[data-testid="slot-slot-32400"]') ??
+      const nineAm =
+        document.querySelector<HTMLElement>('[data-testid="slot-slot-32400"]') ??
         document.querySelectorAll<HTMLElement>('[forTimePickerOption]')[9];
       nineAm?.click();
       await flush(r.fixture);
@@ -614,6 +608,125 @@ describe('ForTimePicker', () => {
 
       const selectedSlot = document.querySelector<HTMLElement>('[data-state="checked"]');
       expect(selectedSlot).not.toBeNull();
+    });
+  });
+
+  describe('anchor (separate positioning element)', () => {
+    @Component({
+      imports: [
+        ForTimePicker,
+        ForTimePickerAnchor,
+        ForTimePickerTrigger,
+        ForTimePickerContent,
+        ForTimePickerOption,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forTimePicker [(open)]="open" [(value)]="value" #picker="forTimePicker">
+          @if (showAnchor()) {
+            <div data-testid="anchor" forTimePickerAnchor>
+              <button forTimePickerTrigger>Open</button>
+            </div>
+          } @else {
+            <button forTimePickerTrigger>Open</button>
+          }
+          @if (open()) {
+            <div forTimePickerContent>
+              @for (slot of picker.slots(); track slot.id) {
+                <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+                  {{ slot.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly open = signal(false);
+      readonly value = signal<Date | null>(null);
+      readonly showAnchor = signal(true);
+    }
+
+    it('mounts the listbox with [forTimePickerAnchor] registered alongside the trigger', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(getTrigger()).not.toBeNull();
+      expect(getContent()).not.toBeNull();
+    });
+
+    it('lets the trigger keep driving aria-controls and the toggle even with an anchor', async () => {
+      const r = renderHost(AnchorHost);
+      const trigger = getTrigger();
+      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
+
+      trigger.click();
+      await flush(r.fixture);
+
+      const content = getContent()!;
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('restores the trigger fallback after the anchor is torn down inside @if', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[data-testid="anchor"]')).toBeNull();
+
+      getTrigger().click();
+      await flush(r.fixture);
+      expect(getContent()).not.toBeNull();
+    });
+
+    it('reacts to anchor registration without zone.js', async () => {
+      const r = renderHost(AnchorHost);
+      r.instance.showAnchor.set(false);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(getContent()).not.toBeNull();
+
+      r.instance.open.set(false);
+      r.instance.showAnchor.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[data-testid="anchor"]')).not.toBeNull();
+      expect(getContent()).not.toBeNull();
+    });
+
+    it('throws when two [forTimePickerAnchor] are registered inside the same [forTimePicker]', () => {
+      @Component({
+        imports: [ForTimePicker, ForTimePickerAnchor, ForTimePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          @if (show()) {
+            <div forTimePicker>
+              <div forTimePickerAnchor></div>
+              <div forTimePickerAnchor></div>
+              <button forTimePickerTrigger>Open</button>
+            </div>
+          }
+        `,
+      })
+      class TwoAnchorsHost {
+        readonly show = signal(true);
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TwoAnchorsHost);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/time-picker\] Multiple \[forTimePickerAnchor\]/,
+      );
     });
   });
 
