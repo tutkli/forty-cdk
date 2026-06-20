@@ -1,6 +1,16 @@
 import { linkedSignal, type Signal, type WritableSignal } from '@angular/core';
 
+import { readEntryGuarded } from '../_internal/virtualized-navigator/virtualized-navigator';
 import type { ForComboboxOptionHandle } from './combobox-context';
+
+/**
+ * Read a handle's inputs inside a snapshot fold, skipping a statically-rendered
+ * option that registers before its `input.required` `[value]` binding is
+ * written (the NG0950 window). Combobox-local alias of the shared
+ * `_internal/virtualized-navigator` read guard, shared by `OptionLabelCache`
+ * and `VirtualizedNavigator` so the guard is single-sourced across the library.
+ */
+export const tryReadHandle = readEntryGuarded;
 
 /** Source tracked by every combobox snapshot fold: the live window + its total. */
 interface FoldSource<T> {
@@ -43,42 +53,4 @@ export function foldSnapshotOnTotalCountTransition<T, A>(
       return fold(prev?.value ?? empty(), window);
     },
   });
-}
-
-/**
- * Read a handle's inputs inside a snapshot fold, tolerating the NG0950 thrown
- * while a statically-rendered option is in the gap between registering (its
- * constructor, during the content view's *creation* pass) and having its
- * `input.required` `[value]` binding written (that view's *update* pass). The
- * host view's effect flush — which primes these folds — runs in that gap, so a
- * static option above a `@for` list would otherwise hard-crash on open.
- *
- * Returns `null` in that window; the caller skips the option for this fold.
- * The required-input signal's producer is accessed *before* the read throws,
- * so the dependency is still tracked: writing the binding marks the fold's
- * `linkedSignal` dirty and it re-runs, folding the option in once its value is
- * set. Any non-NG0950 error propagates unchanged.
- */
-export function tryReadHandle<R>(read: () => R): R | null {
-  try {
-    return read();
-  } catch (error) {
-    if (isRequiredInputUnset(error)) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-/**
- * NG0950 — `RuntimeError(-950)` — is thrown when an `input.required` is read
- * before its binding is written. Detected via the stable numeric `code` rather
- * than the message text (which is stripped in production builds).
- */
-function isRequiredInputUnset(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as Error & { code?: unknown }).code;
-  return typeof code === 'number' && Math.abs(code) === 950;
 }
