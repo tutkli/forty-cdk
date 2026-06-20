@@ -13,27 +13,19 @@ import {
   signal,
 } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import {
-  compareDateOf,
-  type DateAdapter,
-  injectDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter, injectDateAdapter } from '../_internal/date-adapter/date-adapter';
 import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { buildMonthMatrix } from './build-month-matrix';
+import { CalendarBounds } from './calendar-bounds';
 import {
   type CalendarDateLabelFormatter,
   type CalendarDateRange,
   type CalendarMonthOption,
   type CalendarMonthRow,
   type CalendarView,
-  type CalendarWeek,
-  type CalendarWeekday,
-  type CalendarYearOption,
   type CalendarYearRow,
   FOR_CALENDAR_CONTEXT,
   type ForCalendarCellHandle,
@@ -41,9 +33,13 @@ import {
   type ForCalendarMonthCellHandle,
   type ForCalendarYearCellHandle,
 } from './calendar-context';
+import { CalendarDayNavigator } from './calendar-day-navigator';
 import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
-
-const GRID_COLUMNS = 3;
+import { CalendarMonthNavigator } from './calendar-month-navigator';
+import { CalendarNavigation } from './calendar-navigation';
+import { CalendarRangeSelection } from './calendar-range-selection';
+import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
+import { CalendarYearNavigator } from './calendar-year-navigator';
 
 /**
  * Headless implementation of a single-date calendar grid following the
@@ -64,42 +60,20 @@ const GRID_COLUMNS = 3;
  * `Shift+PageUp` / `Shift+PageDown` move the focused date, re-paging the grid
  * when crossing a month boundary; `Enter` / `Space` select.
  *
+ * The day / month / year views are each backed by a sub-grid collaborator
+ * ({@link CalendarDayNavigator} / {@link CalendarMonthNavigator} /
+ * {@link CalendarYearNavigator}), and range selection by
+ * {@link CalendarRangeSelection}; the root wires them together and exposes the
+ * `[(value)]` / `[(view)]` / `[(range)]` models.
+ *
  * `ForCalendar` is the grid widget, not a form value — it exposes `[(value)]`
  * as a `model<D | null>` in `selectionMode="single"` (default), and
  * `[(range)]` as a `model<CalendarDateRange<D> | null>` in
  * `selectionMode="range"`. The `FormValueControl<D>` contract arrives with the
- * follow-up `ForDatePicker` / `ForDateField`.
+ * follow-up `ForDatePicker` / `ForDateField`. See the primitive's README for a
+ * complete styleless usage example.
  *
  * @typeParam D The adapter's immutable date type.
- *
- * @example
- * ```html
- * <div forCalendar [(value)]="date">
- *   <header>
- *     <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
- *     <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
- *     <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
- *   </header>
- *   <table forCalendarGrid #grid="forCalendarGrid">
- *     <thead forCalendarGridHeader>
- *       <tr>
- *         @for (day of grid.weekDays(); track day.key) {
- *           <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
- *         }
- *       </tr>
- *     </thead>
- *     <tbody>
- *       @for (week of grid.weeks(); track week.key) {
- *         <tr>
- *           @for (cell of week.days; track cell.key) {
- *             <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
- *           }
- *         </tr>
- *       }
- *     </tbody>
- *   </table>
- * </div>
- * ```
  */
 @Directive({
   selector: '[forCalendar]',
@@ -225,29 +199,115 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly dir = injectTextDirection(this._dirInput);
 
   readonly #today = this.adapter.today();
-  readonly #cells = new Collection<ForCalendarCellHandle<D>>();
-  readonly #monthCells = new Collection<ForCalendarMonthCellHandle>();
-  readonly #yearCells = new Collection<ForCalendarYearCellHandle>();
-
-  readonly #anchor = signal<D | null>(null);
-  readonly #hovered = signal<D | null>(null);
-
-  readonly #effectiveRange = computed<{ start: D; end: D; preview: boolean } | null>(() => {
-    const anchor = this.#anchor();
-    if (anchor !== null) {
-      const cursor = this.#hovered() ?? this.focusedDate();
-      const cmp = compareDateOf(this.adapter, cursor, anchor);
-      const [start, end] = cmp < 0 ? [cursor, anchor] : [anchor, cursor];
-      return { start, end, preview: true };
-    }
-    const committed = this.range();
-    return committed === null ? null : { start: committed.start, end: committed.end, preview: false };
-  });
 
   /** Internal focused date (the roving entry point), seeded from `value ?? range.start ?? today`. */
-  readonly focusedDate = linkedSignal<D>(
-    () => this.value() ?? this.range()?.start ?? this.#today,
+  readonly focusedDate = linkedSignal<D>(() => this.value() ?? this.range()?.start ?? this.#today);
+
+  readonly #bounds = new CalendarBounds<D>({
+    adapter: this.adapter,
+    min: this.min,
+    max: this.max,
+    visibleMonth: () => this.visibleMonth(),
+    isDateUnavailable: this.isDateUnavailable,
+    disabled: this.disabled,
+  });
+
+  readonly #range = new CalendarRangeSelection<D>({
+    adapter: this.adapter,
+    focusedDate: this.focusedDate,
+    range: this.range,
+    active: computed(() => this.selectionMode() === 'range'),
+    minRangeLength: this.minRangeLength,
+    maxRangeLength: this.maxRangeLength,
+  });
+
+  readonly #nav = new CalendarNavigation<D>(
+    {
+      adapter: this.adapter,
+      disabled: this.disabled,
+      readonly: this.readonly,
+      selectionMode: this.selectionMode,
+      focusedDate: this.focusedDate,
+      value: this.value,
+      visibleMonth: () => this.visibleMonth(),
+      visibleMonthLabel: () => this.visibleMonthLabel(),
+      visibleYear: () => this.visibleYear(),
+      visibleMonthNumber: () => this.visibleMonthNumber(),
+      bounds: this.#bounds,
+      range: this.#range,
+      announce: (label) => this.#announcer.announce(label, 'polite'),
+      scheduleFocus: (fn) => this.#scheduleFocus(fn),
+      focusDayCell: (target) => this.#focusDayCell(target),
+    },
+    this.value() ?? this.range()?.start ?? this.#today,
   );
+
+  readonly #dayNav = new CalendarDayNavigator<D>({
+    ...this.#subGridHost(),
+    visibleMonth: () => this.visibleMonth(),
+    firstDayOfWeek: () => this.#resolvedFirstDayOfWeek(),
+    getDateLabel: (date) => this.getDateLabel(date),
+    selectDate: (date) => this.#nav.selectDate(date),
+    pageMonths: (delta) => this.#nav.pageMonths(delta),
+    applyDayKeyMove: (target, isPaging) => this.#nav.applyDayKeyMove(target, isPaging),
+  });
+
+  readonly #monthNav = new CalendarMonthNavigator<D>(
+    {
+      ...this.#subGridHost(),
+      ...this.#pickerViewHost(),
+      isMonthOutOfBounds: (year, month) => this.#bounds.isMonthOutOfBounds(year, month),
+      selectMonth: (month) => this.selectMonth(month),
+    },
+    this.#today,
+  );
+
+  readonly #yearNav = new CalendarYearNavigator<D>(
+    {
+      ...this.#subGridHost(),
+      ...this.#pickerViewHost(),
+      selectYear: (year) => this.selectYear(year),
+    },
+    this.#today,
+  );
+
+  readonly #strategies: Record<CalendarView, CalendarViewStrategy> = {
+    day: this.#dayNav,
+    month: this.#monthNav,
+    year: this.#yearNav,
+  };
+
+  #strategyFor(view: CalendarView): CalendarViewStrategy {
+    return this.#strategies[view];
+  }
+
+  /** The reactive root surface shared by all three sub-grid navigators. */
+  #subGridHost(): CalendarSubGridHost<D> {
+    return {
+      adapter: this.adapter,
+      dir: this.dir,
+      yearBlockSize: () => this.yearBlockSize(),
+      yearBlockStart: () => this.#yearBlockStart(),
+      visibleMonthLabel: () => this.visibleMonthLabel(),
+      visibleYear: () => this.visibleYear(),
+      visibleMonthNumber: () => this.visibleMonthNumber(),
+      focusedDate: this.focusedDate,
+      isPreviousMonthDisabled: this.#bounds.isPreviousMonthDisabled,
+      isNextMonthDisabled: this.#bounds.isNextMonthDisabled,
+      isYearDisabled: (year) => this.#bounds.isYearDisabled(year),
+    };
+  }
+
+  /** The navigation / focus surface shared by the month and year picker navigators. */
+  #pickerViewHost() {
+    return {
+      value: () => this.value(),
+      pageByYears: (step: number) => this.#nav.pageByYears(step),
+      setFocusedDate: (date: D) => this.focusedDate.set(date),
+      dateInMonth: (year: number, month: number) => this.#nav.dateInMonth(year, month),
+      scheduleFocus: (fn: () => void) => this.#scheduleFocus(fn),
+    };
+  }
 
   #viewSwitched = false;
   readonly #viewFocusEffect = effect(() => {
@@ -256,7 +316,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       this.#viewSwitched = true;
       return;
     }
-    afterNextRender(() => this.#focusActiveForView(view), { injector: this.#injector });
+    afterNextRender(() => this.#strategyFor(view).focusActive(), { injector: this.#injector });
   });
 
   readonly #resolvedFirstDayOfWeek = computed(
@@ -300,19 +360,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * whether the whole month falls outside `[min, max]`. Tracks {@link visibleYear}.
    * Build native `<select>` month dropdowns from it.
    */
-  readonly monthOptions = computed<readonly CalendarMonthOption[]>(() => {
-    const adapter = this.adapter;
-    const year = this.visibleYear();
-    const options: CalendarMonthOption[] = [];
-    for (let month = 1; month <= 12; month++) {
-      options.push({
-        value: month,
-        label: adapter.format(adapter.createDate(year, month, 1), { month: 'long' }),
-        disabled: this.#isMonthOutOfBounds(year, month),
-      });
-    }
-    return options;
-  });
+  readonly monthOptions = computed<readonly CalendarMonthOption[]>(() => this.#monthNav.options());
 
   readonly #yearBlockStart = computed(() => {
     const size = this.yearBlockSize();
@@ -320,137 +368,36 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   });
 
   /** Rows of the month picker grid (3 columns) for the visible year. */
-  readonly monthRows = computed<readonly CalendarMonthRow[]>(() => {
-    const months = this.monthOptions();
-    const rows: CalendarMonthRow[] = [];
-    for (let i = 0; i < months.length; i += GRID_COLUMNS) {
-      rows.push({ key: `m-${i}`, months: months.slice(i, i + GRID_COLUMNS) });
-    }
-    return rows;
-  });
+  readonly monthRows = computed<readonly CalendarMonthRow[]>(() => this.#monthNav.rows());
 
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
-  readonly yearRows = computed<readonly CalendarYearRow[]>(() => {
-    const start = this.#yearBlockStart();
-    const size = this.yearBlockSize();
-    const years: CalendarYearOption[] = [];
-    for (let i = 0; i < size; i++) {
-      const value = start + i;
-      years.push({ value, disabled: this.isYearDisabled(value) });
-    }
-    const rows: CalendarYearRow[] = [];
-    for (let i = 0; i < years.length; i += GRID_COLUMNS) {
-      rows.push({ key: `y-${i}`, years: years.slice(i, i + GRID_COLUMNS) });
-    }
-    return rows;
-  });
+  readonly yearRows = computed<readonly CalendarYearRow[]>(() => this.#yearNav.rows());
 
   /** Label for the view trigger / heading, reflecting the active view. */
-  readonly viewTriggerLabel = computed(() => {
-    switch (this.view()) {
-      case 'day':
-        return this.visibleMonthLabel();
-      case 'month':
-        return String(this.visibleYear());
-      case 'year': {
-        const start = this.#yearBlockStart();
-        return `${start} – ${start + this.yearBlockSize() - 1}`;
-      }
-    }
-  });
+  readonly viewTriggerLabel = computed(() => this.#strategyFor(this.view()).triggerLabel());
 
-  readonly isPreviousDisabled = computed(() => {
-    switch (this.view()) {
-      case 'day':
-        return this.isPreviousMonthDisabled();
-      case 'month':
-        return this.isYearDisabled(this.visibleYear() - 1);
-      case 'year':
-        return this.isYearDisabled(this.#yearBlockStart() - 1);
-    }
-  });
+  readonly isPreviousDisabled = computed(() => this.#strategyFor(this.view()).isPreviousDisabled());
 
-  readonly isNextDisabled = computed(() => {
-    switch (this.view()) {
-      case 'day':
-        return this.isNextMonthDisabled();
-      case 'month':
-        return this.isYearDisabled(this.visibleYear() + 1);
-      case 'year':
-        return this.isYearDisabled(this.#yearBlockStart() + this.yearBlockSize());
-    }
-  });
+  readonly isNextDisabled = computed(() => this.#strategyFor(this.view()).isNextDisabled());
 
-  /**
-   * Day-of-month the user is conceptually navigating with. Paging across months
-   * re-derives the focused date from it (clamped to the target month's length)
-   * so the original day restores when landing on a longer month, instead of
-   * cumulatively drifting back through a chain of short months. It is re-synced
-   * to the focused date's day whenever the focus moved for a non-paging reason
-   * (explicit day move, selection, external `value` write), tracked via
-   * {@link #pagedFocus}.
-   */
-  #intendedDay = this.adapter.getDate(this.value() ?? this.range()?.start ?? this.#today);
+  /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
+  readonly weekDays = this.#dayNav.weekDays;
 
-  /**
-   * The focused date the last paging operation produced. Lets paging detect a
-   * focus that moved for any other reason (and therefore reset
-   * {@link #intendedDay} to the new day) without an `effect`.
-   */
-  #pagedFocus: D | null = null;
+  /** Week rows of the visible month, including outside-month padding days. */
+  readonly weeks = this.#dayNav.weeks;
 
-  readonly #matrix = computed(() =>
-    buildMonthMatrix(this.adapter, this.visibleMonth(), this.#resolvedFirstDayOfWeek()),
-  );
+  /** Whether the previous-month button should be disabled (bounded by `min`). */
+  readonly isPreviousMonthDisabled = this.#bounds.isPreviousMonthDisabled;
 
-  readonly weekDays = computed<readonly CalendarWeekday[]>(() => {
-    const adapter = this.adapter;
-    const firstDay = this.#resolvedFirstDayOfWeek();
-    return this.#matrix()[0]!.map((date, index) => ({
-      key: String((firstDay + index) % 7),
-      narrow: adapter.format(date, { weekday: 'narrow' }),
-      short: adapter.format(date, { weekday: 'short' }),
-      long: adapter.format(date, { weekday: 'long' }),
-    }));
-  });
-
-  readonly weeks = computed<readonly CalendarWeek<D>[]>(() => {
-    const adapter = this.adapter;
-    return this.#matrix().map((row) => ({
-      key: this.#dateKey(row[0]!),
-      days: row.map((date) => ({
-        key: this.#dateKey(date),
-        date,
-        label: String(adapter.getDate(date)),
-        dateLabel: this.getDateLabel(date),
-      })),
-    }));
-  });
-
-  readonly isPreviousMonthDisabled = computed(() => {
-    const min = this.min();
-    if (min === null) {
-      return false;
-    }
-    const previousMonthLastDay = this.adapter.addDays(this.visibleMonth(), -1);
-    return compareDateOf(this.adapter, previousMonthLastDay, min) < 0;
-  });
-
-  readonly isNextMonthDisabled = computed(() => {
-    const max = this.max();
-    if (max === null) {
-      return false;
-    }
-    const nextMonthFirstDay = this.adapter.addMonths(this.visibleMonth(), 1);
-    return compareDateOf(this.adapter, nextMonthFirstDay, max) > 0;
-  });
+  /** Whether the next-month button should be disabled (bounded by `max`). */
+  readonly isNextMonthDisabled = this.#bounds.isNextMonthDisabled;
 
   /**
    * Whether every day of `month` (**1-12**) in the visible year falls outside
    * `[min, max]`. Use it to disable a month in a custom dropdown.
    */
   isMonthDisabled(month: number): boolean {
-    return this.#isMonthOutOfBounds(this.visibleYear(), month);
+    return this.#bounds.isMonthOutOfBounds(this.visibleYear(), month);
   }
 
   /**
@@ -458,76 +405,59 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * year in a custom dropdown.
    */
   isYearDisabled(year: number): boolean {
-    const adapter = this.adapter;
-    return this.#outOfBounds(adapter.createDate(year, 1, 1), adapter.createDate(year, 12, 31));
+    return this.#bounds.isYearDisabled(year);
   }
 
   isMonthSelected(month: number): boolean {
-    const value = this.value();
-    return (
-      value !== null &&
-      this.adapter.getYear(value) === this.visibleYear() &&
-      this.adapter.getMonth(value) === month
-    );
+    return this.#monthNav.isSelected(month);
   }
 
   isMonthToday(month: number): boolean {
-    return (
-      this.adapter.getYear(this.#today) === this.visibleYear() &&
-      this.adapter.getMonth(this.#today) === month
-    );
+    return this.#monthNav.isToday(month);
   }
 
   isMonthFocused(month: number): boolean {
-    return month === this.visibleMonthNumber();
+    return this.#monthNav.isFocused(month);
   }
 
   isYearSelected(year: number): boolean {
-    const value = this.value();
-    return value !== null && this.adapter.getYear(value) === year;
+    return this.#yearNav.isSelected(year);
   }
 
   isYearToday(year: number): boolean {
-    return this.adapter.getYear(this.#today) === year;
+    return this.#yearNav.isToday(year);
   }
 
   isYearFocused(year: number): boolean {
-    return year === this.visibleYear();
+    return this.#yearNav.isFocused(year);
   }
 
   isSelected(date: D): boolean {
     if (this.selectionMode() === 'range') {
-      return this.isInRange(date);
+      return this.#range.contains(date);
     }
     const value = this.value();
     return value !== null && this.adapter.isSameDay(date, value);
   }
 
   isRangeStart(date: D): boolean {
-    const er = this.#effectiveRange();
-    return er !== null && this.adapter.isSameDay(date, er.start);
+    return this.#range.isRangeStart(date);
   }
 
   isRangeEnd(date: D): boolean {
-    const er = this.#effectiveRange();
-    return er !== null && this.adapter.isSameDay(date, er.end);
+    return this.#range.isRangeEnd(date);
   }
 
   isInRange(date: D): boolean {
-    const er = this.#effectiveRange();
-    return er !== null && !er.preview && this.#withinInclusive(date, er);
+    return this.#range.isInRange(date);
   }
 
   isRangePreview(date: D): boolean {
-    const er = this.#effectiveRange();
-    return er !== null && er.preview && this.#withinInclusive(date, er);
+    return this.#range.isRangePreview(date);
   }
 
   setHovered(date: D | null): void {
-    if (this.selectionMode() !== 'range') {
-      return;
-    }
-    this.#hovered.set(date);
+    this.#range.setHovered(date);
   }
 
   isToday(date: D): boolean {
@@ -547,19 +477,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   isUnavailable(date: D): boolean {
-    if (this.disabled()) {
-      return true;
-    }
-    const adapter = this.adapter;
-    const min = this.min();
-    if (min !== null && compareDateOf(adapter, date, min) < 0) {
-      return true;
-    }
-    const max = this.max();
-    if (max !== null && compareDateOf(adapter, date, max) > 0) {
-      return true;
-    }
-    return this.isDateUnavailable()(date);
+    return this.#bounds.isUnavailable(date);
   }
 
   getDateLabel(date: D): string {
@@ -570,70 +488,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   selectDate(date: D): void {
-    if (this.disabled() || this.readonly() || this.isUnavailable(date)) {
-      return;
-    }
-    if (this.selectionMode() === 'range') {
-      this.#selectRange(date);
-      return;
-    }
-    this.#setFocusedDay(date);
-    this.value.set(this.#withPreservedTime(date));
-    this.#focusDate(date);
-  }
-
-  #selectRange(date: D): void {
-    const anchor = this.#anchor();
-    if (anchor === null) {
-      this.range.set(null);
-      this.#anchor.set(date);
-    } else if (compareDateOf(this.adapter, date, anchor) < 0) {
-      this.#anchor.set(date);
-    } else {
-      if (!this.#rangeLengthSatisfied(anchor, date)) {
-        return;
-      }
-      this.range.set({ start: anchor, end: date });
-      this.#anchor.set(null);
-    }
-    this.#setFocusedDay(date);
-    this.focusedDate.set(date);
-    this.#focusDate(date);
-  }
-
-  #rangeLengthSatisfied(anchor: D, end: D): boolean {
-    const minLen = this.minRangeLength();
-    const maxLen = this.maxRangeLength();
-    if (minLen === null && maxLen === null) {
-      return true;
-    }
-    let len = 1;
-    let cursor = anchor;
-    while (compareDateOf(this.adapter, cursor, end) < 0) {
-      cursor = this.adapter.addDays(cursor, 1);
-      len++;
-      if (maxLen !== null && len > maxLen) {
-        return false;
-      }
-    }
-    if (minLen !== null && len < minLen) {
-      return false;
-    }
-    return true;
+    this.#nav.selectDate(date);
   }
 
   pageMonths(delta: number): void {
-    if (this.disabled()) {
-      return;
-    }
-    const previousMonth = this.visibleMonth();
-    this.#syncIntendedDay();
-    const next = this.#clampToBounds(
-      this.#applyIntendedDay(this.adapter.addMonths(this.focusedDate(), delta)),
-    );
-    this.focusedDate.set(next);
-    this.#pagedFocus = next;
-    this.#announceMonthChange(previousMonth);
+    this.#nav.pageMonths(delta);
   }
 
   /**
@@ -645,17 +504,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * calendar is disabled.
    */
   goTo(year: number, month: number): void {
-    if (this.disabled()) {
-      return;
-    }
-    const previousMonth = this.visibleMonth();
-    this.#syncIntendedDay();
-    const next = this.#clampToBounds(
-      this.#applyIntendedDay(this.adapter.createDate(year, month, 1)),
-    );
-    this.focusedDate.set(next);
-    this.#pagedFocus = next;
-    this.#announceMonthChange(previousMonth);
+    this.#nav.goTo(year, month);
   }
 
   /** Set the visible month within the current visible year. `month` is **1-12**. */
@@ -672,30 +521,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled()) {
       return;
     }
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      event.preventDefault();
-      this.selectDate(fromDate);
-      return;
-    }
-    const target = this.#resolveMove(event, fromDate);
-    if (target === null) {
-      return;
-    }
-    event.preventDefault();
-    const previousMonth = this.visibleMonth();
-    const isPaging = event.key === 'PageUp' || event.key === 'PageDown';
-    let next: D;
-    if (isPaging) {
-      this.#syncIntendedDay();
-      next = this.#clampToBounds(this.#applyIntendedDay(target));
-      this.#pagedFocus = next;
-    } else {
-      next = target;
-      this.#setFocusedDay(next);
-    }
-    this.focusedDate.set(next);
-    this.#focusDate(next);
-    this.#announceMonthChange(previousMonth);
+    this.#dayNav.handleKeydown(event, fromDate);
   }
 
   /**
@@ -752,19 +578,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     if (this.disabled()) {
       return;
     }
-    if (this.view() === 'day') {
-      this.pageMonths(direction);
-      return;
-    }
-    const previousMonth = this.visibleMonth();
-    this.#syncIntendedDay();
-    const step = this.view() === 'year' ? direction * this.yearBlockSize() : direction;
-    const next = this.#clampToBounds(
-      this.#applyIntendedDay(this.adapter.addYears(this.focusedDate(), step)),
-    );
-    this.focusedDate.set(next);
-    this.#pagedFocus = next;
-    this.#announceMonthChange(previousMonth);
+    this.#strategyFor(this.view()).page(direction);
   }
 
   /**
@@ -775,323 +589,52 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * fall back to its own focus logic.
    */
   focusActiveCell(): boolean {
-    switch (this.view()) {
-      case 'day':
-        return this.#focusCell(this.focusedDate());
-      case 'month':
-        return this.#focusMonthCell(this.visibleMonthNumber());
-      case 'year':
-        return this.#focusYearCell(this.visibleYear());
-    }
+    return this.#strategyFor(this.view()).focusActive();
   }
 
   registerCell(handle: ForCalendarCellHandle<D>): void {
-    this.#cells.register(handle);
+    this.#dayNav.register(handle);
   }
 
   unregisterCell(handle: ForCalendarCellHandle<D>): void {
-    this.#cells.unregister(handle);
+    this.#dayNav.unregister(handle);
   }
 
   handleMonthCellKeydown(event: KeyboardEvent, fromMonth: number): void {
     if (this.disabled()) {
       return;
     }
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      event.preventDefault();
-      this.selectMonth(fromMonth);
-      return;
-    }
-    const target = this.#resolveMonthMove(event, fromMonth);
-    if (target === null) {
-      return;
-    }
-    event.preventDefault();
-    this.focusedDate.set(this.#dateInMonth(target.year, target.month));
-    afterNextRender(() => this.#focusMonthCell(this.visibleMonthNumber()), { injector: this.#injector });
+    this.#monthNav.handleKeydown(event, fromMonth);
   }
 
   handleYearCellKeydown(event: KeyboardEvent, fromYear: number): void {
     if (this.disabled()) {
       return;
     }
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      event.preventDefault();
-      this.selectYear(fromYear);
-      return;
-    }
-    const target = this.#resolveYearMove(event, fromYear);
-    if (target === null) {
-      return;
-    }
-    event.preventDefault();
-    this.focusedDate.set(this.#dateInMonth(target, this.visibleMonthNumber()));
-    afterNextRender(() => this.#focusYearCell(this.visibleYear()), { injector: this.#injector });
+    this.#yearNav.handleKeydown(event, fromYear);
   }
 
   registerMonthCell(handle: ForCalendarMonthCellHandle): void {
-    this.#monthCells.register(handle);
+    this.#monthNav.register(handle);
   }
 
   unregisterMonthCell(handle: ForCalendarMonthCellHandle): void {
-    this.#monthCells.unregister(handle);
+    this.#monthNav.unregister(handle);
   }
 
   registerYearCell(handle: ForCalendarYearCellHandle): void {
-    this.#yearCells.register(handle);
+    this.#yearNav.register(handle);
   }
 
   unregisterYearCell(handle: ForCalendarYearCellHandle): void {
-    this.#yearCells.unregister(handle);
+    this.#yearNav.unregister(handle);
   }
 
-  #withinInclusive(date: D, range: { start: D; end: D }): boolean {
-    return (
-      compareDateOf(this.adapter, date, range.start) >= 0 &&
-      compareDateOf(this.adapter, date, range.end) <= 0
-    );
+  #scheduleFocus(fn: () => void): void {
+    afterNextRender(fn, { injector: this.#injector });
   }
 
-  #resolveMove(event: KeyboardEvent, fromDate: D): D | null {
-    const adapter = this.adapter;
-    const rtl = this.dir() === 'rtl';
-    switch (event.key) {
-      case 'ArrowLeft':
-        return adapter.addDays(fromDate, rtl ? 1 : -1);
-      case 'ArrowRight':
-        return adapter.addDays(fromDate, rtl ? -1 : 1);
-      case 'ArrowUp':
-        return adapter.addDays(fromDate, -7);
-      case 'ArrowDown':
-        return adapter.addDays(fromDate, 7);
-      case 'Home':
-        return this.#startOfWeek(fromDate);
-      case 'End':
-        return adapter.addDays(this.#startOfWeek(fromDate), 6);
-      case 'PageUp':
-        return event.shiftKey ? adapter.addYears(fromDate, -1) : adapter.addMonths(fromDate, -1);
-      case 'PageDown':
-        return event.shiftKey ? adapter.addYears(fromDate, 1) : adapter.addMonths(fromDate, 1);
-      default:
-        return null;
-    }
-  }
-
-  /** Record `date` as the focus origin for a non-paging move and reset the intended day. */
-  #setFocusedDay(date: D): void {
-    this.#intendedDay = this.adapter.getDate(date);
-    this.#pagedFocus = null;
-  }
-
-  /**
-   * Re-sync {@link #intendedDay} to the focused date's actual day unless the
-   * focus is still where the last paging operation left it. Anything that moved
-   * the focus for another reason (explicit day move, selection, an external
-   * `value` write driving the `focusedDate` linkedSignal) resets the intended
-   * day so a fresh paging run starts from the day the user can see.
-   */
-  #syncIntendedDay(): void {
-    const focused = this.focusedDate();
-    if (this.#pagedFocus === null || !this.adapter.isSameDay(this.#pagedFocus, focused)) {
-      this.#intendedDay = this.adapter.getDate(focused);
-    }
-  }
-
-  /**
-   * Re-derive `date` so its day-of-month matches the user's intended day,
-   * clamped to the target month's length. Restores e.g. the 31st when a paging
-   * chain lands back on a 31-day month, instead of carrying forward the day a
-   * shorter intermediate month clamped it to.
-   */
-  #applyIntendedDay(date: D): D {
-    const adapter = this.adapter;
-    const daysInMonth = adapter.getDaysInMonth(date);
-    const day = this.#intendedDay < daysInMonth ? this.#intendedDay : daysInMonth;
-    return adapter.createDate(adapter.getYear(date), adapter.getMonth(date), day);
-  }
-
-  /**
-   * Announce the visible month politely when a navigation action actually
-   * crossed a month boundary. Driven from the navigation paths (paging,
-   * month-crossing keyboard moves) rather than a global label-tracking effect,
-   * so external `value` writes that don't move the user never announce.
-   */
-  #announceMonthChange(previousMonth: D): void {
-    if (!this.adapter.isSameDay(previousMonth, this.visibleMonth())) {
-      this.#announcer.announce(this.visibleMonthLabel(), 'polite');
-    }
-  }
-
-  #clampToBounds(date: D): D {
-    const adapter = this.adapter;
-    const min = this.min();
-    if (min !== null && compareDateOf(adapter, date, min) < 0) {
-      return min;
-    }
-    const max = this.max();
-    if (max !== null && compareDateOf(adapter, date, max) > 0) {
-      return max;
-    }
-    return date;
-  }
-
-  #isMonthOutOfBounds(year: number, month: number): boolean {
-    const adapter = this.adapter;
-    const firstDay = adapter.createDate(year, month, 1);
-    const lastDay = adapter.createDate(year, month, adapter.getDaysInMonth(firstDay));
-    return this.#outOfBounds(firstDay, lastDay);
-  }
-
-  #outOfBounds(firstDay: D, lastDay: D): boolean {
-    const adapter = this.adapter;
-    const min = this.min();
-    if (min !== null && compareDateOf(adapter, lastDay, min) < 0) {
-      return true;
-    }
-    const max = this.max();
-    if (max !== null && compareDateOf(adapter, firstDay, max) > 0) {
-      return true;
-    }
-    return false;
-  }
-
-  #startOfWeek(date: D): D {
-    const offset = (this.adapter.getDayOfWeek(date) - this.#resolvedFirstDayOfWeek() + 7) % 7;
-    return this.adapter.addDays(date, -offset);
-  }
-
-  #resolveMonthMove(event: KeyboardEvent, fromMonth: number): { year: number; month: number } | null {
-    const rtl = this.dir() === 'rtl';
-    const year = this.visibleYear();
-    const base = year * 12 + (fromMonth - 1);
-    let index: number;
-    switch (event.key) {
-      case 'ArrowLeft':
-        index = base + (rtl ? 1 : -1);
-        break;
-      case 'ArrowRight':
-        index = base + (rtl ? -1 : 1);
-        break;
-      case 'ArrowUp':
-        index = base - GRID_COLUMNS;
-        break;
-      case 'ArrowDown':
-        index = base + GRID_COLUMNS;
-        break;
-      case 'Home':
-        index = year * 12;
-        break;
-      case 'End':
-        index = year * 12 + 11;
-        break;
-      case 'PageUp':
-        index = base - 12;
-        break;
-      case 'PageDown':
-        index = base + 12;
-        break;
-      default:
-        return null;
-    }
-    return { year: Math.floor(index / 12), month: (index % 12) + 1 };
-  }
-
-  #resolveYearMove(event: KeyboardEvent, fromYear: number): number | null {
-    const rtl = this.dir() === 'rtl';
-    const size = this.yearBlockSize();
-    const start = this.#yearBlockStart();
-    switch (event.key) {
-      case 'ArrowLeft':
-        return fromYear + (rtl ? 1 : -1);
-      case 'ArrowRight':
-        return fromYear + (rtl ? -1 : 1);
-      case 'ArrowUp':
-        return fromYear - GRID_COLUMNS;
-      case 'ArrowDown':
-        return fromYear + GRID_COLUMNS;
-      case 'Home':
-        return start;
-      case 'End':
-        return start + size - 1;
-      case 'PageUp':
-        return fromYear - size;
-      case 'PageDown':
-        return fromYear + size;
-      default:
-        return null;
-    }
-  }
-
-  #dateInMonth(year: number, month: number): D {
-    const adapter = this.adapter;
-    const daysInMonth = adapter.getDaysInMonth(adapter.createDate(year, month, 1));
-    const day = Math.min(adapter.getDate(this.focusedDate()), daysInMonth);
-    return adapter.createDate(year, month, day);
-  }
-
-  #focusMonthCell(month: number): boolean {
-    const handle = this.#monthCells.items().find((cell) => cell.month() === month);
-    if (!handle) {
-      return false;
-    }
-    handle.host.focus();
-    return true;
-  }
-
-  #focusYearCell(year: number): boolean {
-    const handle = this.#yearCells.items().find((cell) => cell.year() === year);
-    if (!handle) {
-      return false;
-    }
-    handle.host.focus();
-    return true;
-  }
-
-  #focusActiveForView(view: CalendarView): void {
-    if (view === 'day') {
-      this.#focusCell(this.focusedDate());
-    } else if (view === 'month') {
-      this.#focusMonthCell(this.visibleMonthNumber());
-    } else {
-      this.#focusYearCell(this.visibleYear());
-    }
-  }
-
-  #focusDate(target: D): void {
-    afterNextRender(() => this.#focusCell(target), { injector: this.#injector });
-  }
-
-  #focusCell(target: D): boolean {
-    const handle = this.#cells.items().find((cell) => this.adapter.isSameDay(cell.date(), target));
-    if (!handle) {
-      return false;
-    }
-    handle.host.focus();
-    return true;
-  }
-
-  #withPreservedTime(date: D): D {
-    const adapter = this.adapter;
-    const current = this.value();
-    if (
-      current === null ||
-      adapter.supportsTime?.() !== true ||
-      !adapter.getHours ||
-      !adapter.getMinutes ||
-      !adapter.getSeconds ||
-      !adapter.setTime
-    ) {
-      return date;
-    }
-    return adapter.setTime(
-      date,
-      adapter.getHours(current),
-      adapter.getMinutes(current),
-      adapter.getSeconds(current),
-    );
-  }
-
-  #dateKey(date: D): string {
-    return `${this.adapter.getYear(date)}-${this.adapter.getMonth(date)}-${this.adapter.getDate(date)}`;
+  #focusDayCell(target: D): void {
+    afterNextRender(() => this.#dayNav.focusCell(target), { injector: this.#injector });
   }
 }
