@@ -1749,6 +1749,7 @@ a.pg-nav-link.active {
 }
 
 .pg-tree-label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -1802,6 +1803,27 @@ a.pg-nav-link.active {
 
 .pg-tree[data-dragging] .pg-tree-label {
   cursor: grabbing;
+}
+
+.pg-tree-item[data-drop-position] > .pg-tree-label::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(
+    (var(--for-tree-drop-level, 1) - var(--pg-tree-node-level, 1)) * 1.15rem
+  );
+  inset-inline-end: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--pg-primary);
+  pointer-events: none;
+}
+
+.pg-tree-item[data-drop-position='before'] > .pg-tree-label::after {
+  top: -1px;
+}
+
+.pg-tree-item[data-drop-position='after'] > .pg-tree-label::after {
+  bottom: -1px;
 }
 
 .pg-tree-toggle {

@@ -55,7 +55,7 @@ const INITIAL_ROOTS: readonly TreeNodeData[] = [
           [ariaLabel]="'Workspace files'"
         >
           @for (node of roots(); track node.id) {
-            <app-dnd-tree-node [node]="node" [expandedIds]="expanded()" />
+            <app-dnd-tree-node [node]="node" [expandedIds]="expanded()" [level]="1" />
           }
         </ul>
       </div>

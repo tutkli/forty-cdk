@@ -675,4 +675,33 @@ export class Files {
 | `data-drop-target`      | `""` (empty) | A valid drop target has been resolved.        |
 | `--for-tree-drop-level` | integer 1–N  | The resolved depth of the current target.     |
 
+### Drop indicator
+
+While a drag is live, the single `[forTreeItem]` the lifted node would land beside reflects **`data-drop-position`** so you can draw an indented insertion line. Exactly one visible item carries it at a time; it is absent on every other row and whenever the tree is idle. It tracks every pointer move and every Arrow step (in both LTR and RTL) and clears on drop / cancel / Escape / Tab.
+
+| Piece           | Attribute            | Values                                                        |
+| --------------- | -------------------- | ------------------------------------------------------------- |
+| `[forTreeItem]` | `data-drop-position` | `"before"` \| `"after"` (the line sits above / below the row) |
+
+Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent the line to the target level:
+
+```css
+[forTreeItem][data-drop-position]::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--for-tree-drop-level, 1) * 1rem);
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+[forTreeItem][data-drop-position='before']::after {
+  top: 0;
+}
+[forTreeItem][data-drop-position='after']::after {
+  bottom: 0;
+}
+```
+
+Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator | null>` on `ForTreeNodeDragContext` (`{ anchor, position, level }`, `null` when idle).
+
 On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable and structurally prevents dropping a node into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.

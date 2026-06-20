@@ -287,6 +287,145 @@ describe('ForTreeNodeDrag — keyboard', () => {
   });
 });
 
+describe('ForTreeNodeDrag — drop indicator', () => {
+  it('anchors data-drop-position to the row the node will land beside, tracking ArrowDown', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    const notesEl = query<HTMLElement>('[data-testid="notes"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBe('before');
+    expect(notesEl.getAttribute('data-drop-position')).toBeNull();
+    expect(docsEl.getAttribute('data-drop-position')).toBeNull();
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBeNull();
+    expect(notesEl.getAttribute('data-drop-position')).toBe('before');
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+
+    expect(notesEl.getAttribute('data-drop-position')).toBe('after');
+    expect(musicEl.getAttribute('data-drop-position')).toBeNull();
+  });
+
+  it('exposes the resolved depth via --for-tree-drop-level and deepens it on ArrowRight', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    const notesEl = query<HTMLElement>('[data-testid="notes"]')!;
+    musicEl.focus();
+
+    dispatchKey(musicEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(notesEl.getAttribute('data-drop-position')).toBe('before');
+    expect(tree.style.getPropertyValue('--for-tree-drop-level')).toBe('1');
+
+    dispatchKey(tree, 'ArrowRight', {});
+    await f();
+
+    expect(notesEl.getAttribute('data-drop-position')).toBe('before');
+    expect(tree.style.getPropertyValue('--for-tree-drop-level')).toBe('2');
+  });
+
+  it('clears data-drop-position on drop', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBe('before');
+
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBeNull();
+  });
+
+  it('clears data-drop-position on Escape', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBe('before');
+
+    dispatchKey(tree, 'Escape', {});
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBeNull();
+  });
+
+  it('clears data-drop-position on Tab', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBe('before');
+
+    dispatchKey(tree, 'Tab', {});
+    await f();
+
+    expect(musicEl.getAttribute('data-drop-position')).toBeNull();
+  });
+});
+
+@Component({
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree aria-label="Files">
+      <li forTreeItem value="a" data-testid="a"><div forTreeItemLabel>A</div></li>
+      <li forTreeItem value="b" data-testid="b"><div forTreeItemLabel>B</div></li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class PlainTreeHost {}
+
+describe('ForTreeItem — without [forTreeNodeDrag]', () => {
+  it('never emits data-drop-position', async () => {
+    const { query, flush: f } = renderHost(PlainTreeHost);
+    await f();
+
+    const a = query<HTMLElement>('[data-testid="a"]')!;
+    const b = query<HTMLElement>('[data-testid="b"]')!;
+
+    expect(a.hasAttribute('data-drop-position')).toBe(false);
+    expect(b.hasAttribute('data-drop-position')).toBe(false);
+  });
+});
+
 @Component({
   imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel, ForTreeNodeDragHandle],
   template: `
@@ -364,5 +503,26 @@ describe('ForTreeNodeDrag — zoneless', () => {
 
     expect(fixture.componentInstance.dropped()).not.toBeNull();
     expect(fixture.componentInstance.dropped()!.node).toBe('docs');
+  });
+
+  it('reflects data-drop-position in a zoneless TestBed context', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const fixture = TestBed.createComponent(TreeDragHost);
+    await flush(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    const docsEl = root.querySelector('[data-testid="docs"]') as HTMLElement;
+    const musicEl = root.querySelector('[data-testid="music"]') as HTMLElement;
+    docsEl.focus();
+
+    docsEl.dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', ctrlKey: true, bubbles: true, cancelable: true }),
+    );
+    await flush(fixture);
+
+    expect(musicEl.getAttribute('data-drop-position')).toBe('before');
   });
 });

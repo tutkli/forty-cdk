@@ -11,6 +11,7 @@ import {
   output,
   PLATFORM_ID,
   signal,
+  type Signal,
 } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
@@ -55,12 +56,26 @@ function announceTreeInvalid(label: string): string {
   return `Cannot drop ${label} here.`;
 }
 
+/**
+ * Where the lifted node will land, for rendering an insertion indicator. `null` when idle.
+ */
+export interface ForTreeDropIndicator {
+  /** The visible row the indicator anchors to (the node value). */
+  readonly anchor: string;
+  /** Whether the line sits just before or just after the anchor row in DOM order. */
+  readonly position: 'before' | 'after';
+  /** Resolved 1-based depth of the drop (mirror of `--for-tree-drop-level`). */
+  readonly level: number;
+}
+
 /** The coordination contract the handle uses to register with the coordinator. */
 export interface ForTreeNodeDragContext {
   /** Register a drag handle element for the item that contains it. */
   registerHandle(el: HTMLElement): void;
   /** Unregister a previously registered handle element. */
   unregisterHandle(el: HTMLElement): void;
+  /** Resolved drop indicator while a drag is live; `null` when idle. */
+  readonly dropIndicator: Signal<ForTreeDropIndicator | null>;
 }
 
 /** InjectionToken for the `[forTreeNodeDrag]` coordinator. */
@@ -116,6 +131,11 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   protected readonly _dragging = signal(false);
   protected readonly _dropTargetValid = signal(false);
   protected readonly _dropLevel = signal<number | null>(null);
+
+  readonly #dropIndicator = signal<ForTreeDropIndicator | null>(null);
+
+  /** Resolved drop indicator while a drag is live; `null` when idle. */
+  readonly dropIndicator: Signal<ForTreeDropIndicator | null> = this.#dropIndicator.asReadonly();
 
   readonly #handles = new Set<HTMLElement>();
 
@@ -334,6 +354,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
     this._dropTargetValid.set(true);
     this._dropLevel.set(target.level);
+    this.#setDropIndicator(rows, this.#gapIndex, target.level);
 
     if (this.#preview) {
       this.#preview.moveTo(event.clientX, event.clientY);
@@ -413,6 +434,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this._dragging.set(true);
     this._dropTargetValid.set(true);
     this._dropLevel.set(this.#desiredLevel);
+    this.#setDropIndicator(rows, this.#gapIndex, this.#desiredLevel);
 
     this.#announcer.announce(announceTreeLift(this.#label), 'assertive');
   }
@@ -452,6 +474,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this._dragging.set(true);
     this._dropTargetValid.set(true);
     this._dropLevel.set(this.#desiredLevel);
+    this.#setDropIndicator(rows, this.#gapIndex, this.#desiredLevel);
 
     this.#announcer.announce(announceTreeLift(this.#label), 'assertive');
   }
@@ -526,6 +549,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this._dragging.set(false);
     this._dropTargetValid.set(false);
     this._dropLevel.set(null);
+    this.#dropIndicator.set(null);
 
     this.#removeDocumentListeners();
   }
@@ -584,11 +608,27 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     return rows.length;
   }
 
+  #setDropIndicator(rows: TreeDropRow[], gapIndex: number, level: number): void {
+    if (rows.length === 0) {
+      this.#dropIndicator.set(null);
+      return;
+    }
+    const gap = Math.max(0, Math.min(gapIndex, rows.length));
+    if (gap >= rows.length) {
+      const last = rows[rows.length - 1]!;
+      this.#dropIndicator.set({ anchor: last.value, position: 'after', level });
+    } else {
+      const row = rows[gap]!;
+      this.#dropIndicator.set({ anchor: row.value, position: 'before', level });
+    }
+  }
+
   #resolveAndAnnounceMove(visible: readonly ForTreeVisibleNode[]): void {
     const rows = this.#buildRows(visible);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
     this.#desiredLevel = target.level;
     this._dropLevel.set(target.level);
+    this.#setDropIndicator(rows, this.#gapIndex, target.level);
 
     const parentLabel = this.#parentLabel(visible, target.parentValue);
     const totalSiblings = this.#countSiblings(rows, target.parentValue, target.level);
