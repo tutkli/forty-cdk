@@ -91,4 +91,30 @@ export class OptionLabelCache<T> {
   entries(): readonly SnapshotEntry<T>[] {
     return this.#cachedOptions();
   }
+
+  /**
+   * Live entries merged with any off-window entries from the virtualized
+   * position-map, so typeahead and inline autocomplete can match against
+   * options scrolled out of view. Live entries take precedence (freshest data)
+   * and appear first, followed by off-window indexed entries sorted by absolute
+   * position. Pass an empty / zero-size map (the non-virtualized case) to get
+   * the live entries unchanged.
+   */
+  mergedEntries(indexed: ReadonlyMap<number, SnapshotEntry<T>>): readonly SnapshotEntry<T>[] {
+    const live = this.#cachedOptions();
+    if (indexed.size === 0) {
+      return live;
+    }
+    const seen = new Set(live.map((o) => o.id));
+    const merged: SnapshotEntry<T>[] = [...live];
+    const positions = [...indexed.keys()].sort((a, b) => a - b);
+    for (const pos of positions) {
+      const entry = indexed.get(pos)!;
+      if (seen.has(entry.id)) {
+        continue;
+      }
+      merged.push({ id: entry.id, value: entry.value, label: entry.label });
+    }
+    return merged;
+  }
 }
