@@ -29,6 +29,38 @@ test.describe('Tooltip', () => {
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
 
+  test('showOnOverflow shows only when the trigger text is truncated', async ({ page }) => {
+    await gotoFixture(page, 'tooltip');
+
+    // A trigger whose text fits is NOT truncated → hover must not open it.
+    await el(page, 'fit-trigger').hover();
+    await page.waitForTimeout(100);
+    await expect(el(page, 'fit-tooltip')).toHaveCount(0);
+
+    // A trigger whose text overflows (ellipsized) → hover opens it.
+    await el(page, 'overflow-trigger').hover();
+    await expect(el(page, 'overflow-tooltip')).toBeVisible();
+  });
+
+  test('hoverableContent keeps the tooltip open when the pointer enters the content', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tooltip');
+
+    await el(page, 'hoverable-trigger').hover();
+    await expect(el(page, 'hoverable-tooltip')).toBeVisible();
+
+    // Move the pointer into the content — the grace bridge + content hover keep
+    // it open well past the 200ms closeDelay.
+    await el(page, 'hoverable-tooltip').hover();
+    await page.waitForTimeout(400);
+    await expect(el(page, 'hoverable-tooltip')).toBeVisible();
+
+    // Moving the pointer away from both trigger and content closes it.
+    await el(page, 'after').hover();
+    await expect(el(page, 'hoverable-tooltip')).toHaveCount(0);
+  });
+
   // Tooltip's hover-to-open path has no touch equivalent — a tap is
   // not a hover, and the W3C tooltip pattern is purely descriptive
   // for mouse / keyboard users. The keyboard-focus path is the

@@ -1,6 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { Point } from '../_internal/pointer-grace/pointer-grace';
 
 /** Reason a show / hide was scheduled — escape bypasses the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
@@ -9,6 +10,12 @@ export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
  * Coordination contract owned by `ForTooltip`. Trigger and content register
  * their host elements so floating-ui can compute position; the optional arrow
  * registers itself so the `arrow` middleware can offset it inside the bubble.
+ *
+ * The trigger and content forward their host hover / focus events through the
+ * `pointerEnter*` / `pointerLeave*` / `focusTrigger` / `blurTrigger` methods;
+ * the root owns the single open / close decision so all keep-alive sources
+ * (trigger hover, trigger focus, and — under `hoverableContent` — content
+ * hover) are reconciled in one place.
  */
 export interface ForTooltipContext {
   readonly open: Signal<boolean>;
@@ -23,6 +30,8 @@ export interface ForTooltipContext {
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;
+  /** Whether the pointer may move into the content without dismissing the tooltip. */
+  readonly hoverableContent: Signal<boolean>;
   /** Trigger element id — a consumer-set host `id` is adopted, else a generated one. */
   readonly triggerId: Signal<string>;
   /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */
@@ -32,10 +41,26 @@ export interface ForTooltipContext {
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;
+  /** Registers the content host element so the hoverable-content grace polygon can measure it. */
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
   /** Adopts a consumer-set static `id` on the content host into `contentId`. */
   adoptContentId(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
   unregisterArrow(el: HTMLElement): void;
+
+  /** The pointer entered the trigger; opens after the resolved open delay (gated by `showOnOverflow`). */
+  pointerEnterTrigger(): void;
+  /** The pointer left the trigger; closes, or arms the hoverable-content bridge from `cursor`. */
+  pointerLeaveTrigger(cursor: Point): void;
+  /** The trigger received focus; opens after the resolved open delay (gated by `showOnOverflow`). */
+  focusTrigger(): void;
+  /** The trigger lost focus; closes when nothing else keeps the tooltip alive. */
+  blurTrigger(): void;
+  /** The pointer entered the content (`hoverableContent`); holds the tooltip open. */
+  pointerEnterContent(): void;
+  /** The pointer left the content (`hoverableContent`); closes when nothing else keeps it alive. */
+  pointerLeaveContent(): void;
 
   /** Schedule the tooltip to open after `openDelay` ms (instant when delay is 0). */
   scheduleOpen(reason: TooltipScheduleReason): void;

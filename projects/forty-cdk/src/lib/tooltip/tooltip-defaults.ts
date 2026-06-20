@@ -43,6 +43,18 @@ export interface ForTooltipDefaults {
    * locally. Library fallback `8`.
    */
   collisionPadding: number;
+  /**
+   * Whether tooltips show only when the trigger's own text is truncated
+   * (`scrollWidth > clientWidth`), for tooltips that don't override
+   * `showOnOverflow` locally. Library fallback `false`.
+   */
+  showOnOverflow: boolean;
+  /**
+   * Whether the pointer may move into the content without dismissing the
+   * tooltip, for tooltips that don't override `hoverableContent` locally.
+   * Library fallback `false`.
+   */
+  hoverableContent: boolean;
 }
 
 /**
@@ -58,6 +70,8 @@ export const FOR_TOOLTIP_FALLBACK_DEFAULTS: ForTooltipDefaults = {
   align: 'center',
   sideOffset: 8,
   collisionPadding: 8,
+  showOnOverflow: false,
+  hoverableContent: false,
 };
 
 const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(

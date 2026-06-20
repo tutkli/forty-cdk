@@ -21,7 +21,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
     '[attr.aria-describedby]': 'ctx().open() ? ctx().contentId() : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter()',
-    '(pointerleave)': 'onPointerLeave()',
+    '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
     '(keydown.escape)': 'onEscape($event)',
@@ -43,9 +43,6 @@ export class ForTooltipTrigger {
 
   protected readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
 
-  #hovered = false;
-  #focused = false;
-
   constructor() {
     const el = this.#host.nativeElement;
     // Registration is an imperative call into the resolved root's registry,
@@ -59,30 +56,19 @@ export class ForTooltipTrigger {
   }
 
   protected onPointerEnter(): void {
-    this.#hovered = true;
-    this.ctx().scheduleOpen('hover');
+    this.ctx().pointerEnterTrigger();
   }
 
-  protected onPointerLeave(): void {
-    this.#hovered = false;
-    this.#scheduleCloseIfInactive('hover');
+  protected onPointerLeave(event: PointerEvent): void {
+    this.ctx().pointerLeaveTrigger({ x: event.clientX, y: event.clientY });
   }
 
   protected onFocus(): void {
-    this.#focused = true;
-    this.ctx().scheduleOpen('focus');
+    this.ctx().focusTrigger();
   }
 
   protected onBlur(): void {
-    this.#focused = false;
-    this.#scheduleCloseIfInactive('focus');
-  }
-
-  #scheduleCloseIfInactive(reason: 'hover' | 'focus'): void {
-    if (this.#hovered || this.#focused) {
-      return;
-    }
-    this.ctx().scheduleClose(reason);
+    this.ctx().blurTrigger();
   }
 
   protected onEscape(event: Event): void {

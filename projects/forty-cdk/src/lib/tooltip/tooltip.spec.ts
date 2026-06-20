@@ -70,6 +70,26 @@ class TooltipWithArrowHost {
 })
 class TwoTooltipHost {}
 
+@Component({
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <div
+      forTooltip
+      [(open)]="isOpen"
+      [openDelay]="0"
+      [closeDelay]="0"
+      [hoverableContent]="hoverable()"
+    >
+      <button type="button" forTooltipTrigger>Hover me</button>
+      <div forTooltipContent>Helpful hint</div>
+    </div>
+  `,
+})
+class HoverableTooltipHost {
+  readonly isOpen = signal(false);
+  readonly hoverable = signal(true);
+}
+
 describe('ForTooltip', () => {
   // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
   // still doesn't ship them. Install no-op polyfills for this spec only; the
@@ -345,6 +365,84 @@ describe('ForTooltip', () => {
       r.fixture.detectChanges();
 
       expect(r.instance.isOpen()).toBe(false);
+    });
+  });
+
+  describe('hoverableContent', () => {
+    it('keeps the tooltip open when the pointer moves into the content', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Leaving the trigger arms the grace bridge rather than closing.
+      trigger.dispatchEvent(new PointerEvent('pointerleave', { clientX: 0, clientY: 0 }));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // The pointer reaches the content → it holds the tooltip open.
+      content.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Leaving the content (closeDelay = 0) finally closes it.
+      content.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('keeps the tooltip open via content hover while the trigger is still focused', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      content.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Blur while the pointer is over the content keeps it open…
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // …and leaving the content (now neither focused nor hovered) closes it.
+      content.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('content hover is inert when hoverableContent is off', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      r.instance.hoverable.set(false);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      // With hoverableContent off, content enter / leave early-return — they
+      // neither hold the tooltip open nor schedule a close. The tooltip stays
+      // in whatever state the (trigger-driven) lifecycle left it.
+      content.dispatchEvent(new PointerEvent('pointerenter'));
+      content.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('reflects pointer-events on the content only while hoverableContent is set', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      r.instance.hoverable.set(false);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.style.pointerEvents).toBe('none');
+
+      r.instance.hoverable.set(true);
+      await flush(r.fixture);
+      expect(content.style.pointerEvents).toBe('');
     });
   });
 
@@ -882,6 +980,65 @@ describe('ForTooltip', () => {
       expect(content.dataset['side']).toBe('top');
       expect(content.dataset['align']).toBe('center');
       expect(content.dataset['placement']).toBe('top');
+    });
+  });
+
+  describe('showOnOverflow / hoverableContent defaults', () => {
+    it('resolves both from the scope when the inputs are unset', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ showOnOverflow: true, hoverableContent: true })],
+        template: `
+          <div forTooltip>
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.showOnOverflow()).toBe(true);
+      expect(tooltip.hoverableContent()).toBe(true);
+    });
+
+    it('lets instance-level inputs win over the scope defaults', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        providers: [provideForTooltipDefaults({ showOnOverflow: true, hoverableContent: true })],
+        template: `
+          <div forTooltip [showOnOverflow]="false" [hoverableContent]="false">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.showOnOverflow()).toBe(false);
+      expect(tooltip.hoverableContent()).toBe(false);
+    });
+
+    it('keeps the library fallbacks (false / false) when nothing is configured', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      expect(tooltip.showOnOverflow()).toBe(false);
+      expect(tooltip.hoverableContent()).toBe(false);
     });
   });
 

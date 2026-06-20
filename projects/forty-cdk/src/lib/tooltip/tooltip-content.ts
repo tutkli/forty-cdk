@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectTooltipContext } from './tooltip-context';
@@ -9,8 +9,10 @@ import { injectTooltipContext } from './tooltip-context';
  * `injectOverlayShell` helper) while mounted.
  *
  * Default `pointer-events: none` is applied via host styles so the bubble
- * layers above content without intercepting hover. Override with your own
- * CSS if needed — but per APG, do not put interactive elements inside.
+ * layers above content without intercepting hover. When the root opts in with
+ * `hoverableContent`, `pointer-events` is dropped while open so the pointer
+ * can rest over the bubble without dismissing it. Override with your own CSS
+ * if needed — but per APG, do not put interactive elements inside.
  *
  * The directive does not manage DOM presence — wrap with
  * `@if (tip.open())` (using a template ref on `[forTooltip]`) so the
@@ -28,14 +30,19 @@ import { injectTooltipContext } from './tooltip-context';
     role: 'tooltip',
     '[id]': 'ctx.contentId()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    style: 'pointer-events: none;',
+    '[style.pointer-events]': 'ctx.hoverableContent() ? null : "none"',
+    '(pointerenter)': 'ctx.pointerEnterContent()',
+    '(pointerleave)': 'ctx.pointerLeaveContent()',
   },
 })
 export class ForTooltipContent {
   protected readonly ctx = injectTooltipContext('ForTooltipContent');
 
   constructor() {
-    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    this.ctx.adoptContentId(el);
+    this.ctx.registerContent(el);
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(el));
     injectOverlayShell({
       positioner: {
         kind: 'floating',

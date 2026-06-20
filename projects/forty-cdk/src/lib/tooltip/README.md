@@ -19,17 +19,19 @@ Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI
 
 ### `ForTooltip`
 
-| API                | Type                                | Description                                                                                                            |
-| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `open`             | `model<boolean>`                    | Two-way bindable visibility.                                                                                           |
-| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).        |
-| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).     |
-| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).             |
-| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis. Default `0`.                                                                            |
-| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`). |
-| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).                         |
-| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).     |
-| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.                                                                               |
+| API                | Type                                | Description                                                                                                                                                 |
+| ------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>`                    | Two-way bindable visibility.                                                                                                                                |
+| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).                                             |
+| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).                                          |
+| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).                                                  |
+| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis. Default `0`.                                                                                                                 |
+| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).                                      |
+| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).                                                              |
+| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).                                          |
+| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.                                                                                                                    |
+| `showOnOverflow`   | `input<boolean \| undefined>`       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).                      |
+| `hoverableContent` | `input<boolean \| undefined>`       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`). |
 
 ### `ForTooltipTrigger`, `ForTooltipContent`, `ForTooltipArrow`
 
@@ -39,15 +41,17 @@ No inputs of their own — they coordinate via the `ForTooltip` context.
 
 `provideForTooltipDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer tooltips inside the scope share a skip-delay window; tooltips in other scopes don't.
 
-| Key                 | Library fallback | Meaning                                                                      |
-| ------------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `openDelay`         | `700`            | ms before showing after hover/focus enters.                                  |
-| `closeDelay`        | `300`            | ms before hiding after hover/focus leaves.                                   |
-| `skipDelayDuration` | `300`            | Window (ms) after a peer closes during which the next open is instant.       |
-| `side`              | `'top'`          | Anchor side for tooltips that don't set `side` themselves.                   |
-| `align`             | `'center'`       | Alignment along `side` for tooltips that don't set `align` themselves.       |
-| `sideOffset`        | `8`              | Main-axis gap (px) for tooltips that don't set `sideOffset` themselves.      |
-| `collisionPadding`  | `8`              | Collision-middleware padding (px) for tooltips that don't set it themselves. |
+| Key                 | Library fallback | Meaning                                                                                    |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
+| `openDelay`         | `700`            | ms before showing after hover/focus enters.                                                |
+| `closeDelay`        | `300`            | ms before hiding after hover/focus leaves.                                                 |
+| `skipDelayDuration` | `300`            | Window (ms) after a peer closes during which the next open is instant.                     |
+| `side`              | `'top'`          | Anchor side for tooltips that don't set `side` themselves.                                 |
+| `align`             | `'center'`       | Alignment along `side` for tooltips that don't set `align` themselves.                     |
+| `sideOffset`        | `8`              | Main-axis gap (px) for tooltips that don't set `sideOffset` themselves.                    |
+| `collisionPadding`  | `8`              | Collision-middleware padding (px) for tooltips that don't set it themselves.               |
+| `showOnOverflow`    | `false`          | Show only when the trigger's text is truncated, for tooltips that don't set it themselves. |
+| `hoverableContent`  | `false`          | Allow hovering into the content, for tooltips that don't set it themselves.                |
 
 Per-instance inputs always win over the scope defaults.
 
@@ -201,9 +205,10 @@ While `disabled` is `true`, hover and focus are ignored and an already-open tool
 ## Behavior notes
 
 - **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
-- **`pointer-events: none`** is applied by default so hovering the bubble doesn't extend its lifetime and clicks pass through to whatever is behind. Override with your own CSS if your design needs a different behavior.
+- **`pointer-events: none`** is applied by default so hovering the bubble doesn't extend its lifetime and clicks pass through to whatever is behind. Setting `hoverableContent` drops it while open (see below). Override with your own CSS if your design needs a different behavior.
 - **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
-- **Content hover doesn't keep the tooltip alive in v1.** If a consumer needs that (e.g. selectable text inside a description), it'll be added when there's a real use case.
+- **`hoverableContent`** lets the pointer move into the bubble without dismissing it — useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
+- **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`) — the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
 - **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus). v1 doesn't add special touch handling — consider a Popover for touch-first UI.
 - **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
 - **Floating-ui dependency** is declared as an optional peer (`@floating-ui/dom`). Install it only if you actually use the Tooltip primitive:
