@@ -14,6 +14,7 @@ import { ForFileUploadTrigger } from './file-upload-trigger';
       forFileUpload
       [accept]="accept()"
       [multiple]="multiple()"
+      [directory]="directory()"
       [disabled]="disabled()"
       (filesChange)="onFiles($event)"
     >
@@ -25,6 +26,7 @@ import { ForFileUploadTrigger } from './file-upload-trigger';
 class FileUploadHost {
   readonly accept = signal<string | null>(null);
   readonly multiple = signal(false);
+  readonly directory = signal(false);
   readonly disabled = signal(false);
   readonly capturedFiles = signal<FileList | null>(null);
   onFiles(files: FileList): void {
@@ -73,6 +75,23 @@ describe('ForFileUpload', () => {
       await f();
 
       expect(input.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('reflects webkitdirectory reactively from the directory input', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+
+      expect(input.hasAttribute('webkitdirectory')).toBe(false);
+
+      instance.directory.set(true);
+      await f();
+
+      expect(input.getAttribute('webkitdirectory')).toBe('');
+
+      instance.directory.set(false);
+      await f();
+
+      expect(input.hasAttribute('webkitdirectory')).toBe(false);
     });
   });
 

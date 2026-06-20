@@ -59,6 +59,14 @@ test.describe('FileUpload', () => {
     await expect(el(page, 'zone')).not.toHaveAttribute('data-dragging');
   });
 
+  test('directory: input reflects webkitdirectory when enabled', async ({ page }) => {
+    await gotoFixture(page, 'file-upload');
+    await expect(el(page, 'input')).not.toHaveAttribute('webkitdirectory');
+
+    await gotoFixture(page, 'file-upload', { directory: '1' });
+    await expect(el(page, 'input')).toHaveAttribute('webkitdirectory', '');
+  });
+
   test('disabled: trigger has disabled attribute and drop does not update count', async ({
     page,
   }) => {

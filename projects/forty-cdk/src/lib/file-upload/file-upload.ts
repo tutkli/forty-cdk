@@ -31,6 +31,12 @@ export class ForFileUpload implements ForFileUploadContext {
   readonly accept = input<string | null>(null);
   /** Whether multiple files can be selected at once. */
   readonly multiple = input(false, { transform: booleanAttribute });
+  /**
+   * When `true`, the native picker selects a whole folder; the emitted
+   * `FileList` then contains every file inside it (each carrying a
+   * `webkitRelativePath` so the consumer can reconstruct the tree).
+   */
+  readonly directory = input(false, { transform: booleanAttribute });
   /** Whether the file upload zone and all its pieces are disabled. */
   readonly disabled = input(false, { transform: booleanAttribute });
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */

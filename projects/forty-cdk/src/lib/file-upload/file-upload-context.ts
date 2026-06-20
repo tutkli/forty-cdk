@@ -8,6 +8,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 export interface ForFileUploadContext {
   readonly accept: Signal<string | null>;
   readonly multiple: Signal<boolean>;
+  readonly directory: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   /** Registers the native `<input type="file">` so the root can open the dialog and sync dropped files. */
   registerInput(el: HTMLInputElement): void;
