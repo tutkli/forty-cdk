@@ -649,12 +649,13 @@ afterEveryRender(() => {
 
 ### `[forTableVirtualized]` API (`#v="forTableVirtualized"`)
 
-| Member                         | Type                             | Description                                                               |
-| ------------------------------ | -------------------------------- | ------------------------------------------------------------------------- |
-| `virtualRows()`                | `Signal<readonly VirtualItem[]>` | The visible window plus overscan, always including the focused row.       |
-| `totalSize()`                  | `Signal<number>`                 | Total scroll height of all rows in px. Bind to the body container height. |
-| `scrollToRow(index, options?)` | method                           | Scroll the container so row `index` is in view.                           |
-| `measureRow(el)`               | method                           | Record a rendered row element's measured size (for dynamic row heights).  |
+| Member                         | Type                                | Description                                                                                                                                                                           |
+| ------------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `virtualRows()`                | `Signal<readonly VirtualItem[]>`    | The visible window plus overscan, always including the focused row.                                                                                                                   |
+| `range()`                      | `Signal<readonly [number, number]>` | The rendered window as `[firstIndex, lastIndex + 1)`, sourced from the true virtualizer window (not the focus-augmented `virtualRows()`). Plugs straight into `injectInfiniteScroll`. |
+| `totalSize()`                  | `Signal<number>`                    | Total scroll height of all rows in px. Bind to the body container height.                                                                                                             |
+| `scrollToRow(index, options?)` | method                              | Scroll the container so row `index` is in view.                                                                                                                                       |
+| `measureRow(el)`               | method                              | Record a rendered row element's measured size (for dynamic row heights).                                                                                                              |
 
 ### Tree-shaking
 

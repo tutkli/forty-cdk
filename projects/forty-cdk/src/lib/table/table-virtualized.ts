@@ -104,6 +104,14 @@ export class ForTableVirtualized {
   readonly totalSize = this.#virtualizer.totalSize;
 
   /**
+   * The rendered window as the inclusive-exclusive `[firstIndex, lastIndex + 1)` index range,
+   * sourced from the underlying virtualizer (the true window) — not from {@link virtualRows},
+   * which is augmented with the focused / reordering rows. So a row retained out of the window
+   * never widens this range. Plugs straight into `injectInfiniteScroll({ range, count, onLoadMore })`.
+   */
+  readonly range = this.#virtualizer.range;
+
+  /**
    * Scroll the container so the row at `index` is in view. Cross-window keyboard
    * navigation calls this internally; consumers may also call it to scroll
    * programmatically.
