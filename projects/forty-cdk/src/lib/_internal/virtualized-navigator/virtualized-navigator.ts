@@ -3,6 +3,13 @@ import { linkedSignal, signal, type Signal } from '@angular/core';
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 
 /**
+ * Re-export of the shared NG0950 read guard under the navigator's historical
+ * name. The single source lives in `_internal/signal-graph/read-handle.ts`;
+ * adapters wiring `readEntry` keep importing it from here.
+ */
+export { tryReadHandle as readEntryGuarded } from '../signal-graph/read-handle';
+
+/**
  * Minimal shape every position-snapshot entry must expose so the engine can
  * resolve the current absolute position from `aria-activedescendant` and skip
  * disabled positions outside the rendered window. Primitive adapters widen this
@@ -283,36 +290,5 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
       return;
     }
     host.scrollIntoView?.({ block: 'nearest' });
-  }
-}
-
-/**
- * Read a snapshot entry inside the fold, tolerating the NG0950 thrown while a
- * statically-rendered option is in the gap between registering (its
- * constructor, during the content view's *creation* pass) and having its
- * `input.required` binding written (that view's *update* pass). The fold-priming
- * effect flush runs in that gap, so a static option above a `@for` list would
- * otherwise hard-crash on open.
- *
- * Returns `null` in that window; the caller skips the option for this fold. The
- * required-input signal's producer is accessed *before* the read throws, so the
- * dependency is still tracked: writing the binding marks the fold's
- * `linkedSignal` dirty and it re-runs, folding the option in once its value is
- * set. NG0950 (`RuntimeError(-950)`) is detected via the stable numeric `code`
- * rather than the message text (stripped in production builds). Any non-NG0950
- * error propagates unchanged.
- */
-export function readEntryGuarded<R>(read: () => R): R | null {
-  try {
-    return read();
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error;
-    }
-    const code = (error as Error & { code?: unknown }).code;
-    if (typeof code === 'number' && Math.abs(code) === 950) {
-      return null;
-    }
-    throw error;
   }
 }

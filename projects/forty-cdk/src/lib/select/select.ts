@@ -32,7 +32,9 @@ import {
   singleSelected,
   toggleInArray,
 } from '../_internal/selection/selection';
+import { isRequiredInputUnset } from '../_internal/signal-graph/read-handle';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import { findTypeaheadMatch } from '../_internal/typeahead/match-options';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   emitVetoableEvent,
@@ -52,19 +54,6 @@ import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
 
 /** Sentinel for an option handle whose `input.required` `[value]` is not yet written. */
 const NO_VALUE = Symbol('forty-cdk/select:no-value');
-
-/**
- * NG0950 — `RuntimeError(-950)` — is thrown when an `input.required` is read
- * before its binding is written. Detected via the stable numeric `code` rather
- * than the message text (which is stripped in production builds).
- */
-function isRequiredInputUnset(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as Error & { code?: unknown }).code;
-  return typeof code === 'number' && Math.abs(code) === 950;
-}
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -647,18 +636,12 @@ export class ForSelect<T = string>
     if (!this.#typeahead.handle(event)) {
       return;
     }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#items.items();
-    const match = items.find((o) => {
-      if (o.disabled()) {
-        return false;
-      }
-      const text = (o.host.textContent ?? '').trim().toLowerCase();
-      return text.startsWith(buffer);
-    });
+    const match = findTypeaheadMatch(
+      this.#items.items(),
+      { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
+      (o) => o.host.textContent ?? '',
+      (o) => o.disabled(),
+    );
     match?.host.focus();
   }
 
@@ -914,18 +897,12 @@ export class ForSelect<T = string>
     if (!this.#typeahead.handle(event)) {
       return;
     }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
-    const items = this.#items.items();
-    const match = items.find((o) => {
-      if (o.disabled()) {
-        return false;
-      }
-      const text = (o.host.textContent ?? '').trim().toLowerCase();
-      return text.startsWith(buffer);
-    });
+    const match = findTypeaheadMatch(
+      this.#items.items(),
+      { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
+      (o) => o.host.textContent ?? '',
+      (o) => o.disabled(),
+    );
     if (match) {
       this.#activeId.set(match.id());
       match.host.scrollIntoView?.({ block: 'nearest' });

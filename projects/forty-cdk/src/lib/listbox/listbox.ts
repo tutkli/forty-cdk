@@ -32,6 +32,7 @@ import {
   toggleInArray,
 } from '../_internal/selection/selection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import { findTypeaheadMatch } from '../_internal/typeahead/match-options';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -463,32 +464,19 @@ export class ForListbox<T = string>
     if (!this.#typeahead.handle(event)) {
       return false;
     }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return true;
-    }
     const options = this.#options.items();
-    if (options.length === 0) {
-      return true;
-    }
-
-    const cycle = this.#typeahead.isRepeatedChar();
-    const query = cycle ? buffer[0]! : buffer;
     const currentIndex = options.findIndex((o) => o.host === event.target);
-    const anchor = currentIndex >= 0 ? currentIndex : -1;
-    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
-
-    for (let offset = 0; offset < options.length; offset++) {
-      const option = options[(start + offset) % options.length]!;
-      if (option.disabled()) {
-        continue;
-      }
-      const text = (option.host.textContent ?? '').trim().toLowerCase();
-      if (text.startsWith(query)) {
-        option.host.focus();
-        return true;
-      }
-    }
+    const match = findTypeaheadMatch(
+      options,
+      {
+        buffer: this.#typeahead.buffer(),
+        repeated: this.#typeahead.isRepeatedChar(),
+        anchorIndex: currentIndex,
+      },
+      (o) => o.host.textContent ?? '',
+      (o) => o.disabled(),
+    );
+    match?.host.focus();
     return true;
   }
 
@@ -573,30 +561,22 @@ export class ForListbox<T = string>
     if (!this.#typeahead.handle(event)) {
       return;
     }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
     const options = this.#options.items();
-    if (options.length === 0) {
-      return;
-    }
-    const cycle = this.#typeahead.isRepeatedChar();
-    const query = cycle ? buffer[0]! : buffer;
     const activeId = this.#activeId();
     const anchor = activeId === null ? -1 : options.findIndex((o) => o.id() === activeId);
-    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
-    for (let offset = 0; offset < options.length; offset++) {
-      const option = options[(start + offset) % options.length]!;
-      if (option.disabled()) {
-        continue;
-      }
-      const text = (option.host.textContent ?? '').trim().toLowerCase();
-      if (text.startsWith(query)) {
-        this.#activeId.set(option.id());
-        option.host.scrollIntoView?.({ block: 'nearest' });
-        return;
-      }
+    const match = findTypeaheadMatch(
+      options,
+      {
+        buffer: this.#typeahead.buffer(),
+        repeated: this.#typeahead.isRepeatedChar(),
+        anchorIndex: anchor,
+      },
+      (o) => o.host.textContent ?? '',
+      (o) => o.disabled(),
+    );
+    if (match) {
+      this.#activeId.set(match.id());
+      match.host.scrollIntoView?.({ block: 'nearest' });
     }
   }
 

@@ -38,7 +38,10 @@ export class OptionLabelCache<T> {
     readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
     readonly totalCount: Signal<number | undefined>;
   }) {
-    this.#cachedOptions = foldSnapshotOnTotalCountTransition<T, readonly SnapshotEntry<T>[]>(
+    this.#cachedOptions = foldSnapshotOnTotalCountTransition<
+      ForComboboxOptionHandle<T>,
+      readonly SnapshotEntry<T>[]
+    >(
       deps.items,
       deps.totalCount,
       () => [],

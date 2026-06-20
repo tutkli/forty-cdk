@@ -1,56 +1,10 @@
-import { linkedSignal, type Signal, type WritableSignal } from '@angular/core';
-
-import { readEntryGuarded } from '../_internal/virtualized-navigator/virtualized-navigator';
-import type { ForComboboxOptionHandle } from './combobox-context';
-
 /**
- * Read a handle's inputs inside a snapshot fold, skipping a statically-rendered
- * option that registers before its `input.required` `[value]` binding is
- * written (the NG0950 window). Combobox-local alias of the shared
- * `_internal/virtualized-navigator` read guard, shared by `OptionLabelCache`
- * and `VirtualizedNavigator` so the guard is single-sourced across the library.
+ * Combobox-local re-exports of the shared snapshot-fold helpers. The single
+ * sources live in `_internal/`: `tryReadHandle` (the NG0950 read guard) in
+ * `_internal/signal-graph/read-handle.ts` and `foldSnapshotOnTotalCountTransition`
+ * (the `totalCount`-reset `linkedSignal` fold) in
+ * `_internal/collection/fold-snapshot.ts`. Kept as a barrel so `OptionLabelCache`
+ * and the combobox virtualized navigator import from one combobox-local path.
  */
-export const tryReadHandle = readEntryGuarded;
-
-/** Source tracked by every combobox snapshot fold: the live window + its total. */
-interface FoldSource<T> {
-  readonly total: number | undefined;
-  readonly items: readonly ForComboboxOptionHandle<T>[];
-}
-
-/**
- * Builds the `linkedSignal` shared by `OptionLabelCache` and
- * `VirtualizedNavigator`. Both fold the live `items()` window into an
- * accumulator that persists across listbox close / open cycles and resets when
- * the consumer's `totalCount` transitions.
- *
- * The stale-window invariant lives here, in one place: on a `totalCount`
- * transition the `items()` array may still hold the previous window (signal
- * commits run serially, so the `@for` re-render hasn't unregistered the old
- * options yet), so the fold restarts from `empty()` on that compute and the
- * next run — fired when `items` catches up — folds the fresh window into a
- * clean carry-over accumulator.
- *
- * @param items Live registered options. The same signal the host exposes.
- * @param totalCount Total option count (virtualized) or `undefined`.
- * @param empty Produces a fresh, empty accumulator (used on a `totalCount`
- *   transition and as the initial `prev`).
- * @param fold Overlays the current `items` window onto the carried-over
- *   accumulator and returns the next accumulator.
- */
-export function foldSnapshotOnTotalCountTransition<T, A>(
-  items: Signal<readonly ForComboboxOptionHandle<T>[]>,
-  totalCount: Signal<number | undefined>,
-  empty: () => A,
-  fold: (prev: A, items: readonly ForComboboxOptionHandle<T>[]) => A,
-): WritableSignal<A> {
-  return linkedSignal<FoldSource<T>, A>({
-    source: () => ({ total: totalCount(), items: items() }),
-    computation: ({ total, items: window }, prev) => {
-      if (prev && prev.source.total !== total) {
-        return empty();
-      }
-      return fold(prev?.value ?? empty(), window);
-    },
-  });
-}
+export { tryReadHandle } from '../_internal/signal-graph/read-handle';
+export { foldSnapshotOnTotalCountTransition } from '../_internal/collection/fold-snapshot';
