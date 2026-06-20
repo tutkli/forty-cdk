@@ -1,7 +1,7 @@
-import { signal, type Signal } from '@angular/core';
+import { type Signal } from '@angular/core';
 
-import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { foldSnapshotOnTotalCountTransition, tryReadHandle } from './combobox-snapshot-fold';
+import { VirtualizedNavigator as VirtualizedNavigatorCore } from '../_internal/virtualized-navigator/virtualized-navigator';
+import { tryReadHandle } from './combobox-snapshot-fold';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import type { SnapshotEntry } from './combobox-label-cache';
 
@@ -43,86 +43,44 @@ export interface VirtualizedNavigatorDeps<T> {
 }
 
 /**
- * Virtualization navigation engine for `ForCombobox`. Constructed lazily — only
- * once the consumer sets `totalCount()` — so a non-virtualized combobox never
- * pulls this position-map machinery into its hot path. Encapsulates the two
- * pieces of state that make keyboard navigation work across a virtualized
- * window where the active option may be unmounted at any time:
- *
- * - **Snapshot by position** — option data keyed by absolute `posInSet`, plus
- *   the `disabled` flag. Drives navigation past the rendered window so
- *   `moveIndex` knows about disabled boundaries it can't see.
- * - **Pending active position** — when navigation lands on a position outside
- *   the visible window the helper emits `(scrollToIndex)` and remembers the
- *   target here. The host's bridge effect calls `tryResolvePending` once the
- *   freshly-mounted option carries that posInSet so activedescendant seeds
- *   without a roundtrip through user code.
+ * Virtualization navigation engine for `ForCombobox`. A thin adapter over the
+ * shared `_internal/virtualized-navigator` engine. Maps the combobox option
+ * handle (whose `posInSet` is optional) onto the engine's accessors, reads the
+ * option through the single NG0950 read guard, and overrides scroll-into-view
+ * with the host's pointer-suppression wrapper. Adds the combobox-only
+ * auto-highlight seed that stays passive (never scrolls the window).
  *
  * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
  */
 export class VirtualizedNavigator<T> {
   readonly #deps: VirtualizedNavigatorDeps<T>;
 
-  /**
-   * Snapshot keyed by absolute index (`posInSet`), persisted across unmount so
-   * navigation can walk past the rendered window.
-   *
-   * Reset whenever the consumer's `totalCount` transitions — a query change
-   * typically rebuilds the source array, so previously-folded entries no
-   * longer point at the same items. On any other reactive trigger (option
-   * mount / unmount) the prior map is carried over and the currently-rendered
-   * options are overlaid in place. The stale-window invariant lives in
-   * `combobox-snapshot-fold.ts`, shared with `OptionLabelCache`.
-   */
-  readonly #snapshotByPos: Signal<Map<number, IndexedSnapshotEntry<T>>>;
-
-  /**
-   * When navigation lands on a posInSet outside the visible window, the
-   * directive emits `(scrollToIndex)` and remembers the target here. The
-   * host's bridge effect calls `tryResolvePending` to seed
-   * `aria-activedescendant` once the option for that posInSet mounts.
-   */
-  readonly #pendingActivePos = signal<number | null>(null);
+  readonly #core: VirtualizedNavigatorCore<ForComboboxOptionHandle<T>, IndexedSnapshotEntry<T>>;
 
   constructor(deps: VirtualizedNavigatorDeps<T>) {
     this.#deps = deps;
-
-    this.#snapshotByPos = foldSnapshotOnTotalCountTransition<
-      T,
-      Map<number, IndexedSnapshotEntry<T>>
-    >(
-      deps.items,
-      deps.totalCount,
-      () => new Map(),
-      (prev, items) => {
-        const next = new Map(prev);
-        for (const item of items) {
-          const pos = item.posInSet?.() ?? null;
-          if (pos === null) continue;
-          // A static option registers before its `[value]` binding is written;
-          // skip it this fold and pick it up on the re-run the binding
-          // triggers. See `tryReadHandle`.
-          const entry = tryReadHandle(() => ({
-            id: item.id(),
-            value: item.value(),
-            label: item.label(),
-            disabled: item.disabled(),
-          }));
-          if (entry === null) continue;
-          next.set(pos, entry);
-        }
-        return next;
+    this.#core = new VirtualizedNavigatorCore(
+      { ...deps, loop: deps.loop },
+      {
+        posOf: (o) => o.posInSet?.() ?? null,
+        idOf: (o) => o.id(),
+        hostOf: (o) => o.host,
+        readEntry: (o) =>
+          tryReadHandle(() => ({
+            id: o.id(),
+            value: o.value(),
+            label: o.label(),
+            disabled: o.disabled(),
+          })),
+        scrollIntoView: (host) => deps.scrollActiveIntoView(host),
       },
+      { deferFoldOnTotalTransition: true },
     );
   }
 
-  /**
-   * Pull the position-map so its `linkedSignal` `prev` slot gets seeded while
-   * the listbox is open. Called from the host's bridge effect alongside the
-   * label cache, but only when virtualizing.
-   */
+  /** @see VirtualizedNavigator.prime */
   prime(): void {
-    this.#snapshotByPos();
+    this.#core.prime();
   }
 
   /**
@@ -130,30 +88,12 @@ export class VirtualizedNavigator<T> {
    * fallback and for the merged-label lookup. Read-only for callers.
    */
   snapshotByPos(): ReadonlyMap<number, IndexedSnapshotEntry<T>> {
-    return this.#snapshotByPos();
+    return this.#core.snapshotByPos();
   }
 
-  /**
-   * Try to resolve a pending virtualized navigation. Once an option carrying
-   * the requested `posInSet` mounts, seeds activedescendant to its id and
-   * scrolls it into view. Returns `true` if a pending request was resolved,
-   * `false` otherwise — the host effect uses this to decide whether to fall
-   * through to the auto-highlight branch.
-   */
+  /** @see VirtualizedNavigator.tryResolvePending */
   tryResolvePending(): boolean {
-    const pendingPos = this.#pendingActivePos();
-    if (pendingPos === null) {
-      return false;
-    }
-    const items = this.#deps.items();
-    const match = items.find((it) => it.posInSet?.() === pendingPos);
-    if (!match) {
-      return false;
-    }
-    this.#deps.setActiveId(match.id());
-    this.#pendingActivePos.set(null);
-    this.#deps.scrollActiveIntoView(match.host);
-    return true;
+    return this.#core.tryResolvePending();
   }
 
   /**
@@ -194,74 +134,9 @@ export class VirtualizedNavigator<T> {
     }
   }
 
-  /**
-   * Virtualized arrow / Home / End navigation. Walks `moveIndex` against the
-   * absolute total, using the indexed snapshot to learn about disabled options
-   * outside the rendered window. When the target is in the visible range and a
-   * live option is present, seeds activedescendant directly; otherwise stashes
-   * the target in `#pendingActivePos` and emits `(scrollToIndex)` so the
-   * consumer can scroll it into view.
-   */
+  /** @see VirtualizedNavigator.navigate */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
-    const total = this.#deps.totalCount();
-    if (total === undefined || total <= 0) {
-      return;
-    }
-    const indexed = this.#snapshotByPos();
-    const items = this.#deps.items();
-
-    // Locate current absolute position from the activedescendant.
-    const currentId = this.#deps.getActiveId();
-    let currentPos = -1;
-    if (currentId !== null) {
-      const live = items.find((o) => o.id() === currentId);
-      const livePos = live?.posInSet?.() ?? null;
-      if (livePos !== null) {
-        currentPos = livePos;
-      } else {
-        for (const [pos, entry] of indexed) {
-          if (entry.id === currentId) {
-            currentPos = pos;
-            break;
-          }
-        }
-      }
-    }
-
-    let action = direction;
-    if (currentPos < 0 && direction === 'next') {
-      action = 'first';
-    } else if (currentPos < 0 && direction === 'prev') {
-      action = 'last';
-    }
-
-    // Disabled lookup against the indexed snapshot — entries we've never seen
-    // are assumed enabled (the consumer filtered them in).
-    const isDisabled = (i: number) => indexed.get(i)?.disabled === true;
-
-    const next = moveIndex(currentPos, total, action, {
-      loop: this.#deps.loop(),
-      isDisabled,
-    });
-    if (next === null) {
-      return;
-    }
-
-    const range = this.#deps.visibleRange();
-    const inRange = !range || (next >= range[0] && next < range[1]);
-    if (inRange) {
-      const live = items.find((it) => it.posInSet?.() === next);
-      if (live) {
-        this.#pendingActivePos.set(null);
-        this.#deps.setActiveId(live.id());
-        this.#deps.scrollActiveIntoView(live.host);
-        return;
-      }
-      // Range claims it's in-window but the option hasn't mounted yet — fall
-      // through to the pending path so the next render seeds it.
-    }
-    this.#pendingActivePos.set(next);
-    this.#deps.emitScrollToIndex(next);
+    this.#core.navigate(direction);
   }
 
   /**
@@ -270,6 +145,6 @@ export class VirtualizedNavigator<T> {
    * after the listbox re-opens.
    */
   resetPending(): void {
-    this.#pendingActivePos.set(null);
+    this.#core.resetPending();
   }
 }

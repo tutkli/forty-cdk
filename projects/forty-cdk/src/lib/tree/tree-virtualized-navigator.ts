@@ -1,6 +1,6 @@
-import { linkedSignal, signal, type Signal } from '@angular/core';
+import { type Signal } from '@angular/core';
 
-import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { VirtualizedNavigator } from '../_internal/virtualized-navigator/virtualized-navigator';
 import type { ForTreeItemHandle } from './tree-context';
 
 interface PositionEntry {
@@ -31,173 +31,56 @@ export interface TreeVirtualizedNavigatorDeps {
 }
 
 /**
- * Virtualization navigation engine for `ForTree`. Constructed lazily — only
- * once the consumer sets `totalCount()` — so a non-virtualized tree never
- * pulls this position-map machinery into its hot path. Encapsulates two pieces
- * of state that make keyboard navigation work across a virtualized window where
- * the active node may be unmounted at any time:
- *
- * - **Snapshot by position** — node data keyed by absolute `itemIndex`. Drives
- *   navigation past the rendered window so `moveIndex` knows about disabled
- *   boundaries it cannot see, and lets tree-specific moves (enter child /
- *   go-to-parent) resolve levels outside the window.
- * - **Pending active position** — when navigation lands outside the visible
- *   window, the helper emits `(scrollToIndex)` and remembers the target. The
- *   host's bridge effect calls `tryResolvePending` once the freshly-mounted
- *   node carries that `itemIndex`.
+ * Virtualization navigation engine for `ForTree`. A thin adapter over the
+ * shared `_internal/virtualized-navigator` engine. A tree never wraps, so it
+ * pins `loop` to `false`; its snapshot entry carries `level` / `expandable` /
+ * `value` so the tree-specific moves (enter child / go-to-parent) can resolve
+ * levels outside the rendered window.
  *
  * Internal — not re-exported from `tree/index.ts` or `public-api.ts`.
  */
 export class TreeVirtualizedNavigator {
   readonly #deps: TreeVirtualizedNavigatorDeps;
 
-  readonly #snapshotByPos: Signal<Map<number, PositionEntry>>;
-
-  readonly #pendingActivePos = signal<number | null>(null);
+  readonly #core: VirtualizedNavigator<ForTreeItemHandle, PositionEntry>;
 
   constructor(deps: TreeVirtualizedNavigatorDeps) {
     this.#deps = deps;
-
-    this.#snapshotByPos = linkedSignal<
-      { total: number | undefined; items: readonly ForTreeItemHandle[] },
-      Map<number, PositionEntry>
-    >({
-      source: () => ({ total: deps.totalCount(), items: deps.items() }),
-      computation: (src, prev) => {
-        const next =
-          prev !== undefined && prev.source.total === src.total
-            ? new Map(prev.value)
-            : new Map<number, PositionEntry>();
-        for (const item of src.items) {
-          const pos = item.itemIndex();
-          if (pos === null) continue;
-          next.set(pos, {
-            id: item.id(),
-            disabled: item.disabled(),
-            level: item.level(),
-            expandable: item.expandable(),
-            value: item.value(),
-          });
-        }
-        return next;
+    this.#core = new VirtualizedNavigator(
+      { ...deps, loop: () => false },
+      {
+        posOf: (n) => n.itemIndex(),
+        idOf: (n) => n.id(),
+        hostOf: (n) => n.host,
+        readEntry: (n) => ({
+          id: n.id(),
+          disabled: n.disabled(),
+          level: n.level(),
+          expandable: n.expandable(),
+          value: n.value(),
+        }),
       },
-    });
+    );
   }
 
-  /**
-   * Pull the position-map so its `linkedSignal` `prev` slot gets seeded while
-   * the tree nodes are tracked. Called from the host's bridge effect.
-   */
+  /** @see VirtualizedNavigator.prime */
   prime(): void {
-    this.#snapshotByPos();
+    this.#core.prime();
   }
 
-  /**
-   * Try to resolve a pending virtualized navigation. Once a node carrying
-   * the requested `itemIndex` mounts, seeds activedescendant to its id and
-   * scrolls it into view. Returns `true` if a pending request was resolved,
-   * `false` otherwise.
-   */
+  /** @see VirtualizedNavigator.tryResolvePending */
   tryResolvePending(): boolean {
-    const pendingPos = this.#pendingActivePos();
-    if (pendingPos === null) {
-      return false;
-    }
-    const items = this.#deps.items();
-    const match = items.find((it) => it.itemIndex() === pendingPos);
-    if (!match) {
-      return false;
-    }
-    this.#deps.setActiveId(match.id());
-    this.#pendingActivePos.set(null);
-    match.host.scrollIntoView?.({ block: 'nearest' });
-    return true;
+    return this.#core.tryResolvePending();
   }
 
-  /**
-   * Virtualized arrow / Home / End navigation. Walks `moveIndex` against the
-   * absolute total, using the indexed snapshot to learn about disabled nodes
-   * outside the rendered window. When the target is in the visible range and a
-   * live node is present, seeds activedescendant directly; otherwise stashes
-   * the target in `#pendingActivePos` and emits `(scrollToIndex)`.
-   */
+  /** @see VirtualizedNavigator.navigate */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
-    const total = this.#deps.totalCount();
-    if (total === undefined || total <= 0) {
-      return;
-    }
-    const indexed = this.#snapshotByPos();
-    const items = this.#deps.items();
-
-    const currentId = this.#deps.getActiveId();
-    let currentPos = -1;
-    if (currentId !== null) {
-      const live = items.find((o) => o.id() === currentId);
-      const livePos = live?.itemIndex() ?? null;
-      if (livePos !== null) {
-        currentPos = livePos;
-      } else {
-        for (const [pos, entry] of indexed) {
-          if (entry.id === currentId) {
-            currentPos = pos;
-            break;
-          }
-        }
-      }
-    }
-
-    let action = direction;
-    if (currentPos < 0 && direction === 'next') {
-      action = 'first';
-    } else if (currentPos < 0 && direction === 'prev') {
-      action = 'last';
-    }
-
-    const isDisabled = (i: number) => indexed.get(i)?.disabled === true;
-
-    const next = moveIndex(currentPos, total, action, {
-      loop: false,
-      isDisabled,
-    });
-    if (next === null) {
-      return;
-    }
-
-    const range = this.#deps.visibleRange();
-    const inRange = !range || (next >= range[0] && next < range[1]);
-    if (inRange) {
-      const live = items.find((it) => it.itemIndex() === next);
-      if (live) {
-        this.#pendingActivePos.set(null);
-        this.#deps.setActiveId(live.id());
-        live.host.scrollIntoView?.({ block: 'nearest' });
-        return;
-      }
-    }
-    this.#pendingActivePos.set(next);
-    this.#deps.emitScrollToIndex(next);
+    this.#core.navigate(direction);
   }
 
-  /**
-   * Land the activedescendant on a specific absolute index. If the index is
-   * inside the rendered window and live, seeds activedescendant directly;
-   * otherwise stashes it as pending and emits `(scrollToIndex)`.
-   */
+  /** @see VirtualizedNavigator.seedActive */
   seedActive(index: number): void {
-    const range = this.#deps.visibleRange();
-    const items = this.#deps.items();
-    const inRange = !range || (index >= range[0] && index < range[1]);
-    if (inRange) {
-      const live = items.find((it) => it.itemIndex() === index);
-      if (live) {
-        this.#pendingActivePos.set(null);
-        this.#deps.setActiveId(live.id());
-        live.host.scrollIntoView?.({ block: 'nearest' });
-        return;
-      }
-    }
-    this.#pendingActivePos.set(index);
-    this.#deps.emitScrollToIndex(index);
+    this.#core.seedActive(index);
   }
 
   /**
@@ -216,8 +99,7 @@ export class TreeVirtualizedNavigator {
     if (currentId === null) {
       return null;
     }
-    const items = this.#deps.items();
-    const live = items.find((o) => o.id() === currentId);
+    const live = this.#deps.items().find((o) => o.id() === currentId);
     if (live) {
       const pos = live.itemIndex();
       if (pos !== null) {
@@ -230,7 +112,7 @@ export class TreeVirtualizedNavigator {
         };
       }
     }
-    const indexed = this.#snapshotByPos();
+    const indexed = this.#core.snapshotByPos();
     for (const [pos, entry] of indexed) {
       if (entry.id === currentId) {
         return {
@@ -268,7 +150,7 @@ export class TreeVirtualizedNavigator {
   moveToParent(): void {
     const cur = this.currentEntry();
     if (!cur) return;
-    const indexed = this.#snapshotByPos();
+    const indexed = this.#core.snapshotByPos();
     for (let p = cur.pos - 1; p >= 0; p--) {
       const e = indexed.get(p);
       if (e && e.level < cur.level) {
