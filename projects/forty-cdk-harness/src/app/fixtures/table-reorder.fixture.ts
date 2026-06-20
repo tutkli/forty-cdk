@@ -99,6 +99,7 @@ interface Row {
             [name]="col"
             forDraggable
             [dragData]="col"
+            [dragDisabled]="isPinned(col)"
             class="header-cell"
             [attr.data-testid]="'header-' + col"
           >
@@ -160,6 +161,17 @@ export class TableReorderFixture {
     const useBoundary = this.#route.snapshot.queryParamMap.get('boundary') === 'true';
     return useBoundary ? '[data-testid="table-root"]' : null;
   })();
+
+  readonly #pinnedColumns = new Set(
+    (this.#route.snapshot.queryParamMap.get('pinned') ?? '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0),
+  );
+
+  protected isPinned(col: string): boolean {
+    return this.#pinnedColumns.has(col);
+  }
 
   readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
   readonly rows = signal<Row[]>([

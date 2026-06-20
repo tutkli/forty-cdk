@@ -1,4 +1,4 @@
-import { placeholderInsertion } from './placeholder-position';
+import { fencePlaceholderIndex, placeholderInsertion } from './placeholder-position';
 
 function makeDiv(): HTMLElement {
   return document.createElement('div');
@@ -59,5 +59,50 @@ describe('placeholderInsertion', () => {
     const result = placeholderInsertion([host], 0, container);
     expect(result.parent).toBe(altParent);
     expect(result.ref).toBe(host);
+  });
+});
+
+describe('fencePlaceholderIndex', () => {
+  it('no disabled hosts — returns the index unchanged', () => {
+    const disabled = [false, false, false, false];
+    expect(fencePlaceholderIndex(0, disabled, 3)).toBe(0);
+    expect(fencePlaceholderIndex(2, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(4, disabled, 3)).toBe(4);
+  });
+
+  it('leading pinned block [F*, F*, A, C], origin after A — clamps the lower bound to 2', () => {
+    const disabled = [true, true, false, false];
+    expect(fencePlaceholderIndex(0, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(1, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(2, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(3, disabled, 3)).toBe(3);
+    expect(fencePlaceholderIndex(4, disabled, 3)).toBe(4);
+  });
+
+  it('trailing pinned block [A, C, F*], origin before A — clamps the upper bound to 2', () => {
+    const disabled = [false, false, true];
+    expect(fencePlaceholderIndex(0, disabled, 0)).toBe(0);
+    expect(fencePlaceholderIndex(1, disabled, 0)).toBe(1);
+    expect(fencePlaceholderIndex(2, disabled, 0)).toBe(2);
+    expect(fencePlaceholderIndex(3, disabled, 0)).toBe(2);
+  });
+
+  it('pinned on both ends [F*, A, C, F2*], origin between A and C — clamps to band [1, 3]', () => {
+    const disabled = [true, false, false, true];
+    expect(fencePlaceholderIndex(0, disabled, 2)).toBe(1);
+    expect(fencePlaceholderIndex(1, disabled, 2)).toBe(1);
+    expect(fencePlaceholderIndex(2, disabled, 2)).toBe(2);
+    expect(fencePlaceholderIndex(3, disabled, 2)).toBe(3);
+    expect(fencePlaceholderIndex(4, disabled, 2)).toBe(3);
+  });
+
+  it('interspersed pinned item [A, F*, B] — fences each origin to its own enabled run', () => {
+    const disabled = [false, true, false];
+    expect(fencePlaceholderIndex(0, disabled, 0)).toBe(0);
+    expect(fencePlaceholderIndex(1, disabled, 0)).toBe(1);
+    expect(fencePlaceholderIndex(3, disabled, 0)).toBe(1);
+    expect(fencePlaceholderIndex(0, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(2, disabled, 3)).toBe(2);
+    expect(fencePlaceholderIndex(3, disabled, 3)).toBe(3);
   });
 });

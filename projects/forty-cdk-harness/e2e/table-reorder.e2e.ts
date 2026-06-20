@@ -208,3 +208,36 @@ test.describe('table reorder live-sort placeholder', () => {
     await page.mouse.up();
   });
 });
+
+test.describe('table reorder live-sort placeholder fence (dragDisabled)', () => {
+  test('placeholder cannot cross a pinned (dragDisabled) column', async ({ page }) => {
+    await gotoFixture(page, 'table-reorder', { liveSort: 'true', pinned: 'name' });
+
+    const deptHeader = el(page, 'header-dept');
+    const nameHeader = el(page, 'header-name');
+
+    const deptBox = await deptHeader.boundingBox();
+    const nameBox = await nameHeader.boundingBox();
+    if (!deptBox || !nameBox) throw new Error('Header cells not found');
+
+    const startX = deptBox.x + deptBox.width / 2;
+    const startY = deptBox.y + deptBox.height / 2;
+    const targetX = nameBox.x + 4;
+    const targetY = nameBox.y + nameBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX - 5, startY);
+    await page.mouse.move(targetX, targetY);
+
+    const order = await page
+      .locator('[data-testid="header-row"] > *')
+      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+    const nameIndex = order.indexOf('header-name');
+    const phIndex = order.indexOf('col-placeholder');
+    expect(nameIndex).toBe(0);
+    expect(phIndex).toBeGreaterThan(nameIndex);
+
+    await page.mouse.up();
+  });
+});

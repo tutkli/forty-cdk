@@ -24,7 +24,10 @@ import {
   resolveDropTarget,
   type DropContainerGeometry,
 } from '../_internal/drag-session/drag-geometry';
-import { placeholderInsertion } from '../_internal/drag-session/placeholder-position';
+import {
+  fencePlaceholderIndex,
+  placeholderInsertion,
+} from '../_internal/drag-session/placeholder-position';
 import {
   createDragPreview,
   wrapPreview,
@@ -133,6 +136,10 @@ export class ForDropList implements ForDropListContext {
    * reveal where the item will land. When false (the default), the placeholder stays in the
    * dragged item's source slot (the #806 behaviour). Has no effect without a
    * `[forDragPlaceholder]` template, and none on keyboard dragging.
+   *
+   * A `dragDisabled` sibling acts as a hard fence: the placeholder stops at the first
+   * pinned item instead of travelling past it. This is purely visual — the committed drop
+   * index emitted by `dragDrop` is resolved separately and unaffected.
    */
   readonly liveSort = input(false, { transform: booleanAttribute });
 
@@ -371,7 +378,11 @@ export class ForDropList implements ForDropListContext {
     if (changed) {
       const targetCtx = containers[target.containerIndex]!;
       if (this.liveSort()) {
-        this.#movePlaceholder(targetCtx, target.index, lifted);
+        this.#movePlaceholder(
+          targetCtx,
+          this.#fencedPlaceholderIndex(targetCtx, target.index, lifted),
+          lifted,
+        );
       }
       const label = (lifted.textContent ?? '').trim();
       this.#announcer.announce(
@@ -556,6 +567,22 @@ export class ForDropList implements ForDropListContext {
 
   setLivePlaceholder(nodes: readonly Node[] | null): void {
     this.#placeholderNodes = nodes;
+  }
+
+  #fencedPlaceholderIndex(
+    targetCtx: ForDropListContext,
+    index: number,
+    lifted: HTMLElement,
+  ): number {
+    if (targetCtx !== (this as ForDropListContext)) {
+      return index;
+    }
+    const disabled = this.#items
+      .items()
+      .filter((h) => h.host !== lifted)
+      .map((h) => h.disabled());
+    const origin = this.#items.indexOfHost(lifted);
+    return fencePlaceholderIndex(index, disabled, origin < 0 ? 0 : origin);
   }
 
   #movePlaceholder(targetCtx: ForDropListContext, index: number, lifted: HTMLElement): void {
