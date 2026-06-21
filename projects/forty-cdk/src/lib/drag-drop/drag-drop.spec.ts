@@ -464,6 +464,33 @@ describe('ForDropList + ForDraggable', () => {
       expect(item1.hasAttribute('data-dragging')).toBe(false);
       expect(listEl(el).hasAttribute('data-drag-over')).toBe(false);
     });
+
+    it('Escape cancels an in-flight pointer drag — no dragDrop, the trailing pointerup is inert', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      const opts = {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        button: 0,
+        pointerType: 'mouse',
+      };
+
+      first.dispatchEvent(new PointerEvent('pointerdown', { ...opts, clientX: 0, clientY: 0 }));
+      first.dispatchEvent(new PointerEvent('pointermove', { ...opts, clientX: 20, clientY: 0 }));
+      fixture.detectChanges();
+      expect(first.hasAttribute('data-dragging')).toBe(true);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      expect(comp.lastDrop()).toBeNull();
+      expect(first.hasAttribute('data-dragging')).toBe(false);
+
+      first.dispatchEvent(new PointerEvent('pointerup', { ...opts, clientX: 20, clientY: 0 }));
+      fixture.detectChanges();
+      expect(comp.lastDrop()).toBeNull();
+    });
   });
 
   describe('disabled list', () => {

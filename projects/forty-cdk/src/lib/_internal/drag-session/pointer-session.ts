@@ -5,8 +5,10 @@
  * domain model: the host `pointerdown` capture listener, the document-level
  * `pointermove` / `pointerup` / `pointercancel` capture listeners, the arm threshold
  * (a drag is not "lifted" until the pointer travels past `armThreshold` from the start
- * point), and the post-drag click suppression that stops the release from triggering a
- * stray `click` on whatever sat under the pointer.
+ * point), the post-drag click suppression that stops the release from triggering a
+ * stray `click` on whatever sat under the pointer, and — when `capturePointer` is set —
+ * pointer capture on the host (which also suppresses the browser's native drag behaviours,
+ * e.g. text-selection auto-scroll near a scroll-container edge).
  *
  * The session keeps no Angular DI surface — it's a plain function that returns a cleanup
  * handle. Callers wire it through the directive's `DestroyRef`. Domain decisions stay with
@@ -21,7 +23,12 @@
  *   the document listeners are torn down and no further callback fires.
  * - `onMove(event)` fires on every armed move after the lift.
  * - `onCommit(event)` fires on `pointerup` while armed.
- * - `onCancel()` fires on `pointercancel`.
+ * - `onCancel()` fires on `pointercancel`, and on `Escape` when `cancelOnEscape` is set.
+ *
+ * Escape: with `cancelOnEscape`, a document `keydown` listener (alive only while a press is
+ * tracked) aborts an armed drag on `Escape` — it tears the session down and fires `onCancel`,
+ * just like a `pointercancel`. It is opt-in so callers that run their own keyboard-drag mode and
+ * own the `Escape` handling themselves (e.g. `ForTreeNodeDrag`) stay unaffected.
  *
  * Click suppression: when a `pointerup` ends an armed drag, the next capture-phase `click`
  * on the document is swallowed (`stopPropagation` + `preventDefault`). The listener removes
@@ -58,8 +65,20 @@ export interface PointerDragSessionOptions {
   readonly onMove: (event: PointerEvent) => void;
   /** Fires on `pointerup` while armed. */
   readonly onCommit: (event: PointerEvent) => void;
-  /** Fires on `pointercancel`. */
+  /** Fires on `pointercancel`, and on `Escape` while armed when {@link cancelOnEscape} is set. */
   readonly onCancel: () => void;
+  /**
+   * When `true`, an `Escape` keydown aborts an armed drag (tears the session down and fires
+   * `onCancel`). Defaults to `false` so callers owning their own `Escape` handling are unaffected.
+   */
+  readonly cancelOnEscape?: boolean;
+  /**
+   * When `true`, the host captures the pointer once the drag arms and releases it on
+   * commit / cancel / teardown. Capture also suppresses the browser's native drag behaviours
+   * (notably text-selection auto-scroll when the pointer reaches a scroll-container edge).
+   * Defaults to `false`; capture is no-op'd in environments without `PointerCapture` (jsdom).
+   */
+  readonly capturePointer?: boolean;
   /** Fallback timeout (ms) that drops the click trap if no click follows the release. */
   readonly suppressClickTimeoutMs?: number;
 }
@@ -76,10 +95,12 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
 
   let start: { x: number; y: number } | null = null;
   let armed = false;
+  let pointerId: number | null = null;
 
   let onDocumentMove: ((event: PointerEvent) => void) | null = null;
   let onDocumentUp: ((event: PointerEvent) => void) | null = null;
   let onDocumentCancel: ((event: PointerEvent) => void) | null = null;
+  let onDocumentKeydown: ((event: KeyboardEvent) => void) | null = null;
   let onDocumentClick: ((event: MouseEvent) => void) | null = null;
 
   const removeDocumentListeners = (): void => {
@@ -95,6 +116,10 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       document.removeEventListener('pointercancel', onDocumentCancel, { capture: true });
       onDocumentCancel = null;
     }
+    if (onDocumentKeydown) {
+      document.removeEventListener('keydown', onDocumentKeydown);
+      onDocumentKeydown = null;
+    }
   };
 
   const removeClickTrap = (): void => {
@@ -104,9 +129,24 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
   };
 
+  const releaseCapture = (): void => {
+    if (pointerId === null) {
+      return;
+    }
+    try {
+      if (host.hasPointerCapture?.(pointerId)) {
+        host.releasePointerCapture?.(pointerId);
+      }
+    } catch {
+      // Some environments (jsdom) reject release on detached nodes.
+    }
+  };
+
   const resetTracking = (): void => {
+    releaseCapture();
     start = null;
     armed = false;
+    pointerId = null;
     removeDocumentListeners();
   };
 
@@ -121,6 +161,13 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
         return;
       }
       armed = true;
+      if (opts.capturePointer && pointerId !== null) {
+        try {
+          host.setPointerCapture?.(pointerId);
+        } catch {
+          // Some environments (jsdom) reject capture on detached nodes.
+        }
+      }
       if (opts.onLift(event) === false) {
         resetTracking();
         return;
@@ -169,6 +216,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
     start = { x: event.clientX, y: event.clientY };
     armed = false;
+    pointerId = event.pointerId;
 
     onDocumentMove = move;
     onDocumentUp = up;
@@ -176,6 +224,16 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     document.addEventListener('pointermove', move, { capture: true });
     document.addEventListener('pointerup', up, { capture: true });
     document.addEventListener('pointercancel', cancel, { capture: true });
+
+    if (opts.cancelOnEscape) {
+      const escape = (event: KeyboardEvent): void => {
+        if (armed && event.key === 'Escape') {
+          cancel();
+        }
+      };
+      onDocumentKeydown = escape;
+      document.addEventListener('keydown', escape);
+    }
   };
 
   host.addEventListener('pointerdown', down, { capture: true });
@@ -183,6 +241,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   return {
     destroy(): void {
       host.removeEventListener('pointerdown', down, { capture: true });
+      releaseCapture();
       removeDocumentListeners();
       removeClickTrap();
     },

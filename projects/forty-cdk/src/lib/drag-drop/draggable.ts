@@ -18,7 +18,10 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { attachSwipeDismiss, type SwipeDirection } from '../_internal/swipe-dismiss/swipe-dismiss';
+import {
+  createPointerDragSession,
+  type PointerDragSession,
+} from '../_internal/drag-session/pointer-session';
 import { createTemplatePreview, type DragPreview } from '../_internal/drag-session/drag-preview';
 import {
   FOR_DRAGGABLE_CONTEXT,
@@ -31,6 +34,8 @@ import {
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { ForDragPreview } from './drag-preview';
 import { ForDragPlaceholder } from './drag-placeholder';
+
+const POINTER_ARM_THRESHOLD_PX = 5;
 
 /**
  * Marks an element as a draggable item inside a `[forDropList]`. Handles
@@ -70,9 +75,8 @@ export class ForDraggable implements ForDraggableContext {
   protected readonly placeholderActive = signal(false);
 
   readonly #handles = new Set<HTMLElement>();
-  #downOnHandle = false;
   #pointerDragging = false;
-  #escapeListener: ((event: KeyboardEvent) => void) | null = null;
+  #pointerSession: PointerDragSession | null = null;
 
   /** Data payload handed back in the `dragDrop` event when this item is dropped. */
   readonly dragData = input.required<unknown>();
@@ -131,29 +135,19 @@ export class ForDraggable implements ForDraggableContext {
     );
 
     if (this.#isBrowser) {
-      const host = this.#host.nativeElement;
-      const onDown = (event: PointerEvent): void => {
-        const target = event.target as Node | null;
-        this.#downOnHandle =
-          this.#handles.size === 0 ||
-          (target !== null && [...this.#handles].some((h) => h.contains(target)));
-      };
-      host.addEventListener('pointerdown', onDown, { capture: true });
-      this.#destroyRef.onDestroy(() =>
-        host.removeEventListener('pointerdown', onDown, { capture: true }),
-      );
-
-      const cleanup = attachSwipeDismiss({
-        element: host,
-        getDirections: () => this.#dragDirections(),
-        getThreshold: () => 0,
-        onSwipeStart: (d) => this.#onPointerStart(d.originalEvent),
-        onSwipeMove: (d) => this.#onPointerMove(d.originalEvent),
-        onSwipeEnd: () => this.#onPointerEnd(),
-        onSwipeCancel: () => this.#onPointerCancel(),
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host.nativeElement,
+        document: this.#document,
+        armThreshold: POINTER_ARM_THRESHOLD_PX,
+        cancelOnEscape: true,
+        capturePointer: true,
+        canStart: (event) => this.#canStartPointer(event),
+        onLift: (event) => this.#onPointerLift(event),
+        onMove: (event) => this.#onPointerMove(event),
+        onCommit: () => this.#onPointerCommit(),
+        onCancel: () => this.#onPointerCancel(),
       });
-      this.#destroyRef.onDestroy(cleanup);
-      this.#destroyRef.onDestroy(() => this.#removeEscapeListener());
+      this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
       this.#destroyRef.onDestroy(() => this.#clearPlaceholder());
     }
   }
@@ -166,13 +160,21 @@ export class ForDraggable implements ForDraggableContext {
     this.#handles.delete(el);
   }
 
-  readonly #allDirections: readonly SwipeDirection[] = ['left', 'right', 'up', 'down'];
-
-  #dragDirections(): readonly SwipeDirection[] {
-    return !this.effectiveDisabled() && this.#downOnHandle ? this.#allDirections : [];
+  #canStartPointer(event: PointerEvent): boolean {
+    if (this.effectiveDisabled()) {
+      return false;
+    }
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return false;
+    }
+    if (this.#handles.size === 0) {
+      return true;
+    }
+    const target = event.target as Node | null;
+    return target !== null && [...this.#handles].some((h) => h.contains(target));
   }
 
-  #onPointerStart(event: PointerEvent): void {
+  #onPointerLift(event: PointerEvent): boolean {
     const preview = this.#buildPreview();
     const index = this.#list.pointerLift(
       this.#host.nativeElement,
@@ -181,29 +183,21 @@ export class ForDraggable implements ForDraggableContext {
     );
     if (index < 0) {
       preview?.destroy();
-      return;
+      return false;
     }
     this.#renderPlaceholder();
     this.#pointerDragging = true;
     this.dragStart.emit({ source: this.#list, index });
-    this.#addEscapeListener();
+    return true;
   }
 
   #onPointerMove(event: PointerEvent): void {
-    if (!this.#pointerDragging) {
-      return;
-    }
     this.#list.pointerMove({ x: event.clientX, y: event.clientY });
   }
 
-  #onPointerEnd(): void {
-    if (!this.#pointerDragging) {
-      return;
-    }
+  #onPointerCommit(): void {
     this.#pointerDragging = false;
-    this.#removeEscapeListener();
     this.#clearPlaceholder();
-    this.#suppressNextClick();
     this.#list.drop();
     this.dragEnd.emit({ dropped: true });
   }
@@ -213,46 +207,9 @@ export class ForDraggable implements ForDraggableContext {
       return;
     }
     this.#pointerDragging = false;
-    this.#removeEscapeListener();
     this.#clearPlaceholder();
-    this.#suppressNextClick();
     this.#list.cancel();
     this.dragEnd.emit({ dropped: false });
-  }
-
-  #suppressNextClick(): void {
-    const onClick = (event: Event): void => {
-      event.stopPropagation();
-      event.preventDefault();
-      this.#document.removeEventListener('click', onClick, { capture: true });
-    };
-    this.#document.addEventListener('click', onClick, { capture: true });
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(() =>
-        this.#document.removeEventListener('click', onClick, { capture: true }),
-      );
-    }
-  }
-
-  #addEscapeListener(): void {
-    const listener = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape' && this.#pointerDragging) {
-        this.#pointerDragging = false;
-        this.#removeEscapeListener();
-        this.#clearPlaceholder();
-        this.#list.cancel();
-        this.dragEnd.emit({ dropped: false });
-      }
-    };
-    this.#escapeListener = listener;
-    this.#document.addEventListener('keydown', listener);
-  }
-
-  #removeEscapeListener(): void {
-    if (this.#escapeListener) {
-      this.#document.removeEventListener('keydown', this.#escapeListener);
-      this.#escapeListener = null;
-    }
   }
 
   #buildPreview(): DragPreview | null {
