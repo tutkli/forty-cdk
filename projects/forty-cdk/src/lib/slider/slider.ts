@@ -17,6 +17,7 @@ import { Collection } from '../_internal/collection/collection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { snapToStep } from '../_internal/numeric-step/numeric-step';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_SLIDER_CONTEXT,
@@ -25,24 +26,6 @@ import {
   type SliderArrowKey,
 } from './slider-context';
 import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
-
-/**
- * Round `value` to the number of decimal places `step` carries, so float
- * arithmetic noise (e.g. `0.1 * 3 === 0.30000000000000004`) can't masquerade
- * as a change in the `next === current[index]` equality guard nor leak into
- * `aria-valuenow`. Integer steps round to integers; a `0.1` step rounds to one
- * decimal, and so on.
- */
-function roundToStepPrecision(value: number, step: number): number {
-  const stepText = String(step);
-  const dot = stepText.indexOf('.');
-  if (dot < 0) {
-    return Math.round(value);
-  }
-  const decimals = stepText.length - dot - 1;
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
 
 /**
  * Headless implementation of the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
@@ -453,8 +436,7 @@ export class ForSlider
     const max = this.maxValue();
     const step = this.step();
     const gap = this.minStepsBetweenThumbs() * step;
-    const snapped =
-      step > 0 ? roundToStepPrecision(Math.round((raw - min) / step) * step + min, step) : raw;
+    const snapped = snapToStep(raw, step, min);
     let lo = min;
     let hi = max;
     if (index > 0) {

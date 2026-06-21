@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, effect, inject, input, model } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
+import { clamp } from '../_internal/numeric-step/numeric-step';
 import {
   FOR_PROGRESS_CONTEXT,
   type ForProgressContext,
@@ -94,10 +95,7 @@ export class ForProgress implements ForProgressContext {
     if (v === null) {
       return null;
     }
-    const max = this.effectiveMax();
-    if (v <= 0) return 0;
-    if (v >= max) return max;
-    return v;
+    return clamp(v, 0, this.effectiveMax());
   });
 
   readonly percentage = computed<number | null>(() => {

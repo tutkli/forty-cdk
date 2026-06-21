@@ -14,6 +14,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { clamp, roundToStepPrecision } from '../_internal/numeric-step/numeric-step';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
 
@@ -263,7 +264,9 @@ export class ForNumberInput
       return;
     }
     const current = this.value();
-    this.#applyValue(current === null ? this.#baseline() : current + by);
+    this.#applyValue(
+      current === null ? this.#baseline() : roundToStepPrecision(current + by, this.step()),
+    );
   }
 
   /**
@@ -275,7 +278,9 @@ export class ForNumberInput
       return;
     }
     const current = this.value();
-    this.#applyValue(current === null ? this.#baseline() : current - by);
+    this.#applyValue(
+      current === null ? this.#baseline() : roundToStepPrecision(current - by, this.step()),
+    );
   }
 
   /** Live-parse the typed text into the value (unclamped — clamping waits for commit). */
@@ -371,16 +376,7 @@ export class ForNumberInput
   }
 
   #clamp(n: number): number {
-    const min = this.min();
-    const max = this.max();
-    let result = n;
-    if (min !== undefined && result < min) {
-      result = min;
-    }
-    if (max !== undefined && result > max) {
-      result = max;
-    }
-    return result;
+    return clamp(n, this.min() ?? -Infinity, this.max() ?? Infinity);
   }
 
   #isWholeBound(bound: number | undefined): boolean {

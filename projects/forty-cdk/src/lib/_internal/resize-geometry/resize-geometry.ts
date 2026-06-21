@@ -1,25 +1,13 @@
+import { clamp } from '../numeric-step/numeric-step';
+
+export { roundToStepPrecision } from '../numeric-step/numeric-step';
+
 /** Pointer travel (px) required before a resize drag starts mutating the value. */
 export const DRAG_DEAD_ZONE_PX = 3;
 
 /** Clamps `value` into the inclusive `[min, max]` range. */
 export function clampToRange(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-/**
- * Rounds `value` to the decimal precision a `step` carries, so repeated
- * `value ± step` arithmetic with a fractional step (e.g. `0.1`) cannot accumulate
- * float noise that defeats a `next === value` change guard. Integer steps return
- * `value` unchanged.
- */
-export function roundToStepPrecision(value: number, step: number): number {
-  const stepText = String(step);
-  const dot = stepText.indexOf('.');
-  if (dot < 0) {
-    return value;
-  }
-  const factor = 10 ** (stepText.length - dot - 1);
-  return Math.round(value * factor) / factor;
+  return clamp(value, min, max);
 }
 
 /** Configuration for {@link startPointerResize}. */
