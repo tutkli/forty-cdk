@@ -1,18 +1,9 @@
-import {
-  computed,
-  DestroyRef,
-  Directive,
-  DOCUMENT,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  model,
-} from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, input, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
+import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { localeSeparators, parseLocaleNumber } from '../_internal/locale-number/locale-number';
 import { clamp, roundToStepPrecision } from '../_internal/numeric-step/numeric-step';
@@ -84,7 +75,6 @@ export class ForNumberInput
   implements FormValueControl<number | null>, ForNumberInputContext
 {
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
-  readonly #document = inject(DOCUMENT);
   readonly #defaults = inject(FOR_NUMBER_INPUT_DEFAULTS);
 
   /**
@@ -210,17 +200,10 @@ export class ForNumberInput
     }
 
     // Mirror external writes (consumer `[(value)]` / `[formField]`, or the
-    // post-commit reformat) into the native element while it isn't focused —
-    // assigning `.value` mid-edit would jump the caret. Live typing flows in
-    // through the `(input)` listener, and step / commit write the display
-    // imperatively (the element is focused then, so this guard skips it).
-    effect(() => {
-      const text = this.#displayText();
-      const el = this.#host.nativeElement;
-      if (this.#document.activeElement !== el && el.value !== text) {
-        el.value = text;
-      }
-    });
+    // post-commit reformat) into the native element while it isn't focused. Live
+    // typing flows in through the `(input)` listener, and step / commit write the
+    // display imperatively (the element is focused then, so this guard skips it).
+    mirrorUnfocusedValue(() => this.#host.nativeElement, this.#displayText);
   }
 
   /**

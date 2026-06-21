@@ -1,8 +1,9 @@
-import { DOCUMENT, Directive, effect, ElementRef, inject, model } from '@angular/core';
+import { Directive, ElementRef, inject, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
+import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
 
 /**
  * Shared base for the text-valued form controls `ForInput` and `ForTextarea`.
@@ -34,7 +35,6 @@ export abstract class TextValueControlBase
   readonly value = model<string>('');
 
   readonly #host = inject<ElementRef<HTMLInputElement | HTMLTextAreaElement>>(ElementRef);
-  readonly #document = inject(DOCUMENT);
 
   #composing = false;
 
@@ -46,17 +46,9 @@ export abstract class TextValueControlBase
     reflectDisabled(this.effectiveDisabled);
 
     // Mirror external writes (consumer `[(value)]` or `[formField]`) back to
-    // the native element — but only while it isn't focused, since assigning
-    // `.value` mid-edit would jump the caret. The user's own typing already
-    // flows in through the `(input)` listener, so this never fights live
-    // editing. Writing the DOM is a side effect, not signal propagation.
-    effect(() => {
-      const next = this.value();
-      const el = this.#host.nativeElement;
-      if (this.#document.activeElement !== el && el.value !== next) {
-        el.value = next;
-      }
-    });
+    // the native element while it isn't focused. The user's own typing already
+    // flows in through the `(input)` listener, so this never fights live editing.
+    mirrorUnfocusedValue(() => this.#host.nativeElement, this.value);
   }
 
   /** Bridges the native `input` event into the `value` model. */
