@@ -35,7 +35,6 @@ import {
 } from './tree-context';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
 import { TreeSelection } from './tree-selection';
-import { TreeVirtualizedNavigator } from './tree-virtualized-navigator';
 
 type VisibleEntry = ForTreeVisibleNode;
 
@@ -274,12 +273,11 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     setAnchorValue: (value) => this.#anchorValue.set(value),
   });
 
-  #navigator: TreeVirtualizedNavigator | null = null;
   #rovingModel: RovingFocusModel | null = null;
   #activeDescendantModel: ActiveDescendantFocusModel | null = null;
 
-  #requireNavigator(): TreeVirtualizedNavigator {
-    return (this.#navigator ??= new TreeVirtualizedNavigator({
+  #requireActiveDescendantModel(): ActiveDescendantFocusModel {
+    return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel({
       items: this.#items.items,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
@@ -291,10 +289,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   #focusModel(): FocusModel {
     if (this.#virtualized()) {
-      return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel({
-        navigator: () => this.#requireNavigator(),
-        setActiveId: (id) => this.#activeId.set(id),
-      }));
+      return this.#requireActiveDescendantModel();
     }
     return (this.#rovingModel ??= new RovingFocusModel({
       roving: this.roving,
@@ -327,9 +322,9 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     effect(() => {
       this.#items.items();
       if (!this.#virtualized()) return;
-      const navigator = this.#requireNavigator();
-      navigator.prime();
-      navigator.tryResolvePending();
+      const model = this.#requireActiveDescendantModel();
+      model.prime();
+      model.tryResolvePending();
     });
   }
 
