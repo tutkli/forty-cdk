@@ -22,7 +22,7 @@ export interface ForDrawerDefaults {
    * Default `0.25`. Fraction past which a release dismisses instead of
    * snapping back: of the full dimension without snap points, of the lowest
    * snap's extent with them (see
-   * `_internal/swipe-dismiss/resolveSnapTarget`).
+   * `_internal/snap-points/resolveSnapTarget`).
    */
   closeThreshold?: number;
   /** Default `'first'`. Where to send focus on mount. */

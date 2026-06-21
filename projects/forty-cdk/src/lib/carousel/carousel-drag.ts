@@ -13,10 +13,10 @@ import { isPlatformBrowser } from '@angular/common';
 
 import {
   attachSwipeDismiss,
-  isScrollableAtEdge,
   type SwipeDirection,
   type SwipeEventDetail,
 } from '../_internal/swipe-dismiss/swipe-dismiss';
+import { isScrollableAtEdge } from '../_internal/scroll-boundary/scroll-boundary';
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import { injectCarouselContext } from './carousel-context';
 
