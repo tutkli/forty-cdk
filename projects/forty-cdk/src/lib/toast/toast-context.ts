@@ -96,6 +96,27 @@ export interface ForToastConfig<D = unknown> {
    * {@link class} and with the directive's own host attributes.
    */
   classList?: string | readonly string[];
+  /**
+   * CSS class applied via `animate.enter` to the rendered toast root, so it
+   * plays an enter animation on mount. Optional and symmetric with
+   * {@link animateLeave}: a plain CSS `@keyframes` / `animation` declared on
+   * `[forToast]` already plays on mount without this, so this is only needed
+   * for class-applied entrances. When unset, falls through to the
+   * viewport-level `[animateEnter]`.
+   */
+  animateEnter?: string;
+  /**
+   * CSS class applied via `animate.leave` to the rendered toast root, so it
+   * plays an exit animation before the toast leaves the DOM on dismiss. When
+   * unset, falls through to the viewport-level `[animateLeave]`.
+   *
+   * This is the only way to express a toast exit animation on the programmatic
+   * path: the viewport renders the toast inside its own `@for`, and a pure-CSS
+   * exit cannot defer the unmount — Angular needs `animate.leave` on the node to
+   * keep it mounted until the animation settles. Leaving it unset keeps the
+   * existing synchronous unmount on dismiss.
+   */
+  animateLeave?: string;
   /** Arbitrary payload passed to `template` context as `data`. */
   data?: D;
   /** Override the default rendering with a `TemplateRef`. */

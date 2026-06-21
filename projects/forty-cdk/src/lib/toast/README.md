@@ -139,6 +139,41 @@ this.toasts.show({ title: 'Failed', classList: ['toast', 'toast--error'] });
 
 Declarative toasts (`<div forToast class="toast">`) take consumer classes the native way — `class` in `show()` is the programmatic equivalent. Styling by the `[forToast]` / `[forToastTitle]` / … attribute selectors still works and remains a valid choice; the class hook just unblocks design-system class names.
 
+### Exit / enter animations (programmatic)
+
+On the programmatic path the toast root is rendered for you inside `<for-toast-viewport>`'s `@for`, so — unlike a declarative `<div forToast>` — you have no node to put `animate.leave` on. Pass `animateLeave` (and, for symmetry, `animateEnter`) in the `show()` config instead, or set a viewport-wide default with `[animateLeave]` / `[animateEnter]`. The viewport binds them through Angular's native `animate.leave` / `animate.enter` on the rendered toast, so the toast stays mounted until its exit animation settles before it leaves the DOM:
+
+```ts
+this.toasts.show({ title: 'Saved', variant: 'success', animateLeave: 'toast-out' });
+```
+
+```css
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+[forToast].toast-out {
+  animation: toast-out 200ms ease forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  [forToast].toast-out {
+    animation-duration: 1ms;
+  }
+}
+```
+
+A viewport-level default applies to every toast that omits its own; a per-toast `animateLeave` always wins:
+
+```html
+<for-toast-viewport animateLeave="toast-out" animateEnter="toast-in" />
+```
+
+`animateLeave` is the load-bearing hook — a pure-CSS exit cannot defer the `@for` unmount, so it is the only way to play an exit animation on the programmatic path. `animateEnter` is optional: a plain `@keyframes` on `[forToast]` already plays on mount without it (this is why programmatic toasts have always animated _in_). Leaving `animateLeave` unset keeps the existing synchronous unmount on dismiss. `prefers-reduced-motion` is honored by your own CSS exactly as with the swipe / enter hooks — the directive adds no animation of its own.
+
+The **declarative** path is unchanged — write `animate.leave` directly on your `<div forToast>` (see [Declarative usage](#declarative-usage)).
+
 ### Custom rendering with a `template`
 
 If the default title / description / action / close shape isn't enough, pass a `template`:

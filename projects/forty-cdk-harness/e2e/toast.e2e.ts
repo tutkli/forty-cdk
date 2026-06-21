@@ -207,3 +207,55 @@ test.describe('Toast', () => {
     });
   });
 });
+
+test.describe('Toast exit animation (#1024)', () => {
+  test('per-toast animateLeave keeps the toast mounted until the leave animation settles', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { animateLeave: 'leaving-own' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    const start = Date.now();
+    await el(page, 'dismiss-all').click();
+    await expect(el(page, 'toast-0')).toHaveClass(/leaving-own/, { timeout: 1000 });
+    await expect(el(page, 'toast-0')).toHaveCount(0, { timeout: 3000 });
+    const elapsed = Date.now() - start;
+
+    expect(elapsed).toBeGreaterThanOrEqual(150);
+    await expect(el(page, 'toast-count')).toHaveText('0');
+  });
+
+  test('viewport [animateLeave] applies to a toast that omits its own animateLeave', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { vpAnimateLeave: 'leaving-vp' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    await el(page, 'dismiss-all').click();
+    await expect(el(page, 'toast-0')).toHaveClass(/leaving-vp/, { timeout: 1000 });
+    await expect(el(page, 'toast-0')).toHaveCount(0, { timeout: 3000 });
+  });
+
+  test('per-toast animateLeave wins over the viewport [animateLeave]', async ({ page }) => {
+    await gotoFixture(page, 'toast', { animateLeave: 'leaving-own', vpAnimateLeave: 'leaving-vp' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    await el(page, 'dismiss-all').click();
+    await expect(el(page, 'toast-0')).toHaveClass(/leaving-own/, { timeout: 1000 });
+    await expect(el(page, 'toast-0')).not.toHaveClass(/leaving-vp/);
+    await expect(el(page, 'toast-0')).toHaveCount(0, { timeout: 3000 });
+  });
+
+  test('without animateLeave the toast unmounts immediately on dismiss', async ({ page }) => {
+    await gotoFixture(page, 'toast', { side: 'top-right' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    await el(page, 'dismiss-all').click();
+    await expect(el(page, 'toast-0')).toHaveCount(0);
+    await expect(el(page, 'toast-count')).toHaveText('0');
+  });
+});
