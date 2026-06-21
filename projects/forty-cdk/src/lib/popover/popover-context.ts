@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
 import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
 
 /**
@@ -13,23 +13,12 @@ import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-e
  * is published here so descendant pieces can react without each subscribing
  * to the directive instance directly.
  */
-export interface ForPopoverContext {
+export interface ForPopoverContext extends AnchoredPositioningContext {
   readonly open: ModelSignal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
   readonly initialFocus: Signal<'first' | 'container'>;
-
-  readonly side: Signal<FloatingSide>;
-  readonly align: Signal<FloatingAlign>;
-  readonly sideOffset: Signal<number>;
-  readonly alignOffset: Signal<number>;
-  readonly avoidCollisions: Signal<boolean>;
-  readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
-  readonly sticky: Signal<'partial' | 'always' | false>;
-  readonly hideWhenDetached: Signal<boolean>;
-  readonly clipUntilPositioned: Signal<boolean>;
 
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
@@ -49,7 +38,6 @@ export interface ForPopoverContext {
    * the popover paints.
    */
   readonly reference: Signal<HTMLElement | null>;
-  readonly arrow: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;

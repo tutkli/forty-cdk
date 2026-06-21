@@ -1,5 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { toFloatingPositioner } from '../_internal/floating/anchored-positioning-inputs';
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectHoverCardContext } from './hover-card-context';
 
@@ -42,22 +43,7 @@ export class ForHoverCardContent {
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(el));
 
     injectOverlayShell({
-      positioner: {
-        kind: 'floating',
-        reference: this.ctx.trigger,
-        open: this.ctx.open,
-        side: this.ctx.side,
-        align: this.ctx.align,
-        sideOffset: this.ctx.sideOffset,
-        alignOffset: this.ctx.alignOffset,
-        avoidCollisions: this.ctx.avoidCollisions,
-        collisionPadding: this.ctx.collisionPadding,
-        arrowPadding: this.ctx.arrowPadding,
-        sticky: this.ctx.sticky,
-        hideWhenDetached: this.ctx.hideWhenDetached,
-        clipUntilPositioned: this.ctx.clipUntilPositioned,
-        arrow: this.ctx.arrow,
-      },
+      positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
       dismiss: {
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
       },

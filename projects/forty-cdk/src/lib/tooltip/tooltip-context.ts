@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
 import type { Point } from '../_internal/pointer-grace/pointer-grace';
 
 /** Reason a show / hide was scheduled — escape bypasses the close delay. */
@@ -17,19 +17,9 @@ export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
  * (trigger hover, trigger focus, and — under `hoverableContent` — content
  * hover) are reconciled in one place.
  */
-export interface ForTooltipContext {
+export interface ForTooltipContext extends AnchoredPositioningContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  readonly side: Signal<FloatingSide>;
-  readonly align: Signal<FloatingAlign>;
-  readonly sideOffset: Signal<number>;
-  readonly alignOffset: Signal<number>;
-  readonly avoidCollisions: Signal<boolean>;
-  readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
-  readonly sticky: Signal<'partial' | 'always' | false>;
-  readonly hideWhenDetached: Signal<boolean>;
-  readonly clipUntilPositioned: Signal<boolean>;
   /** Whether the pointer may move into the content without dismissing the tooltip. */
   readonly hoverableContent: Signal<boolean>;
   /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
@@ -39,7 +29,6 @@ export interface ForTooltipContext {
   /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */
   readonly contentId: Signal<string>;
   readonly trigger: Signal<HTMLElement | null>;
-  readonly arrow: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;

@@ -1,5 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
+import { toFloatingPositioner } from '../_internal/floating/anchored-positioning-inputs';
 import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
 import { injectPopoverContext } from './popover-context';
 
@@ -45,22 +46,7 @@ export class ForPopoverContent {
   constructor() {
     this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
     injectOverlayShell({
-      positioner: {
-        kind: 'floating',
-        reference: this.ctx.reference,
-        open: this.ctx.open,
-        side: this.ctx.side,
-        align: this.ctx.align,
-        sideOffset: this.ctx.sideOffset,
-        alignOffset: this.ctx.alignOffset,
-        avoidCollisions: this.ctx.avoidCollisions,
-        collisionPadding: this.ctx.collisionPadding,
-        arrowPadding: this.ctx.arrowPadding,
-        sticky: this.ctx.sticky,
-        hideWhenDetached: this.ctx.hideWhenDetached,
-        clipUntilPositioned: this.ctx.clipUntilPositioned,
-        arrow: this.ctx.arrow,
-      },
+      positioner: toFloatingPositioner(this.ctx, this.ctx.reference),
       dismiss: {
         dismissible: this.ctx.dismissible,
         requestClose: () => this.ctx.requestClose(),
