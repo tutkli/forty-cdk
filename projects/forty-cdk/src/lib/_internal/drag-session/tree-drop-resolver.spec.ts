@@ -7,7 +7,7 @@ function row(value: string, level: number, top: number, left = level * 16): Tree
 describe('resolveTreeDrop', () => {
   it('returns root index 0 for empty rows', () => {
     const result = resolveTreeDrop([], 0, 1);
-    expect(result).toEqual({ parentValue: null, index: 0, level: 1 });
+    expect(result).toEqual({ parentValue: null, index: 0, level: 1, siblingCount: 0 });
   });
 
   it('drops between two same-level siblings (reorder)', () => {
@@ -122,6 +122,35 @@ describe('resolveTreeDrop', () => {
     const result = resolveTreeDrop(rows, 1, 1);
     expect(result.level).toBeGreaterThanOrEqual(1);
     expect(result.level).toBeLessThanOrEqual(3);
+  });
+
+  describe('siblingCount', () => {
+    it('counts all root-level siblings regardless of the gap', () => {
+      const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32), row('c', 1, 64)];
+      const result = resolveTreeDrop(rows, 1, 1);
+      expect(result.siblingCount).toBe(3);
+    });
+
+    it('counts only the children under the resolved parent', () => {
+      const rows: TreeDropRow[] = [
+        row('parent', 1, 0),
+        row('child1', 2, 32),
+        row('child2', 2, 64),
+        row('other', 1, 96),
+      ];
+      const result = resolveTreeDrop(rows, 3, 2);
+      expect(result.parentValue).toBe('parent');
+      expect(result.level).toBe(2);
+      expect(result.siblingCount).toBe(2);
+    });
+
+    it('is 0 when no existing row sits at the resolved level under the parent', () => {
+      const rows: TreeDropRow[] = [row('parent', 1, 0), row('sibling', 1, 32)];
+      const result = resolveTreeDrop(rows, 1, 2);
+      expect(result.parentValue).toBe('parent');
+      expect(result.level).toBe(2);
+      expect(result.siblingCount).toBe(0);
+    });
   });
 });
 

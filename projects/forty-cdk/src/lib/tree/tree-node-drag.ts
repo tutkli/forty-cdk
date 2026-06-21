@@ -17,44 +17,36 @@ import {
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import { createDragPreview, type DragPreview } from '../_internal/drag-session/drag-preview';
 import {
+  createPointerDragSession,
+  type PointerDragSession,
+} from '../_internal/drag-session/pointer-session';
+import {
+  gapFromPointerY,
   levelFromPointerX,
+  resolveDropIndicator,
   resolveTreeDrop,
   type TreeDropRow,
 } from '../_internal/drag-session/tree-drop-resolver';
+import {
+  announceTreeCancel,
+  announceTreeDrop,
+  announceTreeInvalid,
+  announceTreeLift,
+  announceTreeMove,
+} from './tree-drag-announcements';
+import { isTreeDragLiftKey, resolveTreeDragLiftedAction } from './tree-drag-keys';
+import {
+  buildTreeDropRows,
+  isInsideGrabArea,
+  resolveLiftGap,
+  resolveTreeLiftContext,
+  treeNodeLabel,
+  treeParentLabel,
+} from './tree-drag-rows';
 import { injectTreeContext, type ForTreeVisibleNode } from './tree-context';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
-function announceTreeLift(label: string): string {
-  return `Picked up ${label}. Use arrow keys to move, Space to drop, Escape to cancel.`;
-}
-
-function announceTreeMove(
-  label: string,
-  parentLabel: string | null,
-  position: number,
-  total: number,
-): string {
-  const parentPart = parentLabel ? `under ${parentLabel}, ` : 'at root, ';
-  return `${label}: ${parentPart}position ${position} of ${total}.`;
-}
-
-function announceTreeDrop(
-  label: string,
-  parentLabel: string | null,
-  position: number,
-  total: number,
-): string {
-  const parentPart = parentLabel ? `under ${parentLabel}, ` : 'at root, ';
-  return `Dropped ${label} ${parentPart}position ${position} of ${total}.`;
-}
-
-function announceTreeCancel(label: string): string {
-  return `Cancelled. ${label} returned to its original position.`;
-}
-
-function announceTreeInvalid(label: string): string {
-  return `Cannot drop ${label} here.`;
-}
+const POINTER_ARM_THRESHOLD_PX = 5;
 
 /**
  * Where the lifted node will land, for rendering an insertion indicator. `null` when idle.
@@ -147,15 +139,10 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   #desiredLevel = 1;
   #preview: DragPreview | null = null;
   #wasExpanded = false;
-  #pointerStart: { x: number; y: number } | null = null;
-  #pointerArmed = false;
   #liftedHost: HTMLElement | null = null;
   #label = '';
 
-  #onDocumentPointerMove: ((e: PointerEvent) => void) | null = null;
-  #onDocumentPointerUp: ((e: PointerEvent) => void) | null = null;
-  #onDocumentPointerCancel: ((e: PointerEvent) => void) | null = null;
-  #onDocumentClick: ((e: MouseEvent) => void) | null = null;
+  #pointerSession: PointerDragSession | null = null;
 
   constructor() {
     if (!this.#isBrowser) {
@@ -163,18 +150,26 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     }
 
     const onKeydown = (event: KeyboardEvent): void => this.#onCaptureKeydown(event);
-    const onPointerdown = (event: PointerEvent): void => this.#onCapturePointerdown(event);
     const onFocusout = (event: FocusEvent): void => this.#onFocusout(event);
 
     this.#hostEl.addEventListener('keydown', onKeydown, { capture: true });
-    this.#hostEl.addEventListener('pointerdown', onPointerdown, { capture: true });
     this.#hostEl.addEventListener('focusout', onFocusout);
+
+    this.#pointerSession = createPointerDragSession({
+      host: this.#hostEl,
+      document: this.#document,
+      armThreshold: POINTER_ARM_THRESHOLD_PX,
+      canStart: (event) => this.#canStartPointer(event),
+      onLift: () => this.#onPointerLift(),
+      onMove: (event) => this.#onPointerMove(event),
+      onCommit: (event) => this.#onPointerCommit(event),
+      onCancel: () => this.#cancelSession(true),
+    });
 
     this.#destroyRef.onDestroy(() => {
       this.#hostEl.removeEventListener('keydown', onKeydown, { capture: true });
-      this.#hostEl.removeEventListener('pointerdown', onPointerdown, { capture: true });
       this.#hostEl.removeEventListener('focusout', onFocusout);
-      this.#removeDocumentListeners();
+      this.#pointerSession?.destroy();
       if (this.#mode !== 'idle') {
         this.#cancelSession(false);
       }
@@ -194,10 +189,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       this.#handleLiftedKeydown(event);
       return;
     }
-    if (this.#mode !== 'idle') {
-      return;
-    }
-    if (!((event.ctrlKey || event.metaKey) && event.key === ' ')) {
+    if (this.#mode !== 'idle' || !isTreeDragLiftKey(event)) {
       return;
     }
     if (this.disabled() || this.#ctx.disabled()) {
@@ -211,56 +203,40 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     }
     event.preventDefault();
     event.stopPropagation();
-    this.#kbLift(entry.handle.host, visible.indexOf(entry));
+    this.#lift(entry.handle.host, visible.indexOf(entry), visible, 'keyboard');
   }
 
   #handleLiftedKeydown(event: KeyboardEvent): void {
-    const key = event.key;
-    if (key === 'Escape' || key === 'Tab') {
-      event.preventDefault();
-      event.stopPropagation();
+    const action = resolveTreeDragLiftedAction(event, this.#ctx.dir());
+    if (action === null) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (action === 'cancel') {
       this.#cancelSession(true);
       return;
     }
-    if (key === ' ' || key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
+    if (action === 'commit') {
       this.#commitSession();
       return;
     }
+
     const visible = this.#ctx.visibleNodes();
-    const rowCount = this.#buildRows(visible).length;
-    if (key === 'ArrowDown') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.#gapIndex = Math.min(this.#gapIndex + 1, rowCount);
-      this.#resolveAndAnnounceMove(visible);
-      return;
-    }
-    if (key === 'ArrowUp') {
-      event.preventDefault();
-      event.stopPropagation();
+    if (action === 'down') {
+      this.#gapIndex = Math.min(
+        this.#gapIndex + 1,
+        buildTreeDropRows(visible, this.#liftedValue).length,
+      );
+    } else if (action === 'up') {
       this.#gapIndex = Math.max(this.#gapIndex - 1, 0);
-      this.#resolveAndAnnounceMove(visible);
-      return;
-    }
-    const isRtl = this.#ctx.dir() === 'rtl';
-    const isDeepen = isRtl ? key === 'ArrowLeft' : key === 'ArrowRight';
-    const isShallow = isRtl ? key === 'ArrowRight' : key === 'ArrowLeft';
-    if (isDeepen) {
-      event.preventDefault();
-      event.stopPropagation();
+    } else if (action === 'deepen') {
       this.#desiredLevel++;
-      this.#resolveAndAnnounceMove(visible);
-      return;
-    }
-    if (isShallow) {
-      event.preventDefault();
-      event.stopPropagation();
+    } else {
       this.#desiredLevel = Math.max(1, this.#desiredLevel - 1);
-      this.#resolveAndAnnounceMove(visible);
-      return;
     }
+    this.#resolveAndAnnounceMove(visible);
   }
 
   #onFocusout(event: FocusEvent): void {
@@ -274,209 +250,109 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#cancelSession(true);
   }
 
-  #onCapturePointerdown(event: PointerEvent): void {
-    if (this.disabled() || this.#ctx.disabled()) {
-      return;
-    }
-    if (event.button !== 0) {
-      return;
+  #canStartPointer(event: PointerEvent): boolean {
+    if (this.disabled() || this.#ctx.disabled() || event.button !== 0) {
+      return false;
     }
     const target = event.target as HTMLElement;
     const itemHost = target.closest<HTMLElement>('[forTreeItem]');
     if (!itemHost) {
-      return;
+      return false;
     }
-    const visible = this.#ctx.visibleNodes();
-    const entry = visible.find((e) => e.handle.host === itemHost);
+    const entry = this.#ctx.visibleNodes().find((e) => e.handle.host === itemHost);
     if (!entry || entry.handle.disabled()) {
-      return;
+      return false;
     }
-
-    const itemHandles = Array.from(this.#handles).filter((h) => itemHost.contains(h));
-    if (itemHandles.length > 0) {
-      const insideHandle = itemHandles.some((h) => h === target || h.contains(target));
-      if (!insideHandle) {
-        return;
-      }
+    if (!isInsideGrabArea(itemHost, target, this.#handles)) {
+      return false;
     }
-
     this.#liftedHost = itemHost;
-    this.#pointerStart = { x: event.clientX, y: event.clientY };
-    this.#pointerArmed = false;
-
-    const onMove = (e: PointerEvent): void => this.#onDocumentMove(e);
-    const onUp = (e: PointerEvent): void => this.#onDocumentUp(e);
-    const onCancel = (): void => this.#cancelSession(true);
-
-    this.#onDocumentPointerMove = onMove;
-    this.#onDocumentPointerUp = onUp;
-    this.#onDocumentPointerCancel = onCancel;
-
-    this.#document.addEventListener('pointermove', onMove, { capture: true });
-    this.#document.addEventListener('pointerup', onUp, { capture: true });
-    this.#document.addEventListener('pointercancel', onCancel, { capture: true });
+    return true;
   }
 
-  #onDocumentMove(event: PointerEvent): void {
-    if (!this.#liftedHost || !this.#pointerStart) {
-      return;
+  #onPointerLift(): boolean {
+    if (!this.#liftedHost) {
+      return false;
     }
-
-    const dx = event.clientX - this.#pointerStart.x;
-    const dy = event.clientY - this.#pointerStart.y;
-
-    if (!this.#pointerArmed) {
-      if (Math.hypot(dx, dy) < 5) {
-        return;
-      }
-      this.#pointerArmed = true;
-      const visible = this.#ctx.visibleNodes();
-      const idx = visible.findIndex((e) => e.handle.host === this.#liftedHost);
-      if (idx < 0) {
-        this.#cleanupPointerState();
-        return;
-      }
-      this.#ptrLift(this.#liftedHost, idx, visible);
+    const visible = this.#ctx.visibleNodes();
+    const idx = visible.findIndex((e) => e.handle.host === this.#liftedHost);
+    if (idx < 0) {
+      this.#liftedHost = null;
+      return false;
     }
+    this.#lift(this.#liftedHost, idx, visible, 'pointer');
+    return true;
+  }
 
+  #applyPointerPosition(event: PointerEvent): TreeDropRow[] {
+    const rows = buildTreeDropRows(this.#ctx.visibleNodes(), this.#liftedValue);
+    this.#gapIndex = gapFromPointerY(rows, event.clientY);
+    this.#desiredLevel = levelFromPointerX(rows, this.#gapIndex, event.clientX);
+    return rows;
+  }
+
+  #onPointerMove(event: PointerEvent): void {
     if (this.#mode !== 'pointer') {
       return;
     }
-
-    const visible = this.#ctx.visibleNodes();
-    const rows = this.#buildRows(visible);
-    const py = event.clientY;
-    const px = event.clientX;
-
-    this.#gapIndex = this.#resolveGapFromY(rows, py);
-    this.#desiredLevel = levelFromPointerX(rows, this.#gapIndex, px);
-
+    const rows = this.#applyPointerPosition(event);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
-    this._dropTargetValid.set(true);
-    this._dropLevel.set(target.level);
-    this.#setDropIndicator(rows, this.#gapIndex, target.level);
+    this.#publishDropTarget(rows, target.level);
 
-    if (this.#preview) {
-      this.#preview.moveTo(event.clientX, event.clientY);
-    }
+    this.#preview?.moveTo(event.clientX, event.clientY);
   }
 
-  #onDocumentUp(event: PointerEvent): void {
+  #onPointerCommit(event: PointerEvent): void {
     if (this.#mode !== 'pointer') {
-      this.#cleanupPointerState();
       return;
     }
-    if (this.#pointerArmed) {
-      const onClickCapture = (e: MouseEvent): void => {
-        e.stopPropagation();
-        e.preventDefault();
-        this.#document.removeEventListener('click', onClickCapture, { capture: true });
-        this.#onDocumentClick = null;
-      };
-      this.#onDocumentClick = onClickCapture;
-      this.#document.addEventListener('click', onClickCapture, { capture: true });
-      setTimeout(() => {
-        if (this.#onDocumentClick === onClickCapture) {
-          this.#document.removeEventListener('click', onClickCapture, { capture: true });
-          this.#onDocumentClick = null;
-        }
-      }, 500);
-    }
-
-    const visible = this.#ctx.visibleNodes();
-    const rows = this.#buildRows(visible);
-    const py = event.clientY;
-    const px = event.clientX;
-    this.#gapIndex = this.#resolveGapFromY(rows, py);
-    this.#desiredLevel = levelFromPointerX(rows, this.#gapIndex, px);
-
+    this.#applyPointerPosition(event);
     this.#commitSession();
-    this.#removeDocumentListeners();
   }
 
-  #kbLift(host: HTMLElement, visibleIdx: number): void {
-    const visible = this.#ctx.visibleNodes();
+  #lift(
+    host: HTMLElement,
+    visibleIdx: number,
+    visible: readonly ForTreeVisibleNode[],
+    mode: 'keyboard' | 'pointer',
+  ): void {
     const entry = visible[visibleIdx];
-    if (!entry) {
+    const origin = resolveTreeLiftContext(visible, visibleIdx);
+    if (!entry || !origin) {
       return;
     }
-    const value = entry.handle.value();
-    const parentHost = entry.parentHost;
-    const parentEntry = parentHost ? visible.find((e) => e.handle.host === parentHost) : null;
-    const parentValue = parentEntry ? parentEntry.handle.value() : null;
-    const siblingsBefore = visible.filter(
-      (e) => e.parentHost === parentHost && visible.indexOf(e) < visibleIdx,
-    );
 
-    this.#liftedValue = value;
-    this.#previousParent = parentValue;
-    this.#previousIndex = siblingsBefore.length;
-    this.#wasExpanded = this.#ctx.isExpanded(value);
-    this.#label = this.#nodeLabel(entry);
-    this.#mode = 'keyboard';
+    this.#liftedValue = origin.value;
+    this.#previousParent = origin.parentValue;
+    this.#previousIndex = origin.previousIndex;
+    this.#wasExpanded = this.#ctx.isExpanded(origin.value);
+    this.#label = treeNodeLabel(entry);
+    this.#mode = mode;
     this.#liftedHost = host;
 
     if (this.#wasExpanded) {
-      this.#ctx.setExpanded(value, false);
+      this.#ctx.setExpanded(origin.value, false);
+    }
+
+    if (mode === 'pointer') {
+      this.#preview = createDragPreview(host, this.#document);
     }
 
     const visibleAfter = this.#ctx.visibleNodes();
-    const rows = this.#buildRows(visibleAfter);
-    this.#gapIndex = rows.findIndex((r) => {
-      const nextEntry = visibleAfter.find((e) => e.handle.value() === r.value);
-      return nextEntry && visibleAfter.indexOf(nextEntry) >= visibleIdx;
-    });
-    if (this.#gapIndex < 0) {
-      this.#gapIndex = rows.length;
-    }
+    const rows = buildTreeDropRows(visibleAfter, this.#liftedValue);
+    this.#gapIndex = resolveLiftGap(rows, visibleAfter, visibleIdx, mode);
     this.#desiredLevel = entry.handle.level();
 
     this._dragging.set(true);
-    this._dropTargetValid.set(true);
-    this._dropLevel.set(this.#desiredLevel);
-    this.#setDropIndicator(rows, this.#gapIndex, this.#desiredLevel);
+    this.#publishDropTarget(rows, this.#desiredLevel);
 
     this.#announcer.announce(announceTreeLift(this.#label), 'assertive');
   }
 
-  #ptrLift(host: HTMLElement, visibleIdx: number, visible: readonly ForTreeVisibleNode[]): void {
-    const entry = visible[visibleIdx];
-    if (!entry) {
-      return;
-    }
-    const value = entry.handle.value();
-    const parentHost = entry.parentHost;
-    const parentEntry = parentHost ? visible.find((e) => e.handle.host === parentHost) : null;
-    const parentValue = parentEntry ? parentEntry.handle.value() : null;
-    const siblingsBefore = visible.filter(
-      (e) => e.parentHost === parentHost && visible.indexOf(e) < visibleIdx,
-    );
-
-    this.#liftedValue = value;
-    this.#previousParent = parentValue;
-    this.#previousIndex = siblingsBefore.length;
-    this.#wasExpanded = this.#ctx.isExpanded(value);
-    this.#label = this.#nodeLabel(entry);
-    this.#mode = 'pointer';
-    this.#liftedHost = host;
-
-    if (this.#wasExpanded) {
-      this.#ctx.setExpanded(value, false);
-    }
-
-    this.#preview = createDragPreview(host, this.#document);
-
-    const visibleAfter = this.#ctx.visibleNodes();
-    const rows = this.#buildRows(visibleAfter);
-    this.#gapIndex = visibleIdx < rows.length ? visibleIdx : rows.length;
-    this.#desiredLevel = entry.handle.level();
-
-    this._dragging.set(true);
+  #publishDropTarget(rows: TreeDropRow[], level: number): void {
     this._dropTargetValid.set(true);
-    this._dropLevel.set(this.#desiredLevel);
-    this.#setDropIndicator(rows, this.#gapIndex, this.#desiredLevel);
-
-    this.#announcer.announce(announceTreeLift(this.#label), 'assertive');
+    this._dropLevel.set(level);
+    this.#dropIndicator.set(resolveDropIndicator(rows, this.#gapIndex, level));
   }
 
   #commitSession(): void {
@@ -484,11 +360,10 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       return;
     }
     const visible = this.#ctx.visibleNodes();
-    const rows = this.#buildRows(visible);
+    const rows = buildTreeDropRows(visible, this.#liftedValue);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
 
-    const parentLabel = this.#parentLabel(visible, target.parentValue);
-    const totalSiblings = this.#countSiblings(rows, target.parentValue, target.level);
+    const parentLabel = treeParentLabel(visible, target.parentValue);
 
     const event: ForTreeDragDropEvent = {
       node: this.#liftedValue,
@@ -508,7 +383,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#restoreExpansion();
     this.nodeDrop.emit(event);
     this.#announcer.announce(
-      announceTreeDrop(this.#label, parentLabel, target.index + 1, totalSiblings + 1),
+      announceTreeDrop(this.#label, parentLabel, target.index + 1, target.siblingCount + 1),
       'assertive',
     );
     this.#clearSession();
@@ -538,8 +413,6 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#wasExpanded = false;
     this.#liftedHost = null;
     this.#label = '';
-    this.#pointerStart = null;
-    this.#pointerArmed = false;
 
     if (this.#preview) {
       this.#preview.destroy();
@@ -550,130 +423,19 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this._dropTargetValid.set(false);
     this._dropLevel.set(null);
     this.#dropIndicator.set(null);
-
-    this.#removeDocumentListeners();
-  }
-
-  #cleanupPointerState(): void {
-    this.#liftedHost = null;
-    this.#pointerStart = null;
-    this.#pointerArmed = false;
-    this.#removeDocumentListeners();
-  }
-
-  #removeDocumentListeners(): void {
-    if (this.#onDocumentPointerMove) {
-      this.#document.removeEventListener('pointermove', this.#onDocumentPointerMove, {
-        capture: true,
-      });
-      this.#onDocumentPointerMove = null;
-    }
-    if (this.#onDocumentPointerUp) {
-      this.#document.removeEventListener('pointerup', this.#onDocumentPointerUp, {
-        capture: true,
-      });
-      this.#onDocumentPointerUp = null;
-    }
-    if (this.#onDocumentPointerCancel) {
-      this.#document.removeEventListener('pointercancel', this.#onDocumentPointerCancel, {
-        capture: true,
-      });
-      this.#onDocumentPointerCancel = null;
-    }
-  }
-
-  #buildRows(visible: readonly ForTreeVisibleNode[]): TreeDropRow[] {
-    return visible
-      .filter((e) => e.handle.value() !== this.#liftedValue)
-      .map((e) => {
-        const rect = e.handle.host.getBoundingClientRect();
-        return {
-          value: e.handle.value(),
-          level: e.handle.level(),
-          left: rect.left,
-          top: rect.top,
-          bottom: rect.bottom,
-        };
-      });
-  }
-
-  #resolveGapFromY(rows: TreeDropRow[], y: number): number {
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]!;
-      const mid = (row.top + row.bottom) / 2;
-      if (y < mid) {
-        return i;
-      }
-    }
-    return rows.length;
-  }
-
-  #setDropIndicator(rows: TreeDropRow[], gapIndex: number, level: number): void {
-    if (rows.length === 0) {
-      this.#dropIndicator.set(null);
-      return;
-    }
-    const gap = Math.max(0, Math.min(gapIndex, rows.length));
-    if (gap >= rows.length) {
-      const last = rows[rows.length - 1]!;
-      this.#dropIndicator.set({ anchor: last.value, position: 'after', level });
-    } else {
-      const row = rows[gap]!;
-      this.#dropIndicator.set({ anchor: row.value, position: 'before', level });
-    }
   }
 
   #resolveAndAnnounceMove(visible: readonly ForTreeVisibleNode[]): void {
-    const rows = this.#buildRows(visible);
+    const rows = buildTreeDropRows(visible, this.#liftedValue);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
     this.#desiredLevel = target.level;
-    this._dropLevel.set(target.level);
-    this.#setDropIndicator(rows, this.#gapIndex, target.level);
+    this.#publishDropTarget(rows, target.level);
 
-    const parentLabel = this.#parentLabel(visible, target.parentValue);
-    const totalSiblings = this.#countSiblings(rows, target.parentValue, target.level);
+    const parentLabel = treeParentLabel(visible, target.parentValue);
 
     this.#announcer.announce(
-      announceTreeMove(this.#label, parentLabel, target.index + 1, totalSiblings + 1),
+      announceTreeMove(this.#label, parentLabel, target.index + 1, target.siblingCount + 1),
       'polite',
     );
-  }
-
-  #parentLabel(visible: readonly ForTreeVisibleNode[], parentValue: string | null): string | null {
-    if (parentValue === null) {
-      return null;
-    }
-    const entry = visible.find((e) => e.handle.value() === parentValue);
-    return entry ? this.#nodeLabel(entry) : null;
-  }
-
-  #nodeLabel(entry: ForTreeVisibleNode): string {
-    const labelEl = entry.handle.labelEl();
-    return (labelEl?.textContent ?? entry.handle.host.textContent ?? '').trim();
-  }
-
-  #countSiblings(rows: TreeDropRow[], parentValue: string | null, level: number): number {
-    let count = 0;
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]!;
-      if (row.level !== level) {
-        continue;
-      }
-      if (level === 1) {
-        count++;
-      } else {
-        let ancestor: string | null = null;
-        for (let j = i - 1; j >= 0; j--) {
-          if (rows[j]!.level === level - 1) {
-            ancestor = rows[j]!.value;
-            break;
-          }
-        }
-        if (ancestor === parentValue) {
-          count++;
-        }
-      }
-    }
-    return count;
   }
 }

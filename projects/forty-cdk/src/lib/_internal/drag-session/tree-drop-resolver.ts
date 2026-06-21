@@ -10,6 +10,16 @@ export interface TreeDropRow {
   readonly bottom: number;
 }
 
+/** Where a lifted node will land, for rendering an insertion indicator. */
+export interface TreeDropIndicator {
+  /** The visible row the indicator anchors to (the node value). */
+  readonly anchor: string;
+  /** Whether the line sits just before or just after the anchor row in DOM order. */
+  readonly position: 'before' | 'after';
+  /** Resolved 1-based depth of the drop. */
+  readonly level: number;
+}
+
 /** A resolved tree drop position. */
 export interface TreeDropTarget {
   /** New parent's value, or `null` for the root level. */
@@ -18,6 +28,13 @@ export interface TreeDropTarget {
   readonly index: number;
   /** Resolved 1-based depth of the dropped node. */
   readonly level: number;
+  /**
+   * Number of existing children under `parentValue` at the resolved `level` (excluding the
+   * dragged node, which is absent from `rows`). The dropped node will be sibling
+   * `index + 1` of `siblingCount + 1` after the move — the numbers screen-reader
+   * announcements report.
+   */
+  readonly siblingCount: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -41,7 +58,7 @@ export function resolveTreeDrop(
   desiredLevel: number,
 ): TreeDropTarget {
   if (rows.length === 0) {
-    return { parentValue: null, index: 0, level: 1 };
+    return { parentValue: null, index: 0, level: 1, siblingCount: 0 };
   }
 
   const gap = clamp(gapIndex, 0, rows.length);
@@ -67,28 +84,87 @@ export function resolveTreeDrop(
   }
 
   let index = 0;
-  for (let i = 0; i < gap; i++) {
-    const row = rows[i]!;
-    if (row.level !== level) {
+  let siblingCount = 0;
+  for (let i = 0; i < rows.length; i++) {
+    if (!isSiblingUnder(rows, i, level, parentValue)) {
       continue;
     }
-    if (level === 1) {
+    siblingCount++;
+    if (i < gap) {
       index++;
-    } else {
-      let ancestor: string | null = null;
-      for (let j = i - 1; j >= 0; j--) {
-        if (rows[j]!.level === level - 1) {
-          ancestor = rows[j]!.value;
-          break;
-        }
-      }
-      if (ancestor === parentValue) {
-        index++;
-      }
     }
   }
 
-  return { parentValue, index, level };
+  return { parentValue, index, level, siblingCount };
+}
+
+/**
+ * Whether the row at `rowIndex` is a child of `parentValue` at depth `level` — i.e. it sits
+ * at `level` and its nearest preceding row at `level - 1` is `parentValue` (root rows at
+ * `level === 1` have no ancestor row, so they always qualify when their depth matches).
+ */
+function isSiblingUnder(
+  rows: readonly TreeDropRow[],
+  rowIndex: number,
+  level: number,
+  parentValue: string | null,
+): boolean {
+  const row = rows[rowIndex]!;
+  if (row.level !== level) {
+    return false;
+  }
+  if (level === 1) {
+    return true;
+  }
+  for (let j = rowIndex - 1; j >= 0; j--) {
+    if (rows[j]!.level === level - 1) {
+      return rows[j]!.value === parentValue;
+    }
+  }
+  return parentValue === null;
+}
+
+/**
+ * Maps a pointer y coordinate to the insertion gap among `rows` using the vertical-midpoint
+ * rule: the gap is the index of the first row whose vertical midpoint sits below `y`
+ * (`rows.length` when `y` is below every row's midpoint).
+ *
+ * @param rows Visible rows in DOM order, dragged node excluded.
+ * @param y Pointer y in viewport coordinates.
+ */
+export function gapFromPointerY(rows: readonly TreeDropRow[], y: number): number {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    const mid = (row.top + row.bottom) / 2;
+    if (y < mid) {
+      return i;
+    }
+  }
+  return rows.length;
+}
+
+/**
+ * Resolves the insertion-indicator anchor for a gap: the line sits `before` the row at
+ * `gapIndex`, or `after` the last row when the gap is past the end. Returns `null` when there
+ * are no rows to anchor to.
+ *
+ * @param rows Visible rows in DOM order, dragged node excluded.
+ * @param gapIndex Insertion gap (same as passed to {@link resolveTreeDrop}).
+ * @param level Resolved 1-based depth to report on the indicator.
+ */
+export function resolveDropIndicator(
+  rows: readonly TreeDropRow[],
+  gapIndex: number,
+  level: number,
+): TreeDropIndicator | null {
+  if (rows.length === 0) {
+    return null;
+  }
+  const gap = clamp(gapIndex, 0, rows.length);
+  if (gap >= rows.length) {
+    return { anchor: rows[rows.length - 1]!.value, position: 'after', level };
+  }
+  return { anchor: rows[gap]!.value, position: 'before', level };
 }
 
 /**
