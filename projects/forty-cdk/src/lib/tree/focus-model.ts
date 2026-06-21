@@ -6,8 +6,8 @@ import {
   moveIndex,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { VirtualizedNavigator } from '../_internal/virtualized-navigator/virtualized-navigator';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
-import type { TreeVirtualizedNavigator } from './tree-virtualized-navigator';
 
 /**
  * The currently-focused node, resolved by the active {@link FocusModel}. Carries
@@ -146,27 +146,73 @@ export class RovingFocusModel implements FocusModel {
   }
 }
 
+/** Position-snapshot entry carried by the tree's virtualized navigation engine. */
+interface PositionEntry {
+  readonly id: string;
+  readonly disabled: boolean;
+  readonly level: number;
+  readonly expandable: boolean;
+  readonly value: string;
+}
+
 /** Wiring for {@link ActiveDescendantFocusModel}. */
 export interface ActiveDescendantFocusModelDeps {
-  /** The virtualization navigation engine resolving moves across the rendered window. */
-  readonly navigator: () => TreeVirtualizedNavigator;
-  /** Set the host's `aria-activedescendant` to a node id. */
+  /** Live registered tree items — the rendered window when virtualizing. */
+  readonly items: Signal<readonly ForTreeItemHandle[]>;
+  /** Total node count for the virtualized path. */
+  readonly totalCount: Signal<number | undefined>;
+  /** Inclusive-exclusive range of currently rendered nodes when virtualizing. */
+  readonly visibleRange: Signal<readonly [number, number] | undefined>;
+  /** Read the host's current activedescendant id. */
+  readonly getActiveId: () => string | null;
+  /** Write the host's `aria-activedescendant` to a node id. */
   readonly setActiveId: (id: string | null) => void;
+  /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
+  readonly emitScrollToIndex: (idx: number) => void;
 }
 
 /**
  * Focus engine for the virtualized tree: DOM focus stays on the container and
- * an `aria-activedescendant` pointer tracks the active node, resolved through
- * {@link TreeVirtualizedNavigator} so navigation works across nodes outside the
- * rendered window. Selection never follows focus here.
+ * an `aria-activedescendant` pointer tracks the active node. Owns the shared
+ * `_internal/virtualized-navigator` engine directly — a tree never wraps, so it
+ * pins `loop` to `false`, and its snapshot entry carries `level` / `expandable`
+ * / `value` so the tree-specific enter-child / go-to-parent moves can resolve
+ * levels outside the rendered window. Selection never follows focus here.
  *
  * Internal — not re-exported from `tree/index.ts` or `public-api.ts`.
  */
 export class ActiveDescendantFocusModel implements FocusModel {
   readonly #deps: ActiveDescendantFocusModelDeps;
 
+  readonly #core: VirtualizedNavigator<ForTreeItemHandle, PositionEntry>;
+
   constructor(deps: ActiveDescendantFocusModelDeps) {
     this.#deps = deps;
+    this.#core = new VirtualizedNavigator(
+      { ...deps, loop: () => false },
+      {
+        posOf: (n) => n.itemIndex(),
+        idOf: (n) => n.id(),
+        hostOf: (n) => n.host,
+        readEntry: (n) => ({
+          id: n.id(),
+          disabled: n.disabled(),
+          level: n.level(),
+          expandable: n.expandable(),
+          value: n.value(),
+        }),
+      },
+    );
+  }
+
+  /** @see VirtualizedNavigator.prime */
+  prime(): void {
+    this.#core.prime();
+  }
+
+  /** @see VirtualizedNavigator.tryResolvePending */
+  tryResolvePending(): boolean {
+    return this.#core.tryResolvePending();
   }
 
   focusTarget(handle: ForTreeItemHandle): void {
@@ -174,7 +220,7 @@ export class ActiveDescendantFocusModel implements FocusModel {
   }
 
   current(): TreeFocusEntry | null {
-    const cur = this.#deps.navigator().currentEntry();
+    const cur = this.#currentEntry();
     if (!cur) {
       return null;
     }
@@ -182,19 +228,88 @@ export class ActiveDescendantFocusModel implements FocusModel {
   }
 
   navigate(action: ListNavigationAction): void {
-    this.#deps.navigator().navigate(action);
+    this.#core.navigate(action);
   }
 
+  /**
+   * Move activedescendant to the first child of the current node (the node
+   * immediately after it in pre-order flat space). No-op when there is no
+   * active node or when the active node is the last in the list.
+   */
   enterChild(): void {
-    this.#deps.navigator().enterChild();
+    const cur = this.#currentEntry();
+    if (!cur) return;
+    const target = cur.pos + 1;
+    const total = this.#deps.totalCount();
+    if (total !== undefined && target < total) {
+      this.#core.seedActive(target);
+    }
   }
 
+  /**
+   * Move activedescendant to the nearest preceding node at a shallower level
+   * (the parent). No-op when the active node has no visible parent in the
+   * snapshot — an accepted edge case when the parent has never been rendered.
+   */
   moveToParent(): void {
-    this.#deps.navigator().moveToParent();
+    const cur = this.#currentEntry();
+    if (!cur) return;
+    const indexed = this.#core.snapshotByPos();
+    for (let p = cur.pos - 1; p >= 0; p--) {
+      const e = indexed.get(p);
+      if (e && e.level < cur.level) {
+        this.#core.seedActive(p);
+        return;
+      }
+    }
   }
 
   typeaheadTo(handle: ForTreeItemHandle): void {
     this.#deps.setActiveId(handle.id());
     handle.host.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  /**
+   * Resolve the active node's position entry from live items first, then the
+   * snapshot. Returns `{ pos, value, level, expandable, disabled }` or `null`
+   * when nothing is active.
+   */
+  #currentEntry(): {
+    pos: number;
+    value: string;
+    level: number;
+    expandable: boolean;
+    disabled: boolean;
+  } | null {
+    const currentId = this.#deps.getActiveId();
+    if (currentId === null) {
+      return null;
+    }
+    const live = this.#deps.items().find((o) => o.id() === currentId);
+    if (live) {
+      const pos = live.itemIndex();
+      if (pos !== null) {
+        return {
+          pos,
+          value: live.value(),
+          level: live.level(),
+          expandable: live.expandable(),
+          disabled: live.disabled(),
+        };
+      }
+    }
+    const indexed = this.#core.snapshotByPos();
+    for (const [pos, entry] of indexed) {
+      if (entry.id === currentId) {
+        return {
+          pos,
+          value: entry.value,
+          level: entry.level,
+          expandable: entry.expandable,
+          disabled: entry.disabled,
+        };
+      }
+    }
+    return null;
   }
 }
