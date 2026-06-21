@@ -22,7 +22,7 @@ export interface ForDraggableHandle {
  */
 export interface ForDropListContext {
   readonly host: HTMLElement;
-  readonly orientation: Signal<'horizontal' | 'vertical'>;
+  readonly orientation: Signal<'horizontal' | 'vertical' | 'mixed'>;
   readonly dir: Signal<WritingDirection>;
   /** Effective disabled of the whole list. */
   readonly disabled: Signal<boolean>;

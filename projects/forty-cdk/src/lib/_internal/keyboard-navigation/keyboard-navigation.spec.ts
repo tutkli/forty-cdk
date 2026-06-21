@@ -67,6 +67,24 @@ describe('resolveListNavigation', () => {
     });
   });
 
+  describe('mixed orientation', () => {
+    it('maps every arrow direction to a linear step', () => {
+      const opts = { orientation: 'mixed' as const };
+      expect(resolveListNavigation(key('ArrowUp'), opts)).toBe('prev');
+      expect(resolveListNavigation(key('ArrowDown'), opts)).toBe('next');
+      expect(resolveListNavigation(key('ArrowLeft'), opts)).toBe('prev');
+      expect(resolveListNavigation(key('ArrowRight'), opts)).toBe('next');
+    });
+
+    it('swaps the horizontal arrows in RTL', () => {
+      const opts = { orientation: 'mixed' as const, dir: 'rtl' as const };
+      expect(resolveListNavigation(key('ArrowLeft'), opts)).toBe('next');
+      expect(resolveListNavigation(key('ArrowRight'), opts)).toBe('prev');
+      expect(resolveListNavigation(key('ArrowUp'), opts)).toBe('prev');
+      expect(resolveListNavigation(key('ArrowDown'), opts)).toBe('next');
+    });
+  });
+
   describe('pageKeys', () => {
     it('maps PageUp / PageDown when enabled', () => {
       const opts = { orientation: 'vertical' as const, pageKeys: true };

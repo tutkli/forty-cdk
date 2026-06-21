@@ -6,7 +6,7 @@
  * Pair with `RovingTabindex` to actually move focus.
  */
 
-export type ListOrientation = 'horizontal' | 'vertical' | 'both';
+export type ListOrientation = 'horizontal' | 'vertical' | 'both' | 'mixed';
 export type WritingDirection = 'ltr' | 'rtl';
 
 export type ListNavigationAction = 'next' | 'prev' | 'first' | 'last';
@@ -24,15 +24,19 @@ export interface ListNavigationOptions {
 
 /**
  * Maps a keyboard event to a 1D navigation action, or `null` if the key is
- * not handled by the configured orientation.
+ * not handled by the configured orientation. `'both'` and `'mixed'` accept
+ * every arrow direction and map each to a linear `next` / `previous` step —
+ * `'mixed'` models a visually-wrapped grid as a 1D DOM sequence, so there is no
+ * separate row/column keyboard step.
  */
 export function resolveListNavigation(
   event: KeyboardEvent,
   options: ListNavigationOptions,
 ): ListNavigationAction | null {
   const { orientation, dir = 'ltr', pageKeys = false } = options;
-  const acceptsVertical = orientation === 'vertical' || orientation === 'both';
-  const acceptsHorizontal = orientation === 'horizontal' || orientation === 'both';
+  const acceptsBothAxes = orientation === 'both' || orientation === 'mixed';
+  const acceptsVertical = orientation === 'vertical' || acceptsBothAxes;
+  const acceptsHorizontal = orientation === 'horizontal' || acceptsBothAxes;
 
   switch (event.key) {
     case 'Home':

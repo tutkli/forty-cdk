@@ -35,9 +35,12 @@ function insertionIndex(
   itemRects: readonly DragRect[],
   x: number,
   y: number,
-  orientation: 'horizontal' | 'vertical',
+  orientation: 'horizontal' | 'vertical' | 'mixed',
   dir: 'ltr' | 'rtl',
 ): number {
+  if (orientation === 'mixed') {
+    return mixedInsertionIndex(itemRects, x, y, dir);
+  }
   for (let i = 0; i < itemRects.length; i++) {
     const r = itemRects[i]!;
     const past =
@@ -53,19 +56,65 @@ function insertionIndex(
   return itemRects.length;
 }
 
+function mixedInsertionIndex(
+  itemRects: readonly DragRect[],
+  x: number,
+  y: number,
+  dir: 'ltr' | 'rtl',
+): number {
+  if (isSingleRow(itemRects)) {
+    return insertionIndex(itemRects, x, y, 'horizontal', dir);
+  }
+  if (isSingleColumn(itemRects)) {
+    return insertionIndex(itemRects, x, y, 'vertical', dir);
+  }
+  for (let i = 0; i < itemRects.length; i++) {
+    const r = itemRects[i]!;
+    const beforeRow = y < r.top;
+    const withinRow = y <= r.bottom;
+    const pastColumn = dir === 'rtl' ? x > (r.left + r.right) / 2 : x < (r.left + r.right) / 2;
+    if (beforeRow || (withinRow && pastColumn)) {
+      return i;
+    }
+  }
+  return itemRects.length;
+}
+
+function isSingleRow(itemRects: readonly DragRect[]): boolean {
+  let maxTop = -Infinity;
+  let minBottom = Infinity;
+  for (const r of itemRects) {
+    maxTop = Math.max(maxTop, r.top);
+    minBottom = Math.min(minBottom, r.bottom);
+  }
+  return maxTop < minBottom;
+}
+
+function isSingleColumn(itemRects: readonly DragRect[]): boolean {
+  let maxLeft = -Infinity;
+  let minRight = Infinity;
+  for (const r of itemRects) {
+    maxLeft = Math.max(maxLeft, r.left);
+    minRight = Math.min(minRight, r.right);
+  }
+  return maxLeft < minRight;
+}
+
 /**
  * Resolves the drop target container and insertion index from a pointer position.
  *
  * @param point Viewport pointer coordinates.
  * @param containers Ordered `[source, ...connected]` container geometries.
- * @param orientation List axis — `'horizontal'` or `'vertical'`.
- * @param dir Writing direction for horizontal insertion-index math.
+ * @param orientation List axis — `'horizontal'`, `'vertical'`, or `'mixed'` (2D resolution for
+ *   wrapping grids of uniformly-sized items, considering both axes). `'mixed'` reduces to the
+ *   single-axis result when the items form a single row or a single column.
+ * @param dir Writing direction for horizontal / mixed insertion-index math.
  * @returns The resolved `DropTarget`, or `null` when `containers` is empty.
  */
 export function resolveDropTarget(
   point: { readonly x: number; readonly y: number },
   containers: readonly DropContainerGeometry[],
-  orientation: 'horizontal' | 'vertical',
+  orientation: 'horizontal' | 'vertical' | 'mixed',
   dir: 'ltr' | 'rtl',
 ): DropTarget | null {
   if (containers.length === 0) {

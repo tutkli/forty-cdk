@@ -55,9 +55,9 @@ import { ReorderAnimator } from './reorder-animator';
  * consumer's template — `ForTableColumnReorder` provides `'horizontal'` so column reordering
  * resolves along the row axis out of the box.
  */
-export const FOR_DROP_LIST_DEFAULT_ORIENTATION = new InjectionToken<'horizontal' | 'vertical'>(
-  'FOR_DROP_LIST_DEFAULT_ORIENTATION',
-);
+export const FOR_DROP_LIST_DEFAULT_ORIENTATION = new InjectionToken<
+  'horizontal' | 'vertical' | 'mixed'
+>('FOR_DROP_LIST_DEFAULT_ORIENTATION');
 
 /**
  * Root directive of the drag-drop primitive. Apply on any container element to
@@ -91,11 +91,18 @@ export class ForDropList implements ForDropListContext {
     inject(FOR_DROP_LIST_DEFAULT_ORIENTATION, { optional: true }) ?? 'vertical';
 
   /**
-   * Layout orientation of the list. Affects which arrow keys move focus and the lifted item.
-   * Defaults to `'vertical'`, or to `FOR_DROP_LIST_DEFAULT_ORIENTATION` when an in-scope
-   * provider sets it (e.g. `ForTableColumnReorder` defaults it to `'horizontal'`).
+   * Layout orientation of the list. Affects which arrow keys move focus and the lifted item, and
+   * how a pointer drag resolves the live drop index. Defaults to `'vertical'`, or to
+   * `FOR_DROP_LIST_DEFAULT_ORIENTATION` when an in-scope provider sets it (e.g.
+   * `ForTableColumnReorder` defaults it to `'horizontal'`).
+   *
+   * `'mixed'` is for wrapping grids (`flex-wrap` / CSS grid) of uniformly-sized items: the drop
+   * index is resolved in 2D so an item flowing across rows lands in the slot under the pointer's
+   * row and column, and every arrow key steps the lifted item linearly in DOM order. A `'mixed'`
+   * list that happens to render as a single row or single column resolves identically to
+   * `'horizontal'` / `'vertical'`.
    */
-  readonly orientation = input<'horizontal' | 'vertical'>(this.#defaultOrientation);
+  readonly orientation = input<'horizontal' | 'vertical' | 'mixed'>(this.#defaultOrientation);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient direction is

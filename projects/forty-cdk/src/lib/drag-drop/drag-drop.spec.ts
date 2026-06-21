@@ -60,7 +60,7 @@ class SingleListHost {
     { id: 2, label: 'Beta' },
     { id: 3, label: 'Gamma' },
   ]);
-  readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
+  readonly orientation = signal<'vertical' | 'horizontal' | 'mixed'>('vertical');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly listDisabled = signal(false);
   readonly animate = signal(false);
@@ -552,6 +552,55 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
       await flush(fixture);
       expect(listEl(el).getAttribute('dir')).toBe('rtl');
+    });
+  });
+
+  describe('mixed orientation', () => {
+    it('reflects data-orientation="mixed" on the list host', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      fixture.componentInstance.orientation.set('mixed');
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(listEl(el).getAttribute('data-orientation')).toBe('mixed');
+    });
+
+    it('ArrowRight steps the lifted item in mixed mode (vertical would ignore it)', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      comp.orientation.set('mixed');
+      fixture.detectChanges();
+      await flush(fixture);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowRight');
+      pressKey(first, ' ');
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
+    });
+
+    it('zoneless: mixed lift → ArrowDown move → drop commits correct indices', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.componentInstance.orientation.set('mixed');
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      pressKey(first, 'ArrowDown');
+      fixture.detectChanges();
+      pressKey(first, ' ');
+      fixture.detectChanges();
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(1);
     });
   });
 
