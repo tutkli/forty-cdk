@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectCalendarNavigationContext } from './calendar-context';
+import { injectCalendarContext } from './calendar-context';
 
 /**
  * The calendar's date table (`role="grid"`). Apply on a `<table>`. Labelled by
@@ -21,7 +21,7 @@ import { injectCalendarNavigationContext } from './calendar-context';
   },
 })
 export class ForCalendarGrid {
-  protected readonly ctx = injectCalendarNavigationContext('ForCalendarGrid');
+  protected readonly ctx = injectCalendarContext('ForCalendarGrid');
 
   /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
   readonly weekDays = this.ctx.weekDays;

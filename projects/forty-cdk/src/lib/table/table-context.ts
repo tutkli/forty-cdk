@@ -67,36 +67,18 @@ export interface TableVirtualRowNavigation {
   scrollToRow(index: number): void;
 }
 
-/**
- * Structural / measurement slice of the table context: the resolved ARIA mode,
- * writing direction, header-row measurement, and column-width publishing.
- * Injected by `[forTableHeaderRow]` and `[forTableColumnResizer]`.
- */
-export interface ForTableMeasurement {
+/** Coordination contract owned by `ForTable`, injected by every descendant piece. */
+export interface ForTableContext {
   /** The resolved ARIA mode; cells derive `role` (`cell` vs `gridcell`) from it, and navigation engages when it is not `'table'`. */
   readonly mode: Signal<TableMode>;
   /** The resolved writing direction (flips ArrowLeft / ArrowRight in `rtl`). */
   readonly dir: Signal<WritingDirection>;
+  /** The active row-selection mode. `'none'` means selection is disabled. */
+  readonly selectionMode: Signal<TableSelectionMode>;
   /** Registers the header row's host so the root can measure its height for the sticky-header CSS var. */
   registerHeaderRow(el: HTMLElement): void;
   /** Unregisters the header row's host. Reference-based; safe to call if never registered. */
   unregisterHeaderRow(el: HTMLElement): void;
-  /**
-   * Publishes a column's resolved width as the CSS custom property
-   * `--for-table-col-<column>-width` on the table root, so the consumer's layout
-   * can apply it. Called by `[forTableColumnResizer]`.
-   */
-  setColumnWidth(column: string, width: number): void;
-}
-
-/**
- * Roving-navigation slice of the table context: data-row / cell registration
- * and the 2D grid keyboard navigation. Injected by `[forTableCell]` (the cell
- * facets) and read by `[forTableRow]` as part of its per-row coordination.
- */
-export interface ForTableRoving {
-  /** The resolved ARIA mode; cells derive `role` (`cell` vs `gridcell`) from it, and navigation engages when it is not `'table'`. */
-  readonly mode: Signal<TableMode>;
   /** Registers a data row so it joins the row index space and the navigation grid. */
   registerRow(handle: ForTableRowHandle): void;
   /** Unregisters a data row. Reference-based. */
@@ -111,16 +93,6 @@ export interface ForTableRoving {
   activateCell(host: HTMLElement): void;
   /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
   handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
-}
-
-/**
- * Row-selection slice of the table context: per-row and aggregate selection
- * state plus the click / select-all entry points. Injected by
- * `[forTableSelectAll]`; also read by `[forTableRow]`.
- */
-export interface ForTableSelection {
-  /** The active row-selection mode. `'none'` means selection is disabled. */
-  readonly selectionMode: Signal<TableSelectionMode>;
   /** Returns whether `value` is currently in the selection. */
   isRowSelected(value: unknown): boolean;
   /** Toggles `value` in or out of the selection, respecting `selectionMode`. No-op in `'none'` mode. */
@@ -138,31 +110,12 @@ export interface ForTableSelection {
   readonly selectAllState: Signal<TableSelectAllState>;
   /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
   toggleSelectAll(): void;
-}
-
-/**
- * Treegrid-expansion slice of the table context: per-row open state and the
- * `aria-posinset` / `aria-setsize` sibling math. Read by `[forTableRow]`.
- */
-export interface ForTableExpansion {
-  /** Whether `value` is in the open-rows set (`treegrid` expansion). */
-  isRowExpanded(value: unknown): boolean;
-  /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
-  toggleRowExpansion(value: unknown): void;
-  /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */
-  rowPosinset(host: HTMLElement): number;
-  /** Total `aria-setsize` of a row host's same-level sibling set (treegrid). */
-  rowSetsize(host: HTMLElement): number;
-}
-
-/**
- * Virtualization-bridge slice of the table context: the true row count, the
- * mounted-row registry, the focused / reordering row indices, and the
- * cross-window navigation delegate. Injected by `[forTableRowReorder]`; the
- * full surface is read by `[forTableVirtualized]` through the public
- * `ForTableContext` (it lives in the `forty-cdk/virtualization` entry point).
- */
-export interface ForTableVirtualization {
+  /**
+   * Publishes a column's resolved width as the CSS custom property
+   * `--for-table-col-<column>-width` on the table root, so the consumer's layout
+   * can apply it. Called by `[forTableColumnResizer]`.
+   */
+  setColumnWidth(column: string, width: number): void;
   /** The consumer-declared true total row count (`aria-rowcount`); `undefined` when defaulted to the rendered count. */
   readonly rowCount: Signal<number | undefined>;
   /**
@@ -203,23 +156,15 @@ export interface ForTableVirtualization {
    * `[forTableVirtualized]` to retain the lifted row in the rendered window.
    */
   setReorderingRow(index: number | null): void;
+  /** Whether `value` is in the open-rows set (`treegrid` expansion). */
+  isRowExpanded(value: unknown): boolean;
+  /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
+  toggleRowExpansion(value: unknown): void;
+  /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */
+  rowPosinset(host: HTMLElement): number;
+  /** Total `aria-setsize` of a row host's same-level sibling set (treegrid). */
+  rowSetsize(host: HTMLElement): number;
 }
-
-/**
- * Coordination contract owned by `ForTable`, injected by every descendant
- * piece. It is the composition of the measurement, roving, selection,
- * expansion, and virtualization role slices each piece injects in isolation, so
- * the root implements one object while a cell sees only the roving slice, the
- * select-all only the selection slice, and so on. The composed shape is
- * structurally identical to the flat contract.
- */
-export interface ForTableContext
-  extends
-    ForTableMeasurement,
-    ForTableRoving,
-    ForTableSelection,
-    ForTableExpansion,
-    ForTableVirtualization {}
 
 export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_CONTEXT');
 
@@ -253,48 +198,12 @@ export function coerceSticky(value: boolean | string): TableStickyValue {
   return value === 'end' ? 'end' : booleanAttribute(value);
 }
 
-function injectTableSlice<T>(piece: string): T {
+export function injectTableContext(piece: string): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/table] ${piece} must be used inside a [forTable] element.`);
   }
-  return ctx as unknown as T;
-}
-
-export function injectTableContext(piece: string): ForTableContext {
-  return injectTableSlice<ForTableContext>(piece);
-}
-
-/**
- * Injects the measurement slice of the table context. Used by
- * `[forTableHeaderRow]` and `[forTableColumnResizer]`.
- */
-export function injectTableMeasurement(piece: string): ForTableMeasurement {
-  return injectTableSlice<ForTableMeasurement>(piece);
-}
-
-/**
- * Injects the roving-navigation slice of the table context. Used by
- * `[forTableCell]`.
- */
-export function injectTableRoving(piece: string): ForTableRoving {
-  return injectTableSlice<ForTableRoving>(piece);
-}
-
-/**
- * Injects the row-selection slice of the table context. Used by
- * `[forTableSelectAll]`.
- */
-export function injectTableSelection(piece: string): ForTableSelection {
-  return injectTableSlice<ForTableSelection>(piece);
-}
-
-/**
- * Injects the virtualization-bridge slice of the table context. Used by
- * `[forTableRowReorder]`.
- */
-export function injectTableVirtualization(piece: string): ForTableVirtualization {
-  return injectTableSlice<ForTableVirtualization>(piece);
+  return ctx;
 }
 
 export function injectTableRowContext(piece: string): ForTableRowContext {

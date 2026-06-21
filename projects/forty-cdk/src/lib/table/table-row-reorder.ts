@@ -14,7 +14,7 @@ import { ForDropList } from '../drag-drop/drop-list';
 import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import { translateWindowReorder } from '../_internal/drag-session/window-index-map';
-import { injectTableVirtualization } from './table-context';
+import { injectTableContext } from './table-context';
 
 /** Payload of `rowReorder`: the previous and new row index. */
 export interface TableRowReorderDescriptor {
@@ -86,7 +86,7 @@ export function translateRowReorderIndices(
   ],
 })
 export class ForTableRowReorder {
-  protected readonly ctx = injectTableVirtualization('ForTableRowReorder');
+  protected readonly ctx = injectTableContext('ForTableRowReorder');
   readonly #list = inject(ForDropList);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);

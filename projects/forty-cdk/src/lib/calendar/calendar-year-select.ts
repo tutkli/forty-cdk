@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { type CalendarYearOption, injectCalendarNavigationContext } from './calendar-context';
+import { type CalendarYearOption, injectCalendarContext } from './calendar-context';
 
 /**
  * Wires a native `<select>` to a `ForCalendar`'s year navigation. Apply on a
@@ -29,7 +29,7 @@ import { type CalendarYearOption, injectCalendarNavigationContext } from './cale
   },
 })
 export class ForCalendarYearSelect {
-  protected readonly ctx = injectCalendarNavigationContext('ForCalendarYearSelect');
+  protected readonly ctx = injectCalendarContext('ForCalendarYearSelect');
 
   /**
    * Lowest year listed in {@link years}. Defaults to 100 years before the

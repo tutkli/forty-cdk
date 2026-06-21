@@ -4,7 +4,7 @@ import { registerHandle } from '../_internal/collection/register-handle';
 import {
   coerceSticky,
   type ForTableCellHandle,
-  injectTableRoving,
+  injectTableContext,
   injectTableRowContext,
   type TableStickyValue,
 } from './table-context';
@@ -36,7 +36,7 @@ import {
   },
 })
 export class ForTableCell {
-  protected readonly ctx = injectTableRoving('ForTableCell');
+  protected readonly ctx = injectTableContext('ForTableCell');
   protected readonly rowCtx = injectTableRowContext('ForTableCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
