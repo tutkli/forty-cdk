@@ -43,7 +43,7 @@ import {
 import { createAutoScroller, type AutoScroller } from '../_internal/drag-session/auto-scroll';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
-import { PreviewController } from './preview-controller';
+import { PreviewController } from '../_internal/drag-session/preview-controller';
 import { PlaceholderSorter } from './placeholder-sorter';
 import { ReorderAnimator } from './reorder-animator';
 

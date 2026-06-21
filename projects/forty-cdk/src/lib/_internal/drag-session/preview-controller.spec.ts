@@ -1,4 +1,4 @@
-import type { DragPreview } from '../_internal/drag-session/drag-preview';
+import type { DragPreview } from './drag-preview';
 import { PreviewController } from './preview-controller';
 
 function fakeFullPreview(): DragPreview & { moves: number; settles: number; destroys: number } {

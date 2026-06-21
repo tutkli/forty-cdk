@@ -15,7 +15,8 @@ import {
 } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import { createDragPreview, type DragPreview } from '../_internal/drag-session/drag-preview';
+import { type PreviewPoint } from '../_internal/drag-session/clamp-preview';
+import { PreviewController } from '../_internal/drag-session/preview-controller';
 import {
   createPointerDragSession,
   type PointerDragSession,
@@ -137,7 +138,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   #previousIndex = 0;
   #gapIndex = 0;
   #desiredLevel = 1;
-  #preview: DragPreview | null = null;
+  #previewController: PreviewController | null = null;
   #wasExpanded = false;
   #liftedHost: HTMLElement | null = null;
   #label = '';
@@ -160,7 +161,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       document: this.#document,
       armThreshold: POINTER_ARM_THRESHOLD_PX,
       canStart: (event) => this.#canStartPointer(event),
-      onLift: () => this.#onPointerLift(),
+      onLift: (event) => this.#onPointerLift(event),
       onMove: (event) => this.#onPointerMove(event),
       onCommit: (event) => this.#onPointerCommit(event),
       onCancel: () => this.#cancelSession(true),
@@ -270,7 +271,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     return true;
   }
 
-  #onPointerLift(): boolean {
+  #onPointerLift(event: PointerEvent): boolean {
     if (!this.#liftedHost) {
       return false;
     }
@@ -280,7 +281,10 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       this.#liftedHost = null;
       return false;
     }
-    this.#lift(this.#liftedHost, idx, visible, 'pointer');
+    this.#lift(this.#liftedHost, idx, visible, 'pointer', {
+      x: event.clientX,
+      y: event.clientY,
+    });
     return true;
   }
 
@@ -299,7 +303,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
     this.#publishDropTarget(rows, target.level);
 
-    this.#preview?.moveTo(event.clientX, event.clientY);
+    this.#previewController?.moveTo({ x: event.clientX, y: event.clientY });
   }
 
   #onPointerCommit(event: PointerEvent): void {
@@ -315,6 +319,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     visibleIdx: number,
     visible: readonly ForTreeVisibleNode[],
     mode: 'keyboard' | 'pointer',
+    point?: PreviewPoint,
   ): void {
     const entry = visible[visibleIdx];
     const origin = resolveTreeLiftContext(visible, visibleIdx);
@@ -334,8 +339,15 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       this.#ctx.setExpanded(origin.value, false);
     }
 
-    if (mode === 'pointer') {
-      this.#preview = createDragPreview(host, this.#document);
+    if (mode === 'pointer' && point) {
+      this.#previewController = new PreviewController({
+        source: host,
+        point,
+        preview: null,
+        doc: this.#document,
+        boundary: null,
+        lockAxis: () => null,
+      });
     }
 
     const visibleAfter = this.#ctx.visibleNodes();
@@ -414,9 +426,9 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#liftedHost = null;
     this.#label = '';
 
-    if (this.#preview) {
-      this.#preview.destroy();
-      this.#preview = null;
+    if (this.#previewController) {
+      this.#previewController.destroy();
+      this.#previewController = null;
     }
 
     this._dragging.set(false);
