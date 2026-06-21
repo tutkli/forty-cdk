@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import { type WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { clamp } from '../_internal/numeric-step/numeric-step';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { FOR_PAGINATION_CONTEXT, type ForPaginationContext } from './pagination-context';
 import { FOR_PAGINATION_DEFAULTS } from './pagination-defaults';
@@ -127,7 +128,7 @@ export class ForPagination implements ForPaginationContext {
     if (this.disabled()) {
       return;
     }
-    const clamped = Math.max(1, Math.min(page, Math.max(1, this.count())));
+    const clamped = clamp(page, 1, Math.max(1, this.count()));
     if (clamped !== this.page()) {
       this.page.set(clamped);
     }

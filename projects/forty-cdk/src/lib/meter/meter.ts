@@ -1,5 +1,6 @@
 import { computed, Directive, input, model } from '@angular/core';
 
+import { clamp } from '../_internal/numeric-step/numeric-step';
 import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
 
 /**
@@ -88,10 +89,7 @@ export class ForMeter implements ForMeterContext {
 
   readonly clampedValue = computed<number>(() => {
     const { min, max } = this.#range();
-    const v = this.value();
-    if (v < min) return min;
-    if (v > max) return max;
-    return v;
+    return clamp(this.value(), min, max);
   });
 
   readonly percentage = computed<number>(() => {

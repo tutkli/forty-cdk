@@ -358,6 +358,19 @@ describe('ForNumberInput', () => {
       flush();
       expect(fixture.componentInstance.qty()).toBe(3);
     });
+
+    it('rounds a fractional 0.1 step to a clean value without float noise', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.qty.set(0.2);
+      flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'ArrowUp');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(0.3);
+      expect(input.getAttribute('aria-valuenow')).toBe('0.3');
+    });
   });
 
   describe('clamping', () => {
