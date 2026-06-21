@@ -238,6 +238,60 @@ describe('createPointerDragSession', () => {
     expect(click.defaultPrevented).toBe(false);
   });
 
+  it('cancels an armed drag on Escape when cancelOnEscape is set', () => {
+    const { host, session, rec } = setup({ cancelOnEscape: true });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(rec.cancels).toBe(1);
+
+    document.dispatchEvent(pointer('pointerup', 110, 100));
+    expect(rec.commits).toBe(0);
+  });
+
+  it('ignores Escape before the drag arms (cancelOnEscape set)', () => {
+    const { host, session, rec } = setup({ cancelOnEscape: true });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(rec.cancels).toBe(0);
+
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+  });
+
+  it('does not listen for Escape when cancelOnEscape is unset (default)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(rec.cancels).toBe(0);
+
+    document.dispatchEvent(pointer('pointerup', 110, 100));
+    expect(rec.commits).toBe(1);
+  });
+
+  it('lift → move → commit still works with capturePointer set (capture no-ops in jsdom)', () => {
+    const { host, session, rec } = setup({ capturePointer: true });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(1);
+    expect(rec.moves).toBe(2);
+    expect(rec.commits).toBe(1);
+  });
+
   it('destroy() stops the host listener from starting new sessions', () => {
     const { host, session, rec } = setup();
     host.remove();
