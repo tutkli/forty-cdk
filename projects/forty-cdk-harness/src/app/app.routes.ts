@@ -211,6 +211,10 @@ export const routes: Routes = [
       import('./fixtures/drag-drop-animate.fixture').then((m) => m.DragDropAnimateFixture),
   },
   {
+    path: 'free-drag',
+    loadComponent: () => import('./fixtures/free-drag.fixture').then((m) => m.FreeDragFixture),
+  },
+  {
     path: 'table',
     loadComponent: () => import('./fixtures/table.fixture').then((m) => m.TableFixture),
   },

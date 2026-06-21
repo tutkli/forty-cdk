@@ -3,6 +3,9 @@
 Headless accessible drag-and-drop for sortable lists and cross-list item
 transfers. Supports both keyboard and pointer (mouse / touch / pen) dragging.
 
+For repositioning an arbitrary element (no list, no reorder) — e.g. dragging a
+whole dialog around by its header — see [`[forFreeDrag]`](#free-drag-forfreedrag).
+
 ## Keyboard model
 
 | State  | Key         | Action                                     |
@@ -218,14 +221,60 @@ providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'mixed' }];
 `"mixed"` targets regular grids of uniformly-sized items; variable-size / masonry layouts are out of
 scope. `[animateReorder]` (FLIP) reflows by DOM order and needs no change in mixed mode.
 
+## Free drag (`[forFreeDrag]`)
+
+`[forFreeDrag]` repositions its host element (or a resolved `rootElement`) by pointer drag, with
+**no `[forDropList]` required** — it never commits a reorder, it just moves the element around via a
+CSS `transform: translate(...)`. It is the standalone counterpart to a sortable list item, mirroring
+Angular CDK's free-drag `cdkDrag` (+ `cdkDragRootElement` / `cdkDragBoundary` / `cdkDragLockAxis` /
+`cdkDragFreeDragPosition`).
+
+```html
+<!-- move the whole dialog by its header -->
+<div class="dialog">
+  <header forFreeDrag rootElement=".dialog" boundary=".viewport">Drag me</header>
+  …
+</div>
+
+<!-- or with an explicit handle and a controllable position -->
+<div forFreeDrag [(position)]="pos" boundary=".viewport">
+  <span forDragHandle aria-hidden="true">⠿</span>
+  …
+</div>
+```
+
+| Input         | Type                            | Default       | Meaning                                                                                            |
+| ------------- | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| `disabled`    | `boolean`                       | `false`       | When true, the element can't be dragged (it stays focusable; the transform doesn't change).        |
+| `rootElement` | `HTMLElement \| string \| null` | `null`        | The element actually moved. A `closest()` selector resolves an ancestor. `null` moves the host.    |
+| `boundary`    | `HTMLElement \| string \| null` | `null`        | Confine the moved element fully inside this element (or `closest()` selector). `null` = unbounded. |
+| `lockAxis`    | `'x' \| 'y' \| null`            | `null`        | Constrain movement to one axis. `'x'` pins lift-time `y`, `'y'` pins lift-time `x`.                |
+| `position`    | `model<{ x; y }>`               | `{ x:0,y:0 }` | Two-way translate offset (px) from the element's natural position. Controllable / restorable.      |
+
+| Output      | Payload    | Fires                                                                                          |
+| ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `dragStart` | `{ x; y }` | When a pointer drag starts (the lift-time position).                                           |
+| `dragMove`  | `{ x; y }` | On every armed move, with the live position.                                                   |
+| `dragEnd`   | `{ x; y }` | When the drag ends (commit keeps the position; cancel/Escape restores the lift-time snapshot). |
+
+`[forDragHandle]` works inside `[forFreeDrag]` exactly as it does inside `[forDraggable]`: once any
+handle is present, a pointer drag may only start from within a handle.
+
+**Accessibility.** Free-drag is **pointer-only** — there is no WAI-ARIA pattern for "reposition an
+element", so it owns no role or ARIA state (matching CDK's `cdkDrag`). The consumer is responsible
+for keeping the moved element fully usable at its default position (e.g. a repositionable dialog must
+still be operable by keyboard); dragging is a pointer convenience, not the only way to use it.
+
 ## Data attributes
 
 | Attribute               | Element           | Meaning                                                                              |
 | ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
 | `data-orientation`      | `[forDropList]`   | `"vertical"`, `"horizontal"`, or `"mixed"`                                           |
 | `data-disabled`         | both              | Present when the item or list is disabled                                            |
+| `data-disabled`         | `[forFreeDrag]`   | Present when the free-drag element is disabled                                       |
 | `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                 |
 | `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                    |
+| `data-dragging`         | `[forFreeDrag]`   | Present while a free-drag pointer gesture is armed                                   |
 | `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                           |
 | `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                              |
 | `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper  |

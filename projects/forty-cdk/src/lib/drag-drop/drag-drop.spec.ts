@@ -858,13 +858,13 @@ describe('ForDropList + ForDraggable', () => {
 
     it('ForDragPreview outside [forDraggable] throws the orphan error', () => {
       expect(() => renderHost(OrphanPreviewHost)).toThrow(
-        '[forty-cdk/drag-drop] ForDragPreview must be used inside a [forDraggable] element.',
+        '[forty-cdk/drag-drop] ForDragPreview must be used inside a [forDraggable] or [forFreeDrag] element.',
       );
     });
 
     it('ForDragPlaceholder outside [forDraggable] throws the orphan error', () => {
       expect(() => renderHost(OrphanPlaceholderHost)).toThrow(
-        '[forty-cdk/drag-drop] ForDragPlaceholder must be used inside a [forDraggable] element.',
+        '[forty-cdk/drag-drop] ForDragPlaceholder must be used inside a [forDraggable] or [forFreeDrag] element.',
       );
     });
 

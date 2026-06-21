@@ -125,6 +125,7 @@ import { ForDragHandle } from '../../drag-drop/drag-handle';
 import { ForDragPlaceholder } from '../../drag-drop/drag-placeholder';
 import { ForDragPreview } from '../../drag-drop/drag-preview';
 import { ForDraggable } from '../../drag-drop/draggable';
+import { ForFreeDrag } from '../../drag-drop/free-drag';
 import { ForDropList } from '../../drag-drop/drop-list';
 import { ForDropListGroup } from '../../drag-drop/drop-list-group';
 import { ForTable } from '../../table/table';
@@ -1170,6 +1171,19 @@ class TimePickerOpenFixture {}
 class DragDropFixture {}
 
 @Component({
+  imports: [ForFreeDrag, ForDragHandle],
+  template: `
+    <div class="dialog" style="position: relative">
+      <header forFreeDrag rootElement=".dialog" boundary=".dialog">
+        <span forDragHandle aria-hidden="true">::</span>
+        Drag me
+      </header>
+    </div>
+  `,
+})
+class FreeDragFixture {}
+
+@Component({
   imports: [
     ForStepper,
     ForStepperList,
@@ -1488,6 +1502,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DatePickerFixture,
   TimePickerOpenFixture,
   DragDropFixture,
+  FreeDragFixture,
   DropdownMenuOpenFixture,
   ContextMenuOpenFixture,
   HoverCardOpenFixture,
