@@ -1,7 +1,7 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import { type ForCalendarMonthCellHandle, injectCalendarMonthContext } from './calendar-context';
+import { type ForCalendarMonthCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
  * A single month cell (`role="gridcell"`) in the month picker grid. Apply on
@@ -30,7 +30,7 @@ import { type ForCalendarMonthCellHandle, injectCalendarMonthContext } from './c
   },
 })
 export class ForCalendarMonthCell {
-  protected readonly ctx = injectCalendarMonthContext('ForCalendarMonthCell');
+  protected readonly ctx = injectCalendarContext('ForCalendarMonthCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The month this cell represents, **1-12**. */

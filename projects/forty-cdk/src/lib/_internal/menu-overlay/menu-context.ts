@@ -68,13 +68,12 @@ export interface ForMenuItemHandle extends CollectionHandle {
 }
 
 /**
- * Positioning / open-state core of a menu context: the floating-ui inputs, the
- * open/disabled flags, ids, anchor, and the `parentMenu` / `menubar` links that
- * place the menu in its surrounding chain. Every menu flavor (the single-owner
- * `MenuOverlay` roots and the multiplexed menubar context) implements this in
- * full — none of it is optional.
+ * Coordination contract owned by the root that opens the menu —
+ * `[forDropdownMenu]` (button trigger) or `[forContextMenu]`
+ * (right-click / `Shift+F10`). Items, content, separators, etc. inject
+ * this contract so they don't depend on a specific root flavor.
  */
-export interface MenuPositioningCore {
+export interface ForMenuContext {
   /**
    * Whether the menu is currently shown. Read-only at the contract level —
    * concrete roots (`[forDropdownMenu]`, `[forContextMenu]`, `[forMenuSub]`)
@@ -105,6 +104,10 @@ export interface MenuPositioningCore {
   readonly clipUntilPositioned: Signal<boolean>;
   readonly loop: Signal<boolean>;
 
+  /** Where focus should land after the menu mounts. Set by triggers before flipping `open`. */
+  readonly initialFocus: Signal<'first' | 'last'>;
+  setInitialFocus(target: 'first' | 'last'): void;
+
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
@@ -114,6 +117,13 @@ export interface MenuPositioningCore {
 
   /** The focusable element that receives focus on close (the trigger button or right-click target). */
   readonly trigger: Signal<HTMLElement | null>;
+  registerTrigger(el: HTMLElement): void;
+  unregisterTrigger(el: HTMLElement): void;
+
+  /** The mounted `[forMenuContent]` element. Submenus exempt their parent's content. */
+  readonly content: Signal<HTMLElement | null>;
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
 
   /**
    * The enclosing menu, when this context is a `[forMenuSub]`. `null` for
@@ -140,22 +150,6 @@ export interface MenuPositioningCore {
    * region while the menu is open should close it.
    */
   readonly dismissableExemptions: Signal<readonly HTMLElement[]>;
-}
-
-/**
- * Item-collection coordination of a menu context: registration, navigation,
- * typeahead, initial-focus hinting, and the open/close entry points the
- * triggers and content drive. Implemented by every menu flavor.
- */
-export interface MenuItemCoordination {
-  /** Where focus should land after the menu mounts. Set by triggers before flipping `open`. */
-  readonly initialFocus: Signal<'first' | 'last'>;
-  setInitialFocus(target: 'first' | 'last'): void;
-
-  /** The mounted `[forMenuContent]` element. Submenus exempt their parent's content. */
-  readonly content: Signal<HTMLElement | null>;
-  registerContent(el: HTMLElement): void;
-  unregisterContent(el: HTMLElement): void;
 
   registerItem(handle: ForMenuItemHandle): void;
   unregisterItem(handle: ForMenuItemHandle): void;
@@ -217,30 +211,7 @@ export interface MenuItemCoordination {
    * triangle" toward its content. The sub-trigger calls it on `pointerleave`.
    */
   onTriggerPointerLeave?(cursor: Point): void;
-}
 
-/**
- * Trigger-registration capability: top-level roots and submenus register the
- * trigger element that toggles them, so the dismissable layer can exempt it and
- * the return-focus knows its target. The menubar owns trigger registration on
- * the bar itself, so its multiplexed context implements these as no-ops — but
- * the members stay required so `[forMenuContent]` / the trigger directives can
- * call them uniformly across every flavor.
- */
-export interface MenuTriggerRegistry {
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
-}
-
-/**
- * Dismiss / auto-focus emit forwarders: `injectOverlayShell` routes outside
- * interactions, Escape, and the auto-focus vetoes through these so the matching
- * `(escapeKeyDown)` / `(pointerDownOutside)` / `(autoFocusOnOpen)` outputs fire.
- * The menubar has no per-trigger outputs, so its context implements them as
- * documented inert forwarders; the members stay required so the single
- * `[forMenuContent]` directive can call them on every flavor.
- */
-export interface MenuDismissOutputs {
   /**
    * Escape is consumer-owned (its close emits `(escapeKeyDown)`, stops
    * propagation, and closes with reason `'escape'`); Content forwards the raw
@@ -268,21 +239,6 @@ export interface MenuDismissOutputs {
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
 }
-
-/**
- * Coordination contract owned by the root that opens the menu —
- * `[forDropdownMenu]` (button trigger) or `[forContextMenu]`
- * (right-click / `Shift+F10`). Items, content, separators, etc. inject
- * this contract so they don't depend on a specific root flavor.
- *
- * The contract is the composition of four role slices — positioning core,
- * item coordination, trigger registration, and dismiss / auto-focus outputs —
- * so a menu flavor's responsibilities read off the interfaces it satisfies.
- * The composed shape is structurally identical to the flat contract; the slices
- * exist to document the roles, not to narrow the public surface.
- */
-export interface ForMenuContext
-  extends MenuPositioningCore, MenuItemCoordination, MenuTriggerRegistry, MenuDismissOutputs {}
 
 export type { MenuActivationModality };
 

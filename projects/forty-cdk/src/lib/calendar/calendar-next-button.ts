@@ -1,7 +1,7 @@
 import { computed, Directive, input } from '@angular/core';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { injectCalendarNavigationContext } from './calendar-context';
+import { injectCalendarContext } from './calendar-context';
 
 /**
  * Pages the calendar forward. In `day` view pages by one month; in `month` view
@@ -25,7 +25,7 @@ import { injectCalendarNavigationContext } from './calendar-context';
   },
 })
 export class ForCalendarNextButton {
-  protected readonly ctx = injectCalendarNavigationContext('ForCalendarNextButton');
+  protected readonly ctx = injectCalendarContext('ForCalendarNextButton');
 
   /** Accessible name for the button. A `null` (default) or empty value emits no attribute. */
   readonly ariaLabel = input<string | null>(null);

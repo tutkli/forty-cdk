@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { injectTableSelection } from './table-context';
+import { injectTableContext } from './table-context';
 
 /**
  * Header "select all" checkbox for a `[forTable]` in `selectionMode="multiple"`.
@@ -25,7 +25,7 @@ import { injectTableSelection } from './table-context';
   },
 })
 export class ForTableSelectAll {
-  protected readonly ctx = injectTableSelection('ForTableSelectAll');
+  protected readonly ctx = injectTableContext('ForTableSelectAll');
 
   /** Accessible label for the control (e.g. "Select all rows"). Truthy-only. */
   readonly ariaLabel = input<string | null>(null);
