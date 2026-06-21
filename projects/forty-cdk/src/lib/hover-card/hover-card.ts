@@ -13,6 +13,7 @@ import {
   untracked,
 } from '@angular/core';
 
+import { ANCHORED_POSITIONING_DEFAULTS } from '../_internal/floating/anchored-positioning-inputs';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
   createHoverIntent,
@@ -124,10 +125,14 @@ export class ForHoverCard implements ForHoverCardContext {
   );
 
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
+  readonly alignOffset = input(ANCHORED_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+  });
 
   /** When `true` (default), `flip` and `shift` keep the card inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+  readonly avoidCollisions = input(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions, {
+    transform: booleanAttribute,
+  });
 
   /**
    * Per-card override for the padding (px) applied uniformly to the `flip`,
@@ -150,13 +155,17 @@ export class ForHoverCard implements ForHoverCardContext {
   );
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
+  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
+  readonly sticky = input<'partial' | 'always' | false>(ANCHORED_POSITIONING_DEFAULTS.sticky);
 
   /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+  readonly hideWhenDetached = input(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached, {
+    transform: booleanAttribute,
+  });
 
   /**
    * When `true` (default), the content is clipped until floating-ui resolves
@@ -165,7 +174,9 @@ export class ForHoverCard implements ForHoverCardContext {
    * surface may flash briefly at the unresolved position while positioning
    * computes).
    */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+  readonly clipUntilPositioned = input(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned, {
+    transform: booleanAttribute,
+  });
 
   /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
   readonly openDelay = input<number | undefined>(undefined);

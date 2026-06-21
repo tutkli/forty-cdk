@@ -1,25 +1,14 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
 
-export interface ForHoverCardContext {
+export interface ForHoverCardContext extends AnchoredPositioningContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  readonly side: Signal<FloatingSide>;
-  readonly align: Signal<FloatingAlign>;
-  readonly sideOffset: Signal<number>;
-  readonly alignOffset: Signal<number>;
-  readonly avoidCollisions: Signal<boolean>;
-  readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
-  readonly sticky: Signal<'partial' | 'always' | false>;
-  readonly hideWhenDetached: Signal<boolean>;
-  readonly clipUntilPositioned: Signal<boolean>;
   readonly trigger: Signal<HTMLElement | null>;
-  readonly arrow: Signal<HTMLElement | null>;
   readonly content: Signal<HTMLElement | null>;
 
   registerTrigger(el: HTMLElement): void;

@@ -12,6 +12,7 @@ import {
   untracked,
 } from '@angular/core';
 
+import { ANCHORED_POSITIONING_DEFAULTS } from '../_internal/floating/anchored-positioning-inputs';
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
 import {
   createHoverIntent,
@@ -115,13 +116,17 @@ export class ForTooltip implements ForTooltipContext {
   );
 
   /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
+  readonly alignOffset = input(ANCHORED_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+  });
 
   /**
    * When `true` (default), `flip` and `shift` keep the tooltip inside the
    * viewport. Disable for strict positioning where overflow is acceptable.
    */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
+  readonly avoidCollisions = input(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions, {
+    transform: booleanAttribute,
+  });
 
   /**
    * Per-tooltip override for the padding (px) applied uniformly to the
@@ -144,20 +149,24 @@ export class ForTooltip implements ForTooltipContext {
   );
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
+  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /**
    * Stickiness behaviour for `shift`. `'partial'` (default) lets the
    * tooltip shift to stay visible. `'always'` keeps the requested
    * placement even off-screen.
    */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
+  readonly sticky = input<'partial' | 'always' | false>(ANCHORED_POSITIONING_DEFAULTS.sticky);
 
   /**
    * When `true`, sets `data-detached=""` while the trigger has scrolled
    * off all clipping ancestors.
    */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+  readonly hideWhenDetached = input(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached, {
+    transform: booleanAttribute,
+  });
 
   /**
    * When `true` (default), the content is clipped until floating-ui resolves
@@ -166,7 +175,9 @@ export class ForTooltip implements ForTooltipContext {
    * surface may flash briefly at the unresolved position while positioning
    * computes).
    */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+  readonly clipUntilPositioned = input(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned, {
+    transform: booleanAttribute,
+  });
 
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`
