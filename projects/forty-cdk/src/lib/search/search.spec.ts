@@ -168,6 +168,7 @@ describe('ForSearch', () => {
       clear.click();
       flush();
       expect(fixture.componentInstance.text()).toBe('');
+      expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
       expect(document.activeElement).toBe(input);
     });
