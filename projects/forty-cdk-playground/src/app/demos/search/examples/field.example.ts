@@ -1,0 +1,141 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { form, FormField, minLength, required } from '@angular/forms/signals';
+import { ForField, ForFieldError, ForLabel, ForSearch, ForSearchClear } from 'forty-cdk';
+
+import { DemoLayout } from '../../../ui/demo-layout';
+
+interface Filters {
+  readonly term: string;
+}
+
+@Component({
+  selector: 'app-search-field-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DemoLayout, FormField, ForField, ForLabel, ForSearch, ForSearchClear, ForFieldError],
+  template: `
+    <playground-demo
+      title="Inside a Field with Signal Forms"
+      subtitle="forSearch implements FormValueControl<string>, so [formField] auto-wires it inside forField exactly like forInput: the label adopts the control id, validation flows into aria-errormessage, and aria-invalid / aria-required are reflected. Type one or two characters and blur to surface the error."
+      sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/field.example.ts"
+    >
+      <div demo>
+        <div forField #field="forField" class="field">
+          <label forLabel class="field-label">
+            <span class="field-label-text">Search the docs</span>
+            <div class="search">
+              <input
+                forSearch
+                #s="forSearch"
+                class="search-input"
+                placeholder="At least 3 characters…"
+                [formField]="filtersForm.term"
+              />
+              <button [forSearchClear]="s" class="search-clear" aria-label="Clear search">×</button>
+            </div>
+          </label>
+          @if (filtersForm.term().touched() && !filtersForm.term().valid()) {
+            <p forFieldError #err="forFieldError" class="field-error">
+              {{ err.messages().join(', ') }}
+            </p>
+          }
+        </div>
+      </div>
+
+      <div controls class="pg-controls">
+        <button type="button" class="pg-btn" (click)="filtersForm.term().markAsTouched()">
+          Mark touched
+        </button>
+        <p class="pg-state">
+          value: <b>{{ filtersForm.term().value() || '∅' }}</b
+          ><br />
+          touched: <b>{{ field.touched() }}</b
+          ><br />
+          invalid: <b>{{ field.invalid() }}</b>
+        </p>
+      </div>
+    </playground-demo>
+  `,
+  styles: `
+    .field {
+      width: min(360px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .field-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .field-label-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--pg-text);
+    }
+
+    .search {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 0.6rem 2.2rem 0.6rem 0.85rem;
+      color: var(--pg-text);
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      outline: none;
+    }
+
+    .search-input:focus-visible {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--pg-primary) 35%, transparent);
+    }
+
+    .field[data-touched][data-invalid] .search-input {
+      border-color: var(--pg-danger);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      font: inherit;
+      font-size: 1.1rem;
+      line-height: 1;
+      color: var(--pg-text-muted);
+      background: var(--pg-surface-2);
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .search-clear:hover {
+      color: var(--pg-text);
+    }
+
+    .field-error {
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--pg-danger);
+    }
+  `,
+})
+export class SearchFieldExample {
+  protected readonly model = signal<Filters>({ term: '' });
+  protected readonly filtersForm = form(this.model, (path) => {
+    required(path.term, { message: 'Enter a search term' });
+    minLength(path.term, 3, { message: 'Use at least 3 characters' });
+  });
+}
