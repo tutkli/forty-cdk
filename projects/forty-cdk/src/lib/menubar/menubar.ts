@@ -12,6 +12,7 @@ import {
 
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
+import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import {
   type ListNavigationAction,
   moveIndex,
@@ -175,12 +176,12 @@ export class ForMenubar implements ForMenubarContext {
 
   readonly #triggerTypeahead = injectTypeahead();
 
-  #closeTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly #closeAction = createDebouncedAction(() => this.#closeByPointer());
   #detachContentPointerFn: (() => void) | null = null;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
-      this.#clearCloseTimer();
+      this.#closeAction.cancel();
       this.detachContentPointer();
     });
   }
@@ -313,7 +314,7 @@ export class ForMenubar implements ForMenubarContext {
     }
     // Entering any trigger aborts a pending hover-leave close — the pointer
     // is still travelling across the bar, so keep the open menu alive.
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
     // Hover-after-open opens siblings instantly; while no menu is
     // open, hover does nothing (first open requires keyboard / click).
     if (this.value() === '' || this.value() === value) {
@@ -330,7 +331,7 @@ export class ForMenubar implements ForMenubarContext {
    * not trip the close timer.
    */
   cancelPendingClose(): void {
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
   }
 
   /**
@@ -347,21 +348,13 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   #scheduleCloseByPointer(): void {
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
     // A non-dismissible menu stays pinned open: hover-leave is held to the
     // same contract as Escape / outside interaction.
     if (this.value() === '' || !this.dismissible()) {
       return;
     }
-    const delay = Math.max(0, this.closeDelay());
-    if (delay === 0) {
-      this.#closeByPointer();
-      return;
-    }
-    this.#closeTimer = setTimeout(() => {
-      this.#closeTimer = null;
-      this.#closeByPointer();
-    }, delay);
+    this.#closeAction.schedule(this.closeDelay());
   }
 
   #closeByPointer(): void {
@@ -384,7 +377,7 @@ export class ForMenubar implements ForMenubarContext {
       if (event.pointerType !== '' && event.pointerType !== 'mouse') {
         return;
       }
-      this.#clearCloseTimer();
+      this.#closeAction.cancel();
     };
     const onLeave = (event: PointerEvent): void => {
       if (event.pointerType !== '' && event.pointerType !== 'mouse') {
@@ -404,13 +397,6 @@ export class ForMenubar implements ForMenubarContext {
   detachContentPointer(): void {
     this.#detachContentPointerFn?.();
     this.#detachContentPointerFn = null;
-  }
-
-  #clearCloseTimer(): void {
-    if (this.#closeTimer !== null) {
-      clearTimeout(this.#closeTimer);
-      this.#closeTimer = null;
-    }
   }
 
   handleTriggerTypeahead(event: KeyboardEvent): void {

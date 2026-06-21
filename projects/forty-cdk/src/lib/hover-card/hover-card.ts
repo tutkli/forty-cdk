@@ -3,17 +3,16 @@ import {
   computed,
   DestroyRef,
   Directive,
-  effect,
   inject,
   input,
   model,
   numberAttribute,
   output,
   signal,
-  untracked,
 } from '@angular/core';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { forceCloseWhenDisabled } from '../_internal/hover-intent/force-close-when-disabled';
 import {
   createHoverIntent,
   type HoverIntentScheduler,
@@ -199,20 +198,10 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly #hoverIntent: HoverIntentScheduler;
 
   constructor() {
-    // Force-close when `disabled` flips to true. The scheduler already
-    // early-returns on `disabled()` so hover/focus can't open a disabled card;
-    // this isolated reaction only covers the remaining path — an open card
-    // being disabled out from under itself. The `open` read is `untracked` so
-    // this never re-runs as a function of `open` (no read+write cycle on the
-    // same signal); it reacts to `disabled` alone. This is the documented,
-    // intentional `effect()`-to-set carve-out (CLAUDE.md): it integrates the
-    // disabled gate with the public `model()` instead of wrapping the model in
-    // a parallel signal.
-    effect(() => {
-      if (this.disabled() && untracked(this.open)) {
-        this.cancelPending();
-        this.open.set(false);
-      }
+    forceCloseWhenDisabled({
+      open: this.open,
+      disabled: this.disabled,
+      onForceClose: () => this.cancelPending(),
     });
 
     this.#hoverIntent = createHoverIntent({

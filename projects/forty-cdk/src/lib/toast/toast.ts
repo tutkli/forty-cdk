@@ -9,20 +9,21 @@ import {
   input,
   numberAttribute,
   output,
+  type Signal,
   signal,
   untracked,
 } from '@angular/core';
 
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import {
+  injectPauseController,
+  type PauseController,
+} from '../_internal/pausable/pause-controller';
+import {
   attachSwipeDismiss,
   type SwipeDirection,
   type SwipeEventDetail,
 } from '../_internal/swipe-dismiss/swipe-dismiss';
-import {
-  isPageHidden,
-  subscribeVisibilityPause,
-} from '../_internal/visibility-pause/visibility-pause';
 import {
   FOR_TOAST_CONTEXT,
   type ForToastActionHandle,
@@ -143,9 +144,8 @@ export class ForToast implements ForToastContext {
   /** Fired on pointer-up before the threshold, or on `pointercancel`. */
   readonly swipeCancel = output<SwipeEventDetail>();
 
-  readonly #paused = signal(false);
-  readonly paused = this.#paused.asReadonly();
-  readonly #pauseReasons = new Set<'hover' | 'focus' | 'visibility'>();
+  readonly #pause: PauseController<'hover' | 'focus' | 'visibility'>;
+  readonly paused: Signal<boolean>;
 
   readonly #swipeState = signal<SwipeState | null>(null);
   readonly #swipeActiveDirection = signal<SwipeDirection | null>(null);
@@ -236,13 +236,24 @@ export class ForToast implements ForToastContext {
   // True once the auto-dismiss countdown has begun, so `#remainingMs` holds a
   // meaningful value. While paused this guards the duration effect from
   // clobbering a captured remaining time on an unrelated re-run (e.g. an
-  // `update()` that re-renders the toast); see `#updatePaused`.
+  // `update()` that re-renders the toast); see `#onPausedChange`.
   #timerStarted = false;
 
   constructor() {
+    // Multi-reason pause: pointer hover, focus, and page visibility each
+    // pause/resume independently. The remaining-ms capture/reschedule is
+    // layered on the `paused` transition via `onChange`, keeping the timer off
+    // the reactive graph (pause/resume are imperative, so a tick must not trip
+    // change detection). The shared controller wires the page-visibility source
+    // and tears its subscription down with this injector.
+    this.#pause = injectPauseController<'hover' | 'focus' | 'visibility'>({
+      onChange: (paused) => this.#onPausedChange(paused),
+    });
+    this.paused = this.#pause.paused;
+
     // Start (or reset) the auto-dismiss timer whenever `duration` /
     // `closable` changes. Pause / resume are handled imperatively in
-    // `#updatePaused`, so we read `#paused()` via `untracked()` here —
+    // `#onPausedChange`, so we read `paused()` via `untracked()` here —
     // otherwise the effect would re-run on hover and clobber the in-flight
     // remaining-ms capture. While paused with a countdown already in flight we
     // bail out entirely so the captured remaining time survives a re-render;
@@ -251,7 +262,7 @@ export class ForToast implements ForToastContext {
     effect(() => {
       const ms = this.duration();
       const closable = this.closable();
-      const paused = untracked(() => this.#paused());
+      const paused = untracked(this.paused);
       if (paused && this.#timerStarted) {
         return;
       }
@@ -286,24 +297,6 @@ export class ForToast implements ForToastContext {
       lastAnnounced = message;
       this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
     });
-
-    // Pause the auto-dismiss timer while the page is backgrounded so the
-    // toast does not silently expire while the user is not looking. The
-    // global listener is refcounted across all live toast instances, so the
-    // document only carries a single `visibilitychange` handler regardless
-    // of stack depth.
-    const unsubscribe = subscribeVisibilityPause((hidden) => {
-      if (hidden) {
-        this.#applyPause('visibility');
-      } else {
-        this.#releasePause('visibility');
-      }
-    });
-    this.#destroyRef.onDestroy(unsubscribe);
-
-    if (isPageHidden()) {
-      this.#applyPause('visibility');
-    }
 
     const detachSwipe = attachSwipeDismiss({
       element: this.#host.nativeElement,
@@ -396,21 +389,11 @@ export class ForToast implements ForToastContext {
   }
 
   protected onPause(reason: 'hover' | 'focus'): void {
-    this.#applyPause(reason);
+    this.#pause.apply(reason);
   }
 
   protected onResume(reason: 'hover' | 'focus'): void {
-    this.#releasePause(reason);
-  }
-
-  #applyPause(reason: 'hover' | 'focus' | 'visibility'): void {
-    this.#pauseReasons.add(reason);
-    this.#updatePaused();
-  }
-
-  #releasePause(reason: 'hover' | 'focus' | 'visibility'): void {
-    this.#pauseReasons.delete(reason);
-    this.#updatePaused();
+    this.#pause.release(reason);
   }
 
   protected onMaybeResumeFocus(event: FocusEvent): void {
@@ -430,13 +413,8 @@ export class ForToast implements ForToastContext {
     this.requestClose('escape');
   }
 
-  #updatePaused(): void {
-    const next = this.#pauseReasons.size > 0;
-    if (next === this.#paused()) {
-      return;
-    }
-    this.#paused.set(next);
-    if (next) {
+  #onPausedChange(paused: boolean): void {
+    if (paused) {
       // Pause: capture remaining time and cancel the running timer.
       if (this.#timerHandle !== null) {
         this.#remainingMs = Math.max(0, this.#timerEndsAt - Date.now());

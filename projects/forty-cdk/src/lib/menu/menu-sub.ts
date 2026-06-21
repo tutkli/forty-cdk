@@ -14,6 +14,7 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
 import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
@@ -276,8 +277,8 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly anchor = computed<ReferenceElement | null>(() => this._overlay.trigger());
 
   // --- Pointer-driven (hover) open/close state. Additive to click/keyboard. ---
-  #openTimer: ReturnType<typeof setTimeout> | null = null;
-  #closeTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly #openAction = createDebouncedAction(() => this.#openByPointer());
+  readonly #closeAction = createDebouncedAction(() => this.#closeByPointer());
   #graceTimer: ReturnType<typeof setTimeout> | null = null;
   #detachGrace: (() => void) | null = null;
   #detachContentPointer: (() => void) | null = null;
@@ -342,18 +343,10 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     }
     this.#keepChainOpen();
     this.cancelPendingClose();
-    if (this.open() || this.#openTimer !== null) {
+    if (this.open() || this.#openAction.isPending()) {
       return;
     }
-    const delay = Math.max(0, this.#defaults.subMenuOpenDelay);
-    if (delay === 0) {
-      this.#openByPointer();
-      return;
-    }
-    this.#openTimer = setTimeout(() => {
-      this.#openTimer = null;
-      this.#openByPointer();
-    }, delay);
+    this.#openAction.schedule(this.#defaults.subMenuOpenDelay);
   }
 
   /**
@@ -372,23 +365,15 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   /** Schedule a hover-close of the submenu after `subMenuCloseDelay`. */
   scheduleCloseByPointer(): void {
     this.#clearOpenTimer();
-    if (!this.open() || this.#closeTimer !== null) {
+    if (!this.open() || this.#closeAction.isPending()) {
       return;
     }
-    const delay = Math.max(0, this.#defaults.subMenuCloseDelay);
-    if (delay === 0) {
-      this.#closeByPointer();
-      return;
-    }
-    this.#closeTimer = setTimeout(() => {
-      this.#closeTimer = null;
-      this.#closeByPointer();
-    }, delay);
+    this.#closeAction.schedule(this.#defaults.subMenuCloseDelay);
   }
 
   /** Cancel a pending hover-close and disarm the pointer-grace tracker. */
   cancelPendingClose(): void {
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
     this.#disarmPointerGrace();
   }
 
@@ -404,7 +389,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
 
   #closeByPointer(): void {
     this.#disarmPointerGrace();
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
     // Hover-close affects only this level (like Escape / programmatic — no
     // upward propagation) and suppresses the trigger return-focus.
     this.#suppressFocusMoves = true;
@@ -474,17 +459,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   }
 
   #clearOpenTimer(): void {
-    if (this.#openTimer !== null) {
-      clearTimeout(this.#openTimer);
-      this.#openTimer = null;
-    }
-  }
-
-  #clearCloseTimer(): void {
-    if (this.#closeTimer !== null) {
-      clearTimeout(this.#closeTimer);
-      this.#closeTimer = null;
-    }
+    this.#openAction.cancel();
   }
 
   #attachContentPointer(el: HTMLElement): void {
@@ -511,7 +486,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
 
   #teardownPointer(): void {
     this.#clearOpenTimer();
-    this.#clearCloseTimer();
+    this.#closeAction.cancel();
     this.#disarmPointerGrace();
     this.#detachContentPointer?.();
     this.#detachContentPointer = null;
