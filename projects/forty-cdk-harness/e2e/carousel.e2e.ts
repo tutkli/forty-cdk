@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import {
   dragFrom,
   dragFromSteps,
@@ -9,6 +9,15 @@ import {
   rovingFirst,
   tabN,
 } from './_helpers';
+
+function activeSlideTestid(page: Page): Promise<string | null> {
+  return page.evaluate(
+    () =>
+      document
+        .querySelector('[forCarouselSlide][data-state="active"]')
+        ?.getAttribute('data-testid') ?? null,
+  );
+}
 
 /**
  * Real-browser coverage for the Carousel primitive. The Vitest contract
@@ -177,15 +186,18 @@ test.describe('Carousel (geometry — Tier A)', () => {
     await gotoFixture(page, 'carousel');
     await el(page, 'next').click();
 
-    const inViewport = await page.evaluate(() => {
-      const vp = document.querySelector('[forCarouselViewport]') as HTMLElement;
-      const slide1 = document.querySelector('[data-testid="slide-1"]') as HTMLElement;
-      if (!vp || !slide1) return false;
-      const vpBox = vp.getBoundingClientRect();
-      const slideBox = slide1.getBoundingClientRect();
-      return slideBox.left >= vpBox.left - 1 && slideBox.right <= vpBox.right + 1;
-    });
-    expect(inViewport).toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const vp = document.querySelector('[forCarouselViewport]') as HTMLElement;
+          const slide1 = document.querySelector('[data-testid="slide-1"]') as HTMLElement;
+          if (!vp || !slide1) return false;
+          const vpBox = vp.getBoundingClientRect();
+          const slideBox = slide1.getBoundingClientRect();
+          return slideBox.left >= vpBox.left - 1 && slideBox.right <= vpBox.right + 1;
+        }),
+      )
+      .toBe(true);
   });
 });
 
@@ -286,11 +298,12 @@ test.describe('Carousel (autoplay — sticky stop)', () => {
   test('clicking start after sticky stop resumes rotation', async ({ page }) => {
     await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
     await el(page, 'rotation').click();
+    const stopped = await activeSlideTestid(page);
     await el(page, 'rotation').click();
     await el(page, 'before').focus();
     await page.mouse.move(0, 0);
     await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
-    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await expect.poll(() => activeSlideTestid(page)).not.toBe(stopped);
   });
 });
 
