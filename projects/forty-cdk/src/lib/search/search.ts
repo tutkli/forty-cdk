@@ -60,6 +60,7 @@ export class ForSearch extends TextValueControlBase implements FormValueControl<
    */
   clear(): void {
     this.value.set('');
+    this.#host.nativeElement.value = '';
   }
 
   /**
