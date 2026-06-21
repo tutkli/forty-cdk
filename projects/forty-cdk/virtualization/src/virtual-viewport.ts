@@ -18,7 +18,12 @@ import {
   type ForVirtualViewportContext,
 } from './virtual-viewport-context';
 import { injectInfiniteScroll } from './infinite-scroll';
-import { type ForVirtualizer, type VirtualItem, injectVirtualizer } from './virtualizer';
+import {
+  type ForVirtualizer,
+  type VirtualItem,
+  estimateTotal,
+  injectVirtualizer,
+} from './virtualizer';
 
 /** Default estimated item size, in CSS pixels, when none is provided. */
 const DEFAULT_ESTIMATE_SIZE = 50;
@@ -86,21 +91,19 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
    */
   readonly endReached = output<void>();
 
-  /** The total number of items in the full (non-windowed) list. */
-  readonly count = computed(() => this.virtualCount());
+  /**
+   * The total number of items in the full (non-windowed) list — the
+   * {@link ForVirtualViewportContext.count} the nested `*forVirtualFor` reads.
+   * Aliases the `virtualCount` input signal directly (no wrapper node).
+   */
+  readonly count = this.virtualCount;
 
-  readonly #estimateTotal = computed(() => {
-    const total = this.virtualCount();
+  readonly #estimator = computed<(index: number) => number>(() => {
     const estimate = this.estimateSize();
-    if (typeof estimate !== 'function') {
-      return total * estimate;
-    }
-    let sum = 0;
-    for (let index = 0; index < total; index++) {
-      sum += estimate(index);
-    }
-    return sum;
+    return typeof estimate === 'function' ? estimate : () => estimate;
   });
+
+  readonly #estimateTotal = computed(() => estimateTotal(this.count(), this.#estimator()));
 
   /** The items in the currently visible window plus overscan. */
   readonly virtualItems: Signal<readonly VirtualItem[]> = computed(
@@ -127,10 +130,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
       this.#virtualizer.set(
         injectVirtualizer({
           count: this.count,
-          estimateSize: (index) => {
-            const estimate = this.estimateSize();
-            return typeof estimate === 'function' ? estimate(index) : estimate;
-          },
+          estimateSize: (index) => this.#estimator()(index),
           scrollElement: this.#scrollElement,
           orientation: this.orientation(),
           overscan: this.overscan(),
