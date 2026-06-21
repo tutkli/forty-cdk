@@ -33,6 +33,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../_internal/vetoable-event/vetoable-event';
+import { clampToBounds, composeWithTime, serializeISODate } from '../_internal/datetime/serialize';
 import { ForCalendar } from '../calendar/calendar';
 import type { CalendarDateRange } from '../calendar/calendar-context';
 import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
@@ -413,22 +414,7 @@ export class ForDatePicker<D>
         if (value === null) {
           return [];
         }
-        const year = String(this.adapter.getYear(value)).padStart(4, '0');
-        const month = String(this.adapter.getMonth(value)).padStart(2, '0');
-        const day = String(this.adapter.getDate(value)).padStart(2, '0');
-        const date = `${year}-${month}-${day}`;
-        const granularity = this.granularity();
-        if (granularity === 'day') {
-          return [date];
-        }
-        const time = this.#time();
-        const hour = String(time.getHours(value)).padStart(2, '0');
-        const minute = String(time.getMinutes(value)).padStart(2, '0');
-        if (granularity === 'second') {
-          const second = String(time.getSeconds(value)).padStart(2, '0');
-          return [`${date}T${hour}:${minute}:${second}`];
-        }
-        return [`${date}T${hour}:${minute}`];
+        return [serializeISODate(this.adapter, value, this.granularity(), 'ForDatePicker')];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -490,20 +476,21 @@ export class ForDatePicker<D>
         // entered time-of-day. Reading `value()` here is safe because the
         // one-way binding means the calendar's own write didn't clobber it.
         if (selected !== null && this.granularity() !== 'day') {
-          const time = this.#time();
           const base = this.value() ?? selected;
           this.value.set(
-            this.#clampToBounds(
-              time.setTime(
-                selected,
-                time.getHours(base),
-                time.getMinutes(base),
-                time.getSeconds(base),
-              ),
+            clampToBounds(
+              this.adapter,
+              composeWithTime(this.#time(), selected, base),
+              this.minDate(),
+              this.maxDate(),
             ),
           );
         } else {
-          this.value.set(selected === null ? null : this.#clampToBounds(selected));
+          this.value.set(
+            selected === null
+              ? null
+              : clampToBounds(this.adapter, selected, this.minDate(), this.maxDate()),
+          );
         }
         this.markTouched();
         // A date-time picker stays open after a day is picked so the time can
@@ -534,7 +521,9 @@ export class ForDatePicker<D>
           return;
         }
         const next = value as D | null;
-        this.value.set(next === null ? null : this.#clampToBounds(next));
+        this.value.set(
+          next === null ? null : clampToBounds(this.adapter, next, this.minDate(), this.maxDate()),
+        );
         this.markTouched();
       });
       onCleanup(() => sub.unsubscribe());
@@ -544,18 +533,6 @@ export class ForDatePicker<D>
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
     return assertTimeCapable(this.adapter, 'ForDatePicker');
-  }
-
-  #clampToBounds(date: D): D {
-    const min = this.minDate();
-    if (min !== null && this.adapter.compare(date, min) < 0) {
-      return min;
-    }
-    const max = this.maxDate();
-    if (max !== null && this.adapter.compare(date, max) > 0) {
-      return max;
-    }
-    return date;
   }
 
   registerTrigger(el: HTMLElement): void {

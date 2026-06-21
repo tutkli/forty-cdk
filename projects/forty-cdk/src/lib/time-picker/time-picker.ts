@@ -30,6 +30,7 @@ import type {
 } from '../_internal/vetoable-event/vetoable-event';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
+import { serializeISOTime, timeSentinel } from '../_internal/datetime/serialize';
 import { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './build-time-slots';
 import {
   FOR_TIME_PICKER_CONTEXT,
@@ -302,7 +303,7 @@ export class ForTimePicker<D>
 
   readonly options = this.#controller.options;
 
-  readonly #sentinel = computed(() => this.adapter.createDate(2000, 1, 1));
+  readonly #sentinel = computed(() => timeSentinel(this.adapter));
 
   readonly #effectiveFormatOptions = computed<Intl.DateTimeFormatOptions>(() => {
     const options = this.formatOptions();
@@ -368,17 +369,7 @@ export class ForTimePicker<D>
         if (current === null) {
           return [];
         }
-        const hour = String(this.adapter.getHours(current)).padStart(2, '0');
-        const granularity = this.granularity();
-        if (granularity === 'hour') {
-          return [hour];
-        }
-        const minute = String(this.adapter.getMinutes(current)).padStart(2, '0');
-        if (granularity === 'minute') {
-          return [`${hour}:${minute}`];
-        }
-        const second = String(this.adapter.getSeconds(current)).padStart(2, '0');
-        return [`${hour}:${minute}:${second}`];
+        return [serializeISOTime(this.adapter, current, this.granularity())];
       }),
       disabled: this.effectiveDisabled,
     });

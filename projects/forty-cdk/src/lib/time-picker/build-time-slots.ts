@@ -1,4 +1,5 @@
 import type { TimeCapableDateAdapter } from '../_internal/date-adapter/date-adapter';
+import { secondsOfDay } from '../_internal/datetime/serialize';
 
 /** The time granularity at which the picker operates. */
 export type TimePickerGranularity = 'hour' | 'minute' | 'second';
@@ -52,11 +53,10 @@ function timeOfDaySeconds<D>(
   if (granularity === 'hour') {
     return h * 3600;
   }
-  const m = adapter.getMinutes(d);
   if (granularity === 'minute') {
-    return h * 3600 + m * 60;
+    return h * 3600 + adapter.getMinutes(d) * 60;
   }
-  return h * 3600 + m * 60 + adapter.getSeconds(d);
+  return secondsOfDay(adapter, d);
 }
 
 /**

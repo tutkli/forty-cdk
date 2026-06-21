@@ -23,6 +23,7 @@ import {
   type SegmentHandle,
   type SegmentType,
 } from '../_internal/datetime/segment-editor';
+import { clampToBounds, serializeISODate } from '../_internal/datetime/serialize';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -288,22 +289,7 @@ export class ForDateField<D>
         if (current === null) {
           return [];
         }
-        const year = String(this.adapter.getYear(current)).padStart(4, '0');
-        const month = String(this.adapter.getMonth(current)).padStart(2, '0');
-        const day = String(this.adapter.getDate(current)).padStart(2, '0');
-        const date = `${year}-${month}-${day}`;
-        const granularity = this.granularity();
-        if (granularity === 'day') {
-          return [date];
-        }
-        const time = this.#time();
-        const hour = String(time.getHours(current)).padStart(2, '0');
-        const minute = String(time.getMinutes(current)).padStart(2, '0');
-        if (granularity === 'second') {
-          const second = String(time.getSeconds(current)).padStart(2, '0');
-          return [`${date}T${hour}:${minute}:${second}`];
-        }
-        return [`${date}T${hour}:${minute}`];
+        return [serializeISODate(this.adapter, current, this.granularity(), 'ForDateField')];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -546,18 +532,6 @@ export class ForDateField<D>
         needSecond ? next.second! : 0,
       );
     }
-    this.value.set(this.#clampToBounds(created));
-  }
-
-  #clampToBounds(date: D): D {
-    const min = this.minDate();
-    if (min !== null && this.adapter.compare(date, min) < 0) {
-      return min;
-    }
-    const max = this.maxDate();
-    if (max !== null && this.adapter.compare(date, max) > 0) {
-      return max;
-    }
-    return date;
+    this.value.set(clampToBounds(this.adapter, created, this.minDate(), this.maxDate()));
   }
 }
