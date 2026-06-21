@@ -13,11 +13,11 @@ import {
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
   attachSwipeDismiss,
-  isScrollableAtEdge,
-  resolveSnapTarget,
   type SwipeDirection,
   type SwipeEventDetail,
 } from '../_internal/swipe-dismiss/swipe-dismiss';
+import { isScrollableAtEdge } from '../_internal/scroll-boundary/scroll-boundary';
+import { resolveSnapTarget } from '../_internal/snap-points/snap-points';
 import {
   type ForDrawerDragEvent,
   type ForDrawerReleaseEvent,
