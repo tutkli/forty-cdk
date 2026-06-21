@@ -110,6 +110,13 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     label: 'Forms & selection',
     primitives: [
       {
+        slug: 'button',
+        title: 'Button',
+        description:
+          'Turns any element — a native <button> or a custom host like <div> / <span> — into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-* hooks.',
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/button/',
+      },
+      {
         slug: 'field',
         title: 'Field',
         description:
@@ -128,6 +135,12 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
           'Attribute directives for single- and multi-line text: a string value() that auto-wires with Signal Forms and reflects every form state (empty, disabled, readonly, invalid …) as data-* / aria-* hooks.',
       },
       {
+        slug: 'search',
+        title: 'Search',
+        description:
+          "A role='searchbox' text input that mirrors its value to a signal and reflects validation state, paired with a clear button that self-hides while the field is empty. Reuses forInput's form-value wiring, so it auto-wires with Signal Forms and Field.",
+      },
+      {
         slug: 'number-input',
         title: 'Number Input',
         description:
@@ -139,6 +152,12 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         title: 'OTP Input',
         description:
           'A one-time-code / PIN field on the single-input model: typed and pasted characters fill styled slots, with masking, character filtering and a complete event.',
+      },
+      {
+        slug: 'file-upload',
+        title: 'File Upload',
+        description:
+          "A headless drag-and-drop / dialog file-selection zone: a visually-hidden native <input type='file'> stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.",
       },
       {
         slug: 'switch',
@@ -263,6 +282,20 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
         title: 'Toolbar',
         description: 'A container that groups a set of controls under roving-tabindex navigation.',
         apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/',
+      },
+      {
+        slug: 'breadcrumbs',
+        title: 'Breadcrumbs',
+        description:
+          "A labelled navigation landmark for a breadcrumb trail: links with aria-current='page' on the current page and decorative separators hidden from assistive technology.",
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/',
+      },
+      {
+        slug: 'pagination',
+        title: 'Pagination',
+        description:
+          "A navigation landmark that derives a visible page list with ellipsis gaps from page, count, siblingCount and boundaryCount, with previous / next buttons and aria-current='page' on the active page.",
+        apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html',
       },
       {
         slug: 'separator',

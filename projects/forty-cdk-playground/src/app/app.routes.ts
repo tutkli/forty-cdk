@@ -7,6 +7,28 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/accordion/accordion.page').then((m) => m.AccordionPage),
   },
   {
+    path: 'button',
+    loadComponent: () => import('./demos/button/button.page').then((m) => m.ButtonPage),
+  },
+  {
+    path: 'search',
+    loadComponent: () => import('./demos/search/search.page').then((m) => m.SearchPage),
+  },
+  {
+    path: 'file-upload',
+    loadComponent: () =>
+      import('./demos/file-upload/file-upload.page').then((m) => m.FileUploadPage),
+  },
+  {
+    path: 'breadcrumbs',
+    loadComponent: () =>
+      import('./demos/breadcrumbs/breadcrumbs.page').then((m) => m.BreadcrumbsPage),
+  },
+  {
+    path: 'pagination',
+    loadComponent: () => import('./demos/pagination/pagination.page').then((m) => m.PaginationPage),
+  },
+  {
     path: 'dialog',
     loadComponent: () => import('./demos/dialog/dialog.page').then((m) => m.DialogPage),
   },

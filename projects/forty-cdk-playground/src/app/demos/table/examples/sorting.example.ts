@@ -10,6 +10,7 @@ import {
   type TableSortDirection,
 } from 'forty-cdk';
 
+import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';
 import { COLUMN_LABELS, PEOPLE, type PersonColumn, personField } from './people';
@@ -26,6 +27,7 @@ import { COLUMN_LABELS, PEOPLE, type PersonColumn, personField } from './people'
     ForTableCell,
     ForTableSortHeader,
     ControlSwitch,
+    ControlSelect,
   ],
   template: `
     <playground-demo
@@ -46,6 +48,7 @@ import { COLUMN_LABELS, PEOPLE, type PersonColumn, personField } from './people'
                     [column]="column"
                     [direction]="directionFor(column)"
                     [disableClear]="disableClear()"
+                    [firstClickDirection]="firstClick()"
                     (sortChange)="onSort($event)"
                     class="tbl-cell tbl-sort"
                     scope="col"
@@ -71,6 +74,12 @@ import { COLUMN_LABELS, PEOPLE, type PersonColumn, personField } from './people'
       </div>
 
       <div controls class="pg-controls">
+        <app-control-select
+          label="firstClickDirection"
+          hint="The direction a freshly activated header sorts by first. 'descending' flips the entry pole so the first click sorts descending."
+          [options]="firstClickOptions"
+          [(value)]="firstClick"
+        />
         <app-control-switch
           label="disableClear"
           hint="When on, the cycle skips the unsorted step: clicking a sorted header toggles ascending ↔ descending instead of returning to none."
@@ -159,6 +168,12 @@ export class TableSortingExample {
 
   protected readonly sort = signal<TableSortDescriptor>({ column: '', direction: 'none' });
   protected readonly disableClear = signal(false);
+  protected readonly firstClick = signal<'ascending' | 'descending'>('ascending');
+
+  protected readonly firstClickOptions: readonly ControlOption<'ascending' | 'descending'>[] = [
+    { value: 'ascending', label: 'ascending' },
+    { value: 'descending', label: 'descending' },
+  ];
 
   protected readonly sortedRows = computed(() => {
     const { column, direction } = this.sort();
