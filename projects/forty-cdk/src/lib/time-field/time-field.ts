@@ -13,6 +13,12 @@ import {
   type SegmentHandle,
   type SegmentType,
 } from '../_internal/datetime/segment-editor';
+import {
+  composeWithTime,
+  secondsOfDay,
+  serializeISOTime,
+  timeSentinel,
+} from '../_internal/datetime/serialize';
 import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -266,17 +272,7 @@ export class ForTimeField<D>
         if (current === null) {
           return [];
         }
-        const hour = String(this.adapter.getHours(current)).padStart(2, '0');
-        const granularity = this.granularity();
-        if (granularity === 'hour') {
-          return [hour];
-        }
-        const minute = String(this.adapter.getMinutes(current)).padStart(2, '0');
-        if (granularity === 'minute') {
-          return [`${hour}:${minute}`];
-        }
-        const second = String(this.adapter.getSeconds(current)).padStart(2, '0');
-        return [`${hour}:${minute}:${second}`];
+        return [serializeISOTime(this.adapter, current, this.granularity())];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -411,7 +407,7 @@ export class ForTimeField<D>
       (!needMinute || next.minute !== null) &&
       (!needSecond || next.second !== null);
     if (complete) {
-      const base = this.value() ?? this.#sentinelDate();
+      const base = this.value() ?? timeSentinel(this.adapter);
       const composed = this.adapter.setTime(
         base,
         next.hour!,
@@ -424,37 +420,15 @@ export class ForTimeField<D>
     }
   }
 
-  #sentinelDate(): D {
-    return this.adapter.createDate(2000, 1, 1);
-  }
-
   #clampToBounds(date: D): D {
     const min = this.minTime();
-    if (min !== null && this.#compareTimeOfDay(date, min) < 0) {
-      return this.adapter.setTime(
-        date,
-        this.adapter.getHours(min),
-        this.adapter.getMinutes(min),
-        this.adapter.getSeconds(min),
-      );
+    if (min !== null && secondsOfDay(this.adapter, date) < secondsOfDay(this.adapter, min)) {
+      return composeWithTime(this.adapter, date, min);
     }
     const max = this.maxTime();
-    if (max !== null && this.#compareTimeOfDay(date, max) > 0) {
-      return this.adapter.setTime(
-        date,
-        this.adapter.getHours(max),
-        this.adapter.getMinutes(max),
-        this.adapter.getSeconds(max),
-      );
+    if (max !== null && secondsOfDay(this.adapter, date) > secondsOfDay(this.adapter, max)) {
+      return composeWithTime(this.adapter, date, max);
     }
     return date;
-  }
-
-  #compareTimeOfDay(a: D, b: D): number {
-    const seconds = (date: D): number =>
-      this.adapter.getHours(date) * 3600 +
-      this.adapter.getMinutes(date) * 60 +
-      this.adapter.getSeconds(date);
-    return seconds(a) - seconds(b);
   }
 }

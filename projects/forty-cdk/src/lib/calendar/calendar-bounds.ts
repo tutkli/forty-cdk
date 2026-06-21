@@ -1,6 +1,7 @@
 import { computed, type Signal } from '@angular/core';
 
 import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { clampToBounds } from '../_internal/datetime/serialize';
 
 /**
  * The reactive `[min, max]` bounds surface a `ForCalendar` root supplies to its
@@ -98,15 +99,9 @@ export class CalendarBounds<D> {
   /** Clamp `date` into `[min, max]`, returning the nearer bound when outside. */
   clamp(date: D): D {
     const adapter = this.#host.adapter;
-    const min = this.#host.min();
-    if (min !== null && compareDateOf(adapter, date, min) < 0) {
-      return min;
-    }
-    const max = this.#host.max();
-    if (max !== null && compareDateOf(adapter, date, max) > 0) {
-      return max;
-    }
-    return date;
+    return clampToBounds(adapter, date, this.#host.min(), this.#host.max(), (a, b) =>
+      compareDateOf(adapter, a, b),
+    );
   }
 
   #outOfBounds(firstDay: D, lastDay: D): boolean {
