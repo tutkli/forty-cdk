@@ -11,7 +11,8 @@ import { Collection } from '../collection/collection';
 import { firstEnabledHost } from '../collection/first-enabled-host';
 import { adoptHostId } from '../host-id/host-id';
 import type { IdGenerator } from '../id-generator/id-generator';
-import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
+import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../keyboard-navigation/move-in-collection';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
@@ -202,20 +203,8 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
     if (this.#deps.effectiveDisabled()) {
       return;
     }
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((o) => o.host === currentOption);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop,
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
+    const target = nextEnabledHandle(this.#items.items(), currentOption, action, { loop });
+    if (target === null) {
       return;
     }
     target.host.focus();

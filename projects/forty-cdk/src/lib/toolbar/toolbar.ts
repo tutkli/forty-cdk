@@ -4,9 +4,9 @@ import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
-  moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
@@ -116,19 +116,10 @@ export class ForToolbar implements ForToolbarContext {
     if (this.disabled()) {
       return;
     }
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
+    const target = nextEnabledHandle(this.#items.items(), currentItem, action, {
       loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
     });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
+    target?.host.focus();
   }
 
   isFirstFocusableItem(el: HTMLElement): boolean {

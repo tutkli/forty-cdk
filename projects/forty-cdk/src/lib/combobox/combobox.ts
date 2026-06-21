@@ -19,10 +19,8 @@ import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import { adoptHostId } from '../_internal/host-id/host-id';
 import { IdGenerator } from '../_internal/id-generator/id-generator';
-import {
-  moveIndex,
-  type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
+import { type WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import {
   createPointerSuppression,
   type PointerSuppression,
@@ -666,15 +664,8 @@ export class ForCombobox<T = string>
       action = 'last';
     }
 
-    const next = moveIndex(currentIndex, items.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
+    const target = nextEnabledHandle(items, currentIndex, action, { loop: this.loop() });
+    if (target === null) {
       return;
     }
     this.#activeId.set(target.id());

@@ -1,7 +1,8 @@
 import { type Signal } from '@angular/core';
 
 import { Collection, type CollectionHandle } from '../collection/collection';
-import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
+import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../keyboard-navigation/move-in-collection';
 import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
 
 /**
@@ -71,19 +72,10 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
   }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
-    const items = this.#items.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((i) => i.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
+    const target = nextEnabledHandle(this.#items.items(), currentItem, action, {
       loop: this.#loop(),
-      isDisabled: (i) => items[i]!.disabled(),
     });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
+    target?.host.focus();
   }
 
   handleTypeahead(event: KeyboardEvent): void {

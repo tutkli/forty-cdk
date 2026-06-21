@@ -15,9 +15,9 @@ import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import {
   type ListNavigationAction,
-  moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
@@ -251,19 +251,10 @@ export class ForMenubar implements ForMenubarContext {
     if (this.disabled()) {
       return;
     }
-    const items = this.#triggerCollection.items();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((t) => t.host === currentTrigger);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
+    const target = nextEnabledHandle(this.#triggerCollection.items(), currentTrigger, action, {
       loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
     });
-    if (next === null) {
-      return;
-    }
-    items[next]?.host.focus();
+    target?.host.focus();
   }
 
   openTrigger(
@@ -307,15 +298,10 @@ export class ForMenubar implements ForMenubarContext {
     }
     const currentValue = this.value();
     const currentIndex = items.findIndex((t) => t.value() === currentValue);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, direction, {
+    const target = nextEnabledHandle(items, currentIndex < 0 ? 0 : currentIndex, direction, {
       loop: this.loop(),
-      isDisabled: (i) => items[i]!.disabled(),
     });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
+    if (target === null) {
       return;
     }
     this.openTrigger(target.value(), 'first');
