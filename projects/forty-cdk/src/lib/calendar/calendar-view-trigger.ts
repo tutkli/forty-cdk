@@ -1,7 +1,7 @@
 import { Directive } from '@angular/core';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * The view-cycle button in the calendar header. Apply on a `<button>`. Each
@@ -24,7 +24,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarViewTrigger {
-  protected readonly ctx = injectCalendarContext('ForCalendarViewTrigger');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarViewTrigger');
 
   /** Label for the active view, e.g. `"June 2026"` / `"2026"` / `"2016 – 2027"`. */
   readonly label = this.ctx.viewTriggerLabel;

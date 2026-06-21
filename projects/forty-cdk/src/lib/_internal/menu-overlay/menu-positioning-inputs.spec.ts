@@ -1,10 +1,11 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { ForContextMenu } from '../../context-menu/context-menu';
 import { ForDropdownMenu } from '../../dropdown-menu/dropdown-menu';
 import { ForMenuSub } from '../../menu/menu-sub';
+import { MenubarMenuContext, type MenubarMenuHost } from '../../menubar/menubar-menu-context';
 import { MENU_POSITIONING_DEFAULTS } from './menu-positioning-inputs';
 
 @Component({
@@ -79,5 +80,54 @@ describe('menu positioning inputs drift guard', () => {
 
     expect(sub.sideOffset()).toBe(0);
     expect(sub.collisionPadding()).toBe(8);
+  });
+});
+
+/**
+ * Companion guard for the menubar's multiplexed `ForMenuContext`. It derives
+ * positioning from the active trigger, falling back to the shared
+ * `MENU_POSITIONING_DEFAULTS` for the non-seed inputs when no trigger is open.
+ * This pins those fallbacks to the single source so the bar can't drift away
+ * from the three roots (the audit's original copy-paste failure mode).
+ */
+describe('menubar menu context positioning fallback drift guard', () => {
+  function host(): MenubarMenuHost {
+    return {
+      value: signal(''),
+      disabled: signal(false),
+      dismissible: signal(true),
+      dir: signal('ltr'),
+      loop: signal(true),
+      activeTrigger: signal(null),
+      triggers: signal([]),
+      lastTriggerHost: signal(null),
+      closeOpen: () => {},
+      attachContentPointer: () => {},
+      detachContentPointer: () => {},
+      switchToSibling: () => {},
+    } as unknown as MenubarMenuHost;
+  }
+
+  function createContext(): MenubarMenuContext {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    return TestBed.runInInjectionContext(() => new MenubarMenuContext(host()));
+  }
+
+  it('falls back to the shared non-seed defaults with no active trigger', () => {
+    const ctx = createContext();
+
+    expect(ctx.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
+    expect(ctx.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
+    expect(ctx.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
+    expect(ctx.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
+    expect(ctx.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
+    expect(ctx.clipUntilPositioned()).toBe(MENU_POSITIONING_DEFAULTS.clipUntilPositioned);
+  });
+
+  it('seeds the per-root offsets matching the menubar trigger input defaults', () => {
+    const ctx = createContext();
+
+    expect(ctx.sideOffset()).toBe(4);
+    expect(ctx.collisionPadding()).toBe(8);
   });
 });

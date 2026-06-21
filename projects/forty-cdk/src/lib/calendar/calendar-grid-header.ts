@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * Marks the calendar grid's header rowgroup. Apply on a `<thead>` holding a
@@ -24,7 +24,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarGridHeader {
-  protected readonly ctx = injectCalendarContext('ForCalendarGridHeader');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarGridHeader');
 
   /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
   readonly weekDays = this.ctx.weekDays;

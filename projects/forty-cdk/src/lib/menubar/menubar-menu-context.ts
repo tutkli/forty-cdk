@@ -3,6 +3,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import { CloseReasonState, InitialFocusState } from '../_internal/menu-overlay/menu-focus-state';
 import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
+import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import type { ListNavigationAction } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type {
@@ -79,16 +80,28 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly side = computed(() => this.#host.activeTrigger()?.side());
   readonly align = computed(() => this.#host.activeTrigger()?.align());
   readonly sideOffset = computed(() => this.#host.activeTrigger()?.sideOffset() ?? 4);
-  readonly alignOffset = computed(() => this.#host.activeTrigger()?.alignOffset() ?? 0);
-  readonly avoidCollisions = computed(() => this.#host.activeTrigger()?.avoidCollisions() ?? true);
+  readonly alignOffset = computed(
+    () => this.#host.activeTrigger()?.alignOffset() ?? MENU_POSITIONING_DEFAULTS.alignOffset,
+  );
+  readonly avoidCollisions = computed(
+    () =>
+      this.#host.activeTrigger()?.avoidCollisions() ?? MENU_POSITIONING_DEFAULTS.avoidCollisions,
+  );
   readonly collisionPadding = computed(() => this.#host.activeTrigger()?.collisionPadding() ?? 8);
-  readonly arrowPadding = computed(() => this.#host.activeTrigger()?.arrowPadding() ?? 0);
-  readonly sticky = computed(() => this.#host.activeTrigger()?.sticky() ?? 'partial');
+  readonly arrowPadding = computed(
+    () => this.#host.activeTrigger()?.arrowPadding() ?? MENU_POSITIONING_DEFAULTS.arrowPadding,
+  );
+  readonly sticky = computed(
+    () => this.#host.activeTrigger()?.sticky() ?? MENU_POSITIONING_DEFAULTS.sticky,
+  );
   readonly hideWhenDetached = computed(
-    () => this.#host.activeTrigger()?.hideWhenDetached() ?? false,
+    () =>
+      this.#host.activeTrigger()?.hideWhenDetached() ?? MENU_POSITIONING_DEFAULTS.hideWhenDetached,
   );
   readonly clipUntilPositioned = computed(
-    () => this.#host.activeTrigger()?.clipUntilPositioned() ?? true,
+    () =>
+      this.#host.activeTrigger()?.clipUntilPositioned() ??
+      MENU_POSITIONING_DEFAULTS.clipUntilPositioned,
   );
   readonly loop: Signal<boolean>;
   readonly initialFocus = this.#initialFocusState.target;

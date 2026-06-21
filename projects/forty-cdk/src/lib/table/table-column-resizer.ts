@@ -15,7 +15,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import { clampToRange, startPointerResize } from '../_internal/resize-geometry/resize-geometry';
-import { injectTableContext } from './table-context';
+import { injectTableMeasurement } from './table-context';
 
 /** Payload of `resizeCommit`: which column was resized and its committed width (px). */
 export interface TableResizeDescriptor {
@@ -67,7 +67,7 @@ export interface TableResizeDescriptor {
   },
 })
 export class ForTableColumnResizer {
-  protected readonly ctx = injectTableContext('ForTableColumnResizer');
+  protected readonly ctx = injectTableMeasurement('ForTableColumnResizer');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /** Column identity; included in the `resizeCommit` payload and the published CSS var name. */
