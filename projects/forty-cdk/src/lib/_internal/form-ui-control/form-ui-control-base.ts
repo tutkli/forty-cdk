@@ -143,12 +143,29 @@ export abstract class FormUiControlBase {
     this.touch.emit();
   }
 
+  /**
+   * The element the four form-state `data-*` booleans (`data-touched` /
+   * `data-dirty` / `data-pending` / `data-invalid`) are reflected onto. Defaults
+   * to the directive host — correct when the host carries the control's styling
+   * surface. Override (returning `null` until it exists) when the reflected
+   * element is a child the directive injects, e.g. `ForOtpInput`'s real
+   * `<input>` rather than its `role="group"` host. Read reactively inside the
+   * reflection effect, so a returned signal re-targets once the element appears.
+   */
+  protected fieldStateReflectionTarget(): HTMLElement | null {
+    return this.#hostEl;
+  }
+
   constructor() {
     effect(() => {
-      this.#hostEl.toggleAttribute('data-touched', this.touched());
-      this.#hostEl.toggleAttribute('data-dirty', this.dirty());
-      this.#hostEl.toggleAttribute('data-pending', this.pending());
-      this.#hostEl.toggleAttribute('data-invalid', this.invalid());
+      const target = this.fieldStateReflectionTarget();
+      if (!target) {
+        return;
+      }
+      target.toggleAttribute('data-touched', this.touched());
+      target.toggleAttribute('data-dirty', this.dirty());
+      target.toggleAttribute('data-pending', this.pending());
+      target.toggleAttribute('data-invalid', this.invalid());
     });
     injectFieldWiring({
       invalid: this.invalid,

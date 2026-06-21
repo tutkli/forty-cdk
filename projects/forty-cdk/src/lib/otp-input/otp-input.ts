@@ -15,10 +15,11 @@ import {
   PLATFORM_ID,
   signal,
 } from '@angular/core';
-import type { FormValueControl, ValidationError } from '@angular/forms/signals';
+import type { FormValueControl } from '@angular/forms/signals';
 
-import { FOR_FIELD_CONTEXT, type FieldControlHandle } from '../_internal/field/field-wiring';
-import { FOR_FIELDSET_CONTEXT } from '../_internal/fieldset/fieldset-context';
+import { FOR_FIELD_CONTEXT } from '../_internal/field/field-wiring';
+import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
+import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 
@@ -49,9 +50,12 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
  * (label / description / error) with no extra markup.
  *
  * Because the focusable, submittable control is the injected `<input>` and not
- * the `role="group"` host, `ForOtpInput` wires form-control reflection, the
- * field association, and native `name` submission onto that input itself rather
- * than extending `FormUiControlBase` (whose helpers target the directive host).
+ * the `role="group"` host, `ForOtpInput` redirects `FormUiControlBase`'s
+ * host-targeted helpers onto that input: it overrides `fieldLabelledElement()`
+ * (so the field association lands on the input) and `fieldStateReflectionTarget()`
+ * (so the form-state `data-*` reflect there), and reflects the OTP-specific input
+ * attributes (`maxLength` / `inputmode` / `autocomplete` / `pattern` / `name`)
+ * and ARIA on the input itself.
  *
  * The host gets `data-complete` (while every slot is filled) and `data-disabled`
  * for CSS hooks; the real input carries `data-disabled` / `data-readonly` plus
@@ -86,13 +90,15 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
   },
   providers: [{ provide: FOR_OTP_INPUT_CONTEXT, useExisting: ForOtpInput }],
 })
-export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext {
+export class ForOtpInput
+  extends FormUiControlBase
+  implements FormValueControl<string>, ForOtpInputContext
+{
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #field = inject(FOR_FIELD_CONTEXT, { optional: true });
-  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /** The injected real `<input>`, once created in the browser. */
   readonly #inputEl = signal<HTMLInputElement | null>(null);
@@ -138,57 +144,6 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
    */
   readonly ariaLabel = input<string | null>(null);
 
-  /**
-   * When true, interaction is ignored and `aria-disabled` / `data-disabled` are
-   * reflected. Behavior and ARIA gate off {@link effectiveDisabled}, which also
-   * folds in a surrounding disabled `[forFieldset]`.
-   */
-  readonly disabled = input(false, { transform: booleanAttribute });
-
-  /**
-   * The control's own {@link disabled} OR'd with a surrounding disabled
-   * `[forFieldset]`. Drives interaction gating and `aria-disabled` /
-   * `data-disabled`, so a disabled group disables the OTP input too.
-   */
-  readonly effectiveDisabled = computed(
-    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
-  );
-
-  /** When true, interaction is ignored but the control stays focusable; `aria-readonly="true"`. */
-  readonly readonly = input(false, { transform: booleanAttribute });
-
-  /** Reflected as `aria-required="true"` when truthy. */
-  readonly required = input(false, { transform: booleanAttribute });
-
-  /** Reflected as `aria-invalid="true"` and `data-invalid` when truthy. */
-  readonly invalid = input(false, { transform: booleanAttribute });
-
-  /** Reflected as `aria-busy="true"` and `data-pending` when truthy. */
-  readonly pending = input(false, { transform: booleanAttribute });
-
-  /** Reflected as `data-dirty` when truthy. */
-  readonly dirty = input(false, { transform: booleanAttribute });
-
-  /** When non-empty, reflected as the real input's `name` for native form submission. */
-  readonly name = input<string>('');
-
-  /** Validation errors surfaced by Signal Forms. */
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
-
-  /**
-   * Set to true on blur. Two-way bindable for standalone consumers; under
-   * `[formField]` the directive pushes the field's touched state down through
-   * this input.
-   */
-  readonly touched = model<boolean>(false);
-
-  /**
-   * Emitted on blur alongside the `touched` flip. `[formField]` listens to
-   * this output to mark the field touched — since Signal Forms v22 the
-   * `touched` input is write-only from the form's perspective.
-   */
-  readonly touch = output<void>();
-
   /** Fires when every slot is filled (by typing or paste). */
   readonly valueComplete = output<string>();
 
@@ -222,8 +177,13 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
   });
 
   constructor() {
-    // Reflect form-control attributes onto the injected real input — not the
-    // role="group" host. Runs once the input exists.
+    super();
+
+    // Reflect the OTP-specific input attributes and ARIA onto the injected real
+    // input — not the role="group" host. The four form-state data-* booleans and
+    // the field association are reflected onto the same input by the base, via
+    // the fieldStateReflectionTarget() / fieldLabelledElement() overrides below.
+    // Runs once the input exists.
     effect(() => {
       const el = this.#inputEl();
       if (!el) {
@@ -245,43 +205,12 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       setAttr(el, 'aria-busy', this.pending() ? 'true' : null);
       el.toggleAttribute('data-disabled', this.effectiveDisabled());
       el.toggleAttribute('data-readonly', this.readonly());
-      el.toggleAttribute('data-touched', this.touched());
-      el.toggleAttribute('data-dirty', this.dirty());
-      el.toggleAttribute('data-pending', this.pending());
-      el.toggleAttribute('data-invalid', this.invalid());
     });
 
     // Mirror external value writes (consumer `[(value)]` / `[formField]`) back
-    // to the input while it isn't focused — assigning `.value` mid-edit would
-    // jump the caret. Live typing flows in through the `input` listener.
-    effect(() => {
-      const el = this.#inputEl();
-      if (!el) {
-        return;
-      }
-      const next = this.#clampedValue();
-      if (this.#document.activeElement !== el && el.value !== next) {
-        el.value = next;
-      }
-    });
-
-    // Field association: id + aria-* on the input (mirrors injectFieldWiring,
-    // but targeting the injected input rather than the directive host).
-    const field = this.#field;
-    if (field) {
-      effect(() => {
-        const el = this.#inputEl();
-        if (!el) {
-          return;
-        }
-        if (!el.getAttribute('id')) {
-          el.setAttribute('id', field.controlId());
-        }
-        setAttr(el, 'aria-labelledby', field.labelledBy());
-        setAttr(el, 'aria-describedby', field.describedBy());
-        setAttr(el, 'aria-errormessage', field.errorMessageId());
-      });
-    }
+    // to the input while it isn't focused. Live typing flows in through the
+    // `input` listener.
+    mirrorUnfocusedValue(this.#inputEl, this.#clampedValue);
 
     // Create the single real input after hydration (browser only), so the
     // server-rendered markup stays the group + slots and there is no hydration
@@ -305,8 +234,7 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
       });
       el.addEventListener('blur', () => {
         this.#focused.set(false);
-        this.touched.set(true);
-        this.touch.emit();
+        this.markTouched();
       });
       el.addEventListener('click', () => this.#syncSelection());
       el.addEventListener('keyup', () => this.#syncSelection());
@@ -314,21 +242,27 @@ export class ForOtpInput implements FormValueControl<string>, ForOtpInputContext
 
       this.#inputEl.set(el);
 
-      if (field) {
-        const handle: FieldControlHandle = {
-          host: el,
-          invalid: this.invalid,
-          required: this.required,
-          disabled: this.effectiveDisabled,
-          touched: this.touched,
-          errors: this.errors,
-        };
-        field.registerControl(handle);
-        this.#destroyRef.onDestroy(() => field.unregisterControl(handle));
-      }
-
       this.#destroyRef.onDestroy(() => el.remove());
     });
+  }
+
+  /**
+   * The injected real `<input>` is the focusable, submittable control, so the
+   * surrounding `[forField]` associates with it rather than the `role="group"`
+   * host. Returns `null` until the input is created (after hydration), at which
+   * point the field-wiring effect re-targets it. See the Select precedent.
+   */
+  protected override fieldLabelledElement(): HTMLElement | null {
+    return this.#inputEl();
+  }
+
+  /**
+   * The four form-state `data-*` booleans reflect onto the injected real
+   * `<input>`, alongside the OTP-specific `data-disabled` / `data-readonly`,
+   * rather than the `role="group"` host. `null` until the input exists.
+   */
+  protected override fieldStateReflectionTarget(): HTMLElement | null {
+    return this.#inputEl();
   }
 
   /** Move focus to the real input. Implements `FormUiControl.focus`. */
