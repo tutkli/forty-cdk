@@ -3,6 +3,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import type { DragPreview } from '../_internal/drag-session/drag-preview';
 
 /** A registered draggable item, as seen by its drop list. */
 export interface ForDraggableHandle {
@@ -56,13 +57,14 @@ export interface ForDropListContext {
   /**
    * Begin a pointer drag for `el` at viewport point `point`. Sets up the same session state as a
    * keyboard lift. `preview` is the floating element supplied by the draggable (a consumer
-   * `[forDragPreview]` template); when omitted, the list creates the default cloned preview.
+   * `[forDragPreview]` template) — either a full {@link DragPreview} or the minimal
+   * `{ moveTo, destroy }` shape; when omitted, the list creates the default cloned preview.
    * Returns the source index, or `-1` if it could not lift.
    */
   pointerLift(
     el: HTMLElement,
     point: { x: number; y: number },
-    preview?: { moveTo(x: number, y: number): void; destroy(): void } | null,
+    preview?: DragPreview | { moveTo(x: number, y: number): void; destroy(): void } | null,
   ): number;
   /** Update the live pointer drop target + preview position. No-op if nothing is lifted. */
   pointerMove(point: { x: number; y: number }): void;
