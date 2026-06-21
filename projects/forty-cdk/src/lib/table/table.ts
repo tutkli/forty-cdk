@@ -1,6 +1,14 @@
-import { computed, Directive, ElementRef, inject, input, model, signal } from '@angular/core';
+import {
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+  type Signal,
+  signal,
+} from '@angular/core';
 
-import { SelectionModel } from '../_internal/selection-model/selection-model';
 import { injectElementSize } from '../_internal/element-size/element-size';
 import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
@@ -25,6 +33,8 @@ import {
   type TableSelectAllState,
   type TableVirtualRowNavigation,
 } from './table-context';
+import { TableRowSelection } from './table-row-selection';
+import { TableExpansion } from './table-expansion';
 
 /** Grid actions whose target may lie on a row outside the rendered virtualized window. */
 const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
@@ -165,11 +175,6 @@ export class ForTable implements ForTableContext {
   readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
   readonly #firstEnabledCell = computed(() => firstEnabledHost(this.#flatCells()));
 
-  readonly #selection = new SelectionModel<unknown>(this.selection, {
-    multiple: computed(() => this.selectionMode() === 'multiple'),
-    compareWith: (a, b) => this.compareWith()(a, b),
-  });
-  readonly #anchorValue = signal<unknown>(undefined);
   readonly #registeredValues = computed<readonly unknown[]>(() =>
     this.#rows
       .items()
@@ -179,43 +184,25 @@ export class ForTable implements ForTableContext {
   readonly #aggregateValues = computed<readonly unknown[]>(
     () => this.selectableValues() ?? this.#registeredValues(),
   );
-  readonly selectAllState = computed<TableSelectAllState>(() => {
-    const values = this.#aggregateValues();
-    if (values.length === 0) {
-      return 'none';
-    }
-    let count = 0;
-    for (const v of values) {
-      if (this.#selection.isSelected(v)) {
-        count += 1;
-      }
-    }
-    if (count === 0) {
-      return 'none';
-    }
-    return count === values.length ? 'all' : 'some';
+
+  readonly #selection = new TableRowSelection({
+    selection: this.selection,
+    selectionMode: this.selectionMode,
+    selectionBehavior: this.selectionBehavior,
+    compareWith: this.compareWith,
+    aggregateValues: this.#aggregateValues,
+  });
+
+  readonly selectAllState: Signal<TableSelectAllState> = this.#selection.selectAllState;
+
+  readonly #expansion = new TableExpansion({
+    expanded: this.expanded,
+    compareWith: this.compareWith,
   });
 
   readonly #rowHierarchy = computed(() =>
     computeFlatHierarchy(this.#rows.items().map((row) => row.level())),
   );
-
-  #isExpanded(value: unknown): boolean {
-    return this.expanded().some((v) => this.compareWith()(v, value));
-  }
-
-  #setExpanded(value: unknown, open: boolean): void {
-    if (value === undefined) {
-      return;
-    }
-    const current = this.expanded();
-    const has = this.#isExpanded(value);
-    if (open && !has) {
-      this.expanded.set([...current, value]);
-    } else if (!open && has) {
-      this.expanded.set(current.filter((v) => !this.compareWith()(v, value)));
-    }
-  }
 
   #rowOfCell(cellHost: HTMLElement): ForTableRowHandle | undefined {
     return this.#rows.items().find((row) => row.cells().some((cell) => cell.host === cellHost));
@@ -254,14 +241,11 @@ export class ForTable implements ForTableContext {
   }
 
   isRowExpanded(value: unknown): boolean {
-    return this.#isExpanded(value);
+    return this.#expansion.isExpanded(value);
   }
 
   toggleRowExpansion(value: unknown): void {
-    if (value === undefined) {
-      return;
-    }
-    this.#setExpanded(value, !this.#isExpanded(value));
+    this.#expansion.toggle(value);
   }
 
   rowPosinset(host: HTMLElement): number {
@@ -322,63 +306,18 @@ export class ForTable implements ForTableContext {
   }
 
   toggleRowSelection(value: unknown): void {
-    if (this.selectionMode() === 'none') {
-      return;
-    }
     this.#selection.toggle(value);
-    this.#anchorValue.set(value);
   }
 
   selectRow(
     value: unknown,
     modifiers?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
   ): void {
-    const mode = this.selectionMode();
-    if (mode === 'none') {
-      return;
-    }
-    if (this.selectionBehavior() === 'toggle') {
-      this.#selection.toggle(value);
-      this.#anchorValue.set(value);
-      return;
-    }
-    const multiple = mode === 'multiple';
-    if (multiple && modifiers?.shiftKey) {
-      this.#selectRange(value);
-      return;
-    }
-    if (multiple && (modifiers?.ctrlKey || modifiers?.metaKey)) {
-      this.#selection.toggle(value);
-      this.#anchorValue.set(value);
-      return;
-    }
-    this.#selection.setSelection(value);
-    this.#anchorValue.set(value);
+    this.#selection.select(value, modifiers);
   }
 
   toggleSelectAll(): void {
-    if (this.selectionMode() !== 'multiple') {
-      return;
-    }
-    if (this.selectAllState() === 'all') {
-      this.#selection.clear();
-    } else {
-      this.#selection.select(...this.#aggregateValues());
-    }
-  }
-
-  #selectRange(toValue: unknown): void {
-    const values = this.#aggregateValues();
-    const equals = this.compareWith();
-    const toIdx = values.findIndex((v) => equals(v, toValue));
-    if (toIdx < 0) {
-      return;
-    }
-    const anchor = this.#anchorValue();
-    const anchorIdx = anchor === undefined ? -1 : values.findIndex((v) => equals(v, anchor));
-    const start = anchorIdx < 0 ? toIdx : anchorIdx;
-    const [lo, hi] = start <= toIdx ? [start, toIdx] : [toIdx, start];
-    this.#selection.setSelection(...values.slice(lo, hi + 1));
+    this.#selection.toggleSelectAll();
   }
 
   #rowValueOfCell(cellHost: HTMLElement): unknown {
@@ -394,35 +333,56 @@ export class ForTable implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
-    if (event.key === ' ' && event.target === host && this.selectionMode() !== 'none') {
-      const value = this.#rowValueOfCell(host);
-      if (value !== undefined) {
-        event.preventDefault();
-        this.#selection.toggle(value);
-        this.#anchorValue.set(value);
-        return;
-      }
+    if (this.#handleSelectionKeydown(event, host)) {
+      return;
     }
-    if (this.mode() === 'treegrid') {
-      const intent = resolveTreegridExpandCollapse(event, this.dir());
-      if (intent !== null) {
-        const row = this.#rowOfCell(host);
-        if (row?.expandable()) {
-          const value = row.value();
-          const open = this.#isExpanded(value);
-          if (intent === 'expand' && !open) {
-            event.preventDefault();
-            this.#setExpanded(value, true);
-            return;
-          }
-          if (intent === 'collapse' && open) {
-            event.preventDefault();
-            this.#setExpanded(value, false);
-            return;
-          }
-        }
-      }
+    if (this.#handleExpansionKeydown(event, host)) {
+      return;
     }
+    this.#handleGridNavigationKeydown(event, host);
+  }
+
+  #handleSelectionKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
+    if (event.key !== ' ' || event.target !== host || this.selectionMode() === 'none') {
+      return false;
+    }
+    const value = this.#rowValueOfCell(host);
+    if (value === undefined) {
+      return false;
+    }
+    event.preventDefault();
+    this.#selection.toggle(value);
+    return true;
+  }
+
+  #handleExpansionKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
+    if (this.mode() !== 'treegrid') {
+      return false;
+    }
+    const intent = resolveTreegridExpandCollapse(event, this.dir());
+    if (intent === null) {
+      return false;
+    }
+    const row = this.#rowOfCell(host);
+    if (!row?.expandable()) {
+      return false;
+    }
+    const value = row.value();
+    const open = this.#expansion.isExpanded(value);
+    if (intent === 'expand' && !open) {
+      event.preventDefault();
+      this.#expansion.setExpanded(value, true);
+      return true;
+    }
+    if (intent === 'collapse' && open) {
+      event.preventDefault();
+      this.#expansion.setExpanded(value, false);
+      return true;
+    }
+    return false;
+  }
+
+  #handleGridNavigationKeydown(event: KeyboardEvent, host: HTMLElement): void {
     const cols = this.#cols();
     const cells = this.#flatCells();
     if (cols === 0 || cells.length === 0) {
