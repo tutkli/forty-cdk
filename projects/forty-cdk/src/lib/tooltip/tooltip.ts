@@ -408,6 +408,34 @@ export class ForTooltip implements ForTooltipContext {
     this.#hoverIntent.cancelPending();
   }
 
+  /**
+   * Imperatively opens the tooltip — for programmatic control beyond hover and
+   * focus (e.g. a design-system wrapper driving the tooltip from a
+   * text-truncation observer). Schedules the show after the resolved
+   * `openDelay` (instant when the delay is `0` or the scope's skip-delay window
+   * is active) and applies the same gates as a hover / focus open: a no-op
+   * while `disabled`, and a no-op under `showOnOverflow` when the trigger's own
+   * text is not truncated. For an instant, unconditional open that bypasses the
+   * delay and both gates, write the `[(open)]` model directly (`open.set(true)`).
+   */
+  show(): void {
+    if (this.#suppressedByOverflow()) {
+      return;
+    }
+    this.#hoverIntent.scheduleOpen();
+  }
+
+  /**
+   * Imperatively closes the tooltip, mirroring a hover-leave / blur close:
+   * schedules the hide after the resolved `closeDelay` (instant when the delay
+   * is `0`) and disarms the hoverable-content grace bridge. For an instant
+   * close that ignores `closeDelay`, write the `[(open)]` model directly
+   * (`open.set(false)`).
+   */
+  hide(): void {
+    this.scheduleClose('hover');
+  }
+
   /** Close only when no keep-alive source (trigger hover/focus, content hover) is active. */
   #scheduleCloseIfInactive(): void {
     if (this.#triggerHovered || this.#triggerFocused || this.#contentHovered) {

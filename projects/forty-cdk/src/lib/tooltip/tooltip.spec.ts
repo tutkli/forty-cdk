@@ -555,6 +555,121 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('show() / hide() imperative API', () => {
+    it('show() opens the tooltip after openDelay', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      tooltip.show();
+
+      vi.advanceTimersByTime(699);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+
+    it('hide() closes the tooltip after closeDelay, not before', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+
+      vi.useFakeTimers();
+      tooltip.hide();
+
+      vi.advanceTimersByTime(299);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('show() is a no-op while disabled', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isDisabled.set(true);
+      await flush(r.fixture);
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+
+      vi.useFakeTimers();
+      tooltip.show();
+      vi.advanceTimersByTime(2_000);
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('show() is a no-op under showOnOverflow when the trigger reports no overflow', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0" showOnOverflow>
+            <button type="button" forTooltipTrigger>Fits</button>
+            <div forTooltipContent>Fits</div>
+          </div>
+        `,
+      })
+      class OverflowHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(OverflowHost);
+      await flush(r.fixture);
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+
+      tooltip.show();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('reflects show() / hide() through data-state without Zone.js', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [openDelay]="0" [closeDelay]="0">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {}
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const tooltip = r.fixture.debugElement
+        .query(By.directive(ForTooltip))
+        .injector.get(ForTooltip);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      tooltip.show();
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      tooltip.hide();
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+    });
+  });
+
   describe('floating-ui positioning', () => {
     it('writes a position and data-placement on the content once open', async () => {
       const r = renderHost(TooltipHost);

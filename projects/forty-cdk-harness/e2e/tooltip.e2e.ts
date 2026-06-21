@@ -42,6 +42,29 @@ test.describe('Tooltip', () => {
     await expect(el(page, 'overflow-tooltip')).toBeVisible();
   });
 
+  test('show() / hide() imperatively open and close the tooltip', async ({ page }) => {
+    await gotoFixture(page, 'tooltip');
+
+    await el(page, 'imp-show').click();
+    await expect(el(page, 'tooltip')).toBeVisible();
+
+    await el(page, 'imp-hide').click();
+    await expect(el(page, 'tooltip')).toHaveCount(0);
+  });
+
+  test('show() honors showOnOverflow: opens a truncated trigger, no-ops a fitting one', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tooltip');
+
+    await el(page, 'show-fit').click();
+    await page.waitForTimeout(100);
+    await expect(el(page, 'fit-tooltip')).toHaveCount(0);
+
+    await el(page, 'show-overflow').click();
+    await expect(el(page, 'overflow-tooltip')).toBeVisible();
+  });
+
   test('hoverableContent keeps the tooltip open when the pointer enters the content', async ({
     page,
   }) => {
