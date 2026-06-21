@@ -1,5 +1,4 @@
 import {
-  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -24,17 +23,7 @@ import {
   resolveDropTarget,
   type DropContainerGeometry,
 } from '../_internal/drag-session/drag-geometry';
-import {
-  fencePlaceholderIndex,
-  placeholderInsertion,
-} from '../_internal/drag-session/placeholder-position';
-import {
-  createDragPreview,
-  wrapPreview,
-  type DragPreview,
-} from '../_internal/drag-session/drag-preview';
-import { clampPreviewPosition } from '../_internal/drag-session/clamp-preview';
-import { playFlip, type FlipRect } from '../_internal/drag-session/flip';
+import type { DragPreview } from '../_internal/drag-session/drag-preview';
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
   type ListNavigationAction,
@@ -54,6 +43,9 @@ import {
 import { createAutoScroller, type AutoScroller } from '../_internal/drag-session/auto-scroll';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
+import { PreviewController } from './preview-controller';
+import { PlaceholderSorter } from './placeholder-sorter';
+import { ReorderAnimator } from './reorder-animator';
 
 /**
  * Optional DI seam overriding the fallback `orientation` of every `[forDropList]` in scope.
@@ -189,15 +181,10 @@ export class ForDropList implements ForDropListContext {
   readonly #flatIndex = signal(0);
   readonly #dragOver = signal<number | null>(null);
 
-  #preview: DragPreview | null = null;
-  #grabOffsetX = 0;
-  #grabOffsetY = 0;
-  #previewSize: { width: number; height: number } = { width: 0, height: 0 };
-  #lockOrigin: { x: number; y: number } = { x: 0, y: 0 };
-  #boundaryEl: HTMLElement | null = null;
+  #previewController: PreviewController | null = null;
+  #sorter: PlaceholderSorter | null = null;
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
-  #placeholderNodes: readonly Node[] | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -308,26 +295,30 @@ export class ForDropList implements ForDropListContext {
   pointerLift(
     el: HTMLElement,
     point: { x: number; y: number },
-    preview?: { moveTo(x: number, y: number): void; destroy(): void } | null,
+    preview?: DragPreview | { moveTo(x: number, y: number): void; destroy(): void } | null,
   ): number {
     const from = this.#beginLift(el);
     if (from < 0) {
       return -1;
     }
     if (this.#isBrowser) {
-      const rect = el.getBoundingClientRect();
-      this.#grabOffsetX = point.x - rect.left;
-      this.#grabOffsetY = point.y - rect.top;
-      this.#previewSize = { width: rect.width, height: rect.height };
-      this.#lockOrigin = { x: point.x - this.#grabOffsetX, y: point.y - this.#grabOffsetY };
-      this.#boundaryEl = this.#resolveBoundary();
-      this.#preview = preview
-        ? 'settle' in preview
-          ? (preview as DragPreview)
-          : wrapPreview(preview)
-        : createDragPreview(el, this.#document);
-      const topLeft = this.#clampedPreviewTopLeft(point);
-      this.#preview.moveTo(topLeft.x, topLeft.y);
+      this.#previewController = new PreviewController({
+        source: el,
+        point,
+        preview,
+        doc: this.#document,
+        boundary: this.#resolveBoundary(),
+        lockAxis: this.lockAxis,
+      });
+      if (this.liveSort()) {
+        this.#sorter = new PlaceholderSorter({
+          source: this,
+          lifted: el,
+          doc: this.#document,
+          sourceItems: this.#items.items,
+          originIndex: () => this.#items.indexOfHost(el),
+        });
+      }
     }
     return from;
   }
@@ -357,8 +348,7 @@ export class ForDropList implements ForDropListContext {
         .map((h) => h.host.getBoundingClientRect()),
     }));
     const target = resolveDropTarget(point, geoms, this.orientation(), this.dir());
-    const topLeft = this.#clampedPreviewTopLeft(point);
-    this.#preview?.moveTo(topLeft.x, topLeft.y);
+    this.#previewController?.moveTo(point);
     if (!target) {
       return;
     }
@@ -377,13 +367,7 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flat);
     if (changed) {
       const targetCtx = containers[target.containerIndex]!;
-      if (this.liveSort()) {
-        this.#movePlaceholder(
-          targetCtx,
-          this.#fencedPlaceholderIndex(targetCtx, target.index, lifted),
-          lifted,
-        );
-      }
+      this.#sorter?.onTargetChange(targetCtx, target.index);
       const label = (lifted.textContent ?? '').trim();
       this.#announcer.announce(
         this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
@@ -398,18 +382,6 @@ export class ForDropList implements ForDropListContext {
       return null;
     }
     return typeof boundary === 'string' ? this.host.closest<HTMLElement>(boundary) : boundary;
-  }
-
-  #clampedPreviewTopLeft(point: { x: number; y: number }): { x: number; y: number } {
-    const desired = { x: point.x - this.#grabOffsetX, y: point.y - this.#grabOffsetY };
-    const boundaryRect = this.#boundaryEl?.getBoundingClientRect() ?? null;
-    return clampPreviewPosition(
-      desired,
-      this.#previewSize,
-      boundaryRect,
-      this.lockAxis(),
-      this.#lockOrigin,
-    );
   }
 
   #onAutoScrollFrame(): void {
@@ -495,8 +467,15 @@ export class ForDropList implements ForDropListContext {
     const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
     const animate =
       this.animateReorder() && this.#isBrowser && !this.#prefersReducedMotion() && moved;
-    const preview = this.#preview;
-    const first = animate ? this.#captureFirstRects(connected) : null;
+    const preview = this.#previewController?.preview ?? null;
+    const animator = animate
+      ? new ReorderAnimator({
+          containers: [this, ...connected],
+          injector: this.#injector,
+          win: this.#document.defaultView,
+        })
+      : null;
+    animator?.captureFirst();
 
     this.dragDrop.emit({
       item,
@@ -510,45 +489,12 @@ export class ForDropList implements ForDropListContext {
       'assertive',
     );
 
-    if (animate && first) {
-      this.#scheduleReorderAnimation(first, liftedHost, preview);
+    if (animator) {
+      animator.schedule(liftedHost, preview);
       this.#teardown(connected, true);
     } else {
       this.#teardown(connected);
     }
-  }
-
-  #captureFirstRects(connected: readonly ForDropListContext[]): Map<HTMLElement, FlipRect> {
-    const map = new Map<HTMLElement, FlipRect>();
-    for (const ctx of [this as ForDropListContext, ...connected]) {
-      for (const h of ctx.items()) {
-        const r = h.host.getBoundingClientRect();
-        map.set(h.host, { left: r.left, top: r.top });
-      }
-    }
-    return map;
-  }
-
-  #scheduleReorderAnimation(
-    first: ReadonlyMap<HTMLElement, FlipRect>,
-    liftedHost: HTMLElement,
-    preview: DragPreview | null,
-  ): void {
-    const win = this.#document.defaultView;
-    afterNextRender(
-      () => {
-        playFlip({ first, win, exclude: preview ? liftedHost : null });
-        if (preview) {
-          if (liftedHost.isConnected && win) {
-            const r = liftedHost.getBoundingClientRect();
-            preview.settle(r.left, r.top, win);
-          } else {
-            preview.destroy();
-          }
-        }
-      },
-      { injector: this.#injector },
-    );
   }
 
   cancel(): void {
@@ -566,40 +512,7 @@ export class ForDropList implements ForDropListContext {
   }
 
   setLivePlaceholder(nodes: readonly Node[] | null): void {
-    this.#placeholderNodes = nodes;
-  }
-
-  #fencedPlaceholderIndex(
-    targetCtx: ForDropListContext,
-    index: number,
-    lifted: HTMLElement,
-  ): number {
-    if (targetCtx !== (this as ForDropListContext)) {
-      return index;
-    }
-    const disabled = this.#items
-      .items()
-      .filter((h) => h.host !== lifted)
-      .map((h) => h.disabled());
-    const origin = this.#items.indexOfHost(lifted);
-    return fencePlaceholderIndex(index, disabled, origin < 0 ? 0 : origin);
-  }
-
-  #movePlaceholder(targetCtx: ForDropListContext, index: number, lifted: HTMLElement): void {
-    const nodes = this.#placeholderNodes;
-    if (!this.#isBrowser || nodes === null || nodes.length === 0) {
-      return;
-    }
-    const fragment = this.#document.createDocumentFragment();
-    for (const node of nodes) {
-      fragment.appendChild(node);
-    }
-    const hosts = targetCtx
-      .items()
-      .map((h) => h.host)
-      .filter((h) => h !== lifted);
-    const { parent, ref } = placeholderInsertion(hosts, index, targetCtx.host);
-    parent.insertBefore(fragment, ref);
+    this.#sorter?.setNodes(nodes);
   }
 
   readonly #effectiveConnected = computed((): readonly ForDropListContext[] => {
@@ -627,12 +540,9 @@ export class ForDropList implements ForDropListContext {
     this.#liftedHost.set(null);
     this.#flatIndex.set(0);
     if (!keepPreview) {
-      this.#preview?.destroy();
+      this.#previewController?.destroy();
     }
-    this.#preview = null;
-    this.#placeholderNodes = null;
-    this.#boundaryEl = null;
-    this.#previewSize = { width: 0, height: 0 };
-    this.#lockOrigin = { x: 0, y: 0 };
+    this.#previewController = null;
+    this.#sorter = null;
   }
 }
