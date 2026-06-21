@@ -84,7 +84,13 @@ export interface ForVirtualizer {
   measureElement(element: HTMLElement): void;
 }
 
-function estimateTotal(count: number, estimateSize: (index: number) => number): number {
+/**
+ * Sum of the estimated size of every item: `count` × the estimate when it's
+ * uniform, else the per-index estimator summed. Used as the SSR / pre-mount
+ * total before the core has measured any item, and shared with the ergonomic
+ * viewport layer so the estimate-total math lives in one place.
+ */
+export function estimateTotal(count: number, estimateSize: (index: number) => number): number {
   let total = 0;
   for (let index = 0; index < count; index++) {
     total += estimateSize(index);

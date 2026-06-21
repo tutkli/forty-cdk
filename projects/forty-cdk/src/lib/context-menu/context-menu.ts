@@ -237,22 +237,7 @@ export class ForContextMenu
 
   /** Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates. */
   setVirtualAnchor(x: number, y: number): void {
-    const virtual: VirtualElement = {
-      getBoundingClientRect: () => ({
-        x,
-        y,
-        width: 0,
-        height: 0,
-        top: y,
-        left: x,
-        right: x,
-        bottom: y,
-        toJSON() {
-          return this;
-        },
-      }),
-    };
-    this.#anchor.set(virtual);
+    this.#anchor.set(this.#virtualAnchor(x, y, 0, 0));
   }
 
   /**
@@ -262,22 +247,24 @@ export class ForContextMenu
    * by value, so subsequent layout changes don't shift the anchor.
    */
   setVirtualAnchorFromRect(rect: DOMRect): void {
-    const { x, y, width, height, top, left, right, bottom } = rect;
-    const virtual: VirtualElement = {
+    this.#anchor.set(this.#virtualAnchor(rect.x, rect.y, rect.width, rect.height));
+  }
+
+  #virtualAnchor(x: number, y: number, width: number, height: number): VirtualElement {
+    return {
       getBoundingClientRect: () => ({
         x,
         y,
         width,
         height,
-        top,
-        left,
-        right,
-        bottom,
+        top: y,
+        left: x,
+        right: x + width,
+        bottom: y + height,
         toJSON() {
           return this;
         },
       }),
     };
-    this.#anchor.set(virtual);
   }
 }

@@ -13,6 +13,7 @@ import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
 import { ForDropList } from '../drag-drop/drop-list';
 import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
+import { translateWindowReorder } from '../_internal/drag-session/window-index-map';
 import { injectTableContext } from './table-context';
 
 /** Payload of `rowReorder`: the previous and new row index. */
@@ -28,28 +29,15 @@ export interface TableRowReorderDescriptor {
  * absolute dataset indices, so a virtualized table's consumer can apply
  * `moveItemInArray` over the **full** row array. `windowIndices` holds the
  * absolute `virtualIndex` of every rendered draggable row, in DOM (ascending)
- * order — its length is the rendered window size; `previousIndex` is the lifted
- * row's position in that window and `currentIndex` the resolved insertion index
- * (post-removal space, `0..windowIndices.length - 1`). Reduces to the identity
- * when the window spans the whole dataset, so a non-virtualized table is
- * unaffected.
+ * order. Thin table-facing wrapper over the shared
+ * {@link translateWindowReorder} helper, which owns the post-removal index math.
  */
 export function translateRowReorderIndices(
   windowIndices: readonly number[],
   previousIndex: number,
   currentIndex: number,
 ): TableRowReorderDescriptor {
-  const from = windowIndices[previousIndex] ?? previousIndex;
-  const rest = windowIndices.filter((_, i) => i !== previousIndex);
-  if (currentIndex >= rest.length) {
-    const last = rest[rest.length - 1];
-    if (last === undefined) {
-      return { from, to: from };
-    }
-    return { from, to: last + 1 - (last > from ? 1 : 0) };
-  }
-  const target = rest[currentIndex]!;
-  return { from, to: target - (target > from ? 1 : 0) };
+  return translateWindowReorder(windowIndices, previousIndex, currentIndex);
 }
 
 /**
