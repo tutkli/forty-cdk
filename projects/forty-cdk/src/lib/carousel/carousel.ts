@@ -25,13 +25,13 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
+import {
+  injectPauseController,
+  type PauseController,
+} from '../_internal/pausable/pause-controller';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import {
-  isPageHidden,
-  subscribeVisibilityPause,
-} from '../_internal/visibility-pause/visibility-pause';
 import {
   type CarouselAlign,
   FOR_CAROUSEL_CONTEXT,
@@ -176,11 +176,10 @@ export class ForCarousel implements ForCarouselContext {
     () => this.#userPlaying() ?? (this.autoplay() && !this.#prefersReducedMotion()),
   );
 
-  readonly #paused = signal(false);
-  readonly #pauseReasons = new Set<'hover' | 'focus' | 'visibility'>();
+  readonly #pause: PauseController<'hover' | 'focus' | 'visibility'> = injectPauseController();
 
   /** Whether the carousel is actively auto-rotating right now. */
-  readonly rotating = computed(() => this.playing() && !this.#paused());
+  readonly rotating = computed(() => this.playing() && !this.#pause.paused());
 
   #timerHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -236,18 +235,6 @@ export class ForCarousel implements ForCarouselContext {
       untracked(() => this.#syncTimer(rotating, interval));
     });
     this.#destroyRef.onDestroy(() => this.#clearTimer());
-
-    const unsubscribe = subscribeVisibilityPause((hidden) => {
-      if (hidden) {
-        this.#applyPause('visibility');
-      } else {
-        this.#releasePause('visibility');
-      }
-    });
-    this.#destroyRef.onDestroy(unsubscribe);
-    if (isPageHidden()) {
-      this.#applyPause('visibility');
-    }
 
     if (isDevMode()) {
       let warned = false;
@@ -433,11 +420,11 @@ export class ForCarousel implements ForCarouselContext {
   }
 
   protected onAutoplayPause(reason: 'hover' | 'focus'): void {
-    this.#applyPause(reason);
+    this.#pause.apply(reason);
   }
 
   protected onAutoplayResume(reason: 'hover' | 'focus'): void {
-    this.#releasePause(reason);
+    this.#pause.release(reason);
   }
 
   protected onAutoplayFocusOut(event: FocusEvent): void {
@@ -445,21 +432,7 @@ export class ForCarousel implements ForCarouselContext {
     if (next && this.#element.nativeElement.contains(next)) {
       return;
     }
-    this.#releasePause('focus');
-  }
-
-  #applyPause(reason: 'hover' | 'focus' | 'visibility'): void {
-    this.#pauseReasons.add(reason);
-    this.#updatePaused();
-  }
-
-  #releasePause(reason: 'hover' | 'focus' | 'visibility'): void {
-    this.#pauseReasons.delete(reason);
-    this.#updatePaused();
-  }
-
-  #updatePaused(): void {
-    this.#paused.set(this.#pauseReasons.size > 0);
+    this.#pause.release('focus');
   }
 
   #syncTimer(rotating: boolean, interval: number): void {
