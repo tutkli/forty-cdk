@@ -7,7 +7,7 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    <span forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0">
+    <span forTooltip #main="forTooltip" [(open)]="open" [openDelay]="0" [closeDelay]="0">
       <button data-testid="trigger" forTooltipTrigger>Save</button>
       @if (open()) {
         <div forTooltipContent data-testid="tooltip">Save changes</div>
@@ -15,8 +15,18 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
     </span>
     <input data-testid="after" placeholder="after-trigger" />
 
+    <button data-testid="imp-show" type="button" (click)="main.show()">show</button>
+    <button data-testid="imp-hide" type="button" (click)="main.hide()">hide</button>
+
     <!-- showOnOverflow: a truncated trigger shows; a non-truncated one is suppressed. -->
-    <span forTooltip [(open)]="overflowOpen" [openDelay]="0" [closeDelay]="0" showOnOverflow>
+    <span
+      forTooltip
+      #ovf="forTooltip"
+      [(open)]="overflowOpen"
+      [openDelay]="0"
+      [closeDelay]="0"
+      showOnOverflow
+    >
       <button
         data-testid="overflow-trigger"
         forTooltipTrigger
@@ -31,7 +41,14 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
       }
     </span>
 
-    <span forTooltip [(open)]="fitOpen" [openDelay]="0" [closeDelay]="0" showOnOverflow>
+    <span
+      forTooltip
+      #fit2="forTooltip"
+      [(open)]="fitOpen"
+      [openDelay]="0"
+      [closeDelay]="0"
+      showOnOverflow
+    >
       <button
         data-testid="fit-trigger"
         forTooltipTrigger
@@ -43,6 +60,9 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
         <div forTooltipContent data-testid="fit-tooltip">Fits</div>
       }
     </span>
+
+    <button data-testid="show-overflow" type="button" (click)="ovf.show()">show overflow</button>
+    <button data-testid="show-fit" type="button" (click)="fit2.show()">show fit</button>
 
     <!-- hoverableContent: moving the pointer into the content keeps it open. -->
     <span forTooltip [(open)]="hoverOpen" [openDelay]="0" [closeDelay]="200" hoverableContent>

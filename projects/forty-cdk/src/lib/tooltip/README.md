@@ -208,6 +208,37 @@ export class MyTooltipButton {
 
 While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes — no empty bubble, no stale `aria-describedby`.
 
+## Imperative `show()` / `hide()`
+
+For programmatic control beyond hover and focus — e.g. a wrapper that drives the tooltip from a text-truncation observer — `ForTooltip` exposes `show()` and `hide()` methods. Grab the root with a template reference (`#tip="forTooltip"`) and call them:
+
+```ts
+import { Component } from '@angular/core';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+
+@Component({
+  selector: 'demo-imperative',
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <span forTooltip #tip="forTooltip">
+      <button type="button" forTooltipTrigger>Save</button>
+      <div forTooltipContent class="my-tooltip">Save changes</div>
+    </span>
+
+    <button type="button" (click)="tip.show()">Show</button>
+    <button type="button" (click)="tip.hide()">Hide</button>
+  `,
+})
+export class DemoImperative {}
+```
+
+Both mirror the hover / focus lifecycle rather than bypassing it:
+
+- `show()` schedules the open after the resolved `openDelay` (instant when the delay is `0` or the scope's skip-delay window is active). It is a no-op while `disabled`, and a no-op under `showOnOverflow` when the trigger's own text is not truncated — the same gates a hover / focus open passes.
+- `hide()` schedules the close after the resolved `closeDelay` and disarms the hoverable-content grace bridge.
+
+For an **instant, unconditional** open or close that ignores the delays and both gates, write the `[(open)]` model directly (`open.set(true)` / `open.set(false)`) instead. To suppress empty-message tooltips, keep using the `disabled` input shown above rather than gating the `show()` call yourself.
+
 ## Keyboard
 
 - **Tab** to the trigger → opens the tooltip after `openDelay`.
