@@ -3,6 +3,7 @@ import {
   moveIndex,
   resolveGridNavigation,
   resolveListNavigation,
+  resolveTreeExpandCollapse,
   resolveTreegridExpandCollapse,
 } from './keyboard-navigation';
 
@@ -174,6 +175,63 @@ describe('resolveTreegridExpandCollapse', () => {
     expect(resolveTreegridExpandCollapse(key('Enter'))).toBe(null);
     expect(resolveTreegridExpandCollapse(key(' '))).toBe(null);
     expect(resolveTreegridExpandCollapse(key('Tab'))).toBe(null);
+  });
+});
+
+describe('resolveTreeExpandCollapse', () => {
+  describe('vertical orientation (horizontal arrows, RTL-mirrored)', () => {
+    const opts = { orientation: 'vertical' as const };
+
+    it('ArrowRight → expand in ltr (default)', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowRight'), opts)).toBe('expand');
+    });
+
+    it('ArrowLeft → collapse in ltr (default)', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowLeft'), opts)).toBe('collapse');
+    });
+
+    it('ArrowRight → collapse in rtl', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowRight'), { ...opts, dir: 'rtl' })).toBe(
+        'collapse',
+      );
+    });
+
+    it('ArrowLeft → expand in rtl', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowLeft'), { ...opts, dir: 'rtl' })).toBe('expand');
+    });
+
+    it('ArrowDown / ArrowUp → null', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowDown'), opts)).toBe(null);
+      expect(resolveTreeExpandCollapse(key('ArrowUp'), opts)).toBe(null);
+    });
+  });
+
+  describe('horizontal orientation (vertical arrows)', () => {
+    const opts = { orientation: 'horizontal' as const };
+
+    it('ArrowDown → expand', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowDown'), opts)).toBe('expand');
+    });
+
+    it('ArrowUp → collapse', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowUp'), opts)).toBe('collapse');
+    });
+
+    it('horizontal arrows are unaffected by dir', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowDown'), { ...opts, dir: 'rtl' })).toBe('expand');
+      expect(resolveTreeExpandCollapse(key('ArrowUp'), { ...opts, dir: 'rtl' })).toBe('collapse');
+    });
+
+    it('ArrowLeft / ArrowRight → null', () => {
+      expect(resolveTreeExpandCollapse(key('ArrowLeft'), opts)).toBe(null);
+      expect(resolveTreeExpandCollapse(key('ArrowRight'), opts)).toBe(null);
+    });
+  });
+
+  it('unrelated keys → null in either orientation', () => {
+    expect(resolveTreeExpandCollapse(key('Enter'), { orientation: 'vertical' })).toBe(null);
+    expect(resolveTreeExpandCollapse(key(' '), { orientation: 'horizontal' })).toBe(null);
+    expect(resolveTreeExpandCollapse(key('Tab'), { orientation: 'vertical' })).toBe(null);
   });
 });
 

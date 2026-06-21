@@ -10,7 +10,10 @@ import {
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { hostId } from '../_internal/host-id/host-id';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  resolveListNavigation,
+  resolveTreeExpandCollapse,
+} from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
   FOR_TREE_ITEM_CONTEXT,
   type ForTreeContainerContext,
@@ -108,6 +111,8 @@ export class ForTreeItem implements ForTreeItemContext {
 
   readonly id = hostId('for-tree-item');
 
+  readonly #virtualized = computed(() => this.#tree.totalCount() !== undefined);
+
   /** True once a `[forTreeItemToggle]` registers, marking the node a parent (D4). */
   readonly expandable = computed(() => this.#toggleCount() > 0);
   readonly expanded = computed(() => this.#tree.isExpanded(this.value()));
@@ -148,17 +153,15 @@ export class ForTreeItem implements ForTreeItemContext {
   });
 
   readonly level = computed(() =>
-    this.#tree.totalCount() !== undefined
-      ? (this._levelInput() ?? this.#container.level())
-      : this.#container.level(),
+    this.#virtualized() ? (this._levelInput() ?? this.#container.level()) : this.#container.level(),
   );
   readonly posinset = computed(() =>
-    this.#tree.totalCount() !== undefined
+    this.#virtualized()
       ? (this._posInSetInput() ?? this.#container.indexOfHost(this.#host.nativeElement) + 1)
       : this.#container.indexOfHost(this.#host.nativeElement) + 1,
   );
   readonly setsize = computed(() =>
-    this.#tree.totalCount() !== undefined
+    this.#virtualized()
       ? (this._setSizeInput() ?? this.#container.items().length)
       : this.#container.items().length,
   );
@@ -167,7 +170,7 @@ export class ForTreeItem implements ForTreeItemContext {
     if (this.effectiveDisabled()) {
       return -1;
     }
-    if (this.#tree.totalCount() !== undefined) {
+    if (this.#virtualized()) {
       return -1;
     }
     if (this.#tree.roving.hasActive()) {
@@ -234,7 +237,7 @@ export class ForTreeItem implements ForTreeItemContext {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (this.#tree.totalCount() !== undefined) {
+    if (this.#virtualized()) {
       this.#tree.notifyItemClick(this.id());
       return;
     }
@@ -242,14 +245,14 @@ export class ForTreeItem implements ForTreeItemContext {
   }
 
   protected onFocus(): void {
-    if (this.effectiveDisabled() || this.#tree.totalCount() !== undefined) {
+    if (this.effectiveDisabled() || this.#virtualized()) {
       return;
     }
     this.#tree.roving.setActive(this.#host.nativeElement);
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (this.#tree.totalCount() === undefined) return;
+    if (!this.#virtualized()) return;
     event.preventDefault();
   }
 
@@ -317,7 +320,10 @@ export class ForTreeItem implements ForTreeItemContext {
       return;
     }
 
-    const intent = this.#resolveExpandCollapse(event);
+    const intent = resolveTreeExpandCollapse(event, {
+      orientation: tree.orientation(),
+      dir: tree.dir(),
+    });
     if (intent === 'expand') {
       event.preventDefault();
       tree.expandOrEnter(host);
@@ -330,25 +336,5 @@ export class ForTreeItem implements ForTreeItemContext {
     }
 
     tree.handleTypeahead(event);
-  }
-
-  #resolveExpandCollapse(event: KeyboardEvent): 'expand' | 'collapse' | null {
-    const dir = this.#tree.dir();
-    if (this.#tree.orientation() === 'vertical') {
-      if (event.key === 'ArrowRight') {
-        return dir === 'rtl' ? 'collapse' : 'expand';
-      }
-      if (event.key === 'ArrowLeft') {
-        return dir === 'rtl' ? 'expand' : 'collapse';
-      }
-      return null;
-    }
-    if (event.key === 'ArrowDown') {
-      return 'expand';
-    }
-    if (event.key === 'ArrowUp') {
-      return 'collapse';
-    }
-    return null;
   }
 }
