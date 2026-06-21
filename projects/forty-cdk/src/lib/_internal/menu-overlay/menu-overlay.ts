@@ -16,6 +16,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../vetoable-event/vetoable-event';
+import { CloseReasonState, InitialFocusState } from './menu-focus-state';
 import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
 
 /**
@@ -143,14 +144,12 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   /** Unique id for the content element. Stable across the menu's lifetime. */
   readonly contentId: Signal<string>;
 
-  readonly #initialFocus = signal<'first' | 'last'>('first');
+  readonly #initialFocusState = new InitialFocusState();
 
   /** Where focus should land when the menu mounts. Set by triggers before flipping `open`. */
-  readonly initialFocus = this.#initialFocus.asReadonly();
+  readonly initialFocus = this.#initialFocusState.target;
 
-  #highlightInitialFocus = true;
-
-  readonly #lastCloseReason = signal<MenuOverlayCloseReason | null>(null);
+  readonly #closeReasonState = new CloseReasonState<MenuOverlayCloseReason>();
 
   /**
    * Reason of the most recent close, or `null` while the menu is open / has
@@ -158,7 +157,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * reads this to skip its return-focus on `'tab'` so Tab can advance focus
    * out of the menu instead of snapping back to the trigger.
    */
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+  readonly lastCloseReason = this.#closeReasonState.reason;
 
   readonly #triggerEl = signal<HTMLElement | null>(null);
 
@@ -180,7 +179,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocus.set(target);
+    this.#initialFocusState.setTarget(target);
   }
 
   registerTrigger(el: HTMLElement): void {
@@ -241,7 +240,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * `data-highlighted` (one-shot — later calls highlight normally).
    */
   focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem(this.#consumeHighlightInitialFocus());
+    return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
   }
 
   /**
@@ -250,13 +249,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * `data-highlighted` (one-shot — later calls highlight normally).
    */
   focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem(this.#consumeHighlightInitialFocus());
-  }
-
-  #consumeHighlightInitialFocus(): boolean {
-    const highlight = this.#highlightInitialFocus;
-    this.#highlightInitialFocus = true;
-    return highlight;
+    return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
   }
 
   /**
@@ -290,15 +283,14 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     if (this.#hooks.disabled()) {
       return;
     }
-    this.#initialFocus.set(initialFocus);
-    this.#highlightInitialFocus = modality === 'keyboard';
-    this.#lastCloseReason.set(null);
+    this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
+    this.#closeReasonState.reset();
     this.#hooks.open.set(true);
     this.#hooks.onOpen?.(initialFocus);
   }
 
   closeMenu(reason: MenuOverlayCloseReason): void {
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
     this.#hooks.open.set(false);
     this.#hooks.onClose?.(reason);
   }

@@ -1,6 +1,7 @@
 import { computed, type ModelSignal, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
+import { CloseReasonState, InitialFocusState } from '../_internal/menu-overlay/menu-focus-state';
 import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
 import type { ListNavigationAction } from '../_internal/keyboard-navigation/keyboard-navigation';
@@ -48,8 +49,11 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * context shape transparently covers whichever trigger's menu is mounted.
  *
  * Item navigation reuses the shared `MenuItemList` (the same item-collection /
- * typeahead / navigate / focus mechanics that back `MenuOverlay`), so this only
- * has to cover the parts the single-owner overlay can't.
+ * typeahead / navigate / focus mechanics that back `MenuOverlay`), and the
+ * initial-focus / highlight-consume protocol and the close-reason record reuse
+ * the shared `InitialFocusState` / `CloseReasonState` micro-helpers (also
+ * composed by `MenuOverlay`), so this only has to cover the parts the
+ * single-owner overlay can't — the `activeTrigger`-derived multiplexing.
  *
  * A bar-level menu has no per-trigger dismiss / auto-focus outputs and no
  * per-context trigger registration (triggers register with the bar directly),
@@ -64,9 +68,8 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #host: MenubarMenuHost;
   readonly #itemList = createMenuItemList<ForMenuItemHandle>(() => this.#host.loop());
   readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly #initialFocus = signal<'first' | 'last'>('first');
-  #highlightInitialFocus = true;
-  readonly #lastCloseReason = signal<ForMenuCloseReason | null>(null);
+  readonly #initialFocusState = new InitialFocusState();
+  readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
 
   readonly open = computed(() => this.#host.value() !== '');
   readonly disabled: Signal<boolean>;
@@ -88,8 +91,8 @@ export class MenubarMenuContext implements ForMenuContext {
     () => this.#host.activeTrigger()?.clipUntilPositioned() ?? true,
   );
   readonly loop: Signal<boolean>;
-  readonly initialFocus = this.#initialFocus.asReadonly();
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+  readonly initialFocus = this.#initialFocusState.target;
+  readonly lastCloseReason = this.#closeReasonState.reason;
   readonly triggerId = computed(() => this.#host.activeTrigger()?.triggerId() ?? '');
   readonly contentId = computed(() => this.#host.activeTrigger()?.contentId() ?? '');
   readonly ariaLabel = computed(() => this.#host.activeTrigger()?.ariaLabel() ?? null);
@@ -121,7 +124,7 @@ export class MenubarMenuContext implements ForMenuContext {
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocus.set(target);
+    this.#initialFocusState.setTarget(target);
   }
 
   /**
@@ -131,14 +134,13 @@ export class MenubarMenuContext implements ForMenuContext {
    * `data-highlighted` on the focused item.
    */
   prepareOpen(initialFocus: 'first' | 'last', modality: MenuActivationModality = 'keyboard'): void {
-    this.#initialFocus.set(initialFocus);
-    this.#highlightInitialFocus = modality === 'keyboard';
-    this.#lastCloseReason.set(null);
+    this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
+    this.#closeReasonState.reset();
   }
 
   /** Read by the bar's pointer-driven close so the content skips its return-focus. */
   setLastCloseReason(reason: ForMenuCloseReason): void {
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
   }
 
   registerTrigger(): void {
@@ -174,16 +176,10 @@ export class MenubarMenuContext implements ForMenuContext {
     this.#itemList.clearHighlights();
   }
   focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem(this.#consumeHighlightInitialFocus());
+    return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
   }
   focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem(this.#consumeHighlightInitialFocus());
-  }
-
-  #consumeHighlightInitialFocus(): boolean {
-    const highlight = this.#highlightInitialFocus;
-    this.#highlightInitialFocus = true;
-    return highlight;
+    return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
   }
 
   toggle(): void {
@@ -199,14 +195,14 @@ export class MenubarMenuContext implements ForMenuContext {
   }
 
   closeMenu(reason: ForMenuCloseReason): void {
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
     this.#host.closeOpen();
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
     if (!event.defaultPrevented && this.#host.dismissible()) {
       event.stopPropagation();
-      this.#lastCloseReason.set('escape');
+      this.#closeReasonState.set('escape');
       this.#host.closeOpen();
     }
   }
@@ -222,7 +218,7 @@ export class MenubarMenuContext implements ForMenuContext {
     if (this.#host.value() === '') {
       return;
     }
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
     this.#host.closeOpen();
   }
 

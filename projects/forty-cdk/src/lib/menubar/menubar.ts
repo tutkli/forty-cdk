@@ -18,6 +18,8 @@ import {
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
+import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
+import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
 import { FOR_MENU_CONTEXT } from '../_internal/menu-overlay/menu-context';
@@ -171,7 +173,16 @@ export class ForMenubar implements ForMenubarContext {
     firstEnabledHost(this.#triggerCollection.items()),
   );
 
-  readonly #focusedTrigger = signal<HTMLElement | null>(null);
+  /**
+   * Roving-tabindex tracker shared by every menubar trigger, mirroring
+   * `ForToolbar` / `ForTabs`. Triggers promote themselves to active on
+   * `(focus)` (via {@link setFocusedTrigger}) and read `active()` through
+   * {@link tabindexFor}, so re-entry restores the last focused trigger. Before
+   * any focus — and on every close — `active()` is `null`/stale and the tab
+   * stop falls back to the first enabled trigger. The active pointer is
+   * self-healing (a detached / disabled trigger no longer owns the stop).
+   */
+  readonly roving = new RovingTabindex();
 
   readonly #triggerTypeahead = injectTypeahead();
 
@@ -179,6 +190,7 @@ export class ForMenubar implements ForMenubarContext {
   #detachContentPointerFn: (() => void) | null = null;
 
   constructor() {
+    reconcileRovingActive(this.roving, this.#triggerCollection.items);
     inject(DestroyRef).onDestroy(() => {
       this.#clearCloseTimer();
       this.detachContentPointer();
@@ -205,6 +217,7 @@ export class ForMenubar implements ForMenubarContext {
   }
   unregisterTrigger(handle: ForMenubarTriggerHandle): void {
     this.#triggerCollection.unregister(handle);
+    this.roving.unregister(handle.host);
   }
 
   triggerFor(value: string): ForMenubarTriggerHandle | null {
@@ -220,17 +233,17 @@ export class ForMenubar implements ForMenubarContext {
       // While a menu is open, only its trigger is tabbable.
       return this.activeTrigger()?.host === el ? 0 : -1;
     }
-    // Otherwise, the most-recently-focused trigger holds the tab stop.
-    // Falls back to the first enabled trigger when nothing's been focused.
-    const focused = this.#focusedTrigger();
-    if (focused) {
-      return focused === el ? 0 : -1;
+    // Otherwise the roving tracker (promoted by trigger `(focus)`) holds the
+    // tab stop, falling back to the first enabled trigger when nothing has
+    // been focused yet or the active trigger went stale.
+    if (this.roving.hasActive()) {
+      return this.roving.tabindexFor(el);
     }
     return this.#firstEnabledTriggerHost() === el ? 0 : -1;
   }
 
   setFocusedTrigger(el: HTMLElement | null): void {
-    this.#focusedTrigger.set(el);
+    this.roving.setActive(el);
   }
 
   navigateTriggers(currentTrigger: HTMLElement, action: ListNavigationAction): void {
