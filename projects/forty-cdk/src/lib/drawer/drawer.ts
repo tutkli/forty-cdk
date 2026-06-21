@@ -4,9 +4,7 @@ import {
   computed,
   DestroyRef,
   Directive,
-  effect,
   ElementRef,
-  ErrorHandler,
   inject,
   input,
   model,
@@ -16,15 +14,7 @@ import {
 
 import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
 import { ForDrawerStack } from '../_internal/drawer-stack/drawer-stack';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import { injectModalShell } from '../_internal/modal-shell/modal-shell';
-import {
-  attachSwipeDismiss,
-  isScrollableAtEdge,
-  resolveSnapTarget,
-  type SwipeDirection,
-  type SwipeEventDetail,
-} from '../_internal/swipe-dismiss/swipe-dismiss';
 import {
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -39,47 +29,7 @@ import {
   type ForDrawerSnapPoint,
 } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
-import {
-  computeSnapPositions,
-  validateSnapPointsShape,
-  validateSnapPositions,
-} from './snap-points';
-
-function sideToDirections(side: ForDrawerSide): readonly SwipeDirection[] {
-  switch (side) {
-    case 'bottom':
-      return ['down'];
-    case 'top':
-      return ['up'];
-    case 'right':
-      return ['right'];
-    case 'left':
-      return ['left'];
-  }
-}
-
-/** Axis on which the drawer's dimension lives. */
-function sideAxis(side: ForDrawerSide): 'x' | 'y' {
-  return side === 'left' || side === 'right' ? 'x' : 'y';
-}
-
-/** Sign of a positive (toward-edge) drag offset along the host's axis. */
-function sideSign(side: ForDrawerSide): 1 | -1 {
-  return side === 'bottom' || side === 'right' ? 1 : -1;
-}
-
-/**
- * Allowed swipe directions for the drag gesture. Without snap points the
- * drawer only drags *toward* its anchored edge (dismiss). With snap points
- * the surface must also grow on a drag *away* from the edge to reach a
- * larger snap, so both directions along the dismissal axis arm the gesture.
- */
-function dragDirections(side: ForDrawerSide, hasSnapPoints: boolean): readonly SwipeDirection[] {
-  if (!hasSnapPoints) {
-    return sideToDirections(side);
-  }
-  return sideAxis(side) === 'y' ? ['down', 'up'] : ['right', 'left'];
-}
+import { injectDrawerDrag } from './drawer-drag';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),
@@ -292,9 +242,6 @@ export class ForDrawer implements ForDrawerContext {
   readonly #describedByIds = signal<readonly string[]>([]);
   readonly #handleEl = signal<HTMLElement | null>(null);
   readonly #backdropEl = signal<HTMLElement | null>(null);
-  readonly #dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
-  readonly #dragging = signal(false);
-  readonly #dragProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
   // Captures the `value` argument from the most recent `requestClose(reason, value)`
   // call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
   // into `ForDrawerRef.close(value)`. Plain in declarative usage (no consumer
@@ -309,38 +256,9 @@ export class ForDrawer implements ForDrawerContext {
     const ids = this.#describedByIds();
     return ids.length === 0 ? null : ids.join(' ');
   });
-  readonly dragging = this.#dragging.asReadonly();
-  readonly dragProgress = this.#dragProgress.asReadonly();
   readonly activeSnapPointAttr = computed<string | null>(() => {
     const v = this.activeSnapPoint();
     return v == null ? null : String(v);
-  });
-  /**
-   * Live drag displacement as a CSS `translate` value (`"<x> <y>"`),
-   * published on the host as the `--for-drawer-translate` custom property by
-   * an effect in the constructor. The consumer composes it on the surface
-   * with `translate: var(--for-drawer-translate, 0px 0px)`.
-   *
-   * A **custom property** is used (rather than writing the `translate` /
-   * `transform` property directly) for two reasons: `transform` is reserved
-   * for `ForDrawerScaleCoordinator`'s nested / scale-background effect, and
-   * a directly-written inline `translate` is silently dropped by Angular
-   * when the consumer also binds a template `[style.*]` on the same host —
-   * custom properties survive because Angular's style bindings never touch
-   * them. `"0px 0px"` at rest. The write rides the same change-detection
-   * pass as the `data-dragging` removal and the `data-active-snap-point`
-   * change on release, so the consumer's `transition: translate` animates
-   * the drag delta back to zero in lockstep with the snap-position
-   * transition, instead of the surface jumping to the old rest position
-   * before sliding to the new snap.
-   */
-  readonly dragTranslate = computed<string>(() => {
-    const offset = this.#dragOffset();
-    if (offset === 0) {
-      return '0px 0px';
-    }
-    const px = sideSign(this.side()) * offset;
-    return sideAxis(this.side()) === 'y' ? `0px ${px}px` : `${px}px 0px`;
   });
   readonly fadeFromActive = computed<boolean>(() => {
     const idx = this.fadeFromIndex();
@@ -354,11 +272,63 @@ export class ForDrawer implements ForDrawerContext {
   });
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #errorHandler = inject(ErrorHandler);
-  readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #scaleCoordinator = inject(ForDrawerScaleCoordinator);
   readonly #drawerStack = inject(ForDrawerStack);
   readonly #parentDrawer = inject(FOR_DRAWER_CONTEXT, { skipSelf: true, optional: true });
+
+  // Pointer / swipe / snap gesture engine. Owns the velocity tracking,
+  // per-gesture offset bounds, the dimension-keyed snap-position cache, and
+  // the runtime snap re-validation; the directive host-binds the three signals
+  // it returns (`dragging`, `dragProgress`, `dragTranslate`) and drives its
+  // `validateOnMount()` / `arm()` hooks from its own `afterNextRender`s so the
+  // engine's side effects keep `[forDrawer]`'s original ordering relative to
+  // the modal shell.
+  readonly #drag = injectDrawerDrag({
+    side: this.side,
+    snapPoints: this.snapPoints,
+    closeThreshold: this.closeThreshold,
+    handleOnly: this.handleOnly,
+    swipeToDismiss: this.swipeToDismiss,
+    fadeFromIndex: this.fadeFromIndex,
+    activeSnapPoint: this.activeSnapPoint,
+    handleEl: this.#handleEl.asReadonly(),
+    emitDrag: (event) => this.dragMove.emit(event),
+    emitRelease: (event) => this.release.emit(event),
+    requestClose: (reason) => this.requestClose(reason),
+  });
+
+  /**
+   * `true` while a pointer drag gesture is in flight. Mirrors the host's
+   * `data-dragging` attribute; surfaced through `ForDrawerContext` so pieces
+   * portaled away from the surface (the backdrop) can suppress their own
+   * transitions during the gesture.
+   */
+  readonly dragging = this.#drag.dragging;
+
+  /**
+   * Progress of the current drag toward the anchored edge, `∈ [0, 1]`.
+   * Surfaced through `ForDrawerContext` so the backdrop can publish it as the
+   * `--for-drawer-drag-progress` custom property.
+   */
+  readonly dragProgress = this.#drag.dragProgress;
+
+  /**
+   * Live drag displacement as a CSS `translate` value (`"<x> <y>"`),
+   * published on the host as the `--for-drawer-translate` custom property by
+   * the gesture engine. The consumer composes it on the surface with
+   * `translate: var(--for-drawer-translate, 0px 0px)`.
+   *
+   * A **custom property** is used (rather than writing `translate` /
+   * `transform` directly) because `transform` is reserved for
+   * `ForDrawerScaleCoordinator` and a directly-written inline `translate` is
+   * dropped by Angular when the consumer also binds a template `[style.*]` on
+   * the same host. `"0px 0px"` at rest; the write rides the same change-
+   * detection pass as the `data-dragging` / `data-active-snap-point` changes
+   * on release so the consumer's `transition: translate` animates back in
+   * lockstep with the snap transition rather than jumping to the old rest
+   * position first.
+   */
+  readonly dragTranslate = this.#drag.dragTranslate;
 
   /** Host element of this drawer surface — exposed via `ForDrawerContext`. */
   get hostElement(): HTMLElement {
@@ -399,91 +369,33 @@ export class ForDrawer implements ForDrawerContext {
   );
 
   // Cleanup refs for drawer-specific side effects (the modal-shell owns its
-  // own portal / dismissable / focus-trap / scroll-lock / inert-siblings
-  // teardown). These live here because they are layered around the shell on
-  // SETUP: drawer-stack push must run BEFORE the shell's afterNextRender so
-  // descendants see consistent topology, and swipe / scale must run AFTER so
-  // the gesture / coordinator compose on top of a fully-wired surface. On
-  // TEARDOWN they are all torn down from a single `DestroyRef.onDestroy`
-  // (see the constructor) so the sequence is explicit rather than inferred
-  // from registration order relative to the shell's own hook.
-  #swipeCleanup: (() => void) | null = null;
+  // portal / dismissable / focus-trap / scroll-lock / inert-siblings teardown;
+  // the gesture engine owns its own swipe-listener teardown). They are layered
+  // around the shell on SETUP — the drawer-stack push runs BEFORE the shell's
+  // afterNextRender so descendants see consistent topology, scale runs AFTER so
+  // the coordinator composes on a fully-wired surface — and both are torn down
+  // from a single `DestroyRef.onDestroy` (see the constructor).
   #scaleCleanup: (() => void) | null = null;
   #stackCleanup: (() => void) | null = null;
 
-  // Pointer state for velocity tracking.
-  #pointerStartTime = 0;
-  #pointerLastY = 0;
-  #pointerLastX = 0;
-  #pointerLastTime = 0;
-  #pointerVelocity = 0;
-  #dimensionAtStart = 0;
-
-  // Per-gesture lower bound for the drag offset (px toward the edge),
-  // resolved on `#onSwipeStart`. A positive offset moves the surface toward
-  // the edge (shrink / dismiss) and is never capped — dragging past the edge
-  // is how a dismiss arms. A negative offset moves it away from the edge to
-  // grow. Without snap points the floor stays 0 (the surface can only shrink
-  // toward the edge); with snap points the floor reaches the largest snap so
-  // an upward drag can expand the surface.
-  #dragMinOffset = 0;
-
-  // Snap positions cache, keyed by BOTH the dimension they were resolved
-  // against AND the `snapPoints` array identity. First-measurement validation
-  // populates this; `#onSwipeStart` refreshes it when the surface has resized
-  // between gestures, and a runtime `[snapPoints]` rebind (same dimension, new
-  // array reference) is a cache miss so positions are recomputed and
-  // re-validated. Always pre-validated, so `#onSwipeRelease` can read it
-  // without re-running monotonicity checks.
-  #snapPositionsCache: {
-    dimension: number;
-    snapPoints: ReadonlyArray<ForDrawerSnapPoint>;
-    positions: number[];
-  } | null = null;
-
-  // Flipped true once the mount-time `afterNextRender` has validated the
-  // initial snap config. Gates the runtime-rebind effect so its first
-  // (pre-render) run is a no-op and only genuine post-mount changes
-  // re-validate.
-  #snapConfigMounted = false;
-
-  // Signal flipped true in the post-shell `afterNextRender`. Gates the swipe
-  // gate effect so the gesture arms on a host already wired by the shell;
-  // being a signal, flipping it re-runs the effect for the first real
-  // attach.
-  readonly #swipeReady = signal(false);
-
   constructor() {
-    // ---- Drag-translate side effect. Publishes the drag delta as the
-    // `--for-drawer-translate` custom property (see `dragTranslate` for why a
-    // custom property rather than a directly-written `translate`/`transform`).
-    // Runs in the same change-detection flush as the host's attribute
-    // bindings, so the release path's `data-dragging` removal,
-    // `data-active-snap-point` change, and translate reset to "0px 0px" all
-    // land in one style recalc and transition together.
-    effect(() => {
-      this.#host.nativeElement.style.setProperty('--for-drawer-translate', this.dragTranslate());
-    });
-
-    // ---- Pre-shell setup. Runs in its own afterNextRender registered
-    // BEFORE injectModalShell so the drawer-stack push and snap-point
-    // validation precede the shell's dismissable / focus / scroll-lock
-    // wiring. Descendants observing `hasChild` / depth see consistent
-    // topology throughout their own mount sequence; consumers passing bad
-    // closeThreshold / snapPoints get a clear error before the shell tries
-    // to focus an element that may not exist.
+    // ---- Pre-shell setup. Runs in its own afterNextRender registered BEFORE
+    // injectModalShell so the drawer-stack push, closeThreshold validation, and
+    // snap-point validation precede the shell's dismissable / focus /
+    // scroll-lock wiring. Descendants observing `hasChild` / depth see
+    // consistent topology throughout their mount sequence; consumers passing bad
+    // closeThreshold / snapPoints get a clear error before the shell focuses.
     afterNextRender(() => {
       // 1. Drawer-stack push. The `dragging` signal + resolved
-      //    nested-transform tunables ride along so
-      //    `ForDrawerScaleCoordinator` owns the `style.transform` write for
-      //    the parent surface (issue #180) and reads scope-local defaults
-      //    through this node, not through its own injector.
+      //    nested-transform tunables ride along so `ForDrawerScaleCoordinator`
+      //    owns the `style.transform` write for the parent surface (issue #180)
+      //    and reads scope-local defaults through this node.
       const handle = this.#drawerStack.push({
         host: this.#host.nativeElement,
         side: this.side(),
         scaleBackground: this.scaleBackground(),
         parent: this.#parentDrawer?.hostElement ?? null,
-        dragging: this.#dragging.asReadonly(),
+        dragging: this.dragging,
         nestedScaleAmount: this.#defaults.nestedScaleAmount ?? 0.93,
         nestedTranslateYpx: this.#defaults.nestedTranslateYpx ?? 8,
       });
@@ -491,7 +403,7 @@ export class ForDrawer implements ForDrawerContext {
       this.#stackCleanup = handle.cleanup;
 
       // 2. closeThreshold validation. Throws here so consumers get a clear
-      //    error at mount time instead of a silently-broken dismissal.
+      //    mount-time error instead of a silently-broken dismissal.
       const ct = this.closeThreshold();
       if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
         throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
@@ -499,69 +411,20 @@ export class ForDrawer implements ForDrawerContext {
 
       // 3. Snap-point validation (shape + fadeFromIndex range + first
       //    live-dimension measurement) and mount-time `activeSnapPoint`
-      //    default. Subsequent runtime `[snapPoints]` rebinds are handled by
-      //    the effect below, which re-runs the same validation and
-      //    invalidates the position cache.
-      const points = this.snapPoints();
-      if (points && points.length > 0 && this.activeSnapPoint() === null) {
-        this.activeSnapPoint.set(points[0]!);
-      }
-      this.#validateSnapPointConfig(points);
-      // Try first measurement. In real browsers `getBoundingClientRect`
-      // returns the laid-out dimension here (we're inside `afterNextRender`,
-      // post-layout). In jsdom layout doesn't run, so dimension is 0 — defer
-      // to `#onSwipeStart`'s rect read, which is also pre-gesture.
-      if (points && points.length > 0) {
-        this.#refreshSnapPositions(points);
-      }
-      this.#snapConfigMounted = true;
-    });
-
-    // ---- Runtime `[snapPoints]` / `[fadeFromIndex]` rebind. The mount-time
-    // `afterNextRender` validates the INITIAL config once; this effect
-    // re-validates whenever the consumer swaps the array (or fadeFromIndex)
-    // at runtime. Without it a new array that is non-monotonic — or a
-    // fadeFromIndex that no longer fits — would slip through, and the
-    // position cache (keyed on array identity) would lazily recompute on the
-    // next gesture against the new array but never re-run the shape /
-    // range checks. Guarded by `#snapConfigMounted` so the effect's first
-    // run (which fires before `afterNextRender`) doesn't duplicate the
-    // mount-time validation or race the layout measurement. Validation +
-    // cache invalidation are genuine side effects (route an error / clear a
-    // field), not reactive-state propagation, so an `effect` is the right
-    // tool here. Validation failures are funnelled through the injected
-    // `ErrorHandler` so they reach the consumer's handler exactly like the
-    // mount-time `afterNextRender` throw, instead of tearing down the effect.
-    effect(() => {
-      const points = this.snapPoints();
-      // Track fadeFromIndex too so a runtime range violation is caught.
-      this.fadeFromIndex();
-      if (!this.#snapConfigMounted) {
-        return;
-      }
-      // A new array reference invalidates the position cache so the next
-      // gesture (and `#refreshSnapPositions`) resolves against fresh
-      // geometry instead of the previous array's cached positions.
-      if (this.#snapPositionsCache && this.#snapPositionsCache.snapPoints !== points) {
-        this.#snapPositionsCache = null;
-      }
-      try {
-        this.#validateSnapPointConfig(points);
-        if (points && points.length > 0) {
-          this.#refreshSnapPositions(points);
-        }
-      } catch (error) {
-        this.#errorHandler.handleError(error);
-      }
+      //    default, owned by the gesture engine. Runs here — after the stack
+      //    push and closeThreshold check — so the mount sequence matches what
+      //    it was before the engine was extracted. Runtime `[snapPoints]`
+      //    rebinds are re-validated by the engine's own effect.
+      this.#drag.validateOnMount();
     });
 
     // ---- The shared modal-shell. Owns: synchronous return-focus capture
-    // (WebKit #136), portal, dismissable layer with the triple-veto pattern
-    // + composite `interactOutside`, modal vs non-modal branching (focus
-    // trap + scroll lock + inert siblings), and the `autoFocusOnOpen` /
-    // `autoFocusOnClose` veto hooks. Anything drawer-specific (drag
-    // gesture, snap points, scale coordinator, drawer-stack registration,
-    // backdrop exemption) stays in this directive.
+    // (WebKit #136), portal, dismissable layer (triple-veto + composite
+    // `interactOutside`), modal vs non-modal branching (focus trap + scroll
+    // lock + inert siblings), and the `autoFocusOnOpen` / `autoFocusOnClose`
+    // veto hooks. Anything drawer-specific (drag gesture, snap points, scale
+    // coordinator, drawer-stack registration, backdrop exemption) stays in
+    // this directive / the gesture engine.
     injectModalShell({
       modal: this.modal,
       returnFocus: this.returnFocus,
@@ -591,14 +454,13 @@ export class ForDrawer implements ForDrawerContext {
     });
 
     // ---- Post-shell setup. Runs in its own afterNextRender registered
-    // AFTER injectModalShell so swipe-dismiss arms on a host already
-    // attached to body via the shell's portal, and the scale coordinator
-    // composes on top of a fully-wired surface.
+    // AFTER injectModalShell so swipe-dismiss arms on a host already attached
+    // to body via the shell's portal, and the scale coordinator composes on
+    // top of a fully-wired surface.
     afterNextRender(() => {
       // Register with the scale coordinator last so the wrapper transition
-      // composes after every other side effect has stabilised. The
-      // coordinator itself enforces the reduced-motion + wrapper-presence
-      // gates, so we always call it when the consumer opted in.
+      // composes after every other side effect has stabilised. The coordinator
+      // enforces the reduced-motion + wrapper-presence gates.
       if (this.scaleBackground()) {
         this.#scaleCleanup = this.#scaleCoordinator.registerDrawer({
           setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
@@ -609,61 +471,24 @@ export class ForDrawer implements ForDrawerContext {
         });
       }
 
-      // Arm the swipe gate now that the surface is fully wired. The effect
-      // below owns the actual attach/detach; flipping this signal just
-      // unblocks it (and re-runs it) after first render.
-      this.#swipeReady.set(true);
+      // Arm the swipe gate now that the surface is fully wired. The gesture
+      // engine's effect owns the actual attach/detach; arming unblocks it.
+      this.#drag.arm();
     });
 
-    // ---- Swipe-to-dismiss gate. Arms the pointer listeners only when
-    // `swipeToDismiss` is on AND the user hasn't asked for reduced motion
-    // (drag animations are vestibular-hostile). Both inputs are read
-    // reactively so a runtime flip of either — a `[swipeToDismiss]` rebind or
-    // a live `prefers-reduced-motion` change — arms or disarms the gesture,
-    // mirroring how `ForDrawerScaleCoordinator` already reacts to the
-    // preference. Attaching/detaching listeners is a DOM side effect, so an
-    // `effect` is the right tool; `#swipeReady` gates the pre-render run so
-    // the gesture arms on a host already attached via the shell's portal.
-    effect(() => {
-      const shouldArm = this.swipeToDismiss() && !this.#prefersReducedMotion();
-      if (!this.#swipeReady()) {
-        return;
-      }
-      if (shouldArm && this.#swipeCleanup === null) {
-        this.#swipeCleanup = this.#attachSwipe();
-      } else if (!shouldArm && this.#swipeCleanup !== null) {
-        this.#swipeCleanup();
-        this.#swipeCleanup = null;
-      }
-    });
-
-    // ---- Drawer-owned teardown, in one hook. `DestroyRef.onDestroy`
-    // callbacks fire in REGISTRATION order (FIFO), so the previous design's
-    // two hooks straddling `injectModalShell`'s own hook were ordering the
-    // drawer's cleanup steps purely by the accident of registration order —
-    // and the inline comments described that order inverted (claiming LIFO).
-    // None of the three steps actually depends on running before or after the
-    // shell's dismissable / focus-trap / scroll-lock teardown: the swipe and
-    // scale handles are self-contained (remove listeners, pop the scale
-    // stack), and the drawer-stack pop only requires that descendant *drawers*
-    // are already popped — which Angular guarantees by destroying child
-    // components before their parents, independent of this directive's own
-    // hook ordering. Collapsing into a single hook makes the sequence
-    // explicit and immune to a future reorder of the `injectModalShell` call.
-    //
-    // Order within the hook:
-    //   1. Swipe gesture cleanup — detach pointer listeners / release capture.
-    //   2. Scale coordinator cleanup — pop this drawer's scale config.
-    //   3. Drawer-stack pop — last, so any sibling reads of the stack during
-    //      (1)/(2) still see this node. `ForDrawerStack.cleanup` throws if a
-    //      descendant is still registered, surfacing consumer template bugs
-    //      (e.g. a parent `@if` flipping while the child sits in a separate
-    //      branch). The portal's own destroy hook (registered inside
-    //      `injectModalShell`) still removes the host from the DOM after this
-    //      runs, so return-focus is unaffected.
+    // ---- Drawer-owned teardown, in one hook. Neither step depends on
+    // running before or after the shell's dismissable / focus-trap /
+    // scroll-lock teardown: the scale handle is self-contained (pops the scale
+    // stack), the swipe listeners are detached by the gesture engine's own
+    // destroy hook, and the drawer-stack pop only requires that descendant
+    // *drawers* are already popped — which Angular guarantees by destroying
+    // child components before their parents. Scale cleanup runs first, then the
+    // drawer-stack pop (so any sibling reads of the stack during scale cleanup
+    // still see this node; `ForDrawerStack.cleanup` throws if a descendant is
+    // still registered, surfacing consumer template bugs). The portal's own
+    // destroy hook still removes the host from the DOM after this runs, so
+    // return-focus is unaffected.
     inject(DestroyRef).onDestroy(() => {
-      this.#swipeCleanup?.();
-      this.#swipeCleanup = null;
       this.#scaleCleanup?.();
       this.#scaleCleanup = null;
       this.#stackCleanup?.();
@@ -721,252 +546,4 @@ export class ForDrawer implements ForDrawerContext {
    * @internal
    */
   readonly lastCloseValue = this.#lastCloseValue.asReadonly();
-
-  // ---- Swipe wiring ----
-
-  #attachSwipe(): () => void {
-    const el = this.#host.nativeElement;
-    return attachSwipeDismiss({
-      element: el,
-      getDirections: () => dragDirections(this.side(), !!this.snapPoints()?.length),
-      // Always arm on a tiny gesture and let the move handler decide; we
-      // resolve the actual close threshold on release via resolveSnapTarget.
-      getThreshold: () => 1,
-      onSwipeStart: (detail) => this.#onSwipeStart(detail),
-      onSwipeMove: (detail) => this.#onSwipeMove(detail),
-      onSwipeEnd: (detail) => this.#onSwipeRelease(detail),
-      onSwipeCancel: (detail) => this.#onSwipeRelease(detail),
-    });
-  }
-
-  #onSwipeStart(detail: SwipeEventDetail): void {
-    // Bail out conditions that the swipe-dismiss helper can't know about:
-    // (a) `handleOnly` and the gesture didn't start on the registered handle,
-    // (b) the gesture started inside a scrollable element that hasn't reached
-    //     its edge along the dismissal direction (don't steal scroll).
-    const target = detail.originalEvent.target as Element | null;
-    const handle = this.#handleEl();
-    if (this.handleOnly() && (!handle || !target || !handle.contains(target))) {
-      this.#dragging.set(false);
-      return;
-    }
-    if (target && isScrollableAtEdge(target, detail.direction, this.#host.nativeElement)) {
-      this.#dragging.set(false);
-      return;
-    }
-
-    this.#dragging.set(true);
-    this.#dragProgress.set(0);
-    this.#pointerStartTime = detail.originalEvent.timeStamp || performance.now();
-    this.#pointerLastTime = this.#pointerStartTime;
-    this.#pointerLastX = detail.originalEvent.clientX;
-    this.#pointerLastY = detail.originalEvent.clientY;
-    this.#pointerVelocity = 0;
-    const rect = this.#host.nativeElement.getBoundingClientRect();
-    this.#dimensionAtStart = sideAxis(this.side()) === 'y' ? rect.height : rect.width;
-
-    // Refresh & validate snap positions for this gesture's dimension. If
-    // mount-time first-measurement saw a non-zero dimension equal to the
-    // current one, this is a cache hit and no work runs. Validation throws
-    // here (pre-drag) rather than from the release handler.
-    const points = this.snapPoints();
-    if (points && points.length > 0) {
-      this.#refreshSnapPositions(points);
-      const cached = this.#snapPositionsCache;
-      const positions =
-        cached && cached.snapPoints === points
-          ? cached.positions
-          : computeSnapPositions(points, this.#dimensionAtStart);
-      const activePos = this.#activeSnapPositionPx(points, positions);
-      const highestPos = positions[positions.length - 1] ?? activePos;
-      this.#dragMinOffset = activePos - highestPos;
-    } else {
-      this.#dragMinOffset = 0;
-    }
-
-    this.dragMove.emit({ percentageDragged: 0, originalEvent: detail.originalEvent });
-  }
-
-  /**
-   * Dimension-independent snap-point validation: the per-point shape /
-   * strict-increase check (`validateSnapPointsShape`) plus the
-   * `fadeFromIndex` range check. Throws with a `[forty-cdk/drawer]`-prefixed
-   * message on the first failure. A `null` / empty array is a valid "no snap
-   * points" config and skips both checks. Shared by the mount-time
-   * `afterNextRender` and the runtime-rebind effect so the two paths stay in
-   * lockstep.
-   */
-  #validateSnapPointConfig(points: ReadonlyArray<ForDrawerSnapPoint> | undefined): void {
-    if (!points || points.length === 0) {
-      return;
-    }
-    validateSnapPointsShape(points);
-    const idx = this.fadeFromIndex();
-    if (idx !== undefined && (idx < 0 || idx >= points.length)) {
-      throw new Error(
-        `[forty-cdk/drawer] fadeFromIndex (${idx}) is out of range for snapPoints (length ${points.length}).`,
-      );
-    }
-  }
-
-  /**
-   * Resolve and validate snap positions against the host's current
-   * dimension. No-op if the cached positions already match BOTH the live
-   * dimension and the current `snapPoints` array. Throws (with the
-   * offending-point error message) when the live dimension flips a mixed
-   * `'NNpx'` + fraction array out of monotonic order.
-   *
-   * Called from `afterNextRender` (first measurement), from `#onSwipeStart`
-   * (resize between gestures, or a runtime `[snapPoints]` rebind), and from
-   * the runtime-rebind effect. Never from `#onSwipeRelease` — by the time
-   * release fires, the cache is already populated for this gesture's
-   * dimension and array.
-   */
-  #refreshSnapPositions(points: ReadonlyArray<ForDrawerSnapPoint>): void {
-    const rect = this.#host.nativeElement.getBoundingClientRect();
-    const dim = sideAxis(this.side()) === 'y' ? rect.height : rect.width;
-    if (dim <= 0) {
-      // No layout yet (jsdom, or display: none). Defer; the next call with
-      // a real dimension will do the work.
-      return;
-    }
-    const cached = this.#snapPositionsCache;
-    if (cached && cached.dimension === dim && cached.snapPoints === points) {
-      return;
-    }
-    const positions = computeSnapPositions(points, dim);
-    validateSnapPositions(points, positions, dim);
-    this.#snapPositionsCache = { dimension: dim, snapPoints: points, positions };
-  }
-
-  #onSwipeMove(detail: SwipeEventDetail): void {
-    if (!this.#dragging()) {
-      return;
-    }
-    const event = detail.originalEvent;
-    const now = event.timeStamp || performance.now();
-    const dx = event.clientX - this.#pointerLastX;
-    const dy = event.clientY - this.#pointerLastY;
-    const dt = Math.max(1, now - this.#pointerLastTime);
-
-    // Magnitude moved toward the anchored edge (positive = move toward edge).
-    const moveTowardEdge = (() => {
-      switch (this.side()) {
-        case 'bottom':
-          return dy; // pointer moves down → toward bottom edge → positive
-        case 'top':
-          return -dy;
-        case 'right':
-          return dx;
-        case 'left':
-          return -dx;
-      }
-    })();
-    this.#pointerVelocity = moveTowardEdge / dt; // px per ms toward edge
-    this.#pointerLastX = event.clientX;
-    this.#pointerLastY = event.clientY;
-    this.#pointerLastTime = now;
-
-    // Integrate the per-event pointer delta into the cumulative drag offset,
-    // clamped to this gesture's bounds. Without snap points the lower bound
-    // is 0 (the surface only moves toward the edge to dismiss); with snap
-    // points it goes negative so a drag away from the edge grows the surface
-    // toward a larger snap. The host's `[style.translate]` binding reflects
-    // the offset reactively — no imperative DOM write here.
-    const nextOffset = Math.max(this.#dragMinOffset, this.#dragOffset() + moveTowardEdge);
-    this.#dragOffset.set(nextOffset);
-
-    const dim = this.#dimensionAtStart || 1;
-    // `percentageDragged` tracks progress toward dismiss, so growth (a
-    // negative offset) reads as 0 rather than a negative number.
-    const percentageDragged = Math.min(1, Math.max(0, nextOffset / dim));
-    this.#dragProgress.set(percentageDragged);
-    this.dragMove.emit({ percentageDragged, originalEvent: event });
-  }
-
-  #onSwipeRelease(detail: SwipeEventDetail): void {
-    if (!this.#dragging()) {
-      return;
-    }
-    const event = detail.originalEvent;
-    const offset = this.#dragOffset();
-    const dim = this.#dimensionAtStart || 1;
-    const closeThreshold = this.closeThreshold();
-    const points = this.snapPoints();
-
-    let willClose = false;
-    let nextSnap: ForDrawerSnapPoint | null = null;
-
-    if (points && points.length > 0) {
-      // `position` is the surface position along the dismissal axis from the
-      // anchored edge. With `offset` representing how far the surface has
-      // been pulled toward the edge (positive), the effective position from
-      // the edge is `currentSnapPosition - offset`.
-      //
-      // Read snap positions from the pre-validated cache populated by
-      // `#refreshSnapPositions` at mount and on `#onSwipeStart`. The
-      // release path is throw-free by construction: any input that would
-      // fail monotonicity at the live dimension has already failed before
-      // we get here.
-      const cached = this.#snapPositionsCache;
-      const snapPositions =
-        cached && cached.dimension === dim && cached.snapPoints === points
-          ? cached.positions
-          : computeSnapPositions(points, dim);
-      const position = this.#activeSnapPositionPx(points, snapPositions) - offset;
-      const resolved = resolveSnapTarget<ForDrawerSnapPoint>({
-        snapPoints: points,
-        snapPositions,
-        activeSnapPoint: this.activeSnapPoint(),
-        position,
-        velocity: -this.#pointerVelocity, // helper sema: positive = away from edge
-        closeThreshold,
-      });
-      willClose = resolved.willClose;
-      nextSnap = resolved.nextSnapPoint;
-    } else {
-      // No snap points: dismiss when dragged past closeThreshold OR fast
-      // flick toward edge.
-      willClose = offset >= dim * closeThreshold || this.#pointerVelocity >= 0.4;
-    }
-
-    this.release.emit({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
-
-    // Zero the offset and flip `dragging` off together. Both writes (plus the
-    // `activeSnapPoint` change below) flush in one change-detection pass, so
-    // the host applies the `data-dragging` removal, the new
-    // `data-active-snap-point`, and the `translate` reset to zero in a single
-    // style recalc — the consumer's `transition: translate` then animates the
-    // drag delta away in lockstep with the snap-position transition, with no
-    // intermediate jump to the previous rest position.
-    this.#dragOffset.set(0);
-    this.#dragProgress.set(0);
-    this.#dragging.set(false);
-
-    if (willClose) {
-      this.requestClose('swipe');
-      return;
-    }
-
-    if (nextSnap !== null && nextSnap !== this.activeSnapPoint()) {
-      this.activeSnapPoint.set(nextSnap);
-    }
-  }
-
-  /**
-   * Pixel position (from the anchored edge) of the currently-active snap
-   * point within `snapPositions`. Falls back to the closest-to-edge entry
-   * when the active point is unset or not found in `snapPoints`.
-   */
-  #activeSnapPositionPx(
-    points: ReadonlyArray<ForDrawerSnapPoint>,
-    snapPositions: ReadonlyArray<number>,
-  ): number {
-    const active = this.activeSnapPoint();
-    if (active == null) {
-      return snapPositions[0]!;
-    }
-    const idx = points.indexOf(active);
-    return idx >= 0 ? snapPositions[idx]! : snapPositions[0]!;
-  }
 }
