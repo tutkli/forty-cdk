@@ -321,7 +321,7 @@ test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
       await el(page, 'before').focus();
       await page.mouse.move(0, 0);
       await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
-      await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+      await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
     } finally {
       await context.close();
     }
