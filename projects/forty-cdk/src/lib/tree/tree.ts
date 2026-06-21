@@ -17,13 +17,14 @@ import { Collection } from '../_internal/collection/collection';
 import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
   type ListNavigationAction,
-  moveIndex,
   resolveListNavigation,
+  resolveTreeExpandCollapse,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import { injectTypeahead } from '../_internal/typeahead/typeahead';
+import { ActiveDescendantFocusModel, type FocusModel, RovingFocusModel } from './focus-model';
 import {
   FOR_TREE_CONTAINER_CONTEXT,
   FOR_TREE_CONTEXT,
@@ -33,6 +34,7 @@ import {
   type ForTreeVisibleNode,
 } from './tree-context';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
+import { TreeSelection } from './tree-selection';
 import { TreeVirtualizedNavigator } from './tree-virtualized-navigator';
 
 type VisibleEntry = ForTreeVisibleNode;
@@ -255,7 +257,26 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     return this.#virtualized() ? '0' : null;
   });
 
+  readonly #selection = new TreeSelection({
+    value: this.value,
+    expanded: this.expanded,
+    multiple: this.multiple,
+    disabled: this.disabled,
+    selectionMode: this.selectionMode,
+    cascade: this.cascade,
+    descendantsOf: this.descendantsOf,
+    visibleNodes: this.#visibleEntries,
+    visibleHandles: this.#visibleHandles,
+    roving: this.roving,
+    setValue: (next) => this.value.set(next),
+    setExpanded: (next) => this.expanded.set(next),
+    anchorValue: () => this.#anchorValue(),
+    setAnchorValue: (value) => this.#anchorValue.set(value),
+  });
+
   #navigator: TreeVirtualizedNavigator | null = null;
+  #rovingModel: RovingFocusModel | null = null;
+  #activeDescendantModel: ActiveDescendantFocusModel | null = null;
 
   #requireNavigator(): TreeVirtualizedNavigator {
     return (this.#navigator ??= new TreeVirtualizedNavigator({
@@ -265,6 +286,26 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       getActiveId: () => this.#activeId(),
       setActiveId: (id) => this.#activeId.set(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+    }));
+  }
+
+  #focusModel(): FocusModel {
+    if (this.#virtualized()) {
+      return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel({
+        navigator: () => this.#requireNavigator(),
+        setActiveId: (id) => this.#activeId.set(id),
+      }));
+    }
+    return (this.#rovingModel ??= new RovingFocusModel({
+      roving: this.roving,
+      visibleNodes: this.#visibleEntries,
+      visibleHandles: this.#visibleHandles,
+      selectOnFocus: (value) => {
+        if (!this.multiple() && this.selectionFollowsFocus()) {
+          this.value.set([value]);
+          this.#anchorValue.set(value);
+        }
+      },
     }));
   }
 
@@ -307,25 +348,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * are checked, `'false'` when none are, and `'mixed'` otherwise.
    */
   checkState(value: string): 'true' | 'false' | 'mixed' {
-    const current = this.value();
-    if (this.selectionMode() !== 'checkbox' || !this.cascade()) {
-      return current.includes(value) ? 'true' : 'false';
-    }
-    const descendants = this.#resolveDescendants(value);
-    if (descendants.length === 0) {
-      return current.includes(value) ? 'true' : 'false';
-    }
-    const selected = new Set(current);
-    let checked = 0;
-    for (const d of descendants) {
-      if (selected.has(d)) {
-        checked += 1;
-      }
-    }
-    if (checked === 0) {
-      return 'false';
-    }
-    return checked === descendants.length ? 'true' : 'mixed';
+    return this.#selection.checkState(value);
   }
 
   setExpanded(value: string, open: boolean): void {
@@ -340,35 +363,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   select(value: string): void {
-    if (this.disabled()) {
-      return;
-    }
-    if (this.selectionMode() === 'checkbox' && this.cascade()) {
-      const group = new Set([value, ...this.#resolveDescendants(value)]);
-      const current = this.value();
-      const allChecked = [...group].every((v) => current.includes(v));
-      this.value.set(
-        allChecked ? current.filter((v) => !group.has(v)) : [...new Set([...current, ...group])],
-      );
-    } else if (this.multiple() || this.selectionMode() === 'checkbox') {
-      const current = this.value();
-      this.value.set(
-        current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
-      );
-    } else {
-      this.value.set([value]);
-    }
-    this.#anchorValue.set(value);
-  }
-
-  #resolveDescendants(value: string): readonly string[] {
-    const fn = this.descendantsOf();
-    if (!fn) {
-      throw new Error(
-        '[forty-cdk/tree] `cascade` requires a `descendantsOf` descriptor returning the descendant values of a node.',
-      );
-    }
-    return fn(value);
+    this.#selection.select(value);
   }
 
   #relocateActiveOnCollapse(value: string): void {
@@ -387,174 +382,59 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     }
   }
 
-  navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
+  navigate(_currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {
       return;
     }
-    const items = this.#visibleHandles();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: false,
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
-      return;
-    }
-    this.roving.focusActive(target.host);
-    if (!this.multiple() && this.selectionFollowsFocus()) {
-      this.value.set([target.value()]);
-      this.#anchorValue.set(target.value());
-    }
+    this.#focusModel().navigate(action);
   }
 
-  expandOrEnter(currentItem: HTMLElement): void {
+  expandOrEnter(_currentItem: HTMLElement): void {
     if (this.disabled()) {
       return;
     }
-    const entry = this.#visibleEntries().find((e) => e.handle.host === currentItem);
-    if (!entry || entry.handle.disabled()) {
+    const model = this.#focusModel();
+    const cur = model.current();
+    if (!cur || cur.disabled || !cur.expandable) {
       return;
     }
-    const handle = entry.handle;
-    if (!handle.expandable()) {
+    if (!this.isExpanded(cur.value)) {
+      this.setExpanded(cur.value, true);
       return;
     }
-    if (!this.isExpanded(handle.value())) {
-      this.setExpanded(handle.value(), true);
-      return;
-    }
-    const child = handle.childContainer();
-    const firstChild = child ? firstEnabledHost(child.items()) : null;
-    if (firstChild) {
-      this.roving.focusActive(firstChild);
-    }
+    model.enterChild();
   }
 
-  collapseOrLeave(currentItem: HTMLElement): void {
+  collapseOrLeave(_currentItem: HTMLElement): void {
     if (this.disabled()) {
       return;
     }
-    const entry = this.#visibleEntries().find((e) => e.handle.host === currentItem);
-    if (!entry) {
+    const model = this.#focusModel();
+    const cur = model.current();
+    if (!cur) {
       return;
     }
-    const handle = entry.handle;
-    if (handle.expandable() && this.isExpanded(handle.value())) {
-      this.setExpanded(handle.value(), false);
+    if (cur.expandable && this.isExpanded(cur.value)) {
+      this.setExpanded(cur.value, false);
       return;
     }
-    if (entry.parentHost) {
-      this.roving.focusActive(entry.parentHost);
-    }
+    model.moveToParent();
   }
 
   expandSiblings(currentItem: HTMLElement): void {
-    if (this.disabled()) {
-      return;
-    }
-    const entries = this.#visibleEntries();
-    const current = entries.find((e) => e.handle.host === currentItem);
-    if (!current) {
-      return;
-    }
-    const next = [...this.expanded()];
-    for (const entry of entries) {
-      if (
-        entry.parentHost === current.parentHost &&
-        entry.handle.expandable() &&
-        !next.includes(entry.handle.value())
-      ) {
-        next.push(entry.handle.value());
-      }
-    }
-    this.expanded.set(next);
+    this.#selection.expandSiblings(currentItem);
   }
 
   extendByArrow(currentItem: HTMLElement, action: 'next' | 'prev'): void {
-    if (this.disabled() || !this.multiple()) {
-      return;
-    }
-    const items = this.#visibleHandles();
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
-      loop: false,
-      isDisabled: (i) => items[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = items[next];
-    if (!target) {
-      return;
-    }
-    // Establish the range anchor at the origin of the shift-extend run so a
-    // following Shift+Space ranges from where the user started extending, not
-    // from a stale (or absent) anchor. A pre-existing anchor (e.g. from a prior
-    // click) is left in place, matching the listbox range contract.
-    if (this.#anchorValue() === null && currentIndex >= 0) {
-      this.#anchorValue.set(items[currentIndex]!.value());
-    }
-    this.roving.focusActive(target.host);
-    const value = target.value();
-    const current = this.value();
-    this.value.set(
-      current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
-    );
+    this.#selection.extendByArrow(currentItem, action);
   }
 
   selectRangeToFocused(currentItem: HTMLElement): void {
-    if (this.disabled() || !this.multiple()) {
-      return;
-    }
-    const items = this.#visibleHandles();
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
-    if (currentIndex < 0) {
-      return;
-    }
-    const anchorValue = this.#anchorValue();
-    const anchorIndex =
-      anchorValue === null ? currentIndex : items.findIndex((i) => i.value() === anchorValue);
-    const start = anchorIndex < 0 ? currentIndex : anchorIndex;
-    const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
-
-    const next = [...this.value()];
-    for (let i = lo; i <= hi; i++) {
-      const item = items[i];
-      if (!item || item.disabled()) {
-        continue;
-      }
-      const value = item.value();
-      if (!next.includes(value)) {
-        next.push(value);
-      }
-    }
-    this.value.set(next);
+    this.#selection.selectRangeToFocused(currentItem);
   }
 
   selectAll(): void {
-    if (this.disabled() || !this.multiple()) {
-      return;
-    }
-    const values = this.#visibleEntries()
-      .map((entry) => entry.handle)
-      .filter((handle) => !handle.disabled())
-      .map((handle) => handle.value());
-    if (values.length === 0) {
-      return;
-    }
-    const current = this.value();
-    const allSelected = values.every((v) => current.includes(v));
-    this.value.set(allSelected ? [] : [...new Set([...current, ...values])]);
+    this.#selection.selectAll();
   }
 
   handleTypeahead(event: KeyboardEvent): boolean {
@@ -565,19 +445,18 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (!buffer) {
       return true;
     }
-    const match = this.#visibleEntries()
-      .map((entry) => entry.handle)
-      .find((handle) => {
-        if (handle.disabled()) {
-          return false;
-        }
-        const text = (handle.textValue() || handle.labelEl()?.textContent || '')
-          .trim()
-          .toLowerCase();
-        return text.startsWith(buffer);
-      });
+    const source = this.#virtualized()
+      ? this.#items.items()
+      : this.#visibleEntries().map((entry) => entry.handle);
+    const match = source.find((handle) => {
+      if (handle.disabled()) {
+        return false;
+      }
+      const text = (handle.textValue() || handle.labelEl()?.textContent || '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
     if (match) {
-      this.roving.focusActive(match.host);
+      this.#focusModel().typeaheadTo(match);
     }
     return true;
   }
@@ -588,6 +467,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   protected onHostKeyDown(event: KeyboardEvent): void {
     if (!this.#virtualized() || this.disabled()) return;
+    const host = this.#host.nativeElement;
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
       this.#activateActiveDescendant();
@@ -599,21 +479,24 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     });
     if (action === 'next' || action === 'prev' || action === 'first' || action === 'last') {
       event.preventDefault();
-      this.#requireNavigator().navigate(action);
+      this.navigate(host, action);
       return;
     }
-    const intent = this.#resolveExpandCollapse(event);
+    const intent = resolveTreeExpandCollapse(event, {
+      orientation: this.orientation(),
+      dir: this.dir(),
+    });
     if (intent === 'expand') {
       event.preventDefault();
-      this.#expandOrEnterVirtualized();
+      this.expandOrEnter(host);
       return;
     }
     if (intent === 'collapse') {
       event.preventDefault();
-      this.#collapseOrLeaveVirtualized();
+      this.collapseOrLeave(host);
       return;
     }
-    this.#typeaheadVirtualized(event);
+    this.handleTypeahead(event);
   }
 
   protected onHostFocusIn(): void {
@@ -634,64 +517,6 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     const handle = this.#items.items().find((o) => o.id() === id);
     if (!handle || handle.disabled()) return;
     this.select(handle.value());
-  }
-
-  #expandOrEnterVirtualized(): void {
-    const nav = this.#requireNavigator();
-    const cur = nav.currentEntry();
-    if (!cur || cur.disabled || !cur.expandable) return;
-    if (!this.isExpanded(cur.value)) {
-      this.setExpanded(cur.value, true);
-      return;
-    }
-    nav.enterChild();
-  }
-
-  #collapseOrLeaveVirtualized(): void {
-    const nav = this.#requireNavigator();
-    const cur = nav.currentEntry();
-    if (!cur) return;
-    if (cur.expandable && this.isExpanded(cur.value)) {
-      this.setExpanded(cur.value, false);
-      return;
-    }
-    nav.moveToParent();
-  }
-
-  #resolveExpandCollapse(event: KeyboardEvent): 'expand' | 'collapse' | null {
-    const dir = this.dir();
-    if (this.orientation() === 'vertical') {
-      if (event.key === 'ArrowRight') {
-        return dir === 'rtl' ? 'collapse' : 'expand';
-      }
-      if (event.key === 'ArrowLeft') {
-        return dir === 'rtl' ? 'expand' : 'collapse';
-      }
-      return null;
-    }
-    if (event.key === 'ArrowDown') {
-      return 'expand';
-    }
-    if (event.key === 'ArrowUp') {
-      return 'collapse';
-    }
-    return null;
-  }
-
-  #typeaheadVirtualized(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) return;
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) return;
-    const items = this.#items.items();
-    const match = items.find((h) => {
-      if (h.disabled()) return false;
-      const text = (h.textValue() || h.labelEl()?.textContent || '').trim().toLowerCase();
-      return text.startsWith(buffer);
-    });
-    if (match) {
-      this.#activeId.set(match.id());
-      match.host.scrollIntoView?.({ block: 'nearest' });
-    }
   }
 
   registerItem(handle: ForTreeItemHandle): void {

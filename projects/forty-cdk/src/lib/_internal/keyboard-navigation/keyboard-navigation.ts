@@ -254,6 +254,39 @@ export function resolveTreegridExpandCollapse(
   return null;
 }
 
+export interface TreeExpandCollapseOptions {
+  /** Navigation axis of the tree. */
+  orientation: ListOrientation;
+  /** Reading direction. RTL swaps ArrowLeft/ArrowRight. Default `'ltr'`. */
+  dir?: WritingDirection;
+}
+
+/**
+ * Maps an arrow keydown to an expand/collapse intent for a `tree` (APG Tree
+ * View), spanning both orientations. In a vertical tree the horizontal arrows
+ * drive expansion (RTL-mirrored via {@link resolveTreegridExpandCollapse}); in
+ * a horizontal tree ArrowDown expands and ArrowUp collapses. Returns `null` for
+ * any other key. The caller decides whether the intent actually applies (the
+ * focused node is an expandable parent in the right open/closed state) and
+ * otherwise falls through to list navigation.
+ */
+export function resolveTreeExpandCollapse(
+  event: KeyboardEvent,
+  options: TreeExpandCollapseOptions,
+): ExpandCollapseAction | null {
+  const { orientation, dir = 'ltr' } = options;
+  if (orientation === 'vertical') {
+    return resolveTreegridExpandCollapse(event, dir);
+  }
+  if (event.key === 'ArrowDown') {
+    return 'expand';
+  }
+  if (event.key === 'ArrowUp') {
+    return 'collapse';
+  }
+  return null;
+}
+
 function scanFirstEnabled(
   start: number,
   count: number,
