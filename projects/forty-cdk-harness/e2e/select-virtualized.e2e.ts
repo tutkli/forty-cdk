@@ -7,6 +7,7 @@ test.describe('Select virtualization (Shape C)', () => {
   }) => {
     await gotoFixture(page, 'select-virtualized');
     await el(page, 'trigger').click();
+    await expect(page.locator('[data-testid="option"]').first()).toBeAttached();
     const count = await page.locator('[data-testid="option"]').count();
     expect(count).toBeGreaterThanOrEqual(1);
     expect(count).toBeLessThan(80);
