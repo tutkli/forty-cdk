@@ -19,10 +19,10 @@ import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-
 import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
   type ListNavigationAction,
-  moveIndex,
   resolveListNavigation,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
 import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
 import {
@@ -318,20 +318,8 @@ export class ForListbox<T = string>
     if (this.effectiveDisabled() || !this.multiple()) {
       return;
     }
-    const options = this.#options.items();
-    if (options.length === 0) {
-      return;
-    }
-    const currentIndex = options.findIndex((o) => o.host === currentOption);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
-      loop: false,
-      isDisabled: (i) => options[i]!.disabled(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = options[next];
-    if (!target) {
+    const target = nextEnabledHandle(this.#options.items(), currentOption, action, { loop: false });
+    if (target === null) {
       return;
     }
     // Focus moves regardless of readonly — same contract as `navigate()`. Readonly
@@ -437,20 +425,10 @@ export class ForListbox<T = string>
     if (this.effectiveDisabled()) {
       return;
     }
-    const options = this.#options.items();
-    if (options.length === 0) {
-      return;
-    }
-    const currentIndex = options.findIndex((o) => o.host === currentOption);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, options.length, action, {
+    const target = nextEnabledHandle(this.#options.items(), currentOption, action, {
       loop: this.loop(),
-      isDisabled: (i) => options[i]!.disabled(),
     });
-    if (next === null) {
-      return;
-    }
-    const target = options[next];
-    if (!target) {
+    if (target === null) {
       return;
     }
     target.host.focus();

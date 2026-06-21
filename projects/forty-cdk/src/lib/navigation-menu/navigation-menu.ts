@@ -17,9 +17,9 @@ import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissab
 import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import {
   type ListNavigationAction,
-  moveIndex,
   type WritingDirection,
 } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
@@ -286,15 +286,10 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) return;
-    const triggers = this.#triggers.items();
-    if (triggers.length === 0) return;
-    const currentIndex = triggers.findIndex((t) => t.host === currentTrigger);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
+    const target = nextEnabledHandle(this.#triggers.items(), currentTrigger, action, {
       loop: this.loop(),
-      isDisabled: (i) => triggers[i]!.disabled(),
     });
-    if (next === null) return;
-    triggers[next]?.host.focus();
+    target?.host.focus();
   }
 
   focusTrigger(value: string): void {
