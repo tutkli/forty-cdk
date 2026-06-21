@@ -109,7 +109,10 @@ export interface ForDragEndEvent {
   readonly dropped: boolean;
 }
 
-/** Internal coordination surface a `ForDraggable` exposes to its `[forDragHandle]` children. */
+/**
+ * Internal coordination surface a `ForDraggable` / `ForFreeDrag` exposes to its
+ * `[forDragHandle]` children.
+ */
 export interface ForDraggableContext {
   /** Register a handle element; while any handle is registered, pointer drags may only start on one. */
   registerHandle(el: HTMLElement): void;
@@ -123,7 +126,9 @@ export const FOR_DRAGGABLE_CONTEXT = new InjectionToken<ForDraggableContext>(
 export function injectDraggableContext(piece: string): ForDraggableContext {
   const ctx = inject(FOR_DRAGGABLE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/drag-drop] ${piece} must be used inside a [forDraggable] element.`);
+    throw new Error(
+      `[forty-cdk/drag-drop] ${piece} must be used inside a [forDraggable] or [forFreeDrag] element.`,
+    );
   }
   return ctx;
 }

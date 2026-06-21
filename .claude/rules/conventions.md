@@ -240,3 +240,15 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   to `ngOnInit` (via `runInInjectionContext`), where bound inputs are available yet the core's
   `afterNextRender` still registers before the first render. Built entirely on the Shape B core — no
   change to `injectVirtualizer`'s public API. See [#856](https://github.com/tutkli/forty-cdk/issues/856).
+- **`[forFreeDrag]` (drag-drop) implements no WAI-ARIA APG pattern and owns no role / ARIA state.**
+  "Freely reposition an element by pointer drag" is an interaction / behaviour convenience, not a UI
+  pattern — like `injectVirtualizer` it has no role, no keyboard interaction and no ARIA state of its
+  own, so the project rule "declare which APG pattern you implement before writing code" has no
+  answer here. It is pointer-only (matching CDK's `cdkDrag` free-drag), reflecting only the
+  `data-dragging` / `data-disabled` styling hooks and writing a `transform: translate(...)` on the
+  moved element (the host, or a resolved `rootElement` ancestor). Its a11y responsibility is
+  inverted: instead of adding semantics it must **not destroy** the moved element's semantics — the
+  consumer keeps the moved element fully operable at its default position (a repositionable dialog
+  stays usable by keyboard); dragging is a pointer convenience, not the only way to use it. SSR-safe
+  by gating all DOM resolution, transform writes and pointer-session setup on `isPlatformBrowser`.
+  See [#1020](https://github.com/tutkli/forty-cdk/issues/1020).
