@@ -45,6 +45,12 @@ import { ForToastTitle } from './toast-title';
  * Per-toast classes: a config's `class` / `classList` is applied to the
  * rendered toast root, merged with the directive's own host attributes.
  *
+ * Enter / exit animations: a toast renders inside this viewport's `@for`, so a
+ * `[animate.leave]` on the row defers the unmount natively — the toast stays
+ * mounted until its exit animation settles. Supply the class per-toast with
+ * `show({ animateLeave })` or set a viewport-wide default with `[animateLeave]`
+ * (per-toast wins); `[animateEnter]` mirrors it for class-applied entrances.
+ *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
  * or globally with `provideForToastDefaults({ hotkey: '…' })`. The listener
@@ -88,6 +94,8 @@ import { ForToastTitle } from './toast-title';
       <div
         forToast
         [class]="toastClass(toast)"
+        [animate.enter]="toastAnimateEnter(toast)"
+        [animate.leave]="toastAnimateLeave(toast)"
         [variant]="toast.config.variant ?? 'info'"
         [duration]="toast.config.duration ?? defaultDuration()"
         [closable]="toast.config.closable !== false"
@@ -176,6 +184,23 @@ export class ForToastViewport {
    */
   readonly swipeThreshold = input(50, { transform: numberAttribute });
 
+  /**
+   * Default `animate.enter` class applied to every programmatic toast that
+   * doesn't set `animateEnter` in its own config. Empty (default) plays no
+   * class-applied enter animation — a plain CSS `@keyframes` on `[forToast]`
+   * already runs on mount without it.
+   */
+  readonly animateEnter = input<string>('');
+
+  /**
+   * Default `animate.leave` class applied to every programmatic toast that
+   * doesn't set `animateLeave` in its own config. Empty (default) unmounts the
+   * toast synchronously on dismiss; set it (or per-toast `animateLeave`) to
+   * keep the toast mounted until its exit animation settles before it leaves
+   * the DOM.
+   */
+  readonly animateLeave = input<string>('');
+
   protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
 
   /**
@@ -260,5 +285,23 @@ export class ForToastViewport {
    */
   protected toastClass(toast: ForToastInstance): string {
     return resolveConfigClass(toast.config) ?? '';
+  }
+
+  /**
+   * `animate.enter` class for a toast row: its per-toast `animateEnter` config
+   * when set, otherwise the viewport-level `[animateEnter]`. Empty when neither
+   * is set.
+   */
+  protected toastAnimateEnter(toast: ForToastInstance): string {
+    return toast.config.animateEnter ?? this.animateEnter();
+  }
+
+  /**
+   * `animate.leave` class for a toast row: its per-toast `animateLeave` config
+   * when set, otherwise the viewport-level `[animateLeave]`. Empty when neither
+   * is set, which keeps the toast's unmount synchronous on dismiss.
+   */
+  protected toastAnimateLeave(toast: ForToastInstance): string {
+    return toast.config.animateLeave ?? this.animateLeave();
   }
 }

@@ -6,8 +6,13 @@ import {
   type TemplateRef,
   viewChild,
 } from '@angular/core';
-import type { ForToastSwipeDirection, ForToastTemplateContext } from './toast-context';
-import { TestBed } from '@angular/core/testing';
+import type {
+  ForToastInstance,
+  ForToastSwipeDirection,
+  ForToastTemplateContext,
+} from './toast-context';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { afterEachOverlayCleanup } from '../../test-utils/overlay-cleanup';
 import { nextMacrotask } from '../../test-utils/flush';
@@ -45,7 +50,12 @@ function pointer(
   imports: [ForToastViewport, ForToastTitle, ForToastDescription, ForToastAction, ForToastClose],
   template: `
     <button #opener type="button" data-test-id="opener">Opener</button>
-    <for-toast-viewport [maxVisible]="maxVisible()" [hotkey]="hotkey()" />
+    <for-toast-viewport
+      [maxVisible]="maxVisible()"
+      [hotkey]="hotkey()"
+      [animateEnter]="vpAnimateEnter()"
+      [animateLeave]="vpAnimateLeave()"
+    />
     <ng-template #titleOnly let-toast let-data="data">
       <span data-test-id="custom-title">{{ data.label }}</span>
       <button type="button" data-test-id="custom-dismiss" (click)="toast.dismiss()">x</button>
@@ -62,6 +72,8 @@ class ProgrammaticHost {
   readonly toasts = inject(ForToastManager);
   readonly maxVisible = signal<number | null>(null);
   readonly hotkey = signal<string>('');
+  readonly vpAnimateEnter = signal<string>('');
+  readonly vpAnimateLeave = signal<string>('');
   readonly tpl =
     viewChild.required<TemplateRef<ForToastTemplateContext<{ label: string }>>>('titleOnly');
   readonly wiredTpl =
@@ -1495,6 +1507,82 @@ describe('global defaults via provideForToastDefaults', () => {
     );
     fixture.detectChanges();
     expect(document.activeElement).toBe(el.querySelector('[forToast]'));
+  });
+});
+
+describe('exit / enter animation cascade (config → viewport)', () => {
+  afterEachOverlayCleanup();
+
+  interface AnimateResolver {
+    toastAnimateEnter(toast: ForToastInstance): string;
+    toastAnimateLeave(toast: ForToastInstance): string;
+  }
+
+  function resolver(fixture: ComponentFixture<ProgrammaticHost>): AnimateResolver {
+    return fixture.debugElement.query(By.directive(ForToastViewport))!
+      .componentInstance as unknown as AnimateResolver;
+  }
+
+  it('per-toast animateLeave wins over the viewport [animateLeave]; viewport applies when omitted', () => {
+    const r = renderHost(ProgrammaticHost);
+    r.instance.vpAnimateLeave.set('vp-leave');
+    r.flush();
+    r.instance.toasts.show({ title: 'own', animateLeave: 'own-leave' });
+    r.instance.toasts.show({ title: 'fallback' });
+    r.flush();
+    const res = resolver(r.fixture);
+    const [own, fallback] = r.instance.toasts.toasts();
+    expect(res.toastAnimateLeave(own!)).toBe('own-leave');
+    expect(res.toastAnimateLeave(fallback!)).toBe('vp-leave');
+  });
+
+  it('animateEnter cascades the same way (per-toast wins, viewport is the fallback)', () => {
+    const r = renderHost(ProgrammaticHost);
+    r.instance.vpAnimateEnter.set('vp-enter');
+    r.flush();
+    r.instance.toasts.show({ title: 'own', animateEnter: 'own-enter' });
+    r.instance.toasts.show({ title: 'fallback' });
+    r.flush();
+    const res = resolver(r.fixture);
+    const [own, fallback] = r.instance.toasts.toasts();
+    expect(res.toastAnimateEnter(own!)).toBe('own-enter');
+    expect(res.toastAnimateEnter(fallback!)).toBe('vp-enter');
+  });
+
+  it('resolves to empty when neither per-toast nor viewport set a class (synchronous unmount preserved)', () => {
+    const r = renderHost(ProgrammaticHost);
+    r.instance.toasts.show({ title: 'plain' });
+    r.flush();
+    const res = resolver(r.fixture);
+    const [plain] = r.instance.toasts.toasts();
+    expect(res.toastAnimateLeave(plain!)).toBe('');
+    expect(res.toastAnimateEnter(plain!)).toBe('');
+  });
+
+  it('a toast shown with animateLeave still dismisses through the close path (no regression)', () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'A', animateLeave: 'toast-out' });
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+    ref.dismiss();
+    r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('zoneless: show + dismiss with animateLeave resolves and works without Zone.js', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const ref = fixture.componentInstance.toasts.show({ title: 'Z', animateLeave: 'toast-out' });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.toasts.count()).toBe(1);
+    const res = fixture.debugElement.query(By.directive(ForToastViewport))!
+      .componentInstance as unknown as AnimateResolver;
+    expect(res.toastAnimateLeave(fixture.componentInstance.toasts.toasts()[0]!)).toBe('toast-out');
+    ref.dismiss();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.toasts.count()).toBe(0);
   });
 });
 

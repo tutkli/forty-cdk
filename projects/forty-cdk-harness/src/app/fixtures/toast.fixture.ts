@@ -124,15 +124,31 @@ import { ForToastManager, ForToastViewport, type ForToastSwipeDirection } from '
         transition: transform 200ms ease;
         transform: translate(0, 0);
       }
+      @keyframes app-toast-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      app-toast-fixture [forToast].leaving-own,
+      app-toast-fixture [forToast].leaving-vp {
+        animation: app-toast-out 300ms ease forwards;
+      }
     `,
   ],
   template: `
     <button data-testid="enqueue" type="button" (click)="enqueue()">Enqueue toast</button>
+    <button data-testid="dismiss-all" type="button" (click)="manager.dismissAll()">
+      Dismiss all
+    </button>
 
     <for-toast-viewport
       [attr.data-testid]="'viewport'"
       [attr.data-side]="side"
       [swipeDirection]="swipeDirection"
+      [animateLeave]="viewportAnimateLeave"
     >
     </for-toast-viewport>
 
@@ -153,6 +169,14 @@ export class ToastFixture {
 
   protected readonly swipeDirection: ForToastSwipeDirection = parseSwipe(
     this.#route.snapshot.queryParamMap.get('swipe'),
+  );
+
+  protected readonly animateLeave: string = parseAnimateClass(
+    this.#route.snapshot.queryParamMap.get('animateLeave'),
+  );
+
+  protected readonly viewportAnimateLeave: string = parseAnimateClass(
+    this.#route.snapshot.queryParamMap.get('vpAnimateLeave'),
   );
 
   readonly #enqueuedCount = signal(0);
@@ -212,6 +236,7 @@ export class ToastFixture {
       // enqueued through this fixture honour `?swipe=…` even if a viewport
       // default disagrees (it doesn't here, but kept explicit for clarity).
       swipeDirection: this.swipeDirection,
+      animateLeave: this.animateLeave || undefined,
     });
     this.#enqueuedCount.update((n) => n + 1);
   }
@@ -258,5 +283,15 @@ function parseSwipe(raw: string | null): ForToastSwipeDirection {
       return raw;
     default:
       return null;
+  }
+}
+
+function parseAnimateClass(raw: string | null): string {
+  switch (raw) {
+    case 'leaving-own':
+    case 'leaving-vp':
+      return raw;
+    default:
+      return '';
   }
 }
