@@ -14,7 +14,8 @@ transfers. Supports both keyboard and pointer (mouse / touch / pen) dragging.
 | Lifted | Space/Enter | **Drop** (commits and emits `(dragDrop)`)  |
 | Lifted | Escape      | **Cancel** (no event, focus stays on item) |
 
-Arrow direction follows the list's `orientation` and respects RTL via `dir`.
+Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
+`orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
 
 ## Pointer dragging
 
@@ -178,11 +179,50 @@ always provided by the consumer via CSS; the library imposes none.
 With no such CSS, `animateReorder` is a graceful no-op — transforms clear instantly and the
 preview is destroyed promptly.
 
+## Orientation
+
+`[forDropList]` resolves the live drop index along its `orientation`:
+
+- **`"vertical"`** (default) — a stacked column; the index is resolved by the pointer's `y`.
+- **`"horizontal"`** — a single row; the index is resolved by the pointer's `x` (RTL-aware).
+- **`"mixed"`** — a wrapping grid (`flex-wrap` / CSS grid) of **uniformly-sized** items. The index
+  is resolved in 2D, so an item dragged across a wrapped row lands in the slot under the pointer's
+  row **and** column instead of mis-resolving to the nearest single-axis slot. A `"mixed"` list that
+  happens to render as a single row or single column resolves identically to `"horizontal"` /
+  `"vertical"`.
+
+```html
+<ul class="grid" forDropList orientation="mixed" (dragDrop)="onDrop($event)">
+  @for (item of items(); track item.id) {
+  <li forDraggable [dragData]="item">{{ item.label }}</li>
+  }
+</ul>
+```
+
+```css
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+```
+
+A wrapper can default the orientation for every `[forDropList]` in its scope via the
+`FOR_DROP_LIST_DEFAULT_ORIENTATION` token (the same mechanism `ForTableColumnReorder` uses for
+`"horizontal"`):
+
+```ts
+providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'mixed' }];
+```
+
+`"mixed"` targets regular grids of uniformly-sized items; variable-size / masonry layouts are out of
+scope. `[animateReorder]` (FLIP) reflows by DOM order and needs no change in mixed mode.
+
 ## Data attributes
 
 | Attribute               | Element           | Meaning                                                                              |
 | ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
-| `data-orientation`      | `[forDropList]`   | `"vertical"` or `"horizontal"`                                                       |
+| `data-orientation`      | `[forDropList]`   | `"vertical"`, `"horizontal"`, or `"mixed"`                                           |
 | `data-disabled`         | both              | Present when the item or list is disabled                                            |
 | `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                 |
 | `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                    |
