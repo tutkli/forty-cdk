@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * The year picker grid (`role="grid"`). Apply on a `<table>`. Labelled by the
@@ -22,7 +22,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarYearGrid {
-  protected readonly ctx = injectCalendarContext('ForCalendarYearGrid');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarYearGrid');
 
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly rows = this.ctx.yearRows;

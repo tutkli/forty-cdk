@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject, DestroyRef } from '@angular/core';
 
-import { injectTableContext } from './table-context';
+import { injectTableMeasurement } from './table-context';
 
 /**
  * Marks the header row of the table (`role="row"`). Registers its host
@@ -15,7 +15,7 @@ import { injectTableContext } from './table-context';
   },
 })
 export class ForTableHeaderRow {
-  protected readonly ctx = injectTableContext('ForTableHeaderRow');
+  protected readonly ctx = injectTableMeasurement('ForTableHeaderRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {

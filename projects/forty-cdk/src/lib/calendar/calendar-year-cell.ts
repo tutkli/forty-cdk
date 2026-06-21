@@ -1,10 +1,7 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
-import {
-  type ForCalendarYearCellHandle,
-  injectCalendarContext,
-} from './calendar-context';
+import { type ForCalendarYearCellHandle, injectCalendarYearContext } from './calendar-context';
 
 /**
  * A single year cell (`role="gridcell"`) in the year picker grid. Apply on the
@@ -32,7 +29,7 @@ import {
   },
 })
 export class ForCalendarYearCell {
-  protected readonly ctx = injectCalendarContext('ForCalendarYearCell');
+  protected readonly ctx = injectCalendarYearContext('ForCalendarYearCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The year this cell represents. */

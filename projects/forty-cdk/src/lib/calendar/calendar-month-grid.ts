@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * The month picker grid (`role="grid"`). Apply on a `<table>`. Labelled by the
@@ -22,7 +22,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarMonthGrid {
-  protected readonly ctx = injectCalendarContext('ForCalendarMonthGrid');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarMonthGrid');
 
   /** Rows of the month picker grid (3 columns) for the visible year. */
   readonly rows = this.ctx.monthRows;

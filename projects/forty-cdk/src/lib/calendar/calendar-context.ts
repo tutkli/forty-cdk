@@ -141,17 +141,13 @@ export interface ForCalendarCellHandle<D> {
 }
 
 /**
- * Coordination contract owned by `ForCalendar` (the root). Grid, header,
- * cells, heading, and the navigation buttons all derive their state from it
- * and route selection / navigation through it.
- *
- * The token is typed over `unknown`; pieces pass their own `D` into the
- * `unknown`-typed methods (always assignable) and never need the concrete `D`
- * back out.
+ * Calendar state shared by every piece, regardless of view: the active
+ * adapter, writing direction, and the calendar-wide disabled / read-only
+ * flags. Both the day grid and the month / year pickers derive from it.
  *
  * @typeParam D The adapter's date type.
  */
-export interface ForCalendarContext<D> {
+export interface ForCalendarCore<D> {
   /** The active date adapter. */
   readonly adapter: DateAdapter<D>;
   /** Resolved writing direction (`'ltr'` / `'rtl'`); flips horizontal arrows. */
@@ -160,7 +156,17 @@ export interface ForCalendarContext<D> {
   readonly disabled: Signal<boolean>;
   /** Whether the calendar is read-only (focusable, but selection is blocked). */
   readonly readonly: Signal<boolean>;
+}
 
+/**
+ * Visible-month structure and cross-view navigation: the heading label / id,
+ * weekday headers, week rows, the active view + its trigger label, paging, and
+ * the month / year options the dropdowns read. Injected by the grids, header,
+ * heading, navigation buttons, the view trigger, and the month / year selects.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface ForCalendarNavigationContext<D> extends ForCalendarCore<D> {
   /** Stable id of the heading element, used for the grid's `aria-labelledby`. */
   readonly headingId: Signal<string>;
   /** The visible month's accessible label, e.g. `"June 2026"`. */
@@ -210,52 +216,66 @@ export interface ForCalendarContext<D> {
 
   /** Cycle the view one step coarser: `day → month → year`, clamped at `'year'`. */
   cycleView(): void;
-  /** Drill into a month (1-12): navigate to it and switch to day view. No-op when disabled/read-only/out of bounds. */
-  selectMonth(month: number): void;
-  /** Drill into a year: navigate to it and switch to month view. No-op when disabled/read-only/out of bounds. */
-  selectYear(year: number): void;
   /** Page backward by one month / year / block depending on the active view. */
   pagePrevious(): void;
   /** Page forward by one month / year / block depending on the active view. */
   pageNext(): void;
+  /** Adopts a consumer-set static `id` on the heading host into `headingId`. */
+  adoptHeadingId(el: HTMLElement): void;
+}
 
+/**
+ * Month-picker cell coordination: per-month state facets, drill-down, keyboard
+ * handling, and cell registration. Injected by `ForCalendarMonthCell`.
+ */
+export interface ForCalendarMonthContext {
+  /** Drill into a month (1-12): navigate to it and switch to day view. No-op when disabled/read-only/out of bounds. */
+  selectMonth(month: number): void;
+  /** Whether every day of `month` (**1-12**) in the visible year is out of `[min, max]`. */
+  isMonthDisabled(month: number): boolean;
   /** Whether `month` (1-12) in the visible year is the selected date's month. */
   isMonthSelected(month: number): boolean;
   /** Whether `month` (1-12) is today's month in the visible year. */
   isMonthToday(month: number): boolean;
   /** Whether `month` (1-12) is the roving-tabindex focused month. */
   isMonthFocused(month: number): boolean;
+  /** Handle a keydown originating on a month cell. */
+  handleMonthCellKeydown(event: KeyboardEvent, month: number): void;
 
+  registerMonthCell(handle: ForCalendarMonthCellHandle): void;
+  unregisterMonthCell(handle: ForCalendarMonthCellHandle): void;
+}
+
+/**
+ * Year-picker cell coordination: per-year state facets, drill-down, keyboard
+ * handling, and cell registration. Injected by `ForCalendarYearCell`.
+ */
+export interface ForCalendarYearContext {
+  /** Drill into a year: navigate to it and switch to month view. No-op when disabled/read-only/out of bounds. */
+  selectYear(year: number): void;
+  /** Whether every day of `year` is out of `[min, max]`. */
+  isYearDisabled(year: number): boolean;
   /** Whether `year` is the selected date's year. */
   isYearSelected(year: number): boolean;
   /** Whether `year` is today's year. */
   isYearToday(year: number): boolean;
   /** Whether `year` is the roving-tabindex focused year. */
   isYearFocused(year: number): boolean;
-
-  /** Handle a keydown originating on a month cell. */
-  handleMonthCellKeydown(event: KeyboardEvent, month: number): void;
   /** Handle a keydown originating on a year cell. */
   handleYearCellKeydown(event: KeyboardEvent, year: number): void;
 
-  registerMonthCell(handle: ForCalendarMonthCellHandle): void;
-  unregisterMonthCell(handle: ForCalendarMonthCellHandle): void;
   registerYearCell(handle: ForCalendarYearCellHandle): void;
   unregisterYearCell(handle: ForCalendarYearCellHandle): void;
+}
 
-  /** Whether `date` is the currently selected value. */
-  isSelected(date: D): boolean;
-  /** Whether `date` is today. */
-  isToday(date: D): boolean;
-  /** Whether `date` is the roving-tabindex focused day. */
-  isFocused(date: D): boolean;
-  /** Whether `date` falls outside the visible month. */
-  isOutsideMonth(date: D): boolean;
-  /** Whether `date` cannot be selected (`disabled`, out of `min`/`max`, or unavailable). */
-  isUnavailable(date: D): boolean;
-  /** The full accessible date string for `date`'s gridcell (`aria-label`). */
-  getDateLabel(date: D): string;
-
+/**
+ * Range-selection facets for a day cell, emitted only in
+ * `selectionMode="range"`. Folded into {@link ForCalendarDayContext} since the
+ * day cell reads them alongside the single-selection facets.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface ForCalendarRangeContext<D> {
   /**
    * The active selection mode. `'single'` (default) keeps the existing
    * single-date behaviour; `'range'` enables the two-click anchor → commit flow.
@@ -291,23 +311,68 @@ export interface ForCalendarContext<D> {
    * `selectionMode='single'`. Pass `null` on `pointerleave`.
    */
   setHovered(date: D | null): void;
+}
+
+/**
+ * Day-grid cell coordination: per-date state facets (selection, range, today,
+ * out-of-month, availability), selection, keyboard handling, and cell
+ * registration. Injected by `ForCalendarCell`.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface ForCalendarDayContext<D> extends ForCalendarRangeContext<D> {
+  /** Whether `date` is the currently selected value. */
+  isSelected(date: D): boolean;
+  /** Whether `date` is today. */
+  isToday(date: D): boolean;
+  /** Whether `date` is the roving-tabindex focused day. */
+  isFocused(date: D): boolean;
+  /** Whether `date` falls outside the visible month. */
+  isOutsideMonth(date: D): boolean;
+  /** Whether `date` cannot be selected (`disabled`, out of `min`/`max`, or unavailable). */
+  isUnavailable(date: D): boolean;
+  /** The full accessible date string for `date`'s gridcell (`aria-label`). */
+  getDateLabel(date: D): string;
 
   /** Select `date`, unless the calendar is disabled / read-only or the date is unavailable. */
   selectDate(date: D): void;
-  /** Page the visible month by `delta` (signed month count). Keeps DOM focus on the caller. */
-  pageMonths(delta: number): void;
   /** Resolve and apply a keydown originating on the cell for `fromDate`. */
   handleCellKeydown(event: KeyboardEvent, fromDate: D): void;
+
+  registerCell(handle: ForCalendarCellHandle<D>): void;
+  unregisterCell(handle: ForCalendarCellHandle<D>): void;
+}
+
+/**
+ * Coordination contract owned by `ForCalendar` (the root). Grid, header,
+ * cells, heading, and the navigation buttons all derive their state from it
+ * and route selection / navigation through it.
+ *
+ * The contract is the composition of the role slices each piece injects in
+ * isolation — core state, visible-month navigation, day / month / year cell
+ * coordination, and the range facets — so the root implements one object while
+ * each piece sees only the slice it uses. The composed shape is structurally
+ * identical to the flat contract.
+ *
+ * The token is typed over `unknown`; pieces pass their own `D` into the
+ * `unknown`-typed methods (always assignable) and never need the concrete `D`
+ * back out.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface ForCalendarContext<D>
+  extends
+    ForCalendarNavigationContext<D>,
+    ForCalendarDayContext<D>,
+    ForCalendarMonthContext,
+    ForCalendarYearContext {
+  /** Page the visible month by `delta` (signed month count). Keeps DOM focus on the caller. */
+  pageMonths(delta: number): void;
   /**
    * Move DOM focus to the roving cell (the gridcell matching the focused date).
    * Returns `false` when no matching cell is currently rendered.
    */
   focusActiveCell(): boolean;
-
-  registerCell(handle: ForCalendarCellHandle<D>): void;
-  unregisterCell(handle: ForCalendarCellHandle<D>): void;
-  /** Adopts a consumer-set static `id` on the heading host into `headingId`. */
-  adoptHeadingId(el: HTMLElement): void;
 }
 
 /** Injection token for {@link ForCalendarContext}, provided by `ForCalendar`. */
@@ -315,16 +380,53 @@ export const FOR_CALENDAR_CONTEXT = new InjectionToken<ForCalendarContext<unknow
   'FOR_CALENDAR_CONTEXT',
 );
 
-/**
- * Injects the nearest {@link ForCalendarContext}, throwing a descriptive
- * error when used outside a `[forCalendar]` element.
- *
- * @param piece Name of the calling directive, used in the error message.
- */
-export function injectCalendarContext(piece: string): ForCalendarContext<unknown> {
+function injectCalendarSlice<T>(piece: string): T {
   const ctx = inject(FOR_CALENDAR_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/calendar] ${piece} must be used inside a [forCalendar] element.`);
   }
-  return ctx;
+  return ctx as unknown as T;
+}
+
+/**
+ * Injects the visible-month navigation slice of the calendar context. Used by
+ * the grids, header, heading, navigation buttons, the view trigger, and the
+ * month / year selects.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectCalendarNavigationContext(
+  piece: string,
+): ForCalendarNavigationContext<unknown> {
+  return injectCalendarSlice<ForCalendarNavigationContext<unknown>>(piece);
+}
+
+/**
+ * Injects the day-grid cell slice of the calendar context. Used by
+ * `ForCalendarCell`.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectCalendarDayContext(piece: string): ForCalendarDayContext<unknown> {
+  return injectCalendarSlice<ForCalendarDayContext<unknown>>(piece);
+}
+
+/**
+ * Injects the month-picker cell slice of the calendar context. Used by
+ * `ForCalendarMonthCell`.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectCalendarMonthContext(piece: string): ForCalendarMonthContext {
+  return injectCalendarSlice<ForCalendarMonthContext>(piece);
+}
+
+/**
+ * Injects the year-picker cell slice of the calendar context. Used by
+ * `ForCalendarYearCell`.
+ *
+ * @param piece Name of the calling directive, used in the error message.
+ */
+export function injectCalendarYearContext(piece: string): ForCalendarYearContext {
+  return injectCalendarSlice<ForCalendarYearContext>(piece);
 }

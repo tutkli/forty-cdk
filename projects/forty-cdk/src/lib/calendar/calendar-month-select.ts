@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * Wires a native `<select>` to a `ForCalendar`'s month navigation. Apply on a
@@ -29,7 +29,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarMonthSelect {
-  protected readonly ctx = injectCalendarContext('ForCalendarMonthSelect');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarMonthSelect');
 
   /** The twelve localized, bounds-aware month options for the visible year. */
   readonly options = this.ctx.monthOptions;

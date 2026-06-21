@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { injectCalendarContext } from './calendar-context';
+import { injectCalendarNavigationContext } from './calendar-context';
 
 /**
  * The month/year heading. Apply on a heading element (e.g. `<h2>`) and render
@@ -20,7 +20,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarHeading {
-  protected readonly ctx = injectCalendarContext('ForCalendarHeading');
+  protected readonly ctx = injectCalendarNavigationContext('ForCalendarHeading');
 
   /** The visible month's accessible label, e.g. `"June 2026"`. */
   readonly label = this.ctx.visibleMonthLabel;
