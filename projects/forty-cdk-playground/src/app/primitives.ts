@@ -333,6 +333,12 @@ export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
     label: 'Utilities',
     primitives: [
       {
+        slug: 'breakpoints',
+        title: 'Breakpoints',
+        description:
+          'A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpoints — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal<boolean>.',
+      },
+      {
         slug: 'drag-drop',
         title: 'Drag & Drop',
         description:

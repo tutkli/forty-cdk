@@ -211,6 +211,11 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/carousel/carousel.page').then((m) => m.CarouselPage),
   },
   {
+    path: 'breakpoints',
+    loadComponent: () =>
+      import('./demos/breakpoints/breakpoints.page').then((m) => m.BreakpointsPage),
+  },
+  {
     path: 'drag-drop',
     loadComponent: () => import('./demos/drag-drop/drag-drop.page').then((m) => m.DragDropPage),
   },
