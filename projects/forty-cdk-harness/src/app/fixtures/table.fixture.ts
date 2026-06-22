@@ -11,11 +11,11 @@ import {
   ForTableSelectAll,
   ForTableSortHeader,
   type TableResizeDescriptor,
-  type TableSelectionMode,
   type TableSelectionBehavior,
+  type TableSelectionMode,
   type TableSortDescriptor,
   type TableSortDirection,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 @Component({
   selector: 'app-table-fixture',

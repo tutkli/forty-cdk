@@ -8,7 +8,7 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
-} from 'forty-cdk';
+} from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({

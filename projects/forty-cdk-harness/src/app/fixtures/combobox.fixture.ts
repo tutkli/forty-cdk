@@ -8,8 +8,8 @@ import {
   ForComboboxList,
   ForComboboxOption,
   ForComboboxTrigger,
-  type VetoableEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/combobox';
+import { type VetoableEvent } from 'forty-cdk/core';
 
 import { queryFlag } from './_query-flag';
 

@@ -4,7 +4,7 @@ import {
   ForPaginationItem,
   ForPaginationNext,
   ForPaginationPrevious,
-} from 'forty-cdk';
+} from 'forty-cdk/pagination';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

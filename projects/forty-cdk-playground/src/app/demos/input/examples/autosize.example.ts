@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTextarea } from 'forty-cdk';
+import { ForTextarea } from 'forty-cdk/input';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } from 'forty-cdk';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 @Component({
   selector: 'app-context-menu-fixture',

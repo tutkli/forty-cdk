@@ -6,7 +6,7 @@ import {
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
   ForNavigationMenuViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/navigation-menu';
 import { queryFlag } from './_query-flag';
 
 @Component({

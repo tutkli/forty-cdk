@@ -9,7 +9,7 @@ import {
   ForCarouselSlide,
   ForCarouselTrack,
   ForCarouselViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/carousel';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

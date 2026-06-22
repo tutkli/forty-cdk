@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import {
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
-  type VetoableEvent,
-} from 'forty-cdk';
+import { type VetoableEvent } from 'forty-cdk/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { queryFlag } from './_query-flag';
 
 @Component({

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { type ForDrawerSide } from 'forty-cdk/core';
 import {
   ForDrawer,
   ForDrawerBackdrop,
@@ -6,10 +7,9 @@ import {
   type ForDrawerCloseReason,
   ForDrawerDescription,
   ForDrawerHandle,
-  type ForDrawerSide,
   ForDrawerTitle,
   ForDrawerTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

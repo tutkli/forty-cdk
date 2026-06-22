@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, ViewEncapsulation } from '@angular/core';
-import { ForDialogClose, ForDialogManager, ForDialogTitle, injectDialogData } from 'forty-cdk';
+import {
+  ForDialogClose,
+  ForDialogManager,
+  ForDialogTitle,
+  injectDialogData,
+} from 'forty-cdk/dialog';
 
 interface ProgrammaticDialogData {
   message: string;

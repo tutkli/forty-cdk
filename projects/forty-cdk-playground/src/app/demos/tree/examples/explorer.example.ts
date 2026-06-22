@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, linkedSignal, signal } from '@angular/core';
-import { ForTree } from 'forty-cdk';
+import { ForTree } from 'forty-cdk/tree';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

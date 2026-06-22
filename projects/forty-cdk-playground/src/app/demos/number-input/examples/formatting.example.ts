@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForNumberInput } from 'forty-cdk';
+import { ForNumberInput } from 'forty-cdk/number-input';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

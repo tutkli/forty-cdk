@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ForDrawerManager } from 'forty-cdk';
+import { ForDrawerManager } from 'forty-cdk/drawer';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { ConfirmDrawer, type ConfirmResult } from './confirm-drawer';

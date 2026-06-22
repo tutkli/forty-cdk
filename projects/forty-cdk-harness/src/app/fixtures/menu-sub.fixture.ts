@@ -1,16 +1,8 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import {
-  ForContextMenu,
-  ForContextMenuTrigger,
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
-  ForMenubar,
-  ForMenubarTrigger,
-  ForMenuSub,
-  ForMenuSubTrigger,
-} from 'forty-cdk';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 /**
  * Submenu hover fixture exercising pointer-driven open/close (the

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ForDialogManager } from 'forty-cdk';
+import { ForDialogManager } from 'forty-cdk/dialog';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { type ConfirmData, ConfirmDialog, type ConfirmResult } from './confirm-dialog';

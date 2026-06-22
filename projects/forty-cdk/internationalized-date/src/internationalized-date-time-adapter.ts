@@ -7,7 +7,7 @@ import {
   today,
 } from '@internationalized/date';
 
-import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk';
+import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
 /**
  * Time-capable {@link DateAdapter} over `@internationalized/date`'s immutable

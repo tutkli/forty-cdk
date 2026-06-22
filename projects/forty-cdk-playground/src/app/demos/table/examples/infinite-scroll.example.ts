@@ -5,7 +5,7 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';

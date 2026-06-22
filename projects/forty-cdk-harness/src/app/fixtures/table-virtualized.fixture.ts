@@ -16,7 +16,7 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 const ROW_COUNT = 10_000;

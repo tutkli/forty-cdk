@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import {
-  ForContextMenu,
-  ForContextMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
-  ForMenuSeparator,
-} from 'forty-cdk';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

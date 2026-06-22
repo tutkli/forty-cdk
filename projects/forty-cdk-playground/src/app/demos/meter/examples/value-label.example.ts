@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForMeter, ForMeterIndicator } from 'forty-cdk';
+import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

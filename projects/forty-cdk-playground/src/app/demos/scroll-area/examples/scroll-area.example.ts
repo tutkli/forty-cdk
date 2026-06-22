@@ -6,7 +6,7 @@ import {
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
   ForScrollAreaViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/scroll-area';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

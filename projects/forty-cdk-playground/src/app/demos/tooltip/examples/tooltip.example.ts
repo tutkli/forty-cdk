@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import {
+  ForTooltip,
+  ForTooltipArrow,
+  ForTooltipContent,
+  ForTooltipTrigger,
+} from 'forty-cdk/tooltip';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

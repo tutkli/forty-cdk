@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, linkedSignal, signal } from '@angular/core';
-import { expandToReveal, ForInput, ForTree } from 'forty-cdk';
+import { ForInput } from 'forty-cdk/input';
+import { ForTree, expandToReveal } from 'forty-cdk/tree';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import {

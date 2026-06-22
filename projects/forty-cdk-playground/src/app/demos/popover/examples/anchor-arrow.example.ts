@@ -8,7 +8,7 @@ import {
   ForPopoverDescription,
   ForPopoverTitle,
   ForPopoverTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/popover';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

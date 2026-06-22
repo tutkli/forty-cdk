@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-cdk';
+import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

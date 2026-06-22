@@ -11,7 +11,7 @@ import {
   ForStepperPrevious,
   ForStepperSeparator,
   ForStepperTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/stepper';
 
 /**
  * Stepper harness fixture — exercises focus, keyboard navigation, linear

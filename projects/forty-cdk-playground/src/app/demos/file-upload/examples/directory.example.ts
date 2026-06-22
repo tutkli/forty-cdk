@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk';
+import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

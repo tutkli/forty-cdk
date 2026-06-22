@@ -1,18 +1,14 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForDialog, ForDialogClose, ForDialogTrigger } from 'forty-cdk/dialog';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import {
-  ForDialog,
-  ForDialogClose,
-  ForDialogTrigger,
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
   ForSelect,
   ForSelectContent,
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
-} from 'forty-cdk';
+} from 'forty-cdk/select';
 
 /**
  * Fixture for #676 — anchored overlays (Select / DropdownMenu) opened from a

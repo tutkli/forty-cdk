@@ -8,7 +8,7 @@ import {
   ForComboboxList,
   ForComboboxOption,
   ForComboboxTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/combobox';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

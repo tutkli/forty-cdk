@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { type VetoableEvent } from 'forty-cdk/core';
 import {
   ForPopover,
   ForPopoverClose,
   ForPopoverContent,
   ForPopoverTrigger,
-  type VetoableEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/popover';
 import { queryFlag } from './_query-flag';
 
 @Component({

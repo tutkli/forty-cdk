@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
-  ForDraggable,
   type ForDragDropEvent,
   ForDragHandle,
+  ForDraggable,
   ForDropList,
   moveItemInArray,
   provideForDragDropDefaults,
-} from 'forty-cdk';
+} from 'forty-cdk/drag-drop';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

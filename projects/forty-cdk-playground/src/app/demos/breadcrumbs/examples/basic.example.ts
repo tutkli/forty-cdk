@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForBreadcrumbItem, ForBreadcrumbs, ForBreadcrumbSeparator } from 'forty-cdk';
+import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 
 import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

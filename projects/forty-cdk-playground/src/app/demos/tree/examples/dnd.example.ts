@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTree, type ForTreeDragDropEvent, ForTreeNodeDrag, moveTreeNode } from 'forty-cdk';
+import { ForTree, type ForTreeDragDropEvent, ForTreeNodeDrag, moveTreeNode } from 'forty-cdk/tree';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { DndTreeNode } from './dnd-tree-node';

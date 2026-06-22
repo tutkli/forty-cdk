@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
-import { ForCheckbox } from 'forty-cdk';
+import { ForCheckbox } from 'forty-cdk/checkbox';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

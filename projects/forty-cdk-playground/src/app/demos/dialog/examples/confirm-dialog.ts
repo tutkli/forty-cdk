@@ -5,7 +5,7 @@ import {
   ForDialogDescription,
   ForDialogTitle,
   injectDialogData,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
 
 export interface ConfirmData {
   readonly title: string;

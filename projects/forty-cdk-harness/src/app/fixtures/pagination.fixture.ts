@@ -4,7 +4,7 @@ import {
   ForPaginationItem,
   ForPaginationNext,
   ForPaginationPrevious,
-} from 'forty-cdk';
+} from 'forty-cdk/pagination';
 
 @Component({
   selector: 'app-pagination-fixture',

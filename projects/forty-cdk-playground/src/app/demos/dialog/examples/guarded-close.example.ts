@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   ForDialog,
   ForDialogClose,
@@ -6,8 +7,7 @@ import {
   ForDialogDescription,
   ForDialogTitle,
   ForDialogTrigger,
-  type VetoableNativeEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

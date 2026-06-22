@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { ForToastManager, type ForToastRef } from 'forty-cdk';
+import { ForToastManager, type ForToastRef } from 'forty-cdk/toast';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

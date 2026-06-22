@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

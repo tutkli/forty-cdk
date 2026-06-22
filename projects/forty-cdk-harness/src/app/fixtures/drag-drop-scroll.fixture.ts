@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-import { ForDraggable, ForDropList, moveItemInArray, type ForDragDropEvent } from 'forty-cdk';
+import {
+  type ForDragDropEvent,
+  ForDraggable,
+  ForDropList,
+  moveItemInArray,
+} from 'forty-cdk/drag-drop';
 
 interface Item {
   id: number;

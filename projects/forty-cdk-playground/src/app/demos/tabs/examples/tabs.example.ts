@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

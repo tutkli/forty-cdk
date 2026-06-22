@@ -6,7 +6,7 @@ import {
   ForDrawerHandle,
   ForDrawerTitle,
   injectDrawerData,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 export interface ConfirmData {
   readonly title: string;

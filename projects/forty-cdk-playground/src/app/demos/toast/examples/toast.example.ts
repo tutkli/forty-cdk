@@ -16,7 +16,7 @@ import {
   type ForToastTemplateContext,
   ForToastTitle,
   ForToastViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/toast';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

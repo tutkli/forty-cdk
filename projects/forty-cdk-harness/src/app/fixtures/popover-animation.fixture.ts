@@ -6,7 +6,12 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForPopover, ForPopoverClose, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk';
+import {
+  ForPopover,
+  ForPopoverClose,
+  ForPopoverContent,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
 
 @Component({
   selector: 'app-popover-animation-fixture',

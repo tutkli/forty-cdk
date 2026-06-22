@@ -1,19 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { type ForDrawerSide, type VetoableEvent } from 'forty-cdk/core';
 import {
   ForDrawer,
   ForDrawerBackdrop,
-  type ForDrawerCloseReason,
   ForDrawerClose,
+  type ForDrawerCloseReason,
   type ForDrawerDragEvent,
   ForDrawerHandle,
   type ForDrawerReleaseEvent,
-  type ForDrawerSide,
   type ForDrawerSnapPoint,
   ForDrawerTrigger,
   ForDrawerWrapper,
-  type VetoableEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 import { queryFlag } from './_query-flag';
 
 @Component({

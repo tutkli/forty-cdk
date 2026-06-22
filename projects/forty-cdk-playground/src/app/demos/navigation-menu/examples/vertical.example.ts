@@ -7,7 +7,7 @@ import {
   ForNavigationMenuLink,
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/navigation-menu';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

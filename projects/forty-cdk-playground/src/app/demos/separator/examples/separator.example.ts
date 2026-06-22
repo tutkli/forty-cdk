@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ForSeparator } from 'forty-cdk';
+import { ForSeparator } from 'forty-cdk/separator';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

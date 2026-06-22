@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForTable, ForTableCell, ForTableRow } from 'forty-cdk';
+import { ForTable, ForTableCell, ForTableRow } from 'forty-cdk/table';
 
 interface TreeRow {
   id: string;

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForProgress, ForProgressIndicator } from 'forty-cdk';
+import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

@@ -13,7 +13,7 @@ import {
   ForCalendarViewTrigger,
   ForCalendarYearCell,
   ForCalendarYearGrid,
-} from 'forty-cdk';
+} from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';

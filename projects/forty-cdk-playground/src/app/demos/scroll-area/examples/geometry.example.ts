@@ -5,7 +5,7 @@ import {
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
   ForScrollAreaViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/scroll-area';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

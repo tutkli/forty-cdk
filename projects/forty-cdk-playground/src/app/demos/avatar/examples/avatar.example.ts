@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk';
+import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

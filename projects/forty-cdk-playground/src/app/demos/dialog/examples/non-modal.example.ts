@@ -6,7 +6,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForDialog, ForDialogClose, type VetoableEvent } from 'forty-cdk';
+import { type VetoableEvent } from 'forty-cdk/core';
+import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

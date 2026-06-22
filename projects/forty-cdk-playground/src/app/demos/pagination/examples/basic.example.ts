@@ -4,7 +4,7 @@ import {
   ForPaginationItem,
   ForPaginationNext,
   ForPaginationPrevious,
-} from 'forty-cdk';
+} from 'forty-cdk/pagination';
 
 import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

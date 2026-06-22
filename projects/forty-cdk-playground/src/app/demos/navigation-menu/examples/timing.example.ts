@@ -8,7 +8,7 @@ import {
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
   ForNavigationMenuViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/navigation-menu';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

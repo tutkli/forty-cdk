@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, linkedSignal, signal } from '@angular/core';
-import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk';
+import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

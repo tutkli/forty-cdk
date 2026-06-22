@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForMenuContent, ForMenuItem, ForMenubar, ForMenubarTrigger } from 'forty-cdk';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 /**
  * Three-trigger menubar fixture (File / Edit / View). Each menu has four

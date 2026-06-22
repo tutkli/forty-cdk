@@ -29,7 +29,8 @@ import type { FieldState, FieldTree } from '@angular/forms/signals';
  * ```ts
  * import { Component, signal } from '@angular/core';
  * import { form } from '@angular/forms/signals';
- * import { ForSelect, ForSelectTrigger, forSingleValueField } from 'forty-cdk';
+ * import { ForSelect, ForSelectTrigger } from 'forty-cdk/select';
+ * import { forSingleValueField } from 'forty-cdk/signal-forms';
  *
  * @Component({
  *   imports: [ForSelect, ForSelectTrigger, FormField],

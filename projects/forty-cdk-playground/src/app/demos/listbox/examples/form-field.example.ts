@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
-import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk';
+import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

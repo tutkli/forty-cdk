@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

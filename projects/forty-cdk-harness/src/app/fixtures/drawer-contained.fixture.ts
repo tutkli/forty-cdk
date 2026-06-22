@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForDrawer, ForDrawerBackdrop, type ForDrawerCloseReason, ForDrawerClose } from 'forty-cdk';
+import {
+  ForDrawer,
+  ForDrawerBackdrop,
+  ForDrawerClose,
+  type ForDrawerCloseReason,
+} from 'forty-cdk/drawer';
 
 @Component({
   selector: 'app-drawer-contained-fixture',

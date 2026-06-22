@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, ForToggle } from 'forty-cdk';
+import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper } from 'forty-cdk/drawer';
+import { ForToggle } from 'forty-cdk/toggle';
 import { filter } from 'rxjs';
 
 import { AppNav } from './ui/app-nav';

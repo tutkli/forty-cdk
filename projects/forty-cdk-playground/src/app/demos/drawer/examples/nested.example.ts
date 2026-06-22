@@ -8,7 +8,7 @@ import {
   ForDrawerTitle,
   ForDrawerTrigger,
   provideForDrawerDefaults,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

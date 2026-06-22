@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk';
+import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
 
 import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

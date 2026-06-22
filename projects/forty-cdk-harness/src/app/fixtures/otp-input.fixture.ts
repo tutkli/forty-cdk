@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk';
+import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-input';
 
 /**
  * Fixture for `[forOtpInput]`. The real, interactive `<input>` is injected by

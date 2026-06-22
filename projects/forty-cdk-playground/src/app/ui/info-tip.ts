@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import {
+  ForTooltip,
+  ForTooltipArrow,
+  ForTooltipContent,
+  ForTooltipTrigger,
+} from 'forty-cdk/tooltip';
 
 import { Icon } from './icon';
 

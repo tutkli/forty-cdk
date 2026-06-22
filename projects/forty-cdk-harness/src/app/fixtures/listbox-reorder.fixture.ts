@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { moveItemInArray } from 'forty-cdk/drag-drop';
 import {
   ForListbox,
   ForListboxOption,
   ForListboxReorder,
-  moveItemInArray,
   type ForListboxReorderEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/listbox';
 
 /**
  * Selectable + sortable chip grid: `[forListbox]` (multi-select) composed with

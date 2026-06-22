@@ -5,7 +5,7 @@ import {
   ForTimeFieldLiteral,
   ForTimeFieldSegment,
   type TimeGranularity,
-} from 'forty-cdk';
+} from 'forty-cdk/time-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';

@@ -7,7 +7,7 @@ import {
   ForDialogDescription,
   ForDialogTitle,
   ForDialogTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

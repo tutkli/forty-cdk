@@ -9,7 +9,12 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForCombobox, ForComboboxContent, ForComboboxInput, ForComboboxOption } from 'forty-cdk';
+import {
+  ForCombobox,
+  ForComboboxContent,
+  ForComboboxInput,
+  ForComboboxOption,
+} from 'forty-cdk/combobox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {
