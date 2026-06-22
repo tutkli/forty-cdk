@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-22
+
+### Added
+
+- **Tooltip** — imperative `show()` / `hide()` methods for programmatic control beyond hover and focus. `show()` respects `openDelay` and the `disabled` / `showOnOverflow` gates; `hide()` respects `closeDelay` and disarms the hoverable-content grace bridge. `[(open)]` stays the instant, unconditional escape hatch.
+- **Toast** — `animateLeave` programmatic exit-animation hook, so a toast dismissed from code can play its leave animation instead of tearing down synchronously.
+- **Drag & Drop** — new `[forFreeDrag]` free-drag primitive: a boundary-confined draggable with `lockAxis`, `disabled`, a restorable two-way `[(position)]`, and an optional `rootElement` drag handle.
+- **Drag & Drop** — `"mixed"` drop orientation for wrapping grids, reordering by both row and column.
+
+### Fixed
+
+- **Search** — clearing now resets the native input value, not just the model, so the field box is visibly emptied.
+
 ## [0.1.0] - 2026-06-21
 
 First minor release. From this version on, `forty-cdk` follows a `0.MINOR.PATCH`
@@ -154,7 +167,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/tutkli/forty-cdk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tutkli/forty-cdk/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/tutkli/forty-cdk/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/tutkli/forty-cdk/compare/v0.0.2...v0.0.3
