@@ -6,6 +6,9 @@
     "outDir": "../../out-tsc/spec",
     "types": ["vitest/globals"],
     "paths": {
+      "forty-cdk/listbox": ["./listbox/src/public-api.ts"],
+      "forty-cdk/select": ["./select/src/public-api.ts"],
+      "forty-cdk/combobox": ["./combobox/src/public-api.ts"],
       "forty-cdk/menu": ["./menu/src/public-api.ts"],
       "forty-cdk/dropdown-menu": ["./dropdown-menu/src/public-api.ts"],
       "forty-cdk/context-menu": ["./context-menu/src/public-api.ts"],
@@ -51,6 +54,9 @@
     }
   },
   "include": [
+    "listbox/src/**/*.spec.ts",
+    "select/src/**/*.spec.ts",
+    "combobox/src/**/*.spec.ts",
     "menu/src/**/*.spec.ts",
     "dropdown-menu/src/**/*.spec.ts",
     "context-menu/src/**/*.spec.ts",

@@ -25,7 +25,7 @@ import {
   FOR_COMBOBOX_DEFAULTS,
   FOR_COMBOBOX_FALLBACK_DEFAULTS,
   provideForComboboxDefaults,
-} from '../../../src/lib/combobox/combobox-defaults';
+} from '../../../combobox/src/combobox-defaults';
 import {
   FOR_CONTEXT_MENU_DEFAULTS,
   FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
@@ -50,7 +50,7 @@ import {
   FOR_LISTBOX_DEFAULTS,
   FOR_LISTBOX_FALLBACK_DEFAULTS,
   provideForListboxDefaults,
-} from '../../../src/lib/listbox/listbox-defaults';
+} from '../../../listbox/src/listbox-defaults';
 import {
   FOR_MENU_DEFAULTS,
   FOR_MENU_FALLBACK_DEFAULTS,
@@ -95,7 +95,7 @@ import {
   FOR_SELECT_DEFAULTS,
   FOR_SELECT_FALLBACK_DEFAULTS,
   provideForSelectDefaults,
-} from '../../../src/lib/select/select-defaults';
+} from '../../../select/src/select-defaults';
 import {
   FOR_SLIDER_DEFAULTS,
   FOR_SLIDER_FALLBACK_DEFAULTS,

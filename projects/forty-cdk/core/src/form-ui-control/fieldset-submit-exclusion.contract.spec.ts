@@ -6,8 +6,7 @@ import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForNumberInput } from 'forty-cdk/number-input';
 import { ForSlider } from 'forty-cdk/slider';
 import { ForSwitch } from 'forty-cdk/switch';
-import { ForListbox } from '../../../src/lib/listbox/listbox';
-import { ForListboxOption } from '../../../src/lib/listbox/listbox-option';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 /**
  * Library-wide contract for native-submit exclusion under a disabled

@@ -6,6 +6,9 @@
     "outDir": "../../out-tsc/app",
     "types": [],
     "paths": {
+      "forty-cdk/listbox": ["../forty-cdk/listbox/src/public-api.ts"],
+      "forty-cdk/select": ["../forty-cdk/select/src/public-api.ts"],
+      "forty-cdk/combobox": ["../forty-cdk/combobox/src/public-api.ts"],
       "forty-cdk/menu": ["../forty-cdk/menu/src/public-api.ts"],
       "forty-cdk/dropdown-menu": ["../forty-cdk/dropdown-menu/src/public-api.ts"],
       "forty-cdk/context-menu": ["../forty-cdk/context-menu/src/public-api.ts"],

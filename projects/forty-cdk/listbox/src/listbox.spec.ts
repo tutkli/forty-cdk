@@ -2,7 +2,7 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';

@@ -11,7 +11,18 @@ import {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
   ForCombobox,
-} from './combobox';
+} from 'forty-cdk/combobox';
+import {
+  FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
+  ForListbox,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
+import {
+  FOR_SELECT_HOST_DIRECTIVE_INPUTS,
+  FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+  ForSelect,
+} from 'forty-cdk/select';
 import {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
@@ -30,12 +41,7 @@ import {
   ForInput,
   ForTextarea,
 } from 'forty-cdk/input';
-import {
-  FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
-  FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
-  ForListbox,
-  ForListboxOption,
-} from './listbox';
+
 import {
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS,
@@ -51,11 +57,7 @@ import {
   FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,
   ForRadioGroup,
 } from 'forty-cdk/radio-group';
-import {
-  FOR_SELECT_HOST_DIRECTIVE_INPUTS,
-  FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
-  ForSelect,
-} from './select';
+
 import {
   FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
   FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS,

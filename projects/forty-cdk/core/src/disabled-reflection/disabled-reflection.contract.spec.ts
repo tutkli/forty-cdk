@@ -17,13 +17,17 @@ import { ForCalendar } from '../../../src/lib/calendar/calendar';
 import { ForCalendarNextButton } from '../../../src/lib/calendar/calendar-next-button';
 import { ForCalendarPrevButton } from '../../../src/lib/calendar/calendar-prev-button';
 import { provideNativeDateAdapter } from '../../../src/lib/calendar/native-date-adapter';
-import { ForCombobox } from '../../../src/lib/combobox/combobox';
-import { ForComboboxChip } from '../../../src/lib/combobox/combobox-chip';
-import { ForComboboxChipRemove } from '../../../src/lib/combobox/combobox-chip-remove';
-import { ForComboboxChips } from '../../../src/lib/combobox/combobox-chips';
-import { ForComboboxClear } from '../../../src/lib/combobox/combobox-clear';
-import { ForComboboxInput } from '../../../src/lib/combobox/combobox-input';
-import { ForComboboxTrigger } from '../../../src/lib/combobox/combobox-trigger';
+import {
+  ForCombobox,
+  ForComboboxChip,
+  ForComboboxChipRemove,
+  ForComboboxChips,
+  ForComboboxClear,
+  ForComboboxInput,
+  ForComboboxTrigger,
+} from 'forty-cdk/combobox';
+import { ForSelect, ForSelectTrigger } from 'forty-cdk/select';
+
 import { ForDatePicker } from '../../../src/lib/date-picker/date-picker';
 import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-trigger';
 import { ForDialogTrigger } from 'forty-cdk/dialog';
@@ -36,9 +40,6 @@ import {
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
 } from 'forty-cdk/navigation-menu';
-
-import { ForSelect } from '../../../src/lib/select/select';
-import { ForSelectTrigger } from '../../../src/lib/select/select-trigger';
 
 /**
  * Library-wide contract for the non-destructive `disabled` reflection rolled

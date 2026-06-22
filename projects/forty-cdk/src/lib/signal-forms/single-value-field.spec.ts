@@ -9,11 +9,11 @@ import {
 } from '@angular/forms/signals';
 
 import { flush, renderHost } from '../../test-utils';
-import { ForCombobox } from '../combobox/combobox';
+import { ForCombobox } from 'forty-cdk/combobox';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForSelect } from 'forty-cdk/select';
 import { ForField, ForFieldError } from 'forty-cdk/field';
-import { ForListbox } from '../listbox/listbox';
-import { ForListboxOption } from '../listbox/listbox-option';
-import { ForSelect } from '../select/select';
+
 import { forSingleValueField } from './single-value-field';
 
 const optOf = (host: HTMLElement, id: string) =>

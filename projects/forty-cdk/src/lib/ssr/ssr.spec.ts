@@ -69,10 +69,21 @@ import { ForCalendarYearCell } from '../calendar/calendar-year-cell';
 import { ForCalendarYearGrid } from '../calendar/calendar-year-grid';
 import { ForCalendarYearSelect } from '../calendar/calendar-year-select';
 import { provideNativeDateAdapter } from '../calendar/native-date-adapter';
-import { ForCombobox } from '../combobox/combobox';
-import { ForComboboxContent } from '../combobox/combobox-content';
-import { ForComboboxInput } from '../combobox/combobox-input';
-import { ForComboboxOption } from '../combobox/combobox-option';
+import {
+  ForCombobox,
+  ForComboboxContent,
+  ForComboboxInput,
+  ForComboboxOption,
+} from 'forty-cdk/combobox';
+import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listbox';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectOption,
+  ForSelectTrigger,
+  ForSelectValue,
+} from 'forty-cdk/select';
+
 import { ForDateField } from '../date-field/date-field';
 import { ForDateFieldLiteral } from '../date-field/date-field-literal';
 import { ForDateFieldSegment } from '../date-field/date-field-segment';
@@ -106,11 +117,6 @@ import {
   ForNavigationMenuTrigger,
 } from 'forty-cdk/navigation-menu';
 
-import { ForSelect } from '../select/select';
-import { ForSelectContent } from '../select/select-content';
-import { ForSelectOption } from '../select/select-option';
-import { ForSelectTrigger } from '../select/select-trigger';
-import { ForSelectValue } from '../select/select-value';
 import { ForButton } from 'forty-cdk/button';
 import { ForCarousel } from '../carousel/carousel';
 import { ForCarouselDrag } from '../carousel/carousel-drag';
@@ -174,9 +180,6 @@ import { ForStepperSeparator } from '../stepper/stepper-separator';
 import { ForStepperProgress } from '../stepper/stepper-progress';
 import { ForStepperTrigger } from '../stepper/stepper-trigger';
 
-import { ForListbox } from '../listbox/listbox';
-import { ForListboxOption } from '../listbox/listbox-option';
-import { ForListboxReorder } from '../listbox/listbox-reorder';
 import { BodyScrollLock } from 'forty-cdk/core';
 import { DismissableLayerStack } from 'forty-cdk/core';
 import { IdGenerator } from 'forty-cdk/core';

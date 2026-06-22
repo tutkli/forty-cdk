@@ -9,6 +9,9 @@
     "types": []
   },
   "include": [
+    "listbox/src/**/*.ts",
+    "select/src/**/*.ts",
+    "combobox/src/**/*.ts",
     "menu/src/**/*.ts",
     "dropdown-menu/src/**/*.ts",
     "context-menu/src/**/*.ts",

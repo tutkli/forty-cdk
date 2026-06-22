@@ -8,7 +8,7 @@ import {
   flushPositioning,
   pressKey,
   renderHost,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForSelect } from './select';
 import { ForSelectAnchor } from './select-anchor';

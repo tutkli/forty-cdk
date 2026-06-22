@@ -26,7 +26,21 @@ import {
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
-} from './combobox';
+} from 'forty-cdk/combobox';
+import {
+  ForListbox,
+  ForListboxGroup,
+  ForListboxGroupLabel,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectGroup,
+  ForSelectGroupLabel,
+  ForSelectOption,
+  ForSelectTrigger,
+} from 'forty-cdk/select';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from './date-picker';
 import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
@@ -59,16 +73,7 @@ import {
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
 } from 'forty-cdk/navigation-menu';
-import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
 
-import {
-  ForSelect,
-  ForSelectContent,
-  ForSelectGroup,
-  ForSelectGroupLabel,
-  ForSelectOption,
-  ForSelectTrigger,
-} from './select';
 import {
   ForStepper,
   ForStepperContent,
