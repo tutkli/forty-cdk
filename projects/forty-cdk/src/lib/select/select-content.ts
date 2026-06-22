@@ -1,9 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { injectModalShell } from '../_internal/modal-shell/modal-shell';
-import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
-import type { OverlayShellPositionerConfig } from '../_internal/overlay-shell/overlay-shell';
+import {
+  registerHandle,
+  injectModalShell,
+  injectOverlayShell,
+  type OverlayShellPositionerConfig,
+} from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
 
 /**

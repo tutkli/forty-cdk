@@ -1,7 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { moveIndex } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import { moveIndex, type RovingTabindex } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
 /**

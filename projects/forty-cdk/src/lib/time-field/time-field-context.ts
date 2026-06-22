@@ -1,8 +1,11 @@
 import { inject, InjectionToken } from '@angular/core';
 
-import type { FieldSegment, SegmentHandle } from '../_internal/datetime/segment-editor';
-import type { SegmentEditorContext } from '../_internal/datetime/segment-directive';
-import type { TimeSegmentType } from '../_internal/datetime/segment-types';
+import {
+  type FieldSegment,
+  type SegmentHandle,
+  type SegmentEditorContext,
+  type TimeSegmentType,
+} from 'forty-cdk/core';
 
 /**
  * A rendered segment descriptor exposed by `ForTimeField.segments()` for the

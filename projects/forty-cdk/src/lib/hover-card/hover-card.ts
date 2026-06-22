@@ -11,17 +11,16 @@ import {
   signal,
 } from '@angular/core';
 
-import { ANCHORED_POSITIONING_DEFAULTS } from '../_internal/floating/anchored-positioning-inputs';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { forceCloseWhenDisabled } from '../_internal/hover-intent/force-close-when-disabled';
 import {
+  ANCHORED_POSITIONING_DEFAULTS,
+  type FloatingAlign,
+  type FloatingSide,
+  forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
-} from '../_internal/hover-intent/hover-intent';
-import {
   emitVetoableNativeEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+} from 'forty-cdk/core';
 import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,

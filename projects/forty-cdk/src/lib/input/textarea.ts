@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { injectElementSize } from '../_internal/element-size/element-size';
+import { injectElementSize } from 'forty-cdk/core';
 import { TextValueControlBase } from './text-value-control-base';
 
 /**

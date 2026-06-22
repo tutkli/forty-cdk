@@ -10,20 +10,20 @@ import {
   signal,
 } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import {
+  Collection,
+  firstEnabledHost,
+  createDebouncedAction,
   type ListNavigationAction,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import { FOR_MENU_CONTEXT } from '../_internal/menu-overlay/menu-context';
+  nextEnabledHandle,
+  type MenuActivationModality,
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+  injectTypeahead,
+  FOR_MENU_CONTEXT,
+} from 'forty-cdk/core';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,

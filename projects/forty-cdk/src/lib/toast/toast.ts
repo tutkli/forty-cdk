@@ -14,16 +14,14 @@ import {
   untracked,
 } from '@angular/core';
 
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import {
+  LiveAnnouncer,
   injectPauseController,
   type PauseController,
-} from '../_internal/pausable/pause-controller';
-import {
   attachSwipeDismiss,
   type SwipeDirection,
   type SwipeEventDetail,
-} from '../_internal/swipe-dismiss/swipe-dismiss';
+} from 'forty-cdk/core';
 import {
   FOR_TOAST_CONTEXT,
   type ForToastActionHandle,

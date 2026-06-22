@@ -10,22 +10,21 @@ import {
   signal,
 } from '@angular/core';
 
-import { ANCHORED_POSITIONING_DEFAULTS } from '../_internal/floating/anchored-positioning-inputs';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { forceCloseWhenDisabled } from '../_internal/hover-intent/force-close-when-disabled';
 import {
+  ANCHORED_POSITIONING_DEFAULTS,
+  type FloatingAlign,
+  type FloatingSide,
+  forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
-} from '../_internal/hover-intent/hover-intent';
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
-import {
+  adoptHostId,
+  IdGenerator,
+  injectPrefersReducedMotion,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
-} from '../_internal/pointer-grace/pointer-grace';
+} from 'forty-cdk/core';
 import {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,

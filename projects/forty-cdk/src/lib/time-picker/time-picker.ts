@@ -14,23 +14,21 @@ import {
   assertTimeCapable,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import {
+  IdGenerator,
+  type FloatingAlign,
+  type FloatingSide,
   type ListNavigationAction,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { ListboxOverlayController } from '../_internal/listbox-overlay/listbox-overlay-controller';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
-import { serializeISOTime, timeSentinel } from '../_internal/datetime/serialize';
+  ListboxOverlayController,
+  FormUiControlBase,
+  injectHiddenInput,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+  injectTextDirection,
+  FOR_TIME_VALUE_SOURCE,
+  serializeISOTime,
+  timeSentinel,
+} from 'forty-cdk/core';
 import { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './build-time-slots';
 import {
   FOR_TIME_PICKER_CONTEXT,

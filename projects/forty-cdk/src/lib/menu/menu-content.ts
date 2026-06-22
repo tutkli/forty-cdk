@@ -1,8 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
-import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
+import { registerHandle, injectOverlayShell, injectMenuContext } from 'forty-cdk/core';
 
 /**
  * The menu surface. Carries `role="menu"`, is portaled to `document.body`,

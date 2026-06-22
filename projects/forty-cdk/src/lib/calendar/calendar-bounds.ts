@@ -1,7 +1,6 @@
 import { computed, type Signal } from '@angular/core';
 
-import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
-import { clampToBounds } from '../_internal/datetime/serialize';
+import { compareDateOf, type DateAdapter, clampToBounds } from 'forty-cdk/core';
 
 /**
  * The reactive `[min, max]` bounds surface a `ForCalendar` root supplies to its

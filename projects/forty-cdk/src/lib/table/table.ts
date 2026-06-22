@@ -9,20 +9,20 @@ import {
   signal,
 } from '@angular/core';
 
-import { injectElementSize } from '../_internal/element-size/element-size';
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
+  injectElementSize,
+  Collection,
+  firstEnabledHost,
   type GridNavigationAction,
   moveGridIndex,
   resolveGridNavigation,
   resolveTreegridExpandCollapse,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { computeFlatHierarchy } from '../_internal/flat-hierarchy/flat-hierarchy';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+  type WritingDirection,
+  computeFlatHierarchy,
+  injectTextDirection,
+  reconcileRovingActive,
+  RovingTabindex,
+} from 'forty-cdk/core';
 import {
   FOR_TABLE_CONTEXT,
   type ForTableContext,

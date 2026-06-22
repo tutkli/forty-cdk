@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
+import { type MenuActivationModality } from 'forty-cdk/core';
 
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing

@@ -1,13 +1,13 @@
 import { inject } from '@angular/core';
 
-import { FOR_FIELD_CONTEXT, type ForFieldContext } from '../_internal/field/field-wiring';
+import { FOR_FIELD_CONTEXT, type ForFieldContext } from 'forty-cdk/core';
 
 export {
   FOR_FIELD_CONTEXT,
   injectFieldWiring,
   type ForFieldContext,
   type FieldControlHandle,
-} from '../_internal/field/field-wiring';
+} from 'forty-cdk/core';
 
 /**
  * Resolves the surrounding `ForField` context, throwing if the consumer

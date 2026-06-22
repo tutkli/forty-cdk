@@ -1,10 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import {
+  type ListNavigationAction,
+  type WritingDirection,
+  type RovingTabindex,
+} from 'forty-cdk/core';
 
 /** A visible tree node plus its resolved parent host — the flattened list the root walks. */
 export interface ForTreeVisibleNode {

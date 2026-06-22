@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal, type TemplateRef } from '@angular/core';
 
-import type { SwipeDirection } from '../_internal/swipe-dismiss/swipe-dismiss';
+import { type SwipeDirection } from 'forty-cdk/core';
 
 export type ForToastVariant = 'info' | 'success' | 'warning' | 'error';
 

@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { hostId } from '../_internal/host-id/host-id';
+import { hostId } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**

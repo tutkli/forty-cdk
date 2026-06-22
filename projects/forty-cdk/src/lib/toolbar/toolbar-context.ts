@@ -1,9 +1,6 @@
 import { InjectionToken, type Signal } from '@angular/core';
 
-import type {
-  HostRovingContext,
-  HostRovingItemHandle,
-} from '../_internal/roving-tabindex/host-roving-context';
+import { type HostRovingContext, type HostRovingItemHandle } from 'forty-cdk/core';
 
 /**
  * Per-item handle stored in the toolbar's `Collection`. Buttons, links, and

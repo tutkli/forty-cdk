@@ -1,4 +1,4 @@
-import type { TreeDropRow } from '../_internal/drag-session/tree-drop-resolver';
+import { type TreeDropRow } from 'forty-cdk/core';
 import type { ForTreeVisibleNode } from './tree-context';
 
 /**

@@ -1,7 +1,6 @@
 import { afterNextRender, type Injector } from '@angular/core';
 
-import { playFlip, type FlipRect } from '../_internal/drag-session/flip';
-import type { DragPreview } from '../_internal/drag-session/drag-preview';
+import { playFlip, type FlipRect, type DragPreview } from 'forty-cdk/core';
 import type { ForDropListContext } from './drag-drop-context';
 
 /** Options handed to {@link ReorderAnimator} at drop time. */

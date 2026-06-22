@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { registerHandle } from '../_internal/collection/register-handle';
+import { registerHandle } from 'forty-cdk/core';
 import {
   type ForNavigationMenuViewportHandle,
   injectNavigationMenuContext,

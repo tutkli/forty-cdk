@@ -5,31 +5,28 @@ import {
   assertTimeCapable,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
-import { dayPeriodNames, resolveHourCycle } from '../_internal/datetime/hour-cycle';
-import {
+  dayPeriodNames,
+  resolveHourCycle,
   type FieldSpec,
   SegmentEditor,
   type SegmentHandle,
   type SegmentType,
-} from '../_internal/datetime/segment-editor';
-import {
   composeWithTime,
   secondsOfDay,
   serializeISOTime,
   timeSentinel,
-} from '../_internal/datetime/serialize';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  FormUiControlBase,
+  injectHiddenInput,
+  type WritingDirection,
+  RovingTabindex,
+  injectTextDirection,
+  FOR_TIME_VALUE_SOURCE,
+} from 'forty-cdk/core';
 import {
   buildTimeSegments,
   type TimeGranularity,
   type TimeSegmentType,
 } from './build-time-segments';
-import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
 import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 

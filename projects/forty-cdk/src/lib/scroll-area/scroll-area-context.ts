@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { type WritingDirection } from 'forty-cdk/core';
 
 export type ForScrollAreaType = 'auto' | 'always' | 'scroll' | 'hover';
 export type ForScrollbarOrientation = 'horizontal' | 'vertical';

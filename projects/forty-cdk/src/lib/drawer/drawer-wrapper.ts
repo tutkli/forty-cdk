@@ -1,6 +1,6 @@
 import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
+import { ForDrawerScaleCoordinator } from 'forty-cdk/core';
 
 /**
  * Marks the consumer's app-shell wrapper so {@link ForDrawer}'s

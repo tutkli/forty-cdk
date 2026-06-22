@@ -12,9 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
 import { ForDropList } from '../drag-drop/drop-list';
 import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
-import { createKeyboardDragMediator } from '../_internal/drag-session/keyboard-drag-mediator';
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import { translateWindowReorder } from '../_internal/window-index-map/window-index-map';
+import { createKeyboardDragMediator, LiveAnnouncer, translateWindowReorder } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 
 /** Payload of `rowReorder`: the previous and new row index. */

@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { VirtualizedNavigator } from '../_internal/virtualized-navigator/virtualized-navigator';
+import { VirtualizedNavigator } from 'forty-cdk/core';
 import type { ForListboxOptionHandle } from './listbox-context';
 
 interface PositionEntry {

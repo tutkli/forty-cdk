@@ -10,14 +10,14 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
+  registerHandle,
+  resolveListNavigation,
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
+  injectMenuContext,
+} from 'forty-cdk/core';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';

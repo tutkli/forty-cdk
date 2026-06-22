@@ -1,12 +1,12 @@
 import { booleanAttribute, Directive, input, model } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
 import {
+  Collection,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_ACCORDION_CONTEXT,
   type ForAccordionContext,

@@ -16,13 +16,14 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
 import {
+  registerHandle,
+  resolveListNavigation,
   createPointerDragSession,
   type PointerDragSession,
-} from '../_internal/drag-session/pointer-session';
-import { createTemplatePreview, type DragPreview } from '../_internal/drag-session/drag-preview';
+  createTemplatePreview,
+  type DragPreview,
+} from 'forty-cdk/core';
 import {
   FOR_DRAGGABLE_CONTEXT,
   injectDropListContext,

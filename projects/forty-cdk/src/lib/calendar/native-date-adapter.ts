@@ -1,6 +1,6 @@
 import { Injectable, type Provider } from '@angular/core';
 
-import { type DateAdapter, FOR_DATE_ADAPTER } from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();

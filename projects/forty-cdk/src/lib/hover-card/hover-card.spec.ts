@@ -3,7 +3,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flushPositioning,

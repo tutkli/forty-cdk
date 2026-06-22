@@ -1,7 +1,6 @@
 import { booleanAttribute, computed, Directive, inject, input, signal } from '@angular/core';
 
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { adoptHostId, IdGenerator } from 'forty-cdk/core';
 import {
   FOR_ACCORDION_ITEM_CONTEXT,
   type ForAccordionItemContext,

@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { type ForDatePickerContext, injectDatePickerTriggerContext } from './date-picker-context';
 
 /**

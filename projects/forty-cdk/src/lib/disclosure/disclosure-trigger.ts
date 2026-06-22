@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**

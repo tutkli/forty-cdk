@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ForDrawerSide } from '../_internal/drawer-stack/drawer-side';
+import { type ForDrawerSide } from 'forty-cdk/core';
 
 export { type ForDrawerSide };
 

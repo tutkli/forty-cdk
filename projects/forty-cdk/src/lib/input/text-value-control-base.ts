@@ -1,9 +1,7 @@
 import { Directive, ElementRef, inject, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
+import { reflectDisabled, FormUiControlBase, mirrorUnfocusedValue } from 'forty-cdk/core';
 
 /**
  * Shared base for the text-valued form controls `ForInput` and `ForTextarea`.

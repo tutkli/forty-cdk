@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**

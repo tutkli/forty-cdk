@@ -1,8 +1,11 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
-import { createDefaults } from '../_internal/defaults/defaults';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { SkipDelayCoordinator } from '../_internal/hover-intent/skip-delay-coordinator';
+import {
+  createDefaults,
+  type FloatingAlign,
+  type FloatingSide,
+  SkipDelayCoordinator,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant hover-cards in the surrounding injector

@@ -13,12 +13,15 @@ import {
   signal,
 } from '@angular/core';
 
-import { type DateAdapter, injectDateAdapter } from '../_internal/date-adapter/date-adapter';
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import {
+  type DateAdapter,
+  injectDateAdapter,
+  adoptHostId,
+  IdGenerator,
+  LiveAnnouncer,
+  type WritingDirection,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import { CalendarBounds } from './calendar-bounds';
 import {
   type CalendarDateLabelFormatter,

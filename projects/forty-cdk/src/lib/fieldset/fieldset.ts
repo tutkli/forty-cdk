@@ -8,12 +8,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
+  reflectDisabled,
+  IdGenerator,
   FOR_FIELDSET_CONTEXT,
   type ForFieldsetContext,
-} from '../_internal/fieldset/fieldset-context';
+} from 'forty-cdk/core';
 
 /**
  * Headless grouping container that gives a set of related fields a shared

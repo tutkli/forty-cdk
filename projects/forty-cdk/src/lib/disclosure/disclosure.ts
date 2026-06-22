@@ -1,7 +1,6 @@
 import { booleanAttribute, Directive, inject, input, model, signal } from '@angular/core';
 
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { adoptHostId, IdGenerator } from 'forty-cdk/core';
 import { FOR_DISCLOSURE_CONTEXT, type ForDisclosureContext } from './disclosure-context';
 
 /**

@@ -2,7 +2,7 @@ import { Component, model, provideZonelessChangeDetection, signal, viewChild } f
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { compareDateOf, type DateAdapter } from 'forty-cdk/core';
 import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';

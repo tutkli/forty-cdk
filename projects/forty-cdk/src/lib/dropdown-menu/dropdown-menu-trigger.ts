@@ -9,9 +9,12 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import { FOR_MENU_CONTEXT, type ForMenuContext } from '../_internal/menu-overlay/menu-context';
+import {
+  reflectDisabled,
+  type MenuActivationModality,
+  FOR_MENU_CONTEXT,
+  type ForMenuContext,
+} from 'forty-cdk/core';
 
 /**
  * Resolves the trigger's menu root: the explicit reference when the

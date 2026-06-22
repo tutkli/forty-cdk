@@ -1,6 +1,6 @@
 import { Injector, computed, inject, runInInjectionContext, type Signal } from '@angular/core';
 
-import { injectMediaQuery } from '../_internal/media-query/media-query';
+import { injectMediaQuery } from 'forty-cdk/core';
 import { FOR_BREAKPOINTS, type TailwindBreakpointName } from './breakpoints-defaults';
 
 /**

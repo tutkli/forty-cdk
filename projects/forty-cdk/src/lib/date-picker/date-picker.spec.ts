@@ -10,8 +10,7 @@ import {
   renderHost,
   type RenderResult,
 } from '../../test-utils';
-import { assertTimeCapable, type DateAdapter } from '../_internal/date-adapter/date-adapter';
-import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
+import { assertTimeCapable, type DateAdapter, FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
 import { ForCalendar } from '../calendar/calendar';
 import { ForCalendarCell } from '../calendar/calendar-cell';
 import { ForCalendarGrid } from '../calendar/calendar-grid';

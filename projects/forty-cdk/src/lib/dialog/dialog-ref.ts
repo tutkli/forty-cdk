@@ -1,4 +1,4 @@
-import { OverlayRef } from '../_internal/overlay-manager/overlay-ref';
+import { OverlayRef } from 'forty-cdk/core';
 
 /**
  * Handle returned by `ForDialogManager.open()`. Inject inside the opened

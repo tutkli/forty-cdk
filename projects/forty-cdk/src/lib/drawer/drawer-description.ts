@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { registerA11yDescription } from '../_internal/collection/register-handle';
+import { registerA11yDescription } from 'forty-cdk/core';
 import { injectDrawerContext } from './drawer-context';
 
 /**

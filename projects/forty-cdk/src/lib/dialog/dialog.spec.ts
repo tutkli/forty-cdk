@@ -1,10 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,

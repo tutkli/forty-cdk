@@ -19,24 +19,25 @@ import {
   assertTimeCapable,
   type DateAdapter,
   injectDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import {
+  type FloatingAlign,
+  type FloatingSide,
+  FormUiControlBase,
+  injectHiddenInput,
+  adoptHostId,
+  IdGenerator,
+  type WritingDirection,
+  injectTextDirection,
   createVetoableNativeEvent,
   emitVetoableEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import { clampToBounds, composeWithTime, serializeISODate } from '../_internal/datetime/serialize';
+  clampToBounds,
+  composeWithTime,
+  serializeISODate,
+  FOR_TIME_VALUE_SOURCE,
+} from 'forty-cdk/core';
 import { ForCalendar } from '../calendar/calendar';
 import type { CalendarDateRange } from '../calendar/calendar-context';
-import { FOR_TIME_VALUE_SOURCE } from '../_internal/datetime/time-value-source';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
 

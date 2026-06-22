@@ -1,7 +1,6 @@
 import { booleanAttribute, computed, Directive, effect, inject, input, model } from '@angular/core';
 
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import { clamp } from '../_internal/numeric-step/numeric-step';
+import { LiveAnnouncer, clamp } from 'forty-cdk/core';
 import {
   FOR_PROGRESS_CONTEXT,
   type ForProgressContext,

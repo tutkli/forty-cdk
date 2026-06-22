@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { injectPortal } from '../_internal/portal/portal';
+import { injectPortal } from 'forty-cdk/core';
 import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
 
 /**

@@ -1,7 +1,6 @@
-import type { FieldSpec } from '../_internal/datetime/segment-editor';
-import type { TimeSegmentType } from '../_internal/datetime/segment-types';
+import { type FieldSpec, type TimeSegmentType } from 'forty-cdk/core';
 
-export type { TimeSegmentType } from '../_internal/datetime/segment-types';
+export type { TimeSegmentType } from 'forty-cdk/core';
 
 /** Smallest editable time unit; controls which segments are rendered. */
 export type TimeGranularity = 'hour' | 'minute' | 'second';

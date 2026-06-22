@@ -15,7 +15,7 @@ export {
   type ForMenuContext,
   type ForMenuItemHandle,
   type MenuActivationModality,
-} from '../_internal/menu-overlay/menu-context';
+} from 'forty-cdk/core';
 export {
   FOR_MENU_RADIO_GROUP_CONTEXT,
   type ForMenuRadioGroupContext,

@@ -1,7 +1,6 @@
 import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
-import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
-import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import { type AnchoredPositioningContext, type VetoableNativeEvent } from 'forty-cdk/core';
 
 /**
  * Coordination contract owned by `ForPopover`. Trigger / Content register

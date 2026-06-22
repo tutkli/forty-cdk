@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from '../_internal/defaults/defaults';
+import { createDefaults } from 'forty-cdk/core';
 import { type ForDrawerSide } from './drawer-context';
 
 /**

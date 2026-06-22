@@ -1,7 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from '../_internal/defaults/defaults';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
+import { createDefaults, type FloatingAlign, type FloatingSide } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant popovers in the surrounding injector

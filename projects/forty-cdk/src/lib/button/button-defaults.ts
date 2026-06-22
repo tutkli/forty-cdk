@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from '../_internal/defaults/defaults';
+import { createDefaults } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant buttons in the surrounding injector

@@ -1,10 +1,10 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
-import type { CollectionHandle } from '../_internal/collection/collection';
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
+import {
+  type CollectionHandle,
+  type ListNavigationAction,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 /**
  * Per-trigger handle stored in the menu's `Collection`. Triggers register

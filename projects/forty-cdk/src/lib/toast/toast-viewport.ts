@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
-import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
+import { resolveConfigClass } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,

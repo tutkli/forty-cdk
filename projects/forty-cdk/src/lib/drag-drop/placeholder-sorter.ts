@@ -1,7 +1,4 @@
-import {
-  fencePlaceholderIndex,
-  placeholderInsertion,
-} from '../_internal/drag-session/placeholder-position';
+import { fencePlaceholderIndex, placeholderInsertion } from 'forty-cdk/core';
 import type { ForDraggableHandle, ForDropListContext } from './drag-drop-context';
 
 /** Options handed to {@link PlaceholderSorter} at lift time. */

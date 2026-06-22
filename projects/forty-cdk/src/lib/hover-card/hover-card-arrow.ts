@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
+import { registerHandle } from 'forty-cdk/core';
 import { injectHoverCardContext } from './hover-card-context';
 
 /**

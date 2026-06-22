@@ -6,5 +6,5 @@
  * `_internal/collection/fold-snapshot.ts`. Kept as a barrel so `OptionLabelCache`
  * and the combobox virtualized navigator import from one combobox-local path.
  */
-export { tryReadHandle } from '../_internal/signal-graph/read-handle';
-export { foldSnapshotOnTotalCountTransition } from '../_internal/collection/fold-snapshot';
+export { tryReadHandle } from 'forty-cdk/core';
+export { foldSnapshotOnTotalCountTransition } from 'forty-cdk/core';

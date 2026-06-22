@@ -15,11 +15,11 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { clampPreviewPosition } from '../_internal/drag-session/clamp-preview';
 import {
+  clampPreviewPosition,
   createPointerDragSession,
   type PointerDragSession,
-} from '../_internal/drag-session/pointer-session';
+} from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
 
 const POINTER_ARM_THRESHOLD_PX = 5;

@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { ForDateTimeLiteralBase } from '../_internal/datetime/literal-directive';
+import { ForDateTimeLiteralBase } from 'forty-cdk/core';
 
 /**
  * A decorative separator (`:`, a space) between the editable segments of a

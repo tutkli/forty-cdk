@@ -1,12 +1,13 @@
 import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
-import { ForDrawerStack, type DrawerStackHandle } from '../_internal/drawer-stack/drawer-stack';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import {
+  ForDrawerScaleCoordinator,
+  ForDrawerStack,
+  type DrawerStackHandle,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,

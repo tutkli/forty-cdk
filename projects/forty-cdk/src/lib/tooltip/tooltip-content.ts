@@ -1,7 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { toFloatingPositioner } from '../_internal/floating/anchored-positioning-inputs';
-import { injectOverlayShell } from '../_internal/overlay-shell/overlay-shell';
+import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core';
 import { injectTooltipContext } from './tooltip-context';
 
 /**

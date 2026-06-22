@@ -9,16 +9,16 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
+  Collection,
+  firstEnabledHost,
+  FormUiControlBase,
+  injectHiddenInput,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
   type ForRadioGroupContext,

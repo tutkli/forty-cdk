@@ -1,6 +1,6 @@
 import { Directive, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
+import { registerHandle } from 'forty-cdk/core';
 import { injectToastContext } from './toast-context';
 
 /**

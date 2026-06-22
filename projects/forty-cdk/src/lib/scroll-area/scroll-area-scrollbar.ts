@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input, signal } from '@angular/core';
 
-import { injectElementSize } from '../_internal/element-size/element-size';
+import { injectElementSize } from 'forty-cdk/core';
 import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-area-context';
 
 /**

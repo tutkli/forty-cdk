@@ -9,12 +9,15 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { hostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
+import {
+  registerHandle,
+  type FloatingAlign,
+  type FloatingSide,
+  hostId,
+  IdGenerator,
+  resolveListNavigation,
+  type MenuActivationModality,
+} from 'forty-cdk/core';
 import { injectMenubarContext } from './menubar-context';
 
 /**

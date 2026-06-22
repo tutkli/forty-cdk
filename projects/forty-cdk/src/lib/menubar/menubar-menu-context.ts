@@ -1,17 +1,18 @@
 import { computed, type ModelSignal, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { CloseReasonState, InitialFocusState } from '../_internal/menu-overlay/menu-focus-state';
-import { createMenuItemList } from '../_internal/menu-overlay/menu-item-list';
-import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import type { ListNavigationAction } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type {
-  ForMenuCloseReason,
-  ForMenuContext,
-  ForMenuItemHandle,
-  MenuSiblingNavigator,
-} from '../_internal/menu-overlay/menu-context';
+import {
+  CloseReasonState,
+  InitialFocusState,
+  createMenuItemList,
+  MENU_POSITIONING_DEFAULTS,
+  type MenuActivationModality,
+  type ListNavigationAction,
+  type ForMenuCloseReason,
+  type ForMenuContext,
+  type ForMenuItemHandle,
+  type MenuSiblingNavigator,
+} from 'forty-cdk/core';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
 /**

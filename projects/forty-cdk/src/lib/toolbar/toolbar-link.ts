@@ -1,7 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { registerHandle, resolveListNavigation } from 'forty-cdk/core';
 import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
 
 /**

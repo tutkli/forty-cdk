@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { ForDateTimeSegmentBase } from '../_internal/datetime/segment-directive';
+import { ForDateTimeSegmentBase } from 'forty-cdk/core';
 import type { TimeSegmentType } from './build-time-segments';
 import { injectTimeFieldContext } from './time-field-context';
 import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';

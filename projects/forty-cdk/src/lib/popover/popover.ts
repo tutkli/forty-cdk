@@ -10,17 +10,18 @@ import {
   signal,
 } from '@angular/core';
 
-import { ANCHORED_POSITIONING_DEFAULTS } from '../_internal/floating/anchored-positioning-inputs';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
 import {
+  ANCHORED_POSITIONING_DEFAULTS,
+  type FloatingAlign,
+  type FloatingSide,
+  adoptHostId,
+  IdGenerator,
+  injectPrefersReducedMotion,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+} from 'forty-cdk/core';
 import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
 import { FOR_POPOVER_DEFAULTS } from './popover-defaults';
 

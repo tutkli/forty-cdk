@@ -7,12 +7,12 @@ import {
   type Type,
 } from '@angular/core';
 
-import { resolveConfigClass } from '../_internal/class-list/resolve-config-class';
-import { OverlayManagerCore } from '../_internal/overlay-manager/overlay-manager';
 import {
+  resolveConfigClass,
+  OverlayManagerCore,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+} from 'forty-cdk/core';
 import { FOR_DIALOG_INSTANCE_ID } from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
 import type { ForDialogEntry } from './dialog-outlet';

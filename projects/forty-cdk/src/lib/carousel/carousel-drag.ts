@@ -15,9 +15,9 @@ import {
   attachSwipeDismiss,
   type SwipeDirection,
   type SwipeEventDetail,
-} from '../_internal/swipe-dismiss/swipe-dismiss';
-import { isScrollableAtEdge } from '../_internal/scroll-boundary/scroll-boundary';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
+  isScrollableAtEdge,
+  injectPrefersReducedMotion,
+} from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 const FLICK_VELOCITY_PX_PER_MS = 0.4;

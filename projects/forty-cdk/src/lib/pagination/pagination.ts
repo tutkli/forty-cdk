@@ -8,9 +8,7 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { type WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { clamp } from '../_internal/numeric-step/numeric-step';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import { type WritingDirection, clamp, injectTextDirection } from 'forty-cdk/core';
 import { FOR_PAGINATION_CONTEXT, type ForPaginationContext } from './pagination-context';
 import { FOR_PAGINATION_DEFAULTS } from './pagination-defaults';
 import { computePaginationItems, type PaginationItem } from './pagination-range';

@@ -8,12 +8,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { hostId } from '../_internal/host-id/host-id';
 import {
+  registerHandle,
+  hostId,
   resolveListNavigation,
   resolveTreeExpandCollapse,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
+} from 'forty-cdk/core';
 import {
   FOR_TREE_ITEM_CONTEXT,
   type ForTreeContainerContext,

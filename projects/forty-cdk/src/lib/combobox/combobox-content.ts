@@ -1,10 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import {
-  injectOverlayShell,
-  type OverlayShellConfig,
-} from '../_internal/overlay-shell/overlay-shell';
+import { registerHandle, injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**

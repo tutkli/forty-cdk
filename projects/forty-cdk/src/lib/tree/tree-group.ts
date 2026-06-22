@@ -1,6 +1,6 @@
 import { computed, DestroyRef, Directive, inject } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
+import { Collection } from 'forty-cdk/core';
 import {
   FOR_TREE_CONTAINER_CONTEXT,
   type ForTreeContainerContext,

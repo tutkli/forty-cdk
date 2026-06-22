@@ -9,9 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { hostId } from '../_internal/host-id/host-id';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
 
 /**

@@ -26,7 +26,7 @@ import { ForToastTitle } from './toast-title';
 import { ForToastViewport } from './toast-viewport';
 import { provideForToastDefaults } from './toast-defaults';
 import { ForToastManager } from './toast-manager';
-import type { SwipeEventDetail } from '../_internal/swipe-dismiss/swipe-dismiss';
+import { type SwipeEventDetail } from 'forty-cdk/core';
 
 function pointer(
   el: HTMLElement,

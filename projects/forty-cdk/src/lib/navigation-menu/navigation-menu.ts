@@ -12,15 +12,15 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import { injectDismissableLayer } from '../_internal/dismissable-layer/dismissable-layer';
-import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
 import {
+  Collection,
+  injectDismissableLayer,
+  createDebouncedAction,
   type ListNavigationAction,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  nextEnabledHandle,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,

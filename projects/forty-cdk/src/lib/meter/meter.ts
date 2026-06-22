@@ -1,6 +1,6 @@
 import { computed, Directive, input, model } from '@angular/core';
 
-import { clamp } from '../_internal/numeric-step/numeric-step';
+import { clamp } from 'forty-cdk/core';
 import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
 
 /**

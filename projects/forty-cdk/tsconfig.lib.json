@@ -8,6 +8,11 @@
     "declarationMap": true,
     "types": []
   },
-  "include": ["src/**/*.ts", "internationalized-date/src/**/*.ts", "virtualization/src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "core/src/**/*.ts",
+    "internationalized-date/src/**/*.ts",
+    "virtualization/src/**/*.ts"
+  ],
   "exclude": ["**/*.spec.ts", "src/test-utils/**"]
 }

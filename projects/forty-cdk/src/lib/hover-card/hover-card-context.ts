@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
+import { type AnchoredPositioningContext } from 'forty-cdk/core';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';

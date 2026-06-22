@@ -1,7 +1,6 @@
 import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { registerHandle, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**

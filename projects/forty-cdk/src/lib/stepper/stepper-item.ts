@@ -1,7 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 import type { FieldTree } from '@angular/forms/signals';
 
-import { registerHandle } from '../_internal/collection/register-handle';
+import { registerHandle } from 'forty-cdk/core';
 import {
   FOR_STEPPER_ITEM_CONTEXT,
   type ForStepperItemContext,

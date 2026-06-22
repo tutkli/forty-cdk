@@ -1,6 +1,6 @@
 import { computed, DestroyRef, Directive, inject } from '@angular/core';
 
-import { FOR_FIELDSET_CONTEXT } from '../_internal/fieldset/fieldset-context';
+import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 
 /**
  * Accessible group label for a `[forFieldset]`. Inside a fieldset it adopts the

@@ -1,9 +1,6 @@
-import type { FieldSpec, SegmentType } from '../_internal/datetime/segment-editor';
+import { type FieldSpec, type SegmentType } from 'forty-cdk/core';
 
-export type {
-  DateSegmentType,
-  SegmentType as DateTimeSegmentType,
-} from '../_internal/datetime/segment-editor';
+export type { DateSegmentType, SegmentType as DateTimeSegmentType } from 'forty-cdk/core';
 
 /** Date-time precision of a date field; `'day'` keeps it date-only. */
 export type FieldGranularity = 'day' | 'hour' | 'minute' | 'second';

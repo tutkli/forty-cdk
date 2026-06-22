@@ -1,16 +1,16 @@
 import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
+  Collection,
+  firstEnabledHost,
   type ListNavigationAction,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
-import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  nextEnabledHandle,
+  FOR_HOST_ROVING_CONTEXT,
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_TOOLBAR_CONTEXT,
   type ForToolbarContext,

@@ -1,11 +1,11 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
-import type { CollectionHandle } from '../_internal/collection/collection';
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
+import {
+  type CollectionHandle,
+  type ListNavigationAction,
+  type WritingDirection,
+  type RovingTabindex,
+} from 'forty-cdk/core';
 
 /**
  * Per-item handle stored in the group's `Collection`. The directive

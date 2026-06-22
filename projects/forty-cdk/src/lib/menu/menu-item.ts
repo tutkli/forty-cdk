@@ -9,10 +9,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { emitVetoableEvent, type VetoableEvent } from '../_internal/vetoable-event/vetoable-event';
-import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
+import {
+  registerHandle,
+  resolveListNavigation,
+  emitVetoableEvent,
+  type VetoableEvent,
+  injectMenuContext,
+} from 'forty-cdk/core';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 

@@ -1,7 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { AnchoredPositioningContext } from '../_internal/floating/anchored-positioning-inputs';
-import type { Point } from '../_internal/pointer-grace/pointer-grace';
+import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core';
 
 /** Reason a show / hide was scheduled — escape bypasses the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';

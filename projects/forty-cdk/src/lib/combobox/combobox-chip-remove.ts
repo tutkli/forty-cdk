@@ -1,6 +1,6 @@
 import { computed, Directive, inject } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
 

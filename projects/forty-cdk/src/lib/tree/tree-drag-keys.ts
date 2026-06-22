@@ -1,4 +1,4 @@
-import { resolveLiftedDragControl } from '../_internal/drag-session/keyboard-drag-keys';
+import { resolveLiftedDragControl } from 'forty-cdk/core';
 
 /**
  * Tree-specific keyboard resolver for `ForTreeNodeDrag`. Framework-free and unit-testable in

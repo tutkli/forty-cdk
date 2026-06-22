@@ -1,9 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import {
-  readEntryGuarded,
-  VirtualizedNavigator,
-} from '../_internal/virtualized-navigator/virtualized-navigator';
+import { readEntryGuarded, VirtualizedNavigator } from 'forty-cdk/core';
 import type { ForSelectOptionHandle } from './select-context';
 
 interface PositionEntry<T> {

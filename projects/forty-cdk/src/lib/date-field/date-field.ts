@@ -15,20 +15,20 @@ import {
   type DateAdapter,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
-import { dayPeriodNames, resolveHourCycle } from '../_internal/datetime/hour-cycle';
-import {
+  dayPeriodNames,
+  resolveHourCycle,
   type FieldSpec,
   SegmentEditor,
   type SegmentHandle,
   type SegmentType,
-} from '../_internal/datetime/segment-editor';
-import { clampToBounds, serializeISODate } from '../_internal/datetime/serialize';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  clampToBounds,
+  serializeISODate,
+  FormUiControlBase,
+  injectHiddenInput,
+  type WritingDirection,
+  RovingTabindex,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   buildDateTimeSegments,
   type DateTimeSegmentType,

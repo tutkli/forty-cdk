@@ -13,12 +13,14 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { snapToStep } from '../_internal/numeric-step/numeric-step';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import {
+  Collection,
+  FormUiControlBase,
+  injectHiddenInput,
+  type WritingDirection,
+  snapToStep,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_SLIDER_CONTEXT,
   type ForSliderContext,

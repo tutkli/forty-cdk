@@ -1,7 +1,6 @@
 import { DestroyRef, Directive, inject, input, numberAttribute, signal } from '@angular/core';
 
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+import { type WritingDirection, injectTextDirection } from 'forty-cdk/core';
 import {
   FOR_SCROLL_AREA_CONTEXT,
   type ForScrollAreaContext,

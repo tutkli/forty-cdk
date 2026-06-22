@@ -9,7 +9,7 @@ import {
   model,
 } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —

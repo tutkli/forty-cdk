@@ -13,31 +13,28 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { type WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
 import {
+  Collection,
+  type FloatingAlign,
+  type FloatingSide,
+  FormUiControlBase,
+  injectHiddenInput,
+  adoptHostId,
+  IdGenerator,
+  type WritingDirection,
+  nextEnabledHandle,
   createPointerSuppression,
   type PointerSuppression,
-} from '../_internal/pointer-suppression/pointer-suppression';
-import {
   defaultItemToFormValue,
   isInArray,
   singleSelected,
   toggleInArray,
-} from '../_internal/selection/selection';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import {
+  injectTextDirection,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+} from 'forty-cdk/core';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
   FOR_COMBOBOX_CONTEXT,

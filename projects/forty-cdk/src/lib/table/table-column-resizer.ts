@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { clampToRange, startPointerResize } from '../_internal/resize-geometry/resize-geometry';
+import { clampToRange, startPointerResize } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 
 /** Payload of `resizeCommit`: which column was resized and its committed width (px). */

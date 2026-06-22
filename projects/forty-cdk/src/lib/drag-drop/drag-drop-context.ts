@@ -1,9 +1,5 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { DragPreview } from '../_internal/drag-session/drag-preview';
+import { type ListNavigationAction, type WritingDirection, type DragPreview } from 'forty-cdk/core';
 
 /** A registered draggable item, as seen by its drop list. */
 export interface ForDraggableHandle {

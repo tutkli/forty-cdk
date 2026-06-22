@@ -9,8 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import { registerHandle } from '../_internal/collection/register-handle';
+import { Collection, registerHandle } from 'forty-cdk/core';
 import {
   FOR_TABLE_ROW_CONTEXT,
   type ForTableCellHandle,

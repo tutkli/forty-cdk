@@ -1,12 +1,16 @@
 import { computed, DestroyRef, Directive, ElementRef, inject, input, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import { localeSeparators, parseLocaleNumber } from '../_internal/locale-number/locale-number';
-import { clamp, roundToStepPrecision } from '../_internal/numeric-step/numeric-step';
+import {
+  reflectDisabled,
+  FormUiControlBase,
+  mirrorUnfocusedValue,
+  injectHiddenInput,
+  localeSeparators,
+  parseLocaleNumber,
+  clamp,
+  roundToStepPrecision,
+} from 'forty-cdk/core';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
 

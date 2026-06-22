@@ -9,13 +9,13 @@ import {
   output,
 } from '@angular/core';
 
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
 import {
+  type WritingDirection,
+  injectTextDirection,
   clampToRange,
   roundToStepPrecision,
   startPointerResize,
-} from '../_internal/resize-geometry/resize-geometry';
+} from 'forty-cdk/core';
 
 /**
  * Headless implementation of the

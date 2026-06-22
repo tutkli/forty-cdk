@@ -1,8 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import { type FloatingAlign, type FloatingSide, type VetoableNativeEvent } from 'forty-cdk/core';
 
 /**
  * Coordination contract owned by `[forDatePicker]` (the root). The trigger,

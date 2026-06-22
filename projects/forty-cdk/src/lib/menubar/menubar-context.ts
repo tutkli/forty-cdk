@@ -1,13 +1,14 @@
 import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 
-import type { CollectionHandle } from '../_internal/collection/collection';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import type { MenuSiblingNavigator } from '../_internal/menu-overlay/menu-context';
+import {
+  type CollectionHandle,
+  type FloatingAlign,
+  type FloatingSide,
+  type ListNavigationAction,
+  type WritingDirection,
+  type MenuActivationModality,
+  type MenuSiblingNavigator,
+} from 'forty-cdk/core';
 
 /**
  * Per-trigger configuration that the menubar root reads when its menu is the

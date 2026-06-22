@@ -1,9 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { MenuActivationModality } from '../_internal/menu-overlay/menu-overlay';
-import { injectMenuContext } from '../_internal/menu-overlay/menu-context';
+import {
+  registerHandle,
+  resolveListNavigation,
+  type MenuActivationModality,
+  injectMenuContext,
+} from 'forty-cdk/core';
 import { handleMenuTabOut } from './menu-tab-out';
 
 /**

@@ -1,23 +1,18 @@
 /*
- * Public API surface of forty-cdk.
+ * Public API surface of forty-cdk (main barrel).
  *
- * The library ships a single entry point. Each primitive is a small set of
- * standalone directives — combined with `"sideEffects": false`, importing
- * only what you use is enough for tree-shakers to drop the rest. Per-primitive
- * secondary entry points can be added later if real bundles ever need them.
+ * The shared internals live in the `forty-cdk/core` secondary entry point so a
+ * consumer's bundler compiles them exactly once and can code-split each
+ * primitive independently. This barrel re-exports every primitive plus the
+ * cross-cutting public tokens; the per-primitive `forty-cdk/<primitive>` entry
+ * points let bundlers pull only what a route imports.
  */
 
-export type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from './lib/_internal/vetoable-event/vetoable-event';
+export type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
 
-export { FOR_ID_SALT, provideForIdSalt } from './lib/_internal/id-generator/id-generator';
+export { FOR_ID_SALT, provideForIdSalt } from 'forty-cdk/core';
 
-export {
-  FOR_TIME_VALUE_SOURCE,
-  type TimeValueSource,
-} from './lib/_internal/datetime/time-value-source';
+export { FOR_TIME_VALUE_SOURCE, type TimeValueSource } from 'forty-cdk/core';
 
 export * from './lib/disclosure';
 export * from './lib/accordion';

@@ -15,35 +15,36 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { registerHandle } from '../_internal/collection/register-handle';
-import { buildDragSlots, indexOfSlot, stepSlot } from '../_internal/drag-session/drag-positions';
 import {
+  Collection,
+  firstEnabledHost,
+  registerHandle,
+  buildDragSlots,
+  indexOfSlot,
+  stepSlot,
   resolveDropTarget,
   type DropContainerGeometry,
-} from '../_internal/drag-session/drag-geometry';
-import type { DragPreview } from '../_internal/drag-session/drag-preview';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
-import {
+  type DragPreview,
+  injectPrefersReducedMotion,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  LiveAnnouncer,
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+  createAutoScroller,
+  type AutoScroller,
+  PreviewController,
+} from 'forty-cdk/core';
 import {
   FOR_DRAG_DROP_CONTEXT,
   type ForDragDropEvent,
   type ForDraggableHandle,
   type ForDropListContext,
 } from './drag-drop-context';
-import { createAutoScroller, type AutoScroller } from '../_internal/drag-session/auto-scroll';
 import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
-import { PreviewController } from '../_internal/drag-session/preview-controller';
 import { PlaceholderSorter } from './placeholder-sorter';
 import { ReorderAnimator } from './reorder-animator';
 

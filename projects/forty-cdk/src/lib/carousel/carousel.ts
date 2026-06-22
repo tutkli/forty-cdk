@@ -16,22 +16,20 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { injectElementSize } from '../_internal/element-size/element-size';
 import {
+  Collection,
+  firstEnabledHost,
+  injectElementSize,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { injectPrefersReducedMotion } from '../_internal/media-query/media-query';
-import {
+  injectPrefersReducedMotion,
   injectPauseController,
   type PauseController,
-} from '../_internal/pausable/pause-controller';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   type CarouselAlign,
   FOR_CAROUSEL_CONTEXT,

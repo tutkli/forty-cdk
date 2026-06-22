@@ -1,4 +1,4 @@
-import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter } from 'forty-cdk/core';
 
 /**
  * Tracks the day-of-month the user is conceptually navigating with so paging

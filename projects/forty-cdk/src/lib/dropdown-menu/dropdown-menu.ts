@@ -10,17 +10,19 @@ import {
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
-import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
-import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import { FOR_MENU_CONTEXT, type ForMenuContext } from '../_internal/menu-overlay/menu-context';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  type WritingDirection,
+  createMenuOverlay,
+  MenuOverlayHost,
+  MENU_POSITIONING_DEFAULTS,
+  injectTextDirection,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+  FOR_MENU_CONTEXT,
+  type ForMenuContext,
+} from 'forty-cdk/core';
 import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
 
 /**

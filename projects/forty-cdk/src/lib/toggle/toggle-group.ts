@@ -9,18 +9,18 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
+  Collection,
+  firstEnabledHost,
+  FormUiControlBase,
+  injectHiddenInput,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import { FOR_TOGGLE_DEFAULTS } from './toggle-defaults';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,

@@ -1,15 +1,15 @@
 import { booleanAttribute, computed, Directive, inject, input, model } from '@angular/core';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
+  Collection,
+  firstEnabledHost,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
+  reconcileRovingActive,
+  RovingTabindex,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_TABS_CONTEXT,
   type ForTabsContentHandle,

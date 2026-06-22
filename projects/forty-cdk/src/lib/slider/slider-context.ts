@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { type WritingDirection } from 'forty-cdk/core';
 
 /**
  * One thumb registered with `ForSlider`. The handle exposes the host element

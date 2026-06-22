@@ -1,6 +1,6 @@
 import { computed, DOCUMENT, inject, Injectable, type Signal, signal } from '@angular/core';
 
-import { IdGenerator } from '../_internal/id-generator/id-generator';
+import { IdGenerator } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,

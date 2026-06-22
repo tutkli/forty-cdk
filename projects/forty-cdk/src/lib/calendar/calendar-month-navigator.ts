@@ -1,4 +1,4 @@
-import { Collection } from '../_internal/collection/collection';
+import { Collection } from 'forty-cdk/core';
 import type {
   CalendarMonthOption,
   CalendarMonthRow,

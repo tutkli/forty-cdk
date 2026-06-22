@@ -1,8 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { registerHandle, reflectDisabled, resolveListNavigation } from 'forty-cdk/core';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**

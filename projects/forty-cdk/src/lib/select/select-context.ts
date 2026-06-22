@@ -1,13 +1,14 @@
 import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import type { CollectionHandle } from '../_internal/collection/collection';
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import type {
-  ListNavigationAction,
-  WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { VetoableNativeEvent } from '../_internal/vetoable-event/vetoable-event';
+import {
+  type CollectionHandle,
+  type FloatingAlign,
+  type FloatingSide,
+  type ListNavigationAction,
+  type WritingDirection,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 
 /**
  * Why a select requested close. Mirrors the menu primitive vocabulary so

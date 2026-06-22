@@ -12,13 +12,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { ForDrawerScaleCoordinator } from '../_internal/drawer-scale/drawer-scale-coordinator';
-import { ForDrawerStack } from '../_internal/drawer-stack/drawer-stack';
-import { injectModalShell } from '../_internal/modal-shell/modal-shell';
 import {
+  ForDrawerScaleCoordinator,
+  ForDrawerStack,
+  injectModalShell,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+} from 'forty-cdk/core';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,

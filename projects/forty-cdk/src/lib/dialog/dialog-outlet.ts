@@ -9,16 +9,14 @@ import {
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
-import { OverlayContextInjector } from '../_internal/overlay-manager/overlay-context-injector';
-import type {
-  OverlayManagerEntry,
-  OverlayManagerOutlet,
-  OverlayManagerOutletHost,
-} from '../_internal/overlay-manager/overlay-manager';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+import {
+  OverlayContextInjector,
+  type OverlayManagerEntry,
+  type OverlayManagerOutlet,
+  type OverlayManagerOutletHost,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import { ForDialog } from './dialog';
 
 /**

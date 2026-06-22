@@ -1,7 +1,6 @@
 import { afterEveryRender, Directive, ElementRef, inject, signal } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { resolveHostId } from '../_internal/host-id/host-id';
+import { registerHandle, resolveHostId } from 'forty-cdk/core';
 import { injectToastContext, type ForToastTextHandle } from './toast-context';
 
 /**

@@ -1,6 +1,6 @@
 import { Directive, inject, type Signal } from '@angular/core';
 
-import { registerA11yName } from '../_internal/collection/register-handle';
+import { registerA11yName } from 'forty-cdk/core';
 import { ForSelectGroup } from './select-group';
 
 /**

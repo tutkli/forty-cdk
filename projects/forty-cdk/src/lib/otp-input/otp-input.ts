@@ -17,9 +17,7 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { FOR_FIELD_CONTEXT } from '../_internal/field/field-wiring';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { mirrorUnfocusedValue } from '../_internal/form-ui-control/unfocused-value-mirror';
+import { FOR_FIELD_CONTEXT, FormUiControlBase, mirrorUnfocusedValue } from 'forty-cdk/core';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 

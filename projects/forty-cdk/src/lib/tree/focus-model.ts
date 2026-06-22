@@ -1,12 +1,12 @@
 import { type Signal } from '@angular/core';
 
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
 import {
+  firstEnabledHost,
   type ListNavigationAction,
   moveIndex,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import type { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import { VirtualizedNavigator } from '../_internal/virtualized-navigator/virtualized-navigator';
+  type RovingTabindex,
+  VirtualizedNavigator,
+} from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
 /**

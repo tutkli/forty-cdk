@@ -40,5 +40,5 @@ export {
   FOR_DATE_ADAPTER,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from '../_internal/date-adapter/date-adapter';
+} from 'forty-cdk/core';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';

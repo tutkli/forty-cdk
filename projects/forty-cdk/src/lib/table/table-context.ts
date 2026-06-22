@@ -1,6 +1,6 @@
 import { booleanAttribute, inject, InjectionToken, type Signal } from '@angular/core';
 
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { type WritingDirection } from 'forty-cdk/core';
 
 /** ARIA pattern the table renders as. `'table'` is the static structure; `'grid'` / `'treegrid'` add roving + 2D keyboard navigation. */
 export type TableMode = 'table' | 'grid' | 'treegrid';

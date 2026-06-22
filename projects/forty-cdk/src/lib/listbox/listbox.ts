@@ -13,27 +13,25 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { Collection } from '../_internal/collection/collection';
-import { firstEnabledHost } from '../_internal/collection/first-enabled-host';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
 import {
+  Collection,
+  firstEnabledHost,
+  FormUiControlBase,
+  injectHiddenInput,
   type ListNavigationAction,
   resolveListNavigation,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../_internal/keyboard-navigation/move-in-collection';
-import { reconcileRovingActive } from '../_internal/roving-tabindex/reconcile-roving-active';
-import { RovingTabindex } from '../_internal/roving-tabindex/roving-tabindex';
-import {
+  nextEnabledHandle,
+  reconcileRovingActive,
+  RovingTabindex,
   defaultItemToFormValue,
   isInArray,
   singleSelected,
   toggleInArray,
-} from '../_internal/selection/selection';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { findTypeaheadMatch } from '../_internal/typeahead/match-options';
-import { injectTypeahead } from '../_internal/typeahead/typeahead';
+  injectTextDirection,
+  findTypeaheadMatch,
+  injectTypeahead,
+} from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
   type ForListboxContext,

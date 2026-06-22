@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { injectPortal } from '../_internal/portal/portal';
+import { injectPortal } from 'forty-cdk/core';
 import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**

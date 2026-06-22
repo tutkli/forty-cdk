@@ -1,9 +1,6 @@
 import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { hostId } from '../_internal/host-id/host-id';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
+import { registerHandle, reflectDisabled, hostId, resolveListNavigation } from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,

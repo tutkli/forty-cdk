@@ -12,19 +12,17 @@ import {
   signal,
 } from '@angular/core';
 
-import { resolveDropTarget } from '../_internal/drag-session/drag-geometry';
 import {
+  resolveDropTarget,
   isDragLiftKey,
   resolveLiftedDragControl,
-} from '../_internal/drag-session/keyboard-drag-keys';
-import { createKeyboardDragMediator } from '../_internal/drag-session/keyboard-drag-mediator';
-import {
+  createKeyboardDragMediator,
   createPointerDragSession,
   type PointerDragSession,
-} from '../_internal/drag-session/pointer-session';
-import { PreviewController } from '../_internal/drag-session/preview-controller';
-import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
+  PreviewController,
+  LiveAnnouncer,
+  type WritingDirection,
+} from 'forty-cdk/core';
 import { injectListboxContext, type ForListboxContext } from './listbox-context';
 import {
   announceReorderCancel,

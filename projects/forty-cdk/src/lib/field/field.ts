@@ -1,8 +1,6 @@
 import { computed, Directive, inject, signal } from '@angular/core';
 
-import { adoptHostId } from '../_internal/host-id/host-id';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
-import { FOR_FIELDSET_CONTEXT } from '../_internal/fieldset/fieldset-context';
+import { adoptHostId, IdGenerator, FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
 
 /**

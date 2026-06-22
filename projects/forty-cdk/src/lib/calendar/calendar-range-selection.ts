@@ -1,6 +1,6 @@
 import { computed, signal, type Signal, type WritableSignal } from '@angular/core';
 
-import { compareDateOf, type DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { compareDateOf, type DateAdapter } from 'forty-cdk/core';
 import type { CalendarDateRange } from './calendar-context';
 
 /**

@@ -1,8 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { injectHasFocusableContent } from '../_internal/focusable-content/focusable-content';
-import { hostId } from '../_internal/host-id/host-id';
+import { registerHandle, injectHasFocusableContent, hostId } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
 /**

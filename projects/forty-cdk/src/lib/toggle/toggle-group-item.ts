@@ -1,9 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import { resolveListNavigation } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { FOR_HOST_ROVING_CONTEXT } from '../_internal/roving-tabindex/host-roving-context';
+import {
+  registerHandle,
+  reflectDisabled,
+  resolveListNavigation,
+  FOR_HOST_ROVING_CONTEXT,
+} from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**

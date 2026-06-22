@@ -1,8 +1,7 @@
 import { computed, Directive, InjectionToken, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
 
 /**
  * Injection key the `[forCheckboxIndicator]` uses to resolve its parent

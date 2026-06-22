@@ -1,6 +1,6 @@
 import type { Signal, WritableSignal } from '@angular/core';
 
-import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter } from 'forty-cdk/core';
 import type { CalendarBounds } from './calendar-bounds';
 import type { CalendarRangeSelection } from './calendar-range-selection';
 import { IntendedDayCursor } from './intended-day-cursor';

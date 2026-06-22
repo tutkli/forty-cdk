@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { injectFileUploadContext } from './file-upload-context';
 
 /**

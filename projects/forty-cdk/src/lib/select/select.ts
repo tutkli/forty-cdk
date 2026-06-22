@@ -13,30 +13,27 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
-import { IdGenerator } from '../_internal/id-generator/id-generator';
 import {
+  type FloatingAlign,
+  type FloatingSide,
+  FormUiControlBase,
+  injectHiddenInput,
+  IdGenerator,
   type ListNavigationAction,
   resolveListNavigation,
   type WritingDirection,
-} from '../_internal/keyboard-navigation/keyboard-navigation';
-import { ListboxOverlayController } from '../_internal/listbox-overlay/listbox-overlay-controller';
-import {
+  ListboxOverlayController,
   defaultItemToFormValue,
   isInArray,
   singleSelected,
   toggleInArray,
-} from '../_internal/selection/selection';
-import { isRequiredInputUnset } from '../_internal/signal-graph/read-handle';
-import { injectTextDirection } from '../_internal/text-direction/text-direction';
-import { findTypeaheadMatch } from '../_internal/typeahead/match-options';
-import { injectTypeahead } from '../_internal/typeahead/typeahead';
-import type {
-  VetoableEvent,
-  VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
+  isRequiredInputUnset,
+  injectTextDirection,
+  findTypeaheadMatch,
+  injectTypeahead,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import {
   FOR_SELECT_CONTEXT,
   type ForSelectCloseReason,

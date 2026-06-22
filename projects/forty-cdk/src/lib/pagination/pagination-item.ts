@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
+import { reflectDisabled } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**

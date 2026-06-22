@@ -1,8 +1,7 @@
 import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase } from '../_internal/form-ui-control/form-ui-control-base';
-import { injectHiddenInput } from '../_internal/hidden-input/hidden-input';
+import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
 
 /**
  * Headless implementation of the [WAI-ARIA Toggle Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) —

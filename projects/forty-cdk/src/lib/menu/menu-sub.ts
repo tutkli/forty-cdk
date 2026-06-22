@@ -13,28 +13,25 @@ import {
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import type { FloatingAlign, FloatingSide } from '../_internal/floating/floating';
-import { createDebouncedAction } from '../_internal/hover-intent/debounced-action';
-import type { WritingDirection } from '../_internal/keyboard-navigation/keyboard-navigation';
-import { createMenuOverlay } from '../_internal/menu-overlay/menu-overlay';
-import { MenuOverlayHost } from '../_internal/menu-overlay/menu-overlay-host';
-import { MENU_POSITIONING_DEFAULTS } from '../_internal/menu-overlay/menu-positioning-inputs';
 import {
+  type FloatingAlign,
+  type FloatingSide,
+  createDebouncedAction,
+  type WritingDirection,
+  createMenuOverlay,
+  MenuOverlayHost,
+  MENU_POSITIONING_DEFAULTS,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
-} from '../_internal/pointer-grace/pointer-grace';
-import {
   emitVetoableEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
-} from '../_internal/vetoable-event/vetoable-event';
-import {
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
   type ForMenuContext,
-} from '../_internal/menu-overlay/menu-context';
+} from 'forty-cdk/core';
 import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**

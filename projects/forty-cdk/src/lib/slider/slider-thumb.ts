@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
-import { registerHandle } from '../_internal/collection/register-handle';
+import { registerHandle } from 'forty-cdk/core';
 import { injectSliderContext, type SliderArrowKey } from './slider-context';
 
 /**

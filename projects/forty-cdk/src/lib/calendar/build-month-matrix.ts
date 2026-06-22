@@ -1,4 +1,4 @@
-import type { DateAdapter } from '../_internal/date-adapter/date-adapter';
+import { type DateAdapter } from 'forty-cdk/core';
 
 /**
  * Builds the day grid for the month containing `monthAnchor`.
