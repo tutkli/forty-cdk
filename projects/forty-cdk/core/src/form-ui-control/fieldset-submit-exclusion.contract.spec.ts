@@ -1,13 +1,13 @@
 import { Component, type Provider, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ForCheckbox } from '../../../src/lib/checkbox/checkbox';
-import { ForFieldset } from '../../../src/lib/fieldset/fieldset';
+import { ForCheckbox } from 'forty-cdk/checkbox';
+import { ForFieldset } from 'forty-cdk/fieldset';
+import { ForNumberInput } from 'forty-cdk/number-input';
+import { ForSlider } from 'forty-cdk/slider';
+import { ForSwitch } from 'forty-cdk/switch';
 import { ForListbox } from '../../../src/lib/listbox/listbox';
 import { ForListboxOption } from '../../../src/lib/listbox/listbox-option';
-import { ForNumberInput } from '../../../src/lib/number-input/number-input';
-import { ForSlider } from '../../../src/lib/slider/slider';
-import { ForSwitch } from '../../../src/lib/switch/switch';
 
 /**
  * Library-wide contract for native-submit exclusion under a disabled

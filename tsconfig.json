@@ -5,6 +5,98 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "forty-cdk/aspect-ratio": [
+        "./dist/forty-cdk/aspect-ratio",
+        "./projects/forty-cdk/aspect-ratio/src/public-api.ts"
+      ],
+      "forty-cdk/avatar": [
+        "./dist/forty-cdk/avatar",
+        "./projects/forty-cdk/avatar/src/public-api.ts"
+      ],
+      "forty-cdk/breadcrumbs": [
+        "./dist/forty-cdk/breadcrumbs",
+        "./projects/forty-cdk/breadcrumbs/src/public-api.ts"
+      ],
+      "forty-cdk/breakpoints": [
+        "./dist/forty-cdk/breakpoints",
+        "./projects/forty-cdk/breakpoints/src/public-api.ts"
+      ],
+      "forty-cdk/checkbox": [
+        "./dist/forty-cdk/checkbox",
+        "./projects/forty-cdk/checkbox/src/public-api.ts"
+      ],
+      "forty-cdk/disclosure": [
+        "./dist/forty-cdk/disclosure",
+        "./projects/forty-cdk/disclosure/src/public-api.ts"
+      ],
+      "forty-cdk/accordion": [
+        "./dist/forty-cdk/accordion",
+        "./projects/forty-cdk/accordion/src/public-api.ts"
+      ],
+      "forty-cdk/tabs": ["./dist/forty-cdk/tabs", "./projects/forty-cdk/tabs/src/public-api.ts"],
+      "forty-cdk/toolbar": [
+        "./dist/forty-cdk/toolbar",
+        "./projects/forty-cdk/toolbar/src/public-api.ts"
+      ],
+      "forty-cdk/pagination": [
+        "./dist/forty-cdk/pagination",
+        "./projects/forty-cdk/pagination/src/public-api.ts"
+      ],
+      "forty-cdk/slider": [
+        "./dist/forty-cdk/slider",
+        "./projects/forty-cdk/slider/src/public-api.ts"
+      ],
+      "forty-cdk/input": ["./dist/forty-cdk/input", "./projects/forty-cdk/input/src/public-api.ts"],
+      "forty-cdk/field": ["./dist/forty-cdk/field", "./projects/forty-cdk/field/src/public-api.ts"],
+      "forty-cdk/fieldset": [
+        "./dist/forty-cdk/fieldset",
+        "./projects/forty-cdk/fieldset/src/public-api.ts"
+      ],
+      "forty-cdk/file-upload": [
+        "./dist/forty-cdk/file-upload",
+        "./projects/forty-cdk/file-upload/src/public-api.ts"
+      ],
+      "forty-cdk/otp-input": [
+        "./dist/forty-cdk/otp-input",
+        "./projects/forty-cdk/otp-input/src/public-api.ts"
+      ],
+      "forty-cdk/number-input": [
+        "./dist/forty-cdk/number-input",
+        "./projects/forty-cdk/number-input/src/public-api.ts"
+      ],
+      "forty-cdk/scroll-area": [
+        "./dist/forty-cdk/scroll-area",
+        "./projects/forty-cdk/scroll-area/src/public-api.ts"
+      ],
+      "forty-cdk/pane-resizer": [
+        "./dist/forty-cdk/pane-resizer",
+        "./projects/forty-cdk/pane-resizer/src/public-api.ts"
+      ],
+      "forty-cdk/progress": [
+        "./dist/forty-cdk/progress",
+        "./projects/forty-cdk/progress/src/public-api.ts"
+      ],
+      "forty-cdk/meter": ["./dist/forty-cdk/meter", "./projects/forty-cdk/meter/src/public-api.ts"],
+      "forty-cdk/radio-group": [
+        "./dist/forty-cdk/radio-group",
+        "./projects/forty-cdk/radio-group/src/public-api.ts"
+      ],
+      "forty-cdk/separator": [
+        "./dist/forty-cdk/separator",
+        "./projects/forty-cdk/separator/src/public-api.ts"
+      ],
+      "forty-cdk/switch": [
+        "./dist/forty-cdk/switch",
+        "./projects/forty-cdk/switch/src/public-api.ts"
+      ],
+      "forty-cdk/toggle": [
+        "./dist/forty-cdk/toggle",
+        "./projects/forty-cdk/toggle/src/public-api.ts"
+      ],
+      "forty-cdk/search": [
+        "./dist/forty-cdk/search",
+        "./projects/forty-cdk/search/src/public-api.ts"
+      ],
       "forty-cdk": ["./dist/forty-cdk", "./projects/forty-cdk/src/public-api.ts"],
       "forty-cdk/button": [
         "./dist/forty-cdk/button",

@@ -15,7 +15,7 @@ import {
   ForAccordionContent,
   ForAccordionItem,
   ForAccordionTrigger,
-} from './accordion';
+} from 'forty-cdk/accordion';
 import { ForCalendar, ForCalendarCell, ForCalendarGrid, ForCalendarHeading } from './calendar';
 import { provideNativeDateAdapter } from './calendar/native-date-adapter';
 import {
@@ -29,7 +29,9 @@ import {
 } from './combobox';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from './date-picker';
 import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
-import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from './disclosure';
+import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from './drawer';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from './dropdown-menu';
 import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
@@ -56,7 +58,6 @@ import {
   ForPopoverTitle,
   ForPopoverTrigger,
 } from './popover';
-import { ForRadio, ForRadioGroup } from './radio-group';
 import {
   ForSelect,
   ForSelectContent,
@@ -72,7 +73,6 @@ import {
   ForStepperList,
   ForStepperTrigger,
 } from './stepper';
-import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from './tabs';
 import { ForToast, ForToastDescription, ForToastTitle } from './toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from './tooltip';
 import { ForTree, ForTreeItem, ForTreeItemLabel } from './tree';

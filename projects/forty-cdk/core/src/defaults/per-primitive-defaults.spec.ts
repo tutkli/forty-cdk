@@ -10,7 +10,7 @@ import {
   FOR_AVATAR_DEFAULTS,
   FOR_AVATAR_FALLBACK_DEFAULTS,
   provideForAvatarDefaults,
-} from '../../../src/lib/avatar/avatar-defaults';
+} from '../../../avatar/src/avatar-defaults';
 import {
   FOR_CALENDAR_DEFAULTS,
   FOR_CALENDAR_FALLBACK_DEFAULTS,
@@ -70,7 +70,7 @@ import {
   FOR_NUMBER_INPUT_DEFAULTS,
   FOR_NUMBER_INPUT_FALLBACK_DEFAULTS,
   provideForNumberInputDefaults,
-} from '../../../src/lib/number-input/number-input-defaults';
+} from '../../../number-input/src/number-input-defaults';
 import {
   FOR_POPOVER_DEFAULTS,
   FOR_POPOVER_FALLBACK_DEFAULTS,
@@ -80,17 +80,17 @@ import {
   FOR_PROGRESS_DEFAULTS,
   FOR_PROGRESS_FALLBACK_DEFAULTS,
   provideForProgressDefaults,
-} from '../../../src/lib/progress/progress-defaults';
+} from '../../../progress/src/progress-defaults';
 import {
   FOR_RADIO_GROUP_DEFAULTS,
   FOR_RADIO_GROUP_FALLBACK_DEFAULTS,
   provideForRadioGroupDefaults,
-} from '../../../src/lib/radio-group/radio-group-defaults';
+} from '../../../radio-group/src/radio-group-defaults';
 import {
   FOR_SCROLL_AREA_DEFAULTS,
   FOR_SCROLL_AREA_FALLBACK_DEFAULTS,
   provideForScrollAreaDefaults,
-} from '../../../src/lib/scroll-area/scroll-area-defaults';
+} from '../../../scroll-area/src/scroll-area-defaults';
 import {
   FOR_SELECT_DEFAULTS,
   FOR_SELECT_FALLBACK_DEFAULTS,
@@ -100,22 +100,22 @@ import {
   FOR_SLIDER_DEFAULTS,
   FOR_SLIDER_FALLBACK_DEFAULTS,
   provideForSliderDefaults,
-} from '../../../src/lib/slider/slider-defaults';
+} from '../../../slider/src/slider-defaults';
 import {
   FOR_TABS_DEFAULTS,
   FOR_TABS_FALLBACK_DEFAULTS,
   provideForTabsDefaults,
-} from '../../../src/lib/tabs/tabs-defaults';
+} from '../../../tabs/src/tabs-defaults';
 import {
   FOR_TOGGLE_DEFAULTS,
   FOR_TOGGLE_FALLBACK_DEFAULTS,
   provideForToggleDefaults,
-} from '../../../src/lib/toggle/toggle-defaults';
+} from '../../../toggle/src/toggle-defaults';
 import {
   FOR_TOOLBAR_DEFAULTS,
   FOR_TOOLBAR_FALLBACK_DEFAULTS,
   provideForToolbarDefaults,
-} from '../../../src/lib/toolbar/toolbar-defaults';
+} from '../../../toolbar/src/toolbar-defaults';
 import {
   FOR_TOOLTIP_DEFAULTS,
   FOR_TOOLTIP_FALLBACK_DEFAULTS,
@@ -135,7 +135,7 @@ import {
   FOR_PAGINATION_DEFAULTS,
   FOR_PAGINATION_FALLBACK_DEFAULTS,
   provideForPaginationDefaults,
-} from '../../../src/lib/pagination/pagination-defaults';
+} from '../../../pagination/src/pagination-defaults';
 import {
   FOR_STEPPER_DEFAULTS,
   FOR_STEPPER_FALLBACK_DEFAULTS,

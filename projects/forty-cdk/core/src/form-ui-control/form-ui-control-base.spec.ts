@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { type DebugElement } from '@angular/core';
 
 import { renderHost } from '../../../src/test-utils/render';
-import { ForFieldset } from '../../../src/lib/fieldset/fieldset';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { FormUiControlBase } from './form-ui-control-base';
 
 @Directive({

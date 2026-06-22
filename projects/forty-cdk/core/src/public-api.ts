@@ -60,6 +60,7 @@ export * from './floating/floating';
 export * from './focusable-content/focusable-content';
 export * from './form-ui-control/form-ui-control-base';
 export * from './form-ui-control/unfocused-value-mirror';
+export * from './form-ui-control/text-value-control-base';
 export * from './hidden-input/hidden-input';
 export * from './host-id/host-id';
 export * from './hover-intent/debounced-action';

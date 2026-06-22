@@ -1126,6 +1126,7 @@ module.exports = tseslint.config(
       // Local tooling scratch (workflow scripts, agent helpers) — gitignored,
       // never shipped, and not authored against the library's lint rules.
       '.claude/**',
+      'plans/**',
       'projects/**/dist/**',
       // ESLint rule fixtures intentionally violate exactly one forty-cdk/*
       // test-isolation rule each (see `@forty-cdk-test-isolation-rules` block

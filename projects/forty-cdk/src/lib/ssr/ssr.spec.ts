@@ -11,13 +11,52 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { ForAccordion } from '../accordion/accordion';
-import { ForAccordionContent } from '../accordion/accordion-content';
-import { ForAccordionItem } from '../accordion/accordion-item';
-import { ForAccordionTrigger } from '../accordion/accordion-trigger';
-import { ForAvatar } from '../avatar/avatar';
-import { ForAvatarFallback } from '../avatar/avatar-fallback';
-import { ForAvatarImage } from '../avatar/avatar-image';
+import {
+  ForAccordion,
+  ForAccordionContent,
+  ForAccordionItem,
+  ForAccordionTrigger,
+} from 'forty-cdk/accordion';
+import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
+import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
+import { injectBreakpoints } from 'forty-cdk/breakpoints';
+import { ForCheckbox } from 'forty-cdk/checkbox';
+import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
+import { ForTextarea } from 'forty-cdk/input';
+import {
+  ForNumberInput,
+  ForNumberInputDecrement,
+  ForNumberInputGroup,
+  ForNumberInputIncrement,
+} from 'forty-cdk/number-input';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
+import {
+  ForPagination,
+  ForPaginationItem,
+  ForPaginationNext,
+  ForPaginationPrevious,
+} from 'forty-cdk/pagination';
+import { ForPaneResizer } from 'forty-cdk/pane-resizer';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
+import {
+  ForScrollArea,
+  ForScrollAreaContent,
+  ForScrollAreaCorner,
+  ForScrollAreaScrollbar,
+  ForScrollAreaThumb,
+  ForScrollAreaViewport,
+} from 'forty-cdk/scroll-area';
+import { ForSearch, ForSearchClear } from 'forty-cdk/search';
+import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
+import { ForSwitch } from 'forty-cdk/switch';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
+import {
+  ForToolbar,
+  ForToolbarButton,
+  ForToolbarLink,
+  ForToolbarSeparator,
+} from 'forty-cdk/toolbar';
 import { ForCalendar } from '../calendar/calendar';
 import { ForCalendarCell } from '../calendar/calendar-cell';
 import { ForCalendarGrid } from '../calendar/calendar-grid';
@@ -30,7 +69,6 @@ import { ForCalendarYearCell } from '../calendar/calendar-year-cell';
 import { ForCalendarYearGrid } from '../calendar/calendar-year-grid';
 import { ForCalendarYearSelect } from '../calendar/calendar-year-select';
 import { provideNativeDateAdapter } from '../calendar/native-date-adapter';
-import { ForCheckbox } from '../checkbox/checkbox';
 import { ForCombobox } from '../combobox/combobox';
 import { ForComboboxContent } from '../combobox/combobox-content';
 import { ForComboboxInput } from '../combobox/combobox-input';
@@ -44,9 +82,6 @@ import { ForDatePickerValue } from '../date-picker/date-picker-value';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForDialogBackdrop } from 'forty-cdk/dialog';
 import { ForDialogTitle } from 'forty-cdk/dialog';
-import { ForDisclosure } from '../disclosure/disclosure';
-import { ForDisclosureContent } from '../disclosure/disclosure-content';
-import { ForDisclosureTrigger } from '../disclosure/disclosure-trigger';
 import { ForDrawer } from '../drawer/drawer';
 import { ForDrawerBackdrop } from '../drawer/drawer-backdrop';
 import { ForDrawerTitle } from '../drawer/drawer-title';
@@ -60,30 +95,16 @@ import { ForNavigationMenuItem } from '../navigation-menu/navigation-menu-item';
 import { ForNavigationMenuLink } from '../navigation-menu/navigation-menu-link';
 import { ForNavigationMenuList } from '../navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../navigation-menu/navigation-menu-trigger';
-import { ForTextarea } from '../input/textarea';
-import { ForSearch } from '../search/search';
-import { ForSearchClear } from '../search/search-clear';
-import { ForOtpInput } from '../otp-input/otp-input';
-import { ForOtpInputSlot } from '../otp-input/otp-input-slot';
 import { ForPopover } from '../popover/popover';
 import { ForPopoverContent } from '../popover/popover-content';
 import { ForPopoverTitle } from '../popover/popover-title';
 import { ForPopoverTrigger } from '../popover/popover-trigger';
-import { ForRadio } from '../radio-group/radio';
-import { ForRadioGroup } from '../radio-group/radio-group';
-import { ForScrollArea } from '../scroll-area/scroll-area';
-import { ForScrollAreaContent } from '../scroll-area/scroll-area-content';
-import { ForScrollAreaCorner } from '../scroll-area/scroll-area-corner';
-import { ForScrollAreaScrollbar } from '../scroll-area/scroll-area-scrollbar';
-import { ForScrollAreaThumb } from '../scroll-area/scroll-area-thumb';
-import { ForScrollAreaViewport } from '../scroll-area/scroll-area-viewport';
 import { ForSelect } from '../select/select';
 import { ForSelectContent } from '../select/select-content';
 import { ForSelectOption } from '../select/select-option';
 import { ForSelectTrigger } from '../select/select-trigger';
 import { ForSelectValue } from '../select/select-value';
 import { ForButton } from 'forty-cdk/button';
-import { ForSwitch } from '../switch/switch';
 import { ForCarousel } from '../carousel/carousel';
 import { ForCarouselDrag } from '../carousel/carousel-drag';
 import { ForCarouselIndicator } from '../carousel/carousel-indicator';
@@ -94,10 +115,6 @@ import { ForCarouselRotationControl } from '../carousel/carousel-rotation-contro
 import { ForCarouselSlide } from '../carousel/carousel-slide';
 import { ForCarouselTrack } from '../carousel/carousel-track';
 import { ForCarouselViewport } from '../carousel/carousel-viewport';
-import { ForTabs } from '../tabs/tabs';
-import { ForTabsContent } from '../tabs/tabs-content';
-import { ForTabsList } from '../tabs/tabs-list';
-import { ForTabsTrigger } from '../tabs/tabs-trigger';
 import { ForTimeField } from '../time-field/time-field';
 import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
 import { ForTimeFieldSegment } from '../time-field/time-field-segment';
@@ -164,30 +181,6 @@ import { ForHoverCardTrigger } from '../hover-card/hover-card-trigger';
 import { ForListbox } from '../listbox/listbox';
 import { ForListboxOption } from '../listbox/listbox-option';
 import { ForListboxReorder } from '../listbox/listbox-reorder';
-import { ForNumberInput } from '../number-input/number-input';
-import { ForNumberInputDecrement } from '../number-input/number-input-decrement';
-import { ForNumberInputGroup } from '../number-input/number-input-group';
-import { ForNumberInputIncrement } from '../number-input/number-input-increment';
-import { ForPaneResizer } from '../pane-resizer/pane-resizer';
-import { ForSlider } from '../slider/slider';
-import { ForSliderRange } from '../slider/slider-range';
-import { ForSliderThumb } from '../slider/slider-thumb';
-import { ForSliderTrack } from '../slider/slider-track';
-import { ForPagination } from '../pagination/pagination';
-import { ForPaginationItem } from '../pagination/pagination-item';
-import { ForPaginationNext } from '../pagination/pagination-next';
-import { ForPaginationPrevious } from '../pagination/pagination-previous';
-import { ForBreadcrumbs } from '../breadcrumbs/breadcrumbs';
-import { ForBreadcrumbItem } from '../breadcrumbs/breadcrumb-item';
-import { ForBreadcrumbSeparator } from '../breadcrumbs/breadcrumb-separator';
-import { ForFileUpload } from '../file-upload/file-upload';
-import { ForFileUploadInput } from '../file-upload/file-upload-input';
-import { ForFileUploadTrigger } from '../file-upload/file-upload-trigger';
-import { ForToolbar } from '../toolbar/toolbar';
-import { ForToolbarButton } from '../toolbar/toolbar-button';
-import { ForToolbarLink } from '../toolbar/toolbar-link';
-import { ForToolbarSeparator } from '../toolbar/toolbar-separator';
-import { injectBreakpoints } from '../breakpoints/breakpoints';
 import { BodyScrollLock } from 'forty-cdk/core';
 import { DismissableLayerStack } from 'forty-cdk/core';
 import { IdGenerator } from 'forty-cdk/core';

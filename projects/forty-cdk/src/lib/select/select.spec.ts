@@ -9,10 +9,7 @@ import {
   pressKey,
   renderHost,
 } from '../../test-utils';
-import { ForField } from '../field/field';
-import { ForFieldDescription } from '../field/field-description';
-import { ForFieldError } from '../field/field-error';
-import { ForLabel } from '../field/label';
+import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForSelect } from './select';
 import { ForSelectAnchor } from './select-anchor';
 import { ForSelectContent } from './select-content';

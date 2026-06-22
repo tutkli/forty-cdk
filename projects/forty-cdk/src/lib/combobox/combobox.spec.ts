@@ -16,10 +16,7 @@ import {
   pressKey,
   renderHost,
 } from '../../test-utils';
-import { ForField } from '../field/field';
-import { ForFieldDescription } from '../field/field-description';
-import { ForFieldError } from '../field/field-error';
-import { ForLabel } from '../field/label';
+import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForCombobox } from './combobox';
 import { ForComboboxAnchor } from './combobox-anchor';
 import { ForComboboxChip } from './combobox-chip';

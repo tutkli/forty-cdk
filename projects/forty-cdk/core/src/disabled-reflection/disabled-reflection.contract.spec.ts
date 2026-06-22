@@ -1,9 +1,18 @@
 import { Component, type Provider, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ForAccordion } from '../../../src/lib/accordion/accordion';
-import { ForAccordionItem } from '../../../src/lib/accordion/accordion-item';
-import { ForAccordionTrigger } from '../../../src/lib/accordion/accordion-trigger';
+import { ForAccordion, ForAccordionItem, ForAccordionTrigger } from 'forty-cdk/accordion';
+import { ForDisclosure, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForFieldset } from 'forty-cdk/fieldset';
+import { ForInput, ForTextarea } from 'forty-cdk/input';
+import {
+  ForNumberInput,
+  ForNumberInputDecrement,
+  ForNumberInputGroup,
+  ForNumberInputIncrement,
+} from 'forty-cdk/number-input';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
+import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
 import { ForCalendar } from '../../../src/lib/calendar/calendar';
 import { ForCalendarNextButton } from '../../../src/lib/calendar/calendar-next-button';
 import { ForCalendarPrevButton } from '../../../src/lib/calendar/calendar-prev-button';
@@ -18,30 +27,17 @@ import { ForComboboxTrigger } from '../../../src/lib/combobox/combobox-trigger';
 import { ForDatePicker } from '../../../src/lib/date-picker/date-picker';
 import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-trigger';
 import { ForDialogTrigger } from 'forty-cdk/dialog';
-import { ForDisclosure } from '../../../src/lib/disclosure/disclosure';
-import { ForDisclosureTrigger } from '../../../src/lib/disclosure/disclosure-trigger';
 import { ForDrawerTrigger } from '../../../src/lib/drawer/drawer-trigger';
 import { ForDropdownMenu } from '../../../src/lib/dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../../../src/lib/dropdown-menu/dropdown-menu-trigger';
-import { ForFieldset } from '../../../src/lib/fieldset/fieldset';
-import { ForInput } from '../../../src/lib/input/input';
-import { ForTextarea } from '../../../src/lib/input/textarea';
 import { ForNavigationMenu } from '../../../src/lib/navigation-menu/navigation-menu';
 import { ForNavigationMenuItem } from '../../../src/lib/navigation-menu/navigation-menu-item';
 import { ForNavigationMenuList } from '../../../src/lib/navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../../../src/lib/navigation-menu/navigation-menu-trigger';
-import { ForNumberInput } from '../../../src/lib/number-input/number-input';
-import { ForNumberInputDecrement } from '../../../src/lib/number-input/number-input-decrement';
-import { ForNumberInputGroup } from '../../../src/lib/number-input/number-input-group';
-import { ForNumberInputIncrement } from '../../../src/lib/number-input/number-input-increment';
 import { ForPopover } from '../../../src/lib/popover/popover';
 import { ForPopoverTrigger } from '../../../src/lib/popover/popover-trigger';
 import { ForSelect } from '../../../src/lib/select/select';
 import { ForSelectTrigger } from '../../../src/lib/select/select-trigger';
-import { ForToggleGroup } from '../../../src/lib/toggle/toggle-group';
-import { ForToggleGroupItem } from '../../../src/lib/toggle/toggle-group-item';
-import { ForToolbar } from '../../../src/lib/toolbar/toolbar';
-import { ForToolbarButton } from '../../../src/lib/toolbar/toolbar-button';
 
 /**
  * Library-wide contract for the non-destructive `disabled` reflection rolled

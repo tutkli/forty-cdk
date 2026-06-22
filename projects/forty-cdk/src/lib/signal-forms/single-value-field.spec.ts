@@ -10,8 +10,7 @@ import {
 
 import { flush, renderHost } from '../../test-utils';
 import { ForCombobox } from '../combobox/combobox';
-import { ForField } from '../field/field';
-import { ForFieldError } from '../field/field-error';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForListbox } from '../listbox/listbox';
 import { ForListboxOption } from '../listbox/listbox-option';
 import { ForSelect } from '../select/select';
