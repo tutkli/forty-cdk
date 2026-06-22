@@ -17,6 +17,8 @@ import {
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import { type PreviewPoint } from '../_internal/drag-session/clamp-preview';
 import { PreviewController } from '../_internal/drag-session/preview-controller';
+import { isDragLiftKey } from '../_internal/drag-session/keyboard-drag-keys';
+import { createKeyboardDragMediator } from '../_internal/drag-session/keyboard-drag-mediator';
 import {
   createPointerDragSession,
   type PointerDragSession,
@@ -35,7 +37,7 @@ import {
   announceTreeLift,
   announceTreeMove,
 } from './tree-drag-announcements';
-import { isTreeDragLiftKey, resolveTreeDragLiftedAction } from './tree-drag-keys';
+import { resolveTreeDragLiftedAction } from './tree-drag-keys';
 import {
   buildTreeDropRows,
   isInsideGrabArea,
@@ -150,11 +152,15 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       return;
     }
 
-    const onKeydown = (event: KeyboardEvent): void => this.#onCaptureKeydown(event);
-    const onFocusout = (event: FocusEvent): void => this.#onFocusout(event);
-
-    this.#hostEl.addEventListener('keydown', onKeydown, { capture: true });
-    this.#hostEl.addEventListener('focusout', onFocusout);
+    createKeyboardDragMediator({
+      host: this.#hostEl,
+      isBrowser: this.#isBrowser,
+      destroyRef: this.#destroyRef,
+      isLifted: () => this.#mode === 'keyboard',
+      onIdleKeydown: (event) => this.#onIdleKeydown(event),
+      onLiftedKeydown: (event) => this.#handleLiftedKeydown(event),
+      onFocusOut: (event) => this.#onFocusout(event),
+    });
 
     this.#pointerSession = createPointerDragSession({
       host: this.#hostEl,
@@ -168,8 +174,6 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     });
 
     this.#destroyRef.onDestroy(() => {
-      this.#hostEl.removeEventListener('keydown', onKeydown, { capture: true });
-      this.#hostEl.removeEventListener('focusout', onFocusout);
       this.#pointerSession?.destroy();
       if (this.#mode !== 'idle') {
         this.#cancelSession(false);
@@ -185,12 +189,8 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#handles.delete(el);
   }
 
-  #onCaptureKeydown(event: KeyboardEvent): void {
-    if (this.#mode === 'keyboard') {
-      this.#handleLiftedKeydown(event);
-      return;
-    }
-    if (this.#mode !== 'idle' || !isTreeDragLiftKey(event)) {
+  #onIdleKeydown(event: KeyboardEvent): void {
+    if (this.#mode !== 'idle' || !isDragLiftKey(event)) {
       return;
     }
     if (this.disabled() || this.#ctx.disabled()) {

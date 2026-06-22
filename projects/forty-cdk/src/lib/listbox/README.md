@@ -6,11 +6,12 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 ## Pieces
 
-| Class                       | Selector                      | Role                                                                                                                                                |
-| --------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                                                    |
-| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                                                    |
-| `ForListboxOptionIndicator` | `[forListboxOptionIndicator]` | Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)). |
+| Class                       | Selector                      | Role                                                                                                                                                                                   |
+| --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                                                                                       |
+| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                                                                                       |
+| `ForListboxOptionIndicator` | `[forListboxOptionIndicator]` | Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)).                                    |
+| `ForListboxReorder`         | `[forListboxReorder]`         | Optional. Apply on the same element as `[forListbox]` to make the options pointer- and keyboard-sortable while keeping selection + typeahead (see [Reordering](#reordering-sortable)). |
 
 ## Inputs / models
 
@@ -81,6 +82,75 @@ export class DemoFruit {
 ```
 
 Click toggles individual options in multi mode; click selects in single mode.
+
+## Reordering (sortable)
+
+Add `[forListboxReorder]` on the same element as `[forListbox]` to make a listbox **sortable** — a selectable _and_ sortable list (e.g. a chip grid) in one composition, with no `@angular/cdk/drag-drop`.
+
+`[forDraggable]` can't stack on a `[forListboxOption]`: both manage the option's roving tabindex and keyboard, so they collide on `tabindex`, on Space / Enter activation, and on `orientation`. `[forListboxReorder]` is a container-level coordinator (the same shape as `[forTreeNodeDrag]` / `[forTableRowReorder]`): it lives on the listbox, **never touches the option's roving tabindex**, intercepts keys in the capture phase with a dedicated lift chord, and owns its own 2D drop geometry — so selection, typeahead, and arrow navigation keep working unchanged.
+
+It **never reorders the options itself** (BYO-data): `(optionReorder)` emits `{ from, to }` on each committed drop; apply `moveItemInArray(items, from, to)` to your own array.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { ForListbox, ForListboxOption, ForListboxReorder, moveItemInArray } from 'forty-cdk';
+
+@Component({
+  selector: 'demo-sortable-tags',
+  imports: [ForListbox, ForListboxOption, ForListboxReorder],
+  template: `
+    <ul
+      forListbox
+      forListboxReorder
+      multiple
+      [(value)]="selected"
+      (optionReorder)="reorder($event)"
+      aria-label="Tags"
+      style="display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0"
+    >
+      @for (tag of tags(); track tag) {
+        <li>
+          <button type="button" forListboxOption [value]="tag" class="chip">{{ tag }}</button>
+        </li>
+      }
+    </ul>
+  `,
+})
+export class DemoSortableTags {
+  readonly tags = signal<readonly string[]>(['urgent', 'bug', 'ui', 'docs']);
+  readonly selected = signal<readonly string[]>([]);
+
+  reorder({ from, to }: { from: number; to: number }): void {
+    this.tags.update((tags) => moveItemInArray(tags, from, to));
+  }
+}
+```
+
+### Inputs / output
+
+| API               | Type                   | Description                                                                                                               |
+| ----------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `reorderDisabled` | `input<boolean>`       | Disable reorder while keeping selection / typeahead. The listbox's own `disabled` also disables reorder. Default `false`. |
+| `optionReorder`   | `output<{ from; to }>` | Fires once per committed reorder with the previous / new index (both 0-based, DOM order). Apply `moveItemInArray`.        |
+
+### Keyboard
+
+- **Ctrl+Space** (or **Cmd+Space**) lifts the focused option.
+- While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, **Escape / Tab** cancel.
+- The lift chord is intercepted in the capture phase, so it never collides with the option's native Space / Enter selection or with arrow navigation while idle.
+
+### Pointer
+
+Drag an option past a small threshold to reorder; a short press without movement still selects (the post-drag click is suppressed). A floating preview follows the pointer and drop geometry is resolved in 2D, so vertical lists, horizontal lists, and wrapping chip grids all work without configuring `orientation`.
+
+> **Scope:** `[forListboxReorder]` targets the standard roving-tabindex listbox. A virtualized listbox (`[totalCount]` set) is left untouched, since reordering a windowed subset is ill-defined.
+
+### Data attributes
+
+| Piece                 | Attribute       | Values            | Notes                                                               |
+| --------------------- | --------------- | ----------------- | ------------------------------------------------------------------- |
+| `[forListboxReorder]` | `data-dragging` | present \| absent | On the container while any drag (pointer or keyboard) is in flight. |
+| `[forListboxOption]`  | `data-dragging` | present \| absent | On the lifted option for the duration of the drag.                  |
 
 ## Object values
 

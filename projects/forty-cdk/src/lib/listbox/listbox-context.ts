@@ -113,6 +113,14 @@ export interface ForListboxContext<T = unknown> {
   setActiveOption(el: HTMLElement): void;
 
   /**
+   * All registered options, in DOM (rendered) order. Exposed for container-level
+   * coordinators that compose onto the listbox — e.g. `ForListboxReorder` reads the
+   * ordered hosts to resolve drop targets and emit reorder indices — without each
+   * option needing a `[forDraggable]` that would fight the listbox's own roving tabindex.
+   */
+  readonly options: Signal<readonly ForListboxOptionHandle<T>[]>;
+
+  /**
    * Called by an option on click. In the virtualized path, moves
    * `aria-activedescendant` to that option and returns DOM focus to the
    * container. A no-op in the roving-tabindex path.

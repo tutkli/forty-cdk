@@ -12,6 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
 import { ForDropList } from '../drag-drop/drop-list';
 import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
+import { createKeyboardDragMediator } from '../_internal/drag-session/keyboard-drag-mediator';
 import { LiveAnnouncer } from '../_internal/live-announcer/live-announcer';
 import { translateWindowReorder } from '../_internal/window-index-map/window-index-map';
 import { injectTableContext } from './table-context';
@@ -111,23 +112,28 @@ export class ForTableRowReorder {
     if (this.#isBrowser) {
       const onPointerDown = (event: PointerEvent): void => this.#pinFromPointer(event);
       const onPointerEnd = (): void => this.ctx.setReorderingRow(null);
-      const onKeydown = (event: KeyboardEvent): void => this.#onCaptureKeydown(event);
-      const onFocusOut = (event: FocusEvent): void => {
-        if (this.#kbLiftedHost !== null && event.target === this.#kbLiftedHost) {
-          this.#kbCancel();
-        }
-      };
       this.#host.addEventListener('pointerdown', onPointerDown, { capture: true });
       this.#document.addEventListener('pointerup', onPointerEnd, { capture: true });
       this.#document.addEventListener('pointercancel', onPointerEnd, { capture: true });
-      this.#host.addEventListener('keydown', onKeydown, { capture: true });
-      this.#host.addEventListener('focusout', onFocusOut);
+
+      createKeyboardDragMediator({
+        host: this.#host,
+        isBrowser: this.#isBrowser,
+        destroyRef,
+        isLifted: () => this.#kbLiftedHost !== null,
+        onIdleKeydown: (event) => this.#onIdleKeydown(event),
+        onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
+        onFocusOut: (event) => {
+          if (this.#kbLiftedHost !== null && event.target === this.#kbLiftedHost) {
+            this.#kbCancel();
+          }
+        },
+      });
+
       destroyRef.onDestroy(() => {
         this.#host.removeEventListener('pointerdown', onPointerDown, { capture: true });
         this.#document.removeEventListener('pointerup', onPointerEnd, { capture: true });
         this.#document.removeEventListener('pointercancel', onPointerEnd, { capture: true });
-        this.#host.removeEventListener('keydown', onKeydown, { capture: true });
-        this.#host.removeEventListener('focusout', onFocusOut);
         if (this.#kbLiftedHost !== null) {
           this.#kbCancel();
         }
@@ -136,51 +142,54 @@ export class ForTableRowReorder {
     }
   }
 
-  #onCaptureKeydown(event: KeyboardEvent): void {
+  #onLiftedKeydown(event: KeyboardEvent): void {
     if (this.ctx.virtualRowNavigation() === null) {
       return;
     }
-    if (this.#kbLiftedHost !== null) {
-      const key = event.key;
-      if (key === ' ' || key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbCommit();
-      } else if (key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbCancel();
-      } else if (key === 'ArrowDown') {
-        this.#setTarget(this.#kbTarget + 1);
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      } else if (key === 'ArrowUp') {
-        this.#setTarget(this.#kbTarget - 1);
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      } else if (key === 'Home') {
-        this.#setTarget(0);
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      } else if (key === 'End') {
-        this.#setTarget(this.#count() - 1);
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      } else if (key === 'PageDown') {
-        this.#setTarget(this.#kbTarget + this.#page());
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      } else if (key === 'PageUp') {
-        this.#setTarget(this.#kbTarget - this.#page());
-        event.preventDefault();
-        event.stopPropagation();
-        this.#kbApplyTarget();
-      }
+    const key = event.key;
+    if (key === ' ' || key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbCommit();
+    } else if (key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbCancel();
+    } else if (key === 'ArrowDown') {
+      this.#setTarget(this.#kbTarget + 1);
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    } else if (key === 'ArrowUp') {
+      this.#setTarget(this.#kbTarget - 1);
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    } else if (key === 'Home') {
+      this.#setTarget(0);
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    } else if (key === 'End') {
+      this.#setTarget(this.#count() - 1);
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    } else if (key === 'PageDown') {
+      this.#setTarget(this.#kbTarget + this.#page());
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    } else if (key === 'PageUp') {
+      this.#setTarget(this.#kbTarget - this.#page());
+      event.preventDefault();
+      event.stopPropagation();
+      this.#kbApplyTarget();
+    }
+  }
+
+  #onIdleKeydown(event: KeyboardEvent): void {
+    if (this.ctx.virtualRowNavigation() === null) {
       return;
     }
     const key = event.key;

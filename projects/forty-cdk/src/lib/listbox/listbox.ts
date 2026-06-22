@@ -206,6 +206,14 @@ export class ForListbox<T = string>
 
   readonly #options = new Collection<ForListboxOptionHandle<T>>();
 
+  /**
+   * All registered options in DOM (rendered) order. Part of the public
+   * {@link ForListboxContext} surface so container-level coordinators (e.g.
+   * `ForListboxReorder`) can read the ordered hosts without each option owning a
+   * `[forDraggable]` that would fight the listbox's roving tabindex.
+   */
+  readonly options = this.#options.items;
+
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
   readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
