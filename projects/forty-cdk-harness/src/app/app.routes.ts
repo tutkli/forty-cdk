@@ -102,6 +102,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/listbox.fixture').then((m) => m.ListboxFixture),
   },
   {
+    path: 'listbox-reorder',
+    loadComponent: () =>
+      import('./fixtures/listbox-reorder.fixture').then((m) => m.ListboxReorderFixture),
+  },
+  {
     path: 'menubar',
     loadComponent: () => import('./fixtures/menubar.fixture').then((m) => m.MenubarFixture),
   },

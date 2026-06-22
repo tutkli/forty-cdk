@@ -163,6 +163,7 @@ import { ForHoverCardContent } from '../../hover-card/hover-card-content';
 import { ForHoverCardTrigger } from '../../hover-card/hover-card-trigger';
 import { ForListbox } from '../../listbox/listbox';
 import { ForListboxOption } from '../../listbox/listbox-option';
+import { ForListboxReorder } from '../../listbox/listbox-reorder';
 import { ForNumberInput } from '../../number-input/number-input';
 import { ForNumberInputDecrement } from '../../number-input/number-input-decrement';
 import { ForNumberInputGroup } from '../../number-input/number-input-group';
@@ -1301,6 +1302,17 @@ class ListboxFixture {}
 class ListboxVirtualizedFixture {}
 
 @Component({
+  imports: [ForListbox, ForListboxOption, ForListboxReorder],
+  template: `
+    <ul forListbox forListboxReorder multiple ariaLabel="Tags">
+      <li><button type="button" forListboxOption value="a">Alpha</button></li>
+      <li><button type="button" forListboxOption value="b">Beta</button></li>
+    </ul>
+  `,
+})
+class ListboxReorderFixture {}
+
+@Component({
   imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
     <div forSlider [(value)]="value">
@@ -1523,6 +1535,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   HoverCardOpenFixture,
   ListboxFixture,
   ListboxVirtualizedFixture,
+  ListboxReorderFixture,
   SliderFixture,
   PaneResizerFixture,
   NumberInputFixture,
