@@ -151,9 +151,9 @@ interface FormStep {
 
       <div controls class="pg-controls">
         <p class="pg-hint">
-          Linear mode gates forward navigation: a step is only reachable once every preceding step is
-          completed. The Signal Forms field decides completion, so Next enables as soon as the current
-          field becomes valid and touched.
+          Linear mode gates forward navigation: a step is only reachable once every preceding step
+          is completed. The Signal Forms field decides completion, so Next enables as soon as the
+          current field becomes valid and touched.
         </p>
         <p class="pg-state">
           selectedIndex: <b>{{ step() }}</b

@@ -12,7 +12,11 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
-import type { CalendarDateLabelFormatter, CalendarDateRange, CalendarView } from './calendar-context';
+import type {
+  CalendarDateLabelFormatter,
+  CalendarDateRange,
+  CalendarView,
+} from './calendar-context';
 import { ForCalendarMonthCell } from './calendar-month-cell';
 import { ForCalendarMonthGrid } from './calendar-month-grid';
 import { ForCalendarMonthSelect } from './calendar-month-select';
@@ -235,12 +239,7 @@ class CalendarRangeHost {
 }
 
 @Component({
-  imports: [
-    ForCalendar,
-    ForCalendarHeading,
-    ForCalendarGrid,
-    ForCalendarCell,
-  ],
+  imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
     <div forCalendar [(value)]="value" [min]="min()" [max]="max()" #cal="forCalendar">
@@ -265,7 +264,11 @@ class CalendarRangeHost {
         (change)="cal.goToYear(+selectValue($event))"
       >
         @for (y of years; track y) {
-          <option [value]="y" [disabled]="cal.isYearDisabled(y)" [attr.data-testid]="'year-opt-' + y">
+          <option
+            [value]="y"
+            [disabled]="cal.isYearDisabled(y)"
+            [attr.data-testid]="'year-opt-' + y"
+          >
             {{ y }}
           </option>
         }
@@ -421,28 +424,53 @@ class CalendarViewsHost {
   ],
   providers: [...provideNativeDateAdapter()],
   template: `
-    <div forCalendar [(value)]="value" [min]="min()" [max]="max()" [disabled]="disabled()" #cal="forCalendar">
+    <div
+      forCalendar
+      [(value)]="value"
+      [min]="min()"
+      [max]="max()"
+      [disabled]="disabled()"
+      #cal="forCalendar"
+    >
       <select forCalendarMonthSelect #m="forCalendarMonthSelect" data-testid="month-select">
         @for (opt of m.options(); track opt.value) {
-          <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'month-opt-' + opt.value">
+          <option
+            [value]="opt.value"
+            [disabled]="opt.disabled"
+            [attr.data-testid]="'month-opt-' + opt.value"
+          >
             {{ opt.label }}
           </option>
         }
       </select>
-      <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="minYear()" [maxYear]="maxYear()" data-testid="year-select">
+      <select
+        forCalendarYearSelect
+        #y="forCalendarYearSelect"
+        [minYear]="minYear()"
+        [maxYear]="maxYear()"
+        data-testid="year-select"
+      >
         @for (opt of y.years(); track opt.value) {
-          <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'year-opt-' + opt.value">
+          <option
+            [value]="opt.value"
+            [disabled]="opt.disabled"
+            [attr.data-testid]="'year-opt-' + opt.value"
+          >
             {{ opt.value }}
           </option>
         }
       </select>
-      <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">{{ heading.label() }}</h2>
+      <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+        {{ heading.label() }}
+      </h2>
       <table forCalendarGrid #grid="forCalendarGrid">
         <tbody>
           @for (week of grid.weeks(); track week.key) {
             <tr>
               @for (c of week.days; track c.key) {
-                <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">{{ c.label }}</td>
+                <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                  {{ c.label }}
+                </td>
               }
             </tr>
           }
@@ -902,8 +930,7 @@ describe('ForCalendar', () => {
     const rangeCell = (r: RenderResult<CalendarRangeHost>, date: Date) =>
       r.query<HTMLElement>(`[data-testid="cell-${keyOf(date)}"]`)!;
 
-    const click = (el: HTMLElement) =>
-      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const click = (el: HTMLElement) => el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     const JUN_10 = new Date(2026, 5, 10);
     const JUN_15 = new Date(2026, 5, 15);
@@ -1242,7 +1269,9 @@ describe('ForCalendar', () => {
       selectMonth(r, 1);
       await flush(r.fixture);
       expect(liveRegion()?.textContent).toContain('2026');
-      expect(liveRegion()?.textContent).toContain(adapter.format(new Date(2026, 0, 1), { month: 'long' }));
+      expect(liveRegion()?.textContent).toContain(
+        adapter.format(new Date(2026, 0, 1), { month: 'long' }),
+      );
     });
 
     it('does not announce when navigating to the already-visible month', async () => {
@@ -1359,7 +1388,9 @@ describe('ForCalendar', () => {
         fireMonth(r, 1);
         await flush(r.fixture);
         expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
-        expect(r.queryAll('[role="gridcell"][tabindex="0"]')[0]).toBe(dcell(r, new Date(2026, 0, 15)));
+        expect(r.queryAll('[role="gridcell"][tabindex="0"]')[0]).toBe(
+          dcell(r, new Date(2026, 0, 15)),
+        );
       });
     });
   });
@@ -1614,8 +1645,7 @@ describe('ForCalendar', () => {
       r.query<HTMLElement>(`[data-testid="month-cell-${m}"]`)!;
     const yearCell = (r: RenderResult<CalendarViewsHost>, y: number) =>
       r.query<HTMLElement>(`[data-testid="year-cell-${y}"]`)!;
-    const click = (el: HTMLElement) =>
-      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const click = (el: HTMLElement) => el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     it('view trigger cycles day → month → year and clamps at year', async () => {
       const r = renderHost(CalendarViewsHost);

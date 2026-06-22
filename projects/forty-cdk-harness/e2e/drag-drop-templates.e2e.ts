@@ -123,9 +123,9 @@ test.describe('drag-drop live-sort placeholder', () => {
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, targetY);
 
-    const order = await page.locator('[data-testid="list"] > *').evaluateAll((nodes) =>
-      nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')),
-    );
+    const order = await page
+      .locator('[data-testid="list"] > *')
+      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
     const phIndex = order.indexOf('custom-placeholder');
     const item1Index = order.indexOf('item-1');
     expect(phIndex).toBeGreaterThan(item1Index);
@@ -156,9 +156,9 @@ test.describe('drag-drop live-sort placeholder', () => {
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, targetY);
 
-    const order = await page.locator('[data-testid="list"] > *').evaluateAll((nodes) =>
-      nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')),
-    );
+    const order = await page
+      .locator('[data-testid="list"] > *')
+      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
     const phIndex = order.indexOf('custom-placeholder');
     const item1Index = order.indexOf('item-1');
     expect(phIndex).toBeLessThan(item1Index);

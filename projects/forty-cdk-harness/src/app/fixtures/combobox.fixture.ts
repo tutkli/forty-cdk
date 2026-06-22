@@ -63,7 +63,9 @@ type Fruit = (typeof ALL_FRUITS)[number];
       (autoFocusOnClose)="onAutoFocusOnClose($event)"
     >
       @if (picker) {
-        <button data-testid="trigger" forComboboxTrigger>{{ value().at(0) ?? 'Pick a fruit' }}</button>
+        <button data-testid="trigger" forComboboxTrigger>
+          {{ value().at(0) ?? 'Pick a fruit' }}
+        </button>
       } @else if (anchor) {
         <div data-testid="anchor" forComboboxAnchor>
           <span aria-hidden="true">🔎</span>

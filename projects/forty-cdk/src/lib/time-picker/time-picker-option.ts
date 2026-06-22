@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input, signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import { registerHandle } from '../_internal/collection/register-handle';
 import { hostId } from '../_internal/host-id/host-id';
@@ -52,7 +60,9 @@ export class ForTimePickerOption<D = unknown> {
 
   readonly id = hostId('for-time-picker-option');
 
-  readonly selected = computed(() => this.#ctx.value() !== null && this.#ctx.isSelected(this.value()));
+  readonly selected = computed(
+    () => this.#ctx.value() !== null && this.#ctx.isSelected(this.value()),
+  );
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
   readonly #highlighted = signal(false);

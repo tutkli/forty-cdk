@@ -1,8 +1,4 @@
-import {
-  buildDragSlots,
-  indexOfSlot,
-  stepSlot,
-} from './drag-positions';
+import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
 
 describe('buildDragSlots', () => {
   it('produces source-only slots for a single list', () => {

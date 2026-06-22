@@ -44,7 +44,9 @@ import { CheckboxTreeNode } from './checkbox-tree-node';
           Without cascade each node is an independent checkbox. With cascade the dash marks a parent
           whose descendants are partly checked.
         </p>
-        <p class="pg-state">checked: <b>{{ value().join(', ') || '—' }}</b></p>
+        <p class="pg-state">
+          checked: <b>{{ value().join(', ') || '—' }}</b>
+        </p>
       </div>
     </playground-demo>
   `,

@@ -68,7 +68,9 @@ import { queryFlag } from './_query-flag';
               [value]="slot.value"
               [disabled]="slot.disabled"
               [attr.data-testid]="'opt-' + slot.id"
-            >{{ slot.label }}</div>
+            >
+              {{ slot.label }}
+            </div>
           }
         </div>
       }

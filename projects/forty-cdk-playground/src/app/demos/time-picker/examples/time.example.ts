@@ -105,7 +105,9 @@ import { Icon } from '../../../ui/icon';
   `,
 })
 export class TimePickerTimeExample {
-  protected readonly value = signal<CalendarDateTime | null>(new CalendarDateTime(2024, 6, 15, 9, 0));
+  protected readonly value = signal<CalendarDateTime | null>(
+    new CalendarDateTime(2024, 6, 15, 9, 0),
+  );
   protected readonly disabled = signal(false);
   protected readonly is24 = signal(true);
 

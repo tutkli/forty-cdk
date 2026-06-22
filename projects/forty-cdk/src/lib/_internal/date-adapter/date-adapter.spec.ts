@@ -38,9 +38,9 @@ describe('compareDateOf', () => {
     });
 
     it('returns a negative number when a is an earlier day', () => {
-      expect(compareDateOf(adapter, { y: 2026, m: 6, d: 12 }, { y: 2026, m: 6, d: 13 })).toBeLessThan(
-        0,
-      );
+      expect(
+        compareDateOf(adapter, { y: 2026, m: 6, d: 12 }, { y: 2026, m: 6, d: 13 }),
+      ).toBeLessThan(0);
     });
 
     it('returns a positive number when a is a later day', () => {
@@ -50,12 +50,12 @@ describe('compareDateOf', () => {
     });
 
     it('orders by year then month then day', () => {
-      expect(compareDateOf(adapter, { y: 2025, m: 12, d: 31 }, { y: 2026, m: 1, d: 1 })).toBeLessThan(
-        0,
-      );
-      expect(compareDateOf(adapter, { y: 2026, m: 3, d: 1 }, { y: 2026, m: 2, d: 28 })).toBeGreaterThan(
-        0,
-      );
+      expect(
+        compareDateOf(adapter, { y: 2025, m: 12, d: 31 }, { y: 2026, m: 1, d: 1 }),
+      ).toBeLessThan(0);
+      expect(
+        compareDateOf(adapter, { y: 2026, m: 3, d: 1 }, { y: 2026, m: 2, d: 28 }),
+      ).toBeGreaterThan(0);
     });
 
     it('compares same-day-different-time as equal (ignores the time component)', () => {

@@ -35,12 +35,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/range.example.ts"
     >
       <div demo>
-        <div
-          forCalendar
-          class="pg-cal"
-          selectionMode="range"
-          [(range)]="dateRange"
-        >
+        <div forCalendar class="pg-cal" selectionMode="range" [(range)]="dateRange">
           <header class="pg-cal-header">
             <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous month'">
               ‹

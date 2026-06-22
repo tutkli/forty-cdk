@@ -99,13 +99,19 @@ class MockHost implements SegmentEditorHost<Parts> {
   }
 }
 
-function makeHandle(type: SegmentType): SegmentHandle & { host: HTMLElement; type: Signal<SegmentType> } {
+function makeHandle(
+  type: SegmentType,
+): SegmentHandle & { host: HTMLElement; type: Signal<SegmentType> } {
   const host = document.createElement('div');
   host.setAttribute('data-segment', type);
   return { host, type: signal(type) };
 }
 
-function setup(): { host: MockHost; editor: SegmentEditor<Parts>; handles: Map<SegmentType, HTMLElement> } {
+function setup(): {
+  host: MockHost;
+  editor: SegmentEditor<Parts>;
+  handles: Map<SegmentType, HTMLElement>;
+} {
   const host = new MockHost();
   const editor = new SegmentEditor<Parts>(host);
   const handles = new Map<SegmentType, HTMLElement>();

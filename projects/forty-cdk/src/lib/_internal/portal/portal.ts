@@ -71,10 +71,7 @@ export function injectPortal(config: PortalConfig = {}): void {
   });
 
   destroyRef.onDestroy(() => {
-    if (
-      typeof requestAnimationFrame === 'undefined' ||
-      typeof el.getAnimations !== 'function'
-    ) {
+    if (typeof requestAnimationFrame === 'undefined' || typeof el.getAnimations !== 'function') {
       el.remove();
       return;
     }
@@ -84,9 +81,9 @@ export function injectPortal(config: PortalConfig = {}): void {
         el.remove();
         return;
       }
-      Promise.all(
-        animations.map((animation) => animation.finished.catch(() => undefined)),
-      ).then(() => el.remove());
+      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
+        () => el.remove(),
+      );
     });
   });
 }

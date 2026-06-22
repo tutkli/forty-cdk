@@ -1048,7 +1048,13 @@ describe('ForDialog (declarative)', () => {
           imports: [ForDialog],
           template: `
             @if (open()) {
-              <div forDialog [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
+              <div
+                forDialog
+                [modal]="false"
+                [container]="box"
+                (dismiss)="open.set(false)"
+                ariaLabel="t"
+              >
                 <button id="inside">In</button>
               </div>
             }
@@ -1072,7 +1078,13 @@ describe('ForDialog (declarative)', () => {
           imports: [ForDialog, ForDialogBackdrop],
           template: `
             @if (open()) {
-              <div forDialog [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
+              <div
+                forDialog
+                [modal]="false"
+                [container]="box"
+                (dismiss)="open.set(false)"
+                ariaLabel="t"
+              >
                 <div forDialogBackdrop></div>
                 <button id="inside">In</button>
               </div>

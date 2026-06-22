@@ -58,7 +58,12 @@ interface Slide {
             <button forCarouselNext class="dcar-btn" aria-label="Next slide">›</button>
           </div>
 
-          <div forCarouselViewport forCarouselDrag [disabled]="dragDisabled()" class="dcar-viewport">
+          <div
+            forCarouselViewport
+            forCarouselDrag
+            [disabled]="dragDisabled()"
+            class="dcar-viewport"
+          >
             <div forCarouselTrack class="dcar-track">
               @for (slide of slides; track slide.id; let i = $index) {
                 <div forCarouselSlide class="dcar-slide" [class]="'dcar-slide--' + (i + 1)">
@@ -197,11 +202,21 @@ interface Slide {
       min-height: 180px;
     }
 
-    .dcar-slide--1 { background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface)); }
-    .dcar-slide--2 { background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface)); }
-    .dcar-slide--3 { background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface)); }
-    .dcar-slide--4 { background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface)); }
-    .dcar-slide--5 { background: color-mix(in srgb, var(--pg-success) 35%, var(--pg-surface)); }
+    .dcar-slide--1 {
+      background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface));
+    }
+    .dcar-slide--2 {
+      background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface));
+    }
+    .dcar-slide--3 {
+      background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface));
+    }
+    .dcar-slide--4 {
+      background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface));
+    }
+    .dcar-slide--5 {
+      background: color-mix(in srgb, var(--pg-success) 35%, var(--pg-surface));
+    }
 
     .dcar-slide-label {
       font-size: 1.1rem;
@@ -224,7 +239,9 @@ interface Slide {
       background: var(--pg-border-strong);
       padding: 0;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
     }
 
     .dcar-dot[aria-current='true'] {

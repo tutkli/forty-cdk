@@ -103,9 +103,9 @@ describe('FormUiControlBase', () => {
     it('flips data-touched and emits touch exactly once per call', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const control = q(el, 'control');
-      const directive = fixture.debugElement
-        .query((node: DebugElement) => node.nativeElement === control)
-        .references['ctrl'] as ForTestControl;
+      const directive = fixture.debugElement.query(
+        (node: DebugElement) => node.nativeElement === control,
+      ).references['ctrl'] as ForTestControl;
 
       expect(control.hasAttribute('data-touched')).toBe(false);
       expect(fixture.componentInstance.touchCount()).toBe(0);

@@ -189,11 +189,21 @@ interface Slide {
       min-height: 180px;
     }
 
-    .car-slide--1 { background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface)); }
-    .car-slide--2 { background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface)); }
-    .car-slide--3 { background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface)); }
-    .car-slide--4 { background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface)); }
-    .car-slide--5 { background: color-mix(in srgb, var(--pg-success) 35%, var(--pg-surface)); }
+    .car-slide--1 {
+      background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface));
+    }
+    .car-slide--2 {
+      background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface));
+    }
+    .car-slide--3 {
+      background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface));
+    }
+    .car-slide--4 {
+      background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface));
+    }
+    .car-slide--5 {
+      background: color-mix(in srgb, var(--pg-success) 35%, var(--pg-surface));
+    }
 
     .car-slide-label {
       font-size: 1.1rem;
@@ -216,7 +226,9 @@ interface Slide {
       background: var(--pg-border-strong);
       padding: 0;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
     }
 
     .car-dot[aria-current='true'] {

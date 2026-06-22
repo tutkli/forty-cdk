@@ -143,9 +143,7 @@ export class ForStepper implements ForStepperContext {
    */
   readonly isCompleted = computed(() => this.selectedIndex() >= this.count());
 
-  readonly #firstSelectableTriggerHost = computed(() =>
-    firstEnabledHost(this.#triggers.items()),
-  );
+  readonly #firstSelectableTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
   constructor() {
     reconcileRovingActive(this.roving, this.#triggers.items);

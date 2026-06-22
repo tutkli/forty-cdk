@@ -72,9 +72,13 @@ describe('buildTimeSlots', () => {
   it('selected is true for matching slot at minute granularity', () => {
     const selected = new Date(2026, 5, 15, 9, 0, 0);
     const slots = buildTimeSlots(cfg({ selected, granularity: 'minute' }));
-    const nineOClock = slots.find((s) => adapter.getHours(s.value) === 9 && adapter.getMinutes(s.value) === 0);
+    const nineOClock = slots.find(
+      (s) => adapter.getHours(s.value) === 9 && adapter.getMinutes(s.value) === 0,
+    );
     expect(nineOClock?.selected).toBe(true);
-    const eightThirty = slots.find((s) => adapter.getHours(s.value) === 8 && adapter.getMinutes(s.value) === 30);
+    const eightThirty = slots.find(
+      (s) => adapter.getHours(s.value) === 8 && adapter.getMinutes(s.value) === 30,
+    );
     expect(eightThirty?.selected).toBe(false);
   });
 
@@ -89,11 +93,17 @@ describe('buildTimeSlots', () => {
     const slots = buildTimeSlots(cfg({ minTime, maxTime }));
     const midnight = slots[0]!;
     expect(midnight.disabled).toBe(true);
-    const nineAm = slots.find((s) => adapter.getHours(s.value) === 9 && adapter.getMinutes(s.value) === 0);
+    const nineAm = slots.find(
+      (s) => adapter.getHours(s.value) === 9 && adapter.getMinutes(s.value) === 0,
+    );
     expect(nineAm?.disabled).toBe(false);
-    const noon = slots.find((s) => adapter.getHours(s.value) === 12 && adapter.getMinutes(s.value) === 0);
+    const noon = slots.find(
+      (s) => adapter.getHours(s.value) === 12 && adapter.getMinutes(s.value) === 0,
+    );
     expect(noon?.disabled).toBe(false);
-    const elevenPm = slots.find((s) => adapter.getHours(s.value) === 23 && adapter.getMinutes(s.value) === 0);
+    const elevenPm = slots.find(
+      (s) => adapter.getHours(s.value) === 23 && adapter.getMinutes(s.value) === 0,
+    );
     expect(elevenPm?.disabled).toBe(true);
   });
 

@@ -65,7 +65,8 @@ export function forSingleValueField<T>(field: FieldTree<T | null>): FieldTree<re
     view.set = (next: readonly T[]): void => {
       source().set(next.length > 0 ? next[next.length - 1]! : null);
     };
-    view.update = (updater: (prev: readonly T[]) => readonly T[]): void => view.set(updater(read()));
+    view.update = (updater: (prev: readonly T[]) => readonly T[]): void =>
+      view.set(updater(read()));
     view.asReadonly = () => read;
     return view;
   };

@@ -53,7 +53,9 @@ import { Icon } from '../../../ui/icon';
           @if (open()) {
             <div forMenuContent class="pg-menu pg-menu--wide" animate.enter="pg-pop-in">
               <button forMenuItem class="pg-menu-item" (activate)="onAction('Back')">Back</button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Reload')">Reload</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Reload')">
+                Reload
+              </button>
 
               <hr forMenuSeparator class="pg-menu-separator" />
 

@@ -26,8 +26,7 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
     '[id]': 'id()',
     '[attr.aria-selected]':
       "ctx.mode() === 'interactive' ? (item.current() ? 'true' : 'false') : null",
-    '[attr.aria-controls]':
-      "ctx.mode() === 'interactive' && item.current() ? controlsId() : null",
+    '[attr.aria-controls]': "ctx.mode() === 'interactive' && item.current() ? controlsId() : null",
     '[attr.aria-current]': "ctx.mode() === 'progress' && item.current() ? 'step' : null",
     '[attr.aria-disabled]': "ctx.mode() === 'interactive' && !item.selectable() ? 'true' : null",
     '[attr.tabindex]': 'tabindex()',

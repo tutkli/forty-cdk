@@ -1,4 +1,9 @@
-import { Component, output, type OutputEmitterRef, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  output,
+  type OutputEmitterRef,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import {

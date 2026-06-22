@@ -12,10 +12,7 @@ export interface ForTableDefaults {}
 
 const FALLBACK: ForTableDefaults = {};
 
-const { token, provideDefaults } = createDefaults<ForTableDefaults>(
-  'FOR_TABLE_DEFAULTS',
-  FALLBACK,
-);
+const { token, provideDefaults } = createDefaults<ForTableDefaults>('FOR_TABLE_DEFAULTS', FALLBACK);
 
 /** Token holding the resolved table defaults for the current scope. */
 export const FOR_TABLE_DEFAULTS = token;

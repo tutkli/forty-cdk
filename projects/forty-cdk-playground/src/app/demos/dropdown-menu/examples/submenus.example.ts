@@ -53,10 +53,18 @@ import { Icon } from '../../../ui/icon';
                 </button>
                 @if (inviteOpen()) {
                   <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
-                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Invite by email')">
+                    <button
+                      forMenuItem
+                      class="pg-menu-item"
+                      (activate)="onAction('Invite by email')"
+                    >
                       By email
                     </button>
-                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Invite by link')">
+                    <button
+                      forMenuItem
+                      class="pg-menu-item"
+                      (activate)="onAction('Invite by link')"
+                    >
                       By link
                     </button>
 

@@ -30,7 +30,12 @@ import {
     <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">Open dialog</button>
 
     @if (dialogOpen()) {
-      <div forDialog data-testid="dialog" ariaLabel="Outer dialog" (dismiss)="dialogOpen.set(false)">
+      <div
+        forDialog
+        data-testid="dialog"
+        ariaLabel="Outer dialog"
+        (dismiss)="dialogOpen.set(false)"
+      >
         <div forPopover [(open)]="popoverOpen" ariaLabel="Inner popover">
           <button data-testid="popover-trigger" forPopoverTrigger>Open popover</button>
           @if (popoverOpen()) {
