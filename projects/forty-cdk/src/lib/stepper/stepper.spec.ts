@@ -101,9 +101,30 @@ class StepperHost {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly listLabel = signal<string | null>('Steps');
   readonly steps = signal<StepDef[]>([
-    { label: 'A', completed: false, optional: false, disabled: false, hasError: false, state: null },
-    { label: 'B', completed: false, optional: false, disabled: false, hasError: false, state: null },
-    { label: 'C', completed: false, optional: false, disabled: false, hasError: false, state: null },
+    {
+      label: 'A',
+      completed: false,
+      optional: false,
+      disabled: false,
+      hasError: false,
+      state: null,
+    },
+    {
+      label: 'B',
+      completed: false,
+      optional: false,
+      disabled: false,
+      hasError: false,
+      state: null,
+    },
+    {
+      label: 'C',
+      completed: false,
+      optional: false,
+      disabled: false,
+      hasError: false,
+      state: null,
+    },
   ]);
   readonly completeCount = signal(0);
   onComplete(): void {
@@ -117,14 +138,12 @@ const triggerAt = (el: HTMLElement, i: number) =>
 const contentAt = (el: HTMLElement, i: number) =>
   el.querySelector<HTMLElement>(`[data-content="${i}"]`)!;
 
-const itemAt = (el: HTMLElement, i: number) =>
-  el.querySelector<HTMLElement>(`[data-step="${i}"]`)!;
+const itemAt = (el: HTMLElement, i: number) => el.querySelector<HTMLElement>(`[data-step="${i}"]`)!;
 
 const indicatorAt = (el: HTMLElement, i: number) =>
   el.querySelector<HTMLElement>(`[data-indicator="${i}"]`)!;
 
-const sepAt = (el: HTMLElement, i: number) =>
-  el.querySelector<HTMLElement>(`[data-sep="${i}"]`)!;
+const sepAt = (el: HTMLElement, i: number) => el.querySelector<HTMLElement>(`[data-sep="${i}"]`)!;
 
 const listEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forStepperList]')!;
 const nextBtn = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-next]')!;
@@ -302,9 +321,7 @@ describe('ForStepper', () => {
       instance.linear.set(true);
       fixture.detectChanges();
       expect(triggerAt(el, 1).getAttribute('aria-disabled')).toBe('true');
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, completed: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, completed: true } : s)));
       fixture.detectChanges();
       expect(triggerAt(el, 1).hasAttribute('aria-disabled')).toBe(false);
     });
@@ -312,9 +329,7 @@ describe('ForStepper', () => {
     it('optional steps are skippable in linear mode', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
       instance.linear.set(true);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, optional: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, optional: true } : s)));
       fixture.detectChanges();
       expect(triggerAt(el, 1).hasAttribute('aria-disabled')).toBe(false);
     });
@@ -342,9 +357,7 @@ describe('ForStepper', () => {
   describe('resolved-state precedence', () => {
     it('custom state override wins', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, state: 'my-custom' } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, state: 'my-custom' } : s)));
       fixture.detectChanges();
       expect(itemAt(el, 0).getAttribute('data-state')).toBe('my-custom');
       expect(triggerAt(el, 0).getAttribute('data-state')).toBe('my-custom');
@@ -353,27 +366,21 @@ describe('ForStepper', () => {
 
     it('hasError emits "error" on non-current step', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 1 ? { ...s, hasError: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, hasError: true } : s)));
       fixture.detectChanges();
       expect(itemAt(el, 1).getAttribute('data-state')).toBe('error');
     });
 
     it('current step emits "active" even when hasError is true', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, hasError: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, hasError: true } : s)));
       fixture.detectChanges();
       expect(itemAt(el, 0).getAttribute('data-state')).toBe('active');
     });
 
     it('completed step emits "completed"', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 1 ? { ...s, completed: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, completed: true } : s)));
       fixture.detectChanges();
       expect(itemAt(el, 1).getAttribute('data-state')).toBe('completed');
     });
@@ -393,9 +400,7 @@ describe('ForStepper', () => {
     it('separator reflects completed state of its item', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
       expect(sepAt(el, 0).getAttribute('data-state')).toBe('pending');
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, completed: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, completed: true } : s)));
       fixture.detectChanges();
       expect(sepAt(el, 0).getAttribute('data-state')).toBe('completed');
     });
@@ -414,18 +419,14 @@ describe('ForStepper', () => {
     },
     mountWithDisabledFirst: async () => {
       const r = renderHost(StepperHost);
-      r.instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, disabled: true } : s)),
-      );
+      r.instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, disabled: true } : s)));
       r.fixture.detectChanges();
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
     mountWithDisabledMiddle: async () => {
       const r = renderHost(StepperHost);
-      r.instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 1 ? { ...s, disabled: true } : s)),
-      );
+      r.instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, disabled: true } : s)));
       r.fixture.detectChanges();
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [0, 2], flush: r.flush };
@@ -510,9 +511,7 @@ describe('ForStepper', () => {
 
     it('panel with focusable content has no tabindex', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
-      instance.steps.update((ss) =>
-        ss.map((s, i) => (i === 0 ? { ...s, hasError: true } : s)),
-      );
+      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, hasError: true } : s)));
       fixture.detectChanges();
       await flush();
       expect(contentAt(el, 0).hasAttribute('tabindex')).toBe(false);
@@ -932,7 +931,12 @@ describe('ForStepperProgress', () => {
     imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
     template: `
       <div forStepper [(selectedIndex)]="selectedIndex" [orientation]="orientation()">
-        <div forStepperProgress [valueBy]="valueBy()" [ariaLabel]="ariaLabel()" data-testid="progress"></div>
+        <div
+          forStepperProgress
+          [valueBy]="valueBy()"
+          [ariaLabel]="ariaLabel()"
+          data-testid="progress"
+        ></div>
         <ol forStepperList ariaLabel="Steps">
           @for (s of steps(); track $index) {
             <li forStepperItem [completed]="s.completed">
@@ -948,11 +952,7 @@ describe('ForStepperProgress', () => {
     readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
     readonly valueBy = signal<'index' | 'completed'>('index');
     readonly ariaLabel = signal<string | null>(null);
-    readonly steps = signal([
-      { completed: false },
-      { completed: false },
-      { completed: false },
-    ]);
+    readonly steps = signal([{ completed: false }, { completed: false }, { completed: false }]);
   }
 
   const progressEl = (el: HTMLElement) =>

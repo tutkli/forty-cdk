@@ -134,7 +134,11 @@ import { Icon } from '../../../ui/icon';
                 </button>
                 @if (moreOpen()) {
                   <div forMenuSubContent class="pg-menu" animate.enter="pg-pop-in">
-                    <button forMenuItem class="pg-menu-item" (activate)="onAction('Developer tools')">
+                    <button
+                      forMenuItem
+                      class="pg-menu-item"
+                      (activate)="onAction('Developer tools')"
+                    >
                       Developer tools
                     </button>
                     <button forMenuItem class="pg-menu-item" (activate)="onAction('Extensions')">

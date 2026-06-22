@@ -234,9 +234,7 @@ export function injectStepperContext(piece: string): ForStepperContext {
 export function injectStepperItemContext(piece: string): ForStepperItemContext {
   const ctx = inject(FOR_STEPPER_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/stepper] ${piece} must be used inside a [forStepperItem] element.`,
-    );
+    throw new Error(`[forty-cdk/stepper] ${piece} must be used inside a [forStepperItem] element.`);
   }
   return ctx;
 }

@@ -62,7 +62,11 @@ interface NamePart {
       @if (node().children?.length && expandedIds().includes(node().id)) {
         <ul forTreeGroup class="pg-tree-group">
           @for (child of node().children ?? []; track child.id) {
-            <app-checkbox-tree-node [node]="child" [expandedIds]="expandedIds()" [query]="query()" />
+            <app-checkbox-tree-node
+              [node]="child"
+              [expandedIds]="expandedIds()"
+              [query]="query()"
+            />
           }
         </ul>
       }

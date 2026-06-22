@@ -63,9 +63,7 @@ export function buildDescendantsMap(
   return map;
 }
 
-export function buildAncestorsMap(
-  roots: readonly TreeNodeData[],
-): Map<string, readonly string[]> {
+export function buildAncestorsMap(roots: readonly TreeNodeData[]): Map<string, readonly string[]> {
   const map = new Map<string, readonly string[]>();
   const walk = (node: TreeNodeData, ancestors: readonly string[]): void => {
     map.set(node.id, ancestors);

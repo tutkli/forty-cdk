@@ -44,7 +44,11 @@ import { CheckboxTreeNode } from './checkbox-tree-node';
               [ariaLabel]="'Categories'"
             >
               @for (node of filtered(); track node.id) {
-                <app-checkbox-tree-node [node]="node" [expandedIds]="expanded()" [query]="query()" />
+                <app-checkbox-tree-node
+                  [node]="node"
+                  [expandedIds]="expanded()"
+                  [query]="query()"
+                />
               }
             </ul>
           } @else {
@@ -97,8 +101,7 @@ export class TreeFilterExample {
 
   protected readonly descendantsOf = (id: string): readonly string[] =>
     this.#descendants.get(id) ?? [];
-  protected readonly ancestorsOf = (id: string): readonly string[] =>
-    this.#ancestors.get(id) ?? [];
+  protected readonly ancestorsOf = (id: string): readonly string[] => this.#ancestors.get(id) ?? [];
 
   protected readonly filtered = computed(() => filterNodes(CATEGORIES, this.query()));
 

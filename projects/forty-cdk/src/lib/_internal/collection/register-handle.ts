@@ -1,4 +1,11 @@
-import { afterNextRender, DestroyRef, ElementRef, inject, signal, type Signal } from '@angular/core';
+import {
+  afterNextRender,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  type Signal,
+} from '@angular/core';
 
 import { resolveHostId } from '../host-id/host-id';
 import type { Collection } from './collection';
@@ -148,7 +155,8 @@ export interface A11yDescriptionOwner {
  * `ElementRef`, `IdGenerator`, and `DestroyRef`.
  */
 export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<string> {
-  const host = inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
+  const host =
+    inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
   const id = resolveHostId(host, prefix);
   registerHandle(
     id,
@@ -167,7 +175,8 @@ export function registerA11yDescription(
   owner: A11yDescriptionOwner,
   prefix: string,
 ): Signal<string> {
-  const host = inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
+  const host =
+    inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
   const id = resolveHostId(host, prefix);
   registerHandle(
     id,

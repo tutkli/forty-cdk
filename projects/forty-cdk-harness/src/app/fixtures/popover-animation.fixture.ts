@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  ViewEncapsulation,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ForPopover, ForPopoverClose, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk';
 
@@ -31,7 +37,12 @@ import { ForPopover, ForPopoverClose, ForPopoverContent, ForPopoverTrigger } fro
     <div forPopover [(open)]="open" ariaLabel="Animated popover">
       <button data-testid="trigger-anim" forPopoverTrigger>Open</button>
       @if (open()) {
-        <div forPopoverContent data-testid="popover-anim" animate.leave="popover-leaving" [class.leave-scale]="leaveScale">
+        <div
+          forPopoverContent
+          data-testid="popover-anim"
+          animate.leave="popover-leaving"
+          [class.leave-scale]="leaveScale"
+        >
           <button data-testid="first-anim">First</button>
           <button data-testid="close-anim" forPopoverClose>Close</button>
         </div>

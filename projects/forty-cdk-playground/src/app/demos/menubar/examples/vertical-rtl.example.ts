@@ -68,7 +68,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
           @if (openMenu() === 'format') {
             <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
               <button forMenuItem class="pg-menu-item" (activate)="onAction('Bold')">Bold</button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Italic')">Italic</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Italic')">
+                Italic
+              </button>
               <button forMenuItem class="pg-menu-item" (activate)="onAction('Clear formatting')">
                 Clear formatting
               </button>

@@ -10,7 +10,14 @@ import { CalendarViewSwitchingExample } from './examples/views.example';
 @Component({
   selector: 'app-calendar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, CalendarDatePickerExample, CalendarConstraintsExample, CalendarRangeExample, CalendarDropdownsExample, CalendarViewSwitchingExample],
+  imports: [
+    PrimitivePage,
+    CalendarDatePickerExample,
+    CalendarConstraintsExample,
+    CalendarRangeExample,
+    CalendarDropdownsExample,
+    CalendarViewSwitchingExample,
+  ],
   template: `
     <primitive-page slug="calendar">
       <app-calendar-date-picker-example />

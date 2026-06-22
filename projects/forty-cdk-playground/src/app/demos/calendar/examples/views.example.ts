@@ -46,10 +46,22 @@ import { DemoLayout } from '../../../ui/demo-layout';
       sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/views.example.ts"
     >
       <div demo>
-        <div forCalendar class="pg-cal" [(value)]="value" [min]="min" [max]="max" [yearBlockSize]="yearBlockSize()" #cal="forCalendar">
+        <div
+          forCalendar
+          class="pg-cal"
+          [(value)]="value"
+          [min]="min"
+          [max]="max"
+          [yearBlockSize]="yearBlockSize()"
+          #cal="forCalendar"
+        >
           <header class="pg-cal-header">
             <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous'">‹</button>
-            <button forCalendarViewTrigger #vt="forCalendarViewTrigger" class="pg-cal-title pg-cal-view-btn">
+            <button
+              forCalendarViewTrigger
+              #vt="forCalendarViewTrigger"
+              class="pg-cal-title pg-cal-view-btn"
+            >
               {{ vt.label() }}
             </button>
             <button forCalendarNextButton class="pg-cal-nav" [ariaLabel]="'Next'">›</button>
@@ -84,12 +96,20 @@ import { DemoLayout } from '../../../ui/demo-layout';
               </table>
             }
             @case ('month') {
-              <table forCalendarMonthGrid #mg="forCalendarMonthGrid" class="pg-cal-grid pg-cal-grid--3col">
+              <table
+                forCalendarMonthGrid
+                #mg="forCalendarMonthGrid"
+                class="pg-cal-grid pg-cal-grid--3col"
+              >
                 <tbody>
                   @for (row of mg.rows(); track row.key) {
                     <tr>
                       @for (m of row.months; track m.value) {
-                        <td forCalendarMonthCell [month]="m.value" class="pg-cal-cell pg-cal-cell--pick">
+                        <td
+                          forCalendarMonthCell
+                          [month]="m.value"
+                          class="pg-cal-cell pg-cal-cell--pick"
+                        >
                           {{ m.label }}
                         </td>
                       }
@@ -99,12 +119,20 @@ import { DemoLayout } from '../../../ui/demo-layout';
               </table>
             }
             @case ('year') {
-              <table forCalendarYearGrid #yg="forCalendarYearGrid" class="pg-cal-grid pg-cal-grid--3col">
+              <table
+                forCalendarYearGrid
+                #yg="forCalendarYearGrid"
+                class="pg-cal-grid pg-cal-grid--3col"
+              >
                 <tbody>
                   @for (row of yg.rows(); track row.key) {
                     <tr>
                       @for (y of row.years; track y.value) {
-                        <td forCalendarYearCell [year]="y.value" class="pg-cal-cell pg-cal-cell--pick">
+                        <td
+                          forCalendarYearCell
+                          [year]="y.value"
+                          class="pg-cal-cell pg-cal-cell--pick"
+                        >
                           {{ y.value }}
                         </td>
                       }
@@ -163,7 +191,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
       padding: 0.2rem 0.4rem;
       color: var(--pg-text);
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .pg-cal-view-btn:hover {

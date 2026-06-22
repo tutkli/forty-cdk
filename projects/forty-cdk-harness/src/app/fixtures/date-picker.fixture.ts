@@ -72,7 +72,9 @@ import { queryFlag } from './_query-flag';
                 <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
                   {{ heading.label() }}
                 </h2>
-                <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">›</button>
+                <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">
+                  ›
+                </button>
               </header>
 
               <table forCalendarGrid #grid="forCalendarGrid">
@@ -125,7 +127,9 @@ import { queryFlag } from './_query-flag';
                 <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
                   {{ heading.label() }}
                 </h2>
-                <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">›</button>
+                <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">
+                  ›
+                </button>
               </header>
 
               <table forCalendarGrid #grid="forCalendarGrid">

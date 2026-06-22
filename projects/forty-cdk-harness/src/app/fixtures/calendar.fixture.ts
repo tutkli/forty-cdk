@@ -119,25 +119,47 @@ import { queryFlag } from './_query-flag';
         }
       </div>
     } @else if (isDropdowns) {
-      <div forCalendar [(value)]="dropdownValue" [min]="dropdownMin" [max]="dropdownMax" [dir]="dir">
+      <div
+        forCalendar
+        [(value)]="dropdownValue"
+        [min]="dropdownMin"
+        [max]="dropdownMax"
+        [dir]="dir"
+      >
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
           <select forCalendarMonthSelect #m="forCalendarMonthSelect" data-testid="month-select">
             @for (opt of m.options(); track opt.value) {
-              <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'month-opt-' + opt.value">
+              <option
+                [value]="opt.value"
+                [disabled]="opt.disabled"
+                [attr.data-testid]="'month-opt-' + opt.value"
+              >
                 {{ opt.label }}
               </option>
             }
           </select>
-          <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="2024" [maxYear]="2028" data-testid="year-select">
+          <select
+            forCalendarYearSelect
+            #y="forCalendarYearSelect"
+            [minYear]="2024"
+            [maxYear]="2028"
+            data-testid="year-select"
+          >
             @for (opt of y.years(); track opt.value) {
-              <option [value]="opt.value" [disabled]="opt.disabled" [attr.data-testid]="'year-opt-' + opt.value">
+              <option
+                [value]="opt.value"
+                [disabled]="opt.disabled"
+                [attr.data-testid]="'year-opt-' + opt.value"
+              >
                 {{ opt.value }}
               </option>
             }
           </select>
           <button forCalendarNextButton [ariaLabel]="'Next month'" data-testid="next">›</button>
-          <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">{{ heading.label() }}</h2>
+          <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+            {{ heading.label() }}
+          </h2>
         </header>
 
         <table forCalendarGrid #grid="forCalendarGrid">
@@ -152,7 +174,9 @@ import { queryFlag } from './_query-flag';
             @for (week of grid.weeks(); track week.key) {
               <tr>
                 @for (c of week.days; track c.key) {
-                  <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">{{ c.label }}</td>
+                  <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                    {{ c.label }}
+                  </td>
                 }
               </tr>
             }

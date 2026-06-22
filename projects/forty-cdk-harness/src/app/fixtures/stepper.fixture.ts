@@ -63,10 +63,7 @@ import {
       <ol forStepperList ariaLabel="Checkout steps">
         @for (step of steps; track step.index) {
           <li forStepperItem [completed]="completed()[step.index]">
-            <button
-              forStepperTrigger
-              [attr.data-testid]="'trigger-' + step.index"
-            >
+            <button forStepperTrigger [attr.data-testid]="'trigger-' + step.index">
               <span forStepperIndicator></span>
               {{ step.label }}
             </button>
@@ -78,10 +75,7 @@ import {
       </ol>
 
       @for (step of steps; track step.index) {
-        <section
-          forStepperContent
-          [attr.data-testid]="'content-' + step.index"
-        >
+        <section forStepperContent [attr.data-testid]="'content-' + step.index">
           {{ step.label }} content
         </section>
       }
@@ -112,8 +106,7 @@ export class StepperFixture {
   protected readonly mode: 'interactive' | 'progress' =
     this.#route.snapshot.queryParamMap.get('mode') === 'progress' ? 'progress' : 'interactive';
 
-  protected readonly linear: boolean =
-    this.#route.snapshot.queryParamMap.get('linear') === '1';
+  protected readonly linear: boolean = this.#route.snapshot.queryParamMap.get('linear') === '1';
 
   protected readonly orientation: 'horizontal' | 'vertical' =
     this.#route.snapshot.queryParamMap.get('orientation') === 'vertical'
@@ -121,9 +114,7 @@ export class StepperFixture {
       : 'horizontal';
 
   protected readonly activationMode: 'manual' | 'automatic' =
-    this.#route.snapshot.queryParamMap.get('activation') === 'automatic'
-      ? 'automatic'
-      : 'manual';
+    this.#route.snapshot.queryParamMap.get('activation') === 'automatic' ? 'automatic' : 'manual';
 
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';

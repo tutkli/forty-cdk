@@ -1,10 +1,7 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
 import { reflectDisabled } from '../_internal/disabled-reflection/disabled-reflection';
-import {
-  type ForTimePickerContext,
-  injectTimePickerTriggerContext,
-} from './time-picker-context';
+import { type ForTimePickerContext, injectTimePickerTriggerContext } from './time-picker-context';
 
 /**
  * Combobox button that opens the time picker listbox. Apply on a `<button>` so

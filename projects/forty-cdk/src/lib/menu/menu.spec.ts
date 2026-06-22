@@ -34,7 +34,12 @@ import { ForMenuSeparator } from './menu-separator';
           <button id="copy" forMenuItem (activate)="lastSelected.set('copy')">Copy</button>
           <button id="paste" forMenuItem disabled>Paste</button>
           <hr forMenuSeparator />
-          <button id="bold" forMenuCheckboxItem [(checked)]="bold" (activate)="recordSelect('bold')">
+          <button
+            id="bold"
+            forMenuCheckboxItem
+            [(checked)]="bold"
+            (activate)="recordSelect('bold')"
+          >
             Bold
           </button>
           <button id="italic" forMenuCheckboxItem [(checked)]="italic">Italic</button>

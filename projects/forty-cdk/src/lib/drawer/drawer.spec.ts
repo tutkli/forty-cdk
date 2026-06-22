@@ -1296,7 +1296,13 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer],
         template: `
           @if (open()) {
-            <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
+            <div
+              forDrawer
+              [modal]="false"
+              [container]="box"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            >
               <button id="inside">In</button>
             </div>
           }
@@ -1320,7 +1326,13 @@ describe('ForDrawer (declarative)', () => {
         imports: [ForDrawer, ForDrawerBackdrop],
         template: `
           @if (open()) {
-            <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
+            <div
+              forDrawer
+              [modal]="false"
+              [container]="box"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            >
               <div forDrawerBackdrop></div>
               <button id="inside">In</button>
             </div>
@@ -1349,7 +1361,13 @@ describe('ForDrawer (declarative)', () => {
           imports: [ForDrawer],
           template: `
             @if (open()) {
-              <div forDrawer [modal]="false" [container]="box" (dismiss)="open.set(false)" ariaLabel="t">
+              <div
+                forDrawer
+                [modal]="false"
+                [container]="box"
+                (dismiss)="open.set(false)"
+                ariaLabel="t"
+              >
                 <button id="inside">In</button>
               </div>
             }

@@ -43,11 +43,7 @@ export function indexOfSlot(
 }
 
 /** Steps `current` by `delta` (±1), clamped to `[0, slots.length - 1]` (no wrap). */
-export function stepSlot(
-  slots: readonly DragSlot[],
-  current: number,
-  delta: 1 | -1,
-): number {
+export function stepSlot(slots: readonly DragSlot[], current: number, delta: 1 | -1): number {
   if (slots.length === 0) {
     return current;
   }

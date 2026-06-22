@@ -40,7 +40,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
               <button forMenuItem class="pg-menu-item" (activate)="onAction('Copy')">Copy</button>
               <button forMenuItem class="pg-menu-item" (activate)="onAction('Paste')">Paste</button>
               <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Rename')">Rename</button>
+              <button forMenuItem class="pg-menu-item" (activate)="onAction('Rename')">
+                Rename
+              </button>
               <button
                 forMenuItem
                 class="pg-menu-item pg-menu-item--danger"

@@ -59,7 +59,9 @@ interface Slide {
             class="acar-rotation-btn"
             startLabel="Start automatic slide show"
             stopLabel="Stop automatic slide show"
-          ><span class="sr-only">Toggle autoplay</span></button>
+          >
+            <span class="sr-only">Toggle autoplay</span>
+          </button>
 
           <div class="acar-nav-row">
             <button forCarouselPrevious class="acar-btn" aria-label="Previous slide">‹</button>
@@ -211,10 +213,18 @@ interface Slide {
       border-radius: var(--pg-radius);
     }
 
-    .acar-slide--1 { background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface)); }
-    .acar-slide--2 { background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface)); }
-    .acar-slide--3 { background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface)); }
-    .acar-slide--4 { background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface)); }
+    .acar-slide--1 {
+      background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface));
+    }
+    .acar-slide--2 {
+      background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface));
+    }
+    .acar-slide--3 {
+      background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface));
+    }
+    .acar-slide--4 {
+      background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface));
+    }
 
     .acar-slide-label {
       font-size: 1.1rem;
@@ -237,7 +247,9 @@ interface Slide {
       background: var(--pg-border-strong);
       padding: 0;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
     }
 
     .acar-dot[aria-current='true'] {

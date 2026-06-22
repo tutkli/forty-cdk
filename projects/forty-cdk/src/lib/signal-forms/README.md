@@ -56,11 +56,11 @@ export class CountryPicker {
 
 ### What it adapts
 
-| Direction              | Behaviour                                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| Field → control (read) | `null` reads as `[]`; a value `v` reads as `[v]`.                                                    |
-| Control → field (write) | `[]` clears the field to `null`; `[v]` sets it to `v`. In single mode the array never exceeds one. |
-| Everything else        | `disabled` / `readonly` / `required` / `invalid` / `errors` / `touched` / `dirty` / `pending` / `name` / validation / touch tracking / focus delegate to the original field. |
+| Direction               | Behaviour                                                                                                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field → control (read)  | `null` reads as `[]`; a value `v` reads as `[v]`.                                                                                                                            |
+| Control → field (write) | `[]` clears the field to `null`; `[v]` sets it to `v`. In single mode the array never exceeds one.                                                                           |
+| Everything else         | `disabled` / `readonly` / `required` / `invalid` / `errors` / `touched` / `dirty` / `pending` / `name` / validation / touch tracking / focus delegate to the original field. |
 
 The value view is **derived** (`computed`) from the original field — there is no second copy of the value to keep in sync, so it honours the "single source of truth" rule (derive, never effect-write).
 

@@ -1,11 +1,4 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 import type { FieldTree } from '@angular/forms/signals';
 
 import { registerHandle } from '../_internal/collection/register-handle';

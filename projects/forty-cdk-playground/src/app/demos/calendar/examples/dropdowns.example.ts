@@ -40,7 +40,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
       <div demo>
         <div forCalendar class="pg-cal" [(value)]="value" [min]="min" [max]="max">
           <header class="pg-cal-header pg-cal-header--dropdowns">
-            <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous month'">‹</button>
+            <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous month'">
+              ‹
+            </button>
 
             <select forCalendarMonthSelect #m="forCalendarMonthSelect" class="pg-cal-select">
               @for (opt of m.options(); track opt.value) {
@@ -48,14 +50,22 @@ import { DemoLayout } from '../../../ui/demo-layout';
               }
             </select>
 
-            <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="minYear" [maxYear]="maxYear" class="pg-cal-select">
+            <select
+              forCalendarYearSelect
+              #y="forCalendarYearSelect"
+              [minYear]="minYear"
+              [maxYear]="maxYear"
+              class="pg-cal-select"
+            >
               @for (opt of y.years(); track opt.value) {
                 <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
               }
             </select>
 
             <button forCalendarNextButton class="pg-cal-nav" [ariaLabel]="'Next month'">›</button>
-            <h2 forCalendarHeading #heading="forCalendarHeading" class="pg-sr-only">{{ heading.label() }}</h2>
+            <h2 forCalendarHeading #heading="forCalendarHeading" class="pg-sr-only">
+              {{ heading.label() }}
+            </h2>
           </header>
 
           <table forCalendarGrid #grid="forCalendarGrid" class="pg-cal-grid">
@@ -86,8 +96,8 @@ import { DemoLayout } from '../../../ui/demo-layout';
           selected: <b>{{ selectedLabel() }}</b>
         </p>
         <p class="pg-hint">
-          min = Feb 1 of last year · max = Dec 31 of next year. Months/years entirely outside
-          that range are disabled in the dropdowns.
+          min = Feb 1 of last year · max = Dec 31 of next year. Months/years entirely outside that
+          range are disabled in the dropdowns.
         </p>
       </div>
     </playground-demo>

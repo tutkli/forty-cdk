@@ -117,7 +117,12 @@ describe('forSingleValueField', () => {
       }
       const { instance, fixture } = renderHost(Host);
       expect(instance.bridged().invalid()).toBe(true);
-      expect(instance.bridged().errors().map((e) => e.kind)).toEqual(['required']);
+      expect(
+        instance
+          .bridged()
+          .errors()
+          .map((e) => e.kind),
+      ).toEqual(['required']);
 
       instance.model.set({ country: 'fr' });
       fixture.detectChanges();
