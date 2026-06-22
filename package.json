@@ -11,7 +11,7 @@
     "build:playground": "ng build forty-cdk-playground --configuration development",
     "test": "ng test forty-cdk",
     "test:watch": "ng test forty-cdk --watch",
-    "typecheck": "tsc -p projects/forty-cdk/tsconfig.spec.json --noEmit",
+    "typecheck": "tsc -p projects/forty-cdk/tsconfig.lib.json --noEmit && tsc -p projects/forty-cdk/tsconfig.spec.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "playwright test",
