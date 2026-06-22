@@ -11,7 +11,7 @@ For exclusive selection where one option is always required, use `[forRadioGroup
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForToggle } from 'forty-cdk';
+import { ForToggle } from 'forty-cdk/toggle';
 
 @Component({
   selector: 'demo-toggle',
@@ -45,7 +45,7 @@ export class DemoToggle {
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
-import { ForToggle } from 'forty-cdk';
+import { ForToggle } from 'forty-cdk/toggle';
 
 @Component({
   selector: 'demo-bold',
@@ -66,7 +66,7 @@ For a set of related toggles, `ForToggleGroup` implements `FormValueControl<read
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 @Component({
   selector: 'demo-alignment',
@@ -183,7 +183,7 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, required, requiredError, validate } from '@angular/forms/signals';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 @Component({
   selector: 'demo-formats',

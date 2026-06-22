@@ -10,7 +10,8 @@ Pointer activations anchor the menu at the cursor; keyboard activations anchor i
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem } from 'forty-cdk';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 @Component({
   selector: 'demo-context',

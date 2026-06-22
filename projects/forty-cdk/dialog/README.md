@@ -23,7 +23,7 @@ import {
   ForDialogDescription,
   ForDialogTitle,
   ForDialogTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
 
 @Component({
   selector: 'demo-confirm',
@@ -99,7 +99,7 @@ The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **
 
 ```ts
 import { Component, inject } from '@angular/core';
-import { ForDialogManager, ForDialogRef, injectDialogData } from 'forty-cdk';
+import { ForDialogManager, ForDialogRef, injectDialogData } from 'forty-cdk/dialog';
 
 @Component({
   template: `

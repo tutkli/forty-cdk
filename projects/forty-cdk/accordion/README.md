@@ -56,10 +56,10 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 import { Component, signal } from '@angular/core';
 import {
   ForAccordion,
+  ForAccordionContent,
   ForAccordionItem,
   ForAccordionTrigger,
-  ForAccordionContent,
-} from 'forty-cdk';
+} from 'forty-cdk/accordion';
 
 @Component({
   selector: 'demo-faq',

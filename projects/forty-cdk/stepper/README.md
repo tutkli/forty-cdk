@@ -126,11 +126,11 @@ import { Component, signal } from '@angular/core';
 import { form, required, email } from '@angular/forms/signals';
 import {
   ForStepper,
-  ForStepperList,
-  ForStepperItem,
-  ForStepperTrigger,
   ForStepperContent,
-} from 'forty-cdk';
+  ForStepperItem,
+  ForStepperList,
+  ForStepperTrigger,
+} from 'forty-cdk/stepper';
 
 @Component({
   imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],

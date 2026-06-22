@@ -9,7 +9,7 @@ It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no templ
 Configuring is optional — without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
 
 ```ts
-import { provideForBreakpoints } from 'forty-cdk';
+import { provideForBreakpoints } from 'forty-cdk/breakpoints';
 
 export const appConfig: ApplicationConfig = {
   providers: [provideForBreakpoints({ mobile: 0, tablet: 640, laptop: 1024, desktop: 1280 })],
@@ -22,7 +22,7 @@ Providing it again on a component injector replaces the map for that subtree onl
 
 ```ts
 import { Component, inject } from '@angular/core';
-import { injectBreakpoints } from 'forty-cdk';
+import { injectBreakpoints } from 'forty-cdk/breakpoints';
 
 @Component({
   selector: 'app-layout',

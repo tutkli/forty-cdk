@@ -32,7 +32,8 @@ Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps e
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl } from 'forty-cdk';
+import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
+import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
 
 @Component({
   selector: 'demo-fieldset',

@@ -60,11 +60,13 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
+} from 'forty-cdk/calendar';
+import {
   ForDatePicker,
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
-} from 'forty-cdk';
+} from 'forty-cdk/date-picker';
 
 @Component({
   selector: 'app-dob',
@@ -245,7 +247,7 @@ The value display (`[forDatePickerValue]`) automatically appends the time to its
 Set `selectionMode="range"` on both the picker root and the projected calendar and bind `[(range)]` to a `CalendarDateRange<D> | null` signal.
 
 ```ts
-import { type CalendarDateRange } from 'forty-cdk';
+import { type CalendarDateRange } from 'forty-cdk/calendar';
 
 readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
 ```

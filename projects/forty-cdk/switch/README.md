@@ -30,7 +30,7 @@ The host gets `data-state="checked" \| "unchecked"`, `data-disabled`, and `data-
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForSwitch } from 'forty-cdk';
+import { ForSwitch } from 'forty-cdk/switch';
 
 @Component({
   selector: 'demo-toggle',
@@ -55,7 +55,7 @@ export class DemoToggle {
 import { Component, signal } from '@angular/core';
 import { form, required } from '@angular/forms/signals';
 import { Field } from '@angular/forms';
-import { ForSwitch } from 'forty-cdk';
+import { ForSwitch } from 'forty-cdk/switch';
 
 interface Settings {
   notifications: boolean;

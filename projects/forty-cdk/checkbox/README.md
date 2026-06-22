@@ -32,7 +32,7 @@ The host gets `data-state="checked" \| "unchecked" \| "indeterminate"` for CSS h
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForCheckbox } from 'forty-cdk';
+import { ForCheckbox } from 'forty-cdk/checkbox';
 
 @Component({
   selector: 'demo-terms',
@@ -55,7 +55,7 @@ export class DemoTerms {
 
 ```ts
 import { Component, computed, signal } from '@angular/core';
-import { ForCheckbox } from 'forty-cdk';
+import { ForCheckbox } from 'forty-cdk/checkbox';
 
 @Component({
   selector: 'demo-select-all',
@@ -98,7 +98,7 @@ export class DemoSelectAll {
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, required } from '@angular/forms/signals';
-import { ForCheckbox } from 'forty-cdk';
+import { ForCheckbox } from 'forty-cdk/checkbox';
 
 @Component({
   selector: 'demo-checkout',

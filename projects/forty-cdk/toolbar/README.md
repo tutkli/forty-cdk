@@ -27,14 +27,13 @@ Composes naturally with `[forToggleGroup]` — toggle items nested inside a tool
 
 ```ts
 import { Component, signal } from '@angular/core';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 import {
   ForToolbar,
   ForToolbarButton,
   ForToolbarLink,
   ForToolbarSeparator,
-  ForToggleGroup,
-  ForToggleGroupItem,
-} from 'forty-cdk';
+} from 'forty-cdk/toolbar';
 
 @Component({
   selector: 'demo-toolbar',

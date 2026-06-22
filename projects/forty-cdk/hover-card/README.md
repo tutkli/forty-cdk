@@ -54,7 +54,7 @@ Per-instance inputs always win over the scope defaults.
 The HoverCard coordinator is **independent** from `TooltipCoordinator` — the two patterns have different cadences and shouldn't share their skip-delay windows.
 
 ```ts
-import { provideForHoverCardDefaults } from 'forty-cdk';
+import { provideForHoverCardDefaults } from 'forty-cdk/hover-card';
 
 // Right-aligned profile cards app-wide
 bootstrapApplication(App, {
@@ -75,10 +75,10 @@ class ProfileList {}
 import { Component, signal } from '@angular/core';
 import {
   ForHoverCard,
-  ForHoverCardTrigger,
-  ForHoverCardContent,
   ForHoverCardArrow,
-} from 'forty-cdk';
+  ForHoverCardContent,
+  ForHoverCardTrigger,
+} from 'forty-cdk/hover-card';
 
 @Component({
   selector: 'demo-profile-link',

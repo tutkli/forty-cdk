@@ -49,7 +49,13 @@ Trees are recursive, and the idiomatic Angular shape is a small **recursive comp
 
 ```ts
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { ForTree, ForTreeGroup, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
+import {
+  ForTree,
+  ForTreeGroup,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+} from 'forty-cdk/tree';
 
 interface Node {
   id: string;
@@ -139,11 +145,11 @@ import {
   ForTree,
   ForTreeGroup,
   ForTreeItem,
-  ForTreeItemLabel,
-  ForTreeItemToggle,
   ForTreeItemCheckbox,
   ForTreeItemCheckboxIndicator,
-} from 'forty-cdk';
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+} from 'forty-cdk/tree';
 
 @Component({
   selector: 'app-tree-node',
@@ -272,7 +278,7 @@ forty-cdk ships no filtering machinery — matching stays consumer-owned. The li
 3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
 
 ```ts
-import { expandToReveal } from 'forty-cdk';
+import { expandToReveal } from 'forty-cdk/tree';
 
 readonly query = signal('');
 readonly filtered = computed(() => filterNodes(this.roots, this.query()));
@@ -316,7 +322,7 @@ Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and *
 ## Scope defaults
 
 ```ts
-import { provideForTreeDefaults } from 'forty-cdk';
+import { provideForTreeDefaults } from 'forty-cdk/tree';
 
 // app config or a component's providers
 providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
@@ -415,7 +421,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface TreeNode {
@@ -559,6 +565,7 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForTree,
+  type ForTreeDragDropEvent,
   ForTreeGroup,
   ForTreeItem,
   ForTreeItemLabel,
@@ -566,8 +573,7 @@ import {
   ForTreeNodeDrag,
   ForTreeNodeDragHandle,
   moveTreeNode,
-  type ForTreeDragDropEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/tree';
 
 interface Node {
   id: string;

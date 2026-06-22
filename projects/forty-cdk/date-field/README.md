@@ -53,7 +53,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDate } from '@internationalized/date';
-import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk';
+import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 
 @Component({
   selector: 'app-dob',
@@ -126,7 +126,7 @@ On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it
 ## Scope defaults
 
 ```ts
-import { provideForDateFieldDefaults } from 'forty-cdk';
+import { provideForDateFieldDefaults } from 'forty-cdk/date-field';
 
 // app config or a component's providers — localize segment labels and the
 // empty-segment announcement for every nested [forDateField].

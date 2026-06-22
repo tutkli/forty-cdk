@@ -37,13 +37,13 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 import { Component, signal } from '@angular/core';
 import {
   ForNavigationMenu,
-  ForNavigationMenuList,
-  ForNavigationMenuItem,
-  ForNavigationMenuTrigger,
   ForNavigationMenuContent,
-  ForNavigationMenuLink,
   ForNavigationMenuIndicator,
-} from 'forty-cdk';
+  ForNavigationMenuItem,
+  ForNavigationMenuLink,
+  ForNavigationMenuList,
+  ForNavigationMenuTrigger,
+} from 'forty-cdk/navigation-menu';
 
 @Component({
   selector: 'demo-nav',

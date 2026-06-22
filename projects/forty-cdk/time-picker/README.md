@@ -145,7 +145,7 @@ import {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
   ForTimePicker,
-} from 'forty-cdk';
+} from 'forty-cdk/time-picker';
 
 @Component({
   selector: '[myTimePicker]',

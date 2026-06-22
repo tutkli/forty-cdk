@@ -386,7 +386,8 @@ Apply `[forTableColumnReorder]` on the `[forTableHeaderRow]` element and add `[f
 ```
 
 ```ts
-import { ForTableColumnReorder, ForDraggable, moveItemInArray } from 'forty-cdk';
+import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForTableColumnReorder } from 'forty-cdk/table';
 ```
 
 ### Row reordering
@@ -404,7 +405,8 @@ Apply `[forTableRowReorder]` on the rowgroup element that wraps the data rows (`
 ```
 
 ```ts
-import { ForTableRowReorder, ForDraggable, moveItemInArray } from 'forty-cdk';
+import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForTableRowReorder } from 'forty-cdk/table';
 
 onRowReorder(d: TableRowReorderDescriptor): void {
   this.rows.update((r) => moveItemInArray(r, d.from, d.to));

@@ -31,10 +31,10 @@ import {
   ForDrawerClose,
   ForDrawerDescription,
   ForDrawerHandle,
+  type ForDrawerSnapPoint,
   ForDrawerTitle,
   ForDrawerTrigger,
-  type ForDrawerSnapPoint,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 @Component({
   selector: 'demo-filters',
@@ -99,7 +99,7 @@ import {
   ForDrawerRef,
   ForDrawerTitle,
   injectDrawerData,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 @Component({
   imports: [
@@ -441,7 +441,7 @@ Implements the WAI-ARIA Modal Dialog pattern. `role="dialog"` (or `"alertdialog"
 ## Defaults provider
 
 ```ts
-import { provideForDrawerDefaults } from 'forty-cdk';
+import { provideForDrawerDefaults } from 'forty-cdk/drawer';
 
 bootstrapApplication(App, {
   providers: [

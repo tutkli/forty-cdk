@@ -42,7 +42,7 @@ The `data-quality` reflection follows the HTML5 spec:
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForMeter, ForMeterIndicator } from 'forty-cdk';
+import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
 
 @Component({
   selector: 'demo-disk',

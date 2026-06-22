@@ -56,10 +56,10 @@ Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
 import { Component, signal } from '@angular/core';
 import {
   ForNumberInput,
+  ForNumberInputDecrement,
   ForNumberInputGroup,
   ForNumberInputIncrement,
-  ForNumberInputDecrement,
-} from 'forty-cdk';
+} from 'forty-cdk/number-input';
 
 @Component({
   selector: 'demo-quantity',
@@ -105,7 +105,8 @@ Drop the spinbutton inside a `[forField]` and it auto-associates with the label,
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, min, required, FormField } from '@angular/forms/signals';
-import { ForField, ForLabel, ForFieldError, ForNumberInput } from 'forty-cdk';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForNumberInput } from 'forty-cdk/number-input';
 
 @Component({
   selector: 'demo-order',

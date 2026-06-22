@@ -27,7 +27,7 @@ The host element of every piece carries `data-status="idle" \| "loading" \| "loa
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForAvatar, ForAvatarImage, ForAvatarFallback } from 'forty-cdk';
+import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
 
 @Component({
   selector: 'demo-avatar',

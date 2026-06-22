@@ -26,7 +26,7 @@ The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForProgress, ForProgressIndicator } from 'forty-cdk';
+import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
 
 @Component({
   selector: 'demo-upload',

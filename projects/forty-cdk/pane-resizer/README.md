@@ -40,7 +40,7 @@ The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks. When 
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForPaneResizer } from 'forty-cdk';
+import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
 @Component({
   selector: 'demo-split-pane',

@@ -8,15 +8,14 @@ Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org
 
 ```ts
 import { Component, signal } from '@angular/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import {
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
   ForMenuContent,
   ForMenuItem,
-  ForMenuSeparator,
   ForMenuRadioGroup,
   ForMenuRadioItem,
-} from 'forty-cdk';
+  ForMenuSeparator,
+} from 'forty-cdk/menu';
 
 @Component({
   selector: 'demo-options',

@@ -37,7 +37,7 @@ The host gets `data-empty` (while the value is `''`), `data-disabled`, and `data
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForTextarea } from 'forty-cdk';
+import { ForTextarea } from 'forty-cdk/input';
 
 @Component({
   selector: 'demo-comment',
@@ -62,7 +62,7 @@ Auto-resize is a browser-only DOM side effect, so it is inert under server-side 
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForInput, ForTextarea } from 'forty-cdk';
+import { ForInput, ForTextarea } from 'forty-cdk/input';
 
 @Component({
   selector: 'demo-profile',
@@ -87,7 +87,8 @@ Drop the control inside a `[forField]` and it auto-associates with the label, de
 import { Component, signal } from '@angular/core';
 import { form, required } from '@angular/forms/signals';
 import { FormField } from '@angular/forms/signals';
-import { ForField, ForLabel, ForFieldError, ForInput } from 'forty-cdk';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForInput } from 'forty-cdk/input';
 
 @Component({
   selector: 'demo-signup',

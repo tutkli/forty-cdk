@@ -61,7 +61,7 @@ The slot host reflects boolean `data-active` (current caret slot) and `data-empt
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
 
 @Component({
   selector: 'demo-otp',
@@ -123,7 +123,8 @@ Drop the OTP inside a `[forField]` and it auto-associates with the label, descri
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, required, FormField } from '@angular/forms/signals';
-import { ForField, ForLabel, ForFieldError, ForOtpInput, ForOtpInputSlot } from 'forty-cdk';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
 
 @Component({
   selector: 'demo-otp-field',

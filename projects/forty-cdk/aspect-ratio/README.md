@@ -20,7 +20,7 @@ No ARIA semantics. Use it to reserve space for media before it loads (preventing
 
 ```ts
 import { Component } from '@angular/core';
-import { ForAspectRatio } from 'forty-cdk';
+import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
 
 @Component({
   selector: 'demo-aspect-ratio',

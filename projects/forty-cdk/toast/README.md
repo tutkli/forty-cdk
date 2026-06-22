@@ -79,7 +79,7 @@ If two viewports share the same region, only the first one mounted renders it; t
 ## Programmatic API
 
 ```ts
-import { ForToastManager } from 'forty-cdk';
+import { ForToastManager } from 'forty-cdk/toast';
 
 @Component(/* … */)
 class SomeComponent {
@@ -359,7 +359,7 @@ Written on the `[forToast]` host while a swipe gesture is live, so the consumer 
 ## Global defaults
 
 ```ts
-import { provideForToastDefaults } from 'forty-cdk';
+import { provideForToastDefaults } from 'forty-cdk/toast';
 
 bootstrapApplication(App, {
   providers: [provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 })],

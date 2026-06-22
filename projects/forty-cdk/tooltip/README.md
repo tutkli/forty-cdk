@@ -56,7 +56,7 @@ No inputs of their own — they coordinate via the `ForTooltip` context.
 Per-instance inputs always win over the scope defaults.
 
 ```ts
-import { provideForTooltipDefaults } from 'forty-cdk';
+import { provideForTooltipDefaults } from 'forty-cdk/tooltip';
 
 // Bottom-anchored tooltips app-wide
 bootstrapApplication(App, {
@@ -75,7 +75,12 @@ class Toolbar {}
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForTooltip, ForTooltipArrow, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import {
+  ForTooltip,
+  ForTooltipArrow,
+  ForTooltipContent,
+  ForTooltipTrigger,
+} from 'forty-cdk/tooltip';
 
 @Component({
   selector: 'demo-save',
@@ -189,7 +194,7 @@ Tooltip content is template-provided and mounts via the consumer's own markup, s
 
 ```ts
 import { Component, input } from '@angular/core';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 @Component({
   selector: 'my-tooltip-button',
@@ -214,7 +219,7 @@ For programmatic control beyond hover and focus — e.g. a wrapper that drives t
 
 ```ts
 import { Component } from '@angular/core';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 @Component({
   selector: 'demo-imperative',

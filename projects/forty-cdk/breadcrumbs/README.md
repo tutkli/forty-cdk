@@ -14,7 +14,7 @@ Headless breadcrumb trail implementing the [WAI-ARIA Breadcrumb pattern](https:/
 
 ```ts
 import { Component } from '@angular/core';
-import { ForBreadcrumbs, ForBreadcrumbItem, ForBreadcrumbSeparator } from 'forty-cdk';
+import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 
 @Component({
   selector: 'demo-breadcrumbs',

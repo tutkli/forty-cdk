@@ -39,7 +39,7 @@ The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, a
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForRadioGroup, ForRadio } from 'forty-cdk';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 @Component({
   selector: 'demo-color',
@@ -63,7 +63,7 @@ export class DemoColor {
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, required } from '@angular/forms/signals';
-import { ForRadioGroup, ForRadio } from 'forty-cdk';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 @Component({
   selector: 'demo-shipping',

@@ -57,7 +57,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
-import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk';
+import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 
 @Component({
   selector: 'app-appt-time',
@@ -102,7 +102,7 @@ The hour, minute, and second clamp to their valid ranges (hour to the cycle, min
 ## Scope defaults
 
 ```ts
-import { provideForTimeFieldDefaults } from 'forty-cdk';
+import { provideForTimeFieldDefaults } from 'forty-cdk/time-field';
 
 // app config or a component's providers — localize segment labels and the
 // empty-segment announcement for every nested [forTimeField].

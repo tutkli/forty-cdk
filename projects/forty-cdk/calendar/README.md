@@ -67,7 +67,7 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
-} from 'forty-cdk';
+} from 'forty-cdk/calendar';
 
 @Component({
   selector: 'app-date',
@@ -420,7 +420,7 @@ Focus that crosses a month boundary re-pages the visible grid and keeps the focu
 ## Scope defaults
 
 ```ts
-import { provideForCalendarDefaults } from 'forty-cdk';
+import { provideForCalendarDefaults } from 'forty-cdk/calendar';
 
 // app config or a component's providers — Monday-first weeks for this scope
 providers: [provideForCalendarDefaults({ firstDayOfWeek: 1 })];

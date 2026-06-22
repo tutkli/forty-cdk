@@ -18,7 +18,7 @@ import {
   ForPopoverDescription,
   ForPopoverTitle,
   ForPopoverTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/popover';
 
 @Component({
   selector: 'demo-popover',
@@ -133,7 +133,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 Per-instance inputs always win over the scope defaults.
 
 ```ts
-import { provideForPopoverDefaults } from 'forty-cdk';
+import { provideForPopoverDefaults } from 'forty-cdk/popover';
 
 // Top-anchored popovers app-wide
 bootstrapApplication(App, {

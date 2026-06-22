@@ -49,7 +49,7 @@ If the panel is a semantic region, add `role="region"` and `aria-labelledby="...
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForDisclosure, ForDisclosureTrigger, ForDisclosureContent } from 'forty-cdk';
+import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 
 @Component({
   selector: 'demo-faq',

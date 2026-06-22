@@ -31,12 +31,12 @@ The scrollbar reflects `data-orientation`, `data-state` (`'visible'` / `'hidden'
 import { Component } from '@angular/core';
 import {
   ForScrollArea,
-  ForScrollAreaViewport,
   ForScrollAreaContent,
+  ForScrollAreaCorner,
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
-  ForScrollAreaCorner,
-} from 'forty-cdk';
+  ForScrollAreaViewport,
+} from 'forty-cdk/scroll-area';
 
 @Component({
   selector: 'demo-scroll',

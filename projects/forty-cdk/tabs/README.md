@@ -51,7 +51,7 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent } from 'forty-cdk';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 
 @Component({
   selector: 'demo-settings',

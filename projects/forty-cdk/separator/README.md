@@ -23,7 +23,7 @@ The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
 
 ```ts
 import { Component } from '@angular/core';
-import { ForSeparator } from 'forty-cdk';
+import { ForSeparator } from 'forty-cdk/separator';
 
 @Component({
   selector: 'demo-separator',

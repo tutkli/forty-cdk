@@ -18,9 +18,9 @@ import { Component, signal } from '@angular/core';
 import {
   ForPagination,
   ForPaginationItem,
-  ForPaginationPrevious,
   ForPaginationNext,
-} from 'forty-cdk';
+  ForPaginationPrevious,
+} from 'forty-cdk/pagination';
 
 @Component({
   selector: 'demo-pagination',

@@ -36,7 +36,8 @@ You render them; the field handles the ARIA. The error id is wired into `aria-er
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
-import { ForField, ForLabel, ForFieldDescription, ForFieldError, ForSwitch } from 'forty-cdk';
+import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForSwitch } from 'forty-cdk/switch';
 
 @Component({
   selector: 'demo-field',

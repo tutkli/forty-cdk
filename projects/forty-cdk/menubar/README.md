@@ -6,13 +6,8 @@ Headless implementation of the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI
 
 ```ts
 import { Component, signal } from '@angular/core';
-import {
-  ForMenubar,
-  ForMenubarTrigger,
-  ForMenuContent,
-  ForMenuItem,
-  ForMenuSeparator,
-} from 'forty-cdk';
+import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 @Component({
   selector: 'demo-menubar',

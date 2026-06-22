@@ -45,7 +45,7 @@ Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 @Component({
   selector: 'demo-fruit',
@@ -93,7 +93,8 @@ It **never reorders the options itself** (BYO-data): `(optionReorder)` emits `{ 
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForListbox, ForListboxOption, ForListboxReorder, moveItemInArray } from 'forty-cdk';
+import { moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listbox';
 
 @Component({
   selector: 'demo-sortable-tags',
@@ -167,7 +168,7 @@ The visible option label is just the rendered `textContent`, so there's no separ
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 interface City {
   id: string;
@@ -204,7 +205,7 @@ export class DemoCities {
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, required, requiredError, validate } from '@angular/forms/signals';
-import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 @Component({
   selector: 'demo-priorities',
@@ -344,7 +345,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {

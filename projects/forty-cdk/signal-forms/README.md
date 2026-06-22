@@ -13,12 +13,12 @@ import { Component, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import {
   ForSelect,
-  ForSelectTrigger,
-  ForSelectValue,
   ForSelectContent,
   ForSelectOption,
-  forSingleValueField,
-} from 'forty-cdk';
+  ForSelectTrigger,
+  ForSelectValue,
+} from 'forty-cdk/select';
+import { forSingleValueField } from 'forty-cdk/signal-forms';
 
 @Component({
   selector: 'app-country-picker',

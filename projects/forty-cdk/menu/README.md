@@ -110,7 +110,7 @@ Additive to the click / keyboard behaviour, a `[forMenuSubTrigger]` also opens i
 Tune the timings per injector scope with `provideForMenuDefaults` (applies to every submenu in the surrounding scope, across DropdownMenu / ContextMenu / Menubar):
 
 ```ts
-import { provideForMenuDefaults } from 'forty-cdk';
+import { provideForMenuDefaults } from 'forty-cdk/menu';
 
 bootstrapApplication(App, {
   providers: [provideForMenuDefaults({ subMenuOpenDelay: 150, subMenuCloseDelay: 200 })],
