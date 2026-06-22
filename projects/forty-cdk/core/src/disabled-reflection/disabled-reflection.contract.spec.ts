@@ -27,15 +27,15 @@ import { ForComboboxTrigger } from '../../../src/lib/combobox/combobox-trigger';
 import { ForDatePicker } from '../../../src/lib/date-picker/date-picker';
 import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-trigger';
 import { ForDialogTrigger } from 'forty-cdk/dialog';
-import { ForDrawerTrigger } from '../../../src/lib/drawer/drawer-trigger';
+import { ForDrawerTrigger } from 'forty-cdk/drawer';
+import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
 import { ForDropdownMenu } from '../../../src/lib/dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../../../src/lib/dropdown-menu/dropdown-menu-trigger';
 import { ForNavigationMenu } from '../../../src/lib/navigation-menu/navigation-menu';
 import { ForNavigationMenuItem } from '../../../src/lib/navigation-menu/navigation-menu-item';
 import { ForNavigationMenuList } from '../../../src/lib/navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../../../src/lib/navigation-menu/navigation-menu-trigger';
-import { ForPopover } from '../../../src/lib/popover/popover';
-import { ForPopoverTrigger } from '../../../src/lib/popover/popover-trigger';
+
 import { ForSelect } from '../../../src/lib/select/select';
 import { ForSelectTrigger } from '../../../src/lib/select/select-trigger';
 

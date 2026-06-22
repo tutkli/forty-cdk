@@ -14,10 +14,10 @@ import type {
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { afterEachOverlayCleanup } from '../../test-utils/overlay-cleanup';
-import { nextMacrotask } from '../../test-utils/flush';
-import { renderHost } from '../../test-utils/render';
-import { withReducedMotion } from '../../test-utils/reduced-motion';
+import { afterEachOverlayCleanup } from '../../src/test-utils/overlay-cleanup';
+import { nextMacrotask } from '../../src/test-utils/flush';
+import { renderHost } from '../../src/test-utils/render';
+import { withReducedMotion } from '../../src/test-utils/reduced-motion';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';

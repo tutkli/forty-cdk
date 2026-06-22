@@ -2,9 +2,10 @@ import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { ForHoverCard } from '../../../src/lib/hover-card/hover-card';
-import { ForPopover } from '../../../src/lib/popover/popover';
-import { ForTooltip } from '../../../src/lib/tooltip/tooltip';
+import { ForHoverCard } from 'forty-cdk/hover-card';
+import { ForPopover } from 'forty-cdk/popover';
+import { ForTooltip } from 'forty-cdk/tooltip';
+
 import { ANCHORED_POSITIONING_DEFAULTS } from './anchored-positioning-inputs';
 
 @Component({

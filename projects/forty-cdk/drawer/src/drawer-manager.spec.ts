@@ -1,7 +1,7 @@
 import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';

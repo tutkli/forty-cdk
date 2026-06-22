@@ -6,7 +6,7 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { ForDrawer } from './drawer';
 import type { ForDrawerCloseReason } from './drawer-context';
 

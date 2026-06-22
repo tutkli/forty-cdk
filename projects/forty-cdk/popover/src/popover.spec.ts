@@ -11,8 +11,8 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
-import { assertDismissableLayerContract } from '../../test-utils/contract';
+} from '../../src/test-utils';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';

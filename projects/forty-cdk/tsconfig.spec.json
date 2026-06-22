@@ -6,6 +6,11 @@
     "outDir": "../../out-tsc/spec",
     "types": ["vitest/globals"],
     "paths": {
+      "forty-cdk/tooltip": ["./tooltip/src/public-api.ts"],
+      "forty-cdk/drawer": ["./drawer/src/public-api.ts"],
+      "forty-cdk/popover": ["./popover/src/public-api.ts"],
+      "forty-cdk/hover-card": ["./hover-card/src/public-api.ts"],
+      "forty-cdk/toast": ["./toast/src/public-api.ts"],
       "forty-cdk/aspect-ratio": ["./aspect-ratio/src/public-api.ts"],
       "forty-cdk/avatar": ["./avatar/src/public-api.ts"],
       "forty-cdk/breadcrumbs": ["./breadcrumbs/src/public-api.ts"],
@@ -41,6 +46,11 @@
     }
   },
   "include": [
+    "tooltip/src/**/*.spec.ts",
+    "drawer/src/**/*.spec.ts",
+    "popover/src/**/*.spec.ts",
+    "hover-card/src/**/*.spec.ts",
+    "toast/src/**/*.spec.ts",
     "aspect-ratio/src/**/*.spec.ts",
     "avatar/src/**/*.spec.ts",
     "breadcrumbs/src/**/*.spec.ts",

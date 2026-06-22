@@ -82,9 +82,17 @@ import { ForDatePickerValue } from '../date-picker/date-picker-value';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForDialogBackdrop } from 'forty-cdk/dialog';
 import { ForDialogTitle } from 'forty-cdk/dialog';
-import { ForDrawer } from '../drawer/drawer';
-import { ForDrawerBackdrop } from '../drawer/drawer-backdrop';
-import { ForDrawerTitle } from '../drawer/drawer-title';
+import { ForDrawer, ForDrawerBackdrop, ForDrawerTitle } from 'forty-cdk/drawer';
+import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
+import {
+  ForPopover,
+  ForPopoverContent,
+  ForPopoverTitle,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
+import { ForToast, ForToastTitle, ForToastViewport } from 'forty-cdk/toast';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
+
 import { ForMenuContent } from '../menu/menu-content';
 import { ForMenuItem } from '../menu/menu-item';
 import { ForMenubar } from '../menubar/menubar';
@@ -95,10 +103,7 @@ import { ForNavigationMenuItem } from '../navigation-menu/navigation-menu-item';
 import { ForNavigationMenuLink } from '../navigation-menu/navigation-menu-link';
 import { ForNavigationMenuList } from '../navigation-menu/navigation-menu-list';
 import { ForNavigationMenuTrigger } from '../navigation-menu/navigation-menu-trigger';
-import { ForPopover } from '../popover/popover';
-import { ForPopoverContent } from '../popover/popover-content';
-import { ForPopoverTitle } from '../popover/popover-title';
-import { ForPopoverTrigger } from '../popover/popover-trigger';
+
 import { ForSelect } from '../select/select';
 import { ForSelectContent } from '../select/select-content';
 import { ForSelectOption } from '../select/select-option';
@@ -123,12 +128,7 @@ import { ForTimePickerContent } from '../time-picker/time-picker-content';
 import { ForTimePickerOption } from '../time-picker/time-picker-option';
 import { ForTimePickerTrigger } from '../time-picker/time-picker-trigger';
 import { ForTimePickerValue } from '../time-picker/time-picker-value';
-import { ForToast } from '../toast/toast';
-import { ForToastTitle } from '../toast/toast-title';
-import { ForToastViewport } from '../toast/toast-viewport';
-import { ForTooltip } from '../tooltip/tooltip';
-import { ForTooltipContent } from '../tooltip/tooltip-content';
-import { ForTooltipTrigger } from '../tooltip/tooltip-trigger';
+
 import { ForTree } from '../tree/tree';
 import { ForTreeGroup } from '../tree/tree-group';
 import { ForTreeItem } from '../tree/tree-item';
@@ -175,9 +175,7 @@ import { ForContextMenu } from '../context-menu/context-menu';
 import { ForContextMenuTrigger } from '../context-menu/context-menu-trigger';
 import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
 import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
-import { ForHoverCard } from '../hover-card/hover-card';
-import { ForHoverCardContent } from '../hover-card/hover-card-content';
-import { ForHoverCardTrigger } from '../hover-card/hover-card-trigger';
+
 import { ForListbox } from '../listbox/listbox';
 import { ForListboxOption } from '../listbox/listbox-option';
 import { ForListboxReorder } from '../listbox/listbox-reorder';

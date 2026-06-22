@@ -1,8 +1,8 @@
 import { Injectable, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { HoverCardCoordinator } from '../../../src/lib/hover-card/hover-card-defaults';
-import { TooltipCoordinator } from '../../../src/lib/tooltip/tooltip-defaults';
+import { HoverCardCoordinator } from '../../../hover-card/src/hover-card-defaults';
+import { TooltipCoordinator } from '../../../tooltip/src/tooltip-defaults';
 import { SkipDelayCoordinator } from './skip-delay-coordinator';
 
 @Injectable()

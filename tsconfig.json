@@ -5,6 +5,23 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "forty-cdk/tooltip": [
+        "./dist/forty-cdk/tooltip",
+        "./projects/forty-cdk/tooltip/src/public-api.ts"
+      ],
+      "forty-cdk/drawer": [
+        "./dist/forty-cdk/drawer",
+        "./projects/forty-cdk/drawer/src/public-api.ts"
+      ],
+      "forty-cdk/popover": [
+        "./dist/forty-cdk/popover",
+        "./projects/forty-cdk/popover/src/public-api.ts"
+      ],
+      "forty-cdk/hover-card": [
+        "./dist/forty-cdk/hover-card",
+        "./projects/forty-cdk/hover-card/src/public-api.ts"
+      ],
+      "forty-cdk/toast": ["./dist/forty-cdk/toast", "./projects/forty-cdk/toast/src/public-api.ts"],
       "forty-cdk/aspect-ratio": [
         "./dist/forty-cdk/aspect-ratio",
         "./projects/forty-cdk/aspect-ratio/src/public-api.ts"

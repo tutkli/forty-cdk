@@ -14,8 +14,8 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
-import { assertDismissableLayerContract } from '../../test-utils/contract';
+} from '../../src/test-utils';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';

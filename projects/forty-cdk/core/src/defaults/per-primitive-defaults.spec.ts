@@ -45,7 +45,7 @@ import {
   FOR_HOVER_CARD_DEFAULTS,
   FOR_HOVER_CARD_FALLBACK_DEFAULTS,
   provideForHoverCardDefaults,
-} from '../../../src/lib/hover-card/hover-card-defaults';
+} from '../../../hover-card/src/hover-card-defaults';
 import {
   FOR_LISTBOX_DEFAULTS,
   FOR_LISTBOX_FALLBACK_DEFAULTS,
@@ -75,7 +75,7 @@ import {
   FOR_POPOVER_DEFAULTS,
   FOR_POPOVER_FALLBACK_DEFAULTS,
   provideForPopoverDefaults,
-} from '../../../src/lib/popover/popover-defaults';
+} from '../../../popover/src/popover-defaults';
 import {
   FOR_PROGRESS_DEFAULTS,
   FOR_PROGRESS_FALLBACK_DEFAULTS,
@@ -120,7 +120,7 @@ import {
   FOR_TOOLTIP_DEFAULTS,
   FOR_TOOLTIP_FALLBACK_DEFAULTS,
   provideForTooltipDefaults,
-} from '../../../src/lib/tooltip/tooltip-defaults';
+} from '../../../tooltip/src/tooltip-defaults';
 import {
   FOR_TIME_PICKER_DEFAULTS,
   FOR_TIME_PICKER_FALLBACK_DEFAULTS,

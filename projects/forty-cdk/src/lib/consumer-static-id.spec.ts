@@ -32,7 +32,16 @@ import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialo
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
-import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from './drawer';
+import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from 'forty-cdk/drawer';
+import {
+  ForPopover,
+  ForPopoverContent,
+  ForPopoverDescription,
+  ForPopoverTitle,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
+import { ForToast, ForToastDescription, ForToastTitle } from 'forty-cdk/toast';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from './dropdown-menu';
 import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
 import {
@@ -51,13 +60,7 @@ import {
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
 } from './navigation-menu';
-import {
-  ForPopover,
-  ForPopoverContent,
-  ForPopoverDescription,
-  ForPopoverTitle,
-  ForPopoverTrigger,
-} from './popover';
+
 import {
   ForSelect,
   ForSelectContent,
@@ -73,8 +76,7 @@ import {
   ForStepperList,
   ForStepperTrigger,
 } from './stepper';
-import { ForToast, ForToastDescription, ForToastTitle } from './toast';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from './tooltip';
+
 import { ForTree, ForTreeItem, ForTreeItemLabel } from './tree';
 
 /**

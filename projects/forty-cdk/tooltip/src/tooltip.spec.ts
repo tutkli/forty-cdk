@@ -10,7 +10,7 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';

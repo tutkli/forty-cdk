@@ -10,7 +10,7 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';

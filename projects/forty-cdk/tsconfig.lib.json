@@ -9,6 +9,11 @@
     "types": []
   },
   "include": [
+    "tooltip/src/**/*.ts",
+    "drawer/src/**/*.ts",
+    "popover/src/**/*.ts",
+    "hover-card/src/**/*.ts",
+    "toast/src/**/*.ts",
     "aspect-ratio/src/**/*.ts",
     "avatar/src/**/*.ts",
     "breadcrumbs/src/**/*.ts",
