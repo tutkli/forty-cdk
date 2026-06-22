@@ -225,9 +225,9 @@ scope. `[animateReorder]` (FLIP) reflows by DOM order and needs no change in mix
 
 `[forFreeDrag]` repositions its host element (or a resolved `rootElement`) by pointer drag, with
 **no `[forDropList]` required** — it never commits a reorder, it just moves the element around via a
-CSS `transform: translate(...)`. It is the standalone counterpart to a sortable list item, mirroring
-Angular CDK's free-drag `cdkDrag` (+ `cdkDragRootElement` / `cdkDragBoundary` / `cdkDragLockAxis` /
-`cdkDragFreeDragPosition`).
+CSS `transform: translate(...)`. It is the standalone counterpart to a sortable list item: a
+pointer-driven way to move an element freely, with optional root-element retargeting, a confinement
+boundary, axis locking, and a controllable position (see the inputs below).
 
 ```html
 <!-- move the whole dialog by its header -->
@@ -261,7 +261,7 @@ Angular CDK's free-drag `cdkDrag` (+ `cdkDragRootElement` / `cdkDragBoundary` / 
 handle is present, a pointer drag may only start from within a handle.
 
 **Accessibility.** Free-drag is **pointer-only** — there is no WAI-ARIA pattern for "reposition an
-element", so it owns no role or ARIA state (matching CDK's `cdkDrag`). The consumer is responsible
+element", so it owns no role or ARIA state. The consumer is responsible
 for keeping the moved element fully usable at its default position (e.g. a repositionable dialog must
 still be operable by keyboard); dragging is a pointer convenience, not the only way to use it.
 
