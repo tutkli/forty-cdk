@@ -20,12 +20,12 @@ Import the pieces you use. Standalone directives, no `NgModule`:
 ```ts
 import {
   ForPopover,
-  ForPopoverContent,
-  ForPopoverTrigger,
-  ForPopoverTitle,
-  ForPopoverDescription,
   ForPopoverClose,
-} from 'forty-cdk';
+  ForPopoverContent,
+  ForPopoverDescription,
+  ForPopoverTitle,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
 ```
 
 ---
@@ -190,12 +190,12 @@ The complete template at this point:
 import { Component } from '@angular/core';
 import {
   ForPopover,
-  ForPopoverContent,
-  ForPopoverTrigger,
-  ForPopoverTitle,
-  ForPopoverDescription,
   ForPopoverClose,
-} from 'forty-cdk';
+  ForPopoverContent,
+  ForPopoverDescription,
+  ForPopoverTitle,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
 
 @Component({
   selector: 'app-settings',

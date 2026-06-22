@@ -8,11 +8,13 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
+} from 'forty-cdk/calendar';
+import {
   ForDatePicker,
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
-} from 'forty-cdk';
+} from 'forty-cdk/date-picker';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 import { DemoLayout } from '../../../ui/demo-layout';

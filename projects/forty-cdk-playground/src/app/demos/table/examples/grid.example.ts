@@ -5,7 +5,7 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

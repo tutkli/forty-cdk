@@ -4,7 +4,7 @@ import {
   ForHoverCardArrow,
   ForHoverCardContent,
   ForHoverCardTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/hover-card';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

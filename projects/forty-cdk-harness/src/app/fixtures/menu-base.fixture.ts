@@ -1,12 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
-  ForMenuContent,
-  ForMenuItem,
-  ForMenuSeparator,
-} from 'forty-cdk';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 
 /**
  * Default item set for the base-Menu fixture. Hand-picked so typeahead has

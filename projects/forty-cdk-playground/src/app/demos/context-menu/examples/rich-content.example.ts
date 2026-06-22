@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import {
-  ForContextMenu,
-  ForContextMenuTrigger,
   ForMenuCheckboxItem,
   ForMenuContent,
   ForMenuGroup,
@@ -13,7 +12,7 @@ import {
   ForMenuSeparator,
   ForMenuSub,
   ForMenuSubTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/menu';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

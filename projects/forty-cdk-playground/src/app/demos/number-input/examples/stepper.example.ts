@@ -4,7 +4,7 @@ import {
   ForNumberInputDecrement,
   ForNumberInputGroup,
   ForNumberInputIncrement,
-} from 'forty-cdk';
+} from 'forty-cdk/number-input';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

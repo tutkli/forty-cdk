@@ -6,7 +6,7 @@ import {
   type ForDrawerSnapPoint,
   ForDrawerTitle,
   ForDrawerTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/drawer';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

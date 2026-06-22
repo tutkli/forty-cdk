@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForSearch, ForSearchClear } from 'forty-cdk';
+import { ForSearch, ForSearchClear } from 'forty-cdk/search';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

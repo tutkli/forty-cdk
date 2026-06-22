@@ -1,9 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { ForDragPlaceholder, ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import {
-  ForDraggable,
-  ForDragPlaceholder,
   ForTable,
   ForTableCell,
   ForTableColumnReorder,
@@ -11,10 +10,9 @@ import {
   ForTableHeaderRow,
   ForTableRow,
   ForTableRowReorder,
-  moveItemInArray,
   type TableColumnReorderDescriptor,
   type TableRowReorderDescriptor,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 interface Row {
   id: number;

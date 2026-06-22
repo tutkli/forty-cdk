@@ -5,7 +5,7 @@ import {
   ForDateFieldLiteral,
   ForDateFieldSegment,
   provideForDateFieldDefaults,
-} from 'forty-cdk';
+} from 'forty-cdk/date-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 import { DemoLayout } from '../../../ui/demo-layout';

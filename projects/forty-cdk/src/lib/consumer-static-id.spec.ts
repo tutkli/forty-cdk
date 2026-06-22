@@ -15,9 +15,16 @@ import {
   ForAccordionContent,
   ForAccordionItem,
   ForAccordionTrigger,
-} from './accordion';
-import { ForCalendar, ForCalendarCell, ForCalendarGrid, ForCalendarHeading } from './calendar';
-import { provideNativeDateAdapter } from './calendar/native-date-adapter';
+} from 'forty-cdk/accordion';
+import {
+  ForCalendar,
+  ForCalendarCell,
+  ForCalendarGrid,
+  ForCalendarHeading,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
+
 import {
   ForCombobox,
   ForComboboxContent,
@@ -26,37 +33,13 @@ import {
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
-} from './combobox';
-import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from './date-picker';
-import { ForDialog, ForDialogDescription, ForDialogTitle } from './dialog';
-import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from './disclosure';
-import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from './drawer';
-import { ForDropdownMenu, ForDropdownMenuTrigger } from './dropdown-menu';
-import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
+} from 'forty-cdk/combobox';
 import {
-  ForMenuContent,
-  ForMenuGroup,
-  ForMenuGroupLabel,
-  ForMenuItem,
-  ForMenuSub,
-  ForMenuSubTrigger,
-} from './menu';
-import { ForMenubar, ForMenubarTrigger } from './menubar';
-import {
-  ForNavigationMenu,
-  ForNavigationMenuContent,
-  ForNavigationMenuItem,
-  ForNavigationMenuList,
-  ForNavigationMenuTrigger,
-} from './navigation-menu';
-import {
-  ForPopover,
-  ForPopoverContent,
-  ForPopoverDescription,
-  ForPopoverTitle,
-  ForPopoverTrigger,
-} from './popover';
-import { ForRadio, ForRadioGroup } from './radio-group';
+  ForListbox,
+  ForListboxGroup,
+  ForListboxGroupLabel,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
 import {
   ForSelect,
   ForSelectContent,
@@ -64,18 +47,48 @@ import {
   ForSelectGroupLabel,
   ForSelectOption,
   ForSelectTrigger,
-} from './select';
+} from 'forty-cdk/select';
+
+import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
+import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
+import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from 'forty-cdk/drawer';
+import {
+  ForPopover,
+  ForPopoverContent,
+  ForPopoverDescription,
+  ForPopoverTitle,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
+import { ForToast, ForToastDescription, ForToastTitle } from 'forty-cdk/toast';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import {
+  ForMenuContent,
+  ForMenuGroup,
+  ForMenuGroupLabel,
+  ForMenuItem,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
+import {
+  ForNavigationMenu,
+  ForNavigationMenuContent,
+  ForNavigationMenuItem,
+  ForNavigationMenuList,
+  ForNavigationMenuTrigger,
+} from 'forty-cdk/navigation-menu';
+
 import {
   ForStepper,
   ForStepperContent,
   ForStepperItem,
   ForStepperList,
   ForStepperTrigger,
-} from './stepper';
-import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from './tabs';
-import { ForToast, ForToastDescription, ForToastTitle } from './toast';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from './tooltip';
-import { ForTree, ForTreeItem, ForTreeItemLabel } from './tree';
+} from 'forty-cdk/stepper';
+import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
 
 /**
  * Library-wide contract for #659: every piece that host-binds `[id]` for aria

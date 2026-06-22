@@ -6,9 +6,9 @@ import {
   ForScrollAreaCorner,
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
-  ForScrollAreaViewport,
   type ForScrollAreaType,
-} from 'forty-cdk';
+  ForScrollAreaViewport,
+} from 'forty-cdk/scroll-area';
 
 /**
  * Fixture for the synthetic-scrollbar math that Vitest can't exercise — jsdom

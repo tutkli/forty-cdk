@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, type Signal } from '@angular/core';
-import { injectBreakpoints } from 'forty-cdk';
+import { injectBreakpoints } from 'forty-cdk/breakpoints';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

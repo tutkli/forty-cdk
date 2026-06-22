@@ -25,7 +25,7 @@ import {
   FOR_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_INPUT_HOST_DIRECTIVE_OUTPUTS,
   ForInput,
-} from 'forty-cdk';
+} from 'forty-cdk/input';
 
 @Component({
   selector: 'input[mtxInput]',
@@ -76,7 +76,7 @@ import {
   FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
   FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
   ForListbox,
-} from 'forty-cdk';
+} from 'forty-cdk/listbox';
 
 @Component({
   selector: 'ul[mtxListbox]',
@@ -125,7 +125,7 @@ working with no re-exposed names to maintain:
 
 ```ts
 import { Directive } from '@angular/core';
-import { ForInput } from 'forty-cdk';
+import { ForInput } from 'forty-cdk/input';
 
 @Directive({
   selector: 'input[mtxInput]',
@@ -145,7 +145,7 @@ orphan error. The subclass must re-provide the token, pointing `useExisting` at 
 
 ```ts
 import { Directive } from '@angular/core';
-import { FOR_LISTBOX_CONTEXT, ForListbox } from 'forty-cdk';
+import { FOR_LISTBOX_CONTEXT, ForListbox } from 'forty-cdk/listbox';
 
 @Directive({
   selector: 'ul[mtxListbox]',
@@ -169,7 +169,7 @@ its indicator needs the same one-line re-provide, pointing `useExisting` at the 
 
 ```ts
 import { Directive } from '@angular/core';
-import { FOR_SELECT_OPTION, ForSelectOption } from 'forty-cdk';
+import { FOR_SELECT_OPTION, ForSelectOption } from 'forty-cdk/select';
 
 @Directive({
   selector: 'button[mtxSelectOption]',
@@ -205,7 +205,8 @@ finds no time source and the time component is silently dropped:
 
 ```ts
 import { Directive } from '@angular/core';
-import { FOR_TIME_VALUE_SOURCE, ForTimeField } from 'forty-cdk';
+import { FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
+import { ForTimeField } from 'forty-cdk/time-field';
 
 @Directive({
   selector: '[mtxTimeField]',
@@ -275,7 +276,8 @@ it — exactly the glue `[formField]` exists to delete), use the `forSingleValue
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
-import { ForSelect, forSingleValueField } from 'forty-cdk';
+import { ForSelect } from 'forty-cdk/select';
+import { forSingleValueField } from 'forty-cdk/signal-forms';
 
 @Component({
   selector: 'app-country-picker',

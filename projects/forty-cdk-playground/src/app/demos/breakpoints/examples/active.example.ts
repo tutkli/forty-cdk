@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { breakpointsTailwind, injectBreakpoints } from 'forty-cdk';
+import { breakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

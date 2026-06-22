@@ -10,7 +10,7 @@ import {
   ForComboboxIndicator,
   ForComboboxInput,
   ForComboboxOption,
-} from 'forty-cdk';
+} from 'forty-cdk/combobox';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

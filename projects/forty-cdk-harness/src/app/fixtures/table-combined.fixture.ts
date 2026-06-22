@@ -8,8 +8,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { ForDraggable } from 'forty-cdk/drag-drop';
 import {
-  ForDraggable,
   ForTable,
   ForTableCell,
   ForTableColumnReorder,
@@ -24,7 +24,7 @@ import {
   type TableSelectionMode,
   type TableSortDescriptor,
   type TableSortDirection,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 const ROW_HEIGHT = 44;

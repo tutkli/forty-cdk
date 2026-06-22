@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTextarea } from 'forty-cdk';
+import { ForTextarea } from 'forty-cdk/input';
 import { queryFlag } from './_query-flag';
 
 @Component({

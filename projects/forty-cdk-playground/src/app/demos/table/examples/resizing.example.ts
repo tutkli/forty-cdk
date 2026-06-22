@@ -6,7 +6,7 @@ import {
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { PEOPLE } from './people';

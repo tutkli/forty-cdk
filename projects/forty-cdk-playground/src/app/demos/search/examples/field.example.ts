@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, minLength, required } from '@angular/forms/signals';
-import { ForField, ForFieldError, ForLabel, ForSearch, ForSearchClear } from 'forty-cdk';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForSearch, ForSearchClear } from 'forty-cdk/search';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

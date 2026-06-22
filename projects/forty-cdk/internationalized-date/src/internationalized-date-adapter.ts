@@ -1,7 +1,7 @@
 import { Injectable, type Provider } from '@angular/core';
 import { CalendarDate, getLocalTimeZone, isSameDay, today } from '@internationalized/date';
 
-import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk';
+import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
 /**
  * {@link DateAdapter} over `@internationalized/date`'s immutable `CalendarDate`.

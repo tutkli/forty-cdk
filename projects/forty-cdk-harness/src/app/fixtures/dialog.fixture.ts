@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { type VetoableEvent } from 'forty-cdk/core';
 import {
   ForDialog,
   ForDialogClose,
   type ForDialogCloseReason,
   ForDialogTrigger,
-  type VetoableEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
 import { queryFlag } from './_query-flag';
 
 @Component({

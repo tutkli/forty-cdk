@@ -7,11 +7,9 @@ import {
   minLength,
   required,
 } from '@angular/forms/signals';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForInput } from 'forty-cdk/input';
 import {
-  ForField,
-  ForFieldError,
-  ForInput,
-  ForLabel,
   ForStepper,
   ForStepperCompletedContent,
   ForStepperContent,
@@ -22,7 +20,7 @@ import {
   ForStepperPrevious,
   ForStepperSeparator,
   ForStepperTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/stepper';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

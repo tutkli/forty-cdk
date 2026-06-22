@@ -6,22 +6,44 @@ import {
   FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS,
   FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS,
   ForCheckbox,
-} from './checkbox';
+} from 'forty-cdk/checkbox';
 import {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
   ForCombobox,
-} from './combobox';
+} from 'forty-cdk/combobox';
+import {
+  FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
+  ForListbox,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
+import {
+  FOR_SELECT_HOST_DIRECTIVE_INPUTS,
+  FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+  ForSelect,
+} from 'forty-cdk/select';
 import {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
   ForDateField,
-} from './date-field';
+} from 'forty-cdk/date-field';
 import {
   FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
   ForDatePicker,
-} from './date-picker';
+} from 'forty-cdk/date-picker';
+import {
+  FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForTimeField,
+} from 'forty-cdk/time-field';
+import {
+  FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
+  ForTimePicker,
+} from 'forty-cdk/time-picker';
+
 import {
   FOR_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_INPUT_HOST_DIRECTIVE_OUTPUTS,
@@ -29,53 +51,35 @@ import {
   FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS,
   ForInput,
   ForTextarea,
-} from './input';
-import {
-  FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
-  FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
-  ForListbox,
-  ForListboxOption,
-} from './listbox';
+} from 'forty-cdk/input';
+
 import {
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS,
   ForNumberInput,
-} from './number-input';
+} from 'forty-cdk/number-input';
 import {
   FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS,
   ForOtpInput,
-} from './otp-input';
+} from 'forty-cdk/otp-input';
 import {
   FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,
   ForRadioGroup,
-} from './radio-group';
-import {
-  FOR_SELECT_HOST_DIRECTIVE_INPUTS,
-  FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
-  ForSelect,
-} from './select';
+} from 'forty-cdk/radio-group';
+
 import {
   FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
   FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS,
   ForSlider,
-} from './slider';
+} from 'forty-cdk/slider';
 import {
   FOR_SWITCH_HOST_DIRECTIVE_INPUTS,
   FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS,
   ForSwitch,
-} from './switch';
-import {
-  FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
-  FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
-  ForTimeField,
-} from './time-field';
-import {
-  FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
-  FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
-  ForTimePicker,
-} from './time-picker';
+} from 'forty-cdk/switch';
+
 import {
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS,
@@ -83,7 +87,7 @@ import {
   FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS,
   ForToggle,
   ForToggleGroup,
-} from './toggle';
+} from 'forty-cdk/toggle';
 
 interface DirectiveDefLike {
   readonly inputs: Readonly<Record<string, unknown>>;

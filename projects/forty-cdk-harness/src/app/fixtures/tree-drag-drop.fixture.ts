@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import {
   ForTree,
+  type ForTreeDragDropEvent,
   ForTreeGroup,
   ForTreeItem,
   ForTreeItemLabel,
@@ -8,8 +9,7 @@ import {
   ForTreeNodeDrag,
   ForTreeNodeDragHandle,
   moveTreeNode,
-  type ForTreeDragDropEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/tree';
 
 interface FileNode {
   id: string;

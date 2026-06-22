@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk';
+import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 
 /**
  * Fixture for the pointer / drag math that Vitest can't cover (jsdom returns

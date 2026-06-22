@@ -5,7 +5,7 @@ import {
   ForTreeItemLabel,
   ForTreeItemToggle,
   ForTreeNodeDragHandle,
-} from 'forty-cdk';
+} from 'forty-cdk/tree';
 
 import { Icon } from '../../../ui/icon';
 import { type TreeNodeData } from './tree-node';

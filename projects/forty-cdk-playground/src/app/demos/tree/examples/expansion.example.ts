@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTree } from 'forty-cdk';
+import { ForTree } from 'forty-cdk/tree';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { collectParentIds, type TreeNodeData, TreeNode } from './tree-node';

@@ -1,0 +1,340 @@
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+
+import {
+  registerHandle,
+  hostId,
+  resolveListNavigation,
+  resolveTreeExpandCollapse,
+} from 'forty-cdk/core';
+import {
+  FOR_TREE_ITEM_CONTEXT,
+  type ForTreeContainerContext,
+  type ForTreeItemContext,
+  type ForTreeItemHandle,
+  injectTreeContainerContext,
+  injectTreeContext,
+} from './tree-context';
+import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
+
+/**
+ * A single node in a `ForTree`. Carries the `role="treeitem"`, its ARIA state
+ * (`aria-expanded` only when a `[forTreeItemToggle]` is registered, plus
+ * `aria-selected` / `aria-level` / `aria-setsize` / `aria-posinset`), the
+ * roving tab stop, and the full keyboard interaction.
+ *
+ * Apply on the structural element (typically `<li forTreeItem>`); place a
+ * `[forTreeItemLabel]` inside as the pointer target and a `[forTreeGroup]`
+ * (behind `@if`) for children.
+ */
+@Directive({
+  selector: '[forTreeItem]',
+  exportAs: 'forTreeItem',
+  host: {
+    role: 'treeitem',
+    '[id]': 'id()',
+    '[attr.aria-expanded]': 'expandable() ? (expanded() ? "true" : "false") : null',
+    '[attr.aria-checked]': 'checkboxMode() ? checkState() : null',
+    '[attr.aria-selected]': 'checkboxMode() ? null : (selected() ? "true" : "false")',
+    '[attr.aria-level]': 'level()',
+    '[attr.aria-setsize]': 'setsize()',
+    '[attr.aria-posinset]': 'posinset()',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
+    '[attr.tabindex]': 'tabindex()',
+    '[attr.data-state]': 'expandable() ? (expanded() ? "open" : "closed") : null',
+    '[attr.data-selected]': 'selected() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-checked]': 'checkboxMode() ? checkState() : null',
+    '[attr.data-drop-position]': '_dropPosition()',
+    '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'onFocus()',
+    '(pointerdown)': 'onPointerDown($event)',
+  },
+  providers: [{ provide: FOR_TREE_ITEM_CONTEXT, useExisting: ForTreeItem }],
+})
+export class ForTreeItem implements ForTreeItemContext {
+  readonly #tree = injectTreeContext('ForTreeItem');
+  readonly #container = injectTreeContainerContext('ForTreeItem');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #drag = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
+
+  /** Stable identifier for this node, mirrored into `[(value)]` / `[(expanded)]`. */
+  readonly value = input.required<string>();
+
+  /** Disables this node: not selectable, skipped by keyboard navigation. */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * Typeahead text source override. Falls back to the `[forTreeItemLabel]`
+   * element's text content when empty (default).
+   */
+  readonly textValue = input<string>('');
+
+  /**
+   * Virtualized path: zero-based absolute index in the flattened visible-node list.
+   * Leave unset (default `null`) outside the virtualized path.
+   */
+  readonly itemIndex = input<number | null>(null);
+
+  /**
+   * Virtualized path: tree depth of this node (1-based, matching `aria-level`).
+   * When set, overrides the container-derived level in the virtualized path.
+   * Leave unset outside the virtualized path.
+   */
+  readonly _levelInput = input<number | null>(null, { alias: 'level' });
+
+  /**
+   * Virtualized path: total number of siblings at this node's level (matching
+   * `aria-setsize`). When set, overrides the container-derived setsize in the
+   * virtualized path. Leave unset outside the virtualized path.
+   */
+  readonly _setSizeInput = input<number | null>(null, { alias: 'setSize' });
+
+  /**
+   * Virtualized path: 1-based position among siblings at this node's level
+   * (matching `aria-posinset`). When set, overrides the container-derived
+   * posinset in the virtualized path. Leave unset outside the virtualized path.
+   */
+  readonly _posInSetInput = input<number | null>(null, { alias: 'posInSet' });
+
+  readonly #toggleCount = signal(0);
+  readonly #childContainer = signal<ForTreeContainerContext | null>(null);
+  readonly #labelEl = signal<HTMLElement | null>(null);
+
+  readonly id = hostId('for-tree-item');
+
+  readonly #virtualized = computed(() => this.#tree.totalCount() !== undefined);
+
+  /** True once a `[forTreeItemToggle]` registers, marking the node a parent (D4). */
+  readonly expandable = computed(() => this.#toggleCount() > 0);
+  readonly expanded = computed(() => this.#tree.isExpanded(this.value()));
+  readonly selected = computed(() => this.#tree.isSelected(this.value()));
+  /** True when the root tree is in `'checkbox'` selection mode. */
+  readonly checkboxMode = computed(() => this.#tree.selectionMode() === 'checkbox');
+  /**
+   * Tri-state checkbox status of this node — `'true'` / `'false'`, or `'mixed'`
+   * when cascade is on and only some descendants are checked. Drives the
+   * checkbox anatomy; meaningful only in `selectionMode="checkbox"`.
+   */
+  readonly checkState = computed(() => this.#tree.checkState(this.value()));
+
+  /**
+   * True when this node is the current keyboard-focused / active candidate.
+   * In the roving-tabindex path tracks DOM focus; in the virtualized
+   * activedescendant path tracks `aria-activedescendant`. Reflected as
+   * `data-highlighted`.
+   */
+  readonly highlighted = computed(() => {
+    const activeId = this.#tree.activeDescendantId();
+    if (activeId !== null) return activeId === this.id();
+    return this.#tree.roving.active() === this.#host.nativeElement;
+  });
+  readonly effectiveDisabled = computed(() => this.disabled() || this.#tree.disabled());
+
+  /**
+   * Drop-indicator hook for `[forTreeNodeDrag]`: `'before'` / `'after'` when a live drag would
+   * land adjacent to this row, `null` otherwise (and always `null` without a drag coordinator).
+   * Reflected as `data-drop-position`.
+   */
+  protected readonly _dropPosition = computed<'before' | 'after' | null>(() => {
+    const indicator = this.#drag?.dropIndicator();
+    if (!indicator || indicator.anchor !== this.value()) {
+      return null;
+    }
+    return indicator.position;
+  });
+
+  readonly level = computed(() =>
+    this.#virtualized() ? (this._levelInput() ?? this.#container.level()) : this.#container.level(),
+  );
+  readonly posinset = computed(() =>
+    this.#virtualized()
+      ? (this._posInSetInput() ?? this.#container.indexOfHost(this.#host.nativeElement) + 1)
+      : this.#container.indexOfHost(this.#host.nativeElement) + 1,
+  );
+  readonly setsize = computed(() =>
+    this.#virtualized()
+      ? (this._setSizeInput() ?? this.#container.items().length)
+      : this.#container.items().length,
+  );
+
+  protected readonly tabindex = computed<-1 | 0>(() => {
+    if (this.effectiveDisabled()) {
+      return -1;
+    }
+    if (this.#virtualized()) {
+      return -1;
+    }
+    if (this.#tree.roving.hasActive()) {
+      return this.#tree.roving.tabindexFor(this.#host.nativeElement);
+    }
+    if (this.selected()) {
+      return 0;
+    }
+    if (this.#tree.value().length > 0) {
+      return -1;
+    }
+    return this.#tree.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+  });
+
+  constructor() {
+    const handle: ForTreeItemHandle = {
+      host: this.#host.nativeElement,
+      value: this.value,
+      disabled: this.effectiveDisabled,
+      expandable: this.expandable,
+      childContainer: this.#childContainer.asReadonly(),
+      textValue: this.textValue,
+      labelEl: this.#labelEl.asReadonly(),
+      id: this.id,
+      itemIndex: this.itemIndex,
+      level: this.level,
+    };
+    registerHandle(
+      handle,
+      (h) => this.#container.registerItem(h),
+      (h) => this.#container.unregisterItem(h),
+      'afterNextRender',
+    );
+  }
+
+  registerToggle(): () => void {
+    this.#toggleCount.update((n) => n + 1);
+    return () => this.#toggleCount.update((n) => n - 1);
+  }
+
+  setChildContainer(container: ForTreeContainerContext | null): void {
+    this.#childContainer.set(container);
+  }
+
+  setLabel(el: HTMLElement | null): void {
+    this.#labelEl.set(el);
+  }
+
+  toggle(): void {
+    if (!this.expandable() || this.effectiveDisabled()) {
+      return;
+    }
+    this.#tree.setExpanded(this.value(), !this.expanded());
+  }
+
+  select(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#tree.select(this.value());
+  }
+
+  focusItem(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    if (this.#virtualized()) {
+      this.#tree.notifyItemClick(this.id());
+      return;
+    }
+    this.#tree.roving.focusActive(this.#host.nativeElement);
+  }
+
+  protected onFocus(): void {
+    if (this.effectiveDisabled() || this.#virtualized()) {
+      return;
+    }
+    this.#tree.roving.setActive(this.#host.nativeElement);
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (!this.#virtualized()) return;
+    event.preventDefault();
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    const host = this.#host.nativeElement;
+    // Tree items nest, so a keydown on a descendant bubbles through every
+    // ancestor treeitem. Only the focused item (the event target) acts.
+    if (event.target !== host || this.effectiveDisabled()) {
+      return;
+    }
+    const tree = this.#tree;
+
+    if (tree.multiple()) {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        !event.altKey &&
+        (event.key === 'a' || event.key === 'A')
+      ) {
+        event.preventDefault();
+        tree.selectAll();
+        return;
+      }
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const action = resolveListNavigation(event, {
+          orientation: tree.orientation(),
+          dir: tree.dir(),
+        });
+        if (action === 'next' || action === 'prev') {
+          event.preventDefault();
+          tree.extendByArrow(host, action);
+          return;
+        }
+        if (event.key === ' ' || event.key === 'Spacebar') {
+          event.preventDefault();
+          tree.selectRangeToFocused(host);
+          return;
+        }
+      }
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      tree.select(this.value());
+      return;
+    }
+    if (event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      tree.select(this.value());
+      return;
+    }
+    if (event.key === '*') {
+      event.preventDefault();
+      tree.expandSiblings(host);
+      return;
+    }
+
+    const action = resolveListNavigation(event, {
+      orientation: tree.orientation(),
+      dir: tree.dir(),
+    });
+    if (action) {
+      event.preventDefault();
+      tree.navigate(host, action);
+      return;
+    }
+
+    const intent = resolveTreeExpandCollapse(event, {
+      orientation: tree.orientation(),
+      dir: tree.dir(),
+    });
+    if (intent === 'expand') {
+      event.preventDefault();
+      tree.expandOrEnter(host);
+      return;
+    }
+    if (intent === 'collapse') {
+      event.preventDefault();
+      tree.collapseOrLeave(host);
+      return;
+    }
+
+    tree.handleTypeahead(event);
+  }
+}

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForRadio, ForRadioGroup } from 'forty-cdk';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 /**
  * Fixture for the WAI-ARIA Radio Group focus / keyboard contract that jsdom

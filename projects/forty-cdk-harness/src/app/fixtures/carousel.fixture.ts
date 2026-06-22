@@ -11,7 +11,7 @@ import {
   ForCarouselSlide,
   ForCarouselTrack,
   ForCarouselViewport,
-} from 'forty-cdk';
+} from 'forty-cdk/carousel';
 
 /**
  * Carousel harness fixture — exercises the WAI-ARIA Carousel keyboard journey

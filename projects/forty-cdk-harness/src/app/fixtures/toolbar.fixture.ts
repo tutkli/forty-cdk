@@ -1,12 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {
-  ForToggleGroup,
-  ForToggleGroupItem,
-  ForToolbar,
-  ForToolbarButton,
-  ForToolbarSeparator,
-} from 'forty-cdk';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
+import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/toolbar';
 
 /**
  * Fixture for the real-browser keyboard contract of `[forToolbar]`:

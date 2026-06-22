@@ -10,7 +10,7 @@ import {
   ForStepperPrevious,
   ForStepperSeparator,
   ForStepperTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/stepper';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { ForDragHandle, ForFreeDrag } from 'forty-cdk';
+import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
 
 @Component({
   selector: 'app-free-drag-fixture',

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk';
+import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { queryFlag } from './_query-flag';
 
 @Component({

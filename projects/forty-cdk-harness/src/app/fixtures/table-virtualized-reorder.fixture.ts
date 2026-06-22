@@ -6,17 +6,16 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import {
-  ForDraggable,
   ForTable,
   ForTableCell,
   ForTableHeaderCell,
   ForTableHeaderRow,
   ForTableRow,
   ForTableRowReorder,
-  moveItemInArray,
   type TableRowReorderDescriptor,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 const ROW_COUNT = 10_000;

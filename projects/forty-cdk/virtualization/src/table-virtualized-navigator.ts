@@ -1,6 +1,6 @@
 import { signal, type Signal } from '@angular/core';
 
-import type { ForTableRowHandle } from 'forty-cdk';
+import { type ForTableRowHandle } from 'forty-cdk/table';
 
 /** An absolute (rowIndex, 0-based column) target awaiting the row to mount. */
 interface PendingTarget {

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { email, form, FormField, required } from '@angular/forms/signals';
-import { ForField, ForFieldError, ForInput, ForLabel } from 'forty-cdk';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForInput } from 'forty-cdk/input';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

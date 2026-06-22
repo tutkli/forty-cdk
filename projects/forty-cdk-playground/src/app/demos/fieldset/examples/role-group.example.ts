@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ForField, ForFieldset, ForFieldsetLegend, ForInput, ForLabel } from 'forty-cdk';
+import { ForField, ForLabel } from 'forty-cdk/field';
+import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
+import { ForInput } from 'forty-cdk/input';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

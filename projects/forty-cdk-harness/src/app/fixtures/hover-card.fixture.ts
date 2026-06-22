@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk';
+import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
 
 @Component({
   selector: 'app-hover-card-fixture',

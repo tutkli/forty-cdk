@@ -4,7 +4,7 @@ import {
   ForAccordionContent,
   ForAccordionItem,
   ForAccordionTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/accordion';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

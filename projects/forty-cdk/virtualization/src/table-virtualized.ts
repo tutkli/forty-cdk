@@ -9,7 +9,7 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk';
+import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
 
 import { injectVirtualizer, type VirtualItem } from './virtualizer';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';

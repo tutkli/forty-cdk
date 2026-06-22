@@ -6,13 +6,13 @@ import {
   viewChild,
 } from '@angular/core';
 import {
-  ForDraggable,
   type ForDragDropEvent,
+  ForDraggable,
   ForDropList,
   ForDropListGroup,
   moveItemInArray,
   transferArrayItem,
-} from 'forty-cdk';
+} from 'forty-cdk/drag-drop';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

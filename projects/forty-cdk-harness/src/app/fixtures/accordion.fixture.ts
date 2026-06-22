@@ -5,7 +5,7 @@ import {
   ForAccordionContent,
   ForAccordionItem,
   ForAccordionTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/accordion';
 
 /**
  * Fixture for the keyboard / focus journey through an Accordion that jsdom

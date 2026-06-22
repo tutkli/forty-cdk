@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, ViewEncapsulation } from '@angular/core';
-import { ForDrawerClose, ForDrawerManager, ForDrawerTitle, injectDrawerData } from 'forty-cdk';
+import {
+  ForDrawerClose,
+  ForDrawerManager,
+  ForDrawerTitle,
+  injectDrawerData,
+} from 'forty-cdk/drawer';
 
 interface ProgrammaticDrawerData {
   message: string;

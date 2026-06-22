@@ -6,7 +6,7 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
   ForTimePickerValue,
-} from 'forty-cdk';
+} from 'forty-cdk/time-picker';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';

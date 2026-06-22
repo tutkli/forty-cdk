@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ForToastManager, type ForToastRef, type ForToastSwipeDirection } from 'forty-cdk';
+import { ForToastManager, type ForToastRef, type ForToastSwipeDirection } from 'forty-cdk/toast';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { DemoLayout } from '../../../ui/demo-layout';

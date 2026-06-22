@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk';
+import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 @Component({
   selector: 'app-tooltip-fixture',

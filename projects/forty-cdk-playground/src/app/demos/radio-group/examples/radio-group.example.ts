@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForRadio, ForRadioGroup } from 'forty-cdk';
+import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

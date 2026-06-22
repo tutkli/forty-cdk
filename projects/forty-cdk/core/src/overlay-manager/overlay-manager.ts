@@ -1,0 +1,228 @@
+import {
+  ApplicationRef,
+  type ComponentRef,
+  computed,
+  DOCUMENT,
+  EnvironmentInjector,
+  inject,
+  Injector,
+  type Provider,
+  type Signal,
+  signal,
+} from '@angular/core';
+
+import { IdGenerator } from '../id-generator/id-generator';
+import type { OverlayRef } from './overlay-ref';
+
+/**
+ * Minimal shape every overlay entry must satisfy so the shared core can index,
+ * render, and tear it down. Per-primitive entries (`ForDialogEntry`,
+ * `ForDrawerEntry`) extend this with their own directive-input fields.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ */
+export interface OverlayManagerEntry {
+  readonly id: string;
+  readonly ref: OverlayRef<unknown>;
+}
+
+/**
+ * The reactive surface a manager's outlet component is wired with on first
+ * `open()`. Mirrors `ForDialogOutletHost` / `ForDrawerOutletHost`.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ */
+export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
+  readonly entries: Signal<readonly TEntry[]>;
+  closeAllForDestroy(): void;
+}
+
+/**
+ * The minimal surface a manager's outlet component exposes so the core can
+ * wire it on first `open()`. Mirrors `ForDialogOutlet` / `ForDrawerOutlet`.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ */
+export interface OverlayManagerOutlet<TEntry extends OverlayManagerEntry> {
+  init(host: OverlayManagerOutletHost<TEntry>): void;
+}
+
+/**
+ * Per-primitive bindings the shared core needs: how to name ids and the
+ * exit-animation host / backdrop attributes, and how to create the outlet
+ * component that renders the entries.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ */
+export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
+  /**
+   * Per-instance id prefix passed to `IdGenerator.next` (e.g.
+   * `'for-dialog-instance'`).
+   */
+  readonly idPrefix: string;
+  /**
+   * Attribute the overlay root + backdrop reflect their per-instance id on
+   * (e.g. `'data-for-dialog-id'`), matched during exit animation.
+   */
+  readonly idAttribute: string;
+  /**
+   * Attribute marking the portaled backdrop element (e.g.
+   * `'data-for-dialog-backdrop'`), matched during exit animation.
+   */
+  readonly backdropAttribute: string;
+  /** Creates the manager-owned outlet component (e.g. `ForDialogOutlet`). */
+  createOutlet(
+    environmentInjector: EnvironmentInjector,
+  ): ComponentRef<OverlayManagerOutlet<TEntry>>;
+}
+
+/**
+ * Shared imperative-overlay engine behind `ForDialogManager` and
+ * `ForDrawerManager`. Owns the entries signal, the reactive `openCount`, the
+ * lazily-created outlet, the destroy-time close-all sweep, the exit-animation
+ * `beginLeave` driver, and the parent-cached per-component `Injector` factory.
+ * The two managers differ only in their entry shape and directive-input
+ * mapping; everything structural lives here once.
+ *
+ * Internal — not re-exported from `public-api.ts`; the public surface is
+ * `ForDialogManager` / `ForDrawerManager`.
+ */
+export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
+  readonly #appRef = inject(ApplicationRef);
+  readonly #envInjector = inject(EnvironmentInjector);
+  readonly #document = inject(DOCUMENT);
+  protected readonly idGen = inject(IdGenerator);
+
+  readonly #entries = signal<readonly TEntry[]>([]);
+  readonly #config: OverlayManagerConfig<TEntry>;
+
+  /** Reactive count of currently open programmatic overlays. */
+  readonly openCount = computed(() => this.#entries().length);
+
+  #outletRef: ComponentRef<OverlayManagerOutlet<TEntry>> | null = null;
+  #destroying = false;
+
+  constructor(config: OverlayManagerConfig<TEntry>) {
+    this.#config = config;
+  }
+
+  /**
+   * Generates the next per-instance id and a paired idempotent
+   * `remove` that drops the entry. The caller builds the `ref` with a teardown
+   * that drives the exit animation before invoking `remove`.
+   */
+  protected nextId(): { id: string; remove: () => void } {
+    const id = this.idGen.next(this.#config.idPrefix);
+    let removed = false;
+    const remove = (): void => {
+      if (removed) {
+        return;
+      }
+      removed = true;
+      this.#entries.update((arr) => arr.filter((e) => e.id !== id));
+    };
+    return { id, remove };
+  }
+
+  /**
+   * Drives the exit animation on the overlay root and, in lockstep,
+   * on the portaled backdrop (matched by the same per-instance id, because the
+   * backdrop's template `animate.leave` never fires under the manager's
+   * `ngComponentOutlet` mount), then calls `remove`. Runs `remove` immediately
+   * when destroying, when `requestAnimationFrame` is unavailable, or when there
+   * is nothing to animate.
+   */
+  protected beginLeave(
+    id: string,
+    leaveClass: string | undefined,
+    backdropLeaveClass: string | undefined,
+    remove: () => void,
+  ): void {
+    if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
+      remove();
+      return;
+    }
+    const { idAttribute, backdropAttribute } = this.#config;
+    const targets: HTMLElement[] = [];
+    if (leaveClass) {
+      const host = this.#document.querySelector<HTMLElement>(
+        `[${idAttribute}="${id}"]:not([${backdropAttribute}])`,
+      );
+      if (host && typeof host.getAnimations === 'function') {
+        host.classList.add(leaveClass);
+        targets.push(host);
+      }
+    }
+    if (backdropLeaveClass) {
+      const backdrop = this.#document.querySelector<HTMLElement>(
+        `[${backdropAttribute}][${idAttribute}="${id}"]`,
+      );
+      if (backdrop && typeof backdrop.getAnimations === 'function') {
+        backdrop.classList.add(backdropLeaveClass);
+        targets.push(backdrop);
+      }
+    }
+    if (targets.length === 0) {
+      remove();
+      return;
+    }
+    requestAnimationFrame(() => {
+      const animations = targets.flatMap((el) => el.getAnimations());
+      if (animations.length === 0) {
+        remove();
+        return;
+      }
+      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
+        () => remove(),
+      );
+    });
+  }
+
+  /**
+   * Builds a parent-cached per-component `Injector`. The returned
+   * factory recreates the injector only when its parent changes, so re-renders
+   * with the same enclosing `[forDialog]` / `[forDrawer]` host reuse it.
+   */
+  protected createInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
+    let cachedInjector: Injector | null = null;
+    let cachedParent: Injector | null = null;
+    return (parent: Injector): Injector => {
+      if (cachedInjector && cachedParent === parent) {
+        return cachedInjector;
+      }
+      cachedParent = parent;
+      cachedInjector = Injector.create({ parent, providers: [...providers] });
+      return cachedInjector;
+    };
+  }
+
+  /**
+   * Registers a fully-built entry, ensures the outlet exists, and
+   * ticks so the `@for` renders it.
+   */
+  protected register(entry: TEntry): void {
+    this.#ensureOutlet();
+    this.#entries.update((arr) => [...arr, entry]);
+    this.#appRef.tick();
+  }
+
+  #closeAllForDestroy(): void {
+    this.#destroying = true;
+    for (const entry of this.#entries()) {
+      entry.ref.close();
+    }
+  }
+
+  #ensureOutlet(): void {
+    if (this.#outletRef) {
+      return;
+    }
+    const outletRef = this.#config.createOutlet(this.#envInjector);
+    this.#appRef.attachView(outletRef.hostView);
+    outletRef.instance.init({
+      entries: this.#entries.asReadonly(),
+      closeAllForDestroy: () => this.#closeAllForDestroy(),
+    });
+    this.#outletRef = outletRef;
+  }
+}

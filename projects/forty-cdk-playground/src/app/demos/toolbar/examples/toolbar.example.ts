@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 import {
   ForToolbar,
   ForToolbarButton,
   ForToolbarLink,
   ForToolbarSeparator,
-  ForToggleGroup,
-  ForToggleGroupItem,
-} from 'forty-cdk';
+} from 'forty-cdk/toolbar';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

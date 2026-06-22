@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import {
-  ForTimeField,
-  ForTimeFieldLiteral,
-  ForTimeFieldSegment,
-  provideNativeDateAdapter,
-} from 'forty-cdk';
+import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 
 import { queryFlag } from './_query-flag';
 

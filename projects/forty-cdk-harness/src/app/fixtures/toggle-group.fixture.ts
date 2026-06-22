@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 /**
  * Fixture for the standalone `[forToggleGroup]` roving-tabindex contract

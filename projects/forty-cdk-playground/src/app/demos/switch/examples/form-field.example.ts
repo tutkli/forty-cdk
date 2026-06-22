@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
-import { ForSwitch } from 'forty-cdk';
+import { ForSwitch } from 'forty-cdk/switch';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

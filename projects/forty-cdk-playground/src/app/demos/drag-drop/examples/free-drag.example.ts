@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForDragHandle, ForFreeDrag } from 'forty-cdk';
+import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
 
 import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

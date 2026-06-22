@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import {
-  ForDropdownMenu,
-  ForDropdownMenuTrigger,
   ForMenuContent,
   ForMenuItem,
   ForMenuSeparator,
   ForMenuSub,
   ForMenuSubTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/menu';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { Icon } from '../../../ui/icon';

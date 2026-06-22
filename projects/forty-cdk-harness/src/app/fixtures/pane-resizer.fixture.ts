@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForPaneResizer } from 'forty-cdk';
+import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
 /**
  * Fixture for `[forPaneResizer]`. The directive uses `setPointerCapture`, reads

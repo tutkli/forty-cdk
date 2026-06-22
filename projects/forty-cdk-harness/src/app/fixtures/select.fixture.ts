@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { type VetoableEvent } from 'forty-cdk/core';
 import {
   ForSelect,
   ForSelectAnchor,
@@ -7,8 +8,7 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
-  type VetoableEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/select';
 import { queryFlag } from './_query-flag';
 
 @Component({

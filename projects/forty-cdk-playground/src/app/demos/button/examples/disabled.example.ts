@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForButton } from 'forty-cdk';
+import { ForButton } from 'forty-cdk/button';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 

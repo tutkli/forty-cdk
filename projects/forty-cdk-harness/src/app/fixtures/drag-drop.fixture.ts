@@ -9,14 +9,14 @@ import {
 import { ActivatedRoute } from '@angular/router';
 
 import {
+  type ForDragDropEvent,
   ForDragHandle,
   ForDraggable,
   ForDropList,
   ForDropListGroup,
   moveItemInArray,
   transferArrayItem,
-  type ForDragDropEvent,
-} from 'forty-cdk';
+} from 'forty-cdk/drag-drop';
 
 interface Item {
   id: number;

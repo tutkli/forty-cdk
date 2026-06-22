@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
-import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk';
+import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';

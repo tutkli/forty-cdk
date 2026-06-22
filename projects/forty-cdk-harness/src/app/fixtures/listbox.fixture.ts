@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk';
+import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 interface Fruit {
   value: string;

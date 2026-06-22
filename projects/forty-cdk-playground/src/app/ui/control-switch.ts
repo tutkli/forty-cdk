@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
-import { ForSwitch } from 'forty-cdk';
+import { ForSwitch } from 'forty-cdk/switch';
 
 import { InfoTip } from './info-tip';
 

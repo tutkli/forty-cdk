@@ -7,15 +7,15 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import {
   ForDatePicker,
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
-  ForTimeField,
-  ForTimeFieldLiteral,
-  ForTimeFieldSegment,
-  provideNativeDateAdapter,
-} from 'forty-cdk';
+} from 'forty-cdk/date-picker';
+import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 
 @Component({
   selector: 'app-date-time-picker-fixture',

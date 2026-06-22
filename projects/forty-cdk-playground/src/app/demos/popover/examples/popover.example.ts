@@ -7,7 +7,7 @@ import {
   ForPopoverDescription,
   ForPopoverTitle,
   ForPopoverTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/popover';
 
 import { type ControlOption, ControlSelect } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';

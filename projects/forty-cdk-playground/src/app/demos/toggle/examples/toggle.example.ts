@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForToggle, ForToggleGroup, ForToggleGroupItem } from 'forty-cdk';
+import { ForToggle, ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 import { ControlSwitch } from '../../../ui/control-switch';
 import { DemoLayout } from '../../../ui/demo-layout';

@@ -10,7 +10,7 @@ import {
   ForCalendarNextButton,
   ForCalendarPrevButton,
   ForCalendarYearSelect,
-} from 'forty-cdk';
+} from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 import { DemoLayout } from '../../../ui/demo-layout';

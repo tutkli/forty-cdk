@@ -4,10 +4,8 @@ import {
   ForDialogClose,
   type ForDialogCloseReason,
   ForDialogTrigger,
-  ForPopover,
-  ForPopoverContent,
-  ForPopoverTrigger,
-} from 'forty-cdk';
+} from 'forty-cdk/dialog';
+import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popover';
 
 /**
  * Fixture for the "Escape closes the topmost layer only" criterion in

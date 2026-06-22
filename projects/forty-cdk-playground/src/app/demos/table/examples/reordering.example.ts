@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForDragPlaceholder, ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import {
-  ForDraggable,
-  ForDragPlaceholder,
   ForTable,
   ForTableCell,
   ForTableColumnReorder,
@@ -9,10 +8,9 @@ import {
   ForTableHeaderRow,
   ForTableRow,
   ForTableRowReorder,
-  moveItemInArray,
   type TableColumnReorderDescriptor,
   type TableRowReorderDescriptor,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 import { DemoLayout } from '../../../ui/demo-layout';
 import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } from './people';

@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
   ForTimePicker,
   ForTimePickerContent,
   ForTimePickerOption,
   ForTimePickerTrigger,
   ForTimePickerValue,
-  provideNativeDateAdapter,
-} from 'forty-cdk';
+} from 'forty-cdk/time-picker';
 import { queryFlag } from './_query-flag';
 
 @Component({

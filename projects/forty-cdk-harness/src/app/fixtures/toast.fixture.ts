@@ -10,7 +10,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForToastManager, ForToastViewport, type ForToastSwipeDirection } from 'forty-cdk';
+import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from 'forty-cdk/toast';
 
 /**
  * Fixture for the swipe-dismiss / auto-dismiss / stacking behavior on

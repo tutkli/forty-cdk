@@ -6,6 +6,8 @@
     "prepare": "lefthook install || true",
     "start": "ng serve",
     "build": "ng build forty-cdk",
+    "postbuild": "node scripts/check-entrypoint-dedup.mjs",
+    "check:dedup": "node scripts/check-entrypoint-dedup.mjs",
     "watch": "ng build forty-cdk --watch --configuration development",
     "playground": "ng serve forty-cdk-playground",
     "build:playground": "ng build forty-cdk-playground --configuration development",

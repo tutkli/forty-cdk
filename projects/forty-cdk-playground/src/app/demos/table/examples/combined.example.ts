@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal, viewChild } from '@angular/core';
+import { ForDragPlaceholder, ForDraggable } from 'forty-cdk/drag-drop';
 import {
-  ForDraggable,
-  ForDragPlaceholder,
   ForTable,
   ForTableCell,
   ForTableColumnReorder,
@@ -15,7 +14,7 @@ import {
   type TableColumnReorderDescriptor,
   type TableSortDescriptor,
   type TableSortDirection,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 import { DemoLayout } from '../../../ui/demo-layout';

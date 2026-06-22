@@ -8,7 +8,7 @@ import {
   ForTreeItemLabel,
   ForTreeItemToggle,
   expandToReveal,
-} from 'forty-cdk';
+} from 'forty-cdk/tree';
 
 import { queryFlag } from './_query-flag';
 

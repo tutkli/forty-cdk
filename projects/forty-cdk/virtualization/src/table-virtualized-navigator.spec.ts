@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 
-import type { ForTableCellHandle, ForTableRowHandle } from 'forty-cdk';
+import { type ForTableCellHandle, type ForTableRowHandle } from 'forty-cdk/table';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
 describe('TableVirtualizedNavigator', () => {

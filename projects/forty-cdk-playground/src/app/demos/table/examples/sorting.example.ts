@@ -8,7 +8,7 @@ import {
   ForTableSortHeader,
   type TableSortDescriptor,
   type TableSortDirection,
-} from 'forty-cdk';
+} from 'forty-cdk/table';
 
 import { ControlSelect, type ControlOption } from '../../../ui/control-select';
 import { ControlSwitch } from '../../../ui/control-switch';
