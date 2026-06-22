@@ -6,6 +6,11 @@
     "outDir": "../../out-tsc/spec",
     "types": ["vitest/globals"],
     "paths": {
+      "forty-cdk/calendar": ["./calendar/src/public-api.ts"],
+      "forty-cdk/date-field": ["./date-field/src/public-api.ts"],
+      "forty-cdk/date-picker": ["./date-picker/src/public-api.ts"],
+      "forty-cdk/time-field": ["./time-field/src/public-api.ts"],
+      "forty-cdk/time-picker": ["./time-picker/src/public-api.ts"],
       "forty-cdk/listbox": ["./listbox/src/public-api.ts"],
       "forty-cdk/select": ["./select/src/public-api.ts"],
       "forty-cdk/combobox": ["./combobox/src/public-api.ts"],
@@ -54,6 +59,11 @@
     }
   },
   "include": [
+    "calendar/src/**/*.spec.ts",
+    "date-field/src/**/*.spec.ts",
+    "date-picker/src/**/*.spec.ts",
+    "time-field/src/**/*.spec.ts",
+    "time-picker/src/**/*.spec.ts",
     "listbox/src/**/*.spec.ts",
     "select/src/**/*.spec.ts",
     "combobox/src/**/*.spec.ts",

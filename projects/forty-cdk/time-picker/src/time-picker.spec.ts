@@ -2,9 +2,9 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { disabled, form, FormField, required } from '@angular/forms/signals';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
-import { provideNativeDateAdapter } from '../calendar/native-date-adapter';
+import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
   ForTimePicker,
   ForTimePickerAnchor,
@@ -12,7 +12,7 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
   ForTimePickerValue,
-} from './index';
+} from './public-api';
 
 const BASE_IMPORTS = [
   ForTimePicker,

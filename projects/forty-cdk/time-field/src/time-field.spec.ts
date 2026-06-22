@@ -2,8 +2,8 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
-import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
-import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
+import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import type { TimeSegmentType } from './build-time-segments';
 import { ForTimeField } from './time-field';
 import { provideForTimeFieldDefaults } from './time-field-defaults';

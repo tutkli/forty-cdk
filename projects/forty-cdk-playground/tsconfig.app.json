@@ -4,6 +4,11 @@
     "outDir": "../../out-tsc/playground",
     "types": [],
     "paths": {
+      "forty-cdk/calendar": ["../forty-cdk/calendar/src/public-api.ts"],
+      "forty-cdk/date-field": ["../forty-cdk/date-field/src/public-api.ts"],
+      "forty-cdk/date-picker": ["../forty-cdk/date-picker/src/public-api.ts"],
+      "forty-cdk/time-field": ["../forty-cdk/time-field/src/public-api.ts"],
+      "forty-cdk/time-picker": ["../forty-cdk/time-picker/src/public-api.ts"],
       "forty-cdk/listbox": ["../forty-cdk/listbox/src/public-api.ts"],
       "forty-cdk/select": ["../forty-cdk/select/src/public-api.ts"],
       "forty-cdk/combobox": ["../forty-cdk/combobox/src/public-api.ts"],

@@ -9,6 +9,11 @@
     "types": []
   },
   "include": [
+    "calendar/src/**/*.ts",
+    "date-field/src/**/*.ts",
+    "date-picker/src/**/*.ts",
+    "time-field/src/**/*.ts",
+    "time-picker/src/**/*.ts",
     "listbox/src/**/*.ts",
     "select/src/**/*.ts",
     "combobox/src/**/*.ts",

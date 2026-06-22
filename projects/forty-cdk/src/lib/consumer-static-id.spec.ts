@@ -16,8 +16,15 @@ import {
   ForAccordionItem,
   ForAccordionTrigger,
 } from 'forty-cdk/accordion';
-import { ForCalendar, ForCalendarCell, ForCalendarGrid, ForCalendarHeading } from './calendar';
-import { provideNativeDateAdapter } from './calendar/native-date-adapter';
+import {
+  ForCalendar,
+  ForCalendarCell,
+  ForCalendarGrid,
+  ForCalendarHeading,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
+
 import {
   ForCombobox,
   ForComboboxContent,
@@ -41,7 +48,7 @@ import {
   ForSelectOption,
   ForSelectTrigger,
 } from 'forty-cdk/select';
-import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from './date-picker';
+
 import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';

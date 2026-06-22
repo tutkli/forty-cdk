@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { compareDateOf, type DateAdapter } from 'forty-cdk/core';
-import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
+import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
 import { ForCalendarCell } from './calendar-cell';

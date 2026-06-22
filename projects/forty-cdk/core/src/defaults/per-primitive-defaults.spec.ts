@@ -15,7 +15,7 @@ import {
   FOR_CALENDAR_DEFAULTS,
   FOR_CALENDAR_FALLBACK_DEFAULTS,
   provideForCalendarDefaults,
-} from '../../../src/lib/calendar/calendar-defaults';
+} from '../../../calendar/src/calendar-defaults';
 import {
   FOR_CAROUSEL_DEFAULTS,
   FOR_CAROUSEL_FALLBACK_DEFAULTS,
@@ -35,7 +35,7 @@ import {
   FOR_DATE_PICKER_DEFAULTS,
   FOR_DATE_PICKER_FALLBACK_DEFAULTS,
   provideForDatePickerDefaults,
-} from '../../../src/lib/date-picker/date-picker-defaults';
+} from '../../../date-picker/src/date-picker-defaults';
 import {
   FOR_DROPDOWN_MENU_DEFAULTS,
   FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
@@ -125,7 +125,7 @@ import {
   FOR_TIME_PICKER_DEFAULTS,
   FOR_TIME_PICKER_FALLBACK_DEFAULTS,
   provideForTimePickerDefaults,
-} from '../../../src/lib/time-picker/time-picker-defaults';
+} from '../../../time-picker/src/time-picker-defaults';
 import {
   FOR_DRAG_DROP_DEFAULTS,
   FOR_DRAG_DROP_FALLBACK_DEFAULTS,

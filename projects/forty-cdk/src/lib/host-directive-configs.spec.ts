@@ -27,12 +27,23 @@ import {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
   ForDateField,
-} from './date-field';
+} from 'forty-cdk/date-field';
 import {
   FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
   ForDatePicker,
-} from './date-picker';
+} from 'forty-cdk/date-picker';
+import {
+  FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForTimeField,
+} from 'forty-cdk/time-field';
+import {
+  FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
+  ForTimePicker,
+} from 'forty-cdk/time-picker';
+
 import {
   FOR_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_INPUT_HOST_DIRECTIVE_OUTPUTS,
@@ -68,16 +79,7 @@ import {
   FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS,
   ForSwitch,
 } from 'forty-cdk/switch';
-import {
-  FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
-  FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
-  ForTimeField,
-} from './time-field';
-import {
-  FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
-  FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
-  ForTimePicker,
-} from './time-picker';
+
 import {
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS,

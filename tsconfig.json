@@ -5,6 +5,26 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "forty-cdk/calendar": [
+        "./dist/forty-cdk/calendar",
+        "./projects/forty-cdk/calendar/src/public-api.ts"
+      ],
+      "forty-cdk/date-field": [
+        "./dist/forty-cdk/date-field",
+        "./projects/forty-cdk/date-field/src/public-api.ts"
+      ],
+      "forty-cdk/date-picker": [
+        "./dist/forty-cdk/date-picker",
+        "./projects/forty-cdk/date-picker/src/public-api.ts"
+      ],
+      "forty-cdk/time-field": [
+        "./dist/forty-cdk/time-field",
+        "./projects/forty-cdk/time-field/src/public-api.ts"
+      ],
+      "forty-cdk/time-picker": [
+        "./dist/forty-cdk/time-picker",
+        "./projects/forty-cdk/time-picker/src/public-api.ts"
+      ],
       "forty-cdk/listbox": [
         "./dist/forty-cdk/listbox",
         "./projects/forty-cdk/listbox/src/public-api.ts"

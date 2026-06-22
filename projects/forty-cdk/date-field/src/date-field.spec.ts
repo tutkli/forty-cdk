@@ -3,13 +3,13 @@ import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 import { CalendarDateTime } from '@internationalized/date';
 
-import { flush, pressKey, renderHost, type RenderResult } from '../../test-utils';
+import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import {
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk/internationalized-date';
-import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { ForDateField } from './date-field';
 import { provideForDateFieldDefaults } from './date-field-defaults';
 import { ForDateFieldLiteral } from './date-field-literal';

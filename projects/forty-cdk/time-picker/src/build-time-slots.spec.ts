@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { NativeDateAdapter } from '../calendar/native-date-adapter';
+import { NativeDateAdapter } from 'forty-cdk/calendar';
 import { buildTimeSlots, type BuildTimeSlotsConfig } from './build-time-slots';
 
 describe('buildTimeSlots', () => {

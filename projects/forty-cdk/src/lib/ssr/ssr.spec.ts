@@ -57,18 +57,31 @@ import {
   ForToolbarLink,
   ForToolbarSeparator,
 } from 'forty-cdk/toolbar';
-import { ForCalendar } from '../calendar/calendar';
-import { ForCalendarCell } from '../calendar/calendar-cell';
-import { ForCalendarGrid } from '../calendar/calendar-grid';
-import { ForCalendarHeading } from '../calendar/calendar-heading';
-import { ForCalendarMonthCell } from '../calendar/calendar-month-cell';
-import { ForCalendarMonthGrid } from '../calendar/calendar-month-grid';
-import { ForCalendarMonthSelect } from '../calendar/calendar-month-select';
-import { ForCalendarViewTrigger } from '../calendar/calendar-view-trigger';
-import { ForCalendarYearCell } from '../calendar/calendar-year-cell';
-import { ForCalendarYearGrid } from '../calendar/calendar-year-grid';
-import { ForCalendarYearSelect } from '../calendar/calendar-year-select';
-import { provideNativeDateAdapter } from '../calendar/native-date-adapter';
+import {
+  ForCalendar,
+  ForCalendarCell,
+  ForCalendarGrid,
+  ForCalendarHeading,
+  ForCalendarMonthCell,
+  ForCalendarMonthGrid,
+  ForCalendarMonthSelect,
+  ForCalendarViewTrigger,
+  ForCalendarYearCell,
+  ForCalendarYearGrid,
+  ForCalendarYearSelect,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import { ForDatePicker, ForDatePickerTrigger, ForDatePickerValue } from 'forty-cdk/date-picker';
+import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
+import {
+  ForTimePicker,
+  ForTimePickerContent,
+  ForTimePickerOption,
+  ForTimePickerTrigger,
+  ForTimePickerValue,
+} from 'forty-cdk/time-picker';
+
 import {
   ForCombobox,
   ForComboboxContent,
@@ -84,12 +97,6 @@ import {
   ForSelectValue,
 } from 'forty-cdk/select';
 
-import { ForDateField } from '../date-field/date-field';
-import { ForDateFieldLiteral } from '../date-field/date-field-literal';
-import { ForDateFieldSegment } from '../date-field/date-field-segment';
-import { ForDatePicker } from '../date-picker/date-picker';
-import { ForDatePickerTrigger } from '../date-picker/date-picker-trigger';
-import { ForDatePickerValue } from '../date-picker/date-picker-value';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForDialogBackdrop } from 'forty-cdk/dialog';
 import { ForDialogTitle } from 'forty-cdk/dialog';
@@ -128,14 +135,6 @@ import { ForCarouselRotationControl } from '../carousel/carousel-rotation-contro
 import { ForCarouselSlide } from '../carousel/carousel-slide';
 import { ForCarouselTrack } from '../carousel/carousel-track';
 import { ForCarouselViewport } from '../carousel/carousel-viewport';
-import { ForTimeField } from '../time-field/time-field';
-import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
-import { ForTimeFieldSegment } from '../time-field/time-field-segment';
-import { ForTimePicker } from '../time-picker/time-picker';
-import { ForTimePickerContent } from '../time-picker/time-picker-content';
-import { ForTimePickerOption } from '../time-picker/time-picker-option';
-import { ForTimePickerTrigger } from '../time-picker/time-picker-trigger';
-import { ForTimePickerValue } from '../time-picker/time-picker-value';
 
 import { ForTree } from '../tree/tree';
 import { ForTreeGroup } from '../tree/tree-group';

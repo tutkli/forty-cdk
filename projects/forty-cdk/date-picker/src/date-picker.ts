@@ -36,8 +36,7 @@ import {
   serializeISODate,
   FOR_TIME_VALUE_SOURCE,
 } from 'forty-cdk/core';
-import { ForCalendar } from '../calendar/calendar';
-import type { CalendarDateRange } from '../calendar/calendar-context';
+import { ForCalendar, type CalendarDateRange } from 'forty-cdk/calendar';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
 

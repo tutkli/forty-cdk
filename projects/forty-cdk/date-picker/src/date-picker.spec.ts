@@ -9,27 +9,35 @@ import {
   pressKey,
   renderHost,
   type RenderResult,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { assertTimeCapable, type DateAdapter, FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
-import { ForCalendar } from '../calendar/calendar';
-import { ForCalendarCell } from '../calendar/calendar-cell';
-import { ForCalendarGrid } from '../calendar/calendar-grid';
-import { ForCalendarGridHeader } from '../calendar/calendar-grid-header';
-import { NativeDateAdapter, provideNativeDateAdapter } from '../calendar/native-date-adapter';
-import { ForTimeField } from '../time-field/time-field';
-import { FOR_TIME_FIELD_CONTEXT } from '../time-field/time-field-context';
-import { ForTimeFieldLiteral } from '../time-field/time-field-literal';
-import { ForTimeFieldSegment } from '../time-field/time-field-segment';
-import { ForTimePicker } from '../time-picker/time-picker';
-import { ForTimePickerContent } from '../time-picker/time-picker-content';
-import { ForTimePickerOption } from '../time-picker/time-picker-option';
-import { ForTimePickerTrigger } from '../time-picker/time-picker-trigger';
+import {
+  type CalendarDateRange,
+  ForCalendar,
+  ForCalendarCell,
+  ForCalendarGrid,
+  ForCalendarGridHeader,
+  NativeDateAdapter,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import {
+  FOR_TIME_FIELD_CONTEXT,
+  ForTimeField,
+  ForTimeFieldLiteral,
+  ForTimeFieldSegment,
+} from 'forty-cdk/time-field';
+import {
+  ForTimePicker,
+  ForTimePickerContent,
+  ForTimePickerOption,
+  ForTimePickerTrigger,
+} from 'forty-cdk/time-picker';
+
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerAnchor } from './date-picker-anchor';
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
-import type { CalendarDateRange } from '../calendar/calendar-context';
 
 const adapter = new NativeDateAdapter();
 

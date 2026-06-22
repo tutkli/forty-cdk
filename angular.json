@@ -32,6 +32,11 @@
             "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
             "include": [
               "**/*.spec.ts",
+              "../calendar/src/**/*.spec.ts",
+              "../date-field/src/**/*.spec.ts",
+              "../date-picker/src/**/*.spec.ts",
+              "../time-field/src/**/*.spec.ts",
+              "../time-picker/src/**/*.spec.ts",
               "../listbox/src/**/*.spec.ts",
               "../select/src/**/*.spec.ts",
               "../combobox/src/**/*.spec.ts",

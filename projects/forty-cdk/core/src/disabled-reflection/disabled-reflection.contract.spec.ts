@@ -13,10 +13,14 @@ import {
 } from 'forty-cdk/number-input';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
-import { ForCalendar } from '../../../src/lib/calendar/calendar';
-import { ForCalendarNextButton } from '../../../src/lib/calendar/calendar-next-button';
-import { ForCalendarPrevButton } from '../../../src/lib/calendar/calendar-prev-button';
-import { provideNativeDateAdapter } from '../../../src/lib/calendar/native-date-adapter';
+import {
+  ForCalendar,
+  ForCalendarNextButton,
+  ForCalendarPrevButton,
+  provideNativeDateAdapter,
+} from 'forty-cdk/calendar';
+import { ForDatePicker, ForDatePickerTrigger } from 'forty-cdk/date-picker';
+
 import {
   ForCombobox,
   ForComboboxChip,
@@ -28,8 +32,6 @@ import {
 } from 'forty-cdk/combobox';
 import { ForSelect, ForSelectTrigger } from 'forty-cdk/select';
 
-import { ForDatePicker } from '../../../src/lib/date-picker/date-picker';
-import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-trigger';
 import { ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
