@@ -8,7 +8,7 @@ import {
   validate,
 } from '@angular/forms/signals';
 
-import { flush, renderHost } from '../../test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import { ForCombobox } from 'forty-cdk/combobox';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { ForSelect } from 'forty-cdk/select';

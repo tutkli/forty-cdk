@@ -9,6 +9,12 @@
     "types": []
   },
   "include": [
+    "drag-drop/src/**/*.ts",
+    "table/src/**/*.ts",
+    "tree/src/**/*.ts",
+    "carousel/src/**/*.ts",
+    "stepper/src/**/*.ts",
+    "signal-forms/src/**/*.ts",
     "calendar/src/**/*.ts",
     "date-field/src/**/*.ts",
     "date-picker/src/**/*.ts",

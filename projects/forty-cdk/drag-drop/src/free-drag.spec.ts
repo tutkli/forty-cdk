@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, renderHost } from '../../test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import { ForDragHandle } from './drag-handle';
 import { ForFreeDrag } from './free-drag';
 

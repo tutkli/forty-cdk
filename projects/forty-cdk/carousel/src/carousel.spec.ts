@@ -6,7 +6,7 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
+} from '../../src/test-utils';
 import { ForCarousel } from './carousel';
 import { provideForCarouselDefaults } from './carousel-defaults';
 import { ForCarouselIndicator } from './carousel-indicator';

@@ -20,7 +20,7 @@ import {
   FOR_CAROUSEL_DEFAULTS,
   FOR_CAROUSEL_FALLBACK_DEFAULTS,
   provideForCarouselDefaults,
-} from '../../../src/lib/carousel/carousel-defaults';
+} from '../../../carousel/src/carousel-defaults';
 import {
   FOR_COMBOBOX_DEFAULTS,
   FOR_COMBOBOX_FALLBACK_DEFAULTS,
@@ -130,7 +130,7 @@ import {
   FOR_DRAG_DROP_DEFAULTS,
   FOR_DRAG_DROP_FALLBACK_DEFAULTS,
   provideForDragDropDefaults,
-} from '../../../src/lib/drag-drop/drag-drop-defaults';
+} from '../../../drag-drop/src/drag-drop-defaults';
 import {
   FOR_PAGINATION_DEFAULTS,
   FOR_PAGINATION_FALLBACK_DEFAULTS,
@@ -140,12 +140,12 @@ import {
   FOR_STEPPER_DEFAULTS,
   FOR_STEPPER_FALLBACK_DEFAULTS,
   provideForStepperDefaults,
-} from '../../../src/lib/stepper/stepper-defaults';
+} from '../../../stepper/src/stepper-defaults';
 import {
   FOR_TREE_DEFAULTS,
   FOR_TREE_FALLBACK_DEFAULTS,
   provideForTreeDefaults,
-} from '../../../src/lib/tree/tree-defaults';
+} from '../../../tree/src/tree-defaults';
 
 interface DefaultsCase<D extends object> {
   /** Name of the primitive's provider, used as the test suite label. */

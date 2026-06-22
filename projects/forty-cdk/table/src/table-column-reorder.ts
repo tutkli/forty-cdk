@@ -1,8 +1,11 @@
 import { DestroyRef, Directive, inject, output } from '@angular/core';
 
-import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
-import { ForDropList, FOR_DROP_LIST_DEFAULT_ORIENTATION } from '../drag-drop/drop-list';
-import { moveItemInArray } from '../drag-drop/move-item-in-array';
+import {
+  FOR_DROP_LIST_DEFAULT_ORIENTATION,
+  ForDropList,
+  type ForDragDropEvent,
+  moveItemInArray,
+} from 'forty-cdk/drag-drop';
 import { injectTableContext } from './table-context';
 
 /** Payload of `columnReorder`: the move's indices and the resulting column-name order. */

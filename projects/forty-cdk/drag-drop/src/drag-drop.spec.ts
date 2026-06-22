@@ -7,9 +7,9 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { withReducedMotion } from '../../test-utils/reduced-motion';
+import { withReducedMotion } from '../../src/test-utils/reduced-motion';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { flush, pressKey, renderHost } from '../../src/test-utils';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
 import { ForDragHandle } from './drag-handle';
 import { ForDragPlaceholder } from './drag-placeholder';

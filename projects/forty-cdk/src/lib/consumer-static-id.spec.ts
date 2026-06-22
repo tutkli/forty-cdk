@@ -87,9 +87,8 @@ import {
   ForStepperItem,
   ForStepperList,
   ForStepperTrigger,
-} from './stepper';
-
-import { ForTree, ForTreeItem, ForTreeItemLabel } from './tree';
+} from 'forty-cdk/stepper';
+import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
 
 /**
  * Library-wide contract for #659: every piece that host-binds `[id]` for aria

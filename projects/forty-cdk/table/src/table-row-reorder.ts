@@ -9,9 +9,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { type ForDragDropEvent } from '../drag-drop/drag-drop-context';
-import { ForDropList } from '../drag-drop/drop-list';
-import { FOR_DRAG_DROP_DEFAULTS } from '../drag-drop/drag-drop-defaults';
+import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
 import { createKeyboardDragMediator, LiveAnnouncer, translateWindowReorder } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 

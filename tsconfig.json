@@ -5,6 +5,24 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "forty-cdk/drag-drop": [
+        "./dist/forty-cdk/drag-drop",
+        "./projects/forty-cdk/drag-drop/src/public-api.ts"
+      ],
+      "forty-cdk/table": ["./dist/forty-cdk/table", "./projects/forty-cdk/table/src/public-api.ts"],
+      "forty-cdk/tree": ["./dist/forty-cdk/tree", "./projects/forty-cdk/tree/src/public-api.ts"],
+      "forty-cdk/carousel": [
+        "./dist/forty-cdk/carousel",
+        "./projects/forty-cdk/carousel/src/public-api.ts"
+      ],
+      "forty-cdk/stepper": [
+        "./dist/forty-cdk/stepper",
+        "./projects/forty-cdk/stepper/src/public-api.ts"
+      ],
+      "forty-cdk/signal-forms": [
+        "./dist/forty-cdk/signal-forms",
+        "./projects/forty-cdk/signal-forms/src/public-api.ts"
+      ],
       "forty-cdk/calendar": [
         "./dist/forty-cdk/calendar",
         "./projects/forty-cdk/calendar/src/public-api.ts"

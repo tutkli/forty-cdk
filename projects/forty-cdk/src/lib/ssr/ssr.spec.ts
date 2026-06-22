@@ -125,59 +125,69 @@ import {
 } from 'forty-cdk/navigation-menu';
 
 import { ForButton } from 'forty-cdk/button';
-import { ForCarousel } from '../carousel/carousel';
-import { ForCarouselDrag } from '../carousel/carousel-drag';
-import { ForCarouselIndicator } from '../carousel/carousel-indicator';
-import { ForCarouselIndicators } from '../carousel/carousel-indicators';
-import { ForCarouselNext } from '../carousel/carousel-next';
-import { ForCarouselPrevious } from '../carousel/carousel-previous';
-import { ForCarouselRotationControl } from '../carousel/carousel-rotation-control';
-import { ForCarouselSlide } from '../carousel/carousel-slide';
-import { ForCarouselTrack } from '../carousel/carousel-track';
-import { ForCarouselViewport } from '../carousel/carousel-viewport';
+import {
+  ForCarousel,
+  ForCarouselDrag,
+  ForCarouselIndicator,
+  ForCarouselIndicators,
+  ForCarouselNext,
+  ForCarouselPrevious,
+  ForCarouselRotationControl,
+  ForCarouselSlide,
+  ForCarouselTrack,
+  ForCarouselViewport,
+} from 'forty-cdk/carousel';
+import {
+  ForDragHandle,
+  ForDragPlaceholder,
+  ForDragPreview,
+  ForDraggable,
+  ForDropList,
+  ForDropListGroup,
+  ForFreeDrag,
+} from 'forty-cdk/drag-drop';
+import {
+  ForStepper,
+  ForStepperCompletedContent,
+  ForStepperContent,
+  ForStepperIndicator,
+  ForStepperItem,
+  ForStepperList,
+  ForStepperNext,
+  ForStepperPrevious,
+  ForStepperProgress,
+  ForStepperSeparator,
+  ForStepperTrigger,
+} from 'forty-cdk/stepper';
+import {
+  ForTable,
+  ForTableCell,
+  ForTableColumnReorder,
+  ForTableColumnResizer,
+  ForTableHeaderCell,
+  ForTableHeaderRow,
+  ForTableRow,
+  ForTableRowReorder,
+  ForTableSortHeader,
+} from 'forty-cdk/table';
+import {
+  ForTree,
+  ForTreeGroup,
+  ForTreeItem,
+  ForTreeItemCheckbox,
+  ForTreeItemCheckboxIndicator,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  ForTreeNodeDrag,
+  ForTreeNodeDragHandle,
+} from 'forty-cdk/tree';
 
-import { ForTree } from '../tree/tree';
-import { ForTreeGroup } from '../tree/tree-group';
-import { ForTreeItem } from '../tree/tree-item';
-import { ForTreeItemCheckbox } from '../tree/tree-item-checkbox';
-import { ForTreeItemCheckboxIndicator } from '../tree/tree-item-checkbox-indicator';
-import { ForTreeItemLabel } from '../tree/tree-item-label';
-import { ForTreeItemToggle } from '../tree/tree-item-toggle';
-import { ForTreeNodeDrag } from '../tree/tree-node-drag';
-import { ForTreeNodeDragHandle } from '../tree/tree-node-drag-handle';
-import { ForDragHandle } from '../drag-drop/drag-handle';
-import { ForDragPlaceholder } from '../drag-drop/drag-placeholder';
-import { ForDragPreview } from '../drag-drop/drag-preview';
-import { ForDraggable } from '../drag-drop/draggable';
-import { ForFreeDrag } from '../drag-drop/free-drag';
-import { ForDropList } from '../drag-drop/drop-list';
-import { ForDropListGroup } from '../drag-drop/drop-list-group';
-import { ForTable } from '../table/table';
-import { ForTableCell } from '../table/table-cell';
-import { ForTableHeaderCell } from '../table/table-header-cell';
-import { ForTableHeaderRow } from '../table/table-header-row';
-import { ForTableRow } from '../table/table-row';
-import { ForTableSortHeader } from '../table/table-sort-header';
-import { ForTableColumnResizer } from '../table/table-column-resizer';
-import { ForTableColumnReorder } from '../table/table-column-reorder';
-import { ForTableRowReorder } from '../table/table-row-reorder';
 import {
   ForTableVirtualized,
   ForVirtualFor,
   ForVirtualViewport,
   injectVirtualizer,
 } from 'forty-cdk/virtualization';
-import { ForStepper } from '../stepper/stepper';
-import { ForStepperCompletedContent } from '../stepper/stepper-completed-content';
-import { ForStepperContent } from '../stepper/stepper-content';
-import { ForStepperIndicator } from '../stepper/stepper-indicator';
-import { ForStepperItem } from '../stepper/stepper-item';
-import { ForStepperList } from '../stepper/stepper-list';
-import { ForStepperNext } from '../stepper/stepper-next';
-import { ForStepperPrevious } from '../stepper/stepper-previous';
-import { ForStepperSeparator } from '../stepper/stepper-separator';
-import { ForStepperProgress } from '../stepper/stepper-progress';
-import { ForStepperTrigger } from '../stepper/stepper-trigger';
 
 import { BodyScrollLock } from 'forty-cdk/core';
 import { DismissableLayerStack } from 'forty-cdk/core';

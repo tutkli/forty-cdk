@@ -7,9 +7,9 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, installObserverPolyfills, renderHost } from '../../test-utils';
-import { ForDraggable } from '../drag-drop/draggable';
-import { moveItemInArray } from '../drag-drop/move-item-in-array';
+import { flush, installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';
 import { ForTableHeaderCell } from './table-header-cell';

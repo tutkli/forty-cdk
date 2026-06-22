@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, inject, input, model, output } from '@angular/core';
 
-import { FOR_DRAGGABLE_CONTEXT } from '../drag-drop/drag-drop-context';
+import { FOR_DRAGGABLE_CONTEXT } from 'forty-cdk/drag-drop';
 import { injectTableContext } from './table-context';
 
 /** Sort direction for a column header. `'none'` means unsorted (no aria-sort emitted). */

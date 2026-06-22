@@ -3,8 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { form, required } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 
-import { pressKey, renderHost } from '../../test-utils';
-import { assertRovingTabindexContract } from '../../test-utils/contract';
+import { pressKey, renderHost } from '../../src/test-utils';
+import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { ForStepper } from './stepper';
 import { ForStepperContent } from './stepper-content';
 import { ForStepperCompletedContent } from './stepper-completed-content';

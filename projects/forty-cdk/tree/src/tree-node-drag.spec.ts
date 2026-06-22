@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, renderHost } from '../../test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';

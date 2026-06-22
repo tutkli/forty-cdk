@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 
-import { flush, renderHost } from '../../test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';

@@ -7,7 +7,9 @@ export { ForDragPlaceholder } from './drag-placeholder';
 export { ForDropListGroup, FOR_DROP_LIST_GROUP } from './drop-list-group';
 export {
   FOR_DRAG_DROP_CONTEXT,
+  FOR_DRAGGABLE_CONTEXT,
   type ForDropListContext,
+  type ForDraggableContext,
   type ForDraggableHandle,
   type ForDragDropEvent,
   type ForDragStartEvent,

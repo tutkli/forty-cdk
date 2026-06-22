@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { installObserverPolyfills, renderHost } from '../../test-utils';
+import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForCarousel } from './carousel';
 import { ForCarouselDrag } from './carousel-drag';
 import { ForCarouselSlide } from './carousel-slide';
