@@ -22,6 +22,11 @@ import {
   provideForCarouselDefaults,
 } from '../../carousel/carousel-defaults';
 import {
+  FOR_COMBOBOX_DEFAULTS,
+  FOR_COMBOBOX_FALLBACK_DEFAULTS,
+  provideForComboboxDefaults,
+} from '../../combobox/combobox-defaults';
+import {
   FOR_CONTEXT_MENU_DEFAULTS,
   FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
   provideForContextMenuDefaults,
@@ -243,6 +248,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_LISTBOX_FALLBACK_DEFAULTS,
     provide: provideForListboxDefaults,
     override: { selectionFollowsFocus: true },
+  }),
+  defaultsCase({
+    name: 'provideForComboboxDefaults',
+    token: FOR_COMBOBOX_DEFAULTS,
+    fallback: FOR_COMBOBOX_FALLBACK_DEFAULTS,
+    provide: provideForComboboxDefaults,
+    override: { sideOffset: 12 },
   }),
   defaultsCase({
     name: 'provideForContextMenuDefaults',

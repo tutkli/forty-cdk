@@ -48,6 +48,7 @@ import {
   type ForComboboxInitialFocus,
   type ForComboboxOptionHandle,
 } from './combobox-context';
+import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 import { OptionLabelCache } from './combobox-label-cache';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -96,6 +97,7 @@ export class ForCombobox<T = string>
   implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
   readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
 
@@ -226,7 +228,7 @@ export class ForCombobox<T = string>
   );
 
   /** Gap (px) between input and listbox along the main axis. Default `4`. */
-  readonly sideOffset = input(4, { transform: numberAttribute });
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
   /** Gap (px) along the cross axis. Default `0`. */
   readonly alignOffset = input(0, { transform: numberAttribute });
@@ -235,7 +237,9 @@ export class ForCombobox<T = string>
   readonly avoidCollisions = input(true, { transform: booleanAttribute });
 
   /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(8, { transform: numberAttribute });
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /** Padding (px) for the `arrow` middleware. Default `0`. */
   readonly arrowPadding = input(0, { transform: numberAttribute });
