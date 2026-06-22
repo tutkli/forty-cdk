@@ -186,6 +186,7 @@ import { ForToolbar } from '../../toolbar/toolbar';
 import { ForToolbarButton } from '../../toolbar/toolbar-button';
 import { ForToolbarLink } from '../../toolbar/toolbar-link';
 import { ForToolbarSeparator } from '../../toolbar/toolbar-separator';
+import { injectBreakpoints } from '../../breakpoints/breakpoints';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 import { IdGenerator } from '../id-generator/id-generator';
@@ -1450,6 +1451,20 @@ class VirtualViewportFixture {
 })
 class VisuallyHiddenFixture {}
 
+@Component({
+  template: `
+    <p>{{ active() ?? 'base' }}</p>
+    @if (wide()) {
+      <span>wide</span>
+    }
+  `,
+})
+class BreakpointsFixture {
+  private readonly bp = injectBreakpoints();
+  readonly active = this.bp.active;
+  readonly wide = this.bp.up('lg');
+}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -1517,6 +1532,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   FileUploadFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
+  BreakpointsFixture,
   VisuallyHiddenFixture,
 ];
 
