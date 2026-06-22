@@ -5,6 +5,23 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "forty-cdk/menu": ["./dist/forty-cdk/menu", "./projects/forty-cdk/menu/src/public-api.ts"],
+      "forty-cdk/dropdown-menu": [
+        "./dist/forty-cdk/dropdown-menu",
+        "./projects/forty-cdk/dropdown-menu/src/public-api.ts"
+      ],
+      "forty-cdk/context-menu": [
+        "./dist/forty-cdk/context-menu",
+        "./projects/forty-cdk/context-menu/src/public-api.ts"
+      ],
+      "forty-cdk/menubar": [
+        "./dist/forty-cdk/menubar",
+        "./projects/forty-cdk/menubar/src/public-api.ts"
+      ],
+      "forty-cdk/navigation-menu": [
+        "./dist/forty-cdk/navigation-menu",
+        "./projects/forty-cdk/navigation-menu/src/public-api.ts"
+      ],
       "forty-cdk/tooltip": [
         "./dist/forty-cdk/tooltip",
         "./projects/forty-cdk/tooltip/src/public-api.ts"

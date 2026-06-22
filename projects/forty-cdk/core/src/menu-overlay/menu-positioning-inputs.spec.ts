@@ -2,13 +2,14 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { ForContextMenu } from '../../../src/lib/context-menu/context-menu';
-import { ForDropdownMenu } from '../../../src/lib/dropdown-menu/dropdown-menu';
-import { ForMenuSub } from '../../../src/lib/menu/menu-sub';
+import { ForContextMenu } from 'forty-cdk/context-menu';
+import { ForDropdownMenu } from 'forty-cdk/dropdown-menu';
+import { ForMenuSub } from 'forty-cdk/menu';
+
 import {
   MenubarMenuContext,
   type MenubarMenuHost,
-} from '../../../src/lib/menubar/menubar-menu-context';
+} from '../../../menubar/src/menubar-menu-context';
 import { MENU_POSITIONING_DEFAULTS } from './menu-positioning-inputs';
 
 @Component({

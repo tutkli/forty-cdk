@@ -32,6 +32,11 @@
             "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
             "include": [
               "**/*.spec.ts",
+              "../menu/src/**/*.spec.ts",
+              "../dropdown-menu/src/**/*.spec.ts",
+              "../context-menu/src/**/*.spec.ts",
+              "../menubar/src/**/*.spec.ts",
+              "../navigation-menu/src/**/*.spec.ts",
               "../tooltip/src/**/*.spec.ts",
               "../drawer/src/**/*.spec.ts",
               "../popover/src/**/*.spec.ts",

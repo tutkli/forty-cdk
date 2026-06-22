@@ -7,10 +7,10 @@ import {
   flushPositioning,
   pressKey,
   renderHost,
-} from '../../test-utils';
-import { ForContextMenu } from '../context-menu/context-menu';
-import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
-import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
+} from '../../src/test-utils';
+import { ForContextMenu } from 'forty-cdk/context-menu';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+
 import { ForMenuContent } from './menu-content';
 import { provideForMenuDefaults } from './menu-defaults';
 import { ForMenuItem } from './menu-item';

@@ -2,9 +2,9 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
-import { ForMenuContent } from '../menu/menu-content';
-import { ForMenuItem } from '../menu/menu-item';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+
 import { ForDropdownMenu } from './dropdown-menu';
 import { ForDropdownMenuTrigger } from './dropdown-menu-trigger';
 

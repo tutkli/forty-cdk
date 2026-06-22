@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../test-utils';
+import { flush, pressKey, renderHost } from '../../src/test-utils';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';

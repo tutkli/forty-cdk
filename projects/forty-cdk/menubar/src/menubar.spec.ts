@@ -2,11 +2,9 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
-import { ForMenuContent } from '../menu/menu-content';
-import { ForMenuItem } from '../menu/menu-item';
-import { ForMenuSub } from '../menu/menu-sub';
-import { ForMenuSubTrigger } from '../menu/menu-sub-trigger';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+
 import { ForMenubar } from './menubar';
 import { ForMenubarTrigger } from './menubar-trigger';
 

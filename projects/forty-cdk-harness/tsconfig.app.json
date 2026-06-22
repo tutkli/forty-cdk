@@ -6,6 +6,11 @@
     "outDir": "../../out-tsc/app",
     "types": [],
     "paths": {
+      "forty-cdk/menu": ["../forty-cdk/menu/src/public-api.ts"],
+      "forty-cdk/dropdown-menu": ["../forty-cdk/dropdown-menu/src/public-api.ts"],
+      "forty-cdk/context-menu": ["../forty-cdk/context-menu/src/public-api.ts"],
+      "forty-cdk/menubar": ["../forty-cdk/menubar/src/public-api.ts"],
+      "forty-cdk/navigation-menu": ["../forty-cdk/navigation-menu/src/public-api.ts"],
       "forty-cdk/tooltip": ["../forty-cdk/tooltip/src/public-api.ts"],
       "forty-cdk/drawer": ["../forty-cdk/drawer/src/public-api.ts"],
       "forty-cdk/popover": ["../forty-cdk/popover/src/public-api.ts"],

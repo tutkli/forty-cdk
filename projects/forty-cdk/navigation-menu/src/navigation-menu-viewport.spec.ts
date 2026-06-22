@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 
-import { flush as flushAsync } from '../../test-utils/flush';
-import { renderHost } from '../../test-utils/render';
+import { flush as flushAsync } from '../../src/test-utils/flush';
+import { renderHost } from '../../src/test-utils/render';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';

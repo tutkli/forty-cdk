@@ -30,7 +30,7 @@ import {
   FOR_CONTEXT_MENU_DEFAULTS,
   FOR_CONTEXT_MENU_FALLBACK_DEFAULTS,
   provideForContextMenuDefaults,
-} from '../../../src/lib/context-menu/context-menu-defaults';
+} from '../../../context-menu/src/context-menu-defaults';
 import {
   FOR_DATE_PICKER_DEFAULTS,
   FOR_DATE_PICKER_FALLBACK_DEFAULTS,
@@ -40,7 +40,7 @@ import {
   FOR_DROPDOWN_MENU_DEFAULTS,
   FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
   provideForDropdownMenuDefaults,
-} from '../../../src/lib/dropdown-menu/dropdown-menu-defaults';
+} from '../../../dropdown-menu/src/dropdown-menu-defaults';
 import {
   FOR_HOVER_CARD_DEFAULTS,
   FOR_HOVER_CARD_FALLBACK_DEFAULTS,
@@ -55,17 +55,17 @@ import {
   FOR_MENU_DEFAULTS,
   FOR_MENU_FALLBACK_DEFAULTS,
   provideForMenuDefaults,
-} from '../../../src/lib/menu/menu-defaults';
+} from '../../../menu/src/menu-defaults';
 import {
   FOR_MENUBAR_DEFAULTS,
   FOR_MENUBAR_FALLBACK_DEFAULTS,
   provideForMenubarDefaults,
-} from '../../../src/lib/menubar/menubar-defaults';
+} from '../../../menubar/src/menubar-defaults';
 import {
   FOR_NAVIGATION_MENU_DEFAULTS,
   FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS,
   provideForNavigationMenuDefaults,
-} from '../../../src/lib/navigation-menu/navigation-menu-defaults';
+} from '../../../navigation-menu/src/navigation-menu-defaults';
 import {
   FOR_NUMBER_INPUT_DEFAULTS,
   FOR_NUMBER_INPUT_FALLBACK_DEFAULTS,

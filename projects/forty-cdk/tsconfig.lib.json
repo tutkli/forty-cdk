@@ -9,6 +9,11 @@
     "types": []
   },
   "include": [
+    "menu/src/**/*.ts",
+    "dropdown-menu/src/**/*.ts",
+    "context-menu/src/**/*.ts",
+    "menubar/src/**/*.ts",
+    "navigation-menu/src/**/*.ts",
     "tooltip/src/**/*.ts",
     "drawer/src/**/*.ts",
     "popover/src/**/*.ts",

@@ -42,8 +42,7 @@ import {
 } from 'forty-cdk/popover';
 import { ForToast, ForToastDescription, ForToastTitle } from 'forty-cdk/toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
-import { ForDropdownMenu, ForDropdownMenuTrigger } from './dropdown-menu';
-import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import {
   ForMenuContent,
   ForMenuGroup,
@@ -51,15 +50,16 @@ import {
   ForMenuItem,
   ForMenuSub,
   ForMenuSubTrigger,
-} from './menu';
-import { ForMenubar, ForMenubarTrigger } from './menubar';
+} from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
   ForNavigationMenuContent,
   ForNavigationMenuItem,
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
-} from './navigation-menu';
+} from 'forty-cdk/navigation-menu';
+import { ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption } from './listbox';
 
 import {
   ForSelect,

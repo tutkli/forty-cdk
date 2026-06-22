@@ -29,12 +29,13 @@ import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-t
 import { ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
-import { ForDropdownMenu } from '../../../src/lib/dropdown-menu/dropdown-menu';
-import { ForDropdownMenuTrigger } from '../../../src/lib/dropdown-menu/dropdown-menu-trigger';
-import { ForNavigationMenu } from '../../../src/lib/navigation-menu/navigation-menu';
-import { ForNavigationMenuItem } from '../../../src/lib/navigation-menu/navigation-menu-item';
-import { ForNavigationMenuList } from '../../../src/lib/navigation-menu/navigation-menu-list';
-import { ForNavigationMenuTrigger } from '../../../src/lib/navigation-menu/navigation-menu-trigger';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import {
+  ForNavigationMenu,
+  ForNavigationMenuItem,
+  ForNavigationMenuList,
+  ForNavigationMenuTrigger,
+} from 'forty-cdk/navigation-menu';
 
 import { ForSelect } from '../../../src/lib/select/select';
 import { ForSelectTrigger } from '../../../src/lib/select/select-trigger';

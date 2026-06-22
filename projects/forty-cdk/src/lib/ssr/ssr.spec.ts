@@ -93,16 +93,18 @@ import {
 import { ForToast, ForToastTitle, ForToastViewport } from 'forty-cdk/toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
-import { ForMenuContent } from '../menu/menu-content';
-import { ForMenuItem } from '../menu/menu-item';
-import { ForMenubar } from '../menubar/menubar';
-import { ForMenubarTrigger } from '../menubar/menubar-trigger';
-import { ForNavigationMenu } from '../navigation-menu/navigation-menu';
-import { ForNavigationMenuContent } from '../navigation-menu/navigation-menu-content';
-import { ForNavigationMenuItem } from '../navigation-menu/navigation-menu-item';
-import { ForNavigationMenuLink } from '../navigation-menu/navigation-menu-link';
-import { ForNavigationMenuList } from '../navigation-menu/navigation-menu-list';
-import { ForNavigationMenuTrigger } from '../navigation-menu/navigation-menu-trigger';
+import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
+import {
+  ForNavigationMenu,
+  ForNavigationMenuContent,
+  ForNavigationMenuItem,
+  ForNavigationMenuLink,
+  ForNavigationMenuList,
+  ForNavigationMenuTrigger,
+} from 'forty-cdk/navigation-menu';
 
 import { ForSelect } from '../select/select';
 import { ForSelectContent } from '../select/select-content';
@@ -171,10 +173,6 @@ import { ForStepperPrevious } from '../stepper/stepper-previous';
 import { ForStepperSeparator } from '../stepper/stepper-separator';
 import { ForStepperProgress } from '../stepper/stepper-progress';
 import { ForStepperTrigger } from '../stepper/stepper-trigger';
-import { ForContextMenu } from '../context-menu/context-menu';
-import { ForContextMenuTrigger } from '../context-menu/context-menu-trigger';
-import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
-import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
 
 import { ForListbox } from '../listbox/listbox';
 import { ForListboxOption } from '../listbox/listbox-option';

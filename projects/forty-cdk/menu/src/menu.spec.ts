@@ -1,9 +1,9 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../test-utils';
-import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
-import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
+import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+
 import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
 import { ForMenuContent } from './menu-content';
 import { ForMenuGroup } from './menu-group';
