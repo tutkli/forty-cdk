@@ -17,7 +17,7 @@ import { ForComboboxInput } from '../../../src/lib/combobox/combobox-input';
 import { ForComboboxTrigger } from '../../../src/lib/combobox/combobox-trigger';
 import { ForDatePicker } from '../../../src/lib/date-picker/date-picker';
 import { ForDatePickerTrigger } from '../../../src/lib/date-picker/date-picker-trigger';
-import { ForDialogTrigger } from '../../../src/lib/dialog/dialog-trigger';
+import { ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDisclosure } from '../../../src/lib/disclosure/disclosure';
 import { ForDisclosureTrigger } from '../../../src/lib/disclosure/disclosure-trigger';
 import { ForDrawerTrigger } from '../../../src/lib/drawer/drawer-trigger';

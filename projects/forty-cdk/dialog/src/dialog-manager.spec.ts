@@ -1,7 +1,7 @@
 import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, pressKey } from '../../test-utils';
+import { afterEachOverlayCleanup, pressKey } from '../../src/test-utils';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';

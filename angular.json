@@ -30,7 +30,13 @@
             "tsConfig": "projects/forty-cdk/tsconfig.spec.json",
             "runnerConfig": true,
             "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
-            "include": ["**/*.spec.ts", "../virtualization/src/**/*.spec.ts"]
+            "include": [
+              "**/*.spec.ts",
+              "../core/src/**/*.spec.ts",
+              "../button/src/**/*.spec.ts",
+              "../dialog/src/**/*.spec.ts",
+              "../virtualization/src/**/*.spec.ts"
+            ]
           }
         }
       }

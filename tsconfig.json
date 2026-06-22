@@ -6,7 +6,15 @@
     "strict": true,
     "paths": {
       "forty-cdk": ["./dist/forty-cdk", "./projects/forty-cdk/src/public-api.ts"],
+      "forty-cdk/button": [
+        "./dist/forty-cdk/button",
+        "./projects/forty-cdk/button/src/public-api.ts"
+      ],
       "forty-cdk/core": ["./dist/forty-cdk/core", "./projects/forty-cdk/core/src/public-api.ts"],
+      "forty-cdk/dialog": [
+        "./dist/forty-cdk/dialog",
+        "./projects/forty-cdk/dialog/src/public-api.ts"
+      ],
       "forty-cdk/internationalized-date": [
         "./dist/forty-cdk/internationalized-date",
         "./projects/forty-cdk/internationalized-date/src/public-api.ts"

@@ -10,7 +10,9 @@
   },
   "include": [
     "src/**/*.ts",
+    "button/src/**/*.ts",
     "core/src/**/*.ts",
+    "dialog/src/**/*.ts",
     "internationalized-date/src/**/*.ts",
     "virtualization/src/**/*.ts"
   ],

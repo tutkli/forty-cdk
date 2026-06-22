@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 
-import { renderHost } from '../../test-utils/render';
+import { renderHost } from '../../src/test-utils/render';
 import { ForButton } from './button';
 
 @Component({

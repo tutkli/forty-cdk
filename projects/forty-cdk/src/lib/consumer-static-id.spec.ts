@@ -28,7 +28,7 @@ import {
   ForComboboxOption,
 } from './combobox';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from './date-picker';
-import { ForDialog, ForDialogDescription, ForDialogTitle } from './dialog';
+import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from './disclosure';
 import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from './drawer';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from './dropdown-menu';

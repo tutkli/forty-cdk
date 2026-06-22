@@ -8,8 +8,8 @@ import {
   pressKey,
   renderHost,
   withReducedMotion,
-} from '../../test-utils';
-import { assertDismissableLayerContract } from '../../test-utils/contract';
+} from '../../src/test-utils';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';

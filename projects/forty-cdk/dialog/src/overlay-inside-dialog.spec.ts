@@ -1,15 +1,17 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, renderHost } from '../../test-utils';
-import { ForDropdownMenu } from '../dropdown-menu/dropdown-menu';
-import { ForDropdownMenuTrigger } from '../dropdown-menu/dropdown-menu-trigger';
-import { ForMenuContent } from '../menu/menu-content';
-import { ForMenuItem } from '../menu/menu-item';
-import { ForSelect } from '../select/select';
-import { ForSelectContent } from '../select/select-content';
-import { ForSelectOption } from '../select/select-option';
-import { ForSelectTrigger } from '../select/select-trigger';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
+import {
+  ForDropdownMenu,
+  ForDropdownMenuTrigger,
+  ForMenuContent,
+  ForMenuItem,
+  ForSelect,
+  ForSelectContent,
+  ForSelectOption,
+  ForSelectTrigger,
+} from 'forty-cdk';
 import { ForDialog } from './dialog';
 
 /**
