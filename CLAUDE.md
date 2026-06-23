@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All commands run from repo root unless noted. The Angular workspace contains the library project (`forty-cdk`) and a small dev-only application (`forty-cdk-harness`) used by the Playwright E2E suite — `pnpm build` and `pnpm test` are pinned to the library project so the harness never ships.
 
-The repo uses **pnpm** (pinned via `packageManager` in `package.json`, activated through Corepack). With Corepack enabled (`corepack enable`), running `pnpm <cmd>` in this directory will use the correct version automatically. Otherwise install pnpm globally with `npm i -g pnpm@10`.
+The repo uses **pnpm** (pinned via `packageManager` in `package.json`, activated through Corepack). With Corepack enabled (`corepack enable`), running `pnpm <cmd>` in this directory will use the correct version automatically. Otherwise install pnpm globally with `npm i -g pnpm@11`.
 
 ```bash
 pnpm build                 # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)

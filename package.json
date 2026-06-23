@@ -23,7 +23,7 @@
     "lint:rule-fixtures": "eslint --no-ignore projects/forty-cdk/eslint-rules-fixtures"
   },
   "private": true,
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=24"
   },
