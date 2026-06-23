@@ -21,6 +21,7 @@ import {
   resolveListNavigation,
   createPointerDragSession,
   type PointerDragSession,
+  createPointerHandleGuard,
   createTemplatePreview,
   type DragPreview,
 } from 'forty-cdk/core';
@@ -75,7 +76,6 @@ export class ForDraggable implements ForDraggableContext {
   /** `true` while a pointer-drag placeholder template occupies this item's slot (host hidden). */
   protected readonly placeholderActive = signal(false);
 
-  readonly #handles = new Set<HTMLElement>();
   #pointerDragging = false;
   #pointerSession: PointerDragSession | null = null;
 
@@ -96,6 +96,8 @@ export class ForDraggable implements ForDraggableContext {
   readonly dragEnd = output<ForDragEndEvent>();
 
   readonly effectiveDisabled = computed(() => this.dragDisabled() || this.#list.disabled());
+
+  readonly #handleGuard = createPointerHandleGuard(this.effectiveDisabled);
 
   /** `true` when this item is the currently lifted draggable. Reflected as `data-dragging`. */
   readonly lifted = computed(() => this.#list.isLifted(this.#host.nativeElement));
@@ -119,9 +121,7 @@ export class ForDraggable implements ForDraggableContext {
     return this.#list.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
-  protected readonly touchAction = computed<'none' | null>(() =>
-    !this.effectiveDisabled() && this.#handles.size === 0 ? 'none' : null,
-  );
+  protected readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
     const handle: ForDraggableHandle = {
@@ -142,7 +142,7 @@ export class ForDraggable implements ForDraggableContext {
         armThreshold: POINTER_ARM_THRESHOLD_PX,
         cancelOnEscape: true,
         capturePointer: true,
-        canStart: (event) => this.#canStartPointer(event),
+        canStart: (event) => this.#handleGuard.canStart(event),
         onLift: (event) => this.#onPointerLift(event),
         onMove: (event) => this.#onPointerMove(event),
         onCommit: () => this.#onPointerCommit(),
@@ -154,25 +154,11 @@ export class ForDraggable implements ForDraggableContext {
   }
 
   registerHandle(el: HTMLElement): void {
-    this.#handles.add(el);
+    this.#handleGuard.register(el);
   }
 
   unregisterHandle(el: HTMLElement): void {
-    this.#handles.delete(el);
-  }
-
-  #canStartPointer(event: PointerEvent): boolean {
-    if (this.effectiveDisabled()) {
-      return false;
-    }
-    if (event.pointerType === 'mouse' && event.button !== 0) {
-      return false;
-    }
-    if (this.#handles.size === 0) {
-      return true;
-    }
-    const target = event.target as Node | null;
-    return target !== null && [...this.#handles].some((h) => h.contains(target));
+    this.#handleGuard.unregister(el);
   }
 
   #onPointerLift(event: PointerEvent): boolean {
