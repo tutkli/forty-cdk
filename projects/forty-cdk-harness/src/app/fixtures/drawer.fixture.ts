@@ -124,7 +124,7 @@ import { queryFlag } from './_query-flag';
         <button data-testid="close-btn" forDrawerClose>Close</button>
 
         @if (nested) {
-          <button data-testid="open-child" type="button" (click)="childOpen.set(true)">
+          <button data-testid="open-child" type="button" (click)="openChild($event)">
             Open child
           </button>
 
@@ -215,6 +215,19 @@ export class DrawerFixture {
     this.open.set(false);
     // Cascade child closure when parent dismisses, so re-opening starts clean.
     this.childOpen.set(false);
+  }
+
+  protected openChild(event: Event): void {
+    // Re-focus the opener before opening, mirroring `ForDrawerTrigger.onClick`:
+    // WebKit/Safari does not focus a `<button>` on `mousedown` and blurs an
+    // already-focused one, so by the time this handler runs the active element
+    // is `<body>`. The child drawer's return-focus contract restores whatever
+    // held focus at open time — without this re-focus it would capture
+    // `<body>` on WebKit and return-focus to `open-child` would be a no-op
+    // (#136). The real `forDrawerTrigger` opener does this internally; this
+    // plain button mirrors it so the nested return-focus assertions hold.
+    (event.currentTarget as HTMLElement).focus();
+    this.childOpen.set(true);
   }
 
   protected onChildClose(reason: ForDrawerCloseReason): void {

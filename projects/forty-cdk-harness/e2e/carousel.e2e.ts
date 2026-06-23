@@ -352,7 +352,10 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
 
   test('horizontal LTR — flick left advances to slide-1', async ({ page }) => {
     await gotoFixture(page, 'carousel');
-    await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
     await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
     await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
   });
@@ -360,7 +363,10 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
   test('horizontal LTR — flick right returns to slide-0', async ({ page }) => {
     await gotoFixture(page, 'carousel');
     await el(page, 'next').click();
-    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
     await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
   });
 
@@ -376,15 +382,24 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
 
   test('vertical — flick up advances; flick down reverses', async ({ page }) => {
     await gotoFixture(page, 'carousel', { orientation: 'vertical' });
-    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: -40 }, 3, { stepDelayMs: 50 });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: -40 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
     await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
-    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: 40 }, 3, { stepDelayMs: 50 });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 0, dy: 40 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
     await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
   });
 
   test('RTL — flick right advances to slide-1', async ({ page }) => {
     await gotoFixture(page, 'carousel', { dir: 'rtl' });
-    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, { stepDelayMs: 50 });
+    await dragFromSteps(page, el(page, 'viewport'), { dx: 50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
     await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
   });
 
@@ -429,6 +444,7 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
       await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
         stepDelayMs: 50,
         release: false,
+        flickRelease: true,
       });
       const dragVar = await page.evaluate(() => {
         const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
