@@ -18,6 +18,7 @@ import { isPlatformBrowser } from '@angular/common';
 import {
   clampPreviewPosition,
   createPointerDragSession,
+  createPointerHandleGuard,
   type PointerDragSession,
 } from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
@@ -66,12 +67,13 @@ export class ForFreeDrag implements ForDraggableContext {
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #handles = new Set<HTMLElement>();
   readonly #lift = signal<LiftSnapshot | null>(null);
   #pointerSession: PointerDragSession | null = null;
 
   /** When true, the element can't be dragged (it stays focusable; the transform doesn't change). */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  readonly #handleGuard = createPointerHandleGuard(this.disabled);
 
   /**
    * The element actually moved: an `HTMLElement`, or a selector resolved via `closest()` from the
@@ -111,9 +113,7 @@ export class ForFreeDrag implements ForDraggableContext {
   /** True while a pointer drag is armed. Reflected as `data-dragging`. */
   readonly dragging = computed(() => this.#lift() !== null);
 
-  protected readonly touchAction = computed<'none' | null>(() =>
-    !this.disabled() && this.#handles.size === 0 ? 'none' : null,
-  );
+  protected readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
     if (this.#isBrowser) {
@@ -128,7 +128,7 @@ export class ForFreeDrag implements ForDraggableContext {
         armThreshold: POINTER_ARM_THRESHOLD_PX,
         cancelOnEscape: true,
         capturePointer: true,
-        canStart: (event) => this.#canStartPointer(event),
+        canStart: (event) => this.#handleGuard.canStart(event),
         onLift: (event) => this.#onLift(event),
         onMove: (event) => this.#onMove(event),
         onCommit: () => this.#onCommit(),
@@ -139,11 +139,11 @@ export class ForFreeDrag implements ForDraggableContext {
   }
 
   registerHandle(el: HTMLElement): void {
-    this.#handles.add(el);
+    this.#handleGuard.register(el);
   }
 
   unregisterHandle(el: HTMLElement): void {
-    this.#handles.delete(el);
+    this.#handleGuard.unregister(el);
   }
 
   readonly #resolvedRoot = computed<HTMLElement>(() => {
@@ -163,20 +163,6 @@ export class ForFreeDrag implements ForDraggableContext {
     return typeof boundary === 'string'
       ? this.#host.nativeElement.closest<HTMLElement>(boundary)
       : boundary;
-  }
-
-  #canStartPointer(event: PointerEvent): boolean {
-    if (this.disabled()) {
-      return false;
-    }
-    if (event.pointerType === 'mouse' && event.button !== 0) {
-      return false;
-    }
-    if (this.#handles.size === 0) {
-      return true;
-    }
-    const target = event.target as Node | null;
-    return target !== null && [...this.#handles].some((h) => h.contains(target));
   }
 
   #onLift(event: PointerEvent): boolean {

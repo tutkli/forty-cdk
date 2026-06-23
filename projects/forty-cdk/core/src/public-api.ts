@@ -42,6 +42,7 @@ export * from './drag-session/drag-geometry';
 export * from './drag-session/drag-positions';
 export * from './drag-session/drag-preview';
 export * from './drag-session/flip';
+export * from './drag-session/handle-guard';
 export * from './drag-session/keyboard-drag-keys';
 export * from './drag-session/keyboard-drag-mediator';
 export * from './drag-session/placeholder-position';
