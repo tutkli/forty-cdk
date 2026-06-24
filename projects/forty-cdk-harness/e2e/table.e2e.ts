@@ -355,4 +355,26 @@ test.describe('Table (column resizing)', () => {
     const valuenow = Number(await resizer.getAttribute('aria-valuenow'));
     expect(valuenow).toBeGreaterThan(0);
   });
+
+  test('measures the header cell under hostDirectives composition, not the handle', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table-resizer-wrapped');
+    const cell = el(page, 'wrapped-cell');
+    const resizer = el(page, 'wrapped-resizer');
+
+    await expect(cell).toHaveAttribute('role', 'columnheader');
+    await expect(cell).not.toHaveAttribute('fortableheadercell');
+
+    const cellBox = await cell.boundingBox();
+    expect(cellBox).not.toBeNull();
+    const handleBox = await resizer.boundingBox();
+    expect(handleBox).not.toBeNull();
+    expect(handleBox!.width).toBeLessThan(cellBox!.width);
+
+    await expect(resizer).toHaveAttribute('aria-valuenow', /^\d+(\.\d+)?$/);
+    const valuenow = Number(await resizer.getAttribute('aria-valuenow'));
+    expect(valuenow).toBeCloseTo(cellBox!.width, 0);
+    expect(valuenow).toBeGreaterThan(handleBox!.width);
+  });
 });

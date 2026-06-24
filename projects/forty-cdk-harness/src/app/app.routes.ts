@@ -224,6 +224,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/table.fixture').then((m) => m.TableFixture),
   },
   {
+    path: 'table-resizer-wrapped',
+    loadComponent: () =>
+      import('./fixtures/table-resizer-wrapped.fixture').then((m) => m.TableResizerWrappedFixture),
+  },
+  {
     path: 'table-combined',
     loadComponent: () =>
       import('./fixtures/table-combined.fixture').then((m) => m.TableCombinedFixture),

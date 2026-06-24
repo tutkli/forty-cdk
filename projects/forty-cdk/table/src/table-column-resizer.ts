@@ -16,6 +16,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { clampToRange, startPointerResize } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
+import { ForTableHeaderCell } from './table-header-cell';
 
 /** Payload of `resizeCommit`: which column was resized and its committed width (px). */
 export interface TableResizeDescriptor {
@@ -69,6 +70,7 @@ export interface TableResizeDescriptor {
 export class ForTableColumnResizer {
   protected readonly ctx = injectTableContext('ForTableColumnResizer');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #headerCell = inject(ForTableHeaderCell, { optional: true });
 
   /** Column identity; included in the `resizeCommit` payload and the published CSS var name. */
   readonly column = input.required<string>();
@@ -180,7 +182,7 @@ export class ForTableColumnResizer {
   }
 
   #measureBaseWidth(): number {
-    const cell = this.#host.closest<HTMLElement>('[forTableHeaderCell]');
-    return (cell ?? this.#host).getBoundingClientRect().width;
+    const cell = this.#headerCell?.el.nativeElement ?? this.#host;
+    return cell.getBoundingClientRect().width;
   }
 }
