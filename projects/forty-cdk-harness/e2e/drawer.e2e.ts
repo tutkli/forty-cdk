@@ -183,10 +183,7 @@ test.describe('Drawer', () => {
     await expect(el(page, 'child-first')).toBeFocused();
   });
 
-  test('nested: first Escape closes child only; second Escape closes parent', async ({
-    page,
-    browserName,
-  }) => {
+  test('nested: first Escape closes child only; second Escape closes parent', async ({ page }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
     await el(page, 'trigger').click();
     await el(page, 'open-child').click();
@@ -197,22 +194,18 @@ test.describe('Drawer', () => {
     await expect(el(page, 'drawer')).toBeVisible();
     await expect(el(page, 'last-child-close-reason')).toHaveText('escape');
     await expect(el(page, 'last-close-reason')).toHaveText('none');
-    // WebKit auto-blurs descendants of a freshly-inert ancestor and the
-    // race when un-inerting + return-focus prevents the trigger from
-    // regaining focus inside a still-modal parent. Same root cause as the
-    // existing Dialog return-focus race noted in CLAUDE.md; tracked for
-    // a library-level fix rather than papered over here (see #136).
-    if (browserName !== 'webkit') {
-      await expect(el(page, 'open-child')).toBeFocused();
-    }
+    // Closing the child returns focus to its opener — on WebKit too. WebKit
+    // does not focus a `<button>` on `mousedown` (and blurs an already-focused
+    // one), so the `open-child` button re-focuses itself before opening (see
+    // the fixture's `openChild`, mirroring `ForDrawerTrigger.onClick`) — the
+    // drawer then captures it as the return target. `trigger` is a real
+    // `forDrawerTrigger`, which already does this internally (#136).
+    await expect(el(page, 'open-child')).toBeFocused();
 
     await page.keyboard.press('Escape');
     await expect(el(page, 'drawer')).toHaveCount(0);
     await expect(el(page, 'last-close-reason')).toHaveText('escape');
-    // Same WebKit return-focus race as above (see #136).
-    if (browserName !== 'webkit') {
-      await expect(el(page, 'trigger')).toBeFocused();
-    }
+    await expect(el(page, 'trigger')).toBeFocused();
   });
 
   test('nested: closing child reverts data-state-nested on the parent', async ({ page }) => {
@@ -776,18 +769,23 @@ test.describe('Drawer', () => {
       // The directive computes pointer velocity per `pointermove` as
       // `moveTowardEdge / dt` where `dt = now - lastEventTime`. The
       // release reads `#pointerVelocity` set by the LAST move, so the
-      // gesture needs to land back-to-back consecutive moves at the
-      // very end: the final move's `dt` against the preceding move
-      // is sub-millisecond (Playwright's CDP transport overhead), so
-      // even a small final delta yields a velocity well above the
-      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` flick gate.
+      // flick is registered iff the final move's velocity clears the
+      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` gate.
       //
-      // Total displacement = 5 (arm) + 10 (intermediate) + 25 (flick)
-      // = 40 px, below the 50 px (200 × 0.25) position threshold —
-      // so the only way for the drawer to dismiss is via the velocity
-      // branch of `#onSwipeRelease` (`offset >= dim * closeThreshold
-      // || #pointerVelocity >= 0.4`).
-      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      // Robustness: the previous shape relied on the final move's
+      // `dt` being sub-millisecond ("CDP transport overhead") while keeping
+      // the delta tiny (25 px) to stay under the position threshold. On
+      // `Mobile Safari` under `--ui` / load that assumption breaks — WebKit
+      // coalesces pointermoves and inflates `dt`, so 25 px / dt dipped under
+      // 0.4 and the dismiss silently failed, inconsistently. We instead buy
+      // headroom: raise the position threshold to 100 px via
+      // `closeThreshold=0.5` (200 × 0.5) so the velocity branch can use a
+      // LARGE final delta (70 px) that still sits below the position
+      // threshold (total offset 90 px < 100 px). 70 px / dt clears 0.4 even
+      // when `dt` inflates past 100 ms, so the only dismiss path remains the
+      // velocity branch of `#onSwipeRelease`
+      // (`offset >= dim * closeThreshold || #pointerVelocity >= 0.4`).
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '0.5' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
@@ -801,12 +799,13 @@ test.describe('Drawer', () => {
       // intermediate event with a known timestamp gap so the flick's
       // tight dt below stands out unambiguously.
       await page.waitForTimeout(120);
-      await page.mouse.move(sx, sy + 15); // intermediate (slow, velocity here is small)
+      await page.mouse.move(sx, sy + 20); // intermediate (slow, velocity here is small)
       // Back-to-back final move + release: the directive recomputes
-      // `#pointerVelocity` on this move with `dt` ≈ sub-millisecond
-      // CDP transport, so velocity ≈ 25 px / ~1 ms = 25 px/ms (way
-      // above 0.4).
-      await page.mouse.move(sx, sy + 40);
+      // `#pointerVelocity` on this move against the previous one. The
+      // 70 px delta keeps velocity well above 0.4 even if WebKit inflates
+      // `dt`; total offset (90 px) stays under the 100 px position
+      // threshold so this can only dismiss via the velocity branch.
+      await page.mouse.move(sx, sy + 90);
       await page.mouse.up();
 
       await expect(el(page, 'drawer')).toHaveCount(0);

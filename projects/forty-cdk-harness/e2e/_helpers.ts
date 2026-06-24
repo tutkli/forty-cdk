@@ -151,6 +151,21 @@ export async function dragFrom(
  * branch pass a larger `stepDelayMs` so per-event velocity stays below
  * the threshold.
  *
+ * `opts.flickRelease` makes the flick deterministic: the FINAL step is
+ * dispatched back-to-back with the previous move (its preceding
+ * `stepDelayMs` wait is skipped), so the directive samples its release
+ * velocity over the event-dispatch `dt` (a few ms) rather than over the
+ * timed gap. Without it, a flick relies on `stepDelayMs` being an
+ * accurate wall-clock gap, which it is NOT on `Mobile Safari` under
+ * `--ui` / heavy load: `waitForTimeout` overshoots and WebKit coalesces
+ * pointermoves, inflating `dt` so `|step| / dt` dips under the 0.4-px/ms
+ * threshold and the flick silently fails. Use it on any
+ * `@mobile` flick spec that must register a flick (advance / dismiss);
+ * leave it off for no-flick / boundary specs. The arm step and the
+ * `steps - 1` earlier moves still observe `stepDelayMs`, so the
+ * cumulative offset is unchanged — only the release-velocity sample is
+ * made robust.
+ *
  * Pass `opts.testInfo` to enable the touch branch on mobile projects
  * (see {@link dragFrom} for the rationale and limitations of the
  * touch path).
@@ -164,6 +179,7 @@ export async function dragFromSteps(
     release?: boolean;
     stepDelayMs?: number;
     armPx?: number;
+    flickRelease?: boolean;
     testInfo?: TestInfo;
   } = {},
 ): Promise<void> {
@@ -174,6 +190,11 @@ export async function dragFromSteps(
   const stepDelayMs = options.stepDelayMs ?? 50;
   const armPx = options.armPx ?? 5;
   const release = options.release ?? true;
+  const flickRelease = options.flickRelease ?? false;
+  // Skip the timed wait before the final step when a deterministic flick
+  // is requested, so its release-velocity dt is the event-dispatch gap.
+  const isLastStep = (i: number): boolean => i === steps - 1;
+  const waitBeforeStep = (i: number): boolean => !(flickRelease && isLastStep(i));
 
   const len = Math.hypot(step.dx, step.dy) || 1;
   const armDx = (step.dx / len) * armPx;
@@ -186,7 +207,7 @@ export async function dragFromSteps(
     let cx = startX + armDx;
     let cy = startY + armDy;
     for (let i = 0; i < steps; i++) {
-      await page.waitForTimeout(stepDelayMs);
+      if (waitBeforeStep(i)) await page.waitForTimeout(stepDelayMs);
       cx += step.dx;
       cy += step.dy;
       await dispatchPointerMoveAt(page, cx, cy);
@@ -206,7 +227,7 @@ export async function dragFromSteps(
   let cx = startX + armDx;
   let cy = startY + armDy;
   for (let i = 0; i < steps; i++) {
-    await page.waitForTimeout(stepDelayMs);
+    if (waitBeforeStep(i)) await page.waitForTimeout(stepDelayMs);
     cx += step.dx;
     cy += step.dy;
     await page.mouse.move(cx, cy);
