@@ -58,6 +58,7 @@ import {
   ForToolbarSeparator,
 } from 'forty-cdk/toolbar';
 import {
+  type CalendarDateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -72,7 +73,13 @@ import {
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
-import { ForDatePicker, ForDatePickerTrigger, ForDatePickerValue } from 'forty-cdk/date-picker';
+import {
+  ForDatePicker,
+  ForDatePickerContent,
+  ForDatePickerTrigger,
+  ForDatePickerValue,
+  ForDateRangePicker,
+} from 'forty-cdk/date-picker';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import {
   ForTimePicker,
@@ -1119,6 +1126,44 @@ class DatePickerFixture {
 
 @Component({
   imports: [
+    ForDateRangePicker,
+    ForDatePickerTrigger,
+    ForDatePickerValue,
+    ForDatePickerContent,
+    ForCalendar,
+    ForCalendarGrid,
+    ForCalendarCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forDateRangePicker [open]="true" [(value)]="value" ariaLabel="Choose date range">
+      <button forDatePickerTrigger>
+        <span forDatePickerValue placeholder="Pick a range"></span>
+      </button>
+      <div forDatePickerContent>
+        <div forCalendar selectionMode="range" [(range)]="value">
+          <table forCalendarGrid #grid="forCalendarGrid">
+            <tbody>
+              @for (week of grid.weeks(); track week.key) {
+                <tr>
+                  @for (cell of week.days; track cell.key) {
+                    <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class DateRangePickerOpenFixture {
+  readonly value = signal<CalendarDateRange<Date> | null>(null);
+}
+
+@Component({
+  imports: [
     ForTimePicker,
     ForTimePickerTrigger,
     ForTimePickerValue,
@@ -1528,6 +1573,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DateFieldFixture,
   TimeFieldFixture,
   DatePickerFixture,
+  DateRangePickerOpenFixture,
   TimePickerOpenFixture,
   DragDropFixture,
   FreeDragFixture,
@@ -1774,6 +1820,16 @@ describe('SSR smoke tests', () => {
     slides.forEach((s) => {
       expect(s.getAttribute('aria-roledescription')).toBe('slide');
     });
+  });
+
+  it('opening a date range picker does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(DateRangePickerOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forDatePickerContent]') as HTMLElement;
+    expect(content.getAttribute('role')).toBe('dialog');
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forDatePickerContent]')).toBeNull();
   });
 
   it('opening a trigger-anchored overlay (TimePicker) does not portal or mutate <body> server-side', () => {

@@ -156,8 +156,9 @@ export class MtxListbox extends ForListbox {}
 ```
 
 Primitives whose **root** provides a context token (and therefore needs the re-provide):
-`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForListbox`, `ForOtpInput`,
-`ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`, `ForToggleGroup`. The pure leaf
+`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForDateRangePicker`, `ForListbox`,
+`ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`, `ForToggleGroup`.
+The pure leaf
 controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput` — declare no
 providers, so a bare subclass is enough.
 
@@ -239,24 +240,25 @@ the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_S
 
 ## Exported tuples
 
-| Primitive        | Inputs tuple                             | Outputs tuple                             |
-| ---------------- | ---------------------------------------- | ----------------------------------------- |
-| `ForCheckbox`    | `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS`     | `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS`     |
-| `ForCombobox`    | `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS`     | `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS`     |
-| `ForDateField`   | `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS`   | `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS`   |
-| `ForDatePicker`  | `FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS`  | `FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS`  |
-| `ForInput`       | `FOR_INPUT_HOST_DIRECTIVE_INPUTS`        | `FOR_INPUT_HOST_DIRECTIVE_OUTPUTS`        |
-| `ForListbox`     | `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS`      | `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS`      |
-| `ForNumberInput` | `FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS` | `FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS` |
-| `ForOtpInput`    | `FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS`    | `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS`    |
-| `ForRadioGroup`  | `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS`  | `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS`  |
-| `ForSelect`      | `FOR_SELECT_HOST_DIRECTIVE_INPUTS`       | `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS`       |
-| `ForSlider`      | `FOR_SLIDER_HOST_DIRECTIVE_INPUTS`       | `FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS`       |
-| `ForSwitch`      | `FOR_SWITCH_HOST_DIRECTIVE_INPUTS`       | `FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS`       |
-| `ForTextarea`    | `FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS`     | `FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS`     |
-| `ForTimeField`   | `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS`   | `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS`   |
-| `ForToggle`      | `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS`       | `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS`       |
-| `ForToggleGroup` | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS` |
+| Primitive            | Inputs tuple                                  | Outputs tuple                                  |
+| -------------------- | --------------------------------------------- | ---------------------------------------------- |
+| `ForCheckbox`        | `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS`          | `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS`          |
+| `ForCombobox`        | `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS`          | `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS`          |
+| `ForDateField`       | `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS`        | `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS`        |
+| `ForDatePicker`      | `FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS`       | `FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS`       |
+| `ForDateRangePicker` | `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` | `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` |
+| `ForInput`           | `FOR_INPUT_HOST_DIRECTIVE_INPUTS`             | `FOR_INPUT_HOST_DIRECTIVE_OUTPUTS`             |
+| `ForListbox`         | `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS`           | `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS`           |
+| `ForNumberInput`     | `FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS`      | `FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS`      |
+| `ForOtpInput`        | `FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS`         | `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS`         |
+| `ForRadioGroup`      | `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS`       | `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS`       |
+| `ForSelect`          | `FOR_SELECT_HOST_DIRECTIVE_INPUTS`            | `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS`            |
+| `ForSlider`          | `FOR_SLIDER_HOST_DIRECTIVE_INPUTS`            | `FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS`            |
+| `ForSwitch`          | `FOR_SWITCH_HOST_DIRECTIVE_INPUTS`            | `FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS`            |
+| `ForTextarea`        | `FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS`          | `FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS`          |
+| `ForTimeField`       | `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS`        | `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS`        |
+| `ForToggle`          | `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS`            | `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS`            |
+| `ForToggleGroup`     | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS`      | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS`      |
 
 ## Binding a single-valued field to a selection primitive
 

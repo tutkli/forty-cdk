@@ -1,7 +1,5 @@
 import {
-  booleanAttribute,
   computed,
-  contentChild,
   Directive,
   effect,
   inject,
@@ -9,34 +7,23 @@ import {
   isDevMode,
   model,
   numberAttribute,
-  output,
   signal,
+  contentChild,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
   type DateAdapter,
   injectDateAdapter,
-  type FloatingAlign,
-  type FloatingSide,
-  FormUiControlBase,
   injectHiddenInput,
-  adoptHostId,
-  IdGenerator,
-  type WritingDirection,
-  injectTextDirection,
-  createVetoableNativeEvent,
-  emitVetoableEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
   clampToBounds,
   composeWithTime,
   serializeISODate,
   FOR_TIME_VALUE_SOURCE,
 } from 'forty-cdk/core';
-import { ForCalendar, type CalendarDateRange } from 'forty-cdk/calendar';
+import { type ForCalendar, type CalendarDateRange } from 'forty-cdk/calendar';
+import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
 
@@ -52,7 +39,8 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
  * `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires
  * with `[formField]` and auto-associates inside a `[forField]`. The trigger is
  * the focusable control that carries `name` / `disabled` / `invalid`; selection
- * state flows root → projected calendar via `[(value)]`.
+ * state flows root → projected calendar via `[(value)]`. The shared overlay /
+ * trigger / anchor / dismiss / focus machinery lives in {@link DatePickerBase}.
  *
  * The surface defaults to a **non-modal popover** (anchored to the trigger,
  * dismiss on Escape / outside-pointer, return focus on close); set `modal`
@@ -72,6 +60,11 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
  * their internal writes don't clobber each other), and the picker grafts the
  * entered time onto each calendar selection. This needs a time-capable adapter
  * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`).
+ *
+ * Range selection here is the non-form, two-way-bound `[(range)]` variant
+ * (`selectionMode="range"`). For a range that is a Signal Forms value
+ * (`FormValueControl<CalendarDateRange<D> | null>`, auto-wiring with
+ * `[formField]`), use the dedicated `ForDateRangePicker` root instead.
  *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
  *   date-time) type.
@@ -124,14 +117,16 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
   providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker }],
 })
 export class ForDatePicker<D>
-  extends FormUiControlBase
+  extends DatePickerBase<D>
   implements FormValueControl<D | null>, ForDatePickerContext
 {
-  readonly #idGen = inject(IdGenerator);
   readonly #defaults = inject(FOR_DATE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker');
+
+  readonly triggerId = signal(this.idGen.next('for-date-picker-trigger'));
+  readonly contentId = signal(this.idGen.next('for-date-picker-content'));
 
   /**
    * Two-way bindable selected date, or `null`. Required by
@@ -141,37 +136,13 @@ export class ForDatePicker<D>
    */
   readonly value = model<D | null>(null);
 
-  /**
-   * Two-way bindable. Whether the surface is open. The `model()` change emitter
-   * (`(openChange)`) fires only on internal transitions (trigger toggle,
-   * Escape, outside dismissal, selection), never on consumer writes via
-   * `[(open)]`.
-   */
-  readonly open = model<boolean>(false);
+  /** Gap (px) between trigger and surface along the main axis. Default from `provideForDatePickerDefaults`. */
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
-  /**
-   * Minimum selectable date (inclusive). Forward to the projected calendar's
-   * `[min]`. Named `minDate` (not `min`) because `FormUiControl.min` is reserved
-   * for a numeric validator bound by `[formField]`.
-   */
-  readonly minDate = input<D | null>(null);
-
-  /**
-   * Maximum selectable date (inclusive). Forward to the projected calendar's
-   * `[max]`. Named `maxDate` (not `max`) for the same reason as {@link minDate}.
-   */
-  readonly maxDate = input<D | null>(null);
-
-  /** Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`. */
-  readonly isDateUnavailable = input<(date: D) => boolean>(() => false);
-
-  /**
-   * Close the surface after a date is selected in the projected calendar.
-   * Default `true`. Honoured only at `granularity="day"` — a date-time picker
-   * (`granularity > 'day'`) never closes on a calendar selection, so the user
-   * can go on to edit the time.
-   */
-  readonly closeOnSelect = input(true, { transform: booleanAttribute });
+  /** Padding (px) applied uniformly to flip / shift / size. Default from `provideForDatePickerDefaults`. */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
 
   /**
    * Date-time precision. `'day'` (default, **non-breaking**) keeps a pure
@@ -193,37 +164,12 @@ export class ForDatePicker<D>
   readonly hourCycle = input<12 | 24 | null>(null);
 
   /**
-   * When `true`, the surface is a trapped / inert / scroll-locked modal dialog
-   * (routed through `_internal/modal-shell`) instead of the default non-modal
-   * anchored popover. Read once when the content mounts.
-   */
-  readonly modal = input(false, { transform: booleanAttribute });
-
-  /** When true (default), Escape, pointer-down outside, and focus outside close the surface. */
-  readonly dismissible = input(true, { transform: booleanAttribute });
-
-  /** When true (default), focus returns to the trigger on close. */
-  readonly returnFocus = input(true, { transform: booleanAttribute });
-
-  /**
-   * `Intl.DateTimeFormat` options driving the text rendered by
-   * `[forDatePickerValue]`. Default `{ year: 'numeric', month: 'long', day: 'numeric' }`.
-   */
-  readonly formatOptions = input<Intl.DateTimeFormatOptions>({
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  /** Text rendered by `[forDatePickerValue]` when no date is selected. */
-  readonly placeholder = input<string>('');
-
-  /**
    * Selection mode. `'single'` (default) keeps the existing single-date
    * `[(value)]` and `FormValueControl<D | null>` behaviour unchanged.
    * `'range'` switches to the two-click anchor → commit flow and exposes the
    * result through `[(range)]`. Range mode is day-granular and ignores
-   * `granularity` / time. Range is not a Signal Forms value in v1.
+   * `granularity` / time. Range here is not a Signal Forms value — use
+   * `ForDateRangePicker` for that.
    */
   readonly selectionMode = input<'single' | 'range'>('single');
 
@@ -234,104 +180,6 @@ export class ForDatePicker<D>
    * consumer writes via `[(range)]`.
    */
   readonly range = model<CalendarDateRange<D> | null>(null);
-
-  /**
-   * Separator rendered between start and end in `[forDatePickerValue]` while
-   * in `selectionMode="range"`. Default `' – '` (en-dash with spaces).
-   */
-  readonly rangeSeparator = input<string>(' – ');
-
-  /** Side the surface is anchored to. Defaults to `'bottom'`. Ignored in `modal` mode. */
-  readonly side = input<FloatingSide | undefined>('bottom');
-
-  /** Alignment along the chosen `side`. Defaults to `'start'`. Ignored in `modal` mode. */
-  readonly align = input<FloatingAlign | undefined>('start');
-
-  /** Gap (px) between trigger and surface along the main axis. Default from `provideForDatePickerDefaults`. */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-
-  /** When `true` (default), `flip` and `shift` keep the surface inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-
-  /** Padding (px) applied uniformly to flip / shift / size. Default from `provideForDatePickerDefaults`. */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-
-  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
-
-  /** Accessible name for the dialog surface. Emits no `aria-label` while `null`. */
-  readonly ariaLabel = input<string | null>(null);
-
-  /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute.
-   */
-  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
-  readonly dir = injectTextDirection(this._dirInput);
-
-  /**
-   * Fires when the user presses Escape while this surface is the topmost
-   * dismissable layer. Call `preventDefault()` on the veto to suppress the
-   * automatic close.
-   */
-  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
-
-  /** Fires when a pointer goes down outside the surface (and trigger). Vetoable. */
-  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
-
-  /** Fires when focus moves outside the surface (and trigger). Vetoable. */
-  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
-
-  /** Composite event: shares veto state with `pointerDownOutside` / `focusOutside`. */
-  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
-
-  /** Fires just before the surface sends focus into itself on open. Vetoable. */
-  readonly autoFocusOnOpen = output<VetoableEvent>();
-
-  /** Fires just before focus returns to the trigger on close. Vetoable. */
-  readonly autoFocusOnClose = output<VetoableEvent>();
-
-  readonly triggerId = signal(this.#idGen.next('for-date-picker-trigger'));
-  readonly contentId = signal(this.#idGen.next('for-date-picker-content'));
-
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #anchorEl = signal<HTMLElement | null>(null);
-
-  /**
-   * Element floating-ui anchors the surface against. Prefers an optional
-   * `[forDatePickerAnchor]` when registered, otherwise falls back to the
-   * trigger so existing pickers without an anchor keep their behavior.
-   * Decoupled from `trigger` so the trigger keeps driving `aria-controls`, the
-   * click toggle, focus return, and its dismissal exemption regardless of where
-   * the surface paints.
-   */
-  readonly reference = computed<ReferenceElement | null>(
-    () => this.#anchorEl() ?? this.#triggerEl(),
-  );
-
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
 
   /**
    * `formatOptions` augmented with time fields when `granularity > 'day'` and
@@ -379,29 +227,15 @@ export class ForDatePicker<D>
   });
 
   /**
-   * The projected `ForCalendar`. Mounts only while the surface is open, so the
-   * query resolves to the live instance on open and to `undefined` on close.
-   * Its `valueChange` is the single signal that a date was selected inside the
-   * grid — wired in the constructor.
-   *
-   * Invariant: the projected calendar MUST resolve the same `DateAdapter` as
-   * this picker (the same `FOR_DATE_ADAPTER` scope). Angular's `contentChild`
-   * erases the generic, so the bridge reads `calendar.value` as `D | null` via
-   * a cast; a mismatched adapter would leak a wrong-shaped date through that
-   * seam. A dev-mode assertion in the bridge effect catches it early.
-   */
-  private readonly calendar = contentChild(ForCalendar, { descendants: true });
-
-  /**
    * The projected `ForTimeField`, present only in a date-time picker
    * (`granularity > 'day'`). Like the calendar, it mounts with the surface; its
    * `valueChange` (a composed date-time, anchored on the picker's current
    * value) is mirrored straight into the picker's value.
    *
    * Invariant: the projected time field MUST resolve the same `DateAdapter` as
-   * this picker (see {@link calendar}). The bridge casts its `value` to
-   * `D | null` because `contentChild` erases the generic; a dev-mode assertion
-   * guards the same-adapter contract.
+   * this picker (see {@link DatePickerBase.calendar}). The bridge casts its
+   * `value` to `D | null` because `contentChild` erases the generic; a dev-mode
+   * assertion guards the same-adapter contract.
    */
   private readonly timeSource = contentChild(FOR_TIME_VALUE_SOURCE, { descendants: true });
 
@@ -442,11 +276,7 @@ export class ForDatePicker<D>
       if (!calendar) {
         return;
       }
-      if (isDevMode() && calendar.adapter !== this.adapter) {
-        throw new Error(
-          '[forty-cdk/date-picker] The projected ForCalendar must use the same DateAdapter as the ForDatePicker.',
-        );
-      }
+      this.assertSameAdapter(calendar);
 
       if (this.selectionMode() === 'range') {
         const sub = (calendar as ForCalendar<D>).range.subscribe((next) => {
@@ -533,118 +363,5 @@ export class ForDatePicker<D>
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
     return assertTimeCapable(this.adapter, 'ForDatePicker');
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
-  }
-
-  registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/date-picker] Multiple [forDatePickerAnchor] inside the same [forDatePicker]; only one is allowed.',
-      );
-    }
-    this.#anchorEl.set(el);
-  }
-  unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
-  }
-
-  registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.contentId);
-    this.#contentEl.set(el);
-  }
-  unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
-  }
-
-  toggle(): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    this.open.update((v) => !v);
-  }
-
-  close(): void {
-    this.markTouched();
-    this.open.set(false);
-  }
-
-  override markTouched(): void {
-    super.markTouched();
-  }
-
-  focusCalendarCell(): boolean {
-    return this.calendar()?.focusActiveCell() ?? false;
-  }
-
-  // Both the anchored (`injectOverlayShell`) and modal (`injectModalShell`)
-  // surfaces now own the shared `#pendingOutsideVeto` reuse between the
-  // specific outside channels and the composite `interactOutside`, so this
-  // directive only forwards the shell-built veto to the matching `output()`
-  // and owns the close decision via `requestClose`. Escape is the one channel
-  // this directive still owns end-to-end on the anchored path (the modal path
-  // routes it through `emitEscapeKeyDown` on the shell, which builds the veto
-  // and calls `requestClose` itself).
-
-  /**
-   * Anchored-path Escape. Builds the veto, emits `(escapeKeyDown)`, and —
-   * unless vetoed and `dismissible` is off — stops propagation and closes.
-   */
-  emitEscapeKeyDown(event: KeyboardEvent): void {
-    const veto = createVetoableNativeEvent(event);
-    this.escapeKeyDown.emit(veto);
-    if (!veto.defaultPrevented && this.dismissible()) {
-      event.stopPropagation();
-      this.close();
-    }
-  }
-
-  /**
-   * Outside-interaction emit forwarders shared by both shells. The shell
-   * builds and reuses the veto; these only fire the matching output.
-   */
-  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.pointerDownOutside.emit(veto);
-  }
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.focusOutside.emit(veto);
-  }
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.interactOutside.emit(veto);
-  }
-
-  /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
-  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.escapeKeyDown.emit(veto);
-  }
-
-  /**
-   * Implicit close requested by either shell after an un-vetoed outside
-   * interaction (or, on the modal path, an un-vetoed Escape). Marks the
-   * control touched and closes.
-   */
-  requestClose(): void {
-    this.close();
-  }
-
-  emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
-  }
-
-  emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
   }
 }
