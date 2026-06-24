@@ -101,6 +101,11 @@ function buildRows(): readonly Row[] {
         <div forTableHeaderCell name="name" data-testid="header-name">Name</div>
       </div>
       <div
+        data-testid="virt-range"
+        style="position: absolute; width: 0; height: 0"
+        [attr.data-range]="v.range()[0] + ',' + v.range()[1]"
+      ></div>
+      <div
         role="rowgroup"
         [style.height.px]="v.totalSize()"
         style="position: relative"

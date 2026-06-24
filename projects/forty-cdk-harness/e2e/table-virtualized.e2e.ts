@@ -74,6 +74,50 @@ test.describe('Table virtualized', () => {
     await expectFocused(focusedCell);
   });
 
+  test.describe('range', () => {
+    test('tracks the rendered window and starts at 0 at the top of the list', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const rangeAttr = await el(page, 'virt-range').getAttribute('data-range');
+      const [start, end] = rangeAttr!.split(',').map((n) => parseInt(n, 10));
+
+      expect(start).toBe(0);
+
+      const rows = page.locator('[forTableRow]');
+      const firstIndex = parseInt((await rows.first().getAttribute('data-index'))!, 10);
+      const lastIndex = parseInt((await rows.last().getAttribute('data-index'))!, 10);
+
+      expect(start).toBe(firstIndex);
+      expect(end).toBe(lastIndex + 1);
+    });
+
+    test('a retained out-of-window focused row never widens the range', async ({ page }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const firstCell = page.locator('[forTableCell]').first();
+      await firstCell.click();
+      await expectFocused(firstCell);
+
+      const focusedRowIndex = parseInt(
+        (await page.locator('[forTableRow]').first().getAttribute('data-index'))!,
+        10,
+      );
+
+      await el(page, 'root').evaluate((node) => {
+        node.scrollTop = 8000 * 44;
+      });
+      await page.waitForTimeout(300);
+
+      await expect(page.locator(`[data-index="${focusedRowIndex}"]`)).toBeAttached();
+
+      const rangeAttr = await el(page, 'virt-range').getAttribute('data-range');
+      const [start, end] = rangeAttr!.split(',').map((n) => parseInt(n, 10));
+
+      expect(start).toBeGreaterThan(focusedRowIndex);
+      expect(end).toBeGreaterThan(start);
+    });
+  });
+
   test.describe('cross-window keyboard navigation', () => {
     test('ArrowDown past the rendered window scrolls rows in and keeps focus on the same column', async ({
       page,

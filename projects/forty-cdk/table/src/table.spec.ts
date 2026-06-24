@@ -4,7 +4,6 @@ import {
   Directive,
   provideZonelessChangeDetection,
   signal,
-  viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -561,34 +560,6 @@ class CrossWindowTableHost {
 class VirtualizedReorderTableHost {
   readonly windowIndices = signal<readonly number[]>([50, 51, 52, 53, 54]);
   lastRow: TableRowReorderDescriptor | null = null;
-}
-
-@Component({
-  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
-  template: `
-    <div forTable forTableVirtualized mode="grid" [rowCount]="1000">
-      <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
-          <div forTableRow [virtualIndex]="vi">
-            <div forTableCell name="a" [attr.data-testid]="'cell-' + vi">{{ vi }}</div>
-          </div>
-        }
-      </div>
-    </div>
-  `,
-})
-class VirtualizedRangeTableHost {
-  readonly v = viewChild.required(ForTableVirtualized);
-  readonly windowIndices = signal<readonly number[]>([0, 1, 2, 500]);
-}
-
-function fakeLayoutProps(el: HTMLElement, height: number, width = 400): void {
-  Object.defineProperty(el, 'offsetHeight', { configurable: true, value: height });
-  Object.defineProperty(el, 'offsetWidth', { configurable: true, value: width });
-  Object.defineProperty(el, 'clientHeight', { configurable: true, value: height });
-  Object.defineProperty(el, 'clientWidth', { configurable: true, value: width });
-  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: height * 200 });
-  Object.defineProperty(el, 'scrollWidth', { configurable: true, value: width * 200 });
 }
 
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
@@ -2195,46 +2166,6 @@ describe('ForTable', () => {
     it('the companion builds and coexists with ForTable without throwing', () => {
       const { el } = renderHost(VirtualizedTableHost);
       expect(rootEl(el).hasAttribute('forTableVirtualized')).toBe(true);
-    });
-
-    describe('range', () => {
-      it('exposes a public range tracking the rendered virtualizer window', async () => {
-        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-        const fixture = TestBed.createComponent(VirtualizedRangeTableHost);
-        fakeLayoutProps(rootEl(fixture.nativeElement as HTMLElement), 200);
-        fixture.detectChanges();
-        await flush(fixture);
-
-        const v = fixture.componentInstance.v();
-        const rows = v.virtualRows();
-        expect(rows.length).toBeGreaterThanOrEqual(1);
-        // No focused / reordering row is retained, so virtualRows() equals the true window.
-        expect(v.range()).toEqual([rows[0]!.index, rows[rows.length - 1]!.index + 1]);
-        expect(v.range()[0]).toBe(0);
-      });
-
-      it('sources range from the true window — a retained out-of-window focused row never widens it', async () => {
-        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-        const fixture = TestBed.createComponent(VirtualizedRangeTableHost);
-        const el = fixture.nativeElement as HTMLElement;
-        fakeLayoutProps(rootEl(el), 200);
-        fixture.detectChanges();
-        await flush(fixture);
-
-        const v = fixture.componentInstance.v();
-        const windowRange = v.range();
-        expect(windowRange[1]).toBeLessThan(500);
-
-        // Focus row 500's cell — far outside the rendered window — so it is retained.
-        el.querySelector<HTMLElement>('[data-testid="cell-500"]')!.focus();
-        await flush(fixture);
-
-        // virtualRows() retains the out-of-window focused row...
-        expect(v.virtualRows().some((row) => row.index === 500)).toBe(true);
-        // ...but range still reflects the true window: unchanged and excluding the retained row.
-        expect(v.range()).toEqual(windowRange);
-        expect(v.range()[1]).toBeLessThanOrEqual(500);
-      });
     });
 
     describe('cross-window keyboard navigation', () => {
