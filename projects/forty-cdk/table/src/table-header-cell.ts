@@ -1,4 +1,4 @@
-import { Directive, input } from '@angular/core';
+import { Directive, ElementRef, inject, input } from '@angular/core';
 
 import { coerceSticky, injectTableContext, type TableStickyValue } from './table-context';
 
@@ -18,6 +18,14 @@ import { coerceSticky, injectTableContext, type TableStickyValue } from './table
 })
 export class ForTableHeaderCell {
   protected readonly ctx = injectTableContext('ForTableHeaderCell');
+
+  /**
+   * The header cell's host element (`role="columnheader"`). Exposed so a descendant
+   * `[forTableColumnResizer]` can resolve the enclosing cell through DI to measure its
+   * base width — robust to `hostDirectives` composition, where the `[forTableHeaderCell]`
+   * selector attribute is not reflected onto the wrapper's host element.
+   */
+  readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Column identifier, reflected as `data-column`. Required by later phases (sort, resize, reorder). */
   readonly name = input.required<string>();

@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  Directive,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -161,6 +162,36 @@ class ResizeTableHost {
   `,
 })
 class UnseededResizeTableHost {}
+
+@Directive({
+  selector: '[wrappedHeaderCell]',
+  hostDirectives: [{ directive: ForTableHeaderCell, inputs: ['name'] }],
+})
+class WrappedHeaderCell {}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, WrappedHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div wrappedHeaderCell name="name" data-testid="wrapped-cell">
+          Name
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            (resizeCommit)="lastResize = $event"
+            data-testid="resizer"
+          ></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class WrappedResizeTableHost {
+  readonly width = signal<number>(100);
+  lastResize: TableResizeDescriptor | null = null;
+}
 
 @Component({
   imports: [...TABLE_IMPORTS],
@@ -1611,6 +1642,24 @@ describe('ForTable', () => {
       await flush();
       expect(r.getAttribute('aria-valuenow')).toBe('250');
     });
+
+    it('operates when ForTableHeaderCell is composed via hostDirectives (no [forTableHeaderCell] attribute)', async () => {
+      const { el, instance, flush } = renderHost(WrappedResizeTableHost);
+      await flush();
+      const cell = el.querySelector<HTMLElement>('[data-testid="wrapped-cell"]')!;
+      expect(cell.getAttribute('role')).toBe('columnheader');
+      expect(cell.getAttribute('data-column')).toBe('name');
+      expect(cell.hasAttribute('forTableHeaderCell')).toBe(false);
+
+      const r = resizerEl(el);
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('110px');
+    });
   });
 
   describe('column reorder', () => {
@@ -1926,6 +1975,22 @@ describe('ForTable', () => {
 
     it('column resizer ArrowRight updates aria-valuenow and publishes CSS var without Zone.js', () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+      r.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      flush();
+      expect(instance.width()).toBe(110);
+      expect(r.getAttribute('aria-valuenow')).toBe('110');
+      expect(
+        el
+          .querySelector<HTMLElement>('[forTable]')!
+          .style.getPropertyValue('--for-table-col-name-width'),
+      ).toBe('110px');
+    });
+
+    it('column resizer reacts under hostDirectives composition without Zone.js', () => {
+      const { el, instance, flush } = renderHost(WrappedResizeTableHost);
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
