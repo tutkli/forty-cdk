@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-24
+
+### Added
+
+- **Tree** — `ForTreeNodeDrag` drag announcements are now i18n-configurable, so the live-region messages for lift, move, drop, and cancel can be localized through the defaults provider.
+- **Listbox** — `ForListboxReorder` drag announcements are now i18n-configurable, matching the tree's localizable live-region messages.
+
+### Fixed
+
+- **Tree** — a vetoed (canceled) drop now keeps its invalid-drop announcement instead of being silently swallowed, so the screen reader still reports that the drop was rejected.
+- **Table** — the column resizer now measures the header cell via dependency injection rather than DOM traversal, making the measured width robust to wrapper markup.
+
+### Performance
+
+- **Drag & Drop** — pointer-move resolution is coalesced to a single animation frame, cutting redundant drop-target recomputation during fast drags.
+
 ## [0.3.0] - 2026-06-23
 
 ### Added
@@ -179,7 +195,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/tutkli/forty-cdk/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/tutkli/forty-cdk/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/tutkli/forty-cdk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tutkli/forty-cdk/compare/v0.0.4...v0.1.0
