@@ -380,8 +380,9 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
 
     const veto = this.canDrop();
     if (veto !== undefined && !veto(event)) {
+      this.#restoreExpansion();
       this.#announcer.announce(this.#defaults.dragAnnounceInvalid(this.#label), 'assertive');
-      this.#cancelSession(true);
+      this.#clearSession();
       return;
     }
 

@@ -6,7 +6,6 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { LiveAnnouncer } from 'forty-cdk/core';
 import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
 import { provideForTreeDefaults } from './tree-defaults';
@@ -562,9 +561,8 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
     expect(liveRegion('assertive')?.textContent).toBe('[cancel] Alpha');
   });
 
-  it('a canDrop veto announces via the consumer invalid formatter and suppresses the drop', async () => {
+  it('a canDrop veto leaves the invalid message in the assertive region and suppresses the drop', async () => {
     const { instance, query, flush: f } = renderHost(TreeDragI18nHost);
-    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
     instance.canDropFn.set(() => false);
     await f();
 
@@ -577,7 +575,7 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
     dispatchKey(tree, ' ', {});
     await f();
 
-    expect(announce).toHaveBeenCalledWith('[invalid] Alpha', 'assertive');
+    expect(liveRegion('assertive')?.textContent).toBe('[invalid] Alpha');
     expect(instance.dropped()).toBeNull();
   });
 
