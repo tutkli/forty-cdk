@@ -193,6 +193,7 @@ export class ForDropList implements ForDropListContext {
   #sorter: PlaceholderSorter | null = null;
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
+  #resolveRaf: number | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -218,7 +219,13 @@ export class ForDropList implements ForDropListContext {
         maxSpeed: this.#defaults.autoScrollMaxSpeed,
         onFrame: () => this.#onAutoScrollFrame(),
       });
-      this.#destroyRef.onDestroy(() => this.#autoScroller?.stop());
+      this.#destroyRef.onDestroy(() => {
+        this.#autoScroller?.stop();
+        if (this.#resolveRaf !== null) {
+          this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
+          this.#resolveRaf = null;
+        }
+      });
     }
   }
 
@@ -337,11 +344,25 @@ export class ForDropList implements ForDropListContext {
       return;
     }
     this.#lastPoint = point;
-    this.#resolveDrop(point, lifted);
     if (this.autoScroll()) {
       this.#autoScroller?.update(point);
     } else {
       this.#autoScroller?.stop();
+    }
+    if (this.#resolveRaf !== null) {
+      return;
+    }
+    this.#resolveDrop(point, lifted);
+    const win = this.#document.defaultView;
+    if (win) {
+      this.#resolveRaf = win.requestAnimationFrame(() => {
+        this.#resolveRaf = null;
+        const currentLifted = this.#liftedHost();
+        const currentPoint = this.#lastPoint;
+        if (currentLifted !== null && currentPoint !== null) {
+          this.#resolveDrop(currentPoint, currentLifted);
+        }
+      });
     }
   }
 
@@ -381,6 +402,17 @@ export class ForDropList implements ForDropListContext {
         this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
         'polite',
       );
+    }
+  }
+
+  #flushResolve(lifted: HTMLElement): void {
+    if (this.#resolveRaf === null) {
+      return;
+    }
+    this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
+    this.#resolveRaf = null;
+    if (this.#lastPoint !== null) {
+      this.#resolveDrop(this.#lastPoint, lifted);
     }
   }
 
@@ -452,6 +484,7 @@ export class ForDropList implements ForDropListContext {
     if (liftedHost === null) {
       return;
     }
+    this.#flushResolve(liftedHost);
     const connected = this.#effectiveConnected();
     const items = this.#items.items();
     const slots = buildDragSlots(
@@ -539,6 +572,10 @@ export class ForDropList implements ForDropListContext {
   });
 
   #teardown(connected: readonly ForDropListContext[], keepPreview = false): void {
+    if (this.#resolveRaf !== null) {
+      this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
+      this.#resolveRaf = null;
+    }
     this.#autoScroller?.stop();
     this.#lastPoint = null;
     this.#dragOver.set(null);
