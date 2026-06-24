@@ -639,11 +639,18 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Enforces CLAUDE.md § "Defaults providers": every primitive folder under
-    // projects/forty-cdk/src/lib/<name>/ that ships a <name>.ts root file must
-    // also ship a sibling <name>-defaults.ts (empty stub or populated). Skips
-    // _internal (and anything nested under it) and test-utils. Fires once per
-    // primitive root file via a Program-level filesystem check.
+    // Enforces CLAUDE.md § "Defaults providers": every primitive that ships a
+    // root <name>.ts file must also ship a sibling <name>-defaults.ts (empty
+    // stub or populated). Recognises both library layouts:
+    //   - per-entry-point:  projects/forty-cdk/<entry>/src/<entry>.ts
+    //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>.ts
+    // In the per-entry-point layout the primitive name is the entry-point
+    // folder (the segment before /src/), NOT the immediate parent dir (which
+    // is `src`). The `core` entry holds the cross-cutting utilities (the former
+    // `_internal`) and is exempt, as are `_internal`/`test-utils`. A dedicated
+    // fixture (require-defaults-sibling.fixture.ts) exercises the rule under
+    // `pnpm lint:rule-fixtures`. Fires once per primitive root file via a
+    // Program-level filesystem check.
     'require-defaults-sibling': {
       meta: {
         type: 'problem',
@@ -658,27 +665,50 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
+        // Resolves `{ primitive, dir }` for a primitive *root* file, or null.
+        // The primitive name is the entry-point folder (the segment before
+        // /src/) for the per-entry-point layout, or the folder name for the
+        // legacy layout. The `core` entry (former `_internal`) is never a
+        // primitive with a defaults provider.
+        function primitiveRootOf(normalized, dir) {
+          const entry = normalized.match(/\/projects\/forty-cdk\/([^/]+)\/src\/([^/]+)\.ts$/);
+          if (entry && entry[1] === entry[2]) {
+            return entry[1] === 'core' ? null : { primitive: entry[1], dir };
+          }
+          const legacy = normalized.match(/\/projects\/forty-cdk\/src\/lib\/([^/]+)\/([^/]+)\.ts$/);
+          if (legacy && legacy[1] === legacy[2]) {
+            return { primitive: legacy[1], dir };
+          }
+          return null;
+        }
         return {
           Program(node) {
             const filename = context.filename || context.getFilename();
             const dir = path.dirname(filename);
-            const base = path.basename(filename, '.ts');
-            const dirName = path.basename(dir);
-            // Only fire on root primitive files: <dir>/<dir>.ts.
-            if (base !== dirName) return;
-            // Restrict to the library's primitive folder.
-            const normalized = dir.replace(/\\/g, '/');
-            if (!normalized.includes('/projects/forty-cdk/src/lib/')) return;
+            const normalized = filename.replace(/\\/g, '/');
             // Skip cross-cutting helpers and test utilities.
-            if (dirName === '_internal' || dirName === 'test-utils') return;
-            if (normalized.includes('/_internal/')) return;
-            const sibling = path.join(dir, `${dirName}-defaults.ts`);
+            if (normalized.includes('/_internal/') || normalized.includes('/test-utils/')) {
+              return;
+            }
+            let info;
+            if (normalized.includes('/projects/forty-cdk/eslint-rules-fixtures/')) {
+              // Scope the fixtures carve-out to the one fixture that exercises
+              // this rule, so the other fixtures (which target other rules) do
+              // not trip this Program-level filesystem check.
+              const base = path.basename(filename, '.ts');
+              if (base !== 'require-defaults-sibling.fixture') return;
+              info = { primitive: base, dir };
+            } else {
+              info = primitiveRootOf(normalized, dir);
+            }
+            if (!info) return;
+            const sibling = path.join(info.dir, `${info.primitive}-defaults.ts`);
             if (!fs.existsSync(sibling)) {
               context.report({
                 node,
                 loc: { line: 1, column: 0 },
                 messageId: 'missing',
-                data: { name: dirName },
+                data: { name: info.primitive },
               });
             }
           },
@@ -687,13 +717,19 @@ const fortyCdkPlugin = {
     },
 
     // Enforces CLAUDE.md § "Form primitives use Signal Forms": every concrete
-    // class under projects/forty-cdk/src/lib/** implementing `FormValueControl`
-    // or `FormCheckboxControl` must ship a sibling `<name>-host-directive.ts`
-    // (the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples from
-    // tutkli/forty-cdk#645 / PR #652), re-exported from the primitive barrel.
-    // Mirrors `require-defaults-sibling`, with two deliberate differences:
-    //   - It keys on the *file* declaring the class, not the folder root —
-    //     one folder may ship several form controls (`input/` has `input.ts`
+    // class implementing `FormValueControl` or `FormCheckboxControl` must ship
+    // a sibling `<name>-host-directive.ts` (the
+    // `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples from
+    // tutkli/forty-cdk#645 / PR #652), re-exported from the primitive barrel
+    // (`public-api.ts` in the per-entry-point layout, `index.ts` in the legacy
+    // layout). Scoped to the library sources under both layouts:
+    //   - per-entry-point:  projects/forty-cdk/<entry>/src/**
+    //   - legacy folder:    projects/forty-cdk/src/lib/**
+    // The `core` entry (former `_internal`) is exempt, as are `_internal` /
+    // `test-utils`. Mirrors `require-defaults-sibling`, with two deliberate
+    // differences:
+    //   - It keys on the *file* declaring the class, not the entry root —
+    //     one entry may ship several form controls (`input/` has `input.ts`
     //     + `textarea.ts`, `toggle/` has `toggle.ts` + `toggle-group.ts`).
     //   - Abstract classes are skipped: `TextValueControlBase` implements
     //     `FormValueControl<string>` as shared wiring, and the concrete
@@ -715,16 +751,24 @@ const fortyCdkPlugin = {
           missingSibling:
             'Class `{{ className }}` implements `{{ contract }}` but the sibling `{{ sibling }}` file is missing. Every form-value primitive ships the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples so wrapper components re-expose the full surface without hand-maintaining the list (tutkli/forty-cdk#645, docs/wrapping-form-primitives.md).',
           missingBarrelExport:
-            'The sibling `{{ sibling }}` exists but the primitive barrel (`index.ts`) does not re-export it. Add the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` re-export so consumers can reach the tuples (tutkli/forty-cdk#645).',
+            'The sibling `{{ sibling }}` exists but the primitive barrel (`public-api.ts`) does not re-export it. Add the `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` re-export so consumers can reach the tuples (tutkli/forty-cdk#645).',
         },
       },
       create(context) {
         const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
-        const inLib = filename.includes('/projects/forty-cdk/src/lib/');
+        // Match both layouts: per-entry-point (projects/forty-cdk/<entry>/src/**)
+        // and the legacy folder layout (projects/forty-cdk/src/lib/**).
+        const inLib =
+          /\/projects\/forty-cdk\/[^/]+\/src\//.test(filename) ||
+          filename.includes('/projects/forty-cdk/src/lib/');
         const inFixtures = filename.includes('/projects/forty-cdk/eslint-rules-fixtures/');
         if (!inLib && !inFixtures) return {};
+        // `core` is the cross-cutting utilities entry (former `_internal`); its
+        // shared form-control bases are abstract and own no host-directive
+        // sibling.
         if (
           filename.endsWith('.spec.ts') ||
+          /\/projects\/forty-cdk\/core\/src\//.test(filename) ||
           filename.includes('/_internal/') ||
           filename.includes('/test-utils/')
         ) {
@@ -783,11 +827,12 @@ const fortyCdkPlugin = {
               });
               return;
             }
-            const barrel = path.join(dir, 'index.ts');
-            if (
-              fs.existsSync(barrel) &&
-              !fs.readFileSync(barrel, 'utf8').includes(`./${base}-host-directive`)
-            ) {
+            // The barrel is `public-api.ts` in the per-entry-point layout and
+            // `index.ts` in the legacy layout; check whichever exists.
+            const barrel = [path.join(dir, 'public-api.ts'), path.join(dir, 'index.ts')].find(
+              (candidate) => fs.existsSync(candidate),
+            );
+            if (barrel && !fs.readFileSync(barrel, 'utf8').includes(`./${base}-host-directive`)) {
               context.report({
                 node: node.id,
                 messageId: 'missingBarrelExport',
