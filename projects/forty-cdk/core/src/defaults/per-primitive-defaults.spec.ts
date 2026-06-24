@@ -37,6 +37,11 @@ import {
   provideForDatePickerDefaults,
 } from '../../../date-picker/src/date-picker-defaults';
 import {
+  FOR_DATE_RANGE_PICKER_DEFAULTS,
+  FOR_DATE_RANGE_PICKER_FALLBACK_DEFAULTS,
+  provideForDateRangePickerDefaults,
+} from '../../../date-picker/src/date-range-picker-defaults';
+import {
   FOR_DROPDOWN_MENU_DEFAULTS,
   FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
   provideForDropdownMenuDefaults,
@@ -310,6 +315,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_DATE_PICKER_DEFAULTS,
     fallback: FOR_DATE_PICKER_FALLBACK_DEFAULTS,
     provide: provideForDatePickerDefaults,
+    override: { sideOffset: 12 },
+  }),
+  defaultsCase({
+    name: 'provideForDateRangePickerDefaults',
+    token: FOR_DATE_RANGE_PICKER_DEFAULTS,
+    fallback: FOR_DATE_RANGE_PICKER_FALLBACK_DEFAULTS,
+    provide: provideForDateRangePickerDefaults,
     override: { sideOffset: 12 },
   }),
   defaultsCase({

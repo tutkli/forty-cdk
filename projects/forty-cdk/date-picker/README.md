@@ -286,6 +286,59 @@ readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
 | `range`           | `model<CalendarDateRange<D> \| null>` | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`. |
 | `rangeSeparator`  | `input<string>`                       | String placed between start and end in the formatted display. Default `' – '`.                  |
 
+## Range as a Signal Forms value — `ForDateRangePicker`
+
+`ForDatePicker[selectionMode="range"]` exposes the range through a plain two-way `[(range)]` model with **no** form contract — so a range inside a form has to be hand-wired. `ForDateRangePicker` (selector `[forDateRangePicker]`) is the form-capable sibling: it is the root **and** the form value, implementing `FormValueControl<CalendarDateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
+
+It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular in v1 (no time composition).
+
+```ts
+import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { ForDateRangePicker } from 'forty-cdk/date-picker';
+import { form } from '@angular/forms/signals';
+
+interface Booking {
+  stay: CalendarDateRange<CalendarDate> | null;
+}
+readonly model = signal<Booking>({ stay: null });
+readonly booking = form(this.model, (p) => required(p.stay));
+```
+
+```html
+<div
+  forDateRangePicker
+  [formField]="booking.stay"
+  [(open)]="open"
+  [ariaLabel]="'Choose date range'"
+  #picker="forDateRangePicker"
+>
+  <button forDatePickerTrigger>
+    <span forDatePickerValue [placeholder]="'Pick a range'"></span>
+  </button>
+
+  @if (open()) {
+  <div forDatePickerContent>
+    <div
+      forCalendar
+      selectionMode="range"
+      [(range)]="picker.value"
+      [min]="picker.minDate()"
+      [max]="picker.maxDate()"
+    >
+      <!-- …header + grid… -->
+    </div>
+  </div>
+  }
+</div>
+```
+
+- **Form value.** The committed `CalendarDateRange<D> | null` is the `value` model. `null` is the empty state — pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
+- **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]`, and `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
+- **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
+- **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker` — and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
+
+Defaults are configured with `provideForDateRangePickerDefaults` (`sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
