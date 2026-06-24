@@ -28,13 +28,6 @@ import {
   resolveTreeDrop,
   type TreeDropRow,
 } from 'forty-cdk/core';
-import {
-  announceTreeCancel,
-  announceTreeDrop,
-  announceTreeInvalid,
-  announceTreeLift,
-  announceTreeMove,
-} from './tree-drag-announcements';
 import { resolveTreeDragLiftedAction } from './tree-drag-keys';
 import {
   buildTreeDropRows,
@@ -45,6 +38,7 @@ import {
   treeParentLabel,
 } from './tree-drag-rows';
 import { injectTreeContext, type ForTreeVisibleNode } from './tree-context';
+import { FOR_TREE_DEFAULTS } from './tree-defaults';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
@@ -108,6 +102,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
+  readonly #defaults = inject(FOR_TREE_DEFAULTS);
 
   /** Disables all drag interactions on this tree. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -356,7 +351,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this._dragging.set(true);
     this.#publishDropTarget(rows, this.#desiredLevel);
 
-    this.#announcer.announce(announceTreeLift(this.#label), 'assertive');
+    this.#announcer.announce(this.#defaults.dragAnnounceLift(this.#label), 'assertive');
   }
 
   #publishDropTarget(rows: TreeDropRow[], level: number): void {
@@ -385,7 +380,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
 
     const veto = this.canDrop();
     if (veto !== undefined && !veto(event)) {
-      this.#announcer.announce(announceTreeInvalid(this.#label), 'assertive');
+      this.#announcer.announce(this.#defaults.dragAnnounceInvalid(this.#label), 'assertive');
       this.#cancelSession(true);
       return;
     }
@@ -393,7 +388,12 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#restoreExpansion();
     this.nodeDrop.emit(event);
     this.#announcer.announce(
-      announceTreeDrop(this.#label, parentLabel, target.index + 1, target.siblingCount + 1),
+      this.#defaults.dragAnnounceDrop(
+        this.#label,
+        parentLabel,
+        target.index + 1,
+        target.siblingCount + 1,
+      ),
       'assertive',
     );
     this.#clearSession();
@@ -402,7 +402,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   #cancelSession(restore: boolean): void {
     if (restore) {
       this.#restoreExpansion();
-      this.#announcer.announce(announceTreeCancel(this.#label), 'assertive');
+      this.#announcer.announce(this.#defaults.dragAnnounceCancel(this.#label), 'assertive');
     }
     this.#clearSession();
   }
@@ -444,7 +444,12 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     const parentLabel = treeParentLabel(visible, target.parentValue);
 
     this.#announcer.announce(
-      announceTreeMove(this.#label, parentLabel, target.index + 1, target.siblingCount + 1),
+      this.#defaults.dragAnnounceMove(
+        this.#label,
+        parentLabel,
+        target.index + 1,
+        target.siblingCount + 1,
+      ),
       'polite',
     );
   }

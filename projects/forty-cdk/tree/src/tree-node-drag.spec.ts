@@ -6,8 +6,10 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { LiveAnnouncer } from 'forty-cdk/core';
 import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
+import { provideForTreeDefaults } from './tree-defaults';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
 import { ForTreeItemLabel } from './tree-item-label';
@@ -476,6 +478,122 @@ describe('ForTreeNodeDragHandle', () => {
       const f = TestBed.createComponent(BadHost);
       f.detectChanges();
     }).toThrow(/\[forty-cdk\/tree\]/);
+  });
+});
+
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel],
+  providers: [
+    provideForTreeDefaults({
+      dragAnnounceLift: (label) => `[lift] ${label}`,
+      dragAnnounceMove: (label, parentLabel, position, total) =>
+        `[move] ${label} @ ${parentLabel ?? 'root'} ${position}/${total}`,
+      dragAnnounceDrop: (label, parentLabel, position, total) =>
+        `[drop] ${label} @ ${parentLabel ?? 'root'} ${position}/${total}`,
+      dragAnnounceCancel: (label) => `[cancel] ${label}`,
+      dragAnnounceInvalid: (label) => `[invalid] ${label}`,
+    }),
+  ],
+  template: `
+    <ul
+      forTree
+      forTreeNodeDrag
+      [canDrop]="canDropFn()"
+      (nodeDrop)="dropped.set($event)"
+      aria-label="Files"
+    >
+      <li forTreeItem value="a" data-testid="a"><div forTreeItemLabel>Alpha</div></li>
+      <li forTreeItem value="b" data-testid="b"><div forTreeItemLabel>Bravo</div></li>
+      <li forTreeItem value="c" data-testid="c"><div forTreeItemLabel>Charlie</div></li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class TreeDragI18nHost {
+  readonly canDropFn = signal<((e: ForTreeDragDropEvent) => boolean) | undefined>(undefined);
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+function liveRegion(politeness: 'polite' | 'assertive'): HTMLElement | undefined {
+  return Array.from(
+    document.body.querySelectorAll<HTMLElement>(`[aria-live="${politeness}"]`),
+  ).find((el) => !el.closest('[forTree]'));
+}
+
+describe('ForTreeNodeDrag — i18n announcements', () => {
+  it('lift / move / drop announce via the consumer formatters, routing parentLabel through', async () => {
+    const { query, flush: f } = renderHost(TreeDragI18nHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[lift] Alpha');
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('[move] Alpha @ root 2/3');
+
+    dispatchKey(tree, 'ArrowRight', {});
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('[move] Alpha @ Bravo 1/1');
+
+    dispatchKey(tree, ' ', {});
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[drop] Alpha @ Bravo 1/1');
+  });
+
+  it('cancel announces via the consumer formatter', async () => {
+    const { query, flush: f } = renderHost(TreeDragI18nHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(tree, 'Escape', {});
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[cancel] Alpha');
+  });
+
+  it('a canDrop veto announces via the consumer invalid formatter and suppresses the drop', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragI18nHost);
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+    instance.canDropFn.set(() => false);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(announce).toHaveBeenCalledWith('[invalid] Alpha', 'assertive');
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('falls back to the English phrasing when no override is provided', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const musicEl = query<HTMLElement>('[data-testid="music"]')!;
+    musicEl.focus();
+
+    dispatchKey(musicEl, ' ', { ctrlKey: true });
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe(
+      'Picked up Music. Use arrow keys to move, Space to drop, Escape to cancel.',
+    );
   });
 });
 
