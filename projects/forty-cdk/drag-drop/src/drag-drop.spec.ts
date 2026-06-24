@@ -724,6 +724,66 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
+  describe('pointer-move coalescing', () => {
+    @Component({
+      imports: [...DND_IMPORTS],
+      template: `
+        <ul forDropList #list="forDropList" [autoScroll]="false" (dragDrop)="onDrop($event)">
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">{{ row.label }}</li>
+          }
+        </ul>
+      `,
+    })
+    class CoalesceHost {
+      readonly rows: WritableSignal<Row[]> = signal([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      readonly listRef = viewChild.required<ForDropList>('list');
+      readonly lastDrop = signal<ForDragDropEvent | null>(null);
+      onDrop(event: ForDragDropEvent): void {
+        this.lastDrop.set(event);
+      }
+    }
+
+    it('collapses a burst of pointer moves into one trailing frame and flushes it on drop', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(CoalesceHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const comp = fixture.componentInstance;
+      const list = comp.listRef();
+      const el = fixture.nativeElement as HTMLElement;
+      const first = itemEl(el, 1);
+
+      const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+      const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame');
+
+      list.pointerLift(first, { x: 0, y: 0 });
+      list.pointerMove({ x: 0, y: 10 });
+      const framesAfterFirstMove = rafSpy.mock.results.length;
+      const coalescedFrame = rafSpy.mock.results.at(-1)!.value as number;
+      list.pointerMove({ x: 0, y: 20 });
+      list.pointerMove({ x: 0, y: 200 });
+
+      expect(rafSpy.mock.results.length).toBe(framesAfterFirstMove);
+
+      fixture.detectChanges();
+      const cancelsBefore = cancelSpy.mock.calls.length;
+      list.drop();
+      const cancelledDuringDrop = cancelSpy.mock.calls.slice(cancelsBefore).map((c) => c[0]);
+      fixture.detectChanges();
+
+      expect(cancelledDuringDrop).toContain(coalescedFrame);
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(listEl(el).hasAttribute('data-dragging')).toBe(false);
+    });
+  });
+
   describe('[forDragHandle]', () => {
     it('renders data-drag-handle attribute and touch-action: none on the handle element', () => {
       const { el } = renderHost(HandleHost);
