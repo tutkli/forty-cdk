@@ -706,3 +706,30 @@ Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent t
 Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator | null>` on `ForTreeNodeDragContext` (`{ anchor, position, level }`, `null` when idle).
 
 On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable and structurally prevents dropping a node into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
+
+### Localizing drag announcements
+
+While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root — phrase the root-vs-parent distinction in your own language.
+
+```ts
+import { provideForTreeDefaults } from 'forty-cdk/tree';
+
+provideForTreeDefaults({
+  dragAnnounceLift: (label) =>
+    `${label} levantado. Usa las flechas para mover, Espacio para soltar, Escape para cancelar.`,
+  dragAnnounceMove: (label, parentLabel, position, total) =>
+    `${label}: ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position} de ${total}.`,
+  dragAnnounceDrop: (label, parentLabel, position, total) =>
+    `${label} soltado ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position} de ${total}.`,
+  dragAnnounceCancel: (label) => `Cancelado. ${label} vuelve a su posición original.`,
+  dragAnnounceInvalid: (label) => `No se puede soltar ${label} aquí.`,
+});
+```
+
+| Default               | Type                                                                                      | Description                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `dragAnnounceLift`    | `(label: string) => string`                                                               | Announced when a node is picked up for drag.                       |
+| `dragAnnounceMove`    | `(label: string, parentLabel: string \| null, position: number, total: number) => string` | Announced on each intermediate move while a node is lifted.        |
+| `dragAnnounceDrop`    | `(label: string, parentLabel: string \| null, position: number, total: number) => string` | Announced when a node is committed to its new position.            |
+| `dragAnnounceCancel`  | `(label: string) => string`                                                               | Announced when a lift is cancelled and the node returns to origin. |
+| `dragAnnounceInvalid` | `(label: string) => string`                                                               | Announced when a `canDrop` veto rejects the attempted drop.        |
