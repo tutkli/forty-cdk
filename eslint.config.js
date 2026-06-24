@@ -849,13 +849,17 @@ const fortyCdkPlugin = {
     // it takes a directive-name string purely for error messages and exists
     // so sibling pieces of the same primitive can read the shared context.
     // Only the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context
-    // interface are public. This rule forbids any primitive barrel
-    // (`projects/forty-cdk/src/lib/<name>/index.ts`) from re-exporting a
-    // helper named `inject<Anything>Context`, mirroring the
-    // `require-defaults-sibling` shape: an `index.ts`-scoped check over the
-    // file's `export` declarations. Sibling pieces still import the helper
-    // directly from the relative context module (`./<name>-context`); only
-    // the public barrel surface is constrained.
+    // interface are public. This rule forbids any primitive barrel from
+    // re-exporting a helper named `inject<Anything>Context`, mirroring the
+    // `require-defaults-sibling` shape: a barrel-scoped check over the file's
+    // `export` declarations. Recognises both library layouts:
+    //   - per-entry-point:  projects/forty-cdk/<entry>/src/public-api.ts
+    //   - legacy folder:    projects/forty-cdk/src/lib/<name>/index.ts
+    // The `core` entry (former `_internal`) is exempt — its barrel is the
+    // internal shared surface and deliberately re-exports internal helpers with
+    // no semver guarantee — as are `_internal` / `test-utils`. Sibling pieces
+    // still import the helper directly from the relative context module
+    // (`./<name>-context`); only the public barrel surface is constrained.
     //
     // Decision D8 (tutkli/forty-cdk#584): unexport `injectXContext` from
     // every barrel; expose only the token + context interface publicly.
@@ -874,12 +878,23 @@ const fortyCdkPlugin = {
       },
       create(context) {
         const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
-        // Only constrain primitive barrels: <lib>/<name>/index.ts. _internal
-        // and test-utils are not part of the public surface contract.
-        if (!/\/projects\/forty-cdk\/src\/lib\/[^/]+\/index\.ts$/.test(filename)) {
+        // Only constrain primitive barrels. Recognise both library layouts:
+        //   - per-entry-point:  projects/forty-cdk/<entry>/src/public-api.ts
+        //   - legacy folder:    projects/forty-cdk/src/lib/<name>/index.ts
+        const perEntry = /\/projects\/forty-cdk\/([^/]+)\/src\/public-api\.ts$/.exec(filename);
+        const isLegacyBarrel = /\/projects\/forty-cdk\/src\/lib\/[^/]+\/index\.ts$/.test(filename);
+        if (!perEntry && !isLegacyBarrel) {
           return {};
         }
-        if (filename.includes('/_internal/') || filename.includes('/test-utils/')) {
+        // `_internal` and `test-utils` are not part of the public surface
+        // contract; in the per-entry-point layout the former `_internal` is the
+        // `core` entry (its barrel deliberately re-exports internal helpers with
+        // no semver guarantee), so it is exempt too.
+        if (
+          (perEntry && perEntry[1] === 'core') ||
+          filename.includes('/_internal/') ||
+          filename.includes('/test-utils/')
+        ) {
           return {};
         }
         const isInjectContextName = (name) =>
