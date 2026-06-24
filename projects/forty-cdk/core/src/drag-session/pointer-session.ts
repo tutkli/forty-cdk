@@ -34,6 +34,12 @@
  * on the document is swallowed (`stopPropagation` + `preventDefault`). The listener removes
  * itself after the first click, and a `suppressClickTimeoutMs` fallback removes it if no
  * click follows.
+ *
+ * Nested-control opt-out: if the originating `pointerdown` was `defaultPrevented` by a
+ * descendant that owns the same gesture (e.g. a nested resize handle), the session stands
+ * down on the first move instead of arming. The descendant's `preventDefault()` runs in the
+ * bubble phase, after this capture-phase `pointerdown` listener, so the check is deferred to
+ * the first `pointermove` — at `pointerdown` time `defaultPrevented` is still `false`.
  */
 
 /** A live pointer-drag session. Call `destroy()` to remove every listener. */
@@ -96,6 +102,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   let start: { x: number; y: number } | null = null;
   let armed = false;
   let pointerId: number | null = null;
+  let downEvent: PointerEvent | null = null;
 
   let onDocumentMove: ((event: PointerEvent) => void) | null = null;
   let onDocumentUp: ((event: PointerEvent) => void) | null = null;
@@ -147,6 +154,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     start = null;
     armed = false;
     pointerId = null;
+    downEvent = null;
     removeDocumentListeners();
   };
 
@@ -158,6 +166,10 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       const dx = event.clientX - start.x;
       const dy = event.clientY - start.y;
       if (Math.hypot(dx, dy) < opts.armThreshold) {
+        return;
+      }
+      if (downEvent?.defaultPrevented) {
+        resetTracking();
         return;
       }
       armed = true;
@@ -217,6 +229,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     start = { x: event.clientX, y: event.clientY };
     armed = false;
     pointerId = event.pointerId;
+    downEvent = event;
 
     onDocumentMove = move;
     onDocumentUp = up;

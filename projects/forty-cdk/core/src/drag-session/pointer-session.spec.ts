@@ -142,6 +142,58 @@ describe('createPointerDragSession', () => {
     expect(rec.moves).toBe(0);
   });
 
+  it('stands down when a descendant preventDefaults the pointerdown (no lift, move, or commit)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    const child = document.createElement('button');
+    host.appendChild(child);
+    const preventer = (event: PointerEvent): void => event.preventDefault();
+    child.addEventListener('pointerdown', preventer);
+    teardown.push(() => child.removeEventListener('pointerdown', preventer));
+
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(0);
+    expect(rec.moves).toBe(0);
+    expect(rec.commits).toBe(0);
+  });
+
+  it('does not suppress the click after standing down on a prevented pointerdown', () => {
+    const { host, session } = setup();
+    track(host, session);
+
+    const child = document.createElement('button');
+    host.appendChild(child);
+    const preventer = (event: PointerEvent): void => event.preventDefault();
+    child.addEventListener('pointerdown', preventer);
+    teardown.push(() => child.removeEventListener('pointerdown', preventer));
+
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    document.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(false);
+  });
+
+  it('still lifts when the pointerdown is not prevented (descendant present)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    const child = document.createElement('button');
+    host.appendChild(child);
+
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+
+    expect(rec.lifts).toBe(1);
+    expect(rec.moves).toBe(1);
+  });
+
   it('ignores a second pointerdown while a press is already tracked', () => {
     const starts: number[] = [];
     const { host, session } = setup({
@@ -315,5 +367,25 @@ describe('createPointerDragSession', () => {
 
     expect(rec.lifts).toBe(1);
     expect(rec.commits).toBe(1);
+  });
+
+  it('stands down on a prevented pointerdown under provideZonelessChangeDetection', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    const child = document.createElement('button');
+    host.appendChild(child);
+    const preventer = (event: PointerEvent): void => event.preventDefault();
+    child.addEventListener('pointerdown', preventer);
+    teardown.push(() => child.removeEventListener('pointerdown', preventer));
+
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(0);
+    expect(rec.commits).toBe(0);
   });
 });

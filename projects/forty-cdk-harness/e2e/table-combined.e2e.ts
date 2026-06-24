@@ -71,6 +71,33 @@ test.describe('Table combined composition', () => {
     expect(widthVarAfter).not.toBe('');
   });
 
+  test('dragging a nested resizer resizes the full gesture without reordering (no forDragHandle)', async ({
+    page,
+  }) => {
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const orderBefore = await headerOrder(page);
+    const beforeBox = await headerName.boundingBox();
+    if (!beforeBox) throw new Error('header-name has no box');
+
+    const resizerBox = await resizer.boundingBox();
+    if (!resizerBox) throw new Error('resizer-name has no box');
+    const rx = resizerBox.x + resizerBox.width / 2;
+    const ry = resizerBox.y + resizerBox.height / 2;
+
+    await page.mouse.move(rx, ry);
+    await page.mouse.down();
+    await page.mouse.move(rx + 50, ry);
+    await page.mouse.move(rx + 100, ry);
+    await page.mouse.up();
+
+    const afterBox = await headerName.boundingBox();
+    if (!afterBox) throw new Error('header-name has no box after resize');
+    expect(afterBox.width).toBeGreaterThan(beforeBox.width + 60);
+    expect(await headerOrder(page)).toEqual(orderBefore);
+  });
+
   test('a sortable + draggable header cell is focusable and activates the sort with Enter', async ({
     page,
   }) => {
