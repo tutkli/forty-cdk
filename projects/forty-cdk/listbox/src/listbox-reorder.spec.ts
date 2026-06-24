@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { flush, renderHost } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
+import { provideForListboxDefaults } from './listbox-defaults';
 import { ForListboxOption } from './listbox-option';
 import { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
 
@@ -273,5 +274,91 @@ describe('ForListboxReorder — disabled paths', () => {
     dispatchKey(optB, ' ', { ctrlKey: true });
     await f();
     expect(list.getAttribute('data-dragging')).toBe('');
+  });
+});
+
+@Component({
+  imports: [ForListbox, ForListboxOption, ForListboxReorder],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [
+    provideForListboxDefaults({
+      reorderAnnounceLift: (label, index, total) => `[lift] ${label} ${index}/${total}`,
+      reorderAnnounceMove: (label, index, total) => `[move] ${label} ${index}/${total}`,
+      reorderAnnounceDrop: (label, index, total) => `[drop] ${label} ${index}/${total}`,
+      reorderAnnounceCancel: (label) => `[cancel] ${label}`,
+    }),
+  ],
+  template: `
+    <ul forListbox forListboxReorder multiple [(value)]="value" aria-label="Tags">
+      @for (tag of tags(); track tag) {
+        <li>
+          <button type="button" forListboxOption [value]="tag" [attr.data-testid]="'opt-' + tag">
+            {{ tag }}
+          </button>
+        </li>
+      }
+    </ul>
+  `,
+})
+class ReorderI18nHost {
+  readonly tags = signal<readonly string[]>(['a', 'b', 'c', 'd']);
+  readonly value = signal<readonly string[]>([]);
+}
+
+function liveRegion(politeness: 'polite' | 'assertive'): HTMLElement | undefined {
+  return Array.from(
+    document.body.querySelectorAll<HTMLElement>(`[aria-live="${politeness}"]`),
+  ).find((el) => !el.closest('[forListbox]'));
+}
+
+describe('ForListboxReorder — i18n announcements', () => {
+  it('lift / move / drop announce via the consumer-provided formatters', async () => {
+    const { query, flush: f } = renderHost(ReorderI18nHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[lift] b 2/4');
+
+    dispatchKey(list, 'ArrowDown', {});
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('[move] b 3/4');
+
+    dispatchKey(list, ' ', {});
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[drop] b 3/4');
+  });
+
+  it('cancel announces via the consumer-provided formatter', async () => {
+    const { query, flush: f } = renderHost(ReorderI18nHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(list, 'Escape', {});
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[cancel] b');
+  });
+
+  it('falls back to the English phrasing when no override is provided', async () => {
+    const { query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('b, lifted. 2 of 4.');
   });
 });

@@ -153,6 +153,30 @@ Drag an option past a small threshold to reorder; a short press without movement
 | `[forListboxReorder]` | `data-dragging` | present \| absent | On the container while any drag (pointer or keyboard) is in flight. |
 | `[forListboxOption]`  | `data-dragging` | present \| absent | On the lifted option for the duration of the drag.                  |
 
+### Localizing reorder announcements
+
+While a reorder is in flight, `[forListboxReorder]` announces lift / move / drop / cancel through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForListboxDefaults` so screen readers speak the consumer's language. `index` / `total` are 1-based.
+
+```ts
+import { provideForListboxDefaults } from 'forty-cdk/listbox';
+
+provideForListboxDefaults({
+  reorderAnnounceLift: (label, index, total) => `${label} levantado. ${index} de ${total}.`,
+  reorderAnnounceMove: (label, index, total) =>
+    `${label} movido a la posición ${index} de ${total}.`,
+  reorderAnnounceDrop: (label, index, total) =>
+    `${label} soltado en la posición ${index} de ${total}.`,
+  reorderAnnounceCancel: (label) => `Movimiento de ${label} cancelado.`,
+});
+```
+
+| Default                 | Type                                                      | Description                                     |
+| ----------------------- | --------------------------------------------------------- | ----------------------------------------------- |
+| `reorderAnnounceLift`   | `(label: string, index: number, total: number) => string` | Announced when an option is lifted for reorder. |
+| `reorderAnnounceMove`   | `(label: string, index: number, total: number) => string` | Announced when the drop position changes.       |
+| `reorderAnnounceDrop`   | `(label: string, index: number, total: number) => string` | Announced on a committed drop.                  |
+| `reorderAnnounceCancel` | `(label: string) => string`                               | Announced when the reorder is cancelled.        |
+
 ## Object values
 
 Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forListbox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.

@@ -24,12 +24,7 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { injectListboxContext, type ForListboxContext } from './listbox-context';
-import {
-  announceReorderCancel,
-  announceReorderDrop,
-  announceReorderLift,
-  announceReorderMove,
-} from './listbox-reorder-announcements';
+import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
@@ -123,6 +118,7 @@ export class ForListboxReorder {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
+  readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
 
   /**
    * Disables reorder interactions while leaving selection / typeahead intact. Named distinctly
@@ -342,7 +338,7 @@ export class ForListboxReorder {
     }
 
     this.#announcer.announce(
-      announceReorderLift(this.#label, index + 1, this.#ctx.options().length),
+      this.#defaults.reorderAnnounceLift(this.#label, index + 1, this.#ctx.options().length),
       'assertive',
     );
   }
@@ -354,7 +350,10 @@ export class ForListboxReorder {
       return;
     }
     this.#targetIndex = clamped;
-    this.#announcer.announce(announceReorderMove(this.#label, clamped + 1, total), politeness);
+    this.#announcer.announce(
+      this.#defaults.reorderAnnounceMove(this.#label, clamped + 1, total),
+      politeness,
+    );
   }
 
   #commit(): void {
@@ -367,7 +366,7 @@ export class ForListboxReorder {
     const label = this.#label;
     this.#clearSession();
     this.optionReorder.emit({ from, to });
-    this.#announcer.announce(announceReorderDrop(label, to + 1, total), 'assertive');
+    this.#announcer.announce(this.#defaults.reorderAnnounceDrop(label, to + 1, total), 'assertive');
   }
 
   #cancel(): void {
@@ -376,7 +375,7 @@ export class ForListboxReorder {
     }
     const label = this.#label;
     this.#clearSession();
-    this.#announcer.announce(announceReorderCancel(label), 'assertive');
+    this.#announcer.announce(this.#defaults.reorderAnnounceCancel(label), 'assertive');
   }
 
   #clearSession(): void {
