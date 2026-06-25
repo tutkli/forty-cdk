@@ -68,6 +68,14 @@ import { ForToastTitle } from './toast-title';
  * (default `Notifications`). Toast nodes themselves carry their own
  * `role` (`status` / `alert`) and `aria-live`, so screen readers
  * announce updates without forcing focus.
+ *
+ * Over a modal: the host carries `data-for-modal-exempt`, so an open modal
+ * `ForDialog` / `ForDrawer` (a) leaves the viewport out of its inert pass
+ * instead of disabling it (when the viewport sits at the document-body level)
+ * and (b) treats a click on a toast as "inside", never as `pointerDownOutside`.
+ * A confirmation / error toast shown from a flow inside a modal therefore stays
+ * interactive and clicking it does not dismiss the modal — no consumer-side
+ * `data-for-modal-peer` stamping or `onPointerDownOutside` veto needed.
  */
 @Component({
   selector: 'for-toast-viewport, [forToastViewport]',
@@ -84,6 +92,7 @@ import { ForToastTitle } from './toast-title';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     role: 'region',
+    'data-for-modal-exempt': '',
     '[attr.aria-label]': 'label()',
     '[attr.data-region]': 'region()',
     tabindex: '-1',

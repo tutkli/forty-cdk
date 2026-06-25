@@ -44,6 +44,15 @@ Position it from CSS — the directive doesn't impose layout:
 }
 ```
 
+## Toasts over a modal dialog / drawer
+
+Showing a confirmation or error toast from a flow inside a modal `ForDialog` / `ForDrawer` works out of the box. The viewport host carries `data-for-modal-exempt`, so an open modal automatically:
+
+- leaves the viewport out of its inert pass (the toast stays interactive instead of being disabled with the rest of the background), and
+- treats a click on a toast as "inside" — clicking a toast never dismisses the modal.
+
+No wiring is needed on your side — no manual `data-for-modal-peer` stamping, no `(pointerDownOutside)` veto. The one thing you control is layout: for the toast to stay interactive over the modal, mount the viewport as a child of `document.body` (or `position: fixed` it there) rather than nested inside a region that the modal inerts.
+
 ## Multiple regions
 
 A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:

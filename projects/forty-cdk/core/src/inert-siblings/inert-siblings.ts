@@ -38,7 +38,9 @@ import { isPlatformBrowser } from '@angular/common';
  *
  * Peers: any element carrying the `data-for-modal-peer` attribute is
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
- * alongside the dialog).
+ * alongside the dialog). The `data-for-modal-exempt` attribute is excluded
+ * the same way — it additionally opts the element out of the dismissable
+ * layer (e.g. a toast viewport), see {@link MODAL_EXEMPT_ATTRIBUTE}.
  *
  * Late siblings: an element portaled to the root *after* the topmost owner
  * activated would otherwise escape the isolation, since the initial sweep
@@ -64,6 +66,24 @@ import { isPlatformBrowser } from '@angular/common';
  * exported constant.
  */
 export const MODAL_PEER_ATTRIBUTE = 'data-for-modal-peer';
+
+/**
+ * Attribute that marks a root-level child as an **independent overlay surface**
+ * which must stay fully usable while a modal is open. Stronger than
+ * {@link MODAL_PEER_ATTRIBUTE}: like a peer it is skipped by the inert pass
+ * (left interactive instead of inerted), and in addition every active modal's
+ * dismissable layer treats interactions inside it as "inside", so a pointer-down
+ * or focus within it never dismisses the modal (see
+ * `resolveModalExemptOverlays` in the modal shell). A peer (dialog / drawer
+ * backdrop) deliberately stays part of the dismiss-outside surface; an exempt
+ * overlay does not.
+ *
+ * Carried by `ForToastViewport` so a toast shown over an open modal `ForDialog`
+ * / `ForDrawer` stays interactive (when the viewport sits at the document-body
+ * level) and a click on a toast never closes the modal. The viewport host-binds
+ * the literal; imperative callers use this exported constant.
+ */
+export const MODAL_EXEMPT_ATTRIBUTE = 'data-for-modal-exempt';
 
 interface SnapshotEntry {
   readonly el: HTMLElement;
@@ -201,7 +221,7 @@ export class InertSiblingsStack {
     if (child === protectedRoot) {
       return;
     }
-    if (child.hasAttribute(MODAL_PEER_ATTRIBUTE)) {
+    if (child.hasAttribute(MODAL_PEER_ATTRIBUTE) || child.hasAttribute(MODAL_EXEMPT_ATTRIBUTE)) {
       return;
     }
     if (state.appliedSnapshot.some((entry) => entry.el === child)) {
