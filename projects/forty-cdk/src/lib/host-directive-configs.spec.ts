@@ -29,6 +29,11 @@ import {
   ForDateField,
 } from 'forty-cdk/date-field';
 import {
+  FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
+  FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForDateRangeField,
+} from 'forty-cdk/date-range-field';
+import {
   FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
   FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS,
@@ -122,6 +127,12 @@ const cases: readonly ConfigCase[] = [
     directive: ForDateField,
     inputs: FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
     outputs: FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
+    name: 'ForDateRangeField',
+    directive: ForDateRangeField,
+    inputs: FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
   },
   {
     name: 'ForDatePicker',

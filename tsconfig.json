@@ -31,6 +31,10 @@
         "./dist/forty-cdk/date-field",
         "./projects/forty-cdk/date-field/src/public-api.ts"
       ],
+      "forty-cdk/date-range-field": [
+        "./dist/forty-cdk/date-range-field",
+        "./projects/forty-cdk/date-range-field/src/public-api.ts"
+      ],
       "forty-cdk/date-picker": [
         "./dist/forty-cdk/date-picker",
         "./projects/forty-cdk/date-picker/src/public-api.ts"
