@@ -156,8 +156,9 @@ export class MtxListbox extends ForListbox {}
 ```
 
 Primitives whose **root** provides a context token (and therefore needs the re-provide):
-`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForDateRangePicker`, `ForListbox`,
-`ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`, `ForToggleGroup`.
+`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForDateRangeField`, `ForDateRangePicker`,
+`ForListbox`, `ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`,
+`ForTimeRangeField`, `ForToggleGroup`.
 The pure leaf
 controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput` — declare no
 providers, so a bare subclass is enough.
@@ -258,6 +259,7 @@ the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_S
 | `ForSwitch`          | `FOR_SWITCH_HOST_DIRECTIVE_INPUTS`            | `FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS`            |
 | `ForTextarea`        | `FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS`          | `FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS`          |
 | `ForTimeField`       | `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS`        | `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS`        |
+| `ForTimeRangeField`  | `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS`  | `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`  |
 | `ForToggle`          | `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS`            | `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS`            |
 | `ForToggleGroup`     | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS`      | `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS`      |
 

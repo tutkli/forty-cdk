@@ -47,6 +47,11 @@ import {
   ForTimeField,
 } from 'forty-cdk/time-field';
 import {
+  FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
+  FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForTimeRangeField,
+} from 'forty-cdk/time-range-field';
+import {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
   ForTimePicker,
@@ -205,6 +210,12 @@ const cases: readonly ConfigCase[] = [
     directive: ForTimeField,
     inputs: FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
     outputs: FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
+    name: 'ForTimeRangeField',
+    directive: ForTimeRangeField,
+    inputs: FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
   },
   {
     name: 'ForTimePicker',

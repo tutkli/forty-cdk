@@ -20,6 +20,7 @@
     "date-range-field/src/**/*.ts",
     "date-picker/src/**/*.ts",
     "time-field/src/**/*.ts",
+    "time-range-field/src/**/*.ts",
     "time-picker/src/**/*.ts",
     "listbox/src/**/*.ts",
     "select/src/**/*.ts",

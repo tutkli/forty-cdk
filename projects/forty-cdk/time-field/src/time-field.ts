@@ -1,41 +1,25 @@
-import { computed, Directive, ElementRef, inject, input, linkedSignal, model } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
+  type FieldSegment,
+  FOR_TIME_VALUE_SOURCE,
+  FormUiControlBase,
   injectDateAdapter,
-  type TimeCapableDateAdapter,
-  dayPeriodNames,
-  resolveHourCycle,
-  type FieldSpec,
-  SegmentEditor,
+  injectHiddenInput,
+  injectTextDirection,
+  RovingTabindex,
   type SegmentHandle,
   type SegmentType,
-  composeWithTime,
-  secondsOfDay,
   serializeISOTime,
-  timeSentinel,
-  FormUiControlBase,
-  injectHiddenInput,
+  type TimeCapableDateAdapter,
+  TimeFieldEngine,
   type WritingDirection,
-  RovingTabindex,
-  injectTextDirection,
-  FOR_TIME_VALUE_SOURCE,
 } from 'forty-cdk/core';
-import {
-  buildTimeSegments,
-  type TimeGranularity,
-  type TimeSegmentType,
-} from './build-time-segments';
+import { type TimeGranularity, type TimeSegmentType } from './build-time-segments';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
 import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
-
-/** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
-interface TimeParts {
-  hour: number | null;
-  minute: number | null;
-  second: number | null;
-}
 
 /**
  * Headless, segmented, spin-editable time-of-day input — the time counterpart
@@ -51,14 +35,15 @@ interface TimeParts {
  * adapter's date-time type, resolves the locale-ordered segment list, and
  * exposes everything to the segment / literal children through
  * {@link FOR_TIME_FIELD_CONTEXT}. The spin-button engine (digit typing,
- * stepping, Home/End, RTL focus moves, the segment registry) lives in the shared
- * `_internal/datetime` {@link SegmentEditor}; the root supplies only the
- * time-specific bits (segment bounds, the midnight seed, and the
- * sentinel-anchored setTime/clamp compose). All time math goes through the
- * pluggable {@link import('../_internal/date-adapter/date-adapter').DateAdapter} shared with
- * `ForCalendar`, which **must be time-capable** — `provideNativeDateAdapter()`
- * or `provideInternationalizedDateTimeAdapter()` (the day-only
- * `provideInternationalizedDateAdapter()` throws).
+ * stepping, Home/End, RTL focus moves, the segment registry, the segment bounds,
+ * the midnight seed, and the sentinel-anchored setTime/clamp compose) lives in
+ * the shared `_internal/datetime` {@link TimeFieldEngine} (itself built on
+ * `SegmentEditor`); the root supplies only the reactive inputs and writes the
+ * composed value. All time math goes through the pluggable
+ * {@link import('../_internal/date-adapter/date-adapter').DateAdapter} shared
+ * with `ForCalendar`, which **must be time-capable** —
+ * `provideNativeDateAdapter()` or `provideInternationalizedDateTimeAdapter()`
+ * (the day-only `provideInternationalizedDateAdapter()` throws).
  *
  * It implements `FormValueControl<D | null>` from `@angular/forms/signals`, so
  * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
@@ -195,73 +180,34 @@ export class ForTimeField<D>
   /** Shared roving-tabindex tracker: exactly one segment owns `tabindex=0`. */
   readonly roving = new RovingTabindex();
 
-  /** Resolved hour cycle (`12` shows AM/PM, `24` does not). */
-  readonly #cycle = computed(() => resolveHourCycle(this.locale() ?? undefined, this.hourCycle()));
-
-  readonly #specs = computed<readonly FieldSpec[]>(() =>
-    buildTimeSegments(this.locale() ?? undefined, this.#cycle(), this.granularity()),
-  );
-
-  readonly #editableOrder = computed<readonly SegmentType[]>(() =>
-    this.#specs()
-      .filter((spec): spec is Extract<FieldSpec, { kind: 'editable' }> => spec.kind === 'editable')
-      .map((spec) => spec.type),
-  );
-
-  readonly #periodNames = computed(() => dayPeriodNames(this.locale() ?? undefined));
-
-  /**
-   * The entered parts. A `linkedSignal` keyed on `value`: a non-null write
-   * (consumer, `[formField]`, or our own compose) rehydrates the parts from the
-   * date-time. A `null` transition is disambiguated by the prior parts — an
-   * internal edit clearing one segment leaves the others, so `previous` still
-   * carries a filled part and is preserved; an external reset of a complete
-   * value clears the field.
-   */
-  readonly #parts = linkedSignal<D | null, TimeParts>({
-    source: this.value,
-    computation: (current, previous) => {
-      if (current !== null) {
-        return {
-          hour: this.adapter.getHours(current),
-          minute: this.adapter.getMinutes(current),
-          second: this.adapter.getSeconds(current),
-        };
-      }
-      const prior = previous?.value;
-      if (prior && (prior.hour === null || prior.minute === null || prior.second === null)) {
-        return prior;
-      }
-      return { hour: null, minute: null, second: null };
-    },
-  });
-
-  readonly #editor = new SegmentEditor<TimeParts, TimeSegmentType>({
-    disabled: this.effectiveDisabled,
-    readonly: this.readonly,
-    roving: this.roving,
-    cycle: this.#cycle,
-    specs: this.#specs,
-    editableOrder: this.#editableOrder,
-    periodNames: this.#periodNames,
-    parts: () => this.#parts(),
-    segmentMin: (type) => this.segmentMin(type),
-    segmentMax: (type) => this.segmentMax(type),
-    seed: (type) => this.#seed(type),
-    placeholderFor: (type) => this.#placeholderFor(type),
-    valueText: (type) => this.#valueText(type),
-    commit: (next) => this.#commitParts(next),
-  });
+  readonly #engine: TimeFieldEngine<D>;
 
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
    * placeholder while empty, or the literal separator.
    */
-  readonly segments = this.#editor.segments;
+  readonly segments: Signal<readonly FieldSegment<TimeSegmentType>[]>;
 
   constructor() {
     super();
+    this.#engine = new TimeFieldEngine<D>({
+      adapter: this.adapter,
+      disabled: this.effectiveDisabled,
+      readonly: this.readonly,
+      roving: this.roving,
+      granularity: this.granularity,
+      hourCycle: this.hourCycle,
+      locale: this.locale,
+      placeholder: this.placeholder,
+      emptySegmentText: computed(() => this.#defaults.emptySegmentText),
+      minTime: this.minTime,
+      maxTime: this.maxTime,
+      source: this.value,
+      onCommit: (next) => this.value.set(next),
+    });
+    this.segments = this.#engine.segments;
+
     injectHiddenInput({
       name: this.name,
       values: computed(() => {
@@ -276,76 +222,67 @@ export class ForTimeField<D>
   }
 
   segmentValue(type: SegmentType): number | null {
-    return this.#editor.segmentValue(type);
+    return this.#engine.segmentValue(type);
   }
 
   segmentMin(type: SegmentType): number {
-    if (type === 'hour') {
-      return this.#cycle() === 12 ? 1 : 0;
-    }
-    return 0;
+    return this.#engine.segmentMin(type);
   }
 
   segmentMax(type: SegmentType): number {
-    if (type === 'hour') {
-      return this.#cycle() === 12 ? 12 : 23;
-    }
-    if (type === 'dayPeriod') {
-      return 1;
-    }
-    return 59;
+    return this.#engine.segmentMax(type);
   }
 
   segmentValueText(type: SegmentType): string | null {
-    return this.#editor.segmentValueText(type);
+    return this.#engine.segmentValueText(type);
   }
 
   segmentDisplayText(type: SegmentType): string {
-    return this.#editor.segmentDisplayText(type);
+    return this.#engine.segmentDisplayText(type);
   }
 
   isSegmentEmpty(type: SegmentType): boolean {
-    return this.#editor.isSegmentEmpty(type);
+    return this.#engine.isSegmentEmpty(type);
   }
 
   isFirstSegmentType(type: SegmentType): boolean {
-    return this.#editor.isFirstSegmentType(type);
+    return this.#engine.isFirstSegmentType(type);
   }
 
   registerSegment(handle: SegmentHandle): void {
-    this.#editor.registerSegment(handle);
+    this.#engine.registerSegment(handle);
   }
 
   unregisterSegment(handle: SegmentHandle): void {
-    this.#editor.unregisterSegment(handle);
+    this.#engine.unregisterSegment(handle);
   }
 
   focusSegment(type: SegmentType): void {
-    this.#editor.focusSegment(type);
+    this.#engine.focusSegment(type);
   }
 
   typeDigit(type: SegmentType, digit: number): void {
-    this.#editor.typeDigit(type, digit);
+    this.#engine.typeDigit(type, digit);
   }
 
   step(type: SegmentType, delta: number): void {
-    this.#editor.step(type, delta);
+    this.#engine.step(type, delta);
   }
 
   goToBound(type: SegmentType, bound: 'min' | 'max'): void {
-    this.#editor.goToBound(type, bound);
+    this.#engine.goToBound(type, bound);
   }
 
   setDayPeriod(period: 'am' | 'pm'): void {
-    this.#editor.setDayPeriod(period);
+    this.#engine.setDayPeriod(period);
   }
 
   clear(type: SegmentType): void {
-    this.#editor.clear(type);
+    this.#engine.clear(type);
   }
 
   focusSibling(type: SegmentType, step: -1 | 1): void {
-    this.#editor.focusSibling(type, step);
+    this.#engine.focusSibling(type, step);
   }
 
   protected onFocusOut(event: FocusEvent): void {
@@ -353,79 +290,5 @@ export class ForTimeField<D>
     if (!next || !this.#host.nativeElement.contains(next)) {
       this.markTouched();
     }
-  }
-
-  /** Field-specific `aria-valuetext`: only the empty marker; numeric otherwise. */
-  #valueText(type: SegmentType): string | null {
-    return this.isSegmentEmpty(type) ? this.#defaults.emptySegmentText : null;
-  }
-
-  /** Base value for stepping an empty segment: midnight (hour 0, minute 0, second 0). */
-  #seed(type: SegmentType): number {
-    if (type !== 'hour') {
-      return 0;
-    }
-    const display = this.segmentMin('hour');
-    if (this.#cycle() === 24) {
-      return display;
-    }
-    const hour = this.#parts().hour;
-    const pm = hour !== null && hour >= 12;
-    const base = display % 12;
-    return pm ? base + 12 : base;
-  }
-
-  #placeholderFor(type: SegmentType): string {
-    if (type === 'hour' || type === 'minute' || type === 'second' || type === 'dayPeriod') {
-      const override = this.placeholder()[type];
-      if (override) {
-        return override;
-      }
-    }
-    switch (type) {
-      case 'hour':
-        return 'hh';
-      case 'minute':
-        return 'mm';
-      case 'second':
-        return 'ss';
-      default:
-        return '--';
-    }
-  }
-
-  #commitParts(next: TimeParts): void {
-    this.#parts.set(next);
-    const granularity = this.granularity();
-    const needMinute = granularity !== 'hour';
-    const needSecond = granularity === 'second';
-    const complete =
-      next.hour !== null &&
-      (!needMinute || next.minute !== null) &&
-      (!needSecond || next.second !== null);
-    if (complete) {
-      const base = this.value() ?? timeSentinel(this.adapter);
-      const composed = this.adapter.setTime(
-        base,
-        next.hour!,
-        needMinute ? next.minute! : 0,
-        needSecond ? next.second! : 0,
-      );
-      this.value.set(this.#clampToBounds(composed));
-    } else {
-      this.value.set(null);
-    }
-  }
-
-  #clampToBounds(date: D): D {
-    const min = this.minTime();
-    if (min !== null && secondsOfDay(this.adapter, date) < secondsOfDay(this.adapter, min)) {
-      return composeWithTime(this.adapter, date, min);
-    }
-    const max = this.maxTime();
-    if (max !== null && secondsOfDay(this.adapter, date) > secondsOfDay(this.adapter, max)) {
-      return composeWithTime(this.adapter, date, max);
-    }
-    return date;
   }
 }
