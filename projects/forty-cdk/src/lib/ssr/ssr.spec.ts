@@ -183,6 +183,7 @@ import {
 import {
   ForTable,
   ForTableCell,
+  ForTableColumnLabel,
   ForTableColumnReorder,
   ForTableColumnResizer,
   ForTableHeaderCell,
@@ -314,6 +315,7 @@ class TableFixture {}
     ForTableCell,
     ForTableSortHeader,
     ForTableColumnResizer,
+    ForTableColumnLabel,
     ForTableColumnReorder,
     ForTableRowReorder,
     ForDraggable,
@@ -322,8 +324,13 @@ class TableFixture {}
     <div forTable mode="grid" aria-label="People" [rowCount]="100" selectionMode="multiple">
       <div forTableHeaderRow forTableColumnReorder orientation="horizontal">
         <div forTableHeaderCell name="name" forTableSortHeader column="name" direction="ascending">
-          Name
-          <button forTableColumnResizer column="name" aria-label="Resize name"></button>
+          <span forTableColumnLabel>Name</span>
+          <button
+            forTableColumnResizer
+            column="name"
+            fitIncludesHeader
+            aria-label="Resize name"
+          ></button>
         </div>
         <div forTableHeaderCell name="role" forDraggable [dragData]="'role'">
           Role

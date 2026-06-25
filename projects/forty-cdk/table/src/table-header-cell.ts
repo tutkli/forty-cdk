@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject, input } from '@angular/core';
+import { Directive, ElementRef, inject, input, signal } from '@angular/core';
 
 import { coerceSticky, injectTableContext, type TableStickyValue } from './table-context';
 
@@ -29,6 +29,28 @@ export class ForTableHeaderCell {
 
   /** Column identifier, reflected as `data-column`. Required by later phases (sort, resize, reorder). */
   readonly name = input.required<string>();
+
+  readonly #labelEl = signal<HTMLElement | null>(null);
+
+  /**
+   * The element a descendant `[forTableColumnLabel]` marks as this column's label
+   * text, or `null` when no marker is present. A sibling `[forTableColumnResizer]`
+   * reads it to measure the header label for header-inclusive auto-fit, isolating
+   * the label from the resize handle / sort affordance without DOM assumptions.
+   */
+  readonly labelEl = this.#labelEl.asReadonly();
+
+  /** Registers a descendant `[forTableColumnLabel]` as this header cell's label element. */
+  registerLabel(el: HTMLElement): void {
+    this.#labelEl.set(el);
+  }
+
+  /** Unregisters the label element. Reference-based; safe to call if never registered. */
+  unregisterLabel(el: HTMLElement): void {
+    if (this.#labelEl() === el) {
+      this.#labelEl.set(null);
+    }
+  }
 
   /**
    * Sticky placement for this header cell. `true` (or the bare `sticky`

@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import {
   ForTable,
   ForTableCell,
+  ForTableColumnLabel,
   ForTableColumnResizer,
   ForTableHeaderCell,
   ForTableHeaderRow,
@@ -30,6 +31,7 @@ import {
     ForTableSelectAll,
     ForTableSortHeader,
     ForTableColumnResizer,
+    ForTableColumnLabel,
   ],
   styles: [
     `
@@ -68,6 +70,9 @@ import {
       }
       [forTableCell] {
         border-bottom: 1px solid #eee;
+      }
+      [forTableColumnLabel] {
+        white-space: nowrap;
       }
       [forTableRowSelector],
       [forTableSelectAll] {
@@ -122,7 +127,7 @@ import {
             @if (selectionMode() !== 'none') {
               <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
             }
-            Name
+            <span forTableColumnLabel data-testid="label-name">{{ nameLabel() }}</span>
             @if (resizable()) {
               <button
                 class="resize-handle"
@@ -130,6 +135,7 @@ import {
                 column="name"
                 [width]="resizerWidth()"
                 [autoFit]="autoFit()"
+                [fitIncludesHeader]="fitIncludesHeader()"
                 [max]="maxWidth()"
                 data-testid="resizer-name"
                 aria-label="Resize Name column"
@@ -147,7 +153,7 @@ import {
             [direction]="directionFor('role')"
             (sortChange)="onSort($event)"
           >
-            Role
+            <span forTableColumnLabel>Role</span>
             @if (resizable()) {
               <button
                 class="resize-handle"
@@ -155,6 +161,7 @@ import {
                 column="role"
                 [width]="resizerWidth()"
                 [autoFit]="autoFit()"
+                [fitIncludesHeader]="fitIncludesHeader()"
                 data-testid="resizer-role"
                 aria-label="Resize Role column"
                 (resizeCommit)="onResize($event)"
@@ -171,7 +178,7 @@ import {
             [direction]="directionFor('dept')"
             (sortChange)="onSort($event)"
           >
-            Department
+            <span forTableColumnLabel>Department</span>
             @if (resizable()) {
               <button
                 class="resize-handle"
@@ -179,6 +186,7 @@ import {
                 column="dept"
                 [width]="resizerWidth()"
                 [autoFit]="autoFit()"
+                [fitIncludesHeader]="fitIncludesHeader()"
                 data-testid="resizer-dept"
                 aria-label="Resize Department column"
                 (resizeCommit)="onResize($event)"
@@ -232,6 +240,15 @@ export class TableFixture {
     this.route.snapshot.queryParamMap.get('resizable') === 'true',
   );
   protected readonly autoFit = signal(this.route.snapshot.queryParamMap.get('autoFit') === 'true');
+  protected readonly fitIncludesHeader = signal(
+    this.route.snapshot.queryParamMap.get('fitIncludesHeader') === 'true',
+  );
+  protected readonly longHeader = signal(
+    this.route.snapshot.queryParamMap.get('longHeader') === 'true',
+  );
+  protected readonly nameLabel = computed(() =>
+    this.longHeader() ? 'Full Legal Name of the Employee' : 'Name',
+  );
   protected readonly maxWidth = signal<number>(
     Number(this.route.snapshot.queryParamMap.get('maxWidth')) || Infinity,
   );
