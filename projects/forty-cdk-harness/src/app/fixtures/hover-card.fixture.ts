@@ -16,8 +16,31 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
       }
     </span>
     <input id="after" placeholder="after-trigger" />
+
+    <div
+      data-testid="scroll-list"
+      style="height:96px;width:220px;overflow-y:auto;border:1px solid #ccc;"
+    >
+      @for (row of rows; track row) {
+        <div
+          forHoverCard
+          #card="forHoverCard"
+          [openDelay]="0"
+          [closeDelay]="0"
+          style="padding:8px;"
+        >
+          <a [attr.data-testid]="'row-trigger-' + row" forHoverCardTrigger href="#row"
+            >Row {{ row }}</a
+          >
+          @if (card.open()) {
+            <div forHoverCardContent [attr.data-testid]="'row-card-' + row">Card {{ row }}</div>
+          }
+        </div>
+      }
+    </div>
   `,
 })
 export class HoverCardFixture {
   protected readonly open = signal(false);
+  protected readonly rows = Array.from({ length: 20 }, (_, i) => i);
 }

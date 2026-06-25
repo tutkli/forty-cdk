@@ -653,6 +653,107 @@ describe('ForHoverCard', () => {
     });
   });
 
+  describe('scroll dismiss', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('closes an open card when an ancestor scrolls', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+      expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
+
+      document.dispatchEvent(new Event('scroll'));
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(0);
+    });
+
+    it('suppresses a hover open while an ancestor is scrolling, even with openDelay 0', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      document.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+
+      vi.advanceTimersByTime(200);
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('suppresses the instant re-open during scroll within the skip-delay window', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+
+      document.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not suppress a focus open while an ancestor is scrolling', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      document.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      flush();
+      vi.advanceTimersByTime(0);
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('reflects the scroll close through data-state without Zone.js', () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isOpen.set(true);
+      flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      document.dispatchEvent(new Event('scroll'));
+      flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+    });
+  });
+
   describe('prefers-reduced-motion: reduce', () => {
     let restoreReducedMotion: () => void;
     beforeEach(() => {

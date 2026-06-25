@@ -119,6 +119,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ## Behavior notes
 
+- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open card closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so cards on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the card normally again. The keyboard-focus open path is never suppressed.
 - **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the card. Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. The helper ships no default visual.
 
 ## Styling
