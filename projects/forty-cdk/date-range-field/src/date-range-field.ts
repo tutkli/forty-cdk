@@ -7,6 +7,7 @@ import {
   input,
   linkedSignal,
   model,
+  signal,
   type Signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -34,6 +35,11 @@ import {
   type ForDateRangeFieldContext,
 } from './date-range-field-context';
 import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
+
+interface CommittedRange<D> {
+  range: CalendarDateRange<D> | null;
+  generation: number;
+}
 
 /**
  * Headless, segmented, spin-editable date **range** input — the keyboard-first,
@@ -197,22 +203,41 @@ export class ForDateRangeField<D>
   readonly #endRoving = new RovingTabindex();
 
   /**
-   * Per-endpoint rehydration source. A `linkedSignal` keyed on the committed
-   * range: a non-null `value` (external write or our own commit) drives the
-   * endpoint's segments from `range.start` / `range.end`; a `null` `value`
-   * **preserves** the prior endpoint value rather than clearing it, because the
-   * range goes `null` whenever *either* endpoint is mid-edit or the two are out
-   * of order — clearing on that would wipe a complete endpoint just because its
-   * sibling is incomplete. The endpoint's own segment-level edits flow through
-   * the engine's parts, not through this source.
+   * Monotonic generation bumped by {@link #recompose} on every value it writes.
+   * It tags each *internal* commit so an endpoint source can tell a `null` the
+   * field itself produced (one endpoint mid-edit or the two out of order) from a
+   * `null` an external reset wrote — the two are indistinguishable by the
+   * `value` alone, since `null === null`.
    */
-  readonly #startSource = linkedSignal<CalendarDateRange<D> | null, D | null>({
-    source: this.value,
-    computation: (range, previous) => (range !== null ? range.start : (previous?.value ?? null)),
+  readonly #commitGeneration = signal(0);
+
+  /** The committed range paired with the generation of its last internal write. */
+  readonly #committedValue = computed<CommittedRange<D>>(() => ({
+    range: this.value(),
+    generation: this.#commitGeneration(),
+  }));
+
+  /**
+   * Per-endpoint rehydration source. A `linkedSignal` keyed on the committed
+   * range tagged with the commit generation: a non-null `value` (external write
+   * or our own commit) drives the endpoint's segments from `range.start` /
+   * `range.end`. A `null` `value` is disambiguated by the generation — an
+   * **internal** null (the generation advanced since the last computation,
+   * because *either* endpoint is mid-edit or the two are out of order)
+   * **preserves** the prior endpoint value so a complete endpoint isn't wiped
+   * while its sibling is incomplete; an **external** null (a Signal Forms reset
+   * or a consumer `[(value)]="null"`, where the generation is unchanged)
+   * **clears** the endpoint, matching `ForDateField`. Each endpoint reads its
+   * own `previous`, so there is no cross-endpoint race. The endpoint's own
+   * segment-level edits flow through the engine's parts, not through this source.
+   */
+  readonly #startSource = linkedSignal<CommittedRange<D>, D | null>({
+    source: this.#committedValue,
+    computation: (committed, previous) => this.#rehydrate(committed, previous, 'start'),
   });
-  readonly #endSource = linkedSignal<CalendarDateRange<D> | null, D | null>({
-    source: this.value,
-    computation: (range, previous) => (range !== null ? range.end : (previous?.value ?? null)),
+  readonly #endSource = linkedSignal<CommittedRange<D>, D | null>({
+    source: this.#committedValue,
+    computation: (committed, previous) => this.#rehydrate(committed, previous, 'end'),
   });
 
   readonly #startEngine: DateFieldEngine<D>;
@@ -326,16 +351,33 @@ export class ForDateRangeField<D>
    * Re-assembles the committed range from both endpoints' composed values.
    * Emits a `CalendarDateRange` only when both are complete and ordered
    * (`start <= end`); otherwise clears `value` to `null` while preserving each
-   * endpoint's typed segments (their parts survive a `null` value).
+   * endpoint's typed segments (their parts survive an internal `null` value).
+   * Every write bumps {@link #commitGeneration} so the endpoint sources can mark
+   * the resulting `null` as internal and not clear the typed segments.
    */
   #recompose(): void {
     const start = this.#startEngine.composed();
     const end = this.#endEngine.composed();
+    this.#commitGeneration.update((generation) => generation + 1);
     if (start !== null && end !== null && this.adapter.compare(start, end) <= 0) {
       this.value.set({ start, end });
     } else {
       this.value.set(null);
     }
+  }
+
+  #rehydrate(
+    committed: CommittedRange<D>,
+    previous: { source: CommittedRange<D>; value: D | null } | undefined,
+    which: DateRangeFieldEndpoint,
+  ): D | null {
+    if (committed.range !== null) {
+      return committed.range[which];
+    }
+    if (previous && committed.generation !== previous.source.generation) {
+      return previous.value;
+    }
+    return null;
   }
 
   #makeEndpointContext(engine: DateFieldEngine<D>, roving: RovingTabindex): SegmentEditorContext {
