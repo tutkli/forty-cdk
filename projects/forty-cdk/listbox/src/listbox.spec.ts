@@ -1,6 +1,13 @@
-import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
+import { isRequiredInputUnset } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { ForListbox } from './listbox';
@@ -235,6 +242,60 @@ describe('ForListbox', () => {
         (v) => optOf(el, v).getAttribute('tabindex') === '0',
       );
       expect(zeros).toEqual(['apricot']);
+    });
+  });
+
+  describe('seeded selection on first render', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked">
+          @for (opt of options(); track opt) {
+            <li>
+              <button type="button" forListboxOption [value]="opt" [attr.data-test-id]="opt">
+                {{ opt }}
+              </button>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class SeededHost {
+      readonly picked = signal<readonly string[]>(['banana']);
+      readonly options = signal(['apple', 'banana', 'cherry']);
+    }
+
+    it('mounts a non-empty selection without throwing NG0950, and seeds the roving tab stop', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(SeededHost);
+      let thrown: unknown = null;
+      try {
+        fixture.detectChanges();
+        await flush(fixture);
+      } catch (e) {
+        thrown = e;
+      }
+
+      const errors = thrown === null ? captured : [...captured, thrown];
+      expect(errors.some(isRequiredInputUnset)).toBe(false);
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
+      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
+      expect(optOf(el, 'cherry').getAttribute('tabindex')).toBe('-1');
     });
   });
 
