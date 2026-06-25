@@ -159,6 +159,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/toast.fixture').then((m) => m.ToastFixture),
   },
   {
+    path: 'toast-over-dialog',
+    loadComponent: () =>
+      import('./fixtures/toast-over-dialog.fixture').then((m) => m.ToastOverDialogFixture),
+  },
+  {
     path: 'tree',
     loadComponent: () => import('./fixtures/tree.fixture').then((m) => m.TreeFixture),
   },

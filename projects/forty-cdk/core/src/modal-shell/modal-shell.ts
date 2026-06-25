@@ -4,7 +4,11 @@ import { afterNextRenderCancellable } from '../after-next-render-cancellable/aft
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissableLayer } from '../dismissable-layer/dismissable-layer';
 import { findFirstFocusable, injectFocusTrap } from '../focus-trap/focus-trap';
-import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import {
+  type InertSiblingsHandle,
+  InertSiblingsStack,
+  MODAL_EXEMPT_ATTRIBUTE,
+} from '../inert-siblings/inert-siblings';
 import { injectPortal } from '../portal/portal';
 import {
   createVetoableEvent,
@@ -51,6 +55,10 @@ export interface ModalShellDismissConfig {
    * Live "elements that count as inside" set — Drawer uses this to exempt
    * its portaled backdrop so a backdrop click routes through the backdrop's
    * own `requestClose('backdrop')` path instead of `pointerDownOutside`.
+   *
+   * The shell always merges every `MODAL_EXEMPT_ATTRIBUTE` overlay (e.g. toast
+   * viewports) on top of whatever this returns, so a primitive only lists its
+   * *own* extra exemptions here.
    */
   readonly exemptElements?: () => readonly Element[];
 }
@@ -131,6 +139,18 @@ export interface ModalShellConfig {
 export interface ModalShellHandle {
   /** True while the shell activated focus-trap + scroll-lock + inert (modal mode). */
   readonly isModal: () => boolean;
+}
+
+/**
+ * Resolves the live set of independent overlay surfaces that opt out of every
+ * modal's dismissable layer via {@link MODAL_EXEMPT_ATTRIBUTE} — today
+ * `ForToastViewport`. Queried fresh on each interaction (no snapshot) so a
+ * surface mounted *after* the modal opened still counts as "inside", which is
+ * exactly the toast-over-open-dialog case. An interaction inside any returned
+ * element therefore never dismisses the modal.
+ */
+export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
+  return Array.from(doc.querySelectorAll(`[${MODAL_EXEMPT_ATTRIBUTE}]`));
 }
 
 /**
@@ -278,7 +298,10 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     if (dismissCfg !== undefined) {
       let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
       dismissable.activate({
-        ...(dismissCfg.exemptElements ? { exemptElements: dismissCfg.exemptElements } : {}),
+        exemptElements: () => [
+          ...(dismissCfg.exemptElements?.() ?? []),
+          ...resolveModalExemptOverlays(document),
+        ],
         onEscapeKeyDown: (event) => {
           const veto = createVetoableNativeEvent(event);
           dismissCfg.emitEscapeKeyDown(veto);

@@ -112,6 +112,22 @@ describe('InertSiblingsStack', () => {
     handle.deactivate();
   });
 
+  it('skips elements flagged data-for-modal-exempt (e.g. a toast viewport)', () => {
+    const exempt = appendChild();
+    exempt.setAttribute('data-for-modal-exempt', '');
+    track(exempt);
+
+    const owner = appendChild();
+    track(owner);
+
+    const handle = stack.activate(owner);
+
+    expect(exempt.hasAttribute('inert')).toBe(false);
+    expect(exempt.hasAttribute('aria-hidden')).toBe(false);
+
+    handle.deactivate();
+  });
+
   it('does not touch the owner element itself', () => {
     const owner = appendChild();
     track(owner);

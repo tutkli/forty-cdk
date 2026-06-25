@@ -912,6 +912,12 @@ describe('ForToastManager (programmatic)', () => {
     expect(rendered[0]!.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
   });
 
+  it('viewport host opts into modal coexistence via data-for-modal-exempt', () => {
+    const r = renderHost(ProgrammaticHost);
+    const viewport = r.el.querySelector('for-toast-viewport')!;
+    expect(viewport.hasAttribute('data-for-modal-exempt')).toBe(true);
+  });
+
   it('description and close button render by default', () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'Saved', description: 'Your changes are live.' });

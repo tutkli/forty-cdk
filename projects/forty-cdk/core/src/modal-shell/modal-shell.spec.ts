@@ -372,6 +372,68 @@ describe('injectModalShell', () => {
       expect(seen).toEqual(['pointer']);
       ctx.destroy();
     });
+
+    it('auto-exempts data-for-modal-exempt overlays without the primitive listing them', async () => {
+      const overlay = document.createElement('div');
+      overlay.setAttribute('data-for-modal-exempt', '');
+      document.body.appendChild(overlay);
+      const inner = document.createElement('button');
+      overlay.appendChild(inner);
+
+      const seen: string[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(false),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+        dismiss: makeDismissConfig({
+          emitPointerDownOutside: () => seen.push('pointer'),
+        }),
+      }));
+      await flush(ctx.fixture);
+
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: inner, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [inner], configurable: true });
+      document.dispatchEvent(event);
+      expect(seen).toEqual([]);
+
+      overlay.removeAttribute('data-for-modal-exempt');
+      const event2 = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event2, 'target', { value: inner, configurable: true });
+      Object.defineProperty(event2, 'composedPath', { value: () => [inner], configurable: true });
+      document.dispatchEvent(event2);
+      expect(seen).toEqual(['pointer']);
+      ctx.destroy();
+    });
+
+    it('merges data-for-modal-exempt overlays with the primitive own exemptElements', async () => {
+      const backdrop = document.createElement('div');
+      document.body.appendChild(backdrop);
+      const overlay = document.createElement('div');
+      overlay.setAttribute('data-for-modal-exempt', '');
+      document.body.appendChild(overlay);
+
+      const seen: string[] = [];
+      const ctx = mountShell(() => ({
+        modal: signal(false),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+        dismiss: makeDismissConfig({
+          emitPointerDownOutside: () => seen.push('pointer'),
+          exemptElements: () => [backdrop],
+        }),
+      }));
+      await flush(ctx.fixture);
+
+      for (const target of [backdrop, overlay]) {
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: target, configurable: true });
+        Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
+        document.dispatchEvent(event);
+      }
+      expect(seen).toEqual([]);
+      ctx.destroy();
+    });
   });
 
   describe('modal vs non-modal branching', () => {
