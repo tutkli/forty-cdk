@@ -89,6 +89,13 @@ import {
 } from 'forty-cdk/date-picker';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import {
+  ForTimeRangeField,
+  ForTimeRangeFieldEnd,
+  ForTimeRangeFieldLiteral,
+  ForTimeRangeFieldSegment,
+  ForTimeRangeFieldStart,
+} from 'forty-cdk/time-range-field';
+import {
   ForTimePicker,
   ForTimePickerContent,
   ForTimePickerOption,
@@ -1154,6 +1161,43 @@ class DateRangeFieldFixture {
 }
 
 @Component({
+  imports: [
+    ForTimeRangeField,
+    ForTimeRangeFieldStart,
+    ForTimeRangeFieldEnd,
+    ForTimeRangeFieldSegment,
+    ForTimeRangeFieldLiteral,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forTimeRangeField [(value)]="value" ariaLabel="Opening hours" #range="forTimeRangeField">
+      <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+        @for (seg of start.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeRangeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forTimeRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          }
+        }
+      </div>
+      <span aria-hidden="true">–</span>
+      <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+        @for (seg of end.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeRangeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forTimeRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          }
+        }
+      </div>
+    </div>
+  `,
+})
+class TimeRangeFieldFixture {
+  readonly value = signal<CalendarDateRange<Date> | null>(null);
+}
+
+@Component({
   imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -1617,6 +1661,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DateFieldFixture,
   TimeFieldFixture,
   DateRangeFieldFixture,
+  TimeRangeFieldFixture,
   DatePickerFixture,
   DateRangePickerOpenFixture,
   TimePickerOpenFixture,

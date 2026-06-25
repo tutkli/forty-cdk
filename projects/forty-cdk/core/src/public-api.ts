@@ -34,6 +34,8 @@ export * from './datetime/segment-directive';
 export * from './datetime/segment-editor';
 export * from './datetime/segment-types';
 export * from './datetime/serialize';
+export * from './datetime/time-field-engine';
+export * from './datetime/time-segments';
 export * from './datetime/time-value-source';
 export * from './defaults/defaults';
 export * from './disabled-reflection/disabled-reflection';

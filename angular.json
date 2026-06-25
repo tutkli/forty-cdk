@@ -43,6 +43,7 @@
               "../date-range-field/src/**/*.spec.ts",
               "../date-picker/src/**/*.spec.ts",
               "../time-field/src/**/*.spec.ts",
+              "../time-range-field/src/**/*.spec.ts",
               "../time-picker/src/**/*.spec.ts",
               "../listbox/src/**/*.spec.ts",
               "../select/src/**/*.spec.ts",

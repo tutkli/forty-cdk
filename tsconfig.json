@@ -43,6 +43,10 @@
         "./dist/forty-cdk/time-field",
         "./projects/forty-cdk/time-field/src/public-api.ts"
       ],
+      "forty-cdk/time-range-field": [
+        "./dist/forty-cdk/time-range-field",
+        "./projects/forty-cdk/time-range-field/src/public-api.ts"
+      ],
       "forty-cdk/time-picker": [
         "./dist/forty-cdk/time-picker",
         "./projects/forty-cdk/time-picker/src/public-api.ts"
