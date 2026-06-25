@@ -20,6 +20,19 @@ test.describe('Tooltip', () => {
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
 
+  test('clicking the trigger dismisses the tooltip and it does not reopen', async ({ page }) => {
+    await gotoFixture(page, 'tooltip');
+
+    await el(page, 'trigger').hover();
+    await expect(el(page, 'tooltip')).toBeVisible();
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'tooltip')).toHaveCount(0);
+
+    await page.waitForTimeout(100);
+    await expect(el(page, 'tooltip')).toHaveCount(0);
+  });
+
   test('Escape closes immediately', async ({ page }) => {
     await gotoFixture(page, 'tooltip');
     await el(page, 'trigger').focus();

@@ -311,20 +311,6 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('still opens on a mouse-induced focus (hover/focus conflation kept for non-touch)', async () => {
-      const r = renderHost(TooltipHost);
-      r.instance.openDelay.set(0);
-      r.instance.closeDelay.set(0);
-      await flush(r.fixture);
-      const trigger = r.query<HTMLButtonElement>('button')!;
-
-      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
-      trigger.dispatchEvent(new FocusEvent('focus'));
-      await flush(r.fixture);
-
-      expect(r.instance.isOpen()).toBe(true);
-    });
-
     it('ignores a touch pointerenter so a tap never opens via the hover path', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -353,6 +339,113 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new FocusEvent('blur'));
       trigger.dispatchEvent(new FocusEvent('focus'));
       await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('trigger activation (press) dismisses', () => {
+    it('a click dismisses an open tooltip and the focus it induces does not reopen it', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('dismisses immediately on pointerdown, bypassing closeDelay', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      r.instance.closeDelay.set(5_000);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('cancels a pending hover-open when the trigger is pressed within openDelay', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      vi.advanceTimersByTime(300);
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+
+      vi.advanceTimersByTime(5_000);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('reflects the press dismiss through data-state without Zone.js', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      await flush(r.fixture);
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(content.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
+  describe('pointer-induced focus does not open (only keyboard focus does)', () => {
+    it('does not open on a mouse-induced focus (a click that focuses the trigger)', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('does not open on a pen-induced focus', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'pen' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('opens on a keyboard focus not preceded by any pointer interaction', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
       expect(r.instance.isOpen()).toBe(true);
     });
   });
