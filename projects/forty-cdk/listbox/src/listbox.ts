@@ -31,6 +31,7 @@ import {
   injectTextDirection,
   findTypeaheadMatch,
   injectTypeahead,
+  tryReadHandle,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -221,7 +222,11 @@ export class ForListbox<T = string>
     }
     const equals = this.isItemEqualToValue();
     for (const option of this.#options.items()) {
-      if (!option.disabled() && selected.some((v) => equals(v, option.value()))) {
+      if (option.disabled()) {
+        continue;
+      }
+      const matchesSelection = tryReadHandle(() => selected.some((v) => equals(v, option.value())));
+      if (matchesSelection) {
         return option.host;
       }
     }
