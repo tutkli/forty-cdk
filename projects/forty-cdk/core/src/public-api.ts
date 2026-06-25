@@ -100,6 +100,7 @@ export * from './roving-tabindex/host-roving-context';
 export * from './roving-tabindex/reconcile-roving-active';
 export * from './roving-tabindex/roving-tabindex';
 export * from './scroll-boundary/scroll-boundary';
+export * from './scroll-dismiss/scroll-dismiss';
 export * from './selection-model/selection-model';
 export * from './selection/selection';
 export * from './signal-graph/read-handle';

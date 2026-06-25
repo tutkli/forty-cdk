@@ -84,6 +84,20 @@ test.describe('Tooltip', () => {
     await expect(el(page, 'hoverable-tooltip')).toHaveCount(0);
   });
 
+  test('scrolling an ancestor closes the open tooltip and does not flicker new ones', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tooltip');
+
+    await el(page, 'row-trigger-0').hover();
+    await expect(el(page, 'row-tooltip-0')).toBeVisible();
+
+    await page.mouse.wheel(0, 240);
+
+    await expect(el(page, 'row-tooltip-0')).toHaveCount(0);
+    await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
+  });
+
   // A tap is not a hover, and the APG tooltip pattern is purely
   // descriptive for mouse / keyboard users — the keyboard-focus path is
   // the touch-accessible fallback. `ForTooltipTrigger` filters touch

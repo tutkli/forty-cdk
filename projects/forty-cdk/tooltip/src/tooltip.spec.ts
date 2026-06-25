@@ -1278,6 +1278,96 @@ describe('ForTooltip', () => {
     });
   });
 
+  describe('scroll dismiss', () => {
+    function getTooltip(r: ReturnType<typeof renderHost<TooltipHost>>): ForTooltip {
+      return r.fixture.debugElement.query(By.directive(ForTooltip)).injector.get(ForTooltip);
+    }
+
+    it('closes an open tooltip when an ancestor scrolls', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      document.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+    });
+
+    it('suppresses a hover open while an ancestor is scrolling, even with openDelay 0', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      document.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+
+      vi.advanceTimersByTime(200);
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('suppresses the instant re-open during scroll within the skip-delay window', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+
+      document.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('show() is a no-op while an ancestor is scrolling', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const tooltip = getTooltip(r);
+
+      vi.useFakeTimers();
+      document.dispatchEvent(new Event('scroll'));
+      tooltip.show();
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('reflects the scroll close through data-state without Zone.js', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.getAttribute('data-state')).toBe('open');
+
+      document.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(content.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(TooltipHost);

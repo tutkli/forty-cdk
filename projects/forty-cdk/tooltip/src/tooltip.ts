@@ -1,12 +1,15 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   inject,
   input,
   model,
   numberAttribute,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 
@@ -21,9 +24,11 @@ import {
   IdGenerator,
   injectPrefersReducedMotion,
   attachPointerGrace,
+  attachScrollDismiss,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
+  type ScrollDismiss,
 } from 'forty-cdk/core';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -281,6 +286,7 @@ export class ForTooltip implements ForTooltipContext {
   #triggerFocused = false;
   #contentHovered = false;
   #detachGrace: (() => void) | null = null;
+  #scrollDismiss: ScrollDismiss | null = null;
 
   constructor() {
     forceCloseWhenDisabled({
@@ -297,7 +303,16 @@ export class ForTooltip implements ForTooltipContext {
       coordinator: this.#coordinator,
     });
 
-    inject(DestroyRef).onDestroy(() => this.cancelPending());
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      this.#scrollDismiss = attachScrollDismiss(inject(DOCUMENT), {
+        dismiss: () => this.#dismissOnScroll(),
+      });
+    }
+
+    inject(DestroyRef).onDestroy(() => {
+      this.cancelPending();
+      this.#scrollDismiss?.destroy();
+    });
   }
 
   /**
@@ -345,7 +360,7 @@ export class ForTooltip implements ForTooltipContext {
   pointerEnterTrigger(): void {
     this.#triggerHovered = true;
     this.#disarmContentGrace();
-    if (this.#suppressedByOverflow()) {
+    if (this.#scrollSuppressed() || this.#suppressedByOverflow()) {
       return;
     }
     this.#hoverIntent.scheduleOpen();
@@ -394,6 +409,9 @@ export class ForTooltip implements ForTooltipContext {
   }
 
   scheduleOpen(_reason: TooltipScheduleReason): void {
+    if (this.#scrollSuppressed()) {
+      return;
+    }
     this.#hoverIntent.scheduleOpen();
   }
 
@@ -413,12 +431,14 @@ export class ForTooltip implements ForTooltipContext {
    * text-truncation observer). Schedules the show after the resolved
    * `openDelay` (instant when the delay is `0` or the scope's skip-delay window
    * is active) and applies the same gates as a hover / focus open: a no-op
-   * while `disabled`, and a no-op under `showOnOverflow` when the trigger's own
-   * text is not truncated. For an instant, unconditional open that bypasses the
-   * delay and both gates, write the `[(open)]` model directly (`open.set(true)`).
+   * while `disabled`, a no-op under `showOnOverflow` when the trigger's own
+   * text is not truncated, and a no-op while an ancestor is scrolling (the
+   * scroll-dismiss suppression window). For an instant, unconditional open that
+   * bypasses the delay and every gate, write the `[(open)]` model directly
+   * (`open.set(true)`).
    */
   show(): void {
-    if (this.#suppressedByOverflow()) {
+    if (this.#scrollSuppressed() || this.#suppressedByOverflow()) {
       return;
     }
     this.#hoverIntent.scheduleOpen();
@@ -441,6 +461,25 @@ export class ForTooltip implements ForTooltipContext {
       return;
     }
     this.#hoverIntent.scheduleClose(false);
+  }
+
+  /**
+   * Closes the tooltip immediately when an ancestor scrolls under a stationary
+   * cursor and cancels any pending open / close timer. Closes silently
+   * (bypassing `closeDelay` and without opening the skip-delay window) so a peer
+   * row sliding under the cursor can't reopen instantly while the scroll is in
+   * flight. A no-op when nothing is open or armed.
+   */
+  #dismissOnScroll(): void {
+    this.cancelPending();
+    if (this.open()) {
+      this.open.set(false);
+    }
+  }
+
+  /** True while an ancestor scroll has opened the suppression window (opens are no-ops). */
+  #scrollSuppressed(): boolean {
+    return this.#scrollDismiss?.isSuppressed() ?? false;
   }
 
   /** True when `showOnOverflow` is on and the trigger's text is NOT truncated. */
