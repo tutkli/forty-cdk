@@ -18,7 +18,13 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
 
-  /** Schedule the card to open after `openDelay` ms (instant when delay is 0). */
+  /**
+   * Schedule the card to open after `openDelay` ms (instant when delay is 0).
+   * Hover-driven opens (`'hover-trigger'` / `'hover-content'`) are suppressed
+   * while an ancestor scroll container is moving content under a stationary
+   * cursor, so rows sliding past the pointer can't flicker cards open; the
+   * `'focus'` path is never suppressed.
+   */
   scheduleOpen(reason: HoverCardScheduleReason): void;
   /** Schedule the card to close after `closeDelay` ms (instant on `escape`). */
   scheduleClose(reason: HoverCardScheduleReason): void;

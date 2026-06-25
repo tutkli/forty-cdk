@@ -45,6 +45,20 @@ test.describe('HoverCard', () => {
     await expect(el(page, 'card')).toHaveCount(0);
   });
 
+  test('scrolling an ancestor closes the open card and does not flicker new ones', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+
+    await el(page, 'row-trigger-0').hover();
+    await expect(el(page, 'row-card-0')).toBeVisible();
+
+    await page.mouse.wheel(0, 240);
+
+    await expect(el(page, 'row-card-0')).toHaveCount(0);
+    await expect(page.locator('[forHoverCardContent]')).toHaveCount(0);
+  });
+
   // Hover semantics on touch: a tap is NOT a hover, so HoverCard must
   // remain closed after a bare `tap()` on the trigger. The keyboard-focus
   // path is the touch-accessible fallback — it still opens the card the

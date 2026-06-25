@@ -1,13 +1,16 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   inject,
   input,
   model,
   numberAttribute,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 
@@ -18,7 +21,9 @@ import {
   forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
+  attachScrollDismiss,
   emitVetoableNativeEvent,
+  type ScrollDismiss,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -207,6 +212,8 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly #coordinator = inject(HoverCardCoordinator);
   readonly #hoverIntent: HoverIntentScheduler;
 
+  #scrollDismiss: ScrollDismiss | null = null;
+
   constructor() {
     forceCloseWhenDisabled({
       open: this.open,
@@ -222,7 +229,16 @@ export class ForHoverCard implements ForHoverCardContext {
       coordinator: this.#coordinator,
     });
 
-    inject(DestroyRef).onDestroy(() => this.cancelPending());
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      this.#scrollDismiss = attachScrollDismiss(inject(DOCUMENT), {
+        dismiss: () => this.#dismissOnScroll(),
+      });
+    }
+
+    inject(DestroyRef).onDestroy(() => {
+      this.cancelPending();
+      this.#scrollDismiss?.destroy();
+    });
   }
 
   registerTrigger(el: HTMLElement): void {
@@ -255,7 +271,10 @@ export class ForHoverCard implements ForHoverCardContext {
     }
   }
 
-  scheduleOpen(_reason: HoverCardScheduleReason): void {
+  scheduleOpen(reason: HoverCardScheduleReason): void {
+    if (reason !== 'focus' && this.#scrollSuppressed()) {
+      return;
+    }
     this.#hoverIntent.scheduleOpen();
   }
 
@@ -265,6 +284,25 @@ export class ForHoverCard implements ForHoverCardContext {
 
   cancelPending(): void {
     this.#hoverIntent.cancelPending();
+  }
+
+  /**
+   * Closes the card immediately when an ancestor scrolls under a stationary
+   * cursor and cancels any pending open / close timer. Closes silently
+   * (bypassing `closeDelay` and without opening the skip-delay window) so a peer
+   * row sliding under the cursor can't reopen instantly while the scroll is in
+   * flight. A no-op when nothing is open or armed.
+   */
+  #dismissOnScroll(): void {
+    this.cancelPending();
+    if (this.open()) {
+      this.open.set(false);
+    }
+  }
+
+  /** True while an ancestor scroll has opened the suppression window (hover opens are no-ops). */
+  #scrollSuppressed(): boolean {
+    return this.#scrollDismiss?.isSuppressed() ?? false;
   }
 
   /**
