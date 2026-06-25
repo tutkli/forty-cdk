@@ -74,6 +74,13 @@ import {
 } from 'forty-cdk/calendar';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import {
+  ForDateRangeField,
+  ForDateRangeFieldEnd,
+  ForDateRangeFieldLiteral,
+  ForDateRangeFieldSegment,
+  ForDateRangeFieldStart,
+} from 'forty-cdk/date-range-field';
+import {
   ForDatePicker,
   ForDatePickerContent,
   ForDatePickerTrigger,
@@ -1110,6 +1117,43 @@ class TimeFieldFixture {
 }
 
 @Component({
+  imports: [
+    ForDateRangeField,
+    ForDateRangeFieldStart,
+    ForDateRangeFieldEnd,
+    ForDateRangeFieldSegment,
+    ForDateRangeFieldLiteral,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forDateRangeField [(value)]="value" ariaLabel="Stay" #range="forDateRangeField">
+      <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+        @for (seg of start.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          }
+        }
+      </div>
+      <span aria-hidden="true">–</span>
+      <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+        @for (seg of end.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+          }
+        }
+      </div>
+    </div>
+  `,
+})
+class DateRangeFieldFixture {
+  readonly value = signal<CalendarDateRange<Date> | null>(null);
+}
+
+@Component({
   imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -1572,6 +1616,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   CalendarYearViewFixture,
   DateFieldFixture,
   TimeFieldFixture,
+  DateRangeFieldFixture,
   DatePickerFixture,
   DateRangePickerOpenFixture,
   TimePickerOpenFixture,

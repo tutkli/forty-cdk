@@ -17,6 +17,7 @@
     "signal-forms/src/**/*.ts",
     "calendar/src/**/*.ts",
     "date-field/src/**/*.ts",
+    "date-range-field/src/**/*.ts",
     "date-picker/src/**/*.ts",
     "time-field/src/**/*.ts",
     "time-picker/src/**/*.ts",

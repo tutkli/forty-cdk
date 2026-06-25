@@ -26,6 +26,8 @@ export * from './collection/first-enabled-host';
 export * from './collection/fold-snapshot';
 export * from './collection/register-handle';
 export * from './date-adapter/date-adapter';
+export * from './datetime/date-field-engine';
+export * from './datetime/date-segments';
 export * from './datetime/hour-cycle';
 export * from './datetime/literal-directive';
 export * from './datetime/segment-directive';
