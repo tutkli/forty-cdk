@@ -214,6 +214,14 @@ export interface ForComboboxContext<T = unknown> {
   readonly activeId: Signal<string | null>;
   /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
   setActiveId(id: string | null): void;
+  /**
+   * Scroll the current activedescendant option into view. Called by
+   * `[forComboboxContent]` from the positioner's first-resolved-position hook so
+   * the open-time auto-highlight seed survives the content portal move (which
+   * resets `scrollTop`) and lands after the surface is sized. No-op while
+   * virtualizing. See `scrollActiveOptionIntoView` on `ForCombobox`.
+   */
+  scrollActiveOptionIntoView(): void;
   /** Read-only access to the cached snapshot consumed by inline-autocomplete in the input directive. */
   cachedOptions(): readonly { id: string; value: T; label: string }[];
 

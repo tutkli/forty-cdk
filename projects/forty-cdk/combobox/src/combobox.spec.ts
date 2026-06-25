@@ -826,7 +826,7 @@ describe('ForCombobox', () => {
       try {
         const r = renderHost(ComboboxHost);
         r.instance.open.set(true);
-        await flush(r.fixture);
+        await flushPositioning(r.fixture);
 
         const apple = getOption('apple');
         expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
@@ -891,7 +891,7 @@ describe('ForCombobox', () => {
         withScrollStub(async (stub) => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
-          await flush(r.fixture);
+          await flushPositioning(r.fixture);
 
           const apple = getOption('apple');
           expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
@@ -909,7 +909,7 @@ describe('ForCombobox', () => {
         withScrollStub(async (stub) => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
-          await flush(r.fixture);
+          await flushPositioning(r.fixture);
 
           const apricot = getOption('apricot');
           apricot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));

@@ -699,6 +699,38 @@ export class ForCombobox<T = string>
     host.scrollIntoView?.({ block: 'nearest' });
   }
 
+  /**
+   * Scroll the current activedescendant option into view. Driven from
+   * `[forComboboxContent]`'s positioner first-resolved-position hook
+   * (`onFirstPosition`) — the only moment both prerequisites hold: the content
+   * has been portaled to `document.body` (which resets the scroll container's
+   * `scrollTop` to 0, wiping the seed scroll the auto-highlight bridge applied
+   * during change detection) and `@floating-ui/dom`'s `size` middleware has
+   * constrained the surface to its `max-height` (so it is actually scrollable).
+   *
+   * Re-applies the scroll unconditionally — the bridge already recorded this id
+   * as positioned, but the portal move invalidated the real scroll position, so
+   * the usual "already positioned" guard must not short-circuit here. Fires once
+   * per open (the positioner hook is one-shot per run), so a later hover never
+   * scrolls. No-op while virtualizing: the navigator owns the virtualized scroll
+   * and the indexed seed is intentionally passive.
+   */
+  scrollActiveOptionIntoView(): void {
+    if (this.totalCount() !== undefined) {
+      return;
+    }
+    const id = this.#activeId();
+    if (id === null) {
+      return;
+    }
+    const active = this.#items.items().find((o) => o.id() === id);
+    if (!active) {
+      return;
+    }
+    active.host.scrollIntoView?.({ block: 'nearest' });
+    this.#lastPositionedId = id;
+  }
+
   readonly #cachedOptionsMemo = computed<readonly { id: string; value: T; label: string }[]>(() => {
     if (this.totalCount() === undefined) {
       return this.#labelCache.entries();
