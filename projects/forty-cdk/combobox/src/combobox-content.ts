@@ -100,6 +100,7 @@ export class ForComboboxContent {
         sticky: ctx.sticky,
         hideWhenDetached: ctx.hideWhenDetached,
         clipUntilPositioned: ctx.clipUntilPositioned,
+        onFirstPosition: () => ctx.scrollActiveOptionIntoView(),
       },
       dismiss: {
         dismissible: ctx.dismissible,

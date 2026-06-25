@@ -243,6 +243,43 @@ class NoClipBubbleHost {
   readonly bubble = viewChild.required<NoClipBubble>('bubble');
 }
 
+@Component({
+  selector: 'first-position-bubble',
+  template: '<ng-content />',
+})
+class FirstPositionBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly side = signal<'top' | 'bottom'>('top');
+  firstPositionCount = 0;
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      side: this.side,
+      portal: true,
+      onFirstPosition: () => {
+        this.firstPositionCount++;
+      },
+    });
+  }
+}
+
+@Component({
+  imports: [FirstPositionBubble],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <first-position-bubble #bubble>Content</first-position-bubble>
+    </div>
+  `,
+})
+class FirstPositionBubbleHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<FirstPositionBubble>('bubble');
+}
+
 describe('injectFloating', () => {
   // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
   // still doesn't ship them. Install no-op polyfills for this spec only; the
@@ -705,6 +742,54 @@ describe('injectFloating', () => {
       await flushPositioning(fixture);
 
       expect(bubbleEl.dataset['detached']).toBeUndefined();
+    });
+  });
+
+  describe('onFirstPosition', () => {
+    it('does not fire while the surface stays closed', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(FirstPositionBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      await flushPositioning(fixture);
+
+      expect(bubble.firstPositionCount).toBe(0);
+    });
+
+    it('fires exactly once after the first position resolves on open', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(FirstPositionBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('first-position-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.style.translate).not.toBe('');
+      expect(bubble.firstPositionCount).toBe(1);
+
+      await flushPositioning(fixture);
+      expect(bubble.firstPositionCount).toBe(1);
+    });
+
+    it('re-arms on a positioner-config change while open', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(FirstPositionBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+      expect(bubble.firstPositionCount).toBe(1);
+
+      bubble.side.set('bottom');
+      await flushPositioning(fixture);
+      expect(bubble.firstPositionCount).toBe(2);
     });
   });
 });

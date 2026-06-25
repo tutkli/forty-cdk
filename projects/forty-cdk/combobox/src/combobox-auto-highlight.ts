@@ -247,7 +247,13 @@ export interface AutoHighlightBridgeDeps<T> {
  *    The seed itself comes from the linkedSignal; this is its imperative tail.
  *    The activedescendant is read `untracked` so the scroll never re-triggers
  *    the effect, and pointer-move hover doesn't reach here (it changes none of
- *    the tracked reads), so hovering never scrolls.
+ *    the tracked reads), so hovering never scrolls. This handles a re-seed while
+ *    the listbox is already open (e.g. the consumer's filter dropped the active
+ *    option). The **initial open** scroll runs here too but is wiped a tick
+ *    later when `[forComboboxContent]` portals to `document.body` (which resets
+ *    `scrollTop`); `ForCombobox.scrollActiveOptionIntoView` re-applies it from
+ *    the positioner's first-resolved-position hook, after the portal move and
+ *    after the surface is sized (#1066).
  *
  * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
  */

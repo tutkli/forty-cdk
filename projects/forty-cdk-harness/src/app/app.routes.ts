@@ -73,6 +73,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/combobox.fixture').then((m) => m.ComboboxFixture),
   },
   {
+    path: 'combobox-scroll',
+    loadComponent: () =>
+      import('./fixtures/combobox-scroll.fixture').then((m) => m.ComboboxScrollFixture),
+  },
+  {
     path: 'otp-input',
     loadComponent: () => import('./fixtures/otp-input.fixture').then((m) => m.OtpInputFixture),
   },

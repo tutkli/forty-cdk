@@ -146,6 +146,22 @@ export interface FloatingConfig {
   readonly clipUntilPositioned?: Signal<boolean>;
 
   /**
+   * Invoked on the first resolved position of each positioning run — i.e.
+   * after `@floating-ui/dom`'s async `computePosition` lands and the helper
+   * drops the `clip-path` anti-flash baseline. A positioning run is an open
+   * transition (or a positioner-config change while open); the callback fires
+   * once per run and never while the surface stays closed.
+   *
+   * Because it runs strictly after the optional portal's `appendChild` and
+   * after `computePosition` (so the `size` middleware's `max-height` is already
+   * applied), it is the only moment a consumer can touch the now-portaled,
+   * now-sized surface. Combobox uses it to scroll the active descendant into
+   * view inside a `max-height`-constrained listbox whose `scrollTop` the portal
+   * move reset to 0 — see `[forComboboxContent]`.
+   */
+  readonly onFirstPosition?: () => void;
+
+  /**
    * Padding (px) handed to the `shift` middleware so the floating element
    * never crowds the viewport edge. Default `8`. Used as the fallback for
    * `collisionPadding` when that signal is not provided.
@@ -259,6 +275,8 @@ export function injectFloating(config: FloatingConfig): void {
 
     const arrowEl = config.arrow?.() ?? null;
 
+    let firstPositionResolved = false;
+
     // Re-arm the `clip-path: inset(50%)` baseline at the start of every open
     // effect run, not only in `afterNextRender`. A config change while open
     // re-runs this effect: `onCleanup` calls `resetFloatingStyles`, which
@@ -368,6 +386,11 @@ export function injectFloating(config: FloatingConfig): void {
           // enter animation runs anchored to the trigger, with the scale
           // origin set by `--for-content-transform-origin` below.
           el.style.clipPath = '';
+
+          if (!firstPositionResolved) {
+            firstPositionResolved = true;
+            config.onFirstPosition?.();
+          }
 
           // Anchor box → CSS vars so the consumer can size the floating
           // element relative to the anchor (`width: var(--for-anchor-width)`).
