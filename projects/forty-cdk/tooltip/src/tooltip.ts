@@ -417,7 +417,7 @@ export class ForTooltip implements ForTooltipContext {
 
   scheduleClose(reason: TooltipScheduleReason): void {
     this.#disarmContentGrace();
-    this.#hoverIntent.scheduleClose(reason === 'escape');
+    this.#hoverIntent.scheduleClose(reason === 'escape' || reason === 'press');
   }
 
   cancelPending(): void {

@@ -2,8 +2,8 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core';
 
-/** Reason a show / hide was scheduled — escape bypasses the close delay. */
-export type TooltipScheduleReason = 'hover' | 'focus' | 'escape';
+/** Reason a show / hide was scheduled — `escape` and `press` bypass the close delay. */
+export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';
 
 /**
  * Coordination contract owned by `ForTooltip`. Trigger and content register
@@ -54,7 +54,7 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
 
   /** Schedule the tooltip to open after `openDelay` ms (instant when delay is 0). */
   scheduleOpen(reason: TooltipScheduleReason): void;
-  /** Schedule the tooltip to close after `closeDelay` ms (instant on `escape`). */
+  /** Schedule the tooltip to close after `closeDelay` ms (instant on `escape` and `press`). */
   scheduleClose(reason: TooltipScheduleReason): void;
   /** Cancel any pending open/close timer without changing state. */
   cancelPending(): void;

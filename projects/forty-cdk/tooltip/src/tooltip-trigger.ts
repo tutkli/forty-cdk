@@ -7,11 +7,18 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * a focusable element — preferably a `<button>` so keyboard users can reach it.
  * Receives `aria-describedby` only while the tooltip is open, per APG.
  *
- * A touch tap does NOT open the tooltip: touch pointers are filtered out of
- * both the hover-open path and the focus-open path, because a tap is not a
- * hover and the APG flags hover-tooltips as problematic on touch (no hover, no
- * separate focus affordance, no obvious dismiss). Keyboard focus stays the
- * touch-accessible fallback for descriptive content.
+ * Activating the trigger dismisses the tooltip: `pointerdown` schedules an
+ * immediate close (mirroring Radix / Base UI), so the bubble doesn't cover the
+ * result of a click. The focus the same press induces does NOT reopen it —
+ * only keyboard focus opens the tooltip. The open-on-focus path fires solely
+ * when focus was not preceded by a pointer interaction (mouse, pen, or touch):
+ * hover already covers pointer users, so pointer-induced focus is ignored.
+ *
+ * This makes a touch tap a no-op on both the hover-open and the focus-open
+ * paths, because a tap is not a hover and the APG flags hover-tooltips as
+ * problematic on touch (no hover, no separate focus affordance, no obvious
+ * dismiss). Keyboard focus stays the touch-accessible fallback for descriptive
+ * content.
  *
  * The root is normally resolved via DI from the enclosing `[forTooltip]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
@@ -73,6 +80,7 @@ export class ForTooltipTrigger {
 
   protected onPointerDown(event: PointerEvent): void {
     this.#lastPointerType = event.pointerType;
+    this.ctx().scheduleClose('press');
   }
 
   protected onPointerLeave(event: PointerEvent): void {
@@ -80,9 +88,9 @@ export class ForTooltipTrigger {
   }
 
   protected onFocus(): void {
-    const touchInduced = this.#lastPointerType === 'touch';
+    const pointerInduced = this.#lastPointerType !== null;
     this.#lastPointerType = null;
-    if (touchInduced) {
+    if (pointerInduced) {
       return;
     }
     this.ctx().focusTrigger();

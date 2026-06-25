@@ -252,6 +252,8 @@ For an **instant, unconditional** open or close that ignores the delays and both
 
 ## Behavior notes
 
+- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately — the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. This mirrors Radix and Base UI. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
+- **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction — i.e. a real keyboard `Tab`. A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
 - **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
 - **`pointer-events: none`** is applied by default so hovering the bubble doesn't extend its lifetime and clicks pass through to whatever is behind. Setting `hoverableContent` drops it while open (see below). Override with your own CSS if your design needs a different behavior.
 - **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
