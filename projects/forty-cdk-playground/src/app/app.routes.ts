@@ -193,8 +193,18 @@ export const routes: Routes = [
     loadComponent: () => import('./demos/date-field/date-field.page').then((m) => m.DateFieldPage),
   },
   {
+    path: 'date-range-field',
+    loadComponent: () =>
+      import('./demos/date-range-field/date-range-field.page').then((m) => m.DateRangeFieldPage),
+  },
+  {
     path: 'time-field',
     loadComponent: () => import('./demos/time-field/time-field.page').then((m) => m.TimeFieldPage),
+  },
+  {
+    path: 'time-range-field',
+    loadComponent: () =>
+      import('./demos/time-range-field/time-range-field.page').then((m) => m.TimeRangeFieldPage),
   },
   {
     path: 'time-picker',

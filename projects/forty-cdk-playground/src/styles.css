@@ -2291,6 +2291,64 @@ a.pg-nav-link.active {
 }
 
 /*
+ * Segmented range fields (date-range-field, time-range-field). The outer
+ * role=group reflects data-disabled / data-readonly / data-empty / data-range-error;
+ * each endpoint is its own labelled role=group of .pg-seg spinbuttons, reusing
+ * the segment styling above. Shared globally so both range primitives match.
+ */
+.pg-range-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--pg-border-strong);
+  border-radius: var(--pg-radius-sm);
+  background: var(--pg-surface);
+  color: var(--pg-text);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pg-range-field:focus-within {
+  border-color: var(--pg-primary);
+  box-shadow: 0 0 0 1px var(--pg-primary);
+}
+
+.pg-range-field[data-disabled] {
+  opacity: 0.55;
+}
+
+.pg-range-field[data-readonly] {
+  background: var(--pg-surface-2);
+}
+
+.pg-range-field[data-range-error] {
+  border-color: #ef4444;
+}
+
+.pg-range-field[data-range-error]:focus-within {
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+.pg-range-endpoint {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pg-range-sep {
+  color: var(--pg-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-range-field {
+    transition: none;
+  }
+}
+
+/*
  * Date picker. The trigger lives in the demo view, but the content portals to
  * <body> with its projected calendar, so its surface + grid styling is global
  * (same reason as the other floating overlays). Reuses .pg-popover for the
