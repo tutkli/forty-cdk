@@ -1514,6 +1514,29 @@ describe('global defaults via provideForToastDefaults', () => {
     fixture.detectChanges();
     expect(document.activeElement).toBe(el.querySelector('[forToast]'));
   });
+
+  it('viewport keeps data-for-modal-exempt under the default overModal', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const viewport = (fixture.nativeElement as HTMLElement).querySelector('for-toast-viewport')!;
+    expect(viewport.hasAttribute('data-for-modal-exempt')).toBe(true);
+  });
+
+  it('overModal: "inert" drops data-for-modal-exempt from the viewport', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideForToastDefaults({ overModal: 'inert' }),
+      ],
+    });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const viewport = (fixture.nativeElement as HTMLElement).querySelector('for-toast-viewport')!;
+    expect(viewport.hasAttribute('data-for-modal-exempt')).toBe(false);
+  });
 });
 
 describe('exit / enter animation cascade (config → viewport)', () => {
