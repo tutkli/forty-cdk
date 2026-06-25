@@ -201,6 +201,35 @@ describe('ForDateRangeField', () => {
       expect(seg(r, 'end', 'year').textContent?.trim()).toBe('2026');
     });
 
+    it('clears both endpoints when a typed range is reset to null externally', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '06', '10', '2026');
+      await fill(r, 'end', '06', '20', '2026');
+      expect(r.instance.value()).not.toBeNull();
+
+      r.instance.value.set(null);
+      await flush(r.fixture);
+      for (const which of ['start', 'end'] as const) {
+        expect(seg(r, which, 'month').textContent?.trim()).toBe('mm');
+        expect(seg(r, which, 'day').textContent?.trim()).toBe('dd');
+        expect(seg(r, which, 'year').textContent?.trim()).toBe('yyyy');
+      }
+      expect(root(r).getAttribute('data-empty')).toBe('');
+    });
+
+    it('clears both endpoints when an externally set range is reset to null', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 0, 5), end: new Date(2026, 2, 9) });
+      await flush(r.fixture);
+      expect(seg(r, 'start', 'month').textContent?.trim()).toBe('01');
+      expect(seg(r, 'end', 'month').textContent?.trim()).toBe('03');
+
+      r.instance.value.set(null);
+      await flush(r.fixture);
+      expect(seg(r, 'start', 'day').textContent?.trim()).toBe('dd');
+      expect(seg(r, 'end', 'day').textContent?.trim()).toBe('dd');
+    });
+
     it('clamps a composed endpoint down to the shared maxDate', async () => {
       const r = renderHost(Host);
       r.instance.maxDate.set(new Date(2026, 5, 20));
@@ -582,6 +611,12 @@ describe('ForDateRangeField', () => {
       expect(sg('start-day').textContent?.trim()).toBe('01');
       expect(sg('start-year').textContent?.trim()).toBe('2027');
       expect(sg('end-day').textContent?.trim()).toBe('25');
+
+      fixture.componentInstance.value.set(null);
+      await flush(fixture);
+      expect(sg('start-day').textContent?.trim()).toBe('dd');
+      expect(sg('end-day').textContent?.trim()).toBe('dd');
+      expect(root.getAttribute('data-empty')).toBe('');
     });
   });
 });
