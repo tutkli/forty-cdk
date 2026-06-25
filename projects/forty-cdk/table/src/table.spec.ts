@@ -30,6 +30,7 @@ import {
   type TableSortDirection,
 } from './table-sort-header';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
+import { ForTableColumnLabel } from './table-column-label';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import {
   ForTableRowReorder,
@@ -236,6 +237,61 @@ class AutoFitTableHost {
   readonly max = signal<number>(Infinity);
   lastResize: TableResizeDescriptor | null = null;
 }
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableColumnResizer,
+    ForTableColumnLabel,
+  ],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          @if (withLabel()) {
+            <span forTableColumnLabel>Name</span>
+          } @else {
+            Name
+          }
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            [autoFit]="autoFit()"
+            [fitIncludesHeader]="fitIncludesHeader()"
+            [min]="min()"
+            [max]="max()"
+            (resizeCommit)="lastResize = $event"
+            data-testid="resizer"
+          ></button>
+        </div>
+      </div>
+      <div forTableRow [value]="0">
+        <div forTableCell name="name">Ada</div>
+      </div>
+    </div>
+  `,
+})
+class HeaderAutoFitTableHost {
+  readonly resizer = viewChild.required(ForTableColumnResizer);
+  readonly width = signal<number>(100);
+  readonly autoFit = signal(false);
+  readonly fitIncludesHeader = signal(false);
+  readonly withLabel = signal(true);
+  readonly min = signal<number>(0);
+  readonly max = signal<number>(Infinity);
+  lastResize: TableResizeDescriptor | null = null;
+}
+
+@Component({
+  imports: [ForTableColumnLabel],
+  template: `<span forTableColumnLabel>orphan</span>`,
+})
+class OrphanColumnLabelHost {}
 
 @Component({
   imports: [...TABLE_IMPORTS],
@@ -1710,6 +1766,36 @@ describe('ForTable', () => {
       expect(instance.width()).toBe(140);
       expect(instance.lastResize).toEqual({ column: 'name', width: 140 });
     });
+
+    it('fitIncludesHeader with a [forTableColumnLabel] present still clamps to [min] and emits (header-wins geometry is Playwright-only)', () => {
+      const { instance, flush } = renderHost(HeaderAutoFitTableHost);
+      instance.fitIncludesHeader.set(true);
+      instance.min.set(150);
+      flush();
+      const applied = instance.resizer().fitToContent();
+      flush();
+      expect(applied).toBe(150);
+      expect(instance.width()).toBe(150);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 150 });
+    });
+
+    it('fitIncludesHeader with no [forTableColumnLabel] marker degrades to data-cells-only without throwing', () => {
+      const { instance, flush } = renderHost(HeaderAutoFitTableHost);
+      instance.withLabel.set(false);
+      instance.fitIncludesHeader.set(true);
+      instance.min.set(160);
+      flush();
+      const applied = instance.resizer().fitToContent();
+      flush();
+      expect(applied).toBe(160);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 160 });
+    });
+
+    it('[forTableColumnLabel] outside a [forTableHeaderCell] throws a prefixed error', () => {
+      expect(() => renderHost(OrphanColumnLabelHost)).toThrowError(
+        /\[forty-cdk\/table\] ForTableColumnLabel must be used inside a \[forTableHeaderCell\]/,
+      );
+    });
   });
 
   describe('column reorder', () => {
@@ -2071,6 +2157,25 @@ describe('ForTable', () => {
           .querySelector<HTMLElement>('[forTable]')!
           .style.getPropertyValue('--for-table-col-name-width'),
       ).toBe('130px');
+    });
+
+    it('fitIncludesHeader dblclick (with [forTableColumnLabel]) fits and publishes the CSS var without Zone.js', () => {
+      const { el, instance, flush } = renderHost(HeaderAutoFitTableHost);
+      instance.autoFit.set(true);
+      instance.fitIncludesHeader.set(true);
+      instance.min.set(135);
+      flush();
+      const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+      r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.width()).toBe(135);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 135 });
+      expect(r.getAttribute('aria-valuenow')).toBe('135');
+      expect(
+        el
+          .querySelector<HTMLElement>('[forTable]')!
+          .style.getPropertyValue('--for-table-col-name-width'),
+      ).toBe('135px');
     });
 
     it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', () => {

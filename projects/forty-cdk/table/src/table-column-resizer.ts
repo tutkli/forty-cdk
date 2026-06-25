@@ -46,7 +46,9 @@ export interface TableResizeDescriptor {
  * Opt in to size-to-content with `[autoFit]`: double-clicking the handle then fits the
  * column to its widest data-cell content via `fitToContent()` (also callable imperatively
  * through `exportAs="forTableColumnResizer"`, e.g. from a column menu). Unset (default),
- * `dblclick` is a no-op and the resize behaviour is unchanged.
+ * `dblclick` is a no-op and the resize behaviour is unchanged. Add `[fitIncludesHeader]`
+ * to also account for the column header's label (marked with a sibling
+ * `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`.
  *
  * @example
  * ```html
@@ -108,6 +110,15 @@ export class ForTableColumnResizer {
   readonly autoFit = input(false, { transform: booleanAttribute });
 
   /**
+   * Opt-in: also account for the column header's label width when fitting to content,
+   * so `fitToContent()` sizes to `max(header label, …data cells)` instead of data cells
+   * only. The header label is isolated through a sibling `[forTableColumnLabel]` marker
+   * (the resize handle / sort affordance are excluded). When set without a marker present,
+   * it degrades to data-cells-only. Unset (default), the header is ignored.
+   */
+  readonly fitIncludesHeader = input(false, { transform: booleanAttribute });
+
+  /**
    * Fires once per resize gesture — at pointer-up after a drag, and on every arrow
    * press — with the column identity and its committed width. Bind it to persist
    * the width; live updates during a drag come through `[(width)]` / `widthChange`.
@@ -152,8 +163,10 @@ export class ForTableColumnResizer {
 
   /**
    * Sizes the column to its content: measures the widest natural width across the
-   * column's data cells (resolved through the table context, browser-only), clamps it
-   * to `[min, max]`, applies it as the new `[(width)]`, and emits `resizeCommit`.
+   * column's data cells (resolved through the table context, browser-only) — and, when
+   * `[fitIncludesHeader]` is set with a sibling `[forTableColumnLabel]` present, the
+   * header label too, so the fit becomes `max(header label, …data cells)`. Clamps the
+   * result to `[min, max]`, applies it as the new `[(width)]`, and emits `resizeCommit`.
    * Wired to a `dblclick` on the handle when `[autoFit]` is set, and callable
    * imperatively (e.g. from a column menu) via `exportAs="forTableColumnResizer"`.
    * Returns the applied width; a no-op returning the current width off the browser.
@@ -227,7 +240,9 @@ export class ForTableColumnResizer {
       .flatMap((row) => row.cells())
       .map((cell) => cell.host)
       .filter((host) => host.getAttribute('data-column') === column);
-    if (cells.length === 0) {
+    const headerCell = this.#headerCell?.el.nativeElement ?? null;
+    const labelEl = this.fitIncludesHeader() ? (this.#headerCell?.labelEl() ?? null) : null;
+    if (cells.length === 0 && !labelEl) {
       return this.#measureBaseWidth();
     }
     const doc = this.#host.ownerDocument;
@@ -242,18 +257,51 @@ export class ForTableColumnResizer {
     try {
       let widest = 0;
       for (const cell of cells) {
-        const clone = cell.cloneNode(true) as HTMLElement;
-        clone.style.display = 'inline-block';
-        clone.style.width = 'auto';
-        clone.style.minWidth = '0';
-        clone.style.maxWidth = 'none';
-        clone.style.whiteSpace = 'nowrap';
-        probe.appendChild(clone);
-        widest = Math.max(widest, clone.getBoundingClientRect().width);
+        widest = Math.max(widest, this.#measureClone(probe, cell));
+      }
+      if (labelEl && headerCell) {
+        widest = Math.max(
+          widest,
+          this.#measureClone(probe, labelEl) + this.#horizontalBox(headerCell),
+        );
       }
       return widest;
     } finally {
       root.removeChild(probe);
     }
+  }
+
+  #measureClone(probe: HTMLElement, source: HTMLElement): number {
+    const clone = source.cloneNode(true) as HTMLElement;
+    const style = source.ownerDocument.defaultView?.getComputedStyle(source);
+    if (style) {
+      clone.style.fontFamily = style.fontFamily;
+      clone.style.fontSize = style.fontSize;
+      clone.style.fontWeight = style.fontWeight;
+      clone.style.fontStyle = style.fontStyle;
+      clone.style.letterSpacing = style.letterSpacing;
+      clone.style.textTransform = style.textTransform;
+    }
+    clone.style.display = 'inline-block';
+    clone.style.width = 'auto';
+    clone.style.minWidth = '0';
+    clone.style.maxWidth = 'none';
+    clone.style.whiteSpace = 'nowrap';
+    probe.appendChild(clone);
+    return clone.getBoundingClientRect().width;
+  }
+
+  #horizontalBox(el: HTMLElement): number {
+    const style = el.ownerDocument.defaultView?.getComputedStyle(el);
+    if (!style) {
+      return 0;
+    }
+    const px = (value: string): number => parseFloat(value) || 0;
+    return (
+      px(style.paddingLeft) +
+      px(style.paddingRight) +
+      px(style.borderLeftWidth) +
+      px(style.borderRightWidth)
+    );
   }
 }

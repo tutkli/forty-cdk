@@ -421,6 +421,48 @@ test.describe('Table (column resizing)', () => {
     expect(afterBox!.width).toBeCloseTo(beforeBox!.width, 0);
   });
 
+  test('fitIncludesHeader: header-inclusive auto-fit shows a long header label without truncation', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      autoFit: 'true',
+      fitIncludesHeader: 'true',
+      longHeader: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const overflowBefore = await headerName.evaluate((e) => e.scrollWidth - e.clientWidth);
+    expect(overflowBefore).toBeGreaterThan(10);
+
+    await resizer.dblclick();
+
+    const overflowAfter = await headerName.evaluate((e) => e.scrollWidth - e.clientWidth);
+    expect(overflowAfter).toBeLessThanOrEqual(2);
+  });
+
+  test('fitIncludesHeader unset: data-only auto-fit leaves a long header label truncated', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      autoFit: 'true',
+      longHeader: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    await resizer.dblclick();
+
+    const overflowAfter = await headerName.evaluate((e) => e.scrollWidth - e.clientWidth);
+    expect(overflowAfter).toBeGreaterThan(10);
+  });
+
   test('measures the header cell under hostDirectives composition, not the handle', async ({
     page,
   }) => {
