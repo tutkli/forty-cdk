@@ -73,6 +73,20 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
         </div>
       }
     </span>
+
+    <div
+      data-testid="scroll-list"
+      style="height:96px;width:220px;overflow-y:auto;border:1px solid #ccc;"
+    >
+      @for (row of rows; track row) {
+        <div forTooltip #tip="forTooltip" [openDelay]="0" [closeDelay]="0" style="padding:8px;">
+          <button [attr.data-testid]="'row-trigger-' + row" forTooltipTrigger>Row {{ row }}</button>
+          @if (tip.open()) {
+            <div forTooltipContent [attr.data-testid]="'row-tooltip-' + row">Tooltip {{ row }}</div>
+          }
+        </div>
+      }
+    </div>
   `,
 })
 export class TooltipFixture {
@@ -80,4 +94,5 @@ export class TooltipFixture {
   protected readonly overflowOpen = signal(false);
   protected readonly fitOpen = signal(false);
   protected readonly hoverOpen = signal(false);
+  protected readonly rows = Array.from({ length: 20 }, (_, i) => i);
 }
