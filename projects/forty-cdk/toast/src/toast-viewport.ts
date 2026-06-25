@@ -20,6 +20,7 @@ import {
   type ForToastInstance,
   type ForToastSwipeDirection,
 } from './toast-context';
+import { FOR_TOAST_DEFAULTS } from './toast-defaults';
 import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
@@ -69,13 +70,16 @@ import { ForToastTitle } from './toast-title';
  * `role` (`status` / `alert`) and `aria-live`, so screen readers
  * announce updates without forcing focus.
  *
- * Over a modal: the host carries `data-for-modal-exempt`, so an open modal
- * `ForDialog` / `ForDrawer` (a) leaves the viewport out of its inert pass
+ * Over a modal: by default the host carries `data-for-modal-exempt`, so an open
+ * modal `ForDialog` / `ForDrawer` (a) leaves the viewport out of its inert pass
  * instead of disabling it (when the viewport sits at the document-body level)
  * and (b) treats a click on a toast as "inside", never as `pointerDownOutside`.
  * A confirmation / error toast shown from a flow inside a modal therefore stays
  * interactive and clicking it does not dismiss the modal — no consumer-side
- * `data-for-modal-peer` stamping or `onPointerDownOutside` veto needed.
+ * `data-for-modal-peer` stamping or `onPointerDownOutside` veto needed. Opt a
+ * viewport out with `provideForToastDefaults({ overModal: 'inert' })`: the
+ * marker is dropped, so the modal inerts the viewport and a click on a toast
+ * dismisses it like any other background sibling.
  */
 @Component({
   selector: 'for-toast-viewport, [forToastViewport]',
@@ -92,7 +96,7 @@ import { ForToastTitle } from './toast-title';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     role: 'region',
-    'data-for-modal-exempt': '',
+    '[attr.data-for-modal-exempt]': "overModal === 'peer' ? '' : null",
     '[attr.aria-label]': 'label()',
     '[attr.data-region]': 'region()',
     tabindex: '-1',
@@ -144,6 +148,15 @@ import { ForToastTitle } from './toast-title';
 export class ForToastViewport {
   readonly #manager = inject(ForToastManager);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * How this viewport behaves over an open modal `ForDialog` / `ForDrawer`,
+   * resolved per-scope from `provideForToastDefaults({ overModal })` (default
+   * `'peer'`). `'peer'` host-binds `data-for-modal-exempt` so the viewport
+   * stays interactive over the modal; `'inert'` drops the marker so the modal
+   * inerts the viewport and a click on a toast dismisses it.
+   */
+  protected readonly overModal = inject(FOR_TOAST_DEFAULTS).overModal;
 
   /** Accessible name for the viewport region. Default `'Notifications'`. */
   readonly label = input<string>('Notifications');

@@ -53,6 +53,16 @@ Showing a confirmation or error toast from a flow inside a modal `ForDialog` / `
 
 No wiring is needed on your side — no manual `data-for-modal-peer` stamping, no `(pointerDownOutside)` veto. The one thing you control is layout: for the toast to stay interactive over the modal, mount the viewport as a child of `document.body` (or `position: fixed` it there) rather than nested inside a region that the modal inerts.
 
+### Sitting behind the modal instead
+
+The coexist-by-default above is right for confirmation / error toasts raised by the flow inside the modal. For a low-priority or system viewport that should _not_ steal attention from a critical dialog, opt out with `provideForToastDefaults({ overModal: 'inert' })`:
+
+```ts
+provideForToastDefaults({ overModal: 'inert' });
+```
+
+The viewport then drops `data-for-modal-exempt`, so an open modal inerts it like any other background sibling and a click on a toast dismisses the modal. `overModal` resolves per injector scope, so you can keep the global default `'peer'` and scope `'inert'` to one viewport's subtree (or the reverse). Default is `'peer'` — existing setups are unchanged.
+
 ## Multiple regions
 
 A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:
@@ -376,6 +386,8 @@ bootstrapApplication(App, {
 ```
 
 Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
+
+`overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key — see [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
 
 ## Accessibility notes
 
