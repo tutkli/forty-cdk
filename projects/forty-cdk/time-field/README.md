@@ -24,7 +24,7 @@ bootstrapApplication(App, {
 });
 ```
 
-When no value is bound yet, a composed value is anchored on the adapter's `today()` and carries the entered time. Bind an existing date-time as `value` to edit its time in place (the calendar day is preserved).
+When no value is bound yet, a composed value is anchored on a fixed, DST-stable sentinel date (`2000-01-01`) rather than today, so a wall-clock time always round-trips to the same instant. Bind an existing date-time as `value` to edit its time in place (the calendar day is preserved).
 
 ## Pieces
 
