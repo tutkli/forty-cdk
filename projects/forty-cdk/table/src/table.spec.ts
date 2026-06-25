@@ -4,6 +4,7 @@ import {
   Directive,
   provideZonelessChangeDetection,
   signal,
+  viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -189,6 +190,50 @@ class WrappedHeaderCell {}
 })
 class WrappedResizeTableHost {
   readonly width = signal<number>(100);
+  lastResize: TableResizeDescriptor | null = null;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableColumnResizer,
+  ],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          Name
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            [autoFit]="autoFit()"
+            [min]="min()"
+            [max]="max()"
+            (resizeCommit)="lastResize = $event"
+            data-testid="resizer"
+          ></button>
+        </div>
+      </div>
+      <div forTableRow [value]="0">
+        <div forTableCell name="name">Ada Lovelace, the celebrated analyst</div>
+      </div>
+      <div forTableRow [value]="1">
+        <div forTableCell name="name">Bob</div>
+      </div>
+    </div>
+  `,
+})
+class AutoFitTableHost {
+  readonly resizer = viewChild.required(ForTableColumnResizer);
+  readonly width = signal<number>(100);
+  readonly autoFit = signal(false);
+  readonly min = signal<number>(0);
+  readonly max = signal<number>(Infinity);
   lastResize: TableResizeDescriptor | null = null;
 }
 
@@ -1631,6 +1676,40 @@ describe('ForTable', () => {
       expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
       expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('110px');
     });
+
+    const dblclick = (r: HTMLElement) =>
+      r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+    it('autoFit unset: dblclick on the handle is a no-op (no width change, no resizeCommit)', () => {
+      const { el, instance, flush } = renderHost(AutoFitTableHost);
+      dblclick(resizerEl(el));
+      flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.lastResize).toBeNull();
+    });
+
+    it('autoFit set: dblclick fits the column to content width, clamped to [min,max], and emits resizeCommit', () => {
+      const { el, instance, flush } = renderHost(AutoFitTableHost);
+      instance.autoFit.set(true);
+      instance.min.set(120);
+      flush();
+      dblclick(resizerEl(el));
+      flush();
+      expect(instance.width()).toBe(120);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 120 });
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('120px');
+    });
+
+    it('fitToContent() is callable imperatively (independent of autoFit) and returns the applied width', () => {
+      const { instance, flush } = renderHost(AutoFitTableHost);
+      instance.min.set(140);
+      flush();
+      const applied = instance.resizer().fitToContent();
+      flush();
+      expect(applied).toBe(140);
+      expect(instance.width()).toBe(140);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 140 });
+    });
   });
 
   describe('column reorder', () => {
@@ -1974,6 +2053,24 @@ describe('ForTable', () => {
           .querySelector<HTMLElement>('[forTable]')!
           .style.getPropertyValue('--for-table-col-name-width'),
       ).toBe('110px');
+    });
+
+    it('autoFit dblclick fits the column and publishes the CSS var without Zone.js', () => {
+      const { el, instance, flush } = renderHost(AutoFitTableHost);
+      instance.autoFit.set(true);
+      instance.min.set(130);
+      flush();
+      const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+      r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+      flush();
+      expect(instance.width()).toBe(130);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 130 });
+      expect(r.getAttribute('aria-valuenow')).toBe('130');
+      expect(
+        el
+          .querySelector<HTMLElement>('[forTable]')!
+          .style.getPropertyValue('--for-table-col-name-width'),
+      ).toBe('130px');
     });
 
     it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', () => {

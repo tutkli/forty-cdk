@@ -1,5 +1,6 @@
 import {
   afterNextRender,
+  booleanAttribute,
   computed,
   DestroyRef,
   Directive,
@@ -42,6 +43,11 @@ export interface TableResizeDescriptor {
  * (browser-only), so a separator with no `[width]` is never announced without a
  * current value; an explicit `[width]` always takes precedence.
  *
+ * Opt in to size-to-content with `[autoFit]`: double-clicking the handle then fits the
+ * column to its widest data-cell content via `fitToContent()` (also callable imperatively
+ * through `exportAs="forTableColumnResizer"`, e.g. from a column menu). Unset (default),
+ * `dblclick` is a no-op and the resize behaviour is unchanged.
+ *
  * @example
  * ```html
  * <th forTableHeaderCell name="name">
@@ -65,6 +71,7 @@ export interface TableResizeDescriptor {
     '(pointerdown)': 'onPointerDown($event)',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
+    '(dblclick)': 'autoFit() && fitToContent()',
   },
 })
 export class ForTableColumnResizer {
@@ -94,6 +101,13 @@ export class ForTableColumnResizer {
   readonly step = input<number>(10);
 
   /**
+   * Opt-in size-to-content. When set, double-clicking the handle fits the column to
+   * its widest data-cell content via `fitToContent()`. Unset (default), `dblclick` is
+   * a no-op and the resize behaviour is unchanged.
+   */
+  readonly autoFit = input(false, { transform: booleanAttribute });
+
+  /**
    * Fires once per resize gesture — at pointer-up after a drag, and on every arrow
    * press — with the column identity and its committed width. Bind it to persist
    * the width; live updates during a drag come through `[(width)]` / `widthChange`.
@@ -121,6 +135,8 @@ export class ForTableColumnResizer {
 
   #disposePointer: (() => void) | null = null;
 
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   constructor() {
     inject(DestroyRef).onDestroy(() => this.#disposePointer?.());
     effect(() => {
@@ -129,9 +145,27 @@ export class ForTableColumnResizer {
         this.ctx.setColumnWidth(this.column(), w);
       }
     });
-    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+    if (this.#isBrowser) {
       afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
     }
+  }
+
+  /**
+   * Sizes the column to its content: measures the widest natural width across the
+   * column's data cells (resolved through the table context, browser-only), clamps it
+   * to `[min, max]`, applies it as the new `[(width)]`, and emits `resizeCommit`.
+   * Wired to a `dblclick` on the handle when `[autoFit]` is set, and callable
+   * imperatively (e.g. from a column menu) via `exportAs="forTableColumnResizer"`.
+   * Returns the applied width; a no-op returning the current width off the browser.
+   */
+  fitToContent(): number {
+    if (!this.#isBrowser) {
+      return this.width() ?? this.min();
+    }
+    const next = clampToRange(this.#measureContentWidth(), this.min(), this.max());
+    this.width.set(next);
+    this.resizeCommit.emit({ column: this.column(), width: next });
+    return next;
   }
 
   protected onPointerDown(event: PointerEvent): void {
@@ -184,5 +218,42 @@ export class ForTableColumnResizer {
   #measureBaseWidth(): number {
     const cell = this.#headerCell?.el.nativeElement ?? this.#host;
     return cell.getBoundingClientRect().width;
+  }
+
+  #measureContentWidth(): number {
+    const column = this.column();
+    const cells = this.ctx
+      .rows()
+      .flatMap((row) => row.cells())
+      .map((cell) => cell.host)
+      .filter((host) => host.getAttribute('data-column') === column);
+    if (cells.length === 0) {
+      return this.#measureBaseWidth();
+    }
+    const doc = this.#host.ownerDocument;
+    const root =
+      this.#host.closest<HTMLElement>('[role="table"], [role="grid"], [role="treegrid"]') ??
+      doc.body;
+    const probe = doc.createElement('div');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText =
+      'position:absolute;top:0;left:-9999px;visibility:hidden;pointer-events:none;';
+    root.appendChild(probe);
+    try {
+      let widest = 0;
+      for (const cell of cells) {
+        const clone = cell.cloneNode(true) as HTMLElement;
+        clone.style.display = 'inline-block';
+        clone.style.width = 'auto';
+        clone.style.minWidth = '0';
+        clone.style.maxWidth = 'none';
+        clone.style.whiteSpace = 'nowrap';
+        probe.appendChild(clone);
+        widest = Math.max(widest, clone.getBoundingClientRect().width);
+      }
+      return widest;
+    } finally {
+      root.removeChild(probe);
+    }
   }
 }

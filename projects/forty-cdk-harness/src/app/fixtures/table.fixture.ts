@@ -129,6 +129,8 @@ import {
                 forTableColumnResizer
                 column="name"
                 [width]="resizerWidth()"
+                [autoFit]="autoFit()"
+                [max]="maxWidth()"
                 data-testid="resizer-name"
                 aria-label="Resize Name column"
                 (resizeCommit)="onResize($event)"
@@ -152,6 +154,7 @@ import {
                 forTableColumnResizer
                 column="role"
                 [width]="resizerWidth()"
+                [autoFit]="autoFit()"
                 data-testid="resizer-role"
                 aria-label="Resize Role column"
                 (resizeCommit)="onResize($event)"
@@ -175,6 +178,7 @@ import {
                 forTableColumnResizer
                 column="dept"
                 [width]="resizerWidth()"
+                [autoFit]="autoFit()"
                 data-testid="resizer-dept"
                 aria-label="Resize Department column"
                 (resizeCommit)="onResize($event)"
@@ -226,6 +230,10 @@ export class TableFixture {
   );
   protected readonly resizable = signal(
     this.route.snapshot.queryParamMap.get('resizable') === 'true',
+  );
+  protected readonly autoFit = signal(this.route.snapshot.queryParamMap.get('autoFit') === 'true');
+  protected readonly maxWidth = signal<number>(
+    Number(this.route.snapshot.queryParamMap.get('maxWidth')) || Infinity,
   );
   protected readonly seedWidth = signal(
     this.route.snapshot.queryParamMap.get('seedWidth') !== 'false',

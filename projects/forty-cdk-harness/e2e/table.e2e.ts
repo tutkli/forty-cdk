@@ -356,6 +356,71 @@ test.describe('Table (column resizing)', () => {
     expect(valuenow).toBeGreaterThan(0);
   });
 
+  test('autoFit dblclick fits the column to its content width', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      autoFit: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const beforeBox = await headerName.boundingBox();
+    expect(beforeBox).not.toBeNull();
+    expect(beforeBox!.width).toBeGreaterThan(180);
+
+    await resizer.dblclick();
+
+    const afterBox = await headerName.boundingBox();
+    expect(afterBox).not.toBeNull();
+    expect(afterBox!.width).toBeLessThan(beforeBox!.width);
+    expect(afterBox!.width).toBeGreaterThan(0);
+
+    const root = el(page, 'root');
+    const varValue = await root.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--for-table-col-name-width'),
+    );
+    expect(varValue.trim()).not.toBe('');
+  });
+
+  test('autoFit dblclick clamps the fitted width to a finite [max]', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      autoFit: 'true',
+      maxWidth: '50',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    await resizer.dblclick();
+
+    const afterBox = await headerName.boundingBox();
+    expect(afterBox).not.toBeNull();
+    expect(afterBox!.width).toBeLessThanOrEqual(51);
+  });
+
+  test('autoFit unset: dblclick on the handle does not resize the column', async ({ page }) => {
+    await gotoFixture(page, 'table', {
+      resizable: 'true',
+      selectionMode: 'none',
+      sortable: 'true',
+    });
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const beforeBox = await headerName.boundingBox();
+    expect(beforeBox).not.toBeNull();
+
+    await resizer.dblclick();
+
+    const afterBox = await headerName.boundingBox();
+    expect(afterBox).not.toBeNull();
+    expect(afterBox!.width).toBeCloseTo(beforeBox!.width, 0);
+  });
+
   test('measures the header cell under hostDirectives composition, not the handle', async ({
     page,
   }) => {
