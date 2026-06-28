@@ -2,33 +2,22 @@
 
 Headless implementation of the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/) with optional tri-state (`indeterminate`) support. Implements `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring.
 
-## When to choose Checkbox vs Switch
+## When to choose
 
 - **Checkbox**: deferred selection (user is choosing options for a form to apply later). Supports the tri-state `mixed` value, useful for "select all" parents.
 - **Switch**: immediate setting (flipping it changes the world right now). Always binary.
 
 Use the one that matches your semantics. `ForCheckbox` and `ForSwitch` are intentionally separate even though they share most of their state surface.
 
-## Pieces
+## Anatomy
 
 | Class         | Selector        | Role                                                                 |
 | ------------- | --------------- | -------------------------------------------------------------------- |
 | `ForCheckbox` | `[forCheckbox]` | Single directive on a `<button>`. Wires ARIA + click + Signal Forms. |
 
-## Inputs / models
+## Examples
 
-| API                                                          | Type                                                      | Description                                                                                                                                                                                 |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.                                                                                                                                 |
-| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only — not part of the form value.                                                         |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG) — `aria-disabled="true"` + `data-disabled`, no native `disabled`; click is a no-op. |
-| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).                                                                                                                                     |
-| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.                                                                                                                                                     |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.                                                                                                                                                                      |
-
-The host gets `data-state="checked" \| "unchecked" \| "indeterminate"` for CSS hooks.
-
-## Stand-alone usage
+### Stand-alone
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -51,7 +40,7 @@ export class DemoTerms {
 }
 ```
 
-## Tri-state ("select all") usage
+### Tri-state ("select all")
 
 ```ts
 import { Component, computed, signal } from '@angular/core';
@@ -93,7 +82,7 @@ export class DemoSelectAll {
 }
 ```
 
-## Signal Forms usage
+### Signal Forms
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -111,9 +100,20 @@ export class DemoCheckout {
 }
 ```
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the for* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-* attributes below.
+### `ForCheckbox`
+
+| API                                                          | Type                                                      | Default | Description                                                                                                                                                                                 |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`                                                    | `model<boolean>`                                          | —       | Two-way bindable on/off. Required by `FormCheckboxControl`.                                                                                                                                 |
+| `indeterminate`                                              | `model<boolean>`                                          | —       | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only — not part of the form value.                                                         |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | —       | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG) — `aria-disabled="true"` + `data-disabled`, no native `disabled`; click is a no-op. |
+| `name`                                                       | `input<string>`                                           | `''`    | Reflected on `name` (empty string omits the attribute).                                                                                                                                     |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —       | Validation errors fed by `[formField]`.                                                                                                                                                     |
+| `touched`                                                    | `model<boolean>`                                          | —       | Set to `true` on blur.                                                                                                                                                                      |
+
+The host gets `data-state="checked" \| "unchecked" \| "indeterminate"` for CSS hooks.
 
 ### Data attributes
 
@@ -124,6 +124,24 @@ forty-cdk ships no styles. Add your own class to each piece — the for* selecto
 | `[forCheckbox]`          | `data-readonly` | present \| absent                           |
 | `[forCheckboxIndicator]` | `data-state`    | `checked` \| `unchecked` \| `indeterminate` |
 
+## Keyboard
+
+| Key     | Action                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| `Space` | Toggle the checkbox. The only key APG mandates.                                                 |
+| `Enter` | Also toggles — the directive sits on a `<button>`, a documented superset, not an APG violation. |
+
+Activating an indeterminate checkbox clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).
+
+## Accessibility
+
+- **Provide an accessible name.** Wrap the button in a `<label>`, or set `aria-labelledby` / `aria-label`. Without one, the control is announced as just "checkbox" with no purpose.
+- **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+
 ```css
 .checkbox-indicator[data-state='unchecked'] {
   display: none;
@@ -133,13 +151,6 @@ forty-cdk ships no styles. Add your own class to each piece — the for* selecto
   display: block;
 }
 ```
-
-## Accessibility notes
-
-- **Provide an accessible name.** Wrap the button in a `<label>`, or set `aria-labelledby` / `aria-label`. Without one, the control is announced as just "checkbox" with no purpose.
-- **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
-- **Keyboard**: APG only mandates Space. The directive sits on a `<button>` so Enter also activates — this is a documented superset, not a violation.
-- **Activation of an indeterminate checkbox** clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).
 
 ## Wrapping in a design system
 

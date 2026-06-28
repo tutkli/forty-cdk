@@ -4,29 +4,22 @@ Headless implementation of the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/
 
 A switch is a binary on/off control whose state changes immediately on activation — distinct semantically from a checkbox (which represents a deferred selection).
 
-## Pieces
+## When to choose
+
+- **Switch**: immediate setting (flipping it changes the world right now). Always binary.
+- **Checkbox**: deferred selection (user is choosing options for a form to apply later). Supports tri-state.
+
+Use the one that matches your semantics. `ForSwitch` and `ForCheckbox` are intentionally separate even though they share most of their state surface.
+
+## Anatomy
 
 | Class       | Selector      | Role                                                                 |
 | ----------- | ------------- | -------------------------------------------------------------------- |
 | `ForSwitch` | `[forSwitch]` | Single directive on a `<button>`. Wires ARIA + click + Signal Forms. |
 
-## Inputs / models
+## Examples
 
-| API        | Type                                                      | Description                                                                                              |
-| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.                                        |
-| `disabled` | `input<boolean>`                                          | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).           |
-| `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.                                         |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                         |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.                                                                          |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.                                         |
-| `name`     | `input<string \| undefined>`                              | Reflects on `name`.                                                                                      |
-| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.                                            |
-
-The host gets `data-state="checked" \| "unchecked"`, `data-disabled`, and `data-readonly` for CSS hooks.
-
-## Stand-alone usage
+### Stand-alone
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -47,7 +40,7 @@ export class DemoToggle {
 }
 ```
 
-## Signal Forms usage
+### Signal Forms
 
 `ForSwitch` implements `FormCheckboxControl`. The `[formField]` directive detects the interface and wires everything — value, disabled, required, invalid, errors, touched — without any glue.
 
@@ -78,9 +71,21 @@ export class DemoSettings {
 }
 ```
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForSwitch`
+
+| API        | Type                                                      | Default | Description                                                                                              |
+| ---------- | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `checked`  | `model<boolean>`                                          | —       | Two-way bindable on/off state. Required by `FormCheckboxControl`.                                        |
+| `disabled` | `input<boolean>`                                          | —       | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).           |
+| `readonly` | `input<boolean>`                                          | —       | Ignores click; reflects `aria-readonly="true"`. Stays focusable.                                         |
+| `required` | `input<boolean>`                                          | —       | Reflects `aria-required="true"`.                                                                         |
+| `invalid`  | `input<boolean>`                                          | —       | Reflects `aria-invalid="true"`.                                                                          |
+| `pending`  | `input<boolean>`                                          | —       | Reflects `aria-busy="true"` while async validation is in flight.                                         |
+| `name`     | `input<string \| undefined>`                              | —       | Reflects on `name`.                                                                                      |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —       | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
+| `touched`  | `model<boolean>`                                          | —       | Set to `true` on blur. Two-way so the field can read it back.                                            |
 
 ### Data attributes
 
@@ -94,6 +99,24 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forSwitch]` | `data-pending`  | present \| absent        |
 | `[forSwitch]` | `data-invalid`  | present \| absent        |
 
+## Keyboard
+
+| Key     | Action                                                                               |
+| ------- | ------------------------------------------------------------------------------------ |
+| `Space` | Toggle the switch.                                                                   |
+| `Enter` | Also toggles — the directive sits on a `<button>`, a documented superset of the APG. |
+
+## Accessibility
+
+- **Use a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`. Enter and Space toggle the switch via native button behavior. On other elements (e.g. `<div>`), keyboard activation is on you.
+- **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
+- **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
+- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+
 ```css
 .switch .thumb {
   transition: transform 150ms;
@@ -103,13 +126,6 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   transform: translateX(100%);
 }
 ```
-
-## Accessibility notes
-
-- **Use a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`. Enter and Space toggle the switch via native button behavior. On other elements (e.g. `<div>`), keyboard activation is on you.
-- **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
-- **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
-- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).
 
 ## Wrapping in a design system
 

@@ -18,7 +18,7 @@ export const appConfig: ApplicationConfig = {
 
 Providing it again on a component injector replaces the map for that subtree only (nearest scope wins; the map is replaced wholesale, never merged key-by-key).
 
-## Usage
+## Examples
 
 ```ts
 import { Component, inject } from '@angular/core';
@@ -40,15 +40,6 @@ export class Layout {
   protected active = this.bp.active; // 'sm' | 'md' | … | null
 }
 ```
-
-| Method           | Matches                                                                        |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `up(name)`       | the breakpoint and wider — `(min-width: N px)`                                 |
-| `down(name)`     | narrower than the breakpoint — `(max-width: (N − 0.02) px)`                    |
-| `between(a, b)`  | from `a` (inclusive) up to but not including `b`                               |
-| `only(name)`     | the breakpoint's own band, up to but not including the next-larger one         |
-| `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |
-| `matches(query)` | escape hatch for an arbitrary media query (orientation, `prefers-*`, …)        |
 
 The returned handle captures its injection context, so the query methods can be called lazily from a `computed()` or a template, not only during construction:
 
@@ -75,6 +66,19 @@ declare module 'forty-cdk' {
 ```
 
 Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'desktop'` across the whole app.
+
+## API
+
+### `injectBreakpoints`
+
+| Method           | Matches                                                                        |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `up(name)`       | the breakpoint and wider — `(min-width: N px)`                                 |
+| `down(name)`     | narrower than the breakpoint — `(max-width: (N − 0.02) px)`                    |
+| `between(a, b)`  | from `a` (inclusive) up to but not including `b`                               |
+| `only(name)`     | the breakpoint's own band, up to but not including the next-larger one         |
+| `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |
+| `matches(query)` | escape hatch for an arbitrary media query (orientation, `prefers-*`, …)        |
 
 ## SSR
 

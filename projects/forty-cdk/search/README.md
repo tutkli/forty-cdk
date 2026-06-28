@@ -9,7 +9,16 @@ There is no dedicated WAI-ARIA APG pattern page for "search" — the primitive
 is a thin `role="searchbox"` text input (https://www.w3.org/TR/wai-aria-1.2/#searchbox)
 that reuses `[forInput]`'s form-value wiring wholesale.
 
-## Basic usage
+## Anatomy
+
+| Class            | Selector           | Role                                                                          |
+| ---------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `ForSearch`      | `[forSearch]`      | Applied to a native `<input>`. Sets `role="searchbox"`, wires value signal.   |
+| `ForSearchClear` | `[forSearchClear]` | Clear button. Self-hides while value is empty; refocuses input on activation. |
+
+## Examples
+
+### Basic usage
 
 ```html
 <input forSearch #s="forSearch" [(value)]="query" placeholder="Search…" />
@@ -20,7 +29,7 @@ that reuses `[forInput]`'s form-value wiring wholesale.
 on activation. Pass the exported `#s="forSearch"` reference through the
 selector input — no wrapping element is required.
 
-## With Signal Forms and Field
+### With Signal Forms and Field
 
 ```html
 <div forField>
@@ -32,7 +41,7 @@ selector input — no wrapping element is required.
 `[formField]` auto-wires the `FormValueControl<string>` contract — `required`,
 `invalid`, `touched`, and the value itself flow in and out without extra glue.
 
-## Accessibility notes
+## Accessibility
 
 - The `role="searchbox"` attribute is set statically by the directive.
 - Validation state (`aria-required`, `aria-invalid`, `aria-readonly`,

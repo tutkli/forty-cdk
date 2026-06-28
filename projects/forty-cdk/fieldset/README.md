@@ -4,7 +4,7 @@ Headless grouping wiring — the styleless counterpart to a native `<fieldset>` 
 
 Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
 
-## Pieces
+## Anatomy
 
 | Class               | Selector              | Role                                                                                                       |
 | ------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -28,7 +28,7 @@ The `disabled` input:
 
 Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]` — the inner group cannot re-enable what the outer disabled.
 
-## Example
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -67,9 +67,7 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 </div>
 ```
 
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+## API
 
 ### Data attributes
 
@@ -78,6 +76,16 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 | `[forFieldset]` | `data-disabled` | present / absent |
 
 `[forFieldsetLegend]` reflects no data-\* attributes (it only carries the generated `id` that the group's `aria-labelledby` resolves to).
+
+## Accessibility
+
+- **Native `<fieldset>` grouping is preserved.** On a `<fieldset>` host, no extra ARIA is added — the browser's native grouping and `<legend>` labelling apply.
+- **Custom hosts get `role="group"` + `aria-labelledby`** wired to the `[forFieldsetLegend]`'s generated id.
+- **Disabled propagation reaches custom-role controls** that a native `<fieldset disabled>` cannot disable, via context injection.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .fieldset[data-disabled] {

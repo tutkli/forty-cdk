@@ -4,7 +4,7 @@ Headless form-field wiring. It renders **nothing** and imposes no layout: it onl
 
 There is no rendered chrome, no appearance variants, and **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs, so wrapping one in a `[forField]` auto-associates it with zero extra markup.
 
-## Pieces
+## Anatomy
 
 | Class                 | Selector                | Role                                                                                                           |
 | --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@ There is no rendered chrome, no appearance variants, and **no control contract t
 
 You render them; the field handles the ARIA. The error id is wired into `aria-errormessage` (and folded into `aria-describedby`) only while the control is invalid.
 
-## Example
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -75,9 +75,7 @@ Clicking the label activates the control on both host shapes, not just focuses i
 
 > Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
 
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes below.
+## API
 
 ### Data attributes
 
@@ -89,6 +87,17 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 | `[forField]` | `data-touched`  | present / absent |
 
 The reflected state mirrors the registered control: `data-invalid` while it is invalid, `data-required` while it is required, `data-touched` once it has been touched, and `data-disabled` from the control's own disabled state OR a surrounding `[forFieldset]`'s `disabled`. (`[forFieldControl]` additionally reflects `aria-invalid` on its own host, but that is an ARIA hook, not a styling one.)
+
+## Accessibility
+
+- **`aria-labelledby`** is wired from `[forLabel]` to the control's id, so screen readers announce the label when the control receives focus.
+- **`aria-describedby`** is wired from `[forFieldDescription]` (hint text) and folds in the error id while the control is invalid.
+- **`aria-errormessage`** points at `[forFieldError]`'s id while the control is invalid. The error region carries `role="alert"` so it is announced immediately.
+- **Label-click activation** matches native `<label for>` behavior on both native `<label>` and non-label hosts (see [Label-click activation](#label-click-activation)).
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .field[data-invalid] .field-label {

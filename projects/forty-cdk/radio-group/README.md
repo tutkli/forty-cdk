@@ -2,40 +2,16 @@
 
 Headless implementation of the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radio/) with selection-on-focus, wrap-around arrow navigation, and `FormValueControl<string>` integration for Angular Signal Forms.
 
-## Pieces
+## Anatomy
 
 | Class           | Selector          | Role                                                                                                            |
 | --------------- | ----------------- | --------------------------------------------------------------------------------------------------------------- |
 | `ForRadioGroup` | `[forRadioGroup]` | Container. Owns the selected value, orientation, disabled / readonly / form state. Provides the shared context. |
 | `ForRadio`      | `[forRadio]`      | One radio. Apply on a `<button type="button">`.                                                                 |
 
-## Inputs / models
+## Examples
 
-### `ForRadioGroup`
-
-| API                                                          | Type                                                      | Description                                                                                                                                       |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<string>`                                           | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`. |
-| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Default `'vertical'`. Drives keyboard navigation and `aria-orientation`.                                                                          |
-| `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Default `'ltr'`. Swaps ArrowLeft / ArrowRight in horizontal layouts.                                                                              |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection.                                                                  |
-| `loop`                                                       | `input<boolean>`                                          | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.                         |
-| `name`                                                       | `input<string>`                                           | For form association.                                                                                                                             |
-| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.                                                                                                                           |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` when focus leaves the group entirely.                                                                                               |
-
-The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for CSS hooks.
-
-### `ForRadio`
-
-| API        | Type                     | Description                                                                                          |
-| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | This radio's identifier. Must be unique within the group and non-empty.                              |
-| `disabled` | `input<boolean>`         | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation. |
-
-The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, and `data-disabled`. A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
-
-## Stand-alone usage
+### Stand-alone
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -58,7 +34,7 @@ export class DemoColor {
 }
 ```
 
-## Signal Forms usage
+### Signal Forms
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -83,9 +59,31 @@ export class DemoShipping {
 }
 ```
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForRadioGroup`
+
+| API                                                          | Type                                                      | Default      | Description                                                                                                                                       |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                      | `model<string>`                                           | —            | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`. |
+| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | `'vertical'` | Drives keyboard navigation and `aria-orientation`.                                                                                                |
+| `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | `'ltr'`      | Swaps ArrowLeft / ArrowRight in horizontal layouts.                                                                                               |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | —            | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection.                                                                  |
+| `loop`                                                       | `input<boolean>`                                          | `true`       | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.                         |
+| `name`                                                       | `input<string>`                                           | —            | For form association.                                                                                                                             |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —            | Wired by `[formField]`.                                                                                                                           |
+| `touched`                                                    | `model<boolean>`                                          | —            | Set to `true` when focus leaves the group entirely.                                                                                               |
+
+The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for CSS hooks.
+
+### `ForRadio`
+
+| API        | Type                     | Default | Description                                                                                          |
+| ---------- | ------------------------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | —       | This radio's identifier. Must be unique within the group and non-empty.                              |
+| `disabled` | `input<boolean>`         | —       | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation. |
+
+The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, and `data-disabled`. A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
 
 ### Data attributes
 
@@ -100,6 +98,24 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forRadioIndicator]` | `data-state`       | `checked` \| `unchecked`   |
 | `[forRadioIndicator]` | `data-orientation` | `horizontal` \| `vertical` |
 
+## Keyboard
+
+- **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected).
+- **Space** / **Enter** select the focused radio (Space is APG; Enter comes from the underlying `<button>` and is harmless).
+- **ArrowDown** / **ArrowUp** in a vertical group, **ArrowRight** / **ArrowLeft** in a horizontal group: move focus AND change selection ("selection on focus"), wrapping at the ends. RTL swaps Left/Right.
+- **Home** / **End** jump to the first / last enabled radio (and select it).
+- Disabled radios are skipped.
+
+## Accessibility
+
+- **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
+- **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
+- **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+
 ```css
 .radio-group-indicator[data-state='unchecked'] {
   display: none;
@@ -109,20 +125,6 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   cursor: pointer;
 }
 ```
-
-## Keyboard
-
-- **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected).
-- **Space** / **Enter** select the focused radio (Space is APG; Enter comes from the underlying `<button>` and is harmless).
-- **ArrowDown** / **ArrowUp** in a vertical group, **ArrowRight** / **ArrowLeft** in a horizontal group: move focus AND change selection ("selection on focus"), wrapping at the ends. RTL swaps Left/Right.
-- **Home** / **End** jump to the first / last enabled radio (and select it).
-- Disabled radios are skipped.
-
-## Accessibility notes
-
-- **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
-- **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
-- **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
 
 ## Wrapping in a design system
 

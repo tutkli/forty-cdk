@@ -4,39 +4,13 @@ Headless implementation of the [WAI-ARIA Window Splitter pattern](https://www.w3
 
 It is essentially a 1-D slider wearing a separator role. The static visual divider lives in the separate [`ForSeparator`](../separator/README.md) primitive so a plain `<hr forSeparator>` never pulls the drag / keyboard-resize code in.
 
-## Pieces
+## Anatomy
 
 | Class            | Selector           | Role                                                                                  |
 | ---------------- | ------------------ | ------------------------------------------------------------------------------------- |
 | `ForPaneResizer` | `[forPaneResizer]` | Single attribute directive. Focusable resizer: tabbable, exposes `aria-value*`, drag. |
 
-## Inputs
-
-| API           | Type                                | Description                                                                                                |
-| ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the divider line runs along. Defaults to `'horizontal'`. The resize axis runs perpendicular.          |
-| `disabled`    | `input<boolean>`                    | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer. |
-| `value`       | `model<number>`                     | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).                     |
-| `min`         | `input<number>`                     | Lower bound. Default `0`.                                                                                  |
-| `max`         | `input<number>`                     | Upper bound. Default `100`.                                                                                |
-| `step`        | `input<number>`                     | Step applied by ArrowKeys. Default `1`.                                                                    |
-| `largeStep`   | `input<number>`                     | Step applied by `Page Up` / `Page Down`. Default `10`.                                                     |
-| `valueText`   | `input<string \| null>`             | Optional `aria-valuetext` string for human-readable values.                                                |
-| `controls`    | `input<string \| null>`             | Space-separated list of pane ids surfaced as `aria-controls`.                                              |
-| `collapsible` | `input<boolean>`                    | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.      |
-| `dir`         | `input<'ltr' \| 'rtl'>`             | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.             |
-
-## Outputs
-
-| API            | Payload  | Fires                                                                                                          |
-| -------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| `valueChange`  | `number` | Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.   |
-| `resize`       | `number` | Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.                            |
-| `resizeCommit` | `number` | Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here. |
-
-The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks. When `disabled`, the host also gets `data-disabled=""`.
-
-## Usage
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -98,9 +72,26 @@ export class DemoSplitPane {
 
 `pointerdown` captures the pointer, records the starting value, and on each `pointermove` adds the **raw px delta** along the resize axis to `value`, clamped to `[min, max]`. Use this directly for px-unit layouts; for percentage / fractional layouts, listen to `(resizing)` and translate yourself, or skip pointer drag and stick to keyboard.
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForPaneResizer`
+
+| API            | Type                                | Default        | Description                                                                                                            |
+| -------------- | ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `orientation`  | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Axis the divider line runs along. The resize axis runs perpendicular.                                                  |
+| `disabled`     | `input<boolean>`                    | —              | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer.             |
+| `value`        | `model<number>`                     | —              | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).                                 |
+| `min`          | `input<number>`                     | `0`            | Lower bound.                                                                                                           |
+| `max`          | `input<number>`                     | `100`          | Upper bound.                                                                                                           |
+| `step`         | `input<number>`                     | `1`            | Step applied by ArrowKeys.                                                                                             |
+| `largeStep`    | `input<number>`                     | `10`           | Step applied by `Page Up` / `Page Down`.                                                                               |
+| `valueText`    | `input<string \| null>`             | —              | Optional `aria-valuetext` string for human-readable values.                                                            |
+| `controls`     | `input<string \| null>`             | —              | Space-separated list of pane ids surfaced as `aria-controls`.                                                          |
+| `collapsible`  | `input<boolean>`                    | —              | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.                  |
+| `dir`          | `input<'ltr' \| 'rtl'>`             | —              | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.                         |
+| `valueChange`  | `output<number>`                    | —              | Output. Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.   |
+| `resize`       | `output<number>`                    | —              | Output. Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.                            |
+| `resizeCommit` | `output<number>`                    | —              | Output. Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here. |
 
 ### Data attributes
 
@@ -108,6 +99,31 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | ------------------ | ------------------ | -------------------------- |
 | `[forPaneResizer]` | `data-orientation` | `horizontal` \| `vertical` |
 | `[forPaneResizer]` | `data-disabled`    | present \| absent          |
+
+## Keyboard
+
+| Key                        | Action                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `ArrowLeft` / `ArrowRight` | Move along the resize axis for a vertical separator (horizontal pane stack). RTL inverts the horizontal pair. |
+| `ArrowUp` / `ArrowDown`    | Move along the resize axis for a horizontal separator (vertical pane stack).                                  |
+| `Page Up`                  | Apply `largeStep` toward `max`.                                                                               |
+| `Page Down`                | Apply `largeStep` toward `min`.                                                                               |
+| `Home`                     | Snap to `min`.                                                                                                |
+| `End`                      | Snap to `max`.                                                                                                |
+| `Enter` / `Space`          | Toggle collapse to `min` / restore previous size. Only when `collapsible` is enabled (off by default).        |
+
+## Accessibility
+
+- **Follows the Window Splitter pattern verbatim.**
+  - `aria-orientation` is reflected **explicitly** (both `'horizontal'` and `'vertical'`) so AT can announce the resize axis.
+  - `aria-controls` is recommended: point it at the panes the resizer splits so AT can relate them.
+- **`aria-valuetext`** when the bare number is not meaningful (e.g. `"30 percent of viewport"`).
+- **`data-disabled`** is reflected when `disabled` is true so consumers can flip styling and pointer affordances in CSS.
+- **Accessible name.** Provide a name via native `aria-label` / `aria-labelledby` on the host so AT announces what the resizer adjusts.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .resizer[data-orientation='vertical'] {
@@ -121,16 +137,3 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   opacity: 0.5;
 }
 ```
-
-## Accessibility notes
-
-- **Follows the Window Splitter pattern verbatim.**
-  - `aria-orientation` is reflected **explicitly** (both `'horizontal'` and `'vertical'`) so AT can announce the resize axis.
-  - **Arrow keys** move along the resize axis: `Arrow←` / `Arrow→` for a vertical separator (horizontal pane stack), `Arrow↑` / `Arrow↓` for a horizontal separator (vertical pane stack). RTL inverts the horizontal pair.
-  - **`Page Up` / `Page Down`** apply `largeStep` (canonical APG large-step keys, not `Shift+Arrow`).
-  - **`Home` / `End`** snap to `min` / `max`.
-  - **`Enter` / `Space`** toggle to / from `min` when `collapsible` is enabled. Off by default — opt-in because it changes the meaning of `Enter`.
-  - `aria-controls` is recommended: point it at the panes the resizer splits so AT can relate them.
-- **`aria-valuetext`** when the bare number is not meaningful (e.g. `"30 percent of viewport"`).
-- **`data-disabled`** is reflected when `disabled` is true so consumers can flip styling and pointer affordances in CSS.
-- **Accessible name.** Provide a name via native `aria-label` / `aria-labelledby` on the host so AT announces what the resizer adjusts.

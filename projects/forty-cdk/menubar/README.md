@@ -2,7 +2,16 @@
 
 Headless implementation of the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/): a horizontal (or vertical) bar of triggers, each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation, hover-after-first-open, and roving tabindex among triggers.
 
-## Usage
+## Anatomy
+
+| Class               | Selector              | Role                                                                                                                                                                |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForMenubar`        | `[forMenubar]`        | Root. Owns `value` (the open trigger), orientation, dir, loop, disabled. Provides the `ForMenubarContext` and a multiplexed `ForMenuContext` to `[forMenuContent]`. |
+| `ForMenubarTrigger` | `[forMenubarTrigger]` | A trigger button. `role="menuitem"` with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`. Participates in roving tabindex and trigger-row keyboard.      |
+
+The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / side / ids reflect the active trigger.
+
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -48,63 +57,29 @@ export class DemoMenubar {
 
 `@if (open() === '<value>')` controls each menu's mount, so Angular's `animate.enter` / `animate.leave` fire on the natural mount cycle. `[(value)]` is two-way bindable; the menubar flips it on trigger interaction, item activation, Escape, outside dismissal, and cross-menu navigation.
 
-## Pieces
+## API
 
-| Class               | Selector              | Role                                                                                                                                                                |
-| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForMenubar`        | `[forMenubar]`        | Root. Owns `value` (the open trigger), orientation, dir, loop, disabled. Provides the `ForMenubarContext` and a multiplexed `ForMenuContext` to `[forMenuContent]`. |
-| `ForMenubarTrigger` | `[forMenubarTrigger]` | A trigger button. `role="menuitem"` with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`. Participates in roving tabindex and trigger-row keyboard.      |
+### `ForMenubar`
 
-The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / side / ids reflect the active trigger.
+| API           | Type                    | Default        | Description                                                                                                                                                                                         |
+| ------------- | ----------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<string>`         | `''`           | Two-way bindable. The open trigger's `value`, or `''` when none.                                                                                                                                    |
+| `orientation` | `input<string>`         | `'horizontal'` | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).                                                                                          |
+| `dir`         | `input<string>`         | `'ltr'`        | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.                                                                                                  |
+| `loop`        | `input<boolean>`        | `true`         | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.                                                                                                                            |
+| `disabled`    | `input<boolean>`        | `false`        | When `true`, every trigger interaction is a no-op.                                                                                                                                                  |
+| `dismissible` | `input<boolean>`        | `true`         | When `false`, the open menu ignores Escape, outside interaction, and pointer-leave — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav). |
+| `closeDelay`  | `input<number>`         | `150`          | ms before the open menu closes after the pointer leaves the bar (and any open menu). Defaults from `provideForMenubarDefaults`.                                                                     |
+| `ariaLabel`   | `input<string \| null>` | `null`         | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).                                                                                                                   |
 
-## Inputs (`ForMenubar`)
+### `ForMenubarTrigger`
 
-| API           | Default        | Description                                                                                                                                                                                         |
-| ------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `''`           | Two-way bindable. The open trigger's `value`, or `''` when none.                                                                                                                                    |
-| `orientation` | `'horizontal'` | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).                                                                                          |
-| `dir`         | `'ltr'`        | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.                                                                                                  |
-| `loop`        | `true`         | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.                                                                                                                            |
-| `disabled`    | `false`        | When `true`, every trigger interaction is a no-op.                                                                                                                                                  |
-| `dismissible` | `true`         | When `false`, the open menu ignores Escape, outside interaction, and pointer-leave — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav). |
-| `closeDelay`  | `150`          | ms before the open menu closes after the pointer leaves the bar (and any open menu). Defaults from `provideForMenubarDefaults`.                                                                     |
-| `ariaLabel`   | `null`         | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).                                                                                                                   |
-
-## Inputs (`ForMenubarTrigger`)
-
-| API                                                                                                                                       | Default                | Description                                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `value`                                                                                                                                   | required               | Identifier for the trigger. The menubar's `value` model holds this when the menu is open.                                      |
-| `disabled`                                                                                                                                | `false`                | Per-trigger disabled, in addition to the menubar's `disabled`.                                                                 |
-| `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | (floating-ui defaults) | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`. |
-| `ariaLabel`                                                                                                                               | `null`                 | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                              |
-
-## Trigger keyboard
-
-| Key                         | Behavior                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------- |
-| `Click` / `Enter` / `Space` | Toggle this trigger's menu. On open, focus moves to the first enabled item.                 |
-| `ArrowDown`                 | Open and focus the first enabled item.                                                      |
-| `ArrowUp`                   | Open and focus the last enabled item.                                                       |
-| `ArrowLeft` / `ArrowRight`  | Move focus to the previous / next enabled trigger. RTL inverts.                             |
-| `Home` / `End`              | Focus the first / last enabled trigger.                                                     |
-| `Typeahead`                 | Printable keys focus the first sibling trigger whose label starts with the buffered string. |
-
-## In-menu keyboard
-
-Inside an open menu, the standard `[forMenuContent]` keyboard applies — see [`menu/README.md`](../menu/README.md). The menubar adds:
-
-| Key                                                               | Behavior                                                                                                |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `ArrowLeft` / `ArrowRight` (on a top-level item, no submenu open) | Close the current menu and open the previous / next sibling menu, focusing its first item. RTL inverts. |
-| `Escape`                                                          | Close the menu and return focus to its trigger.                                                         |
-| `Tab` / `Shift+Tab`                                               | Close the menu and return focus to its trigger; the natural tab sequence then exits the menubar.        |
-
-Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape collapses one level at a time, the open-key opens, the close-key collapses upward. When the submenu's parent is the top of a menubar, the close-key collapses the parent and switches to the previous sibling menu.
-
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+| API                                                                                                                                       | Type                     | Default                | Description                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `value`                                                                                                                                   | `input.required<string>` | —                      | Identifier for the trigger. The menubar's `value` model holds this when the menu is open.                                      |
+| `disabled`                                                                                                                                | `input<boolean>`         | `false`                | Per-trigger disabled, in addition to the menubar's `disabled`.                                                                 |
+| `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | `input<...>`             | (floating-ui defaults) | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`. |
+| `ariaLabel`                                                                                                                               | `input<string \| null>`  | `null`                 | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                              |
 
 ### Data attributes
 
@@ -116,6 +91,39 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forMenubarTrigger]` | `data-state`       | `open` \| `closed`         |
 | `[forMenubarTrigger]` | `data-orientation` | `horizontal` \| `vertical` |
 | `[forMenubarTrigger]` | `data-disabled`    | present \| absent          |
+
+## Keyboard
+
+### Trigger
+
+| Key                         | Behavior                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| `Click` / `Enter` / `Space` | Toggle this trigger's menu. On open, focus moves to the first enabled item.                 |
+| `ArrowDown`                 | Open and focus the first enabled item.                                                      |
+| `ArrowUp`                   | Open and focus the last enabled item.                                                       |
+| `ArrowLeft` / `ArrowRight`  | Move focus to the previous / next enabled trigger. RTL inverts.                             |
+| `Home` / `End`              | Focus the first / last enabled trigger.                                                     |
+| `Typeahead`                 | Printable keys focus the first sibling trigger whose label starts with the buffered string. |
+
+### In-menu
+
+Inside an open menu, the standard `[forMenuContent]` keyboard applies — see [`menu/README.md`](../menu/README.md). The menubar adds:
+
+| Key                                                               | Behavior                                                                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ArrowLeft` / `ArrowRight` (on a top-level item, no submenu open) | Close the current menu and open the previous / next sibling menu, focusing its first item. RTL inverts. |
+| `Escape`                                                          | Close the menu and return focus to its trigger.                                                         |
+| `Tab` / `Shift+Tab`                                               | Close the menu and return focus to its trigger; the natural tab sequence then exits the menubar.        |
+
+Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape collapses one level at a time, the open-key opens, the close-key collapses upward. When the submenu's parent is the top of a menubar, the close-key collapses the parent and switches to the previous sibling menu.
+
+## Accessibility
+
+`[forMenubar]` implements the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/). Each trigger carries `role="menuitem"` with `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls`. Roving tabindex keeps one trigger in the tab sequence at a time. Disabled triggers remain focusable with `aria-disabled="true"` per APG. The menu surface and item roles come from the shared [`menu/`](../menu/README.md) primitives.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > Each trigger's menu surface is the shared `[forMenuContent]` (from [`menu/`](../menu/README.md)), which **portals to `document.body`**. Style it with global CSS or a class — scoped/`:host` styles won't reach it. The portaled content also exposes the shared positioner custom properties (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`); see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list and how to use them.
 
