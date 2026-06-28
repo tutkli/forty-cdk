@@ -14,6 +14,7 @@
       "forty-cdk/signal-forms": ["../forty-cdk/signal-forms/src/public-api.ts"],
       "forty-cdk/calendar": ["../forty-cdk/calendar/src/public-api.ts"],
       "forty-cdk/date-field": ["../forty-cdk/date-field/src/public-api.ts"],
+      "forty-cdk/date-range-field": ["../forty-cdk/date-range-field/src/public-api.ts"],
       "forty-cdk/date-picker": ["../forty-cdk/date-picker/src/public-api.ts"],
       "forty-cdk/time-field": ["../forty-cdk/time-field/src/public-api.ts"],
       "forty-cdk/time-picker": ["../forty-cdk/time-picker/src/public-api.ts"],
