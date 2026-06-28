@@ -64,3 +64,6 @@ Thumbs.db
 
 # Generated example-source manifests (built by scripts/gen-example-sources.mjs)
 projects/forty-cdk-playground/src/app/demos/**/sources.generated.ts
+
+# Generated README section search index (built by scripts/gen-search-index.mjs)
+projects/forty-cdk-playground/src/app/doc/search-index.generated.ts

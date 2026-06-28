@@ -10,14 +10,17 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper } from 'forty-cdk/drawer';
+import { ForSwitch } from 'forty-cdk/switch';
 import { ForToastViewport } from 'forty-cdk/toast';
-import { ForToggle } from 'forty-cdk/toggle';
 import { filter } from 'rxjs';
 
 import { AppNav } from './ui/app-nav';
+import { CommandPalette } from './ui/command-palette';
 import { Icon } from './ui/icon';
+import { ScrollPane } from './ui/scroll-pane';
+import { SiteNavMenu } from './ui/site-nav-menu';
 
 type Theme = 'light' | 'dark';
 
@@ -36,47 +39,49 @@ function readInitialTheme(): Theme {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterOutlet,
-    ForToggle,
+    RouterLink,
+    ForSwitch,
     ForDrawer,
     ForDrawerBackdrop,
     ForDrawerWrapper,
     ForToastViewport,
     AppNav,
+    SiteNavMenu,
+    ScrollPane,
+    CommandPalette,
     Icon,
   ],
+  host: {
+    '(document:keydown.meta.k)': 'openPalette($event)',
+    '(document:keydown.control.k)': 'openPalette($event)',
+  },
   template: `
     <div class="app-shell" forDrawerWrapper #shell>
       <header class="topbar">
         <button
           type="button"
-          class="icon-btn"
+          class="icon-btn menu-btn"
           (click)="navOpen.set(true)"
           aria-label="Open navigation"
         >
           <app-icon name="bars-3" />
         </button>
-        <div class="brand">
-          <span class="brand-name">forty-cdk</span>
-          <span class="brand-tag">playground</span>
-        </div>
-        <button
-          forToggle
-          type="button"
-          class="icon-btn theme"
-          [checked]="dark()"
-          (checkedChange)="setDark($event)"
-          [attr.aria-label]="themeLabel()"
-        >
-          <app-icon [name]="dark() ? 'sun' : 'moon'" />
-        </button>
-      </header>
 
-      <aside class="sidebar">
-        <div class="brand">
+        <a class="brand" [routerLink]="['/']">
           <span class="brand-name">forty-cdk</span>
-          <span class="brand-tag">playground</span>
+          <span class="brand-tag">docs</span>
+        </a>
+
+        <site-nav-menu class="topnav" />
+
+        <div class="topbar-actions">
+          <button type="button" class="search-btn" (click)="openPalette()" aria-label="Search">
+            <app-icon name="magnifying-glass" />
+            <span class="search-btn-text">Search</span>
+            <kbd class="search-btn-kbd">⌘K</kbd>
+          </button>
           <button
-            forToggle
+            forSwitch
             type="button"
             class="icon-btn theme"
             [checked]="dark()"
@@ -86,12 +91,19 @@ function readInitialTheme(): Theme {
             <app-icon [name]="dark() ? 'sun' : 'moon'" />
           </button>
         </div>
-        <app-nav />
-      </aside>
+      </header>
 
-      <main class="content">
-        <router-outlet />
-      </main>
+      <div class="shell-body">
+        <aside class="sidebar">
+          <scroll-pane>
+            <app-nav />
+          </scroll-pane>
+        </aside>
+
+        <main class="content">
+          <router-outlet />
+        </main>
+      </div>
     </div>
 
     @if (navOpen()) {
@@ -114,6 +126,8 @@ function readInitialTheme(): Theme {
       </div>
     }
 
+    <command-palette [(open)]="paletteOpen" />
+
     <for-toast-viewport class="pg-toast-viewport" data-position="bottom-right" />
   `,
   styles: `
@@ -125,40 +139,38 @@ function readInitialTheme(): Theme {
      * The shell carries [forDrawerWrapper], so [scaleBackground] drawers
      * transform it. transform breaks position: fixed (fixed children anchor
      * to the transformed ancestor and reposition against scroll), so the
-     * layout is normal-flow grid with a position: sticky sidebar — both scale
-     * uniformly with the shell instead of escaping it. The shell is also the
-     * scroll container (see styles.css for why + the BodyScrollLock bridge).
+     * layout is normal-flow with position: sticky chrome — header and sidebar
+     * scale uniformly with the shell instead of escaping it. The shell is also
+     * the scroll container (see styles.css for why + the BodyScrollLock bridge).
      */
     .app-shell {
       height: 100dvh;
       overflow-y: auto;
       scrollbar-gutter: stable;
-      display: grid;
-      grid-template-columns: var(--pg-sidebar-width) 1fr;
-      grid-template-areas: 'sidebar content';
+      display: flex;
+      flex-direction: column;
     }
 
     .topbar {
-      display: none;
-    }
-
-    .sidebar {
-      grid-area: sidebar;
       position: sticky;
       top: 0;
-      align-self: start;
-      height: 100dvh;
-      overflow-y: auto;
-      padding: 1rem 0.75rem 2rem;
-      background: var(--pg-surface);
-      border-right: 1px solid var(--pg-border);
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: var(--pg-header-height);
+      padding: 0 1.25rem;
+      background: color-mix(in srgb, var(--pg-surface) 88%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--pg-border);
     }
 
     .brand {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 0.75rem 1.25rem;
+      text-decoration: none;
+      color: var(--pg-text);
     }
 
     .brand-name {
@@ -176,6 +188,52 @@ function readInitialTheme(): Theme {
       background: color-mix(in srgb, var(--pg-secondary) 16%, transparent);
       padding: 0.1rem 0.45rem;
       border-radius: 999px;
+    }
+
+    .topnav {
+      margin-left: 0.5rem;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-left: auto;
+    }
+
+    .search-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      height: 34px;
+      padding: 0 0.7rem;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--pg-text-muted);
+      background: var(--pg-surface-2);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      cursor: pointer;
+    }
+
+    .search-btn:hover {
+      background: var(--pg-surface);
+      border-color: var(--pg-border-strong);
+    }
+
+    .search-btn app-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .search-btn-kbd {
+      font-family: var(--pg-font-mono);
+      font-size: 0.7rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 6px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border-strong);
+      color: var(--pg-text-muted);
     }
 
     .icon-btn {
@@ -200,37 +258,47 @@ function readInitialTheme(): Theme {
       background: var(--pg-surface-2);
     }
 
-    .theme {
-      margin-left: auto;
-      font-size: 0.95rem;
+    .menu-btn {
+      display: none;
+    }
+
+    .shell-body {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: var(--pg-sidebar-width) 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: var(--pg-header-height);
+      align-self: start;
+      height: calc(100dvh - var(--pg-header-height));
+      padding: 0.75rem 0.4rem 0.75rem 0.75rem;
+      background: var(--pg-surface);
+      border-right: 1px solid var(--pg-border);
     }
 
     .content {
-      grid-area: content;
-      padding: 2.5rem 2rem 4rem;
+      min-width: 0;
+      padding: 2.25rem 2rem 4rem;
     }
 
     @media (max-width: 820px) {
-      .app-shell {
+      .menu-btn {
+        display: grid;
+      }
+
+      .topnav {
+        display: none;
+      }
+
+      .search-btn-text {
+        display: none;
+      }
+
+      .shell-body {
         grid-template-columns: 1fr;
-        grid-template-areas: 'topbar' 'content';
-      }
-
-      .topbar {
-        grid-area: topbar;
-        position: sticky;
-        top: 0;
-        z-index: 40;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.6rem 0.9rem;
-        background: var(--pg-surface);
-        border-bottom: 1px solid var(--pg-border);
-      }
-
-      .topbar .brand {
-        padding: 0;
       }
 
       .sidebar {
@@ -251,6 +319,7 @@ export class App {
 
   protected readonly theme = signal<Theme>(readInitialTheme());
   protected readonly navOpen = signal(false);
+  protected readonly paletteOpen = signal(false);
 
   protected readonly dark = computed(() => this.theme() === 'dark');
   protected readonly themeLabel = computed(() =>
@@ -269,10 +338,19 @@ export class App {
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.shell()?.nativeElement.scrollTo({ top: 0, left: 0 }));
+      .subscribe((event) => {
+        if (!event.urlAfterRedirects.includes('#')) {
+          this.shell()?.nativeElement.scrollTo({ top: 0, left: 0 });
+        }
+      });
   }
 
   protected setDark(dark: boolean): void {
     this.theme.set(dark ? 'dark' : 'light');
+  }
+
+  protected openPalette(event?: Event): void {
+    event?.preventDefault();
+    this.paletteOpen.set(true);
   }
 }

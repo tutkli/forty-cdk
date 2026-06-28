@@ -24,6 +24,7 @@
     0 12px 30px color-mix(in srgb, var(--pg-primary) 16%, transparent);
   --pg-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --pg-sidebar-width: 264px;
+  --pg-header-height: 56px;
   --pg-font-sans: 'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --pg-font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
 }
@@ -288,28 +289,72 @@ h3 {
   cursor: not-allowed;
 }
 
-.pg-nav {
-  display: block;
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
-.pg-nav-group {
-  margin-bottom: 1.25rem;
+.nav-group-heading {
+  margin: 0;
 }
 
-.pg-nav-heading {
-  margin: 0 0 0.4rem;
-  padding: 0 0.75rem;
+.nav-group-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--pg-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--pg-radius-sm);
+  cursor: pointer;
 }
 
-.pg-nav-list {
+.nav-group-trigger:hover {
+  background: var(--pg-surface-2);
+  color: var(--pg-text);
+}
+
+.nav-chevron {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.nav-group-trigger[data-state='open'] .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-group-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.nav-group-content[data-state='open'] {
+  grid-template-rows: 1fr;
+}
+
+.nav-list {
   margin: 0;
-  padding: 0;
+  padding: 0 0 0.4rem;
   list-style: none;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-group-content,
+  .nav-chevron {
+    transition: none;
+  }
 }
 
 .pg-nav-link {
@@ -2791,4 +2836,203 @@ a.pg-nav-link.active {
 [data-theme='dark'] .pg-code .shiki span {
   color: var(--shiki-dark);
   background-color: var(--shiki-dark-bg);
+}
+
+/*
+ * Site navigation menu (header). Reuses the .pg-navmenu-* surfaces from the
+ * navigation-menu demo; only the Components mega-panel grid is bespoke.
+ */
+.pg-navmenu-panel.snm-panel {
+  width: min(720px, calc(100vw - 2rem));
+}
+
+.snm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem 1.25rem;
+}
+
+.snm-col {
+  min-width: 0;
+}
+
+.snm-link {
+  font-size: 0.85rem;
+}
+
+/*
+ * Command palette. [forComboboxContent] portals to <body> and floats below the
+ * input, so the list (.cmdk-content + options) must be styled globally — like
+ * the other combobox surfaces above.
+ */
+.cmdk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(10, 12, 16, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.cmdk-wrap {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 92;
+  width: min(560px, calc(100vw - 2rem));
+}
+
+.cmdk {
+  display: block;
+}
+
+.cmdk-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+  box-shadow: var(--pg-shadow);
+}
+
+.cmdk-search-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--pg-text-muted);
+}
+
+.cmdk-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  border: 0;
+  background: transparent;
+  color: var(--pg-text);
+}
+
+.cmdk-input:focus-visible {
+  outline: none;
+}
+
+.cmdk-kbd {
+  flex: none;
+  font-family: var(--pg-font-mono);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: var(--pg-surface-2);
+  border: 1px solid var(--pg-border-strong);
+  color: var(--pg-text-muted);
+}
+
+.cmdk-content {
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: var(--for-anchor-width);
+  max-height: min(50vh, 380px);
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  padding: 5px;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+  box-shadow: var(--pg-shadow);
+}
+
+.cmdk-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--pg-radius-sm);
+  color: var(--pg-text);
+  cursor: pointer;
+}
+
+.cmdk-option[data-highlighted] {
+  background: var(--pg-surface-2);
+}
+
+.cmdk-option-title {
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdk-option-group {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pg-text-muted);
+}
+
+.cmdk-empty {
+  padding: 0.7rem;
+  font-size: 0.875rem;
+  color: var(--pg-text-muted);
+  text-align: center;
+}
+
+.pg-crumbs {
+  max-width: 980px;
+  margin: 0 auto 1.25rem;
+}
+
+.pg-crumbs-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.pg-crumb {
+  display: inline-flex;
+}
+
+.pg-crumb-link {
+  color: var(--pg-text-muted);
+  text-decoration: none;
+  border-radius: var(--pg-radius-sm);
+  padding: 0.1rem 0.35rem;
+}
+
+.pg-crumb-link:hover {
+  color: var(--pg-text);
+  text-decoration: underline;
+}
+
+.pg-crumb-link[aria-current='page'] {
+  color: var(--pg-text);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.pg-crumb-group {
+  color: var(--pg-text-muted);
+}
+
+.pg-crumb-sep {
+  display: inline-flex;
+  align-items: center;
+  color: var(--pg-border-strong);
+  user-select: none;
+}
+
+.pg-crumb-sep app-icon {
+  width: 12px;
+  height: 12px;
 }

@@ -400,3 +400,12 @@ export function primitiveBySlug(slug: string): PlaygroundPrimitive {
   }
   throw new Error(`[playground] unknown primitive slug: ${slug}`);
 }
+
+export function groupLabelForSlug(slug: string): string {
+  for (const group of PLAYGROUND_GROUPS) {
+    if (group.primitives.some((primitive) => primitive.slug === slug)) {
+      return group.label;
+    }
+  }
+  throw new Error(`[playground] unknown primitive slug: ${slug}`);
+}
