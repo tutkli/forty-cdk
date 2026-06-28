@@ -6,6 +6,7 @@ import { ListboxFormFieldExample } from './examples/form-field.example';
 import { ListboxGroupsExample } from './examples/groups.example';
 import { ListboxReorderExample } from './examples/reorder.example';
 import { ListboxVirtualizedExample } from './examples/virtualized.example';
+import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
 @Component({
   selector: 'app-listbox-page',
@@ -19,7 +20,7 @@ import { ListboxVirtualizedExample } from './examples/virtualized.example';
     ListboxVirtualizedExample,
   ],
   template: `
-    <primitive-page slug="listbox">
+    <primitive-page slug="listbox" [readme]="readme">
       <app-listbox-example />
       <app-listbox-groups-example />
       <app-listbox-reorder-example />
@@ -28,4 +29,6 @@ import { ListboxVirtualizedExample } from './examples/virtualized.example';
     </primitive-page>
   `,
 })
-export class ListboxPage {}
+export class ListboxPage {
+  protected readonly readme = readmeContent;
+}

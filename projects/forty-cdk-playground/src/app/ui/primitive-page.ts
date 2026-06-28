@@ -1,10 +1,23 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+} from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 
+import { DocSection } from '../doc/doc-section';
+import { parseReadme } from '../doc/markdown';
+import { DocToc } from '../doc/doc-toc';
 import { primitiveBySlug } from '../primitives';
 
 @Component({
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DocSection, DocToc],
   template: `
     <header class="head">
       <div class="head-text">
@@ -18,15 +31,44 @@ import { primitiveBySlug } from '../primitives';
       }
     </header>
 
-    <div class="examples">
-      <ng-content />
+    <div class="layout">
+      <div class="main">
+        @if (introHtml(); as intro) {
+          <div class="pg-doc-prose pg-doc-intro" [innerHTML]="intro"></div>
+        }
+
+        @for (section of sectionsBefore(); track section.slug) {
+          <doc-section [section]="section" />
+        }
+
+        <section class="pg-doc-section" [id]="examplesMeta().slug">
+          <h2 class="pg-doc-h2">
+            <a
+              class="pg-doc-anchor"
+              [href]="'#' + examplesMeta().slug"
+              [attr.aria-label]="examplesMeta().title + ' permalink'"
+              >#</a
+            >
+            {{ examplesMeta().title }}
+          </h2>
+          <div class="examples">
+            <ng-content />
+          </div>
+        </section>
+
+        @for (section of sectionsAfter(); track section.slug) {
+          <doc-section [section]="section" />
+        }
+      </div>
+
+      <aside class="rail">
+        <doc-toc [items]="tocItems()" />
+      </aside>
     </div>
   `,
   styles: `
     :host {
       display: block;
-      max-width: 980px;
-      margin: 0 auto;
     }
 
     .head {
@@ -34,7 +76,8 @@ import { primitiveBySlug } from '../primitives';
       align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 2.5rem;
+      max-width: 980px;
+      margin: 0 auto 2.5rem;
     }
 
     .head h1 {
@@ -62,10 +105,39 @@ import { primitiveBySlug } from '../primitives';
       text-decoration: underline;
     }
 
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 3rem;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
     .examples {
       display: flex;
       flex-direction: column;
       gap: 3rem;
+    }
+
+    .rail {
+      position: sticky;
+      top: 2.5rem;
+      align-self: start;
+      height: fit-content;
+    }
+
+    @media (max-width: 1080px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .rail {
+        display: none;
+      }
     }
 
     @media (max-width: 820px) {
@@ -86,7 +158,61 @@ import { primitiveBySlug } from '../primitives';
   `,
 })
 export class PrimitivePage {
+  readonly #sanitizer = inject(DomSanitizer);
+  readonly #document = inject(DOCUMENT);
+
   readonly slug = input.required<string>();
+  readonly readme = input.required<string>();
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
+
+  readonly #parsed = computed(() => parseReadme(this.readme()));
+
+  protected readonly introHtml = computed(() => {
+    const intro = this.#parsed().intro;
+    return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
+  });
+
+  readonly #sections = computed(() => this.#parsed().sections);
+  readonly #examplesIndex = computed(() =>
+    this.#sections().findIndex((section) => section.slug === 'examples'),
+  );
+
+  protected readonly sectionsBefore = computed(() => {
+    const index = this.#examplesIndex();
+    return index < 0 ? [] : this.#sections().slice(0, index);
+  });
+
+  protected readonly sectionsAfter = computed(() => {
+    const index = this.#examplesIndex();
+    return index < 0 ? this.#sections() : this.#sections().slice(index + 1);
+  });
+
+  protected readonly examplesMeta = computed(() => {
+    const index = this.#examplesIndex();
+    if (index < 0) {
+      return { title: 'Examples', slug: 'examples' };
+    }
+    const section = this.#sections()[index];
+    return { title: section.title, slug: section.slug };
+  });
+
+  protected readonly tocItems = computed(() =>
+    [...this.sectionsBefore(), this.examplesMeta(), ...this.sectionsAfter()].map((section) => ({
+      title: section.title,
+      slug: section.slug,
+    })),
+  );
+
+  constructor() {
+    afterNextRender(() => {
+      const hash = decodeURIComponent(
+        (this.#document.defaultView?.location.hash ?? '').replace(/^#/, ''),
+      );
+      if (!hash) {
+        return;
+      }
+      this.#document.getElementById(hash)?.scrollIntoView();
+    });
+  }
 }

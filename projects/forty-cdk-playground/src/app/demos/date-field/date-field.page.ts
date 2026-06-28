@@ -4,6 +4,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DateFieldDateTimeExample } from './examples/date-time.example';
 import { DateFieldDateExample } from './examples/date.example';
 import { DateFieldLocalizedExample } from './examples/localized.example';
+import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
 @Component({
   selector: 'app-date-field-page',
@@ -15,11 +16,13 @@ import { DateFieldLocalizedExample } from './examples/localized.example';
     DateFieldLocalizedExample,
   ],
   template: `
-    <primitive-page slug="date-field">
+    <primitive-page slug="date-field" [readme]="readme">
       <app-date-field-date-example />
       <app-date-field-date-time-example />
       <app-date-field-localized-example />
     </primitive-page>
   `,
 })
-export class DateFieldPage {}
+export class DateFieldPage {
+  protected readonly readme = readmeContent;
+}

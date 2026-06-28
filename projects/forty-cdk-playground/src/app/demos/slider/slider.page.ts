@@ -5,6 +5,7 @@ import { SliderExample } from './examples/slider.example';
 import { SliderInvertedExample } from './examples/inverted.example';
 import { SliderRangeExample } from './examples/range.example';
 import { SliderVerticalExample } from './examples/vertical.example';
+import readmeContent from '../../../../../forty-cdk/slider/README.md';
 
 @Component({
   selector: 'app-slider-page',
@@ -17,7 +18,7 @@ import { SliderVerticalExample } from './examples/vertical.example';
     SliderInvertedExample,
   ],
   template: `
-    <primitive-page slug="slider">
+    <primitive-page slug="slider" [readme]="readme">
       <app-slider-example />
       <app-slider-range-example />
       <app-slider-vertical-example />
@@ -25,4 +26,6 @@ import { SliderVerticalExample } from './examples/vertical.example';
     </primitive-page>
   `,
 })
-export class SliderPage {}
+export class SliderPage {
+  protected readonly readme = readmeContent;
+}

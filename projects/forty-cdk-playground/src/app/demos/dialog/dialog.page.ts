@@ -5,6 +5,7 @@ import { DialogAnatomyExample } from './examples/anatomy.example';
 import { DialogGuardedCloseExample } from './examples/guarded-close.example';
 import { DialogNonModalExample } from './examples/non-modal.example';
 import { DialogProgrammaticExample } from './examples/programmatic.example';
+import readmeContent from '../../../../../forty-cdk/dialog/README.md';
 
 @Component({
   selector: 'app-dialog-page',
@@ -17,7 +18,7 @@ import { DialogProgrammaticExample } from './examples/programmatic.example';
     DialogProgrammaticExample,
   ],
   template: `
-    <primitive-page slug="dialog">
+    <primitive-page slug="dialog" [readme]="readme">
       <app-dialog-anatomy-example />
       <app-dialog-guarded-close-example />
       <app-dialog-non-modal-example />
@@ -25,4 +26,6 @@ import { DialogProgrammaticExample } from './examples/programmatic.example';
     </primitive-page>
   `,
 })
-export class DialogPage {}
+export class DialogPage {
+  protected readonly readme = readmeContent;
+}

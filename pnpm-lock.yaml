@@ -63,6 +63,9 @@ importers:
       lefthook:
         specifier: ^2.1.9
         version: 2.1.9
+      marked:
+        specifier: ^18.0.5
+        version: 18.0.5
       ng-packagr:
         specifier: ^22.0.0
         version: 22.0.0(@angular/compiler-cli@22.0.2(@angular/compiler@22.0.2)(typescript@6.0.3))(tslib@2.8.1)(typescript@6.0.3)
@@ -2823,6 +2826,11 @@ packages:
   make-fetch-happen@15.0.5:
     resolution: {integrity: sha512-uCbIa8jWWmQZt4dSnEStkVC6gdakiinAm4PiGsywIkguF0eWMdcjDz0ECYhUolFU3pFLOev9VNPCEygydXnddg==}
     engines: {node: ^20.17.0 || >=22.9.0}
+
+  marked@18.0.5:
+    resolution: {integrity: sha512-S6GcvALHg6K4ohtu4E7x0a1AqhAjp6cV8KhLSyN9qVapnzJkusVBxZRcIU9AeYsbe6P1hKDusSbEOzGyyuce6w==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -6199,6 +6207,8 @@ snapshots:
       ssri: 13.0.1
     transitivePeerDependencies:
       - supports-color
+
+  marked@18.0.5: {}
 
   math-intrinsics@1.1.0: {}
 

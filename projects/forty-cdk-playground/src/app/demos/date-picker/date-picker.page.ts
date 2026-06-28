@@ -6,6 +6,7 @@ import { DatePickerDateTimeExample } from './examples/date-time.example';
 import { DatePickerBasicExample } from './examples/picker.example';
 import { DatePickerRangeExample } from './examples/range.example';
 import { DatePickerRangeFormExample } from './examples/range-form.example';
+import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
 
 @Component({
   selector: 'app-date-picker-page',
@@ -19,7 +20,7 @@ import { DatePickerRangeFormExample } from './examples/range-form.example';
     DatePickerRangeFormExample,
   ],
   template: `
-    <primitive-page slug="date-picker">
+    <primitive-page slug="date-picker" [readme]="readme">
       <app-date-picker-basic-example />
       <app-date-picker-date-time-example />
       <app-date-picker-constraints-example />
@@ -28,4 +29,6 @@ import { DatePickerRangeFormExample } from './examples/range-form.example';
     </primitive-page>
   `,
 })
-export class DatePickerPage {}
+export class DatePickerPage {
+  protected readonly readme = readmeContent;
+}

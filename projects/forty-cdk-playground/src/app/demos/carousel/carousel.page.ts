@@ -5,6 +5,7 @@ import { CarouselAutoplayExample } from './examples/autoplay.example';
 import { CarouselBasicExample } from './examples/basic.example';
 import { CarouselDragExample } from './examples/drag.example';
 import { CarouselMultipleExample } from './examples/multiple-slides.example';
+import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
 @Component({
   selector: 'app-carousel-page',
@@ -17,7 +18,7 @@ import { CarouselMultipleExample } from './examples/multiple-slides.example';
     CarouselDragExample,
   ],
   template: `
-    <primitive-page slug="carousel">
+    <primitive-page slug="carousel" [readme]="readme">
       <app-carousel-basic-example />
       <app-carousel-multiple-example />
       <app-carousel-drag-example />
@@ -25,4 +26,6 @@ import { CarouselMultipleExample } from './examples/multiple-slides.example';
     </primitive-page>
   `,
 })
-export class CarouselPage {}
+export class CarouselPage {
+  protected readonly readme = readmeContent;
+}
