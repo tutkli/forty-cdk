@@ -265,6 +265,31 @@ element", so it owns no role or ARIA state. The consumer is responsible
 for keeping the moved element fully usable at its default position (e.g. a repositionable dialog must
 still be operable by keyboard); dragging is a pointer convenience, not the only way to use it.
 
+## Virtualized lists
+
+Dragging the rows of a **virtualized** list (one whose off-screen rows are
+recycled out of the DOM) is supported **at the table layer** —
+[`[forTableRowReorder]`](../table/README.md#reordering-under-virtualization)
+composed with `[forTableVirtualized]` — and **not** on a bare `[forDropList]`
+wrapping `*forVirtualFor`.
+
+A raw `[forDropList]` only ever registers the rows currently rendered in the
+window, so on its own it:
+
+- emits **window-relative** `previousIndex` / `currentIndex` (applying
+  `moveItemInArray` over your full array reorders the wrong rows),
+- lets the lifted row get **recycled out from under the drag** when auto-scroll
+  moves the window, and
+- confines keyboard stepping to the **rendered window**, so it can't traverse the
+  dataset.
+
+`[forTableRowReorder]` solves all three. A custom virtualized integration must
+supply the same three mechanisms: map window-relative to absolute indices with the
+reusable `translateWindowReorder` helper (`forty-cdk/core`), keep the lifted row
+mounted for the duration of the drag, and step the keyboard target over the true
+total count. See [`docs/drag-in-virtualized-list-spike.md`](../../../docs/drag-in-virtualized-list-spike.md)
+for the full analysis.
+
 ## Data attributes
 
 | Attribute               | Element           | Meaning                                                                              |
