@@ -22,7 +22,11 @@ describe('TableVirtualizedNavigator', () => {
   it('navigateTo focuses an already-rendered target cell immediately, without scrolling', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2), fakeRow(11, 2)]);
     const scrollToRow = vi.fn();
-    const nav = new TableVirtualizedNavigator({ rows, scrollToRow });
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+    });
     const focusSpy = vi.spyOn(rows()[1]!.cells()[1]!.host, 'focus');
 
     nav.navigateTo(11, 1);
@@ -34,7 +38,11 @@ describe('TableVirtualizedNavigator', () => {
   it('navigateTo stashes the pending target and scrolls when the row is outside the window', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2), fakeRow(11, 2)]);
     const scrollToRow = vi.fn();
-    const nav = new TableVirtualizedNavigator({ rows, scrollToRow });
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+    });
 
     nav.navigateTo(50, 0);
 
@@ -45,7 +53,11 @@ describe('TableVirtualizedNavigator', () => {
 
   it('tryResolvePending focuses the target cell and clears the pending target once the row mounts', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2)]);
-    const nav = new TableVirtualizedNavigator({ rows, scrollToRow: vi.fn() });
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+    });
     nav.navigateTo(50, 1);
 
     const mounted = fakeRow(50, 2);
@@ -62,15 +74,31 @@ describe('TableVirtualizedNavigator', () => {
     const nav = new TableVirtualizedNavigator({
       rows: signal<readonly ForTableRowHandle[]>([]),
       scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
     });
 
     expect(nav.tryResolvePending()).toBe(false);
   });
 
+  it('scrollViewportRect delegates to the injected accessor', () => {
+    const rect = { top: 10, bottom: 410 } as DOMRect;
+    const nav = new TableVirtualizedNavigator({
+      rows: signal<readonly ForTableRowHandle[]>([]),
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => rect,
+    });
+
+    expect(nav.scrollViewportRect()).toBe(rect);
+  });
+
   it('falls back to the last cell when the requested column is out of range', () => {
     const row = fakeRow(5, 2);
     const rows = signal<readonly ForTableRowHandle[]>([row]);
-    const nav = new TableVirtualizedNavigator({ rows, scrollToRow: vi.fn() });
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+    });
     const lastCellSpy = vi.spyOn(row.cells()[1]!.host, 'focus');
 
     nav.navigateTo(5, 9);

@@ -10,7 +10,12 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
-import { createKeyboardDragMediator, LiveAnnouncer, translateWindowReorder } from 'forty-cdk/core';
+import {
+  createKeyboardDragMediator,
+  LiveAnnouncer,
+  resolveScrubReorder,
+  translateWindowReorder,
+} from 'forty-cdk/core';
 
 import { ForVirtualViewport } from './virtual-viewport';
 
@@ -49,6 +54,11 @@ function injectViewport(): ForVirtualViewport {
  *   `setReorderingIndex`, so auto-scroll can carry the window past it without recycling it.
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window.
+ *
+ * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
+ * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted
+ * item at an arbitrary far item without waiting for auto-scroll to reach it. Without Shift, pointer
+ * resolution is unchanged.
  *
  * It **never reorders the items itself** (BYO-data): apply the move to your own array inside
  * the `(itemReorder)` handler. Vertical lists only (the default scroll axis).
@@ -93,6 +103,8 @@ export class ForVirtualReorder {
   #kbLiftedHost: HTMLElement | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
+  #pointerMain: number | null = null;
+  #scrubEngaged = false;
 
   /** Fires once per committed reorder gesture with the previous / new absolute item index. */
   readonly itemReorder = output<ForVirtualReorderEvent>();
@@ -106,8 +118,10 @@ export class ForVirtualReorder {
 
     if (this.#isBrowser) {
       const onPointerDown = (event: PointerEvent): void => this.#pinFromPointer(event);
+      const onPointerMove = (event: PointerEvent): void => this.#trackScrub(event);
       const onPointerEnd = (): void => this.#viewport.setReorderingIndex(null);
       this.#host.addEventListener('pointerdown', onPointerDown, { capture: true });
+      this.#document.addEventListener('pointermove', onPointerMove, { capture: true });
       this.#document.addEventListener('pointerup', onPointerEnd, { capture: true });
       this.#document.addEventListener('pointercancel', onPointerEnd, { capture: true });
 
@@ -127,6 +141,7 @@ export class ForVirtualReorder {
 
       destroyRef.onDestroy(() => {
         this.#host.removeEventListener('pointerdown', onPointerDown, { capture: true });
+        this.#document.removeEventListener('pointermove', onPointerMove, { capture: true });
         this.#document.removeEventListener('pointerup', onPointerEnd, { capture: true });
         this.#document.removeEventListener('pointercancel', onPointerEnd, { capture: true });
         if (this.#kbLiftedHost !== null) {
@@ -259,11 +274,21 @@ export class ForVirtualReorder {
   }
 
   #pinFromPointer(event: PointerEvent): void {
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
     const host = this.#draggableHost(event.target);
     if (host === null) {
       return;
     }
     this.#viewport.setReorderingIndex(this.#absoluteIndex(host));
+  }
+
+  #trackScrub(event: PointerEvent): void {
+    if (!this.#list.isDragging()) {
+      return;
+    }
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
   }
 
   #draggableHost(target: EventTarget | null): HTMLElement | null {
@@ -297,6 +322,19 @@ export class ForVirtualReorder {
         return fallback;
       }
       windowIndices.push(index);
+    }
+    const from = windowIndices[event.previousIndex] ?? event.previousIndex;
+    const rect = this.#host.getBoundingClientRect();
+    const scrub = resolveScrubReorder({
+      engaged: this.#scrubEngaged,
+      pointer: this.#pointerMain ?? rect.top,
+      viewportStart: rect.top,
+      viewportEnd: rect.bottom,
+      from,
+      count: this.#count(),
+    });
+    if (scrub !== null) {
+      return scrub;
     }
     return translateWindowReorder(windowIndices, event.previousIndex, event.currentIndex);
   }

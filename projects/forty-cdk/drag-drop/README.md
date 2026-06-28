@@ -288,7 +288,10 @@ it only ever registers the rows currently rendered in the window, so it
 Both companions solve all three: they translate window-relative to absolute
 dataset indices (so `moveItemInArray` over the full array moves the right item),
 pin the lifted row so auto-scroll never recycles it mid-drag, and step the
-keyboard target over the true total count.
+keyboard target over the true total count. Holding **Shift** during a pointer drag
+additionally engages **windowed scrub**: the scroll viewport maps onto the whole
+dataset (top edge → first item, bottom edge → last), so one gesture drops the
+lifted row at an arbitrary far item without auto-scroll having to reach it.
 
 ```html
 <div

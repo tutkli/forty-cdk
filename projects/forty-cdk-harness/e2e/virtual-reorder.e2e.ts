@@ -91,6 +91,45 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
   });
 
+  test('Shift+pointer scrub drops the lifted row at a far target in a single gesture', async ({
+    page,
+  }) => {
+    await el(page, 'root').evaluate((node) => {
+      node.scrollTop = 100 * 44;
+    });
+    await page.waitForTimeout(200);
+
+    const indices = await renderedIndices(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    const fromRow = el(page, `row-${from}`);
+    const rootBox = await el(page, 'root').boundingBox();
+    const fromBox = await fromRow.boundingBox();
+    if (!rootBox || !fromBox) throw new Error('Elements not found');
+
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+    // 90% down the scroll viewport maps to ~90% through the 10k-row dataset.
+    const targetY = rootBox.y + rootBox.height * 0.9;
+
+    await page.keyboard.down('Shift');
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(startX, targetY);
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+
+    await expect(el(page, 'last-reorder')).not.toHaveText('none');
+    const text = await el(page, 'last-reorder').textContent();
+    const match = /^(\d+)->(\d+)$/.exec(text ?? '');
+    expect(match).not.toBeNull();
+    expect(Number(match![1])).toBe(from);
+    // One gesture reached far past the rendered window without an auto-scroll crawl.
+    expect(Number(match![2])).toBeGreaterThan(from + 1000);
+  });
+
   test('pointer auto-scroll past the window reaches a row beyond it, with absolute indices', async ({
     page,
   }) => {

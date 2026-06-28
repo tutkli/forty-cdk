@@ -45,3 +45,51 @@ export function translateWindowReorder(
   const target = rest[currentIndex]!;
   return { from, to: indexAfterRemoval(target, from) };
 }
+
+/** Geometry and state for {@link resolveScrubReorder}. */
+export interface ScrubReorderParams {
+  /**
+   * Whether the windowed-scrub affordance is engaged for this gesture (e.g. a
+   * modifier key held during a pointer drag). When `false`, scrubbing is off and
+   * the resolver returns `null` so the caller falls back to mounted-rect drop
+   * resolution.
+   */
+  readonly engaged: boolean;
+  /** Pointer position along the scroll axis, in client pixels. */
+  readonly pointer: number;
+  /** Scroll viewport's start edge along the scroll axis, in client pixels (top when vertical). */
+  readonly viewportStart: number;
+  /** Scroll viewport's end edge along the scroll axis, in client pixels (bottom when vertical). */
+  readonly viewportEnd: number;
+  /** Absolute (dataset) index of the lifted row. */
+  readonly from: number;
+  /** Total number of items in the full (non-windowed) dataset. */
+  readonly count: number;
+}
+
+/**
+ * Resolves a **windowed-scrub** drop: maps the pointer's position over the scroll
+ * viewport to an absolute dataset index, so a single gesture can drop a lifted row
+ * at an arbitrary far target without auto-scroll having to mount it first. The
+ * viewport's main-axis extent maps linearly onto the whole dataset — the start
+ * edge targets index `0`, the end edge the last index — independent of which rows
+ * are currently rendered, so a concurrent auto-scroll never desyncs the result.
+ *
+ * Returns `null` when scrubbing is not engaged or the geometry is degenerate
+ * (zero-height viewport, empty dataset); the caller then uses its normal
+ * mounted-rect resolution, leaving the in-window path unchanged. Otherwise returns
+ * the post-removal `from` / `to` pair (matching {@link translateWindowReorder}), so
+ * `moveItemInArray` over the full array moves the right row.
+ */
+export function resolveScrubReorder(params: ScrubReorderParams): WindowReorderResult | null {
+  if (!params.engaged || params.count <= 0) {
+    return null;
+  }
+  const span = params.viewportEnd - params.viewportStart;
+  if (span <= 0) {
+    return null;
+  }
+  const fraction = Math.min(1, Math.max(0, (params.pointer - params.viewportStart) / span));
+  const target = Math.round(fraction * (params.count - 1));
+  return { from: params.from, to: indexAfterRemoval(target, params.from) };
+}
