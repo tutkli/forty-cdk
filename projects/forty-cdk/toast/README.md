@@ -7,7 +7,7 @@ Two ways to use the same primitive:
 - **Programmatic** (the common path): inject `ForToastManager` and call `show({ title, … })` from anywhere.
 - **Declarative**: drop `<div forToast>` directly in any template, controlling mount/unmount with `@if`.
 
-## Pieces
+## Anatomy
 
 | Class                 | Selector                                      | Role                                                                                                                                                                                         |
 | --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,6 +94,21 @@ Each region resolves to the host `data-region` attribute, so you can position / 
 ```
 
 If two viewports share the same region, only the first one mounted renders it; the rest stay inactive (and warn in dev) so a stray second viewport — a lazy route, a shared layout — never silently duplicates toasts. A single `show()` always produces exactly one toast node.
+
+## API
+
+### Data attributes
+
+| Piece                                         | Attribute                | Values                                                                                                      |
+| --------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `[forToast]`                                  | `data-state`             | `open` (always present while mounted; the consumer unmounts on close, so there is no `closed` state)        |
+| `[forToast]`                                  | `data-variant`           | `info` \| `success` \| `warning` \| `error`                                                                 |
+| `[forToast]`                                  | `data-paused`            | present / absent (the auto-dismiss timer is paused)                                                         |
+| `[forToast]`                                  | `data-swipe`             | `start` \| `move` \| `cancel` \| `end` (absent until a swipe gesture begins)                                |
+| `[forToast]`                                  | `data-swipe-direction`   | `left` \| `right` \| `up` \| `down` (absent until a swipe arms)                                             |
+| `[forToast]`                                  | `data-front-stack-index` | `0`-based index in the visible stack (set by the viewport on the programmatic path; `0` is the front toast) |
+| `[forToastViewport]` / `<for-toast-viewport>` | `data-region`            | the viewport's region name (default `default`)                                                              |
+| `[forToastViewport]` / `<for-toast-viewport>` | `data-toast-count`       | number of toasts currently rendered                                                                         |
 
 ## Programmatic API
 
@@ -310,24 +325,71 @@ Outputs:
 
 > **`maxVisible` parks overflow, it does not expire it.** A toast pushed out of the visible window by `[maxVisible]` is unmounted, so its auto-dismiss timer is not running while it waits. When a newer toast is dismissed it re-enters the window and its `duration` countdown restarts from full (a fresh `[forToast]` mounts). If you need overflow toasts to clear on a deadline, dismiss them explicitly (`ForToastRef.dismiss()` / `dismissAll()` / the action / close button) rather than relying on the timer.
 
+## Variants
+
+| Variant            | Role     | aria-live   | Use for                                  |
+| ------------------ | -------- | ----------- | ---------------------------------------- |
+| `info` _(default)_ | `status` | `polite`    | Neutral notifications.                   |
+| `success`          | `status` | `polite`    | Confirmations of completed actions.      |
+| `warning`          | `status` | `polite`    | Non-blocking warnings.                   |
+| `error`            | `alert`  | `assertive` | Failures that interrupt the user's task. |
+
+`data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
+
+## Global defaults
+
+```ts
+import { provideForToastDefaults } from 'forty-cdk/toast';
+
+bootstrapApplication(App, {
+  providers: [provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 })],
+});
+```
+
+Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
+
+`overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key — see [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
+
+## Keyboard
+
+- Toast announcements never steal focus. The user keeps typing.
+- The configured **hotkey** (default `F6`) anywhere in the document focuses the first visible toast.
+- Inside a toast: **Tab** cycles between action / close buttons; **Escape** dismisses (when `closable`); **Shift+Tab** returns out.
+
+## Accessibility
+
+- `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces, the screen reader reads the **whole** toast rather than only the changed node. It does **not** by itself guarantee a re-announcement on a `ref.update()` text change, and it is irrelevant on the silenced (`altText`) path where `aria-live` is `off`. Re-announcement on update is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
+- `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
+- `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
+- The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut.
+- Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
+- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. When at least one `[forToastAction]` carries a non-empty `altText`, the toast silences its host `aria-live` and routes a synthesized announcement (`title. description. altText`) through the shared `LiveAnnouncer` — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions.
+
+  ```html
+  <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>
+  ```
+
+### Live updates and announcements
+
+A toast announces on two paths, picked automatically:
+
+- **Host `aria-live` (default).** With no `altText` anywhere in the toast, the host carries `aria-live="polite"` (or `assertive` for `error`). The screen reader reads the toast when it mounts and, thanks to `aria-atomic`, re-reads the whole toast when the host region's text changes.
+- **`LiveAnnouncer` (silenced path).** As soon as any `[forToastAction]` carries a non-empty `altText`, the host `aria-live` is set to `off` and the toast composes its message (`title. description. altText`) from the **rendered title / description / altText** and pushes it through the shared off-screen `LiveAnnouncer`.
+
+Both paths are reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the silenced path, so the directive owns the re-announce.
+
+```ts
+const ref = this.toasts.show({ title: 'Saving…', duration: 0 });
+// Re-announced automatically when the text changes:
+await api.save();
+ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
+```
+
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly — style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
-
-### Data attributes
-
-| Piece                                         | Attribute                | Values                                                                                                      |
-| --------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `[forToast]`                                  | `data-state`             | `open` (always present while mounted; the consumer unmounts on close, so there is no `closed` state)        |
-| `[forToast]`                                  | `data-variant`           | `info` &#124; `success` &#124; `warning` &#124; `error`                                                     |
-| `[forToast]`                                  | `data-paused`            | present / absent (the auto-dismiss timer is paused)                                                         |
-| `[forToast]`                                  | `data-swipe`             | `start` &#124; `move` &#124; `cancel` &#124; `end` (absent until a swipe gesture begins)                    |
-| `[forToast]`                                  | `data-swipe-direction`   | `left` &#124; `right` &#124; `up` &#124; `down` (absent until a swipe arms)                                 |
-| `[forToast]`                                  | `data-front-stack-index` | `0`-based index in the visible stack (set by the viewport on the programmatic path; `0` is the front toast) |
-| `[forToastViewport]` / `<for-toast-viewport>` | `data-region`            | the viewport's region name (default `default`)                                                              |
-| `[forToastViewport]` / `<for-toast-viewport>` | `data-toast-count`       | number of toasts currently rendered                                                                         |
 
 ### CSS custom properties
 
@@ -356,64 +418,4 @@ Written on the `[forToast]` host while a swipe gesture is live, so the consumer 
 [forToast][data-variant='error'] {
   border-inline-start: 4px solid red;
 }
-```
-
-## Keyboard
-
-- Toast announcements never steal focus. The user keeps typing.
-- The configured **hotkey** (default `F6`) anywhere in the document focuses the first visible toast.
-- Inside a toast: **Tab** cycles between action / close buttons; **Escape** dismisses (when `closable`); **Shift+Tab** returns out.
-
-## Variants
-
-| Variant            | Role     | aria-live   | Use for                                  |
-| ------------------ | -------- | ----------- | ---------------------------------------- |
-| `info` _(default)_ | `status` | `polite`    | Neutral notifications.                   |
-| `success`          | `status` | `polite`    | Confirmations of completed actions.      |
-| `warning`          | `status` | `polite`    | Non-blocking warnings.                   |
-| `error`            | `alert`  | `assertive` | Failures that interrupt the user's task. |
-
-`data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
-
-## Global defaults
-
-```ts
-import { provideForToastDefaults } from 'forty-cdk/toast';
-
-bootstrapApplication(App, {
-  providers: [provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 })],
-});
-```
-
-Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
-
-`overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key — see [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
-
-## Accessibility notes
-
-- `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces, the screen reader reads the **whole** toast rather than only the changed node. It does **not** by itself guarantee a re-announcement on a `ref.update()` text change, and it is irrelevant on the silenced (`altText`) path where `aria-live` is `off`. Re-announcement on update is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
-- `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
-- `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
-- The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut.
-- Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
-- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. When at least one `[forToastAction]` carries a non-empty `altText`, the toast silences its host `aria-live` and routes a synthesized announcement (`title. description. altText`) through the shared `LiveAnnouncer` — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions.
-
-  ```html
-  <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>
-  ```
-
-### Live updates and announcements
-
-A toast announces on two paths, picked automatically:
-
-- **Host `aria-live` (default).** With no `altText` anywhere in the toast, the host carries `aria-live="polite"` (or `assertive` for `error`). The screen reader reads the toast when it mounts and, thanks to `aria-atomic`, re-reads the whole toast when the host region's text changes.
-- **`LiveAnnouncer` (silenced path).** As soon as any `[forToastAction]` carries a non-empty `altText`, the host `aria-live` is set to `off` and the toast composes its message (`title. description. altText`) from the **rendered title / description / altText** and pushes it through the shared off-screen `LiveAnnouncer`.
-
-Both paths are reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the silenced path, so the directive owns the re-announce.
-
-```ts
-const ref = this.toasts.show({ title: 'Saving…', duration: 0 });
-// Re-announced automatically when the text changes:
-await api.save();
-ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
 ```

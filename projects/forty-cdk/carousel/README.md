@@ -5,7 +5,24 @@ Headless, styleless carousel primitive implementing the
 It ships slide tracking, keyboard navigation, focus management, and ARIA; you
 supply the markup and CSS.
 
-## Usage
+## Anatomy
+
+| Class                        | Selector                       | Role                                                                   |
+| ---------------------------- | ------------------------------ | ---------------------------------------------------------------------- |
+| `ForCarousel`                | `[forCarousel]`                | Root. Owns `activeIndex`, orientation, loop, autoplay.                 |
+| `ForCarouselViewport`        | `[forCarouselViewport]`        | Clipping window. Carries `aria-live`.                                  |
+| `ForCarouselTrack`           | `[forCarouselTrack]`           | Scrolling container. Receives the CSS offset custom property.          |
+| `ForCarouselSlide`           | `[forCarouselSlide]`           | One slide. `role="group"`, `aria-roledescription="slide"`.             |
+| `ForCarouselPrevious`        | `[forCarouselPrevious]`        | Previous-slide button.                                                 |
+| `ForCarouselNext`            | `[forCarouselNext]`            | Next-slide button.                                                     |
+| `ForCarouselIndicators`      | `[forCarouselIndicators]`      | Indicator group. Owns roving tabindex across indicators.               |
+| `ForCarouselIndicator`       | `[forCarouselIndicator]`       | One indicator button. Maps 1:1 to a slide by DOM index.                |
+| `ForCarouselRotationControl` | `[forCarouselRotationControl]` | Play/pause button. Required when `autoplay` is enabled.                |
+| `ForCarouselDrag`            | `[forCarouselDrag]`            | Opt-in pointer drag / touch swipe. Applied to `[forCarouselViewport]`. |
+
+## Examples
+
+### Basic carousel
 
 ```html
 <div
@@ -43,49 +60,6 @@ drives the slides (as above) so the counts always match. A mismatched count
 desynchronizes the active-indicator state and is dev-guarded by a `console.warn`
 in development builds. Grouped or summarized indicators (fewer dots than slides)
 are not supported.
-
-## Example CSS
-
-The directive publishes geometry as CSS custom properties on the root element
-so they cascade to the track. The consumer applies the transform and transition.
-
-```css
-[forCarouselViewport] {
-  overflow: hidden;
-}
-[forCarouselTrack] {
-  display: flex;
-  transform: translateX(var(--for-carousel-offset));
-  transition: transform 300ms ease;
-}
-[forCarousel][data-orientation='vertical'] [forCarouselTrack] {
-  flex-direction: column;
-  transform: translateY(var(--for-carousel-offset));
-}
-[forCarouselSlide] {
-  flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
-}
-@media (prefers-reduced-motion: reduce) {
-  [forCarouselTrack] {
-    transition: none;
-  }
-}
-```
-
-## CSS custom properties
-
-The following properties are set on the `[forCarousel]` host and cascade to
-children, unless noted otherwise:
-
-| Property                         | Host                    | Value         | Notes                                                                                                           |
-| -------------------------------- | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                   |
-| `--for-carousel-active-index`    | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                          |
-| `--for-carousel-slide-count`     | `[forCarousel]`         | integer       | Total registered slides.                                                                                        |
-| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                 |
-| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                               |
-| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px`  | Same as above, for the block axis.                                                                              |
-| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px` | Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
 
 ## Autoplay
 
@@ -129,23 +103,6 @@ the defaults with `startLabel` / `stopLabel` inputs:
 ```html
 <button forCarouselRotationControl startLabel="Play slideshow" stopLabel="Pause slideshow"></button>
 ```
-
-**Styling hooks:**
-
-```css
-[forCarouselRotationControl]::before {
-  content: '▶';
-}
-[forCarouselRotationControl][data-playing]::before {
-  content: '⏸';
-}
-```
-
-| Attribute       | When present                                            |
-| --------------- | ------------------------------------------------------- |
-| `data-playing`  | On `[forCarouselRotationControl]` — user intent is "on" |
-| `data-rotating` | On `[forCarousel]` — actively rotating right now        |
-| `data-autoplay` | On `[forCarousel]` — the `autoplay` input is `true`     |
 
 **Programmatic control** via `exportAs`:
 
@@ -224,19 +181,30 @@ horizontal carousels (allows vertical page scroll) and `pan-x` for vertical
 carousels (allows horizontal page scroll). A mostly-cross-axis swipe is never
 captured, so page scrolling on the perpendicular axis is unaffected.
 
-### Styling hooks
+## Localizing the default labels
 
-| Attribute       | Host                    | When present                           |
-| --------------- | ----------------------- | -------------------------------------- |
-| `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed. |
+Each slide's default `aria-label` is the positional `"N of M"` string, and each
+indicator's is `"Go to slide N"`. Localize both centrally with
+`provideForCarouselDefaults` instead of setting `ariaLabel` on every slide and
+indicator:
 
-### Inputs on `[forCarouselDrag]`
+```ts
+providers: [
+  provideForCarouselDefaults({
+    slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
+    indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
+  }),
+];
+```
 
-| Input      | Type      | Default | Description                                                                  |
-| ---------- | --------- | ------- | ---------------------------------------------------------------------------- |
-| `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
+`position` is the 1-based slide index and `total` is the slide count. Overrides
+merge with the parent scope, so you can localize just the labels and inherit the
+rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
+`[forCarouselIndicator]` still takes precedence over the localized default.
 
-## Inputs
+## API
+
+### `ForCarousel`
 
 All inputs are on `[forCarousel]` unless noted.
 
@@ -275,28 +243,13 @@ same clamped view simply share the same visual position. The clamp has no effect
 when `loop` is enabled (the entire range is valid when wrapping) or when
 `slidesPerView` is `1` (a single-view carousel never overscrolls).
 
-## Localizing the default labels
+### `ForCarouselDrag` inputs
 
-Each slide's default `aria-label` is the positional `"N of M"` string, and each
-indicator's is `"Go to slide N"`. Localize both centrally with
-`provideForCarouselDefaults` instead of setting `ariaLabel` on every slide and
-indicator:
+| Input      | Type      | Default | Description                                                                  |
+| ---------- | --------- | ------- | ---------------------------------------------------------------------------- |
+| `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
 
-```ts
-providers: [
-  provideForCarouselDefaults({
-    slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
-    indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
-  }),
-];
-```
-
-`position` is the 1-based slide index and `total` is the slide count. Overrides
-merge with the parent scope, so you can localize just the labels and inherit the
-rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
-`[forCarouselIndicator]` still takes precedence over the localized default.
-
-## Keyboard interaction (indicator group)
+## Keyboard
 
 Keyboard navigation lives on the indicator group. Only the current
 indicator is in the tab order. Arrow keys move focus and activate the target slide
@@ -310,7 +263,7 @@ automatically.
 | `End`                      | Last indicator and slide.                                             |
 | `Enter` / `Space`          | Activate the focused indicator (via native button).                   |
 
-## Accessibility notes
+## Accessibility
 
 - The root carries `role="group"` and `aria-roledescription="carousel"`. The `ariaLabel` input
   should describe the carousel's purpose without using the word "carousel" (APG guidance).
@@ -330,7 +283,72 @@ automatically.
   `aria-roledescription`, `aria-label`, and `aria-hidden` toggle carry the screen-reader
   experience for non-auto-rotating carousels.
 
-## Reduced-motion
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
+
+```css
+[forCarouselViewport] {
+  overflow: hidden;
+}
+[forCarouselTrack] {
+  display: flex;
+  transform: translateX(var(--for-carousel-offset));
+  transition: transform 300ms ease;
+}
+[forCarousel][data-orientation='vertical'] [forCarouselTrack] {
+  flex-direction: column;
+  transform: translateY(var(--for-carousel-offset));
+}
+[forCarouselSlide] {
+  flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
+}
+@media (prefers-reduced-motion: reduce) {
+  [forCarouselTrack] {
+    transition: none;
+  }
+}
+```
+
+### CSS custom properties
+
+The following properties are set on the `[forCarousel]` host and cascade to
+children, unless noted otherwise:
+
+| Property                         | Host                    | Value         | Notes                                                                                                           |
+| -------------------------------- | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                   |
+| `--for-carousel-active-index`    | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                          |
+| `--for-carousel-slide-count`     | `[forCarousel]`         | integer       | Total registered slides.                                                                                        |
+| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                 |
+| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                               |
+| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px`  | Same as above, for the block axis.                                                                              |
+| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px` | Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
+
+### Autoplay styling hooks
+
+```css
+[forCarouselRotationControl]::before {
+  content: '▶';
+}
+[forCarouselRotationControl][data-playing]::before {
+  content: '⏸';
+}
+```
+
+| Attribute       | When present                                            |
+| --------------- | ------------------------------------------------------- |
+| `data-playing`  | On `[forCarouselRotationControl]` — user intent is "on" |
+| `data-rotating` | On `[forCarousel]` — actively rotating right now        |
+| `data-autoplay` | On `[forCarousel]` — the `autoplay` input is `true`     |
+
+### Drag styling hooks
+
+| Attribute       | Host                    | When present                           |
+| --------------- | ----------------------- | -------------------------------------- |
+| `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed. |
+
+### Reduced-motion
 
 The directive performs no animation itself. Add the following CSS to disable the transition
 for users who prefer reduced motion:
@@ -343,7 +361,7 @@ for users who prefer reduced motion:
 }
 ```
 
-## RTL support
+### RTL support
 
 Arrow-key direction (ArrowLeft/ArrowRight) is automatically swapped in RTL — handled by
 `resolveListNavigation` and the reflected `dir` attribute. The **visual** track direction

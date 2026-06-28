@@ -4,7 +4,7 @@ Headless implementation of the [WAI-ARIA Disclosure Navigation Menu pattern](htt
 
 Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are landmarks with links, Tab moves through links, Escape closes and returns focus.
 
-## Pieces
+## Anatomy
 
 | Class                        | Selector                       | Role                                                                  |
 | ---------------------------- | ------------------------------ | --------------------------------------------------------------------- |
@@ -17,21 +17,7 @@ Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are 
 | `ForNavigationMenuIndicator` | `[forNavigationMenuIndicator]` | Optional follower (underline / pill) positioned via CSS custom props. |
 | `ForNavigationMenuViewport`  | `[forNavigationMenuViewport]`  | Optional shared surface for mega-menu animations.                     |
 
-## Inputs (root)
-
-| API                 | Type                                | Description                                                                                                                                               |
-| ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<string>`                     | Two-way bindable. Open item id, or `''`.                                                                                                                  |
-| `orientation`       | `input<'horizontal' \| 'vertical'>` | Default `'horizontal'`.                                                                                                                                   |
-| `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.                                                                                                                       |
-| `loop`              | `input<boolean>`                    | Whether arrow nav wraps. Default `true`.                                                                                                                  |
-| `disabled`          | `input<boolean>`                    | Disables the whole menu.                                                                                                                                  |
-| `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`. Default `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists. |
-| `delayDuration`     | `input<number>`                     | ms before hover/focus opens. Default `200`.                                                                                                               |
-| `closeDelay`        | `input<number>`                     | ms before pointer-leave closes. Default `150`.                                                                                                            |
-| `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant. Default `300`.                                                                              |
-
-## Usage
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -92,88 +78,7 @@ export class DemoNav {
 }
 ```
 
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
-
-### Data attributes
-
-| Piece                          | Attribute          | Values                                               |
-| ------------------------------ | ------------------ | ---------------------------------------------------- |
-| `[forNavigationMenu]`          | `data-state`       | `open` \| `closed`                                   |
-| `[forNavigationMenu]`          | `data-orientation` | `horizontal` \| `vertical`                           |
-| `[forNavigationMenu]`          | `data-disabled`    | present \| absent                                    |
-| `[forNavigationMenuList]`      | `data-orientation` | `horizontal` \| `vertical`                           |
-| `[forNavigationMenuItem]`      | `data-state`       | `open` \| `closed`                                   |
-| `[forNavigationMenuItem]`      | `data-disabled`    | present \| absent                                    |
-| `[forNavigationMenuTrigger]`   | `data-state`       | `open` \| `closed`                                   |
-| `[forNavigationMenuTrigger]`   | `data-disabled`    | present \| absent                                    |
-| `[forNavigationMenuContent]`   | `data-state`       | `open` \| `closed`                                   |
-| `[forNavigationMenuContent]`   | `data-motion`      | `from-start` \| `from-end` \| `to-start` \| `to-end` |
-| `[forNavigationMenuLink]`      | `data-active`      | present \| absent                                    |
-| `[forNavigationMenuIndicator]` | `data-state`       | `visible` \| `hidden`                                |
-| `[forNavigationMenuIndicator]` | `data-orientation` | `horizontal` \| `vertical`                           |
-| `[forNavigationMenuViewport]`  | `data-state`       | `open` \| `closed`                                   |
-| `[forNavigationMenuViewport]`  | `data-orientation` | `horizontal` \| `vertical`                           |
-
-`data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
-
-### CSS custom properties
-
-`[forNavigationMenuIndicator]` exposes the active trigger's geometry (relative to `[forNavigationMenuList]`) so the indicator visual can be driven entirely from CSS. The optional shared `[forNavigationMenuViewport]` exposes the active panel's natural size so consumers can transition `width` / `height` between trigger groups.
-
-| Property                                 | Meaning                                                |
-| ---------------------------------------- | ------------------------------------------------------ |
-| `--for-navigation-menu-indicator-x`      | Horizontal offset of the active trigger (px).          |
-| `--for-navigation-menu-indicator-y`      | Vertical offset of the active trigger (px).            |
-| `--for-navigation-menu-indicator-width`  | Active trigger width (px).                             |
-| `--for-navigation-menu-indicator-height` | Active trigger height (px).                            |
-| `--for-navigation-menu-viewport-width`   | Active content's natural width (px), on the Viewport.  |
-| `--for-navigation-menu-viewport-height`  | Active content's natural height (px), on the Viewport. |
-
-```css
-.navigation-menu-trigger svg {
-  transition: transform 150ms;
-}
-.navigation-menu-trigger[data-state='open'] svg {
-  transform: rotate(180deg);
-}
-
-.navigation-menu-indicator {
-  transform: translateX(var(--for-navigation-menu-indicator-x));
-  width: var(--for-navigation-menu-indicator-width);
-  transition:
-    transform 200ms,
-    width 200ms;
-}
-.navigation-menu-indicator[data-state='hidden'] {
-  opacity: 0;
-}
-```
-
-## Keyboard
-
-| Key                                            | Behavior                                                                   |
-| ---------------------------------------------- | -------------------------------------------------------------------------- |
-| Tab                                            | Moves into the trigger row. Inside an open panel, moves through its links. |
-| Enter / Space                                  | Toggles the focused trigger.                                               |
-| ArrowDown (horizontal) / ArrowRight (vertical) | Opens the focused trigger.                                                 |
-| ArrowLeft / ArrowRight (horizontal)            | Moves focus across triggers.                                               |
-| ArrowUp / ArrowDown (vertical)                 | Moves focus across triggers.                                               |
-| Home / End                                     | Jump to first / last enabled trigger.                                      |
-| Escape                                         | Closes and returns focus to the trigger.                                   |
-
-## Accessibility notes
-
-- **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.
-- **Focus alone does not open.** A trigger opens on hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
-- **Trigger labels are mandatory.** Each `[forNavigationMenuTrigger]` needs visible text or an `aria-label`. The directive does not invent one.
-- **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
-- **Indicator follows the active trigger.** A `ResizeObserver` (browser-only) watches the active trigger and the surrounding list and re-measures only when the active trigger switches or one of those boxes resizes — reactive, not per-render polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
-- **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
-- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissable layer; this covers the keyboard-Tab case it can't see.
-
-## Mega-menu (shared `Viewport`)
+## Mega-menu
 
 For Stripe / Vercel / Linear-style mega menus that share a single panel between trigger groups, drop a `[forNavigationMenuViewport]` inside the menu and let it host the active content. The Viewport is fully opt-in: with no Viewport in the markup the menu behaves exactly as the disclosure recipe above.
 
@@ -248,6 +153,103 @@ The Viewport owns panel ordering: each Content is inserted in its **trigger's do
 
 Measurement always tracks the **active** panel. The Viewport's `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` reflect the entering panel as soon as it becomes active; a non-active panel kept mounted by `animate.leave` is intentionally no longer measured, so a leaving panel's size never drives the Viewport box mid-transition.
 
-## Limitations (v1)
+## Limitations
 
 - Submenús anidados — not implemented; tracked separately.
+
+## API
+
+### `ForNavigationMenu`
+
+| API                 | Type                                | Default        | Description                                                                                                                                               |
+| ------------------- | ----------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<string>`                     | —              | Two-way bindable. Open item id, or `''`.                                                                                                                  |
+| `orientation`       | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Default `'horizontal'`.                                                                                                                                   |
+| `dir`               | `input<WritingDirection>`           | —              | RTL inverts ArrowLeft / ArrowRight.                                                                                                                       |
+| `loop`              | `input<boolean>`                    | `true`         | Whether arrow nav wraps. Default `true`.                                                                                                                  |
+| `disabled`          | `input<boolean>`                    | —              | Disables the whole menu.                                                                                                                                  |
+| `ariaLabel`         | `input<string \| null>`             | `null`         | Reactive `aria-label` for the `<nav>`. Default `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists. |
+| `delayDuration`     | `input<number>`                     | `200`          | ms before hover/focus opens. Default `200`.                                                                                                               |
+| `closeDelay`        | `input<number>`                     | `150`          | ms before pointer-leave closes. Default `150`.                                                                                                            |
+| `skipDelayDuration` | `input<number>`                     | `300`          | ms after a peer closes during which the next open is instant. Default `300`.                                                                              |
+
+### Data attributes
+
+| Piece                          | Attribute          | Values                                               |
+| ------------------------------ | ------------------ | ---------------------------------------------------- |
+| `[forNavigationMenu]`          | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenu]`          | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenu]`          | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuList]`      | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenuItem]`      | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuItem]`      | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuTrigger]`   | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuTrigger]`   | `data-disabled`    | present \| absent                                    |
+| `[forNavigationMenuContent]`   | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuContent]`   | `data-motion`      | `from-start` \| `from-end` \| `to-start` \| `to-end` |
+| `[forNavigationMenuLink]`      | `data-active`      | present \| absent                                    |
+| `[forNavigationMenuIndicator]` | `data-state`       | `visible` \| `hidden`                                |
+| `[forNavigationMenuIndicator]` | `data-orientation` | `horizontal` \| `vertical`                           |
+| `[forNavigationMenuViewport]`  | `data-state`       | `open` \| `closed`                                   |
+| `[forNavigationMenuViewport]`  | `data-orientation` | `horizontal` \| `vertical`                           |
+
+`data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
+
+## Keyboard
+
+| Key                                            | Behavior                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| Tab                                            | Moves into the trigger row. Inside an open panel, moves through its links. |
+| Enter / Space                                  | Toggles the focused trigger.                                               |
+| ArrowDown (horizontal) / ArrowRight (vertical) | Opens the focused trigger.                                                 |
+| ArrowLeft / ArrowRight (horizontal)            | Moves focus across triggers.                                               |
+| ArrowUp / ArrowDown (vertical)                 | Moves focus across triggers.                                               |
+| Home / End                                     | Jump to first / last enabled trigger.                                      |
+| Escape                                         | Closes and returns focus to the trigger.                                   |
+
+## Accessibility
+
+- **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.
+- **Focus alone does not open.** A trigger opens on hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
+- **Trigger labels are mandatory.** Each `[forNavigationMenuTrigger]` needs visible text or an `aria-label`. The directive does not invent one.
+- **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
+- **Indicator follows the active trigger.** A `ResizeObserver` (browser-only) watches the active trigger and the surrounding list and re-measures only when the active trigger switches or one of those boxes resizes — reactive, not per-render polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
+- **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
+- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissable layer; this covers the keyboard-Tab case it can't see.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+
+### CSS custom properties
+
+`[forNavigationMenuIndicator]` exposes the active trigger's geometry (relative to `[forNavigationMenuList]`) so the indicator visual can be driven entirely from CSS. The optional shared `[forNavigationMenuViewport]` exposes the active panel's natural size so consumers can transition `width` / `height` between trigger groups.
+
+| Property                                 | Meaning                                                |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `--for-navigation-menu-indicator-x`      | Horizontal offset of the active trigger (px).          |
+| `--for-navigation-menu-indicator-y`      | Vertical offset of the active trigger (px).            |
+| `--for-navigation-menu-indicator-width`  | Active trigger width (px).                             |
+| `--for-navigation-menu-indicator-height` | Active trigger height (px).                            |
+| `--for-navigation-menu-viewport-width`   | Active content's natural width (px), on the Viewport.  |
+| `--for-navigation-menu-viewport-height`  | Active content's natural height (px), on the Viewport. |
+
+```css
+.navigation-menu-trigger svg {
+  transition: transform 150ms;
+}
+.navigation-menu-trigger[data-state='open'] svg {
+  transform: rotate(180deg);
+}
+
+.navigation-menu-indicator {
+  transform: translateX(var(--for-navigation-menu-indicator-x));
+  width: var(--for-navigation-menu-indicator-width);
+  transition:
+    transform 200ms,
+    width 200ms;
+}
+.navigation-menu-indicator[data-state='hidden'] {
+  opacity: 0;
+}
+```

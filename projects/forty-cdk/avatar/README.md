@@ -4,7 +4,7 @@ Headless avatar that tracks the load lifecycle of an `<img>` and lets the consum
 
 There is no WAI-ARIA pattern for "avatar" — it is a presentational composition. The directive does not impose a `role`; pair the avatar with visible name text or `aria-label` on the surrounding element when identity matters.
 
-## Pieces
+## Anatomy
 
 | Class               | Selector              | Role                                                                   |
 | ------------------- | --------------------- | ---------------------------------------------------------------------- |
@@ -12,18 +12,7 @@ There is no WAI-ARIA pattern for "avatar" — it is a presentational composition
 | `ForAvatarImage`    | `img[forAvatarImage]` | Observes the `<img>` and reports `idle \| loading \| loaded \| error`. |
 | `ForAvatarFallback` | `[forAvatarFallback]` | Marker for fallback content. Reflects `data-status`.                   |
 
-## Inputs / outputs / models
-
-| API                   | Type                      | Owner            | Description                                                                               |
-| --------------------- | ------------------------- | ---------------- | ----------------------------------------------------------------------------------------- |
-| `fallbackDelayMs`     | `input<number>`           | `ForAvatar`      | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
-| `status`              | `Signal<ForAvatarStatus>` | `ForAvatar`      | Read-only current status.                                                                 |
-| `shouldShowFallback`  | `Signal<boolean>`         | `ForAvatar`      | `true` when the consumer should render the fallback. Drives `@if`.                        |
-| `(loadStatusChanged)` | `output<ForAvatarStatus>` | `ForAvatarImage` | Emits whenever the lifecycle transitions.                                                 |
-
-The host element of every piece carries `data-status="idle" \| "loading" \| "loaded" \| "error"`.
-
-## Usage
+## Examples
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -71,16 +60,21 @@ export class DemoAvatar {
 }
 ```
 
-## Notes
+## API
 
-- **Cached images are detected on first render.** If the browser already has the image cached, `load`/`error` may not fire — the directive checks `<img>.complete` and `naturalWidth` after the first render and reports `loaded` / `error` accordingly. A cached image that is `complete` but has zero intrinsic width (e.g. an SVG without explicit dimensions) is ambiguous, so the directive stays `loading` and confirms validity with `img.decode()` rather than pessimistically flagging `error`.
-- **Multiple images per avatar are not supported.** Each `[forAvatar]` expects exactly one `[forAvatarImage]`. If you need cascading sources (CDN → fallback URL → fallback content), swap `src` on a single image.
-- **`alt` is consumer territory.** Because `<img>` is the host element, the consumer keeps full control of `alt` — set `""` for purely decorative avatars next to a name, or describe the person if the avatar stands alone.
-- **The image stays in the DOM.** Hide it via CSS `[data-status="loading"], [data-status="error"] { display: none }` if your consumer-side styling needs it gone. The fallback uses `@if`, so it only mounts when needed.
+### `ForAvatar`
 
-## Styling
+| API                  | Type                      | Default | Description                                                                               |
+| -------------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------- |
+| `fallbackDelayMs`    | `input<number>`           | `0`     | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
+| `status`             | `Signal<ForAvatarStatus>` | —       | Read-only current status.                                                                 |
+| `shouldShowFallback` | `Signal<boolean>`         | —       | `true` when the consumer should render the fallback. Drives `@if`.                        |
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForAvatarImage`
+
+| API                   | Type                      | Default | Description                                       |
+| --------------------- | ------------------------- | ------- | ------------------------------------------------- |
+| `(loadStatusChanged)` | `output<ForAvatarStatus>` | —       | Output. Emits whenever the lifecycle transitions. |
 
 ### Data attributes
 
@@ -90,6 +84,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `img[forAvatarImage]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
 | `[forAvatarFallback]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
 
+## Accessibility
+
+The directive does not impose a `role`. Pair the avatar with visible name text or `aria-label` on the surrounding element when identity matters. Set `alt=""` on the `<img>` for purely decorative avatars next to a name, or provide a meaningful `alt` description if the avatar stands alone.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+
 ```css
 .avatar-image:not([data-status='loaded']) {
   display: none;
@@ -98,3 +100,10 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   color: #b00020;
 }
 ```
+
+## Behavior notes
+
+- **Cached images are detected on first render.** If the browser already has the image cached, `load`/`error` may not fire — the directive checks `<img>.complete` and `naturalWidth` after the first render and reports `loaded` / `error` accordingly. A cached image that is `complete` but has zero intrinsic width (e.g. an SVG without explicit dimensions) is ambiguous, so the directive stays `loading` and confirms validity with `img.decode()` rather than pessimistically flagging `error`.
+- **Multiple images per avatar are not supported.** Each `[forAvatar]` expects exactly one `[forAvatarImage]`. If you need cascading sources (CDN → fallback URL → fallback content), swap `src` on a single image.
+- **`alt` is consumer territory.** Because `<img>` is the host element, the consumer keeps full control of `alt` — set `""` for purely decorative avatars next to a name, or describe the person if the avatar stands alone.
+- **The image stays in the DOM.** Hide it via CSS `[data-status="loading"], [data-status="error"] { display: none }` if your consumer-side styling needs it gone. The fallback uses `@if`, so it only mounts when needed.

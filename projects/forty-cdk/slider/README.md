@@ -4,7 +4,7 @@ Headless slider implementing the [WAI-ARIA Slider pattern](https://www.w3.org/WA
 
 A single primitive supports single, range, and multi-thumb sliders — the shape comes from `value`'s array length and how many `[forSliderThumb]` you render.
 
-## Pieces
+## Anatomy
 
 | Class            | Selector           | Role                                                                                           |
 | ---------------- | ------------------ | ---------------------------------------------------------------------------------------------- |
@@ -13,7 +13,9 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 | `ForSliderRange` | `[forSliderRange]` | Optional decorative band between min and the highest thumb (single) or between thumbs (multi). |
 | `ForSliderThumb` | `[forSliderThumb]` | One thumb. `role="slider"`, full ARIA, keyboard, and drag.                                     |
 
-## Single thumb
+## Examples
+
+### Single thumb
 
 ```html
 <div forSlider [(value)]="volume">
@@ -26,7 +28,7 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 
 Where `volume = signal<readonly number[]>([50])`.
 
-## Range (two thumbs)
+### Range (two thumbs)
 
 ```html
 <div forSlider [(value)]="priceRange" [min]="0" [max]="1000" [step]="10">
@@ -40,46 +42,7 @@ Where `volume = signal<readonly number[]>([50])`.
 
 `priceRange = signal<readonly number[]>([200, 800])` — non-passing constraint is enforced automatically (the lower thumb can't go above the upper, and vice versa). Use `[minStepsBetweenThumbs]="1"` to force a minimum gap.
 
-## Inputs
-
-| Input                   | Default        | Description                                                                                                                                             |
-| ----------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `min`                   | `0`            | Numeric minimum.                                                                                                                                        |
-| `max`                   | `100`          | Numeric maximum.                                                                                                                                        |
-| `step`                  | `1`            | Discrete value increment for arrows + drag.                                                                                                             |
-| `largeStep`             | `10`           | Increment for `PageUp` / `PageDown`.                                                                                                                    |
-| `orientation`           | `'horizontal'` | `'horizontal'` or `'vertical'`.                                                                                                                         |
-| `dir`                   | `'ltr'`        | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.                                                        |
-| `inverted`              | `false`        | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless. |
-| `minStepsBetweenThumbs` | `0`            | Multi-thumb only: minimum gap between adjacent thumbs in step units.                                                                                    |
-| `disabled`              | `false`        | Disables all interaction.                                                                                                                               |
-| `readonly`              | `false`        | Allows focus + announcement, blocks updates.                                                                                                            |
-| `name`                  | `''`           | If non-empty, mirrors `value()` into N `<input type="hidden">` siblings for native form submit.                                                         |
-
-## Outputs
-
-`(valueChange)` (from `model<readonly number[]>`) fires only on internal updates (drag, keyboard, track click). It stays silent on consumer writes via `[(value)]`.
-
-`(valueCommit)` fires once at the trailing edge of a value-changing interaction with the final value array — on `pointerup` / `pointercancel` after a drag, or on `keyup` after one or more keyboard adjustments. Use it to defer expensive work (network calls, history undo entries) without throttling `(valueChange)`. Stays silent when the interaction did not actually change the value (e.g. press + release without movement, or arrow at the extreme).
-
-`(touchedChange)` fires when focus leaves the slider region the first time.
-
-## Keyboard
-
-Focus a thumb, then:
-
-| Key                                                            | Action                   |
-| -------------------------------------------------------------- | ------------------------ |
-| **ArrowRight** _(LTR)_ / **ArrowLeft** _(RTL)_ / **ArrowUp**   | Increase by `step`.      |
-| **ArrowLeft** _(LTR)_ / **ArrowRight** _(RTL)_ / **ArrowDown** | Decrease by `step`.      |
-| **PageUp**                                                     | Increase by `largeStep`. |
-| **PageDown**                                                   | Decrease by `largeStep`. |
-| **Home**                                                       | Set to `min`.            |
-| **End**                                                        | Set to `max`.            |
-
-`inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
-
-## Form integration
+### Signal Forms
 
 `[forSlider]` implements `FormValueControl<readonly number[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
 
@@ -89,9 +52,30 @@ Focus a thumb, then:
 
 For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForSlider`
+
+| API                     | Type                                | Default        | Description                                                                                                                                                                                               |
+| ----------------------- | ----------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly number[]>`          | —              | Two-way bindable value array. Required by `FormValueControl<readonly number[]>`. Output. Emits on drag, keyboard, and track click.                                                                        |
+| `min`                   | `input<number>`                     | `0`            | Numeric minimum.                                                                                                                                                                                          |
+| `max`                   | `input<number>`                     | `100`          | Numeric maximum.                                                                                                                                                                                          |
+| `step`                  | `input<number>`                     | `1`            | Discrete value increment for arrows + drag.                                                                                                                                                               |
+| `largeStep`             | `input<number>`                     | `10`           | Increment for `PageUp` / `PageDown`.                                                                                                                                                                      |
+| `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | `'horizontal'` or `'vertical'`.                                                                                                                                                                           |
+| `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'`        | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.                                                                                                          |
+| `inverted`              | `input<boolean>`                    | `false`        | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless.                                                   |
+| `minStepsBetweenThumbs` | `input<number>`                     | `0`            | Multi-thumb only: minimum gap between adjacent thumbs in step units.                                                                                                                                      |
+| `disabled`              | `input<boolean>`                    | `false`        | Disables all interaction.                                                                                                                                                                                 |
+| `readonly`              | `input<boolean>`                    | `false`        | Allows focus + announcement, blocks updates.                                                                                                                                                              |
+| `name`                  | `input<string>`                     | `''`           | If non-empty, mirrors `value()` into N `<input type="hidden">` siblings for native form submit.                                                                                                           |
+| `valueCommit`           | —                                   | —              | Output. Fires once at the trailing edge of a value-changing interaction with the final value array — on `pointerup` / `pointercancel` after a drag, or on `keyup` after one or more keyboard adjustments. |
+| `touchedChange`         | —                                   | —              | Output. Fires when focus leaves the slider region the first time.                                                                                                                                         |
+
+`(valueChange)` (from `model<readonly number[]>`) fires only on internal updates (drag, keyboard, track click). It stays silent on consumer writes via `[(value)]`.
+
+`(valueCommit)` stays silent when the interaction did not actually change the value (e.g. press + release without movement, or arrow at the extreme).
 
 ### Data attributes
 
@@ -112,6 +96,33 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forSliderThumb]` | `data-disabled`    | present \| absent          |
 | `[forSliderThumb]` | `data-readonly`    | present \| absent          |
 | `[forSliderThumb]` | `data-index`       | 0-based thumb index        |
+
+## Keyboard
+
+Focus a thumb, then:
+
+| Key                                                            | Action                   |
+| -------------------------------------------------------------- | ------------------------ |
+| **ArrowRight** _(LTR)_ / **ArrowLeft** _(RTL)_ / **ArrowUp**   | Increase by `step`.      |
+| **ArrowLeft** _(LTR)_ / **ArrowRight** _(RTL)_ / **ArrowDown** | Decrease by `step`.      |
+| **PageUp**                                                     | Increase by `largeStep`. |
+| **PageDown**                                                   | Decrease by `largeStep`. |
+| **Home**                                                       | Set to `min`.            |
+| **End**                                                        | Set to `max`.            |
+
+`inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
+
+## Accessibility
+
+- `role="slider"` on each thumb with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, optional `aria-valuetext`, and `aria-orientation`.
+- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values, matching the APG multi-thumb guidance.
+- The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
+- `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
+- Provide `[label]` (or `[labelledby]`) on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 
@@ -138,14 +149,6 @@ Pair with `data-orientation` on every piece to pick the right axis from CSS.
   opacity: 0.5;
 }
 ```
-
-## Accessibility notes
-
-- `role="slider"` on each thumb with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, optional `aria-valuetext`, and `aria-orientation`.
-- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values, matching the APG multi-thumb guidance.
-- The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
-- `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
-- Provide `[label]` (or `[labelledby]`) on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label.
 
 ## Wrapping in a design system
 

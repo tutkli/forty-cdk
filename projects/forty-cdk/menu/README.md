@@ -4,7 +4,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 
 Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) for the surface (`role="menu"`) and for items (`menuitem` / `menuitemcheckbox` / `menuitemradio`).
 
-## Pieces
+## Anatomy
 
 | Class                  | Selector                                   | Role                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -119,9 +119,7 @@ bootstrapApplication(App, {
 
 Partial overrides inherit unspecified keys from the parent scope (or the library defaults at the root), so a component-level `providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })]` layers on top of an app-level configuration per key.
 
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+## API
 
 ### Data attributes
 
@@ -141,6 +139,21 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forMenuSub]`                             | `data-disabled`    | present \| absent        |
 | `[forMenuSubTrigger]`                      | `data-state`       | `open` \| `closed`       |
 | `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent        |
+
+## Accessibility
+
+- Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
+- Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.
+- `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
+- `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
+- Submenus use `side="right"` `align="start"` by default in LTR and `side="left"` `align="start"` in RTL — set `[dir]="'rtl'"` on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested `[forMenuSub]` inherits it (and flips `side`, ArrowLeft/Right semantics, etc.). Override per-submenu with `[dir]` or `[side]` if a specific submenu needs to render against the opposite direction.
+- In RTL, ArrowLeft opens a submenu and ArrowRight closes it back to the parent — the swap mirrors the visual flip of the menu chain.
+- **`data-highlighted=""`** is reflected on the focused `[forMenuItem]` / `[forMenuCheckboxItem]` / `[forMenuRadioItem]` so consumers can paint a uniform focus ring shared with the listbox / select / combobox primitives. The attribute is intent-driven: opening a menu with the pointer focuses the first item **without** highlighting it (no "preselected" look on mouse open), while a keyboard open (Enter / Space / ArrowDown / ArrowUp on the trigger, `Shift+F10` for context menus) highlights the initially focused item. Arrow / Home / End / typeahead navigation always highlights the focused item.
+- **Hover follows the pointer.** Moving the mouse over an enabled item focuses **and** highlights it, so the keyboard highlight and the mouse hover never disagree — there is a single "active candidate" at a time. Hovering an adjacent item moves the highlight with it; hovering a disabled item is inert. When the pointer leaves the menu surface the highlight clears, while DOM focus stays anchored on the item so keyboard navigation continues from there. This means `[data-highlighted]` is the only hover styling hook you need — you do **not** add a separate `:hover` rule (it would fight the highlight). Touch / pen never hover, so this applies to mouse input only.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../../../docs/styling-floating-content.md).
 
@@ -168,14 +181,3 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
   transform: rotate(90deg);
 }
 ```
-
-## Accessibility notes
-
-- Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
-- Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.
-- `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
-- `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
-- Submenus use `side="right"` `align="start"` by default in LTR and `side="left"` `align="start"` in RTL — set `[dir]="'rtl'"` on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested `[forMenuSub]` inherits it (and flips `side`, ArrowLeft/Right semantics, etc.). Override per-submenu with `[dir]` or `[side]` if a specific submenu needs to render against the opposite direction.
-- In RTL, ArrowLeft opens a submenu and ArrowRight closes it back to the parent — the swap mirrors the visual flip of the menu chain.
-- **`data-highlighted=""`** is reflected on the focused `[forMenuItem]` / `[forMenuCheckboxItem]` / `[forMenuRadioItem]` so consumers can paint a uniform focus ring shared with the listbox / select / combobox primitives. The attribute is intent-driven: opening a menu with the pointer focuses the first item **without** highlighting it (no "preselected" look on mouse open), while a keyboard open (Enter / Space / ArrowDown / ArrowUp on the trigger, `Shift+F10` for context menus) highlights the initially focused item. Arrow / Home / End / typeahead navigation always highlights the focused item.
-- **Hover follows the pointer.** Moving the mouse over an enabled item focuses **and** highlights it, so the keyboard highlight and the mouse hover never disagree — there is a single "active candidate" at a time. Hovering an adjacent item moves the highlight with it; hovering a disabled item is inert. When the pointer leaves the menu surface the highlight clears, while DOM focus stays anchored on the item so keyboard navigation continues from there. This means `[data-highlighted]` is the only hover styling hook you need — you do **not** add a separate `:hover` rule (it would fight the highlight). Touch / pen never hover, so this applies to mouse input only.

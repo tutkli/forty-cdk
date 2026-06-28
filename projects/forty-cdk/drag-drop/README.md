@@ -4,9 +4,9 @@ Headless accessible drag-and-drop for sortable lists and cross-list item
 transfers. Supports both keyboard and pointer (mouse / touch / pen) dragging.
 
 For repositioning an arbitrary element (no list, no reorder) — e.g. dragging a
-whole dialog around by its header — see [`[forFreeDrag]`](#free-drag-forfreedrag).
+whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 
-## Keyboard model
+## Keyboard
 
 | State  | Key         | Action                                     |
 | ------ | ----------- | ------------------------------------------ |
@@ -19,6 +19,10 @@ whole dialog around by its header — see [`[forFreeDrag]`](#free-drag-forfreedr
 
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
+
+## Accessibility
+
+Keyboard lifting, stepping, dropping, and cancellation are announced via ARIA live regions. Override the default messages at any injector scope via `provideForDragDropDefaults` (see Announcement customisation below). Free-drag is pointer-only — there is no WAI-ARIA pattern for "reposition an element", so `[forFreeDrag]` owns no role or ARIA state; the consumer is responsible for keeping the moved element fully usable at its default position.
 
 ## Pointer dragging
 
@@ -221,7 +225,7 @@ providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'mixed' }];
 `"mixed"` targets regular grids of uniformly-sized items; variable-size / masonry layouts are out of
 scope. `[animateReorder]` (FLIP) reflows by DOM order and needs no change in mixed mode.
 
-## Free drag (`[forFreeDrag]`)
+## Free drag
 
 `[forFreeDrag]` repositions its host element (or a resolved `rootElement`) by pointer drag, with
 **no `[forDropList]` required** — it never commits a reorder, it just moves the element around via a

@@ -9,7 +9,18 @@ Requires a time-capable adapter:
 [`provideNativeDateAdapter()`](../calendar/native-date-adapter.ts) or the
 `@internationalized/date` adapter from `forty-cdk/internationalized-date`.
 
-## Usage
+## Anatomy
+
+| Piece                  | Selector                 | Role                                                                                                                       |
+| ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `ForTimePicker`        | `[forTimePicker]`        | Root — state, slots, context                                                                                               |
+| `ForTimePickerTrigger` | `[forTimePickerTrigger]` | Combobox button                                                                                                            |
+| `ForTimePickerValue`   | `[forTimePickerValue]`   | Display element                                                                                                            |
+| `ForTimePickerContent` | `[forTimePickerContent]` | Portaled listbox                                                                                                           |
+| `ForTimePickerOption`  | `[forTimePickerOption]`  | Option (non-button `<div>`)                                                                                                |
+| `ForTimePickerAnchor`  | `[forTimePickerAnchor]`  | Optional positioning anchor — wrap a decorated field box so the listbox aligns to the visible field instead of the trigger |
+
+## Examples
 
 ```html
 <div
@@ -34,18 +45,26 @@ Requires a time-capable adapter:
 </div>
 ```
 
-## Pieces
+### Signal Forms
 
-| Piece                  | Selector                 | Role                                                                                                                       |
-| ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `ForTimePicker`        | `[forTimePicker]`        | Root — state, slots, context                                                                                               |
-| `ForTimePickerTrigger` | `[forTimePickerTrigger]` | Combobox button                                                                                                            |
-| `ForTimePickerValue`   | `[forTimePickerValue]`   | Display element                                                                                                            |
-| `ForTimePickerContent` | `[forTimePickerContent]` | Portaled listbox                                                                                                           |
-| `ForTimePickerOption`  | `[forTimePickerOption]`  | Option (non-button `<div>`)                                                                                                |
-| `ForTimePickerAnchor`  | `[forTimePickerAnchor]`  | Optional positioning anchor — wrap a decorated field box so the listbox aligns to the visible field instead of the trigger |
+```html
+<div forTimePicker [formField]="profile.meetingTime" [(open)]="open" #picker="forTimePicker">
+  <button forTimePickerTrigger>
+    <span forTimePickerValue placeholder="Pick a time"></span>
+  </button>
+  @if (open()) {
+  <div forTimePickerContent>
+    @for (slot of picker.slots(); track slot.id) {
+    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
+    }
+  </div>
+  }
+</div>
+```
 
-## Inputs (root)
+## API
+
+### `ForTimePicker`
 
 | Input           | Type                             | Default    | Description                      |
 | --------------- | -------------------------------- | ---------- | -------------------------------- |
@@ -66,23 +85,6 @@ Requires a time-capable adapter:
 
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
-
-## Signal Forms
-
-```html
-<div forTimePicker [formField]="profile.meetingTime" [(open)]="open" #picker="forTimePicker">
-  <button forTimePickerTrigger>
-    <span forTimePickerValue placeholder="Pick a time"></span>
-  </button>
-  @if (open()) {
-  <div forTimePickerContent>
-    @for (slot of picker.slots(); track slot.id) {
-    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
-    }
-  </div>
-  }
-</div>
-```
 
 ## Anchoring to a field box
 
@@ -138,7 +140,26 @@ resolves it automatically via `contentChild` to graft time changes onto the comm
 </div>
 ```
 
-## Wrapping with `hostDirectives`
+## Keyboard
+
+| Key                     | Behavior                                  |
+| ----------------------- | ----------------------------------------- |
+| `Enter` / `Space`       | Select the focused slot                   |
+| `ArrowDown` / `ArrowUp` | Move focus between slots                  |
+| `Home`                  | Focus the first enabled slot              |
+| `End`                   | Focus the last enabled slot               |
+| `Tab`                   | Commit the focused slot and advance focus |
+| `Escape`                | Close without committing                  |
+
+## Accessibility
+
+- **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`.
+- **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
+- When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE` — the combined date-time value is surfaced on the date picker's form-control ARIA.
+
+## Wrapping in a design system
+
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
 
 ```typescript
 import {
@@ -159,14 +180,3 @@ import {
 })
 export class MyTimePicker {}
 ```
-
-## Keyboard interaction
-
-| Key                     | Behavior                                  |
-| ----------------------- | ----------------------------------------- |
-| `Enter` / `Space`       | Select the focused slot                   |
-| `ArrowDown` / `ArrowUp` | Move focus between slots                  |
-| `Home`                  | Focus the first enabled slot              |
-| `End`                   | Focus the last enabled slot               |
-| `Tab`                   | Commit the focused slot and advance focus |
-| `Escape`                | Close without committing                  |

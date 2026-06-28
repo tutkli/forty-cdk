@@ -174,7 +174,7 @@ this.dialogs.open(ConfirmDialog, {
 
 Set them once for a scope with `provideForDialogDefaults({ animateEnter, animateLeave })`; a per-`open()` value always wins over the scope default.
 
-## Pieces (declarative)
+## Anatomy
 
 | Class                  | Selector                 | Role                                                                                                                                                                      |
 | ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -185,28 +185,25 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 | `ForDialogClose`       | `[forDialogClose]`       | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode.                                                                      |
 | `ForDialogBackdrop`    | `[forDialogBackdrop]`    | Optional overlay portaled alongside the surface (to `container`, or `document.body` by default). Direct click requests close with reason `'backdrop'` when `dismissible`. |
 
-## Inputs (`ForDialog`)
+## API
 
-| API            | Default   | Description                                                                                                           |
-| -------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| `dismissible`  | `true`    | When `false`, Escape, backdrop, outside-pointer, and outside-focus do not request close. The close button still does. |
-| `modal`        | `true`    | When `false`, no `aria-modal`, no scroll lock, no focus trap.                                                         |
-| `alert`        | `false`   | Switches role to `alertdialog`.                                                                                       |
-| `returnFocus`  | `true`    | Focus returns to the previously focused element on close.                                                             |
-| `initialFocus` | `'first'` | `'first'` (first focusable inside) or `'container'` (the dialog host).                                                |
-| `ariaLabel`    | `null`    | Manual `aria-label` if no `[forDialogTitle]` is rendered.                                                             |
-
-## Outputs (`ForDialog`)
+### `ForDialog`
 
 `(dismiss)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs are vetoable: each receives a `VetoableNativeEvent<E>` carrying the underlying DOM event. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event is on `.event`.
 
-| Output               | Payload                                           | Fires on                                                                                                                                      |
-| -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `close`              | `ForDialogCloseReason`                            | Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`. |
-| `escapeKeyDown`      | `VetoableNativeEvent<KeyboardEvent>`              | Escape while this dialog is the topmost dismissable layer.                                                                                    |
-| `pointerDownOutside` | `VetoableNativeEvent<PointerEvent>`               | Pointer-down outside the dialog.                                                                                                              |
-| `focusOutside`       | `VetoableNativeEvent<FocusEvent>`                 | Focus moves outside the dialog.                                                                                                               |
-| `interactOutside`    | `VetoableNativeEvent<PointerEvent \| FocusEvent>` | Composite: fires alongside both of the above (and shares their veto state).                                                                   |
+| API                  | Type                                                                | Default   | Description                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dismissible`        | —                                                                   | `true`    | When `false`, Escape, backdrop, outside-pointer, and outside-focus do not request close. The close button still does.                                 |
+| `modal`              | —                                                                   | `true`    | When `false`, no `aria-modal`, no scroll lock, no focus trap.                                                                                         |
+| `alert`              | —                                                                   | `false`   | Switches role to `alertdialog`.                                                                                                                       |
+| `returnFocus`        | —                                                                   | `true`    | Focus returns to the previously focused element on close.                                                                                             |
+| `initialFocus`       | —                                                                   | `'first'` | `'first'` (first focusable inside) or `'container'` (the dialog host).                                                                                |
+| `ariaLabel`          | —                                                                   | `null`    | Manual `aria-label` if no `[forDialogTitle]` is rendered.                                                                                             |
+| `close`              | `OutputEmitterRef<ForDialogCloseReason>`                            | —         | Output. Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`. |
+| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | —         | Output. Escape while this dialog is the topmost dismissable layer.                                                                                    |
+| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | —         | Output. Pointer-down outside the dialog.                                                                                                              |
+| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | —         | Output. Focus moves outside the dialog.                                                                                                               |
+| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | —         | Output. Composite: fires alongside both of the above (and shares their veto state).                                                                   |
 
 ### Per-channel dismissal (Escape-only dialogs)
 
@@ -246,10 +243,10 @@ Keep `dismissible: true` (the default) so Escape still closes, and veto only the
 
 The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action. This shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(dismiss)` output. See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs while trigger-anchored overlays (Popover, DropdownMenu, ContextMenu, Menu sub, Select) use output-shape.
 
-| Input              | Payload                          | Fires on                                                                                                                                                                                                                                           |
-| ------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.                                                                                                                              |
-| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus. |
+| API                | Type                             | Default | Description                                                                                                                                                                                                                                        |
+| ------------------ | -------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | —       | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.                                                                                                                              |
+| `autoFocusOnClose` | `(event: VetoableEvent) => void` | —       | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus. |
 
 ### Open without stealing focus
 
@@ -272,6 +269,19 @@ readonly keepSearchFocused = (event: VetoableEvent): void => {
 ```
 
 The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
+
+### Data attributes
+
+| Piece                 | Attribute                  | Values                                                                                   |
+| --------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`)           |
+| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                                       |
+| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                                         |
+| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
+| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
+| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
+
+`[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
 
 ## Programmatic API
 
@@ -307,22 +317,22 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 
 The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` outputs exactly — same events, same veto semantics. See [Per-channel dismissal](#per-channel-dismissal-escape-only-dialogs).
 
+## Keyboard
+
+- **Escape** requests close (reason `'escape'`) when `dismissible`.
+- **Tab / Shift+Tab** cycles focus inside the dialog (focus trap, only when `modal`).
+- **Click** on `[forDialogBackdrop]` requests close (reason `'backdrop'`) when `dismissible`.
+
+## Accessibility
+
+- Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`.
+- `[forDialogDescription]` is optional — use it for non-title supporting copy (the question of a confirm, the rationale of an alert).
+- `alert: true` interrupts assistive tech aggressively — only for genuine alerts (lost connection, unsaved changes warning), not for general confirms.
+- Don't put interactive overlays (popovers, menus) outside the focus trap while a modal dialog is open — they won't be reachable. For a non-modal floating surface anchored to a trigger, use `[forPopover]` instead.
+
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
-
-### Data attributes
-
-| Piece                 | Attribute                  | Values                                                                                   |
-| --------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
-| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`)           |
-| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                                       |
-| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                                         |
-| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
-| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
-| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
-
-`[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > **This dialog portals to `document.body`.** CSS scoped to ancestors of `[forDialog]` (or `[forDialogBackdrop]`) will not apply once the surface is moved to the body. Style it with **global CSS** or a class. Declaratively you write the surface yourself, so add the class directly (`<div forDialog class="my-dialog">`); for programmatically opened instances pass `class` / `classList` on the `ForDialogManager.open()` config — they land on the same `[forDialog]` host that carries `data-state` / `role` / `aria-modal`, merged and never clobbering them.
 
@@ -344,24 +354,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 }
 ```
 
-## Keyboard
-
-- **Escape** requests close (reason `'escape'`) when `dismissible`.
-- **Tab / Shift+Tab** cycles focus inside the dialog (focus trap, only when `modal`).
-- **Click** on `[forDialogBackdrop]` requests close (reason `'backdrop'`) when `dismissible`.
-
-## Behavior notes
-
-- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
-- **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
-- **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
-- **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
-- **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
-- **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
-- **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
-- **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
-
-## Scoped / contained dialog (`container`)
+## Scoped / contained dialog
 
 Pass `[container]` to portal the dialog surface into a specific element instead of `document.body`. Pair it with `[modal]="false"` for a dialog scoped to a region of the page.
 
@@ -380,9 +373,13 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 
 **`[container]` + `[modal]="true"` — region-isolating modal.** When both are set, the dialog isolates **within the container**: focus trap stays scoped to the dialog surface; inert siblings are applied to the container's other children only (body-level siblings outside the container stay interactive); and scroll lock targets the container's own `overflow`, not `<body>`. Programmatically: `ForDialogManager.open(Cmp, { modal: true, container: panelEl })`.
 
-## Accessibility notes
+## Behavior notes
 
-- Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`.
-- `[forDialogDescription]` is optional — use it for non-title supporting copy (the question of a confirm, the rationale of an alert).
-- `alert: true` interrupts assistive tech aggressively — only for genuine alerts (lost connection, unsaved changes warning), not for general confirms.
-- Don't put interactive overlays (popovers, menus) outside the focus trap while a modal dialog is open — they won't be reachable. For a non-modal floating surface anchored to a trigger, use `[forPopover]` instead.
+- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
+- **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
+- **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
+- **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
+- **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
+- **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
+- **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
+- **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.

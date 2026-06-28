@@ -2,7 +2,17 @@
 
 Headless drag-and-drop / dialog file-selection primitive. No ARIA role is imposed on the drop zone — it is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
 
-## Usage
+## Anatomy
+
+| Class                  | Selector                 | Element               | Role                                                                          |
+| ---------------------- | ------------------------ | --------------------- | ----------------------------------------------------------------------------- |
+| `ForFileUpload`        | `[forFileUpload]`        | any wrapper           | Drop zone root. Owns the file list, drag state, and disabled flag.            |
+| `ForFileUploadInput`   | `[forFileUploadInput]`   | `<input type="file">` | The accessible file control. Keep it focusable (use a visually-hidden class). |
+| `ForFileUploadTrigger` | `[forFileUploadTrigger]` | `<button>`            | Opens the native file dialog on click / Enter / Space.                        |
+
+## Examples
+
+### Stand-alone
 
 ```html
 <div forFileUpload accept="image/*,.pdf" (filesChange)="onFiles($event)">
@@ -56,18 +66,30 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 </div>
 ```
 
-## Inputs
+## API
 
-| Input       | Type             | Default | Description                                                                    |
+### `ForFileUpload`
+
+| API         | Type             | Default | Description                                                                    |
 | ----------- | ---------------- | ------- | ------------------------------------------------------------------------------ |
 | `accept`    | `string \| null` | `null`  | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`). |
 | `multiple`  | `boolean`        | `false` | Whether multiple files can be selected at once.                                |
 | `directory` | `boolean`        | `false` | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).     |
 | `disabled`  | `boolean`        | `false` | Whether the zone and all its pieces are disabled.                              |
 
-## Data attributes
+### Data attributes
 
-| Attribute       | When present                                         |
-| --------------- | ---------------------------------------------------- |
-| `data-dragging` | Files are actively being dragged over the drop zone. |
-| `data-disabled` | The zone (and all its pieces) is disabled.           |
+| Piece             | Attribute       | Values                                                                 |
+| ----------------- | --------------- | ---------------------------------------------------------------------- |
+| `[forFileUpload]` | `data-dragging` | present — files are actively being dragged over the drop zone / absent |
+| `[forFileUpload]` | `data-disabled` | present — the zone (and all its pieces) is disabled / absent           |
+
+## Accessibility
+
+- **The `<input type="file">` is the accessible control.** Keep it reachable with a visually-hidden utility class (`sr-only` / `visually-hidden`) rather than `display: none` or `visibility: hidden`, which would remove it from the tab order and from assistive technology.
+- **Label the input.** Supply `aria-label` directly on `[forFileUploadInput]` (as in the examples above), or wrap it in a `<label>`.
+- **The trigger is a native `<button>`.** It receives focus, is announced as a button, and activates the file dialog via click / Enter / Space — no ARIA role augmentation needed.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).

@@ -4,7 +4,7 @@ Headless text form controls that implement Angular's `FormValueControl<string>` 
 
 These are thin wrappers, not re-implementations: the native `<input>` / `<textarea>` keeps its own `type`, caret, IME composition, and native form submission. The directive only bridges the value to a signal and reflects validation state.
 
-## Pieces
+## Anatomy
 
 | Class         | Selector        | Element      | Role                      |
 | ------------- | --------------- | ------------ | ------------------------- |
@@ -12,24 +12,6 @@ These are thin wrappers, not re-implementations: the native `<input>` / `<textar
 | `ForTextarea` | `[forTextarea]` | `<textarea>` | Multi-line text control.  |
 
 Both expose the identical API below; `[forTextarea]` adds the optional `autosize` input.
-
-## Inputs / models
-
-| API        | Type                                                      | Description                                                                                                   |
-| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.                         |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.                                        |
-| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.                                        |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.                                                                              |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.                                                              |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.                             |
-| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.                                                                                        |
-| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.                                                 |
-| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory.      |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.                                                 |
-| `autosize` | `input<boolean>`                                          | `[forTextarea]` only. Grows/shrinks the height to fit content; reflects `data-autosize`. Defaults to `false`. |
-
-The host gets `data-empty` (while the value is `''`), `data-disabled`, and `data-readonly` for CSS hooks, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
 
 ## Auto-resizing textarea
 
@@ -58,7 +40,9 @@ export class DemoComment {
 
 Auto-resize is a browser-only DOM side effect, so it is inert under server-side rendering and hydrates without a layout jump.
 
-## Stand-alone usage
+## Examples
+
+### Stand-alone
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -79,7 +63,7 @@ export class DemoProfile {
 }
 ```
 
-## Field composition
+### Field composition
 
 Drop the control inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
 
@@ -115,11 +99,40 @@ export class DemoSignup {
 
 `[formField]` detects the `FormValueControl<string>` interface and wires everything — value, disabled, required, invalid, errors, touched — without any glue.
 
-## Styling
+## API
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes below.
+### `ForInput`
 
-`[forInput]` and `[forTextarea]` reflect the identical set of attributes on their native host element.
+| API        | Type                                                      | Default | Description                                                                                              |
+| ---------- | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `value`    | `model<string>`                                           | —       | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.                    |
+| `disabled` | `input<boolean>`                                          | —       | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.                                   |
+| `readonly` | `input<boolean>`                                          | —       | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.                                   |
+| `required` | `input<boolean>`                                          | —       | Reflects `aria-required="true"`.                                                                         |
+| `invalid`  | `input<boolean>`                                          | —       | Reflects `aria-invalid="true"` + `data-invalid`.                                                         |
+| `pending`  | `input<boolean>`                                          | —       | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.                        |
+| `dirty`    | `input<boolean>`                                          | —       | Reflects `data-dirty`.                                                                                   |
+| `name`     | `input<string>`                                           | —       | Reflected on the native `name` attribute for form submission.                                            |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —       | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
+| `touched`  | `model<boolean>`                                          | —       | Set to `true` on blur. Two-way so the field can read it back.                                            |
+
+### `ForTextarea`
+
+| API        | Type                                                      | Default | Description                                                                                              |
+| ---------- | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `value`    | `model<string>`                                           | —       | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.                    |
+| `disabled` | `input<boolean>`                                          | —       | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.                                   |
+| `readonly` | `input<boolean>`                                          | —       | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.                                   |
+| `required` | `input<boolean>`                                          | —       | Reflects `aria-required="true"`.                                                                         |
+| `invalid`  | `input<boolean>`                                          | —       | Reflects `aria-invalid="true"` + `data-invalid`.                                                         |
+| `pending`  | `input<boolean>`                                          | —       | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.                        |
+| `dirty`    | `input<boolean>`                                          | —       | Reflects `data-dirty`.                                                                                   |
+| `name`     | `input<string>`                                           | —       | Reflected on the native `name` attribute for form submission.                                            |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —       | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
+| `touched`  | `model<boolean>`                                          | —       | Set to `true` on blur. Two-way so the field can read it back.                                            |
+| `autosize` | `input<boolean>`                                          | `false` | Grows/shrinks the height to fit content; reflects `data-autosize`.                                       |
+
+The host gets `data-empty` (while the value is `''`), `data-disabled`, and `data-readonly` for CSS hooks, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
 
 ### Data attributes
 
@@ -134,6 +147,19 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `[forInput]`, `[forTextarea]` | `data-invalid`  | present / absent                 |
 | `[forTextarea]`               | `data-autosize` | present (`autosize` on) / absent |
 
+## Accessibility
+
+- **The native element is the control.** It stays the focusable, submittable form field, so screen readers, mobile keyboards (`type`, `inputmode`), autofill, and native validation all behave exactly as they would on a bare `<input>` / `<textarea>`.
+- **No hidden input.** Because the visible element carries `name` and its `.value` _is_ the form value, the browser serializes it natively — unlike `ForSwitch` (a `<button>`) or `ForNumberInput` (formatted display), which mount a hidden input. A disabled control is skipped by native serialization automatically.
+- **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+
+`[forInput]` and `[forTextarea]` reflect the identical set of attributes on their native host element.
+
 ```css
 .input[data-invalid] {
   border-color: red;
@@ -143,13 +169,6 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   opacity: 0.5;
 }
 ```
-
-## Accessibility notes
-
-- **The native element is the control.** It stays the focusable, submittable form field, so screen readers, mobile keyboards (`type`, `inputmode`), autofill, and native validation all behave exactly as they would on a bare `<input>` / `<textarea>`.
-- **No hidden input.** Because the visible element carries `name` and its `.value` _is_ the form value, the browser serializes it natively — unlike `ForSwitch` (a `<button>`) or `ForNumberInput` (formatted display), which mount a hidden input. A disabled control is skipped by native serialization automatically.
-- **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
-- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
 
 ## Wrapping in a design system
 

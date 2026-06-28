@@ -2,7 +2,7 @@
 
 Headless breadcrumb trail implementing the [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/): a labelled `navigation` landmark wrapping a set of links, with [`aria-current="page"`](https://www.w3.org/TR/wai-aria-1.2/#aria-current) on the current page and decorative separators hidden from assistive technology. Ships no styles — apply your own.
 
-## Pieces
+## Anatomy
 
 | Class                    | Selector                   | Role                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------- |
@@ -10,7 +10,7 @@ Headless breadcrumb trail implementing the [WAI-ARIA Breadcrumb pattern](https:/
 | `ForBreadcrumbItem`      | `[forBreadcrumbItem]`      | A link in the trail. Reflects `aria-current="page"` when `current`.       |
 | `ForBreadcrumbSeparator` | `[forBreadcrumbSeparator]` | Decorative divider between items. Reflects `aria-hidden="true"`.          |
 
-## Usage
+## Examples
 
 ```ts
 import { Component } from '@angular/core';
@@ -35,6 +35,26 @@ export class DemoBreadcrumbs {}
 ```
 
 The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` (or point a native `aria-labelledby` at a visible heading) when a page hosts more than one breadcrumb trail.
+
+## API
+
+### `ForBreadcrumbs`
+
+| API         | Type            | Default        | Description                                                                                                |
+| ----------- | --------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `input<string>` | `'Breadcrumb'` | Accessible label for the `navigation` landmark. Override when a page hosts more than one breadcrumb trail. |
+
+### `ForBreadcrumbItem`
+
+| API       | Type             | Default | Description                                            |
+| --------- | ---------------- | ------- | ------------------------------------------------------ |
+| `current` | `input<boolean>` | —       | When true, reflects `aria-current="page"` on the link. |
+
+## Accessibility
+
+- **Navigation landmark.** `[forBreadcrumbs]` applies `role="navigation"` and labels it `aria-label="Breadcrumb"` by default, creating a named landmark that screen-reader users can jump to directly.
+- **Current page.** Set `current` on `[forBreadcrumbItem]` for the active page; the directive reflects `aria-current="page"` so assistive technology announces the user's location in the trail.
+- **Decorative separators.** `[forBreadcrumbSeparator]` reflects `aria-hidden="true"` so the visual divider (e.g. `/`) is skipped by screen readers.
 
 ## Styling
 

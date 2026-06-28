@@ -15,7 +15,7 @@ an empty window and the estimate-based total without touching `document`/`window
 > `forty-cdk`. This keeps `@tanstack/virtual-core` out of the main `forty-cdk` bundle for
 > apps and routes that don't virtualize.
 
-## Ergonomic layer (`[forVirtualViewport]` + `*forVirtualFor`)
+## Ergonomic layer
 
 For the common "just virtualize this list" case, the optional Shape A layer wraps the manual
 wiring: `[forVirtualViewport]` owns the scroll container, the total-size sizer, and the windowing
@@ -41,7 +41,7 @@ The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `c
 For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
 headless `injectVirtualizer` core directly, documented below.
 
-## Vertical list (fixed item heights)
+## Vertical list
 
 ```html
 <div #scroll style="overflow: auto; height: 400px">
@@ -81,7 +81,7 @@ positioned with `top: item.start` instead of `translateY` so jsdom-based tests c
 read the value without CSS layout; prefer `transform: translateY(item.start + 'px')
 translateZ(0)` in production for GPU compositing.
 
-## Dynamic item heights (with `measureElement`)
+## Dynamic item heights
 
 When items have variable heights, query the rendered elements and feed each one to
 `measureElement` so the virtualizer refines its estimates. The item element **must**
@@ -157,7 +157,7 @@ this.v.scrollToIndex(500, { align: 'start' });
 `align` accepts `'start'` | `'center'` | `'end'` | `'auto'` (default). `'auto'`
 scrolls the minimum amount needed to bring the item into view.
 
-## Drag-reorder (`[forVirtualReorder]`)
+## Drag-reorder
 
 Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` to make a
 windowed `*forVirtualFor` list reorderable by pointer and keyboard. It composes
@@ -206,7 +206,9 @@ the real count:
 <div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
 ```
 
-## Options
+## API
+
+### Options
 
 | Option          | Type                                  | Default      | Description                                                         |
 | --------------- | ------------------------------------- | ------------ | ------------------------------------------------------------------- |
@@ -217,7 +219,7 @@ the real count:
 | `overscan`      | `number`                              | `5`          | Extra items to render beyond the visible window on each side.       |
 | `getItemKey`    | `(index: number) => string \| number` | `(i) => i`   | Stable key per item; used by `@for (track item.key)`.               |
 
-## Returned handle
+### Returned handle
 
 | Member           | Type                                | Description                                                                                                        |
 | ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
