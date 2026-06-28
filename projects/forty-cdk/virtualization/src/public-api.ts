@@ -25,4 +25,5 @@ export {
 } from './virtual-viewport-context';
 export { ForVirtualViewport } from './virtual-viewport';
 export { ForVirtualFor, type ForVirtualForContext } from './virtual-for';
+export { ForVirtualReorder, type ForVirtualReorderEvent } from './virtual-reorder';
 export { ForTableVirtualized } from './table-virtualized';

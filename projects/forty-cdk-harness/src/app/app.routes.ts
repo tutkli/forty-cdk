@@ -266,6 +266,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'virtual-reorder',
+    loadComponent: () =>
+      import('./fixtures/virtual-reorder.fixture').then((m) => m.VirtualReorderFixture),
+  },
+  {
     path: 'combobox-virtualized',
     loadComponent: () =>
       import('./fixtures/combobox-virtualized.fixture').then((m) => m.ComboboxVirtualizedFixture),

@@ -157,6 +157,41 @@ this.v.scrollToIndex(500, { align: 'start' });
 `align` accepts `'start'` | `'center'` | `'end'` | `'auto'` (default). `'auto'`
 scrolls the minimum amount needed to bring the item into view.
 
+## Drag-reorder (`[forVirtualReorder]`)
+
+Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` to make a
+windowed `*forVirtualFor` list reorderable by pointer and keyboard. It composes
+`[forDropList]` (drag-drop) and translates its window-relative drop into
+dataset-**absolute** indices — so `moveItemInArray` over the full array moves the
+right item even when the lifted row scrolls out of the rendered window. Mark each
+rendered row as `[forDraggable]` with a `[dragData]`.
+
+```html
+<div
+  forVirtualViewport
+  [virtualCount]="rows().length"
+  [estimateSize]="44"
+  forVirtualReorder
+  (itemReorder)="onReorder($event)"
+  style="height: 400px"
+>
+  <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
+</div>
+```
+
+```ts
+onReorder({ from, to }: ForVirtualReorderEvent): void {
+  this.rows.update((rows) => moveItemInArray(rows, from, to));
+}
+```
+
+It never reorders the data itself (BYO-data): apply the move in the
+`(itemReorder)` handler. Pointer drag works within the window and reaches rows
+beyond it via auto-scroll (the lifted row is pinned mounted); keyboard reorder
+(`Space`/`Enter` to lift, arrows / `Home` / `End` / `PageUp` / `PageDown` to step,
+`Space`/`Enter` to drop, `Escape` to cancel) steps the target across the entire
+dataset, scrolling unmounted target rows into view. Vertical lists only.
+
 ## Accessibility
 
 Virtual lists render only a window of items, so screen readers see a shorter list

@@ -207,6 +207,7 @@ import {
 import {
   ForTableVirtualized,
   ForVirtualFor,
+  ForVirtualReorder,
   ForVirtualViewport,
   injectVirtualizer,
 } from 'forty-cdk/virtualization';
@@ -1596,6 +1597,24 @@ class VirtualViewportFixture {
 }
 
 @Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      style="height: 200px"
+    >
+      <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row">{{ row }}</div>
+    </div>
+  `,
+})
+class VirtualReorderFixture {
+  readonly rows = signal(Array.from({ length: 1000 }, (_, i) => `Row ${i}`));
+}
+
+@Component({
   imports: [ForVisuallyHidden],
   template: `
     <span forVisuallyHidden>Loading complete</span>
@@ -1689,6 +1708,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   FileUploadFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
+  VirtualReorderFixture,
   BreakpointsFixture,
   VisuallyHiddenFixture,
 ];

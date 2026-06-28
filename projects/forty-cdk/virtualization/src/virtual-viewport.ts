@@ -105,10 +105,26 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
 
   readonly #estimateTotal = computed(() => estimateTotal(this.count(), this.#estimator()));
 
-  /** The items in the currently visible window plus overscan. */
-  readonly virtualItems: Signal<readonly VirtualItem[]> = computed(
-    () => this.#virtualizer()?.virtualItems() ?? [],
-  );
+  readonly #reorderingIndex = signal<number | null>(null);
+
+  /**
+   * The items in the currently visible window plus overscan, augmented to always
+   * include the row pinned via {@link setReorderingIndex} even when it is scrolled
+   * out of view, so a drag-reorder's lifted row is never recycled out from under
+   * the gesture. Pinning never widens {@link range} (sourced from the underlying
+   * virtualizer), so it leaves infinite-scroll untouched.
+   */
+  readonly virtualItems: Signal<readonly VirtualItem[]> = computed(() => {
+    const items = this.#virtualizer()?.virtualItems() ?? [];
+    const retain = this.#reorderingIndex();
+    if (retain === null || retain < 0 || retain >= this.count()) {
+      return items;
+    }
+    if (items.some((item) => item.index === retain)) {
+      return items;
+    }
+    return [...items, this.#retainedItem(retain)].sort((a, b) => a.index - b.index);
+  });
 
   /** Total scroll size of all items, in pixels (drives the sizer). */
   readonly totalSize = computed(() => this.#virtualizer()?.totalSize() ?? this.#estimateTotal());
@@ -145,6 +161,17 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     });
   }
 
+  /**
+   * Pin the row at the absolute `index` into the rendered window so it stays
+   * mounted even when the window scrolls past it — used by `[forVirtualReorder]`
+   * to keep a drag-reorder's lifted row alive across auto-scroll and dataset-wide
+   * keyboard stepping. Pass `null` to release. No-op when the index is out of
+   * range; rarely needed directly.
+   */
+  setReorderingIndex(index: number | null): void {
+    this.#reorderingIndex.set(index);
+  }
+
   /** Scroll the container so the item at `index` is in view. No-op until initialized. */
   scrollToIndex(index: number, options?: { align?: 'start' | 'center' | 'end' | 'auto' }): void {
     this.#virtualizer()?.scrollToIndex(index, options);
@@ -158,5 +185,15 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /** Record the measured size of a rendered item element. No-op until initialized. */
   measureElement(element: HTMLElement): void {
     this.#virtualizer()?.measureElement(element);
+  }
+
+  #retainedItem(index: number): VirtualItem {
+    const estimator = this.#estimator();
+    let start = 0;
+    for (let i = 0; i < index; i++) {
+      start += estimator(i);
+    }
+    const key = this.getItemKey()?.(index) ?? index;
+    return { index, key, start, size: estimator(index) };
   }
 }

@@ -268,13 +268,15 @@ still be operable by keyboard); dragging is a pointer convenience, not the only 
 ## Virtualized lists
 
 Dragging the rows of a **virtualized** list (one whose off-screen rows are
-recycled out of the DOM) is supported **at the table layer** —
-[`[forTableRowReorder]`](../table/README.md#reordering-under-virtualization)
-composed with `[forTableVirtualized]` — and **not** on a bare `[forDropList]`
-wrapping `*forVirtualFor`.
+recycled out of the DOM) is supported through two opt-in companions:
 
-A raw `[forDropList]` only ever registers the rows currently rendered in the
-window, so on its own it:
+- a **table** — [`[forTableRowReorder]`](../table/README.md#reordering-under-virtualization)
+  composed with `[forTableVirtualized]`, and
+- a **plain `*forVirtualFor` list** — `[forVirtualReorder]` composed with
+  `[forVirtualViewport]` (see `forty-cdk/virtualization`).
+
+A bare `[forDropList]` wrapping `*forVirtualFor` is **not** supported on its own:
+it only ever registers the rows currently rendered in the window, so it
 
 - emits **window-relative** `previousIndex` / `currentIndex` (applying
   `moveItemInArray` over your full array reorders the wrong rows),
@@ -283,11 +285,33 @@ window, so on its own it:
 - confines keyboard stepping to the **rendered window**, so it can't traverse the
   dataset.
 
-`[forTableRowReorder]` solves all three. A custom virtualized integration must
-supply the same three mechanisms: map window-relative to absolute indices with the
-reusable `translateWindowReorder` helper (`forty-cdk/core`), keep the lifted row
-mounted for the duration of the drag, and step the keyboard target over the true
-total count. See [`docs/drag-in-virtualized-list-spike.md`](../../../docs/drag-in-virtualized-list-spike.md)
+Both companions solve all three: they translate window-relative to absolute
+dataset indices (so `moveItemInArray` over the full array moves the right item),
+pin the lifted row so auto-scroll never recycles it mid-drag, and step the
+keyboard target over the true total count.
+
+```html
+<div
+  forVirtualViewport
+  [virtualCount]="rows().length"
+  forVirtualReorder
+  (itemReorder)="onReorder($event)"
+>
+  <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
+</div>
+```
+
+```ts
+onReorder({ from, to }: ForVirtualReorderEvent): void {
+  this.rows.update((rows) => moveItemInArray(rows, from, to));
+}
+```
+
+A custom integration that cannot use either companion must supply the same three
+mechanisms itself: map window-relative to absolute indices with the reusable
+`translateWindowReorder` helper (`forty-cdk/core`), keep the lifted row mounted
+for the duration of the drag, and step the keyboard target over the true total
+count. See [`docs/drag-in-virtualized-list-spike.md`](../../../docs/drag-in-virtualized-list-spike.md)
 for the full analysis.
 
 ## Data attributes
