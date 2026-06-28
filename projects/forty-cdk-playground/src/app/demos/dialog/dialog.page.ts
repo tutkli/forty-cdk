@@ -5,6 +5,8 @@ import { DialogAnatomyExample } from './examples/anatomy.example';
 import { DialogGuardedCloseExample } from './examples/guarded-close.example';
 import { DialogNonModalExample } from './examples/non-modal.example';
 import { DialogProgrammaticExample } from './examples/programmatic.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/dialog/README.md';
 
 @Component({
@@ -17,6 +19,7 @@ import readmeContent from '../../../../../forty-cdk/dialog/README.md';
     DialogNonModalExample,
     DialogProgrammaticExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="dialog" [readme]="readme">
       <app-dialog-anatomy-example />

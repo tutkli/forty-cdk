@@ -1183,6 +1183,7 @@ module.exports = tseslint.config(
       '.angular/**',
       'coverage/**',
       '.audit-issues/**',
+      '**/*.generated.ts',
       // Local tooling scratch (workflow scripts, agent helpers) — gitignored,
       // never shipped, and not authored against the library's lint rules.
       '.claude/**',

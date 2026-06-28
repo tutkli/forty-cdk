@@ -2764,3 +2764,31 @@ a.pg-nav-link.active {
   color: var(--pg-primary);
   border-left-color: var(--pg-primary);
 }
+
+.pg-code {
+  overflow: auto;
+  max-height: 560px;
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+}
+
+.pg-code .shiki {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  font-family: var(--pg-font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.pg-code .shiki,
+.pg-code .shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+[data-theme='dark'] .pg-code .shiki,
+[data-theme='dark'] .pg-code .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}

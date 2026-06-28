@@ -6,6 +6,8 @@ import { CalendarDatePickerExample } from './examples/date-picker.example';
 import { CalendarDropdownsExample } from './examples/dropdowns.example';
 import { CalendarRangeExample } from './examples/range.example';
 import { CalendarViewSwitchingExample } from './examples/views.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/calendar/README.md';
 
 @Component({
@@ -19,6 +21,7 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
     CalendarDropdownsExample,
     CalendarViewSwitchingExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="calendar" [readme]="readme">
       <app-calendar-date-picker-example />

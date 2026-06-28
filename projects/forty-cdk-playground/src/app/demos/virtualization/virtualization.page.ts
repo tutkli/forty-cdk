@@ -4,6 +4,8 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { VirtualizationDynamicExample } from './examples/dynamic.example';
 import { VirtualizationInfiniteScrollExample } from './examples/infinite-scroll.example';
 import { VirtualizationViewportExample } from './examples/viewport.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
 
 @Component({
@@ -15,6 +17,7 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
     VirtualizationDynamicExample,
     VirtualizationInfiniteScrollExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="virtualization" [readme]="readme">
       <app-virtualization-viewport-example />

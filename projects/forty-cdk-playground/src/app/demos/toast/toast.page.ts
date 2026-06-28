@@ -4,12 +4,15 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { ToastPersistentExample } from './examples/persistent.example';
 import { ToastSwipeExample } from './examples/swipe-to-dismiss.example';
 import { ToastExample } from './examples/toast.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/toast/README.md';
 
 @Component({
   selector: 'app-toast-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PrimitivePage, ToastExample, ToastPersistentExample, ToastSwipeExample],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="toast" [readme]="readme">
       <app-toast-example />

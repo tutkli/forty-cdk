@@ -4,6 +4,8 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DropdownMenuCheckboxRadioExample } from './examples/checkbox-radio.example';
 import { DropdownMenuExample } from './examples/dropdown-menu.example';
 import { DropdownMenuSubmenusExample } from './examples/submenus.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
 
 @Component({
@@ -15,6 +17,7 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
     DropdownMenuCheckboxRadioExample,
     DropdownMenuSubmenusExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="dropdown-menu" [readme]="readme">
       <app-dropdown-menu-example />

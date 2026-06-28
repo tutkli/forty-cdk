@@ -4,6 +4,8 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DateFieldDateTimeExample } from './examples/date-time.example';
 import { DateFieldDateExample } from './examples/date.example';
 import { DateFieldLocalizedExample } from './examples/localized.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
 @Component({
@@ -15,6 +17,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
     DateFieldDateTimeExample,
     DateFieldLocalizedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="date-field" [readme]="readme">
       <app-date-field-date-example />

@@ -12,6 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper } from 'forty-cdk/drawer';
+import { ForToastViewport } from 'forty-cdk/toast';
 import { ForToggle } from 'forty-cdk/toggle';
 import { filter } from 'rxjs';
 
@@ -33,7 +34,16 @@ function readInitialTheme(): Theme {
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ForToggle, ForDrawer, ForDrawerBackdrop, ForDrawerWrapper, AppNav, Icon],
+  imports: [
+    RouterOutlet,
+    ForToggle,
+    ForDrawer,
+    ForDrawerBackdrop,
+    ForDrawerWrapper,
+    ForToastViewport,
+    AppNav,
+    Icon,
+  ],
   template: `
     <div class="app-shell" forDrawerWrapper #shell>
       <header class="topbar">
@@ -103,6 +113,8 @@ function readInitialTheme(): Theme {
         <app-nav (navigate)="navOpen.set(false)" />
       </div>
     }
+
+    <for-toast-viewport class="pg-toast-viewport" data-position="bottom-right" />
   `,
   styles: `
     :host {

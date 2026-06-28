@@ -3,12 +3,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { TimeFieldBoundsExample } from './examples/bounds.example';
 import { TimeFieldTimeExample } from './examples/time.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/time-field/README.md';
 
 @Component({
   selector: 'app-time-field-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PrimitivePage, TimeFieldTimeExample, TimeFieldBoundsExample],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="time-field" [readme]="readme">
       <app-time-field-time-example />

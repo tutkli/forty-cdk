@@ -7,6 +7,8 @@ import { TreeExpansionExample } from './examples/expansion.example';
 import { TreeExplorerExample } from './examples/explorer.example';
 import { TreeFilterExample } from './examples/filter.example';
 import { TreeVirtualizedExample } from './examples/virtualized.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/tree/README.md';
 
 @Component({
@@ -21,6 +23,7 @@ import readmeContent from '../../../../../forty-cdk/tree/README.md';
     TreeFilterExample,
     TreeVirtualizedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="tree" [readme]="readme">
       <app-tree-explorer-example />
