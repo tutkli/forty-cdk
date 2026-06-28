@@ -5,6 +5,7 @@ import { ComboboxExample } from './examples/combobox.example';
 import { ComboboxObjectValuesExample } from './examples/object-values.example';
 import { ComboboxPickerExample } from './examples/picker.example';
 import { ComboboxVirtualizedExample } from './examples/virtualized.example';
+import readmeContent from '../../../../../forty-cdk/combobox/README.md';
 
 @Component({
   selector: 'app-combobox-page',
@@ -17,7 +18,7 @@ import { ComboboxVirtualizedExample } from './examples/virtualized.example';
     ComboboxVirtualizedExample,
   ],
   template: `
-    <primitive-page slug="combobox">
+    <primitive-page slug="combobox" [readme]="readme">
       <app-combobox-example />
       <app-combobox-picker-example />
       <app-combobox-object-values-example />
@@ -25,4 +26,6 @@ import { ComboboxVirtualizedExample } from './examples/virtualized.example';
     </primitive-page>
   `,
 })
-export class ComboboxPage {}
+export class ComboboxPage {
+  protected readonly readme = readmeContent;
+}

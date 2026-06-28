@@ -9,6 +9,7 @@ import { TableResizingExample } from './examples/resizing.example';
 import { TableSelectionExample } from './examples/selection.example';
 import { TableSortingExample } from './examples/sorting.example';
 import { TableVirtualizedExample } from './examples/virtualized.example';
+import readmeContent from '../../../../../forty-cdk/table/README.md';
 
 @Component({
   selector: 'app-table-page',
@@ -25,7 +26,7 @@ import { TableVirtualizedExample } from './examples/virtualized.example';
     TableCombinedExample,
   ],
   template: `
-    <primitive-page slug="table">
+    <primitive-page slug="table" [readme]="readme">
       <app-table-grid-example />
       <app-table-selection-example />
       <app-table-sorting-example />
@@ -37,4 +38,6 @@ import { TableVirtualizedExample } from './examples/virtualized.example';
     </primitive-page>
   `,
 })
-export class TablePage {}
+export class TablePage {
+  protected readonly readme = readmeContent;
+}

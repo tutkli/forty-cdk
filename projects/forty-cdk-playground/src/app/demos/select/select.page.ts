@@ -5,6 +5,7 @@ import { SelectExample } from './examples/select.example';
 import { SelectFormFieldExample } from './examples/form-field.example';
 import { SelectTypeaheadExample } from './examples/typeahead.example';
 import { SelectVirtualizedExample } from './examples/virtualized.example';
+import readmeContent from '../../../../../forty-cdk/select/README.md';
 
 @Component({
   selector: 'app-select-page',
@@ -17,7 +18,7 @@ import { SelectVirtualizedExample } from './examples/virtualized.example';
     SelectVirtualizedExample,
   ],
   template: `
-    <primitive-page slug="select">
+    <primitive-page slug="select" [readme]="readme">
       <app-select-example />
       <app-select-typeahead-example />
       <app-select-form-field-example />
@@ -25,4 +26,6 @@ import { SelectVirtualizedExample } from './examples/virtualized.example';
     </primitive-page>
   `,
 })
-export class SelectPage {}
+export class SelectPage {
+  protected readonly readme = readmeContent;
+}

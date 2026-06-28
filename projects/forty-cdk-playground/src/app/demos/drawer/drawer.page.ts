@@ -7,6 +7,7 @@ import { DrawerProgrammaticExample } from './examples/programmatic.example';
 import { DrawerRegionScopedExample } from './examples/region-scoped.example';
 import { DrawerScaleBackgroundExample } from './examples/scale-background.example';
 import { DrawerSnapPointsExample } from './examples/snap-points.example';
+import readmeContent from '../../../../../forty-cdk/drawer/README.md';
 
 @Component({
   selector: 'app-drawer-page',
@@ -21,7 +22,7 @@ import { DrawerSnapPointsExample } from './examples/snap-points.example';
     DrawerProgrammaticExample,
   ],
   template: `
-    <primitive-page slug="drawer">
+    <primitive-page slug="drawer" [readme]="readme">
       <app-drawer-basic-example />
       <app-drawer-snap-points-example />
       <app-drawer-scale-background-example />
@@ -31,4 +32,6 @@ import { DrawerSnapPointsExample } from './examples/snap-points.example';
     </primitive-page>
   `,
 })
-export class DrawerPage {}
+export class DrawerPage {
+  protected readonly readme = readmeContent;
+}

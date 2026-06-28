@@ -7,6 +7,7 @@ import { DragDropFreeDragExample } from './examples/free-drag.example';
 import { DragDropMixedGridExample } from './examples/mixed-grid.example';
 import { DragDropSortableExample } from './examples/sortable.example';
 import { DragDropTransferExample } from './examples/transfer.example';
+import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
 
 @Component({
   selector: 'app-drag-drop-page',
@@ -21,7 +22,7 @@ import { DragDropTransferExample } from './examples/transfer.example';
     DragDropFreeDragExample,
   ],
   template: `
-    <primitive-page slug="drag-drop">
+    <primitive-page slug="drag-drop" [readme]="readme">
       <app-drag-drop-sortable-example />
       <app-drag-drop-auto-scroll-example />
       <app-drag-drop-transfer-example />
@@ -31,4 +32,6 @@ import { DragDropTransferExample } from './examples/transfer.example';
     </primitive-page>
   `,
 })
-export class DragDropPage {}
+export class DragDropPage {
+  protected readonly readme = readmeContent;
+}

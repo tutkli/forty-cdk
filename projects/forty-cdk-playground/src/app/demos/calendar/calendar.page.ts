@@ -6,6 +6,7 @@ import { CalendarDatePickerExample } from './examples/date-picker.example';
 import { CalendarDropdownsExample } from './examples/dropdowns.example';
 import { CalendarRangeExample } from './examples/range.example';
 import { CalendarViewSwitchingExample } from './examples/views.example';
+import readmeContent from '../../../../../forty-cdk/calendar/README.md';
 
 @Component({
   selector: 'app-calendar-page',
@@ -19,7 +20,7 @@ import { CalendarViewSwitchingExample } from './examples/views.example';
     CalendarViewSwitchingExample,
   ],
   template: `
-    <primitive-page slug="calendar">
+    <primitive-page slug="calendar" [readme]="readme">
       <app-calendar-date-picker-example />
       <app-calendar-dropdowns-example />
       <app-calendar-constraints-example />
@@ -28,4 +29,6 @@ import { CalendarViewSwitchingExample } from './examples/views.example';
     </primitive-page>
   `,
 })
-export class CalendarPage {}
+export class CalendarPage {
+  protected readonly readme = readmeContent;
+}

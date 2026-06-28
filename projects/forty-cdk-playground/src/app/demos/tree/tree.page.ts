@@ -7,6 +7,7 @@ import { TreeExpansionExample } from './examples/expansion.example';
 import { TreeExplorerExample } from './examples/explorer.example';
 import { TreeFilterExample } from './examples/filter.example';
 import { TreeVirtualizedExample } from './examples/virtualized.example';
+import readmeContent from '../../../../../forty-cdk/tree/README.md';
 
 @Component({
   selector: 'app-tree-page',
@@ -21,7 +22,7 @@ import { TreeVirtualizedExample } from './examples/virtualized.example';
     TreeVirtualizedExample,
   ],
   template: `
-    <primitive-page slug="tree">
+    <primitive-page slug="tree" [readme]="readme">
       <app-tree-explorer-example />
       <app-tree-dnd-example />
       <app-tree-checkbox-example />
@@ -31,4 +32,6 @@ import { TreeVirtualizedExample } from './examples/virtualized.example';
     </primitive-page>
   `,
 })
-export class TreePage {}
+export class TreePage {
+  protected readonly readme = readmeContent;
+}

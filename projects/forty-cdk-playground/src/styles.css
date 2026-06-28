@@ -2535,3 +2535,232 @@ a.pg-nav-link.active {
 .pg-dp-cell[data-range-end]:not([data-range-start]) {
   border-radius: 0 999px 999px 0;
 }
+
+.pg-doc-section {
+  margin-top: 2.75rem;
+  scroll-margin-top: 4.5rem;
+}
+
+.pg-doc-h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+}
+
+.pg-doc-anchor {
+  font-weight: 400;
+  color: var(--pg-text-muted);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.pg-doc-h2:hover .pg-doc-anchor,
+.pg-doc-anchor:focus-visible {
+  opacity: 0.55;
+}
+
+.pg-doc-anchor:hover {
+  opacity: 1;
+  color: var(--pg-primary);
+}
+
+.pg-doc-intro {
+  font-size: 1.02rem;
+}
+
+.pg-doc-prose {
+  color: var(--pg-text);
+}
+
+.pg-doc-prose > :first-child {
+  margin-top: 0;
+}
+
+.pg-doc-prose p {
+  margin: 0.75rem 0;
+}
+
+.pg-doc-prose h3 {
+  margin: 1.85rem 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pg-doc-prose h4 {
+  margin: 1.4rem 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pg-doc-prose ul,
+.pg-doc-prose ol {
+  margin: 0.75rem 0;
+  padding-left: 1.4rem;
+}
+
+.pg-doc-prose li {
+  margin: 0.3rem 0;
+}
+
+.pg-doc-prose li > ul,
+.pg-doc-prose li > ol {
+  margin: 0.3rem 0;
+}
+
+.pg-doc-prose a {
+  color: var(--pg-primary);
+  text-decoration: none;
+}
+
+.pg-doc-prose a:hover {
+  text-decoration: underline;
+}
+
+.pg-doc-prose strong {
+  font-weight: 700;
+}
+
+.pg-doc-prose code {
+  font-family: var(--pg-font-mono);
+  font-size: 0.85em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  background: var(--pg-surface-2);
+}
+
+.pg-doc-prose pre {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+  font-family: var(--pg-font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.pg-doc-prose pre code {
+  padding: 0;
+  font-size: inherit;
+  background: none;
+}
+
+.pg-doc-prose blockquote {
+  margin: 1rem 0;
+  padding: 0.4rem 0 0.4rem 1rem;
+  border-left: 3px solid var(--pg-border-strong);
+  color: var(--pg-text-muted);
+}
+
+.pg-doc-prose hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--pg-border);
+}
+
+.pg-doc-table-scroll {
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+}
+
+.pg-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.pg-doc-table th,
+.pg-doc-table td {
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--pg-border);
+}
+
+.pg-doc-table thead th {
+  position: relative;
+  white-space: nowrap;
+  font-weight: 700;
+  background: var(--pg-surface-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pg-doc-table thead th::after {
+  content: '↕';
+  margin-left: 0.4rem;
+  font-size: 0.78em;
+  opacity: 0.3;
+}
+
+.pg-doc-table thead th[data-sorted='ascending']::after {
+  content: '↑';
+  opacity: 1;
+  color: var(--pg-primary);
+}
+
+.pg-doc-table thead th[data-sorted='descending']::after {
+  content: '↓';
+  opacity: 1;
+  color: var(--pg-primary);
+}
+
+.pg-doc-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.pg-doc-table td code {
+  white-space: nowrap;
+}
+
+.pg-toc {
+  font-size: 0.82rem;
+}
+
+.pg-toc-title {
+  margin: 0 0 0.6rem;
+  padding-left: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pg-text-muted);
+}
+
+.pg-toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--pg-border);
+}
+
+.pg-toc-link {
+  display: block;
+  margin-left: -1px;
+  padding: 0.3rem 0.75rem;
+  border-left: 2px solid transparent;
+  color: var(--pg-text-muted);
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.pg-toc-link:hover {
+  color: var(--pg-text);
+}
+
+.pg-toc-link.active {
+  font-weight: 600;
+  color: var(--pg-primary);
+  border-left-color: var(--pg-primary);
+}
