@@ -46,7 +46,7 @@ import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from './tooltip-defaults';
  *
  * Tooltip content is portaled to `document.body` and positioned via
  * `@floating-ui/dom`. Per APG, content must NOT be interactive — for
- * interactive popups use a Popover primitive (not yet shipped).
+ * interactive popups use a Popover primitive.
  */
 @Directive({
   selector: '[forTooltip]',
