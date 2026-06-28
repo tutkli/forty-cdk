@@ -1,7 +1,4 @@
-import {
-  attachScrollDismiss,
-  DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS,
-} from './scroll-dismiss';
+import { attachScrollDismiss, DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS } from './scroll-dismiss';
 
 describe('attachScrollDismiss', () => {
   beforeEach(() => {
