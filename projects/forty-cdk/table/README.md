@@ -469,16 +469,17 @@ Supported today:
 - **Pointer drag within the rendered window**, and **auto-scroll past the window edge** to reach
   rows beyond it — the lifted row is pinned mounted for the duration of the drag so auto-scroll
   cannot unmount it and desync the indices.
+- **Single-gesture windowed scrub to an arbitrary far row.** Hold **Shift** during a pointer drag
+  and the scroll viewport maps onto the whole dataset — the top edge targets row 0, the bottom edge
+  the last row — so one gesture drops the lifted row at any far row without waiting for auto-scroll
+  to crawl there. Releasing Shift returns to normal in-window resolution; without Shift, pointer
+  resolution is unchanged.
 - **Keyboard reorder across the entire dataset.** Space lifts the focused row; Arrow keys step
   the target one row at a time; Home / Ctrl+Home jumps to the dataset start (index 0); End /
   Ctrl+End jumps to the dataset end (last absolute index); PageUp / PageDown jump by one rendered
   window; Space drops and emits absolute `from` / `to`. As the target steps past the rendered
   window the target row is scrolled into view and the lifted row stays pinned mounted throughout.
   `rowReorder` always emits absolute `from` / `to`.
-
-Deferred (a `[forTableVirtualized]` row is the only drag-drop composition with this gap):
-
-- **Single-gesture free pointer drag to an arbitrary far row** that auto-scroll cannot reach.
 
 ```html
 <div

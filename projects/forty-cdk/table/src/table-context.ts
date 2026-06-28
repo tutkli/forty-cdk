@@ -65,6 +65,13 @@ export interface TableVirtualRowNavigation {
    * the rendered window without taking a direct dependency on `ForTableVirtualized`.
    */
   scrollToRow(index: number): void;
+  /**
+   * The bounding rect of the scroll container along the visible viewport, or
+   * `null` before it is available. `[forTableRowReorder]` reads it to map a
+   * modifier-held pointer drag onto an absolute dataset index (windowed-scrub
+   * drop to a far row), without depending on `ForTableVirtualized` directly.
+   */
+  scrollViewportRect(): DOMRect | null;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */

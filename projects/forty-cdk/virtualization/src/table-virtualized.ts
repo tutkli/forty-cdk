@@ -73,6 +73,7 @@ export class ForTableVirtualized {
   readonly #navigator = new TableVirtualizedNavigator({
     rows: this.#ctx.rows,
     scrollToRow: (index) => this.scrollToRow(index),
+    scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
   });
 
   constructor() {

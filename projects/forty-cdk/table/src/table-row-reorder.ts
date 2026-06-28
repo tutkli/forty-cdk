@@ -10,7 +10,12 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
-import { createKeyboardDragMediator, LiveAnnouncer, translateWindowReorder } from 'forty-cdk/core';
+import {
+  createKeyboardDragMediator,
+  LiveAnnouncer,
+  resolveScrubReorder,
+  translateWindowReorder,
+} from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 
 /** Payload of `rowReorder`: the previous and new row index. */
@@ -53,6 +58,10 @@ export function translateRowReorderIndices(
  * array moves the right row. Pointer drag works within the rendered window and reaches
  * rows beyond it via auto-scroll (the lifted row is kept mounted for the drag); keyboard
  * reorder steps the target across the entire dataset (scrolling unmounted rows into view).
+ * Holding **Shift** during a pointer drag engages **windowed scrub** — the scroll viewport
+ * maps onto the whole dataset (top edge → row 0, bottom edge → the last row) so a single
+ * gesture drops the lifted row at an arbitrary far row without auto-scroll having to reach
+ * it. Without Shift, pointer resolution is unchanged.
  * A non-virtualized table emits rendered-order indices unchanged.
  *
  * @example
@@ -94,6 +103,8 @@ export class ForTableRowReorder {
   #kbLiftedHost: HTMLElement | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
+  #pointerMain: number | null = null;
+  #scrubEngaged = false;
 
   /** Fires once per committed reorder gesture with the previous / new row index. */
   readonly rowReorder = output<TableRowReorderDescriptor>();
@@ -107,8 +118,10 @@ export class ForTableRowReorder {
 
     if (this.#isBrowser) {
       const onPointerDown = (event: PointerEvent): void => this.#pinFromPointer(event);
+      const onPointerMove = (event: PointerEvent): void => this.#trackScrub(event);
       const onPointerEnd = (): void => this.ctx.setReorderingRow(null);
       this.#host.addEventListener('pointerdown', onPointerDown, { capture: true });
+      this.#document.addEventListener('pointermove', onPointerMove, { capture: true });
       this.#document.addEventListener('pointerup', onPointerEnd, { capture: true });
       this.#document.addEventListener('pointercancel', onPointerEnd, { capture: true });
 
@@ -128,6 +141,7 @@ export class ForTableRowReorder {
 
       destroyRef.onDestroy(() => {
         this.#host.removeEventListener('pointerdown', onPointerDown, { capture: true });
+        this.#document.removeEventListener('pointermove', onPointerMove, { capture: true });
         this.#document.removeEventListener('pointerup', onPointerEnd, { capture: true });
         this.#document.removeEventListener('pointercancel', onPointerEnd, { capture: true });
         if (this.#kbLiftedHost !== null) {
@@ -264,6 +278,8 @@ export class ForTableRowReorder {
   }
 
   #pinFromPointer(event: PointerEvent): void {
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
       return;
@@ -274,6 +290,14 @@ export class ForTableRowReorder {
     }
     const handle = this.ctx.rows().find((r) => r.host === rowHost);
     this.ctx.setReorderingRow(handle?.virtualIndex() ?? null);
+  }
+
+  #trackScrub(event: PointerEvent): void {
+    if (!this.#list.isDragging()) {
+      return;
+    }
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
   }
 
   #resolveDescriptor(event: ForDragDropEvent): TableRowReorderDescriptor {
@@ -292,6 +316,21 @@ export class ForTableRowReorder {
         return fallback;
       }
       windowIndices.push(index);
+    }
+    const rect = this.ctx.virtualRowNavigation()?.scrollViewportRect() ?? null;
+    if (rect !== null) {
+      const from = windowIndices[event.previousIndex] ?? event.previousIndex;
+      const scrub = resolveScrubReorder({
+        engaged: this.#scrubEngaged,
+        pointer: this.#pointerMain ?? rect.top,
+        viewportStart: rect.top,
+        viewportEnd: rect.bottom,
+        from,
+        count: this.#count(),
+      });
+      if (scrub !== null) {
+        return scrub;
+      }
     }
     return translateRowReorderIndices(windowIndices, event.previousIndex, event.currentIndex);
   }
