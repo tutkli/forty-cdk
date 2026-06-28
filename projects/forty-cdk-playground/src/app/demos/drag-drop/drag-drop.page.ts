@@ -7,6 +7,8 @@ import { DragDropFreeDragExample } from './examples/free-drag.example';
 import { DragDropMixedGridExample } from './examples/mixed-grid.example';
 import { DragDropSortableExample } from './examples/sortable.example';
 import { DragDropTransferExample } from './examples/transfer.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
 
 @Component({
@@ -21,6 +23,7 @@ import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
     DragDropMixedGridExample,
     DragDropFreeDragExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="drag-drop" [readme]="readme">
       <app-drag-drop-sortable-example />

@@ -5,6 +5,8 @@ import { CarouselAutoplayExample } from './examples/autoplay.example';
 import { CarouselBasicExample } from './examples/basic.example';
 import { CarouselDragExample } from './examples/drag.example';
 import { CarouselMultipleExample } from './examples/multiple-slides.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
 @Component({
@@ -17,6 +19,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
     CarouselAutoplayExample,
     CarouselDragExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="carousel" [readme]="readme">
       <app-carousel-basic-example />

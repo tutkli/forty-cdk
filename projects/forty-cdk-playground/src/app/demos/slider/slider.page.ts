@@ -5,6 +5,8 @@ import { SliderExample } from './examples/slider.example';
 import { SliderInvertedExample } from './examples/inverted.example';
 import { SliderRangeExample } from './examples/range.example';
 import { SliderVerticalExample } from './examples/vertical.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/slider/README.md';
 
 @Component({
@@ -17,6 +19,7 @@ import readmeContent from '../../../../../forty-cdk/slider/README.md';
     SliderVerticalExample,
     SliderInvertedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="slider" [readme]="readme">
       <app-slider-example />

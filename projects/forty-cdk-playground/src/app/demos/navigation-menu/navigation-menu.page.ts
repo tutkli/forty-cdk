@@ -4,6 +4,8 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { NavigationMenuExample } from './examples/navigation-menu.example';
 import { NavigationMenuTimingExample } from './examples/timing.example';
 import { NavigationMenuVerticalExample } from './examples/vertical.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
 
 @Component({
@@ -15,6 +17,7 @@ import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
     NavigationMenuTimingExample,
     NavigationMenuVerticalExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="navigation-menu" [readme]="readme">
       <app-navigation-menu-example />

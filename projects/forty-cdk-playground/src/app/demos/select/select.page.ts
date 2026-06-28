@@ -5,6 +5,8 @@ import { SelectExample } from './examples/select.example';
 import { SelectFormFieldExample } from './examples/form-field.example';
 import { SelectTypeaheadExample } from './examples/typeahead.example';
 import { SelectVirtualizedExample } from './examples/virtualized.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/select/README.md';
 
 @Component({
@@ -17,6 +19,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
     SelectFormFieldExample,
     SelectVirtualizedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="select" [readme]="readme">
       <app-select-example />

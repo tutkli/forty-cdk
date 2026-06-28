@@ -4,6 +4,8 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DateRangeFieldDateTimeExample } from './examples/date-time.example';
 import { DateRangeFieldFormFieldExample } from './examples/form-field.example';
 import { DateRangeFieldRangeExample } from './examples/range.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/date-range-field/README.md';
 
 @Component({
@@ -15,6 +17,7 @@ import readmeContent from '../../../../../forty-cdk/date-range-field/README.md';
     DateRangeFieldDateTimeExample,
     DateRangeFieldFormFieldExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="date-range-field" [readme]="readme">
       <app-date-range-field-range-example />

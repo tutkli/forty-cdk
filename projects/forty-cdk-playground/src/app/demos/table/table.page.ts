@@ -9,6 +9,8 @@ import { TableResizingExample } from './examples/resizing.example';
 import { TableSelectionExample } from './examples/selection.example';
 import { TableSortingExample } from './examples/sorting.example';
 import { TableVirtualizedExample } from './examples/virtualized.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/table/README.md';
 
 @Component({
@@ -25,6 +27,7 @@ import readmeContent from '../../../../../forty-cdk/table/README.md';
     TableInfiniteScrollExample,
     TableCombinedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="table" [readme]="readme">
       <app-table-grid-example />

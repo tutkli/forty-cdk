@@ -5,6 +5,8 @@ import { ComboboxExample } from './examples/combobox.example';
 import { ComboboxObjectValuesExample } from './examples/object-values.example';
 import { ComboboxPickerExample } from './examples/picker.example';
 import { ComboboxVirtualizedExample } from './examples/virtualized.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/combobox/README.md';
 
 @Component({
@@ -17,6 +19,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
     ComboboxObjectValuesExample,
     ComboboxVirtualizedExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="combobox" [readme]="readme">
       <app-combobox-example />

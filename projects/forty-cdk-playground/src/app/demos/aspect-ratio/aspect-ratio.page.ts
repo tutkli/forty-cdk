@@ -2,12 +2,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { PrimitivePage } from '../../ui/primitive-page';
 import { AspectRatioExample } from './examples/aspect-ratio.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
 
 @Component({
   selector: 'app-aspect-ratio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PrimitivePage, AspectRatioExample],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="aspect-ratio" [readme]="readme">
       <app-aspect-ratio-example />

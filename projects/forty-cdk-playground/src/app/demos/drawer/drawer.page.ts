@@ -7,6 +7,8 @@ import { DrawerProgrammaticExample } from './examples/programmatic.example';
 import { DrawerRegionScopedExample } from './examples/region-scoped.example';
 import { DrawerScaleBackgroundExample } from './examples/scale-background.example';
 import { DrawerSnapPointsExample } from './examples/snap-points.example';
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/drawer/README.md';
 
 @Component({
@@ -21,6 +23,7 @@ import readmeContent from '../../../../../forty-cdk/drawer/README.md';
     DrawerRegionScopedExample,
     DrawerProgrammaticExample,
   ],
+  providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="drawer" [readme]="readme">
       <app-drawer-basic-example />
