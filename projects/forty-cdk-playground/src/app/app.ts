@@ -265,7 +265,7 @@ function readInitialTheme(): Theme {
     }
 
     .shell-body {
-      flex: 1;
+      flex: 1 0 auto;
       min-height: 0;
       display: grid;
       grid-template-columns: var(--pg-sidebar-width) 1fr;
