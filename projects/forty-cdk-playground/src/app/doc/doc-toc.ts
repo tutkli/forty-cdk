@@ -9,6 +9,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 export interface TocItem {
   readonly title: string;
@@ -18,6 +19,7 @@ export interface TocItem {
 @Component({
   selector: 'doc-toc',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   template: `
     <nav class="pg-toc" aria-label="On this page">
       <p class="pg-toc-title">On this page</p>
@@ -27,7 +29,8 @@ export interface TocItem {
             <a
               class="pg-toc-link"
               [class.active]="item.slug === activeSlug()"
-              [href]="'#' + item.slug"
+              [routerLink]="[]"
+              [fragment]="item.slug"
               >{{ item.title }}</a
             >
           </li>

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
+import { RouterLink } from '@angular/router';
 
 import { DocTable } from './doc-table';
 import type { DocSectionData, DocTableData } from './markdown';
@@ -11,13 +12,14 @@ type PreparedBlock =
 @Component({
   selector: 'doc-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocTable],
+  imports: [DocTable, RouterLink],
   template: `
     <section class="pg-doc-section" [id]="section().slug">
       <h2 class="pg-doc-h2">
         <a
           class="pg-doc-anchor"
-          [href]="'#' + section().slug"
+          [routerLink]="[]"
+          [fragment]="section().slug"
           [attr.aria-label]="section().title + ' permalink'"
           >#</a
         >

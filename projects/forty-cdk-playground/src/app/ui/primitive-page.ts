@@ -80,7 +80,8 @@ import { Icon } from './icon';
           <h2 class="pg-doc-h2">
             <a
               class="pg-doc-anchor"
-              [href]="'#' + examplesMeta().slug"
+              [routerLink]="[]"
+              [fragment]="examplesMeta().slug"
               [attr.aria-label]="examplesMeta().title + ' permalink'"
               >#</a
             >
