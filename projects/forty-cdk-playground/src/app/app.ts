@@ -161,6 +161,7 @@ function readInitialTheme(): Theme {
       position: sticky;
       top: 0;
       z-index: 40;
+      flex: none;
       display: flex;
       align-items: center;
       gap: 1rem;
