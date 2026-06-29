@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
   template: `
     <primitive-page slug="aspect-ratio" [readme]="readme">
       <playground-demo
-        title="Widescreen (16 / 9)"
-        subtitle="A layout utility that locks a box to a width / height ratio. It only sets the CSS aspect-ratio property on its host — no ARIA, no behavior — so the box scales fluidly with the available width."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/aspect-ratio/examples/default.example.ts"
       >
         <app-aspect-ratio-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
 
       <playground-demo
         title="Square (1 / 1)"
-        subtitle="Pass ratio=1 to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards."
+        subtitle="Set <code>ratio</code> to <code>1</code> to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards."
         sourcePath="projects/forty-cdk-playground/src/app/demos/aspect-ratio/examples/square.example.ts"
       >
         <app-aspect-ratio-square-example />

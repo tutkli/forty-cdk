@@ -1,14 +1,16 @@
 # AspectRatio
 
-Pure visual utility — locks an element's box to a fixed `width / height` ratio via the native CSS `aspect-ratio` property.
+A container that keeps its content at a fixed width-to-height ratio.
 
-No ARIA semantics. Use it to reserve space for media before it loads (preventing layout shift), to keep cards on a grid uniform, or to wrap responsive iframes.
+Pure visual utility — it locks an element's box via the native CSS `aspect-ratio` property, with no ARIA semantics. Reach for it to reserve space for media before it loads (preventing layout shift), keep cards on a grid uniform, or wrap responsive iframes.
 
 ## Anatomy
 
-| Class            | Selector           | Role                                                      |
-| ---------------- | ------------------ | --------------------------------------------------------- |
-| `ForAspectRatio` | `[forAspectRatio]` | Single attribute directive. Applies `style.aspect-ratio`. |
+```html
+<div forAspectRatio [ratio]="16 / 9">
+  <!-- your content fills the box -->
+</div>
+```
 
 ## Examples
 
@@ -56,15 +58,13 @@ export class DemoAspectRatio {}
 
 ### `ForAspectRatio`
 
-| Property | Type            | Description                                                                                                                                                                                          |
-| -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ratio`  | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. Non-positive or non-finite values fall back to `1`.<br>**Default:** `1` |
+| Property | Type            | Description                                                                                                                                                                         |
+| -------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ratio`  | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Non-positive or non-finite values fall back to `1`.<br>**Default:** `1` |
 
-### Data attributes
-
-| Piece              | Attribute | Values |
-| ------------------ | --------- | ------ |
-| `[forAspectRatio]` | _(none)_  | —      |
+| Data attribute     | Values  |
+| ------------------ | ------- |
+| `[forAspectRatio]` | present |
 
 ## Styling
 
