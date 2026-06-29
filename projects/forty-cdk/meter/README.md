@@ -63,15 +63,15 @@ export class DemoDisk {
 
 ### `ForMeter`
 
-| API             | Type                                       | Default | Description                                                                                           |
-| --------------- | ------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------- |
-| `value`         | `model<number>`                            | —       | Two-way bindable. Clamped to `[min, max]` for ARIA / data-\* output; the model retains the raw write. |
-| `min`           | `input<number>`                            | `0`     | Lower bound. Default `0`.                                                                             |
-| `max`           | `input<number>`                            | `100`   | Upper bound. Default `100`.                                                                           |
-| `low`           | `input<number \| null>`                    | `null`  | Lower boundary of the "comfortable" range. Default `null` (= `min`).                                  |
-| `high`          | `input<number \| null>`                    | `null`  | Upper boundary of the "comfortable" range. Default `null` (= `max`).                                  |
-| `optimum`       | `input<number \| null>`                    | `null`  | Ideal point. Default `null` (= midpoint). Drives the quality classification.                          |
-| `getValueLabel` | `input<((v, min, max) => string) \| null>` | —       | Override for `aria-valuetext`.                                                                        |
+| Property        | Type                                       | Description                                                                                                             |
+| --------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `value`         | `model<number>`                            | Two-way bindable. Clamped to `[min, max]` for ARIA / data-\* output; the model retains the raw write.<br>**Default:** — |
+| `min`           | `input<number>`                            | Lower bound.<br>**Default:** `0`                                                                                        |
+| `max`           | `input<number>`                            | Upper bound.<br>**Default:** `100`                                                                                      |
+| `low`           | `input<number \| null>`                    | Lower boundary of the "comfortable" range.<br>**Default:** `null` (= `min`)                                             |
+| `high`          | `input<number \| null>`                    | Upper boundary of the "comfortable" range.<br>**Default:** `null` (= `max`)                                             |
+| `optimum`       | `input<number \| null>`                    | Ideal point. Drives the quality classification.<br>**Default:** `null` (= midpoint)                                     |
+| `getValueLabel` | `input<((v, min, max) => string) \| null>` | Override for `aria-valuetext`.<br>**Default:** —                                                                        |
 
 ### Data attributes
 

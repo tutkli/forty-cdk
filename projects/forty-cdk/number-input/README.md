@@ -101,18 +101,18 @@ export class DemoOrder {
 
 ### `ForNumberInput`
 
-| API                                                                    | Type                                      | Default | Description                                                                                      |
-| ---------------------------------------------------------------------- | ----------------------------------------- | ------- | ------------------------------------------------------------------------------------------------ |
-| `value`                                                                | `model<number \| null>`                   | —       | Two-way bindable value. `null` is the empty input (reflected as `data-empty`).                   |
-| `min`                                                                  | `input<number \| undefined>`              | —       | Lower bound. Reflected as `aria-valuemin`. Unset → no lower bound.                               |
-| `max`                                                                  | `input<number \| undefined>`              | —       | Upper bound. Reflected as `aria-valuemax`. Unset → no upper bound.                               |
-| `step`                                                                 | `input<number>`                           | `1`     | Increment for ArrowUp / ArrowDown and the buttons.                                               |
-| `stepMultiplier`                                                       | `input<number>`                           | `10`    | Multiplier over `step` for PageUp / PageDown (configurable via `provideForNumberInputDefaults`). |
-| `formatOptions`                                                        | `input<Intl.NumberFormatOptions \| null>` | —       | When set, drives the displayed text and `aria-valuetext`.                                        |
-| `locale`                                                               | `input<string \| null>`                   | —       | BCP 47 locale for parsing and formatting. Defaults to the runtime locale.                        |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | —       | Shared form-control flags (see [Field](../field/README.md)).                                     |
-| `name`                                                                 | `input<string>`                           | —       | Mounts a hidden `<input>` carrying the **raw** number for native form submission.                |
-| `touched`                                                              | `model<boolean>`                          | —       | Set to `true` on blur.                                                                           |
+| Property                                                               | Type                                      | Description                                                                                                           |
+| ---------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                                | `model<number \| null>`                   | Two-way bindable value. `null` is the empty input (reflected as `data-empty`).<br>**Default:** —                      |
+| `min`                                                                  | `input<number \| undefined>`              | Lower bound. Reflected as `aria-valuemin`. Unset → no lower bound.<br>**Default:** —                                  |
+| `max`                                                                  | `input<number \| undefined>`              | Upper bound. Reflected as `aria-valuemax`. Unset → no upper bound.<br>**Default:** —                                  |
+| `step`                                                                 | `input<number>`                           | Increment for ArrowUp / ArrowDown and the buttons.<br>**Default:** `1`                                                |
+| `stepMultiplier`                                                       | `input<number>`                           | Multiplier over `step` for PageUp / PageDown (configurable via `provideForNumberInputDefaults`).<br>**Default:** `10` |
+| `formatOptions`                                                        | `input<Intl.NumberFormatOptions \| null>` | When set, drives the displayed text and `aria-valuetext`.<br>**Default:** —                                           |
+| `locale`                                                               | `input<string \| null>`                   | BCP 47 locale for parsing and formatting. Defaults to the runtime locale.<br>**Default:** —                           |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                        |
+| `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.<br>**Default:** —                   |
+| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur.<br>**Default:** —                                                                              |
 
 The host carries `data-empty` (while the value is `null`), `data-disabled`, and `data-readonly`, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
 

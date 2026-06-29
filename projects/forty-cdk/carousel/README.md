@@ -208,23 +208,23 @@ rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
 
 All inputs are on `[forCarousel]` unless noted.
 
-| Input                                            | Type                           | Default                        | Description                                                                                                                        |
-| ------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `activeIndex`                                    | `model<number>`                | `0`                            | Two-way bindable current slide index.                                                                                              |
-| `orientation`                                    | `'horizontal' \| 'vertical'`   | `'horizontal'`                 | Scroll axis.                                                                                                                       |
-| `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                                                                                     |
-| `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                                                                                     |
-| `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                                                                            |
-| `containScroll`                                  | `boolean`                      | `false`                        | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping. |
-| `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`).                                                             |
-| `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.                                                                    |
-| `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                                                                            |
-| `dir`                                            | `'ltr' \| 'rtl' \| null`       | `null` (inherits)              | Writing direction.                                                                                                                 |
-| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | `null`                         | Label for the picker group.                                                                                                        |
-| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | `null`                         | Override the positional "N of M" label.                                                                                            |
-| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                                                                            |
-| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                                                                                         |
-| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                                                                                         |
+| Property                                         | Type                           | Description                                                                                                                                                |
+| ------------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activeIndex`                                    | `model<number>`                | Two-way bindable current slide index.<br>**Default:** `0`                                                                                                  |
+| `orientation`                                    | `'horizontal' \| 'vertical'`   | Scroll axis.<br>**Default:** `'horizontal'`                                                                                                                |
+| `loop`                                           | `boolean`                      | Wrap-around at the boundaries.<br>**Default:** `false`                                                                                                     |
+| `align`                                          | `'start' \| 'center' \| 'end'` | Alignment of the active slide.<br>**Default:** `'start'`                                                                                                   |
+| `slidesPerView`                                  | `number`                       | Visible slides at once.<br>**Default:** `1`                                                                                                                |
+| `containScroll`                                  | `boolean`                      | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping.<br>**Default:** `false` |
+| `autoplay`                                       | `boolean`                      | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`).<br>**Default:** `false`                                                             |
+| `autoplayInterval`                               | `number`                       | Ms between automatic slide advances. `<= 0` disables the timer.<br>**Default:** `5000`                                                                     |
+| `ariaLabel`                                      | `string \| null`               | Accessible label for the carousel root.<br>**Default:** `null`                                                                                             |
+| `dir`                                            | `'ltr' \| 'rtl' \| null`       | Writing direction.<br>**Default:** `null` (inherits)                                                                                                       |
+| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | Label for the picker group.<br>**Default:** `null`                                                                                                         |
+| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | Override the positional "N of M" label.<br>**Default:** `null`                                                                                             |
+| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | Disable this indicator.<br>**Default:** `false`                                                                                                            |
+| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | Accessible name while rotation is stopped.<br>**Default:** `'Start automatic slide show'`                                                                  |
+| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | Accessible name while rotation is playing.<br>**Default:** `'Stop automatic slide show'`                                                                   |
 
 ### Contain scroll
 
@@ -245,9 +245,9 @@ when `loop` is enabled (the entire range is valid when wrapping) or when
 
 ### `ForCarouselDrag` inputs
 
-| Input      | Type      | Default | Description                                                                  |
-| ---------- | --------- | ------- | ---------------------------------------------------------------------------- |
-| `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
+| Property   | Type      | Description                                                                                          |
+| ---------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `disabled` | `boolean` | Disable pointer drag without removing the directive. Removes `touch-action`.<br>**Default:** `false` |
 
 ## Keyboard
 

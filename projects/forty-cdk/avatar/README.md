@@ -64,17 +64,17 @@ export class DemoAvatar {
 
 ### `ForAvatar`
 
-| API                  | Type                      | Default | Description                                                                               |
-| -------------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `fallbackDelayMs`    | `input<number>`           | `0`     | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
-| `status`             | `Signal<ForAvatarStatus>` | —       | Read-only current status.                                                                 |
-| `shouldShowFallback` | `Signal<boolean>`         | —       | `true` when the consumer should render the fallback. Drives `@if`.                        |
+| Property             | Type                      | Description                                                                                      |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `fallbackDelayMs`    | `input<number>`           | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading.<br>**Default:** `0` |
+| `status`             | `Signal<ForAvatarStatus>` | Read-only current status.<br>**Default:** —                                                      |
+| `shouldShowFallback` | `Signal<boolean>`         | `true` when the consumer should render the fallback. Drives `@if`.<br>**Default:** —             |
 
 ### `ForAvatarImage`
 
-| API                   | Type                      | Default | Description                                       |
-| --------------------- | ------------------------- | ------- | ------------------------------------------------- |
-| `(loadStatusChanged)` | `output<ForAvatarStatus>` | —       | Output. Emits whenever the lifecycle transitions. |
+| Property              | Type                      | Description                                                         |
+| --------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `(loadStatusChanged)` | `output<ForAvatarStatus>` | Output. Emits whenever the lifecycle transitions.<br>**Default:** — |
 
 ### Data attributes
 

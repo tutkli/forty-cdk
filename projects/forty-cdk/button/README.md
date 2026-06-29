@@ -42,10 +42,10 @@ A native `<button>` without an explicit `type` attribute defaults to `type="butt
 
 ### `ForButton`
 
-| API        | Type             | Default | Description                                                                      |
-| ---------- | ---------------- | ------- | -------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | `false` | Suppresses activation and reflects `aria-disabled` + `data-disabled`.            |
-| `activate` | `output<void>`   | —       | Fires once per user activation (click, Enter, Space). Never fires when disabled. |
+| Property   | Type             | Description                                                                                        |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`.<br>**Default:** `false`      |
+| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** — |
 
 ### Data attributes
 

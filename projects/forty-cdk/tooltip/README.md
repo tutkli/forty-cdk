@@ -77,19 +77,19 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForTooltip`
 
-| API                | Type                                | Default | Description                                                                                                                                                 |
-| ------------------ | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`             | `model<boolean>`                    | —       | Two-way bindable visibility.                                                                                                                                |
-| `side`             | `input<FloatingSide \| undefined>`  | —       | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).                                             |
-| `align`            | `input<FloatingAlign \| undefined>` | —       | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).                                          |
-| `sideOffset`       | `input<number \| undefined>`        | —       | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).                                                  |
-| `alignOffset`      | `input<number>`                     | `0`     | Gap (px) along the cross axis. Default `0`.                                                                                                                 |
-| `collisionPadding` | `input<number \| undefined>`        | —       | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).                                      |
-| `openDelay`        | `input<number \| undefined>`        | —       | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).                                                              |
-| `closeDelay`       | `input<number \| undefined>`        | —       | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).                                          |
-| `disabled`         | `input<boolean>`                    | —       | When `true`, all interaction is ignored.                                                                                                                    |
-| `showOnOverflow`   | `input<boolean \| undefined>`       | —       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).                      |
-| `hoverableContent` | `input<boolean \| undefined>`       | —       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`). |
+| Property           | Type                                | Description                                                                                                                                                                   |
+| ------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>`                    | Two-way bindable visibility.<br>**Default:** —                                                                                                                                |
+| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).<br>**Default:** —                                             |
+| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).<br>**Default:** —                                          |
+| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                  |
+| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                            |
+| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                      |
+| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                              |
+| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                          |
+| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                    |
+| `showOnOverflow`   | `input<boolean \| undefined>`       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** —                      |
+| `hoverableContent` | `input<boolean \| undefined>`       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** — |
 
 ### `ForTooltipTrigger`, `ForTooltipContent`, `ForTooltipArrow`
 

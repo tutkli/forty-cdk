@@ -207,17 +207,17 @@ Or purely via CSS:
 
 ### `ForStepper`
 
-| API              | Type                              | Default         | Description                                                                                                |
-| ---------------- | --------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| `selectedIndex`  | `model<number>`                   | `0`             | Two-way bindable selected step index, range `0 … count` (the terminal `=== count` is the completed state). |
-| `linear`         | `input<boolean>`                  | `false`         | Gate forward navigation until preceding steps complete.                                                    |
-| `mode`           | `input<StepperMode>`              | `'interactive'` | Accessibility model.                                                                                       |
-| `orientation`    | `input<'horizontal'\|'vertical'>` | `'horizontal'`  | Layout axis; affects arrow-key semantics.                                                                  |
-| `activationMode` | `input<StepperActivationMode>`    | `'manual'`      | Whether arrow nav also selects (scope-injectable).                                                         |
-| `loop`           | `input<boolean>`                  | `true`          | Wrap arrow navigation (scope-injectable).                                                                  |
-| `disabled`       | `input<boolean>`                  | `false`         | Disables all triggers and navigation.                                                                      |
-| `dir`            | `input<'ltr'\|'rtl'\|null>`       | `null`          | Writing direction (inherits ambient when unset).                                                           |
-| `complete`       | `output()`                        | —               | Output. Fires once each time the stepper enters the completed state.                                       |
+| Property         | Type                              | Description                                                                                                                    |
+| ---------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `selectedIndex`  | `model<number>`                   | Two-way bindable selected step index, range `0 … count` (the terminal `=== count` is the completed state).<br>**Default:** `0` |
+| `linear`         | `input<boolean>`                  | Gate forward navigation until preceding steps complete.<br>**Default:** `false`                                                |
+| `mode`           | `input<StepperMode>`              | Accessibility model.<br>**Default:** `'interactive'`                                                                           |
+| `orientation`    | `input<'horizontal'\|'vertical'>` | Layout axis; affects arrow-key semantics.<br>**Default:** `'horizontal'`                                                       |
+| `activationMode` | `input<StepperActivationMode>`    | Whether arrow nav also selects (scope-injectable).<br>**Default:** `'manual'`                                                  |
+| `loop`           | `input<boolean>`                  | Wrap arrow navigation (scope-injectable).<br>**Default:** `true`                                                               |
+| `disabled`       | `input<boolean>`                  | Disables all triggers and navigation.<br>**Default:** `false`                                                                  |
+| `dir`            | `input<'ltr'\|'rtl'\|null>`       | Writing direction (inherits ambient when unset).<br>**Default:** `null`                                                        |
+| `complete`       | `output()`                        | Output. Fires once each time the stepper enters the completed state.<br>**Default:** —                                         |
 
 `ForStepper` exposes two members for the terminal completed state:
 
@@ -226,14 +226,14 @@ Or purely via CSS:
 
 ### `ForStepperItem`
 
-| API         | Type                              | Default | Description                                                                  |
-| ----------- | --------------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `completed` | `input<boolean>`                  | `false` | Marks the step done (manual; wins over `field`).                             |
-| `optional`  | `input<boolean>`                  | `false` | Marks the step skippable in linear mode.                                     |
-| `disabled`  | `input<boolean>`                  | `false` | Disables only this step.                                                     |
-| `hasError`  | `input<boolean>`                  | `false` | Emits `'error'` resolved state when not current (manual; wins over `field`). |
-| `field`     | `input<FieldTree<unknown>\|null>` | `null`  | Optional Signal Forms field; drives `completed`/`hasError` from validity.    |
-| `state`     | `input<string\|null>`             | `null`  | Custom state override — wins over derived state.                             |
+| Property    | Type                              | Description                                                                                          |
+| ----------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `completed` | `input<boolean>`                  | Marks the step done (manual; wins over `field`).<br>**Default:** `false`                             |
+| `optional`  | `input<boolean>`                  | Marks the step skippable in linear mode.<br>**Default:** `false`                                     |
+| `disabled`  | `input<boolean>`                  | Disables only this step.<br>**Default:** `false`                                                     |
+| `hasError`  | `input<boolean>`                  | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false` |
+| `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
+| `state`     | `input<string\|null>`             | Custom state override — wins over derived state.<br>**Default:** `null`                              |
 
 ### Data attributes
 

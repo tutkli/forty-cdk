@@ -63,13 +63,13 @@ export class DemoToolbar {
 
 Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
-| API           | Type                                | Default        | Description                                                                                                                                                      |
-| ------------- | ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ariaLabel`   | `input<string \| null>`             | `null`         | Reactive accessible name, reflected as `aria-label`. Default `null` (and `''`) emits no attribute. Prefer `aria-labelledby` when a visible label element exists. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Layout direction.                                                                                                                                                |
-| `dir`         | `input<WritingDirection>`           | —              | Reading direction. RTL swaps ArrowLeft / ArrowRight.                                                                                                             |
-| `loop`        | `input<boolean>`                    | `true`         | Whether arrow nav wraps at the ends.                                                                                                                             |
-| `disabled`    | `input<boolean>`                    | —              | Disables every item.                                                                                                                                             |
+| Property      | Type                                | Description                                                                                                                                                             |
+| ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ariaLabel`   | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Prefer `aria-labelledby` when a visible label element exists.<br>**Default:** `null` (and `''`) emits no attribute |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction.<br>**Default:** `'horizontal'`                                                                                                                        |
+| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** —                                                                                                  |
+| `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends.<br>**Default:** `true`                                                                                                             |
+| `disabled`    | `input<boolean>`                    | Disables every item.<br>**Default:** —                                                                                                                                  |
 
 ### Data attributes
 

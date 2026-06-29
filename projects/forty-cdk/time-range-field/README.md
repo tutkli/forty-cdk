@@ -154,17 +154,17 @@ export class OpeningHoursFormField {
 
 ### `ForTimeRangeField`
 
-| API           | Type                                              | Default    | Description                                                                                                                   |
-| ------------- | ------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<CalendarDateRange<D> \| null>`             | —          | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing. Default `null`. |
-| `minTime`     | `input<D \| null>`                                | —          | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.               |
-| `maxTime`     | `input<D \| null>`                                | `null`     | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.                                 |
-| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | `'minute'` | Smallest editable unit shared by both endpoints.                                                                              |
-| `hourCycle`   | `input<12 \| 24 \| null>`                         | `null`     | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.                                           |
-| `locale`      | `input<string \| null>`                           | `null`     | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.                                    |
-| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | `{}`       | Per-segment placeholder while empty, applied to both endpoints.                                                               |
-| `ariaLabel`   | `input<string \| null>`                           | `null`     | Accessible name for the whole range field group. Emits no `aria-label` while `null`.                                          |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | `null`     | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.                  |
+| Property      | Type                                              | Description                                                                                                                          |
+| ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<CalendarDateRange<D> \| null>`             | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null` |
+| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —    |
+| `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                 |
+| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                          |
+| `hourCycle`   | `input<12 \| 24 \| null>`                         | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.<br>**Default:** `null`                           |
+| `locale`      | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                    |
+| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                 |
+| `ariaLabel`   | `input<string \| null>`                           | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                          |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`  |
 
 The endpoint groups (`[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]`) each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`).
 

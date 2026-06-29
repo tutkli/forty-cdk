@@ -46,10 +46,10 @@ export class DemoSeparator {}
 
 ### `ForSeparator`
 
-| API           | Type                                | Default        | Description                                                   |
-| ------------- | ----------------------------------- | -------------- | ------------------------------------------------------------- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Axis the separator divides along. Defaults to `'horizontal'`. |
-| `decorative`  | `input<boolean>`                    | —              | When true, the separator is purely visual (`role="none"`).    |
+| Property      | Type                                | Description                                                                                  |
+| ------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the separator divides along. Defaults to `'horizontal'`.<br>**Default:** `'horizontal'` |
+| `decorative`  | `input<boolean>`                    | When true, the separator is purely visual (`role="none"`).<br>**Default:** —                 |
 
 The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
 

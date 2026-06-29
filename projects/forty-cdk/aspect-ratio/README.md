@@ -56,9 +56,9 @@ export class DemoAspectRatio {}
 
 ### `ForAspectRatio`
 
-| API     | Type            | Default | Description                                                                                                                                                                      |
-| ------- | --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ratio` | `input<number>` | `1`     | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. Non-positive or non-finite values fall back to `1`. |
+| Property | Type            | Description                                                                                                                                                                                          |
+| -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ratio`  | `input<number>` | Width / height ratio (e.g. `16 / 9`, `4 / 3`, `1`). Accepts both numeric expressions and string attributes. Defaults to `1`. Non-positive or non-finite values fall back to `1`.<br>**Default:** `1` |
 
 ### Data attributes
 

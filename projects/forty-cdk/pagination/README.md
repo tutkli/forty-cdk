@@ -48,31 +48,31 @@ export class DemoPagination {
 
 ### `ForPagination`
 
-| API             | Type            | Default | Description                                                             |
-| --------------- | --------------- | ------- | ----------------------------------------------------------------------- |
-| `page`          | `model<number>` | —       | Two-way bindable. The currently active page number.                     |
-| `count`         | `input<number>` | —       | Total number of pages.                                                  |
-| `siblingCount`  | `input<number>` | —       | Number of page buttons to show on each side of the current page.        |
-| `boundaryCount` | `input<number>` | —       | Number of page buttons to always show at the start and end of the list. |
-| `ariaLabel`     | `input<string>` | —       | Accessible label for the `navigation` landmark.                         |
+| Property        | Type            | Description                                                                               |
+| --------------- | --------------- | ----------------------------------------------------------------------------------------- |
+| `page`          | `model<number>` | Two-way bindable. The currently active page number.<br>**Default:** —                     |
+| `count`         | `input<number>` | Total number of pages.<br>**Default:** —                                                  |
+| `siblingCount`  | `input<number>` | Number of page buttons to show on each side of the current page.<br>**Default:** —        |
+| `boundaryCount` | `input<number>` | Number of page buttons to always show at the start and end of the list.<br>**Default:** — |
+| `ariaLabel`     | `input<string>` | Accessible label for the `navigation` landmark.<br>**Default:** —                         |
 
 ### `ForPaginationItem`
 
-| API    | Type            | Default | Description                             |
-| ------ | --------------- | ------- | --------------------------------------- |
-| `page` | `input<number>` | —       | The page number this button represents. |
+| Property | Type            | Description                                               |
+| -------- | --------------- | --------------------------------------------------------- |
+| `page`   | `input<number>` | The page number this button represents.<br>**Default:** — |
 
 ### `ForPaginationPrevious`
 
-| API         | Type            | Default | Description                                    |
-| ----------- | --------------- | ------- | ---------------------------------------------- |
-| `ariaLabel` | `input<string>` | —       | Accessible label for the previous-page button. |
+| Property    | Type            | Description                                                      |
+| ----------- | --------------- | ---------------------------------------------------------------- |
+| `ariaLabel` | `input<string>` | Accessible label for the previous-page button.<br>**Default:** — |
 
 ### `ForPaginationNext`
 
-| API         | Type            | Default | Description                                |
-| ----------- | --------------- | ------- | ------------------------------------------ |
-| `ariaLabel` | `input<string>` | —       | Accessible label for the next-page button. |
+| Property    | Type            | Description                                                  |
+| ----------- | --------------- | ------------------------------------------------------------ |
+| `ariaLabel` | `input<string>` | Accessible label for the next-page button.<br>**Default:** — |
 
 ## Accessibility
 

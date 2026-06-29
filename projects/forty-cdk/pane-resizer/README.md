@@ -76,22 +76,22 @@ export class DemoSplitPane {
 
 ### `ForPaneResizer`
 
-| API            | Type                                | Default        | Description                                                                                                            |
-| -------------- | ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `orientation`  | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Axis the divider line runs along. The resize axis runs perpendicular.                                                  |
-| `disabled`     | `input<boolean>`                    | —              | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer.             |
-| `value`        | `model<number>`                     | —              | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).                                 |
-| `min`          | `input<number>`                     | `0`            | Lower bound.                                                                                                           |
-| `max`          | `input<number>`                     | `100`          | Upper bound.                                                                                                           |
-| `step`         | `input<number>`                     | `1`            | Step applied by ArrowKeys.                                                                                             |
-| `largeStep`    | `input<number>`                     | `10`           | Step applied by `Page Up` / `Page Down`.                                                                               |
-| `valueText`    | `input<string \| null>`             | —              | Optional `aria-valuetext` string for human-readable values.                                                            |
-| `controls`     | `input<string \| null>`             | —              | Space-separated list of pane ids surfaced as `aria-controls`.                                                          |
-| `collapsible`  | `input<boolean>`                    | —              | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.                  |
-| `dir`          | `input<'ltr' \| 'rtl'>`             | —              | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.                         |
-| `valueChange`  | `output<number>`                    | —              | Output. Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.   |
-| `resize`       | `output<number>`                    | —              | Output. Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.                            |
-| `resizeCommit` | `output<number>`                    | —              | Output. Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here. |
+| Property       | Type                                | Description                                                                                                                              |
+| -------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `orientation`  | `input<'horizontal' \| 'vertical'>` | Axis the divider line runs along. The resize axis runs perpendicular.<br>**Default:** `'horizontal'`                                     |
+| `disabled`     | `input<boolean>`                    | Drops the resizer out of tab order; reflects `aria-disabled` / `data-disabled`; blocks keyboard / pointer.<br>**Default:** —             |
+| `value`        | `model<number>`                     | Two-way bindable value along the resize axis. Units are consumer-defined (px, %, fr…).<br>**Default:** —                                 |
+| `min`          | `input<number>`                     | Lower bound.<br>**Default:** `0`                                                                                                         |
+| `max`          | `input<number>`                     | Upper bound.<br>**Default:** `100`                                                                                                       |
+| `step`         | `input<number>`                     | Step applied by ArrowKeys.<br>**Default:** `1`                                                                                           |
+| `largeStep`    | `input<number>`                     | Step applied by `Page Up` / `Page Down`.<br>**Default:** `10`                                                                            |
+| `valueText`    | `input<string \| null>`             | Optional `aria-valuetext` string for human-readable values.<br>**Default:** —                                                            |
+| `controls`     | `input<string \| null>`             | Space-separated list of pane ids surfaced as `aria-controls`.<br>**Default:** —                                                          |
+| `collapsible`  | `input<boolean>`                    | Opt-in `Enter` / `Space` toggle: collapses to `min`, restores to the previous size on the next press.<br>**Default:** —                  |
+| `dir`          | `input<'ltr' \| 'rtl'>`             | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.<br>**Default:** —                         |
+| `valueChange`  | `output<number>`                    | Output. Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.<br>**Default:** —   |
+| `resize`       | `output<number>`                    | Output. Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.<br>**Default:** —                            |
+| `resizeCommit` | `output<number>`                    | Output. Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here.<br>**Default:** — |
 
 ### Data attributes
 

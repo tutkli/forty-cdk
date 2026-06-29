@@ -53,18 +53,18 @@ The library ships no styles. Hide animations / transitions can be driven off `da
 
 ### `ForDisclosure`
 
-| API        | Type             | Default | Description                                                                       |
-| ---------- | ---------------- | ------- | --------------------------------------------------------------------------------- |
-| `open`     | `model<boolean>` | `false` | Two-way bindable. Defaults to `false`.                                            |
-| `disabled` | `input<boolean>` | —       | When true, click on the trigger is ignored. Reflects `data-disabled` on the host. |
+| Property   | Type             | Description                                                                                         |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `open`     | `model<boolean>` | Two-way bindable. Defaults to `false`.<br>**Default:** `false`                                      |
+| `disabled` | `input<boolean>` | When true, click on the trigger is ignored. Reflects `data-disabled` on the host.<br>**Default:** — |
 
 The host element gets `data-state="open" \| "closed"` for CSS hooks.
 
 ### `ForDisclosureTrigger`
 
-| API        | Type             | Default | Description                                                        |
-| ---------- | ---------------- | ------- | ------------------------------------------------------------------ |
-| `disabled` | `input<boolean>` | —       | Disables this trigger only — merged OR with the root's `disabled`. |
+| Property   | Type             | Description                                                                          |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`.<br>**Default:** — |
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (`disabled`, `aria-disabled`, `data-disabled`) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
 

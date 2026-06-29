@@ -109,11 +109,11 @@ export class DemoScroll {}
 
 Root directive. Owns scroll type, hide-delay, hover state, and writing direction.
 
-| API               | Type                                               | Default   | Description                                                                                                                                                                               |
-| ----------------- | -------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | `'hover'` | Visibility behavior. `'always'` keeps the track painted even with no overflow; `'auto'` self-hides — see [Behavior notes](#behavior-notes) and the grid example for reserving the gutter. |
-| `scrollHideDelay` | `input<number>`                                    | `600`     | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`).                                                                                                        |
-| `dir`             | `input<WritingDirection>`                          | —         | Reflected as `dir`.                                                                                                                                                                       |
+| Property          | Type                                               | Description                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. `'always'` keeps the track painted even with no overflow; `'auto'` self-hides — see [Behavior notes](#behavior-notes) and the grid example for reserving the gutter.<br>**Default:** `'hover'` |
+| `scrollHideDelay` | `input<number>`                                    | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`).<br>**Default:** `600`                                                                                                            |
+| `dir`             | `input<WritingDirection>`                          | Reflected as `dir`.<br>**Default:** —                                                                                                                                                                               |
 
 ### Data attributes
 

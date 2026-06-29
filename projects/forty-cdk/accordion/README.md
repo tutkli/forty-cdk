@@ -52,20 +52,20 @@ export class DemoFaq {
 
 ### `ForAccordion`
 
-| API           | Type                                | Default      | Description                                                                                                                                      |
-| ------------- | ----------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<readonly string[]>`          | —            | Currently open item values. In single mode the array has 0 or 1 element.                                                                         |
-| `multiple`    | `input<boolean>`                    | `false`      | When true, multiple items can be open simultaneously.                                                                                            |
-| `collapsible` | `input<boolean>`                    | `false`      | Single mode only: when true, the open item can be collapsed by clicking it. Defaults to `false` — once any item is open, exactly one stays open. |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | `'vertical'` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.                                                   |
-| `dir`         | `input<'ltr' \| 'rtl'>`             | —            | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.                                                    |
+| Property      | Type                                | Description                                                                                                                                                              |
+| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** —                                                                               |
+| `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously.<br>**Default:** `false`                                                                                            |
+| `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Defaults to `false` — once any item is open, exactly one stays open.<br>**Default:** `false` |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                              |
+| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.<br>**Default:** —                                                          |
 
 ### `ForAccordionItem`
 
-| API        | Type                     | Default | Description                                                                        |
-| ---------- | ------------------------ | ------- | ---------------------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | —       | Unique identifier within the accordion. Required.                                  |
-| `disabled` | `input<boolean>`         | —       | When true, the trigger ignores clicks and exposes the native `disabled` attribute. |
+| Property   | Type                     | Description                                                                                          |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | Unique identifier within the accordion. Required.<br>**Default:** —                                  |
+| `disabled` | `input<boolean>`         | When true, the trigger ignores clicks and exposes the native `disabled` attribute.<br>**Default:** — |
 
 The host gets `data-state="open" \| "closed"` and `data-disabled` for CSS hooks.
 

@@ -101,26 +101,26 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForPopover`
 
-| API                  | Type                                                                | Default    | Description                                                                                                      |
-| -------------------- | ------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `open`               | `model<boolean>`                                                    | —          | Two-way bindable visibility.                                                                                     |
-| `side`               | `input<string>`                                                     | `'bottom'` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForPopoverDefaults`.            |
-| `align`              | `input<string>`                                                     | `'center'` | Alignment along the chosen side (`'start'` / `'center'` / `'end'`). Falls back to `provideForPopoverDefaults`.   |
-| `sideOffset`         | `input<number>`                                                     | `8`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.             |
-| `alignOffset`        | `input<number>`                                                     | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                              |
-| `collisionPadding`   | `input<number>`                                                     | `8`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`. |
-| `disabled`           | `input<boolean>`                                                    | `false`    | When `true`, trigger does not toggle.                                                                            |
-| `dismissible`        | `input<boolean>`                                                    | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.                                             |
-| `returnFocus`        | `input<boolean>`                                                    | `true`     | Focus returns to the trigger on close.                                                                           |
-| `initialFocus`       | `input<string>`                                                     | `'first'`  | `'first'` (first focusable inside content) or `'container'` (the content host).                                  |
-| `ariaLabel`          | `input<string \| null>`                                             | `null`     | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.                                      |
-| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | —          | Output. Fires on Escape while this popover is the topmost dismissable layer.                                     |
-| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | —          | Output. Fires on pointer-down outside the content (and outside the trigger).                                     |
-| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | —          | Output. Fires when focus moves outside the content (and outside the trigger).                                    |
-| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | —          | Output. Composite: fires alongside both `pointerDownOutside` and `focusOutside` (and shares their veto state).   |
-| `autoFocusOnOpen`    | `OutputEmitterRef<VetoableEvent>`                                   | —          | Output. Fires just before focus moves into the popover on mount. `preventDefault()` skips the move.              |
-| `autoFocusOnClose`   | `OutputEmitterRef<VetoableEvent>`                                   | —          | Output. Fires just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.    |
-| `openChange`         | `OutputEmitterRef<boolean>`                                         | —          | Output. Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`.      |
+| Property             | Type                                                                | Description                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`               | `model<boolean>`                                                    | Two-way bindable visibility.<br>**Default:** —                                                                                            |
+| `side`               | `input<string>`                                                     | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForPopoverDefaults`.<br>**Default:** `'bottom'`          |
+| `align`              | `input<string>`                                                     | Alignment along the chosen side (`'start'` / `'center'` / `'end'`). Falls back to `provideForPopoverDefaults`.<br>**Default:** `'center'` |
+| `sideOffset`         | `input<number>`                                                     | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`                  |
+| `alignOffset`        | `input<number>`                                                     | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                   |
+| `collisionPadding`   | `input<number>`                                                     | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`      |
+| `disabled`           | `input<boolean>`                                                    | When `true`, trigger does not toggle.<br>**Default:** `false`                                                                             |
+| `dismissible`        | `input<boolean>`                                                    | When `false`, Escape / outside-pointer / outside-focus do not close.<br>**Default:** `true`                                               |
+| `returnFocus`        | `input<boolean>`                                                    | Focus returns to the trigger on close.<br>**Default:** `true`                                                                             |
+| `initialFocus`       | `input<string>`                                                     | `'first'` (first focusable inside content) or `'container'` (the content host).<br>**Default:** `'first'`                                 |
+| `ariaLabel`          | `input<string \| null>`                                             | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.<br>**Default:** `null`                                        |
+| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Fires on Escape while this popover is the topmost dismissable layer.<br>**Default:** —                                            |
+| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Fires on pointer-down outside the content (and outside the trigger).<br>**Default:** —                                            |
+| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Fires when focus moves outside the content (and outside the trigger).<br>**Default:** —                                           |
+| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both `pointerDownOutside` and `focusOutside` (and shares their veto state).<br>**Default:** —          |
+| `autoFocusOnOpen`    | `OutputEmitterRef<VetoableEvent>`                                   | Output. Fires just before focus moves into the popover on mount. `preventDefault()` skips the move.<br>**Default:** —                     |
+| `autoFocusOnClose`   | `OutputEmitterRef<VetoableEvent>`                                   | Output. Fires just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.<br>**Default:** —           |
+| `openChange`         | `OutputEmitterRef<boolean>`                                         | Output. Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`.<br>**Default:** —             |
 
 The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
@@ -149,9 +149,9 @@ The popover opens / closes alongside the input but never steals focus from it �
 
 ### `ForPopoverTrigger`
 
-| API        | Type             | Default | Description                                                                                                                                                       |
-| ---------- | ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | `false` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard. |
+| Property   | Type             | Description                                                                                                                                                                               |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard.<br>**Default:** `false` |
 
 ### Data attributes
 

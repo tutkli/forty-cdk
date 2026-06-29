@@ -50,30 +50,30 @@ export class DemoSettings {
 
 ### `ForTabs`
 
-| API              | Type                                | Default        | Description                                                                                                                                            |
-| ---------------- | ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`          | `model<string \| null>`             | —              | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state — distinct from a tab whose `value` is `''`. |
-| `activationMode` | `input<'automatic' \| 'manual'>`    | `'automatic'`  | Default `'automatic'` (selection follows arrow focus). Use `'manual'` when panel content is expensive — user must press Space / Enter.                 |
-| `orientation`    | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Default `'horizontal'`. Drives keyboard navigation and `aria-orientation`.                                                                             |
-| `dir`            | `input<'ltr' \| 'rtl'>`             | `'ltr'`        | Default `'ltr'`. Swaps ArrowLeft / ArrowRight.                                                                                                         |
-| `disabled`       | `input<boolean>`                    | —              | When true, blocks all selection and keyboard nav.                                                                                                      |
-| `loop`           | `input<boolean>`                    | `true`         | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.                          |
+| Property         | Type                                | Description                                                                                                                                                              |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state — distinct from a tab whose `value` is `''`.<br>**Default:** — |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive — user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)                            |
+| `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                        |
+| `dir`            | `input<'ltr' \| 'rtl'>`             | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                    |
+| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                      |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                     |
 
 ### `ForTabsTrigger`
 
-| API        | Type                     | Default | Description                                                           |
-| ---------- | ------------------------ | ------- | --------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | —       | The tab's identifier. Must match the `value` of its `ForTabsContent`. |
-| `disabled` | `input<boolean>`         | —       | Disables this trigger; arrow nav skips it.                            |
+| Property   | Type                     | Description                                                                             |
+| ---------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`.<br>**Default:** — |
+| `disabled` | `input<boolean>`         | Disables this trigger; arrow nav skips it.<br>**Default:** —                            |
 
 Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`, `data-state="active" \| "inactive"`, `data-disabled`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-activatable, with arrow nav skipping it.
 
 ### `ForTabsContent`
 
-| API                  | Type                     | Default | Description                                                                                                                                                                                                                   |
-| -------------------- | ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `input.required<string>` | —       | Pairs the panel with the trigger of the same value.                                                                                                                                                                           |
-| `interactiveContent` | `input<boolean \| null>` | `null`  | Overrides the automatic focusable-content detection that drives `tabindex`. Default `null` (auto-detect). `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless. |
+| Property             | Type                     | Description                                                                                                                                                                                                                          |
+| -------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`              | `input.required<string>` | Pairs the panel with the trigger of the same value.<br>**Default:** —                                                                                                                                                                |
+| `interactiveContent` | `input<boolean \| null>` | Overrides the automatic focusable-content detection that drives `tabindex`. `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless.<br>**Default:** `null` (auto-detect) |
 
 Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id), `tabindex="0"` **only when the panel has no focusable descendants** (APG), `aria-hidden` (when inactive), `inert` (when inactive), `data-state="active" \| "inactive"`.
 

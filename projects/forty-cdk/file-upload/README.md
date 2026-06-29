@@ -70,12 +70,12 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 
 ### `ForFileUpload`
 
-| API         | Type             | Default | Description                                                                    |
-| ----------- | ---------------- | ------- | ------------------------------------------------------------------------------ |
-| `accept`    | `string \| null` | `null`  | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`). |
-| `multiple`  | `boolean`        | `false` | Whether multiple files can be selected at once.                                |
-| `directory` | `boolean`        | `false` | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).     |
-| `disabled`  | `boolean`        | `false` | Whether the zone and all its pieces are disabled.                              |
+| Property    | Type             | Description                                                                                           |
+| ----------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `accept`    | `string \| null` | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`).<br>**Default:** `null` |
+| `multiple`  | `boolean`        | Whether multiple files can be selected at once.<br>**Default:** `false`                               |
+| `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`    |
+| `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                             |
 
 ### Data attributes
 

@@ -66,22 +66,22 @@ Requires a time-capable adapter:
 
 ### `ForTimePicker`
 
-| Input           | Type                             | Default    | Description                      |
-| --------------- | -------------------------------- | ---------- | -------------------------------- |
-| `value`         | `D \| null`                      | `null`     | Selected time (two-way)          |
-| `open`          | `boolean`                        | `false`    | Open state (two-way)             |
-| `step`          | `number`                         | `30`       | Slot interval in minutes         |
-| `granularity`   | `'hour' \| 'minute' \| 'second'` | `'minute'` | Selection precision              |
-| `hourCycle`     | `12 \| 24 \| null`               | `null`     | Hour cycle for labels            |
-| `locale`        | `string \| null`                 | `null`     | BCP 47 locale for labels         |
-| `minTime`       | `D \| null`                      | `null`     | Earliest selectable time         |
-| `maxTime`       | `D \| null`                      | `null`     | Latest selectable time           |
-| `closeOnSelect` | `boolean`                        | `true`     | Close on slot selection          |
-| `modal`         | `boolean`                        | `false`    | Modal (focus-trapped) mode       |
-| `dismissible`   | `boolean`                        | `true`     | Escape / outside close           |
-| `returnFocus`   | `boolean`                        | `true`     | Return focus to trigger on close |
-| `placeholder`   | `string`                         | `''`       | Value display placeholder        |
-| `formatOptions` | `Intl.DateTimeFormatOptions`     | `{}`       | Override slot label format       |
+| Property        | Type                             | Description                                             |
+| --------------- | -------------------------------- | ------------------------------------------------------- |
+| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`          |
+| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`            |
+| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`           |
+| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`          |
+| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels<br>**Default:** `null`            |
+| `locale`        | `string \| null`                 | BCP 47 locale for labels<br>**Default:** `null`         |
+| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`         |
+| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`           |
+| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`          |
+| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`      |
+| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`           |
+| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true` |
+| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`          |
+| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`         |
 
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.

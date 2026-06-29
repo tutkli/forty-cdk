@@ -40,15 +40,15 @@ The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` 
 
 ### `ForBreadcrumbs`
 
-| API         | Type            | Default        | Description                                                                                                |
-| ----------- | --------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `ariaLabel` | `input<string>` | `'Breadcrumb'` | Accessible label for the `navigation` landmark. Override when a page hosts more than one breadcrumb trail. |
+| Property    | Type            | Description                                                                                                                               |
+| ----------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `input<string>` | Accessible label for the `navigation` landmark. Override when a page hosts more than one breadcrumb trail.<br>**Default:** `'Breadcrumb'` |
 
 ### `ForBreadcrumbItem`
 
-| API       | Type             | Default | Description                                            |
-| --------- | ---------------- | ------- | ------------------------------------------------------ |
-| `current` | `input<boolean>` | —       | When true, reflects `aria-current="page"` on the link. |
+| Property  | Type             | Description                                                              |
+| --------- | ---------------- | ------------------------------------------------------------------------ |
+| `current` | `input<boolean>` | When true, reflects `aria-current="page"` on the link.<br>**Default:** — |
 
 ## Accessibility
 

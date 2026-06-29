@@ -161,17 +161,17 @@ Measurement always tracks the **active** panel. The Viewport's `--for-navigation
 
 ### `ForNavigationMenu`
 
-| API                 | Type                                | Default        | Description                                                                                                                                               |
-| ------------------- | ----------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<string>`                     | —              | Two-way bindable. Open item id, or `''`.                                                                                                                  |
-| `orientation`       | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Default `'horizontal'`.                                                                                                                                   |
-| `dir`               | `input<WritingDirection>`           | —              | RTL inverts ArrowLeft / ArrowRight.                                                                                                                       |
-| `loop`              | `input<boolean>`                    | `true`         | Whether arrow nav wraps. Default `true`.                                                                                                                  |
-| `disabled`          | `input<boolean>`                    | —              | Disables the whole menu.                                                                                                                                  |
-| `ariaLabel`         | `input<string \| null>`             | `null`         | Reactive `aria-label` for the `<nav>`. Default `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists. |
-| `delayDuration`     | `input<number>`                     | `200`          | ms before hover/focus opens. Default `200`.                                                                                                               |
-| `closeDelay`        | `input<number>`                     | `150`          | ms before pointer-leave closes. Default `150`.                                                                                                            |
-| `skipDelayDuration` | `input<number>`                     | `300`          | ms after a peer closes during which the next open is instant. Default `300`.                                                                              |
+| Property            | Type                                | Description                                                                                                                                                      |
+| ------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<string>`                     | Two-way bindable. Open item id, or `''`.<br>**Default:** —                                                                                                       |
+| `orientation`       | `input<'horizontal' \| 'vertical'>` | **Default:** `'horizontal'`                                                                                                                                      |
+| `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.<br>**Default:** —                                                                                                            |
+| `loop`              | `input<boolean>`                    | Whether arrow nav wraps.<br>**Default:** `true`                                                                                                                  |
+| `disabled`          | `input<boolean>`                    | Disables the whole menu.<br>**Default:** —                                                                                                                       |
+| `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`.<br>**Default:** `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists |
+| `delayDuration`     | `input<number>`                     | ms before hover/focus opens.<br>**Default:** `200`                                                                                                               |
+| `closeDelay`        | `input<number>`                     | ms before pointer-leave closes.<br>**Default:** `150`                                                                                                            |
+| `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant.<br>**Default:** `300`                                                                              |
 
 ### Data attributes
 

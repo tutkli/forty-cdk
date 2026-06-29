@@ -210,14 +210,14 @@ the real count:
 
 ### Options
 
-| Option          | Type                                  | Default      | Description                                                         |
-| --------------- | ------------------------------------- | ------------ | ------------------------------------------------------------------- |
-| `count`         | `Signal<number>`                      | required     | Reactive total number of items.                                     |
-| `estimateSize`  | `(index: number) => number`           | required     | Estimated pixel size along the scroll axis for the item at `index`. |
-| `scrollElement` | `Signal<HTMLElement \| null>`         | required     | Reactive scroll container.                                          |
-| `orientation`   | `'vertical' \| 'horizontal'`          | `'vertical'` | Scroll axis.                                                        |
-| `overscan`      | `number`                              | `5`          | Extra items to render beyond the visible window on each side.       |
-| `getItemKey`    | `(index: number) => string \| number` | `(i) => i`   | Stable key per item; used by `@for (track item.key)`.               |
+| Property        | Type                                  | Description                                                                                  |
+| --------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `count`         | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                     |
+| `estimateSize`  | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required |
+| `scrollElement` | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                          |
+| `orientation`   | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                    |
+| `overscan`      | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`            |
+| `getItemKey`    | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`.<br>**Default:** `(i) => i`             |
 
 ### Returned handle
 

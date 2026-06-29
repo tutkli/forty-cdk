@@ -130,21 +130,21 @@ export class DemoOtpField {
 
 ### `ForOtpInput`
 
-| API                                                                    | Type                                                 | Default     | Description                                                                                                                         |
-| ---------------------------------------------------------------------- | ---------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                                | `model<string>`                                      | —           | Two-way bindable code. Rendered length is clamped to `length`.                                                                      |
-| `length`                                                               | `input.required<number>`                             | —           | Number of characters / slots.                                                                                                       |
-| `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | `'numeric'` | Allowed character class. Ignored when `allowedPattern` is set.                                                                      |
-| `allowedPattern`                                                       | `input<RegExp \| null>`                              | —           | Custom allowed-character RegExp (tested per character); overrides `type`.                                                           |
-| `mask`                                                                 | `input<boolean>`                                     | —           | Obscure the rendered `char()` (PIN entry); `value()` stays raw.                                                                     |
-| `oneTimeCode`                                                          | `input<boolean>`                                     | `true`      | Toggle `autocomplete="one-time-code"` for SMS autofill.                                                                             |
-| `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | —           | Rewrite pasted text before it fills the slots (e.g. strip separators).                                                              |
-| `ariaLabel`                                                            | `input<string \| null>`                              | —           | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy. |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | —           | Shared form-control flags (see [Field](../field/README.md)).                                                                        |
-| `name`                                                                 | `input<string>`                                      | —           | Reflected as the real input's `name` for native form submission.                                                                    |
-| `touched`                                                              | `model<boolean>`                                     | —           | Set to `true` on blur.                                                                                                              |
-| `valueComplete`                                                        | `output<string>`                                     | —           | Output. Fires when every slot is filled, by typing or paste.                                                                        |
-| `valueInvalid`                                                         | `output<{ value: string }>`                          | —           | Output. Fires when an entered / pasted character is rejected by `type` / `allowedPattern`.                                          |
+| Property                                                               | Type                                                 | Description                                                                                                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                                | `model<string>`                                      | Two-way bindable code. Rendered length is clamped to `length`.<br>**Default:** —                                                                      |
+| `length`                                                               | `input.required<number>`                             | Number of characters / slots.<br>**Default:** —                                                                                                       |
+| `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Ignored when `allowedPattern` is set.<br>**Default:** `'numeric'`                                                            |
+| `allowedPattern`                                                       | `input<RegExp \| null>`                              | Custom allowed-character RegExp (tested per character); overrides `type`.<br>**Default:** —                                                           |
+| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.<br>**Default:** —                                                                     |
+| `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill.<br>**Default:** `true`                                                                        |
+| `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).<br>**Default:** —                                                              |
+| `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy.<br>**Default:** — |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                                                        |
+| `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.<br>**Default:** —                                                                    |
+| `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.<br>**Default:** —                                                                                                              |
+| `valueComplete`                                                        | `output<string>`                                     | Output. Fires when every slot is filled, by typing or paste.<br>**Default:** —                                                                        |
+| `valueInvalid`                                                         | `output<{ value: string }>`                          | Output. Fires when an entered / pasted character is rejected by `type` / `allowedPattern`.<br>**Default:** —                                          |
 
 `ForOtpInput` also exposes a `slots()` signal (`readonly number[]`) for the `@for`, a `complete()` signal, and a `focus()` method.
 
@@ -152,12 +152,12 @@ export class DemoOtpField {
 
 ### Slot (`ForOtpInputSlot`)
 
-| API              | Type                     | Default | Description                                                      |
-| ---------------- | ------------------------ | ------- | ---------------------------------------------------------------- |
-| `index`          | `input.required<number>` | —       | This slot's 0-based position.                                    |
-| `char()`         | `Signal<string \| null>` | —       | The slot's character (masked when `mask`), or `null` when empty. |
-| `active()`       | `Signal<boolean>`        | —       | Whether this slot is the active caret position.                  |
-| `hasFakeCaret()` | `Signal<boolean>`        | —       | Whether to render a fake caret here (active + empty + focused).  |
+| Property         | Type                     | Description                                                                        |
+| ---------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| `index`          | `input.required<number>` | This slot's 0-based position.<br>**Default:** —                                    |
+| `char()`         | `Signal<string \| null>` | The slot's character (masked when `mask`), or `null` when empty.<br>**Default:** — |
+| `active()`       | `Signal<boolean>`        | Whether this slot is the active caret position.<br>**Default:** —                  |
+| `hasFakeCaret()` | `Signal<boolean>`        | Whether to render a fake caret here (active + empty + focused).<br>**Default:** —  |
 
 The slot host reflects boolean `data-active` (current caret slot) and `data-empty` (no character) for CSS.
 
