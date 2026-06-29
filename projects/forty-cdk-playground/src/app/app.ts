@@ -155,6 +155,7 @@ function readInitialTheme(): Theme {
       scrollbar-gutter: stable;
       display: flex;
       flex-direction: column;
+      background: var(--pg-surface);
     }
 
     .topbar {

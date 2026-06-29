@@ -165,7 +165,7 @@ import { Icon } from './icon';
       justify-content: center;
       min-height: 320px;
       padding: 2rem;
-      background: var(--pg-surface);
+      background: var(--pg-bg);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
     }

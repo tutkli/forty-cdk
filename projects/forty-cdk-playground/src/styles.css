@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --pg-bg: #f5f6f8;
+  --pg-bg: #e0e3ec;
   --pg-surface: #ffffff;
   --pg-surface-2: #eef0f4;
   --pg-border: #e3e6ec;
@@ -16,6 +16,10 @@
   --pg-danger-contrast: #ffffff;
   --pg-success: #16a34a;
   --pg-warning: #d97706;
+  --pg-code-inline-bg: color-mix(in srgb, var(--pg-secondary) 20%, transparent);
+  --pg-code-inline-fg: #9a3412;
+  --pg-code-title-bg: color-mix(in srgb, var(--pg-primary) 14%, transparent);
+  --pg-code-title-fg: var(--pg-primary-hover);
   --pg-radius-sm: 14px;
   --pg-radius: 24px;
   --pg-radius-lg: 36px;
@@ -47,6 +51,10 @@
   --pg-danger-contrast: #0e1116;
   --pg-success: #4ade80;
   --pg-warning: #fbbf24;
+  --pg-code-inline-bg: color-mix(in srgb, var(--pg-secondary) 24%, transparent);
+  --pg-code-inline-fg: #ffd0bf;
+  --pg-code-title-bg: color-mix(in srgb, var(--pg-primary) 20%, transparent);
+  --pg-code-title-fg: var(--pg-primary-hover);
   --pg-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.55);
 }
 
@@ -705,14 +713,26 @@ a.pg-nav-link.active {
 
 .pg-doc-prose p {
   margin: 0.75rem 0;
+  line-height: 1.7;
 }
 
 .pg-doc-prose h3 {
-  margin: 1.85rem 0 0.6rem;
-  font-size: 1.05rem;
-  font-weight: 700;
+  margin: 2.5rem 0 0.85rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--pg-border);
+  font-size: 1.15rem;
+  font-weight: 800;
   letter-spacing: -0.01em;
   scroll-margin-top: 4.5rem;
+}
+
+.pg-doc-prose h3 code {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.95em;
+  background: var(--pg-code-title-bg);
+  border: 0;
+  border-radius: 8px;
+  color: var(--pg-code-title-fg);
 }
 
 .pg-doc-prose h4 {
@@ -729,6 +749,7 @@ a.pg-nav-link.active {
 
 .pg-doc-prose li {
   margin: 0.3rem 0;
+  line-height: 1.7;
 }
 
 .pg-doc-prose li > ul,
@@ -751,17 +772,21 @@ a.pg-nav-link.active {
 
 .pg-doc-prose code {
   font-family: var(--pg-font-mono);
-  font-size: 0.85em;
-  padding: 0.1rem 0.35rem;
-  border-radius: 6px;
-  background: var(--pg-surface-2);
+  font-size: 0.82em;
+  font-weight: 700;
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: var(--pg-code-inline-bg);
+  color: var(--pg-code-inline-fg);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .pg-doc-prose pre {
   margin: 1rem 0;
   padding: 1rem 1.1rem;
   overflow-x: auto;
-  background: var(--pg-surface);
+  background: var(--pg-bg);
   border: 1px solid var(--pg-border);
   border-radius: var(--pg-radius-sm);
   font-family: var(--pg-font-mono);
@@ -772,7 +797,9 @@ a.pg-nav-link.active {
 .pg-doc-prose pre code {
   padding: 0;
   font-size: inherit;
+  font-weight: 400;
   background: none;
+  border: 0;
 }
 
 .pg-doc-prose blockquote {
@@ -1099,13 +1126,17 @@ a.pg-nav-link.active {
 }
 
 .pg-code .shiki,
-.pg-code .shiki span {
+.pg-code .shiki span,
+.pg-doc-prose .shiki,
+.pg-doc-prose .shiki span {
   color: var(--shiki-light);
   background-color: var(--shiki-light-bg);
 }
 
 [data-theme='dark'] .pg-code .shiki,
-[data-theme='dark'] .pg-code .shiki span {
+[data-theme='dark'] .pg-code .shiki span,
+[data-theme='dark'] .pg-doc-prose .shiki,
+[data-theme='dark'] .pg-doc-prose .shiki span {
   color: var(--shiki-dark);
   background-color: var(--shiki-dark-bg);
 }

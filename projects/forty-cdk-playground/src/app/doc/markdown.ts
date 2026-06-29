@@ -1,5 +1,7 @@
 import { Marked, type Tokens } from 'marked';
 
+import { highlightCodeBlock } from './highlighter';
+
 export interface DocTableData {
   readonly columns: readonly string[];
   readonly rows: readonly (readonly DocTableCell[])[];
@@ -55,12 +57,22 @@ class Slugger {
 
 const headingSlugger = new Slugger();
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 const marked = new Marked({ gfm: true });
 marked.use({
   renderer: {
     heading(token: Tokens.Heading) {
       const id = headingSlugger.unique(slugify(token.text));
       return `<h${token.depth} id="${id}">${renderInline(token.text)}</h${token.depth}>\n`;
+    },
+    code(token: Tokens.Code) {
+      const highlighted = highlightCodeBlock(token.text, token.lang);
+      return highlighted
+        ? `${highlighted}\n`
+        : `<pre><code>${escapeHtml(token.text)}</code></pre>\n`;
     },
   },
 });
