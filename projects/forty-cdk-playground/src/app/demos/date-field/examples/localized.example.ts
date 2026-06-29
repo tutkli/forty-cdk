@@ -8,8 +8,6 @@ import {
 } from 'forty-cdk/date-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 const SEGMENT_LABELS = {
   day: 'día',
   month: 'mes',
@@ -22,56 +20,88 @@ const SEGMENT_LABELS = {
 @Component({
   selector: 'app-date-field-localized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
   providers: [
     ...provideInternationalizedDateTimeAdapter(),
     ...provideForDateFieldDefaults({ segmentLabels: SEGMENT_LABELS }),
   ],
   template: `
-    <playground-demo
-      title="Localized segment labels"
-      subtitle="provideForDateFieldDefaults({ segmentLabels }) overrides the accessible name each segment announces, scoped to this injector. A screen reader reads the focused segment as 'día' / 'mes' / 'año' / 'a. m./p. m.' instead of the English default — inspect the aria-label on a segment to confirm. Any key left unset keeps the library label."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/date-field/examples/localized.example.ts"
+    <div
+      forDateField
+      class="date-field"
+      [(value)]="value"
+      locale="es-ES"
+      granularity="minute"
+      [hourCycle]="12"
+      ariaLabel="Fecha y hora"
+      #field="forDateField"
     >
-      <div demo>
-        <div
-          forDateField
-          class="pg-seg-field"
-          [(value)]="value"
-          granularity="minute"
-          [hourCycle]="12"
-          ariaLabel="Fecha y hora"
-          #field="forDateField"
-        >
-          @for (seg of field.segments(); track seg.id) {
-            @if (seg.isLiteral) {
-              <span forDateFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-            } @else {
-              <span forDateFieldSegment class="pg-seg" [segment]="seg.type!">{{ seg.text }}</span>
-            }
-          }
-        </div>
-      </div>
+      @for (seg of field.segments(); track seg.id) {
+        @if (seg.isLiteral) {
+          <span forDateFieldLiteral class="date-field-literal">{{ seg.text }}</span>
+        } @else {
+          <span forDateFieldSegment class="date-field-segment" [segment]="seg.type!">{{
+            seg.text
+          }}</span>
+        }
+      }
+    </div>
+  `,
+  styles: `
+    :host {
+      display: contents;
+    }
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          segmentLabels:<br />
-          @for (entry of labels; track entry[0]) {
-            <span
-              ><code>{{ entry[0] }}</code> → <b>{{ entry[1] }}</b
-              ><br
-            /></span>
-          }
-        </p>
-      </div>
-    </playground-demo>
+    .date-field {
+      display: inline-flex;
+      align-items: center;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .date-field:focus-within {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .date-field-segment {
+      padding: 0.05rem 0.15rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .date-field-segment[data-placeholder] {
+      color: var(--pg-text-muted);
+    }
+
+    .date-field-segment[data-highlighted],
+    .date-field-segment:focus {
+      background: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .date-field-literal {
+      padding: 0 0.05rem;
+      color: var(--pg-text-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .date-field {
+        transition: none;
+      }
+    }
   `,
 })
 export class DateFieldLocalizedExample {
   protected readonly value = signal<CalendarDateTime | null>(
     new CalendarDateTime(2024, 6, 15, 14, 30),
   );
-
-  protected readonly labels: readonly (readonly [string, string])[] =
-    Object.entries(SEGMENT_LABELS);
 }

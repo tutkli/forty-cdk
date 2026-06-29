@@ -1,54 +1,30 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForButton } from 'forty-cdk/button';
-
-import { DemoLayout } from '../../../ui/demo-layout';
 
 @Component({
   selector: 'app-button-disabled-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForButton],
+  imports: [ForButton],
   template: `
-    <playground-demo
-      title="Disabled stays focusable"
-      subtitle="Per the APG, a disabled button must stay reachable so assistive tech can announce it. forButton never sets the native disabled attribute — it reflects aria-disabled='true' + data-disabled and makes activation a no-op. Tab through both: the forButton is still reachable and announced, the native disabled button is skipped entirely."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/button/examples/disabled.example.ts"
-    >
-      <div demo class="stage">
-        <div class="col">
-          <span class="cap">forButton [disabled]</span>
-          <button
-            forButton
-            class="btn"
-            [disabled]="true"
-            (activate)="count.update((n) => n + 1)"
-            (focusin)="focused.set('forButton')"
-          >
-            Submit
-          </button>
-          <span class="tag tag--ok">focusable · aria-disabled</span>
-        </div>
-
-        <div class="col">
-          <span class="cap">native &lt;button disabled&gt;</span>
-          <button class="btn" disabled (focusin)="focused.set('native')">Submit</button>
-          <span class="tag">removed from tab order</span>
-        </div>
+    <div class="stage">
+      <div class="col">
+        <span class="cap">forButton [disabled]</span>
+        <button forButton class="btn" [disabled]="true">Submit</button>
+        <span class="tag tag--ok">focusable · aria-disabled</span>
       </div>
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          last focused: <b>{{ focused() }}</b
-          ><br />
-          activations while disabled: <b>{{ count() }}</b>
-        </p>
-        <p class="pg-hint">
-          Tab into the preview. The forButton receives focus (and stays a no-op on Enter / Space);
-          the native disabled button cannot be focused at all.
-        </p>
+      <div class="col">
+        <span class="cap">native &lt;button disabled&gt;</span>
+        <button class="btn" disabled>Submit</button>
+        <span class="tag">removed from tab order</span>
       </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .stage {
       display: flex;
       flex-wrap: wrap;
@@ -109,7 +85,4 @@ import { DemoLayout } from '../../../ui/demo-layout';
     }
   `,
 })
-export class ButtonDisabledExample {
-  protected readonly count = signal(0);
-  protected readonly focused = signal('—');
-}
+export class ButtonDisabledExample {}

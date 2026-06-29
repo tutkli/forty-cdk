@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import {
   ForDrawer,
   ForDrawerClose,
@@ -8,85 +8,182 @@ import {
   ForDrawerTrigger,
 } from 'forty-cdk/drawer';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-drawer-scale-background-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    DemoLayout,
     ForDrawer,
     ForDrawerTrigger,
     ForDrawerHandle,
     ForDrawerTitle,
     ForDrawerDescription,
     ForDrawerClose,
-    ControlSwitch,
   ],
   template: `
-    <playground-demo
-      title="Scale background"
-      subtitle="Scale-background effect: [forDrawerWrapper] lives on the playground app shell, so opening this drawer scales and rounds the corners of the whole screen behind it — exactly the real-app effect. Watch the entire playground recede."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/scale-background.example.ts"
+    <button
+      forDrawerTrigger
+      class="scale-btn scale-btn--primary"
+      [(open)]="open"
+      controls="scale-drawer"
     >
-      <div demo class="pg-center">
-        <button
-          forDrawerTrigger
-          class="pg-btn pg-btn--primary"
-          [(open)]="scaleOpen"
-          controls="pg-scale-drawer"
-        >
-          Open drawer
-        </button>
-      </div>
+      Open drawer
+    </button>
 
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="setBackgroundColorOnScale"
-          hint="Paints the body behind the scaled page so the gap between the receded wrapper and the viewport edge doesn't show through. Only applies while scaleBackground is on."
-          [(checked)]="scaleBgColor"
-        />
-
-        <p class="pg-state">
-          drawer: <b>{{ scaleOpen() ? 'open' : 'closed' }}</b>
-        </p>
-        <p class="pg-hint">
-          The wrapper is on the app shell — the whole page scales behind the sheet.
-        </p>
-      </div>
-    </playground-demo>
-
-    @if (scaleOpen()) {
+    @if (open()) {
       <div
         forDrawer
-        id="pg-scale-drawer"
-        class="pg-drawer pg-drawer--tall"
+        id="scale-drawer"
+        class="scale-drawer"
         [scaleBackground]="true"
-        [setBackgroundColorOnScale]="scaleBgColor()"
-        (dismiss)="scaleOpen.set(false)"
-        animate.enter="pg-drawer-in-bottom"
-        animate.leave="pg-drawer-out-bottom"
+        (dismiss)="open.set(false)"
+        animate.enter="scale-drawer-in"
+        animate.leave="scale-drawer-out"
       >
-        <div forDrawerHandle class="pg-drawer-handle"></div>
-        <h2 forDrawerTitle class="pg-drawer-title">Scaled background</h2>
-        <p forDrawerDescription class="pg-drawer-desc">
+        <div forDrawerHandle class="scale-drawer-handle"></div>
+        <h2 forDrawerTitle class="scale-drawer-title">Scaled background</h2>
+        <p forDrawerDescription class="scale-drawer-desc">
           The wrapper behind receded and rounded its corners.
         </p>
-        <div class="pg-drawer-actions">
-          <button class="pg-btn" forDrawerClose>Close</button>
+        <div class="scale-drawer-actions">
+          <button class="scale-btn" forDrawerClose>Close</button>
         </div>
       </div>
     }
   `,
   styles: `
-    .pg-center {
+    app-drawer-scale-background-example {
+      display: contents;
+    }
+
+    .scale-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.18s var(--pg-ease-spring);
+    }
+
+    .scale-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .scale-btn:active {
+      transform: scale(0.95);
+    }
+
+    .scale-btn--primary,
+    .scale-btn--primary:hover {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .scale-btn--primary:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
+    }
+
+    .scale-drawer {
+      position: fixed;
+      z-index: 51;
+      box-sizing: border-box;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 1.25rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      box-shadow: var(--pg-shadow);
+      translate: var(--for-drawer-translate, 0px 0px);
+      transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      user-select: none;
+      -webkit-user-select: none;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 85vh;
+      border-radius: var(--pg-radius);
+    }
+
+    .scale-drawer-handle {
+      flex: none;
+      width: 42px;
+      height: 5px;
+      margin: 0 auto 0.3rem;
+      border-radius: 999px;
+      background: var(--pg-border-strong);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .scale-drawer-handle:active {
+      cursor: grabbing;
+    }
+
+    .scale-drawer-title {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .scale-drawer-desc {
+      margin: 0 0 0.25rem;
+      color: var(--pg-text-muted);
+      font-size: 0.9rem;
+    }
+
+    .scale-drawer-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: auto;
+      padding-top: 0.75rem;
+    }
+
+    @keyframes scale-drawer-in {
+      from {
+        transform: translateY(100%);
+      }
+    }
+    @keyframes scale-drawer-out {
+      to {
+        transform: translateY(100%);
+      }
+    }
+
+    .scale-drawer-in {
+      animation: scale-drawer-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    .scale-drawer-out {
+      animation: scale-drawer-out 0.3s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .scale-btn {
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .scale-btn:active {
+        transform: none;
+      }
+
+      .scale-drawer-in,
+      .scale-drawer-out {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
 export class DrawerScaleBackgroundExample {
-  protected readonly scaleOpen = signal(false);
-  protected readonly scaleBgColor = signal(true);
+  protected readonly open = signal(false);
 }

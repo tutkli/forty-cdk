@@ -5,90 +5,159 @@ import {
   type ElementRef,
   signal,
   viewChild,
+  ViewEncapsulation,
 } from '@angular/core';
 import { type VetoableEvent } from 'forty-cdk/core';
 import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-dialog-non-modal-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForDialog, ForDialogClose, ControlSwitch],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForDialog, ForDialogClose],
   template: `
-    <playground-demo
-      title="Non-modal & keep focus"
-      subtitle="modal=false drops the focus trap, scroll lock and inert siblings. autoFocusOnOpen vetoes the initial focus move so the search field keeps focus while you type; autoFocusOnClose returns focus to it on close. The panel has no visible title, so ariaLabel names it."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/non-modal.example.ts"
-    >
-      <div demo class="pg-search-demo">
-        <input
-          #search
-          type="search"
-          class="pg-input"
-          placeholder="Search fruit…"
-          aria-label="Search fruit"
-          [value]="query()"
-          (input)="onQuery($event)"
-        />
-        <p class="pg-hint">Type to open the results — focus never leaves this field.</p>
-      </div>
+    <div class="non-modal-search">
+      <input
+        #search
+        type="search"
+        class="non-modal-input"
+        placeholder="Search fruit…"
+        aria-label="Search fruit"
+        [value]="query()"
+        (input)="onQuery($event)"
+      />
+      <p class="non-modal-hint">Type to open the results — focus never leaves this field.</p>
+    </div>
 
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="autoFocusOnOpen keeps focus"
-          hint="When on, the autoFocusOnOpen callback vetoes the dialog's initial focus move so the search field keeps focus as the results panel opens, instead of focus jumping into the panel."
-          [(checked)]="keepFocus"
-        />
-
-        <p class="pg-state">
-          query: <b>{{ query() || '—' }}</b
-          ><br />panel: <b>{{ searchOpen() ? 'open' : 'closed' }}</b>
-        </p>
-      </div>
-    </playground-demo>
-
-    @if (searchOpen()) {
+    @if (open()) {
       <div
         forDialog
-        class="pg-dialog pg-dialog--top"
+        class="non-modal-dialog"
         [modal]="false"
         [dismissible]="false"
         ariaLabel="Search results"
         [autoFocusOnOpen]="keepSearchFocused"
         [autoFocusOnClose]="refocusSearch"
-        (dismiss)="searchOpen.set(false)"
-        animate.enter="pg-panel-in"
+        (dismiss)="open.set(false)"
+        animate.enter="non-modal-panel-in"
       >
-        <div class="pg-result-list">
+        <div class="non-modal-results">
           @for (item of results(); track item) {
-            <div class="pg-row">{{ item }}</div>
+            <div class="non-modal-row">{{ item }}</div>
           } @empty {
-            <p class="pg-hint">No matches for "{{ query() }}".</p>
+            <p class="non-modal-hint">No matches for "{{ query() }}".</p>
           }
         </div>
-        <div class="pg-dialog-actions">
-          <button class="pg-btn" forDialogClose>Close</button>
+        <div class="non-modal-actions">
+          <button class="non-modal-btn" forDialogClose>Close</button>
         </div>
       </div>
     }
   `,
   styles: `
-    .pg-search-demo {
+    app-dialog-non-modal-example {
+      display: contents;
+    }
+
+    .non-modal-search {
       width: min(360px, 100%);
     }
 
-    .pg-search-demo .pg-hint {
+    .non-modal-input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+    }
+
+    .non-modal-hint {
       margin: 0.7rem 0 0;
+      font-size: 0.8rem;
+      color: var(--pg-text-muted);
+    }
+
+    .non-modal-dialog {
+      position: fixed;
+      z-index: 51;
+      display: block;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(440px, calc(100vw - 2rem));
+      padding: 1.5rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-lg);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .non-modal-results {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .non-modal-row {
+      flex: none;
+      padding: 0.7rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface-2);
+      font-size: 0.9rem;
+    }
+
+    .non-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    .non-modal-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .non-modal-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    @keyframes non-modal-panel-in {
+      from {
+        opacity: 0;
+        scale: 0.96;
+      }
+    }
+
+    .non-modal-panel-in {
+      animation: non-modal-panel-in 0.2s var(--pg-ease-spring) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .non-modal-panel-in {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
 export class DialogNonModalExample {
   protected readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
-  protected readonly searchOpen = signal(false);
+  protected readonly open = signal(false);
   protected readonly query = signal('');
-  protected readonly keepFocus = signal(true);
   readonly #fruits: readonly string[] = [
     'Apple',
     'Apricot',
@@ -111,14 +180,12 @@ export class DialogNonModalExample {
   protected onQuery(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.query.set(value);
-    this.searchOpen.set(value.trim().length > 0);
+    this.open.set(value.trim().length > 0);
   }
 
   protected readonly keepSearchFocused = (event: VetoableEvent): void => {
-    if (this.keepFocus()) {
-      event.preventDefault();
-      this.search()?.nativeElement.focus();
-    }
+    event.preventDefault();
+    this.search()?.nativeElement.focus();
   };
 
   protected readonly refocusSearch = (): void => {

@@ -41,15 +41,9 @@ import { Icon } from './icon';
       </div>
 
       <div forTabsContent value="preview" class="demo-panel">
-        <div class="body">
-          <section class="preview" aria-label="Preview">
-            <ng-content select="[demo]" />
-          </section>
-          <aside class="panel" aria-label="Controls">
-            <h3>Controls</h3>
-            <ng-content select="[controls]" />
-          </aside>
-        </div>
+        <section class="preview" aria-label="Preview">
+          <ng-content />
+        </section>
       </div>
 
       <div forTabsContent value="code" class="demo-panel">
@@ -155,13 +149,6 @@ import { Icon } from './icon';
       display: none;
     }
 
-    .body {
-      display: grid;
-      grid-template-columns: 1fr 260px;
-      gap: 1.5rem;
-      align-items: start;
-    }
-
     .preview {
       display: flex;
       align-items: center;
@@ -171,22 +158,6 @@ import { Icon } from './icon';
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
-    }
-
-    .panel {
-      padding: 1.1rem 1.2rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
-    }
-
-    .panel h3 {
-      margin: 0 0 1rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
     }
 
     .code {
@@ -234,11 +205,6 @@ import { Icon } from './icon';
 
       .head h2 {
         font-size: 1.05rem;
-      }
-
-      .body {
-        grid-template-columns: 1fr;
-        gap: 1rem;
       }
 
       .preview {

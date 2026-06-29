@@ -22,8 +22,6 @@ import {
   ForStepperTrigger,
 } from 'forty-cdk/stepper';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Signup {
   readonly email: string;
   readonly password: string;
@@ -39,7 +37,6 @@ interface FormStep {
   selector: 'app-stepper-form-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     FormField,
     ForField,
     ForLabel,
@@ -57,113 +54,91 @@ interface FormStep {
     ForStepperPrevious,
   ],
   template: `
-    <playground-demo
-      title="Linear wizard with Signal Forms"
-      subtitle="Each step binds a Signal Forms field. A step is completed when its field is valid and touched, and shows the error state when touched and invalid — no manual [completed] wiring. In linear mode Next stays disabled until the current step's field is valid and touched, so fill the input and blur it to advance."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/stepper/examples/form.example.ts"
-    >
-      <div demo class="stp-demo">
-        <div forStepper #stepper="forStepper" class="stp" [(selectedIndex)]="step" [linear]="true">
-          <ol forStepperList class="stp-list" ariaLabel="Create account">
-            @for (s of formSteps; track s.label; let i = $index; let last = $last) {
-              <li forStepperItem #item="forStepperItem" class="stp-item" [field]="s.field">
-                <button forStepperTrigger type="button" class="stp-trigger">
-                  <span forStepperIndicator class="stp-indicator">
-                    @if (item.resolvedState() === 'completed') {
-                      ✓
-                    } @else if (item.resolvedState() === 'error') {
-                      !
-                    } @else {
-                      {{ i + 1 }}
-                    }
-                  </span>
-                  <span class="stp-label">{{ s.label }}</span>
-                </button>
-                @if (!last) {
-                  <span forStepperSeparator class="stp-sep"></span>
-                }
-              </li>
-            }
-          </ol>
+    <div class="stp-demo">
+      <div forStepper class="stp" [(selectedIndex)]="step" [linear]="true">
+        <ol forStepperList class="stp-list" ariaLabel="Create account">
+          @for (s of formSteps; track s.label; let i = $index; let last = $last) {
+            <li forStepperItem #item="forStepperItem" class="stp-item" [field]="s.field">
+              <button forStepperTrigger type="button" class="stp-trigger">
+                <span forStepperIndicator class="stp-indicator">
+                  @if (item.resolvedState() === 'completed') {
+                    ✓
+                  } @else if (item.resolvedState() === 'error') {
+                    !
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </span>
+                <span class="stp-label">{{ s.label }}</span>
+              </button>
+              @if (!last) {
+                <span forStepperSeparator class="stp-sep"></span>
+              }
+            </li>
+          }
+        </ol>
 
-          <div class="stp-body">
-            <section forStepperContent class="stp-panel">
-              <div forField #emailField="forField" class="field">
-                <label forLabel class="field-label">
-                  <span class="field-label-text">Work email</span>
-                  <input forInput class="pg-input" type="email" [formField]="signupForm.email" />
-                </label>
-                @if (emailField.touched() && emailField.invalid()) {
-                  <p forFieldError #emailErr="forFieldError" class="field-error">
-                    {{ emailErr.messages().join(', ') }}
-                  </p>
-                }
-              </div>
-            </section>
-
-            <section forStepperContent class="stp-panel">
-              <div forField #passwordField="forField" class="field">
-                <label forLabel class="field-label">
-                  <span class="field-label-text">Password</span>
-                  <input
-                    forInput
-                    class="pg-input"
-                    type="password"
-                    [formField]="signupForm.password"
-                  />
-                </label>
-                @if (passwordField.touched() && passwordField.invalid()) {
-                  <p forFieldError #passwordErr="forFieldError" class="field-error">
-                    {{ passwordErr.messages().join(', ') }}
-                  </p>
-                }
-              </div>
-            </section>
-
-            <section forStepperContent class="stp-panel">
-              <div forField #nameField="forField" class="field">
-                <label forLabel class="field-label">
-                  <span class="field-label-text">Display name</span>
-                  <input forInput class="pg-input" type="text" [formField]="signupForm.name" />
-                </label>
-                @if (nameField.touched() && nameField.invalid()) {
-                  <p forFieldError #nameErr="forFieldError" class="field-error">
-                    {{ nameErr.messages().join(', ') }}
-                  </p>
-                }
-              </div>
-            </section>
-
-            <section forStepperCompletedContent class="stp-panel stp-complete">
-              <p>✅ Account created — welcome aboard.</p>
-              <button type="button" class="pg-btn" (click)="restart()">Start over</button>
-            </section>
-
-            <div class="stp-nav">
-              <button forStepperPrevious type="button" class="pg-btn">Back</button>
-              <button forStepperNext type="button" class="pg-btn stp-next">Next</button>
+        <div class="stp-body">
+          <section forStepperContent class="stp-panel">
+            <div forField #emailField="forField" class="field">
+              <label forLabel class="field-label">
+                <span class="field-label-text">Work email</span>
+                <input forInput class="input" type="email" [formField]="signupForm.email" />
+              </label>
+              @if (emailField.touched() && emailField.invalid()) {
+                <p forFieldError #emailErr="forFieldError" class="field-error">
+                  {{ emailErr.messages().join(', ') }}
+                </p>
+              }
             </div>
+          </section>
+
+          <section forStepperContent class="stp-panel">
+            <div forField #passwordField="forField" class="field">
+              <label forLabel class="field-label">
+                <span class="field-label-text">Password</span>
+                <input forInput class="input" type="password" [formField]="signupForm.password" />
+              </label>
+              @if (passwordField.touched() && passwordField.invalid()) {
+                <p forFieldError #passwordErr="forFieldError" class="field-error">
+                  {{ passwordErr.messages().join(', ') }}
+                </p>
+              }
+            </div>
+          </section>
+
+          <section forStepperContent class="stp-panel">
+            <div forField #nameField="forField" class="field">
+              <label forLabel class="field-label">
+                <span class="field-label-text">Display name</span>
+                <input forInput class="input" type="text" [formField]="signupForm.name" />
+              </label>
+              @if (nameField.touched() && nameField.invalid()) {
+                <p forFieldError #nameErr="forFieldError" class="field-error">
+                  {{ nameErr.messages().join(', ') }}
+                </p>
+              }
+            </div>
+          </section>
+
+          <section forStepperCompletedContent class="stp-panel stp-complete">
+            <p>✅ Account created — welcome aboard.</p>
+            <button type="button" class="btn" (click)="restart()">Start over</button>
+          </section>
+
+          <div class="stp-nav">
+            <button forStepperPrevious type="button" class="btn">Back</button>
+            <button forStepperNext type="button" class="btn btn-next">Next</button>
           </div>
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-hint">
-          Linear mode gates forward navigation: a step is only reachable once every preceding step
-          is completed. The Signal Forms field decides completion, so Next enables as soon as the
-          current field becomes valid and touched.
-        </p>
-        <p class="pg-state">
-          selectedIndex: <b>{{ step() }}</b
-          ><br />
-          canAdvance: <b>{{ stepper.canAdvance() }}</b
-          ><br />
-          isCompleted: <b>{{ stepper.isCompleted() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .stp-demo {
       width: min(520px, 100%);
     }
@@ -307,7 +282,18 @@ interface FormStep {
       color: var(--pg-text);
     }
 
-    .field[data-touched][data-invalid] .pg-input {
+    .input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+    }
+
+    .field[data-touched][data-invalid] .input {
       border-color: var(--pg-danger);
     }
 
@@ -323,21 +309,32 @@ interface FormStep {
       gap: 0.6rem;
     }
 
-    .stp-next {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-on-primary, #fff);
+    .btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
     }
 
-    .pg-btn[aria-disabled='true'] {
+    .btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .btn[aria-disabled='true'] {
       opacity: 0.45;
       cursor: not-allowed;
     }
 
-    .pg-hint {
-      margin: 0 0 1rem;
-      font-size: 0.85rem;
-      color: var(--pg-text-muted);
+    .btn-next {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-on-primary, #fff);
     }
   `,
 })

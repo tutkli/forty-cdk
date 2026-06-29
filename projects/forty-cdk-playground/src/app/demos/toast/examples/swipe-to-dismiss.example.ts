@@ -1,126 +1,174 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   DestroyRef,
   inject,
-  signal,
+  ViewEncapsulation,
 } from '@angular/core';
-import { ForToastManager, type ForToastRef, type ForToastSwipeDirection } from 'forty-cdk/toast';
-
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { DemoLayout } from '../../../ui/demo-layout';
-
-type SwipeChoice = 'right' | 'left' | 'up' | 'down' | 'right-down';
+import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
 
 @Component({
   selector: 'app-toast-swipe-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ControlSelect],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForToastViewport],
   template: `
-    <playground-demo
-      title="Swipe to dismiss"
-      subtitle="Each toast configures its own swipeDirection (single or an array of directions) and swipeThreshold in the show() config. Drag a toast with the mouse or a touch pointer: the dominant axis of your drag picks the active direction, the directive clamps pointer travel to that half-line and exposes it as the --for-toast-swipe-movement-x/y CSS variables, and the demo's global CSS turns those into a live translate3d. Release past the threshold and the toast closes with reason 'swipe'; release short and data-swipe='cancel' springs it back."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/toast/examples/swipe-to-dismiss.example.ts"
-    >
-      <div demo class="toast-demo">
-        <div class="toast-triggers">
-          <div class="pg-btn-row">
-            <button type="button" class="pg-btn pg-btn--primary" (click)="notify()">
-              Show a swipeable toast
-            </button>
-            <button type="button" class="pg-btn" (click)="manager.dismissAll()">Dismiss all</button>
-          </div>
-          <p class="pg-hint">
-            Press and drag a toast toward the configured direction. The card follows your pointer;
-            let go past {{ threshold() }} px to dismiss, or short of it to spring back. Toasts
-            render in the single shared viewport above.
-          </p>
-        </div>
-      </div>
+    <div class="row">
+      <button type="button" class="btn btn--primary" (click)="notify()">
+        Show a swipeable toast
+      </button>
+    </div>
 
-      <div controls class="pg-controls">
-        <app-control-select
-          label="swipeDirection"
-          hint="Direction(s) the drag can dismiss in. 'right + down' passes an array, so either dominant axis arms the gesture; the perpendicular drag is dropped."
-          [options]="directionOptions"
-          [(value)]="directionChoice"
-        />
-        <app-control-select
-          label="swipeThreshold"
-          hint="Pixels of pointer travel along the active direction needed to commit the dismiss. Below it, the release cancels and the card springs back."
-          [options]="thresholdOptions"
-          [(value)]="thresholdChoice"
-        />
-
-        <p class="pg-state">
-          open toasts: <b>{{ manager.count() }}</b
-          ><br />
-          last swipe: <b>{{ lastSwipe() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <for-toast-viewport
+      class="swipe-toast-viewport"
+      region="toast-swipe"
+      swipeDirection="right"
+      [swipeThreshold]="60"
+    />
   `,
   styles: `
-    .toast-demo {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      width: 100%;
+    app-toast-swipe-example {
+      display: contents;
     }
 
-    .toast-triggers {
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .btn--primary,
+    .btn--primary:hover {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .btn--primary:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
+    }
+
+    .swipe-toast-viewport {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 80;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 0.6rem;
+      width: min(360px, calc(100vw - 2rem));
+      margin: 0;
+      pointer-events: none;
+    }
+
+    .swipe-toast-viewport [forToast] {
+      position: relative;
+      pointer-events: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.15rem;
+      padding: 0.8rem 2.4rem 0.85rem 1rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      border: 1px solid var(--pg-border);
+      border-left: 4px solid var(--pg-primary);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+      transform: translate3d(
+        var(--for-toast-swipe-movement-x, 0px),
+        var(--for-toast-swipe-movement-y, 0px),
+        0
+      );
+      transition: transform 0.18s ease-out;
+      animation: swipe-toast-in 0.24s var(--pg-ease-spring) both;
+      touch-action: none;
+    }
+
+    .swipe-toast-viewport [forToast][data-swipe='move'] {
+      transition: none;
+    }
+
+    .swipe-toast-viewport [forToast][data-swipe='cancel'] {
+      transform: translate3d(0, 0, 0);
+    }
+
+    .swipe-toast-viewport [forToastTitle] {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .swipe-toast-viewport [forToastDescription] {
+      font-size: 0.82rem;
+      color: var(--pg-text-muted);
+    }
+
+    .swipe-toast-viewport [forToastClose] {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      display: inline-flex;
       align-items: center;
-      max-width: 420px;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      font-size: 1.05rem;
+      line-height: 1;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text-muted);
+      cursor: pointer;
+    }
+
+    .swipe-toast-viewport [forToastClose]:hover {
+      background: var(--pg-surface-2);
+      color: var(--pg-text);
+    }
+
+    @keyframes swipe-toast-in {
+      from {
+        opacity: 0;
+        scale: 0.9;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .swipe-toast-viewport [forToast] {
+        animation-duration: 0.01ms;
+        transition: none;
+      }
     }
   `,
 })
 export class ToastSwipeExample {
   protected readonly manager = inject(ForToastManager);
 
-  protected readonly directionOptions: readonly ControlOption<SwipeChoice>[] = [
-    { value: 'right', label: 'right' },
-    { value: 'left', label: 'left' },
-    { value: 'up', label: 'up' },
-    { value: 'down', label: 'down' },
-    { value: 'right-down', label: 'right + down' },
-  ];
-
-  protected readonly thresholdOptions: readonly ControlOption<'30' | '50' | '90'>[] = [
-    { value: '30', label: '30 px' },
-    { value: '50', label: '50 px (default)' },
-    { value: '90', label: '90 px' },
-  ];
-
-  protected readonly directionChoice = signal<SwipeChoice>('right');
-  protected readonly thresholdChoice = signal<'30' | '50' | '90'>('50');
-  protected readonly lastSwipe = signal('—');
-
-  protected readonly threshold = computed(() => Number(this.thresholdChoice()));
-
-  protected readonly swipeDirection = computed<ForToastSwipeDirection>(() => {
-    const choice = this.directionChoice();
-    return choice === 'right-down' ? ['right', 'down'] : choice;
-  });
-
   constructor() {
     inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
   }
 
   protected notify(): void {
-    const ref: ForToastRef = this.manager.show({
+    this.manager.show({
       variant: 'info',
       title: 'Swipe me away',
-      description: 'Drag toward the configured direction to dismiss.',
+      description: 'Drag the toast to the right to dismiss it.',
+      region: 'toast-swipe',
       duration: 0,
-      swipeDirection: this.swipeDirection(),
-      swipeThreshold: this.threshold(),
     });
-    ref.closed.then(({ reason }) => this.lastSwipe.set(`closed (${reason})`));
   }
 }

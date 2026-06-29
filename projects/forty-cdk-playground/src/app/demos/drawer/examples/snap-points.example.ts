@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import {
   ForDrawer,
   ForDrawerBackdrop,
@@ -8,90 +8,232 @@ import {
   ForDrawerTrigger,
 } from 'forty-cdk/drawer';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-drawer-snap-points-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForDrawer,
-    ForDrawerTrigger,
-    ForDrawerBackdrop,
-    ForDrawerHandle,
-    ForDrawerTitle,
-    ControlSwitch,
-  ],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForDrawer, ForDrawerTrigger, ForDrawerBackdrop, ForDrawerHandle, ForDrawerTitle],
   template: `
-    <playground-demo
-      title="Snap points"
-      subtitle="Snap points: drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off data-active-snap-point; data-dragging disables the transition mid-gesture."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/snap-points.example.ts"
+    <button
+      forDrawerTrigger
+      class="snap-btn snap-btn--primary"
+      [(open)]="open"
+      controls="snap-drawer"
     >
-      <div demo class="pg-center">
-        <button
-          forDrawerTrigger
-          class="pg-btn pg-btn--primary"
-          [(open)]="snapOpen"
-          controls="pg-snap-drawer"
-        >
-          Open bottom sheet
-        </button>
-      </div>
+      Open bottom sheet
+    </button>
 
-      <div controls class="pg-controls">
-        <app-control-switch
-          label='fade backdrop from "half"'
-          hint="Sets fadeFromIndex to the half snap: the backdrop only reflects its fade attribute once the sheet reaches that snap or higher, leaving it clear at the peek snap."
-          [(checked)]="snapFade"
-        />
-
-        <p class="pg-state">
-          active snap: <b>{{ snapActiveDisplay() }}</b>
-        </p>
-        <p class="pg-hint">
-          Jump-to-snap buttons live inside the sheet — clicking outside a modal drawer dismisses it.
-        </p>
-      </div>
-    </playground-demo>
-
-    @if (snapOpen()) {
+    @if (open()) {
       <div
         forDrawer
-        id="pg-snap-drawer"
-        class="pg-drawer"
+        id="snap-drawer"
+        class="snap-drawer"
         [snapPoints]="snapPoints"
-        [(activeSnapPoint)]="snapActive"
-        [fadeFromIndex]="snapFade() ? 1 : undefined"
-        (dismiss)="snapOpen.set(false)"
-        animate.enter="pg-drawer-in-bottom"
-        animate.leave="pg-drawer-out-bottom"
+        [(activeSnapPoint)]="active"
+        [fadeFromIndex]="1"
+        (dismiss)="open.set(false)"
+        animate.enter="snap-drawer-in"
+        animate.leave="snap-drawer-out"
       >
-        <div
-          forDrawerBackdrop
-          class="pg-drawer-backdrop"
-          [class.pg-drawer-backdrop--fade]="snapFade()"
-        ></div>
-        <div forDrawerHandle class="pg-drawer-handle"></div>
-        <h2 forDrawerTitle class="pg-drawer-title">Snap points</h2>
-        <div class="pg-btn-row">
-          <button class="pg-btn" type="button" (click)="snapActive.set(peek)">Peek</button>
-          <button class="pg-btn" type="button" (click)="snapActive.set(half)">Half</button>
-          <button class="pg-btn" type="button" (click)="snapActive.set(full)">Full</button>
+        <div forDrawerBackdrop class="snap-drawer-backdrop"></div>
+        <div forDrawerHandle class="snap-drawer-handle"></div>
+        <h2 forDrawerTitle class="snap-drawer-title">Snap points</h2>
+        <div class="snap-btn-row">
+          <button class="snap-btn" type="button" (click)="active.set(peek)">Peek</button>
+          <button class="snap-btn" type="button" (click)="active.set(half)">Half</button>
+          <button class="snap-btn" type="button" (click)="active.set(full)">Full</button>
         </div>
-        <div class="pg-drawer-scroll">
-          @for (item of snapItems; track item) {
-            <div class="pg-row">{{ item }}</div>
+        <div class="snap-drawer-scroll">
+          @for (item of items; track item) {
+            <div class="snap-row">{{ item }}</div>
           }
         </div>
       </div>
     }
   `,
   styles: `
-    .pg-center {
+    app-drawer-snap-points-example {
+      display: contents;
+    }
+
+    .snap-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.18s var(--pg-ease-spring);
+    }
+
+    .snap-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .snap-btn:active {
+      transform: scale(0.95);
+    }
+
+    .snap-btn--primary,
+    .snap-btn--primary:hover {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .snap-btn--primary:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
+    }
+
+    .snap-btn-row {
       display: flex;
-      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .snap-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(10, 12, 16, 0.5);
+      backdrop-filter: blur(2px);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .snap-drawer-backdrop[data-fade-from-active] {
+      opacity: 1;
+    }
+
+    .snap-drawer {
+      position: fixed;
+      z-index: 51;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 1.25rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      box-shadow: var(--pg-shadow);
+      translate: var(--for-drawer-translate, 0px 0px);
+      transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      user-select: none;
+      -webkit-user-select: none;
+      --pg-sheet-full: 72vh;
+      left: 0;
+      right: 0;
+      height: var(--pg-sheet-full);
+      max-height: var(--pg-sheet-full);
+      border-radius: var(--pg-radius) var(--pg-radius) 0 0;
+    }
+
+    .snap-drawer[data-active-snap-point] {
+      transition:
+        bottom 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+        translate 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .snap-drawer[data-active-snap-point][data-dragging] {
+      transition: none;
+    }
+
+    .snap-drawer[data-active-snap-point='148px'] {
+      bottom: calc(148px - var(--pg-sheet-full));
+    }
+
+    .snap-drawer[data-active-snap-point='0.5'] {
+      bottom: calc(var(--pg-sheet-full) * -0.5);
+    }
+
+    .snap-drawer[data-active-snap-point='1'] {
+      bottom: 0;
+    }
+
+    .snap-drawer-handle {
+      flex: none;
+      width: 42px;
+      height: 5px;
+      margin: 0 auto 0.3rem;
+      border-radius: 999px;
+      background: var(--pg-border-strong);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .snap-drawer-handle:active {
+      cursor: grabbing;
+    }
+
+    .snap-drawer-title {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .snap-drawer-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .snap-row {
+      flex: none;
+      padding: 0.7rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface-2);
+      font-size: 0.9rem;
+    }
+
+    @keyframes snap-drawer-in {
+      from {
+        transform: translateY(100%);
+      }
+    }
+    @keyframes snap-drawer-out {
+      to {
+        transform: translateY(100%);
+      }
+    }
+
+    .snap-drawer-in {
+      animation: snap-drawer-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    .snap-drawer-out {
+      animation: snap-drawer-out 0.3s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .snap-btn {
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .snap-btn:active {
+        transform: none;
+      }
+
+      .snap-drawer-in,
+      .snap-drawer-out {
+        animation-duration: 0.01ms;
+      }
+
+      .snap-drawer[data-active-snap-point] {
+        transition-duration: 0.01ms;
+      }
     }
   `,
 })
@@ -104,13 +246,8 @@ export class DrawerSnapPointsExample {
     this.half,
     this.full,
   ];
-  protected readonly snapItems = Array.from({ length: 14 }, (_, i) => `List item ${i + 1}`);
+  protected readonly items = Array.from({ length: 14 }, (_, i) => `List item ${i + 1}`);
 
-  protected readonly snapOpen = signal(false);
-  protected readonly snapActive = signal<ForDrawerSnapPoint | null>(this.peek);
-  protected readonly snapFade = signal(false);
-  protected readonly snapActiveDisplay = computed(() => {
-    const value = this.snapActive();
-    return value == null ? '—' : String(value);
-  });
+  protected readonly open = signal(false);
+  protected readonly active = signal<ForDrawerSnapPoint | null>(this.peek);
 }

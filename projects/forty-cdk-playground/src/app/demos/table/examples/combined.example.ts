@@ -17,7 +17,6 @@ import {
 } from 'forty-cdk/table';
 import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { makePeople } from './big-people';
 import { COLUMN_LABELS, type Person, type PersonColumn, personField } from './people';
 
@@ -37,7 +36,6 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
   selector: 'app-table-combined-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForTable,
     ForTableVirtualized,
     ForTableHeaderRow,
@@ -53,110 +51,97 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     ForDragPlaceholder,
   ],
   template: `
-    <playground-demo
-      title="Everything at once"
-      subtitle="One grid-mode table composing six features on the same element: multiple row selection with a tri-state select-all, sortable headers, column resizing, column reordering, virtualization (rows windowed) and infinite scroll. [selectableValues] feeds select-all the full loaded dataset so its tri-state stays correct beyond the rendered window. Each header cell is simultaneously a sort header, a drag handle for reordering and the host of a resize handle — they coexist without stealing each other's pointer or focus."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/table/examples/combined.example.ts"
-    >
-      <div demo class="ctbl-demo">
+    <div class="ctbl-demo">
+      <div
+        forTable
+        forTableVirtualized
+        #v="forTableVirtualized"
+        mode="grid"
+        ariaLabel="People"
+        class="ctbl"
+        [rowCount]="displayRows().length"
+        [estimateRowSize]="rowHeight"
+        selectionMode="multiple"
+        [(selection)]="selection"
+        [selectableValues]="allIds()"
+      >
         <div
-          forTable
-          forTableVirtualized
-          #v="forTableVirtualized"
-          mode="grid"
-          ariaLabel="People"
-          class="ctbl"
-          [rowCount]="displayRows().length"
-          [estimateRowSize]="rowHeight"
-          [selectionMode]="'multiple'"
-          [(selection)]="selection"
-          [selectableValues]="allIds()"
+          forTableHeaderRow
+          forTableColumnReorder
+          orientation="horizontal"
+          [liveSort]="true"
+          class="ctbl-row ctbl-head"
+          [style.gridTemplateColumns]="gridCols()"
+          (columnReorder)="onColumnReorder($event)"
         >
-          <div
-            forTableHeaderRow
-            forTableColumnReorder
-            orientation="horizontal"
-            [liveSort]="true"
-            class="ctbl-row ctbl-head"
-            [style.gridTemplateColumns]="gridCols()"
-            (columnReorder)="onColumnReorder($event)"
-          >
-            <div forTableHeaderCell name="sel" class="ctbl-cell ctbl-sel">
-              <span forTableSelectAll ariaLabel="Select all rows" class="ctbl-check"></span>
-            </div>
-            @for (column of columns(); track column) {
-              <div
-                forTableHeaderCell
-                [name]="column"
-                class="ctbl-cell ctbl-head-cell"
-                forTableSortHeader
+          <div forTableHeaderCell name="sel" class="ctbl-cell ctbl-sel">
+            <span forTableSelectAll ariaLabel="Select all rows" class="ctbl-check"></span>
+          </div>
+          @for (column of columns(); track column) {
+            <div
+              forTableHeaderCell
+              [name]="column"
+              class="ctbl-cell ctbl-head-cell"
+              forTableSortHeader
+              [column]="column"
+              [direction]="directionFor(column)"
+              forDraggable
+              [dragData]="column"
+              (sortChange)="onSort($event)"
+            >
+              <span class="ctbl-grip" aria-hidden="true">⠿</span>
+              <span class="ctbl-sort-label">{{ labels[column] }}</span>
+              <button
+                forTableColumnResizer
                 [column]="column"
-                [direction]="directionFor(column)"
-                forDraggable
-                [dragData]="column"
-                (sortChange)="onSort($event)"
-              >
-                <span class="ctbl-grip" aria-hidden="true">⠿</span>
-                <span class="ctbl-sort-label">{{ labels[column] }}</span>
-                <button
-                  forTableColumnResizer
-                  [column]="column"
-                  [min]="90"
-                  [max]="360"
-                  class="ctbl-resizer"
-                  [attr.aria-label]="'Resize ' + labels[column] + ' column'"
-                ></button>
-                <ng-template forDragPlaceholder>
-                  <div class="ctbl-ph"></div>
-                </ng-template>
+                [min]="90"
+                [max]="360"
+                class="ctbl-resizer"
+                [attr.aria-label]="'Resize ' + labels[column] + ' column'"
+              ></button>
+              <ng-template forDragPlaceholder>
+                <div class="ctbl-ph"></div>
+              </ng-template>
+            </div>
+          }
+        </div>
+        <div role="rowgroup" class="ctbl-body" [style.height.px]="v.totalSize()">
+          @for (vrow of v.virtualRows(); track vrow.index) {
+            <div
+              forTableRow
+              [value]="displayRows()[vrow.index]!.id"
+              [virtualIndex]="vrow.index"
+              class="ctbl-row ctbl-data-row"
+              [style.gridTemplateColumns]="gridCols()"
+              [style.transform]="'translateY(' + vrow.start + 'px)'"
+            >
+              <div forTableCell name="sel" class="ctbl-cell ctbl-sel">
+                <span forTableRowSelector class="ctbl-check"></span>
               </div>
-            }
-          </div>
-          <div role="rowgroup" class="ctbl-body" [style.height.px]="v.totalSize()">
-            @for (vrow of v.virtualRows(); track vrow.index) {
-              <div
-                forTableRow
-                [value]="displayRows()[vrow.index]!.id"
-                [virtualIndex]="vrow.index"
-                class="ctbl-row ctbl-data-row"
-                [style.gridTemplateColumns]="gridCols()"
-                [style.transform]="'translateY(' + vrow.start + 'px)'"
-              >
-                <div forTableCell name="sel" class="ctbl-cell ctbl-sel">
-                  <span forTableRowSelector class="ctbl-check"></span>
+              @for (column of columns(); track column) {
+                <div forTableCell [name]="column" class="ctbl-cell">
+                  {{ field(displayRows()[vrow.index]!, column) }}
                 </div>
-                @for (column of columns(); track column) {
-                  <div forTableCell [name]="column" class="ctbl-cell">
-                    {{ field(displayRows()[vrow.index]!, column) }}
-                  </div>
-                }
-              </div>
-            }
-          </div>
+              }
+            </div>
+          }
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <button type="button" class="pg-btn" (click)="reset()">Reset</button>
-        <p class="pg-hint">
-          Drag a header sideways to reorder columns, drag its right edge to resize, click it to
-          sort. Tick rows or the header checkbox to select; the body virtualizes and fetches more
-          rows as you scroll toward the end.
-        </p>
-        <p class="pg-state">
-          columns: <b>{{ columns().join(', ') }}</b
-          ><br />
-          sort: <b>{{ sort().column || '—' }} {{ sort().direction }}</b
-          ><br />
-          selected: <b>{{ selection().length }}</b
-          ><br />
-          loaded: <b>{{ rows().length }}</b> / {{ max }} ({{ statusLabel() }})
-        </p>
-      </div>
-    </playground-demo>
+      <p class="ctbl-status" aria-live="polite">
+        <b>{{ selection().length }}</b> selected · loaded <b>{{ rows().length }}</b> of {{ max }} ·
+        {{ statusLabel() }}
+      </p>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .ctbl-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
       width: min(680px, 100%);
     }
 
@@ -337,6 +322,17 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       border-radius: var(--pg-radius-sm);
       background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
     }
+
+    .ctbl-status {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--pg-text-muted);
+    }
+
+    .ctbl-status b {
+      color: var(--pg-text);
+      font-weight: 600;
+    }
   `,
 })
 export class TableCombinedExample {
@@ -416,13 +412,6 @@ export class TableCombinedExample {
 
   protected field(person: Person, column: PersonColumn): string {
     return personField(person, column);
-  }
-
-  protected reset(): void {
-    this.selection.set([]);
-    this.columns.set(['name', 'role', 'dept', 'location']);
-    this.sort.set({ column: '', direction: 'none' });
-    this.rows.set(makePeople(0, 150));
   }
 
   private loadMore(): Promise<void> {

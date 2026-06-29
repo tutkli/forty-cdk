@@ -11,9 +11,6 @@ import {
   ForStepperTrigger,
 } from 'forty-cdk/stepper';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Stage {
   readonly label: string;
 }
@@ -22,7 +19,6 @@ interface Stage {
   selector: 'app-stepper-progress-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForStepper,
     ForStepperList,
     ForStepperItem,
@@ -32,66 +28,44 @@ interface Stage {
     ForStepperProgress,
     ForStepperNext,
     ForStepperPrevious,
-    ControlSelect,
   ],
   template: `
-    <playground-demo
-      title="Progress mode + progress bar"
-      subtitle="A display-only status tracker: the list renders as a plain ordered list with aria-current='step' on the active stage — no roving tabindex or tab roles. The optional forStepperProgress part adds a role=progressbar that reports aria-valuenow / aria-valuetext and publishes a --for-stepper-progress (0–1) custom property for the fill."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/stepper/examples/progress.example.ts"
-    >
-      <div demo class="stp-demo">
-        <div forStepper class="stp" [(selectedIndex)]="step" mode="progress">
-          <div
-            forStepperProgress
-            class="stp-progress"
-            [valueBy]="valueBy()"
-            ariaLabel="Order progress"
-          ></div>
+    <div class="stp-demo">
+      <div forStepper class="stp" [(selectedIndex)]="step" mode="progress">
+        <div forStepperProgress class="stp-progress" ariaLabel="Order progress"></div>
 
-          <ol forStepperList class="stp-list" ariaLabel="Order status">
-            @for (stage of stages; track stage.label; let i = $index; let last = $last) {
-              <li forStepperItem #item="forStepperItem" class="stp-item" [completed]="step() > i">
-                <span forStepperTrigger class="stp-trigger">
-                  <span forStepperIndicator class="stp-indicator">
-                    @if (item.resolvedState() === 'completed') {
-                      ✓
-                    } @else {
-                      {{ i + 1 }}
-                    }
-                  </span>
-                  <span class="stp-label">{{ stage.label }}</span>
+        <ol forStepperList class="stp-list" ariaLabel="Order status">
+          @for (stage of stages; track stage.label; let i = $index; let last = $last) {
+            <li forStepperItem #item="forStepperItem" class="stp-item" [completed]="step() > i">
+              <span forStepperTrigger class="stp-trigger">
+                <span forStepperIndicator class="stp-indicator">
+                  @if (item.resolvedState() === 'completed') {
+                    ✓
+                  } @else {
+                    {{ i + 1 }}
+                  }
                 </span>
-                @if (!last) {
-                  <span forStepperSeparator class="stp-sep"></span>
-                }
-              </li>
-            }
-          </ol>
+                <span class="stp-label">{{ stage.label }}</span>
+              </span>
+              @if (!last) {
+                <span forStepperSeparator class="stp-sep"></span>
+              }
+            </li>
+          }
+        </ol>
 
-          <div class="stp-nav">
-            <button forStepperPrevious type="button" class="pg-btn">Previous</button>
-            <button forStepperNext type="button" class="pg-btn stp-next">Advance</button>
-          </div>
+        <div class="stp-nav">
+          <button forStepperPrevious type="button" class="btn">Previous</button>
+          <button forStepperNext type="button" class="btn btn-next">Advance</button>
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-select
-          label="valueBy"
-          hint="index: the bar tracks the current stage index. completed: it tracks how many stages are marked completed."
-          [options]="valueByOptions"
-          [(value)]="valueBy"
-        />
-        <p class="pg-state">
-          selectedIndex: <b>{{ step() }}</b
-          ><br />
-          stages: <b>{{ stages.length }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .stp-demo {
       width: min(520px, 100%);
     }
@@ -204,15 +178,32 @@ interface Stage {
       gap: 0.6rem;
     }
 
-    .stp-next {
+    .btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .btn[aria-disabled='true'] {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-next {
       background: var(--pg-primary);
       border-color: var(--pg-primary);
       color: var(--pg-on-primary, #fff);
-    }
-
-    .pg-btn[aria-disabled='true'] {
-      opacity: 0.45;
-      cursor: not-allowed;
     }
   `,
 })
@@ -224,11 +215,5 @@ export class StepperProgressExample {
     { label: 'Delivered' },
   ];
 
-  protected readonly valueByOptions: readonly ControlOption<'index' | 'completed'>[] = [
-    { value: 'index', label: 'index' },
-    { value: 'completed', label: 'completed' },
-  ];
-
   protected readonly step = signal(1);
-  protected readonly valueBy = signal<'index' | 'completed'>('index');
 }

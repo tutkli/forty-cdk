@@ -1,59 +1,38 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { breakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 type TailwindName = keyof typeof breakpointsTailwind;
 
 @Component({
   selector: 'app-breakpoints-active-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout],
   template: `
-    <playground-demo
-      title="Active breakpoint"
-      subtitle="injectBreakpoints() reads the breakpoint map from the ambient provider (the Tailwind scale by default) so call sites never repeat it. Every query method returns a Signal<boolean> backed by a MediaQueryList; active() is the largest breakpoint whose min-width currently matches, or null below the smallest. Resize the browser window to watch them update live."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/breakpoints/examples/active.example.ts"
-    >
-      <div demo class="bp-demo">
-        <div class="bp-readout">
-          <span class="bp-readout-label">active breakpoint</span>
-          <span class="bp-active">{{ active() ?? 'below sm' }}</span>
-          <span class="bp-width">viewport ≈ {{ width() }}px</span>
-        </div>
-
-        <ul class="bp-grid">
-          @for (row of rows; track row.name) {
-            <li class="bp-cell" [class.bp-cell--on]="row.up()">
-              <span class="bp-name">{{ row.name }}</span>
-              <span class="bp-min">≥ {{ row.min }}px</span>
-              <span class="bp-flags">
-                <span class="bp-flag" [class.bp-flag--on]="row.up()">up</span>
-                <span class="bp-flag" [class.bp-flag--on]="row.only()">only</span>
-              </span>
-            </li>
-          }
-        </ul>
+    <div class="bp-demo">
+      <div class="bp-readout">
+        <span class="bp-readout-label">active breakpoint</span>
+        <span class="bp-active">{{ active() ?? 'below sm' }}</span>
+        <span class="bp-width">viewport ≈ {{ width() }}px</span>
       </div>
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          active: <b>{{ active() ?? 'null' }}</b
-          ><br />
-          up('md'): <b>{{ bp.up('md')() }}</b
-          ><br />
-          between('md','xl'): <b>{{ bp.between('md', 'xl')() }}</b
-          ><br />
-          down('lg'): <b>{{ bp.down('lg')() }}</b>
-        </p>
-        <p class="pg-hint">
-          The flags reflect up(name) (the breakpoint and wider) and only(name) (its own band). They
-          are live signals, so resizing the window re-evaluates them with no extra wiring.
-        </p>
-      </div>
-    </playground-demo>
+      <ul class="bp-grid">
+        @for (row of rows; track row.name) {
+          <li class="bp-cell" [class.bp-cell--on]="row.up()">
+            <span class="bp-name">{{ row.name }}</span>
+            <span class="bp-min">≥ {{ row.min }}px</span>
+            <span class="bp-flags">
+              <span class="bp-flag" [class.bp-flag--on]="row.up()">up</span>
+              <span class="bp-flag" [class.bp-flag--on]="row.only()">only</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .bp-demo {
       width: min(520px, 100%);
       display: flex;

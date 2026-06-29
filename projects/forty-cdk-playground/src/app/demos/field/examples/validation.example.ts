@@ -3,9 +3,6 @@ import { form, FormField, requiredError, validate } from '@angular/forms/signals
 import { ForCheckbox } from 'forty-cdk/checkbox';
 import { ForField, ForFieldDescription, ForFieldError } from 'forty-cdk/field';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface Signup {
   readonly terms: boolean;
 }
@@ -13,52 +10,42 @@ interface Signup {
 @Component({
   selector: 'app-field-validation-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, FormField, ForCheckbox, ForField, ForFieldDescription, ForFieldError, Icon],
+  imports: [FormField, ForCheckbox, ForField, ForFieldDescription, ForFieldError],
   template: `
-    <playground-demo
-      title="Validation with Signal Forms"
-      subtitle="forFieldError reads the control's Signal Forms errors automatically — you render err.messages(), the field wires aria-errormessage and folds the id into aria-describedby while invalid. The checkbox auto-associates because it extends the shared form base; no manual id plumbing. Mark the field touched (or blur it unchecked) to surface the required error."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/validation.example.ts"
-    >
-      <div demo>
-        <div forField #field="forField" class="field">
-          <button
-            forCheckbox
-            class="cb-row"
-            [formField]="signupForm.terms"
-            aria-label="Accept the terms of service"
-          >
-            <span class="cb">
-              <app-icon class="cb-icon" name="check" [strokeWidth]="2.5" />
-            </span>
-            <span class="cb-label">I accept the terms of service</span>
-          </button>
-          <p forFieldDescription class="field-desc">You can withdraw consent at any time.</p>
-          @if (signupForm.terms().touched() && !signupForm.terms().valid()) {
-            <p forFieldError #err="forFieldError" class="field-error">
-              {{ err.messages().join(', ') }}
-            </p>
-          }
-        </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <button type="button" class="action" (click)="signupForm.terms().markAsTouched()">
-          Mark touched
-        </button>
-        <p class="pg-state">
-          checked: <b>{{ signupForm.terms().value() }}</b
-          ><br />
-          touched: <b>{{ field.touched() }}</b
-          ><br />
-          invalid: <b>{{ field.invalid() }}</b
-          ><br />
-          aria-errormessage: <b>{{ field.errorMessageId() ?? '—' }}</b>
+    <div forField class="field">
+      <button
+        forCheckbox
+        class="cb-row"
+        [formField]="signupForm.terms"
+        aria-label="Accept the terms of service"
+      >
+        <span class="cb">
+          <svg class="cb-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m4.5 12.75 6 6 9-13.5"
+            />
+          </svg>
+        </span>
+        <span class="cb-label">I accept the terms of service</span>
+      </button>
+      <p forFieldDescription class="field-desc">You can withdraw consent at any time.</p>
+      @if (signupForm.terms().touched() && !signupForm.terms().valid()) {
+        <p forFieldError #err="forFieldError" class="field-error">
+          {{ err.messages().join(', ') }}
         </p>
-      </div>
-    </playground-demo>
+      }
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .field {
       width: min(360px, 100%);
       display: flex;
@@ -125,18 +112,6 @@ interface Signup {
       font-size: 0.85rem;
       font-weight: 500;
       color: #ef4444;
-    }
-
-    .action {
-      font: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.45rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      cursor: pointer;
     }
 
     @media (prefers-reduced-motion: reduce) {

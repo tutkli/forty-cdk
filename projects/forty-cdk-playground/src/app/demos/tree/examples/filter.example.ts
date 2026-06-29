@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, linkedSignal, signal } fr
 import { ForInput } from 'forty-cdk/input';
 import { ForTree, expandToReveal } from 'forty-cdk/tree';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import {
   buildAncestorsMap,
   buildDescendantsMap,
@@ -15,68 +14,41 @@ import { CheckboxTreeNode } from './checkbox-tree-node';
 @Component({
   selector: 'app-tree-filter-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForTree, ForInput, CheckboxTreeNode],
+  imports: [ForTree, ForInput, CheckboxTreeNode],
   template: `
-    <playground-demo
-      title="Filter picker"
-      subtitle="The mtx-style filter picker: a search box narrows the tree while cascade checkboxes pick values. forty-cdk ships no filtering engine — you filter your own data and re-render, then call the pure expandToReveal(matches, ancestorsOf) helper to expand just the ancestors that make each match visible. Matched text is highlighted with your own <mark>. Cascade reaches descendants even when they're filtered out of view."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/tree/examples/filter.example.ts"
-    >
-      <div demo class="tree-demo">
-        <div class="filter-stack">
-          <input
-            forInput
-            class="pg-input"
-            type="search"
-            placeholder="Filter categories…"
-            aria-label="Filter categories"
-            [(value)]="query"
-          />
+    <div class="filter-stack">
+      <input
+        forInput
+        class="input"
+        type="search"
+        placeholder="Filter categories…"
+        aria-label="Filter categories"
+        [(value)]="query"
+      />
 
-          @if (filtered().length) {
-            <ul
-              forTree
-              class="pg-tree"
-              selectionMode="checkbox"
-              cascade
-              [descendantsOf]="descendantsOf"
-              [(value)]="value"
-              [(expanded)]="expanded"
-              [ariaLabel]="'Categories'"
-            >
-              @for (node of filtered(); track node.id) {
-                <app-checkbox-tree-node
-                  [node]="node"
-                  [expandedIds]="expanded()"
-                  [query]="query()"
-                />
-              }
-            </ul>
-          } @else {
-            <p class="filter-empty">No categories match “{{ query() }}”.</p>
+      @if (filtered().length) {
+        <ul
+          forTree
+          class="tree"
+          selectionMode="checkbox"
+          cascade
+          [descendantsOf]="descendantsOf"
+          [(value)]="value"
+          [(expanded)]="expanded"
+          [ariaLabel]="'Categories'"
+        >
+          @for (node of filtered(); track node.id) {
+            <app-checkbox-tree-node [node]="node" [expandedIds]="expanded()" [query]="query()" />
           }
-        </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-hint">
-          Try “re” (React, Research) or “o” — matching ancestors expand automatically through
-          expandToReveal, and checking a hidden parent still selects its filtered-out children.
-        </p>
-        <p class="pg-state">
-          query: <b>{{ query() || '—' }}</b
-          ><br />
-          checked: <b>{{ value().length }}</b>
-        </p>
-      </div>
-    </playground-demo>
+        </ul>
+      } @else {
+        <p class="filter-empty">No categories match “{{ query() }}”.</p>
+      }
+    </div>
   `,
   styles: `
-    .tree-demo {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-      padding: 1rem 0;
+    :host {
+      display: contents;
     }
 
     .filter-stack {
@@ -84,6 +56,28 @@ import { CheckboxTreeNode } from './checkbox-tree-node';
       flex-direction: column;
       gap: 0.6rem;
       width: min(360px, 100%);
+    }
+
+    .input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+    }
+
+    .tree {
+      margin: 0;
+      padding: 6px;
+      list-style: none;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+      color: var(--pg-text);
     }
 
     .filter-empty {

@@ -1,72 +1,54 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-pane-resizer-collapsible-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForPaneResizer, ControlSwitch],
+  imports: [ForPaneResizer],
   template: `
-    <playground-demo
-      title="Collapsible panel"
-      subtitle="With collapsible on, Enter / Space on the focused resizer snaps the panel to its min and a second press restores the last expanded size — APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/pane-resizer/examples/collapsible.example.ts"
-    >
-      <div demo class="cs-split">
-        <aside id="cs-side" class="cs-side" [style.flex-basis.px]="size()">
-          @if (collapsed()) {
-            <span class="cs-rail">⋮</span>
-          } @else {
-            <nav class="cs-nav">
-              <span class="cs-item">Overview</span>
-              <span class="cs-item">Activity</span>
-              <span class="cs-item">Members</span>
-              <span class="cs-item">Settings</span>
-            </nav>
-          }
-        </aside>
-        <div
-          forPaneResizer
-          orientation="vertical"
-          class="cs-resizer"
-          aria-label="Resize sidebar"
-          controls="cs-side cs-main"
-          [(value)]="size"
-          [min]="0"
-          [max]="320"
-          [step]="8"
-          [largeStep]="64"
-          [collapsible]="collapsible()"
-        ></div>
-        <main id="cs-main" class="cs-main">
-          <p>
-            Focus the divider and press <kbd>Enter</kbd> to collapse the sidebar, then
-            <kbd>Enter</kbd> again to bring it back to {{ size() }}px.
-          </p>
-        </main>
-      </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="collapsible"
-          hint="When off, Enter / Space do nothing and the divider only resizes via drag or the arrow keys."
-          [(checked)]="collapsible"
-        />
-
-        <p class="pg-state">
-          size: <b>{{ size() }}px</b><br />
-          state: <b>{{ collapsed() ? 'collapsed' : 'expanded' }}</b>
+    <div class="cs-split">
+      <aside id="cs-side" class="cs-side" [style.flex-basis.px]="size()">
+        @if (collapsed()) {
+          <span class="cs-rail">⋮</span>
+        } @else {
+          <nav class="cs-nav">
+            <span class="cs-item">Overview</span>
+            <span class="cs-item">Activity</span>
+            <span class="cs-item">Members</span>
+            <span class="cs-item">Settings</span>
+          </nav>
+        }
+      </aside>
+      <div
+        forPaneResizer
+        orientation="vertical"
+        class="cs-resizer"
+        aria-label="Resize sidebar"
+        controls="cs-side cs-main"
+        [(value)]="size"
+        [min]="0"
+        [max]="320"
+        [step]="8"
+        [largeStep]="64"
+        [collapsible]="true"
+      ></div>
+      <main id="cs-main" class="cs-main">
+        <p>
+          Focus the divider and press <kbd>Enter</kbd> to collapse the sidebar, then
+          <kbd>Enter</kbd> again to bring it back to {{ size() }}px.
         </p>
-      </div>
-    </playground-demo>
+      </main>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .cs-split {
       display: flex;
       align-items: stretch;
-      width: 100%;
+      width: min(560px, 100%);
       height: 200px;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
@@ -151,7 +133,6 @@ import { DemoLayout } from '../../../ui/demo-layout';
 })
 export class PaneResizerCollapsibleExample {
   protected readonly size = signal(220);
-  protected readonly collapsible = signal(true);
 
   protected readonly collapsed = computed(() => this.size() <= 0);
 }

@@ -1,48 +1,26 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-slider-inverted-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb, ControlSwitch],
+  imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
-    <playground-demo
-      title="Inverted"
-      subtitle="inverted flips the value-to-position mapping — in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways with no consumer math. Keyboard semantics are unchanged: ArrowRight / ArrowUp still move toward max regardless of the visual flip. Toggle it and watch the fill grow from the right."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/slider/examples/inverted.example.ts"
-    >
-      <div demo class="sl-demo">
-        <div
-          forSlider
-          class="sl"
-          [(value)]="value"
-          [min]="0"
-          [max]="100"
-          [inverted]="inverted()"
-          [disabled]="disabled()"
-        >
-          <span forSliderTrack class="sl-track">
-            <span forSliderRange class="sl-range"></span>
-            <span forSliderThumb class="sl-thumb" [index]="0" label="Volume"></span>
-          </span>
-        </div>
-        <span class="sl-value">{{ value()[0] }}</span>
+    <div class="sl-demo">
+      <div forSlider class="sl" [(value)]="value" [min]="0" [max]="100" [inverted]="true">
+        <span forSliderTrack class="sl-track">
+          <span forSliderRange class="sl-range"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" label="Volume"></span>
+        </span>
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch label="inverted" [(checked)]="inverted" />
-        <app-control-switch label="disabled" [(checked)]="disabled" />
-
-        <p class="pg-state">
-          value: <b>{{ value().join(', ') }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <span class="sl-value">{{ value()[0] }}</span>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .sl-demo {
       width: min(360px, 100%);
       display: flex;
@@ -55,10 +33,6 @@ import { DemoLayout } from '../../../ui/demo-layout';
       display: flex;
       align-items: center;
       min-height: 24px;
-    }
-
-    .sl[data-disabled] {
-      opacity: 0.5;
     }
 
     .sl-track {
@@ -112,6 +86,4 @@ import { DemoLayout } from '../../../ui/demo-layout';
 })
 export class SliderInvertedExample {
   protected readonly value = signal<readonly number[]>([40]);
-  protected readonly inverted = signal(true);
-  protected readonly disabled = signal(false);
 }

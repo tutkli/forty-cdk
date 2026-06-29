@@ -1,43 +1,38 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, ViewEncapsulation } from '@angular/core';
 import { ForDialogManager } from 'forty-cdk/dialog';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { type ConfirmData, ConfirmDialog, type ConfirmResult } from './confirm-dialog';
 
 @Component({
   selector: 'app-dialog-programmatic-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout],
+  encapsulation: ViewEncapsulation.None,
   template: `
-    <playground-demo
-      title="Programmatic (ForDialogManager)"
-      subtitle="Open a component imperatively and await its result. The manager mounts it under the same [forDialog] engine, so every piece works identically; [forDialogClose] [closeWith] propagates straight to ForDialogRef.close(value). Here as a non-dismissible alertdialog. The config accepts animateLeave + backdropAnimateLeave, so the box and the portaled backdrop fade out in lockstep before unmounting (the pop-in comes from the mount animation; the backdrop's fade-in from its template animate.enter)."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/programmatic.example.ts"
-    >
-      <div demo class="pg-center">
-        <button class="pg-btn pg-btn--danger" type="button" (click)="askToDelete()">
-          Delete account…
-        </button>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          last result: <b>{{ confirmResult() }}</b
-          ><br />open dialogs: <b>{{ dialogs.openCount() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <button class="programmatic-trigger" type="button" (click)="askToDelete()">
+      Delete account…
+    </button>
   `,
   styles: `
-    .pg-center {
-      display: flex;
-      justify-content: center;
+    app-dialog-programmatic-example {
+      display: contents;
+    }
+
+    .programmatic-trigger {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-danger);
+      background: var(--pg-danger);
+      color: var(--pg-danger-contrast);
+      cursor: pointer;
     }
   `,
 })
 export class DialogProgrammaticExample {
   protected readonly dialogs = inject(ForDialogManager);
-  protected readonly confirmResult = signal('—');
 
   protected async askToDelete(): Promise<void> {
     const ref = this.dialogs.open<ConfirmDialog, ConfirmResult, ConfirmData>(ConfirmDialog, {
@@ -47,11 +42,10 @@ export class DialogProgrammaticExample {
       },
       alert: true,
       dismissible: false,
-      class: 'pg-dialog pg-dialog--pop',
-      animateLeave: 'pg-dialog-out',
-      backdropAnimateLeave: 'pg-backdrop-out',
+      class: 'programmatic-dialog programmatic-dialog--pop',
+      animateLeave: 'programmatic-out',
+      backdropAnimateLeave: 'programmatic-backdrop-out',
     });
-    const result = await ref.closed;
-    this.confirmResult.set(result ?? 'dismissed');
+    await ref.closed;
   }
 }

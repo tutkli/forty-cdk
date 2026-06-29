@@ -9,9 +9,6 @@ import {
 import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface TreeNode {
   readonly value: string;
   readonly label: string;
@@ -62,84 +59,94 @@ function flatten(
 @Component({
   selector: 'app-tree-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, Icon],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
   template: `
-    <playground-demo
-      title="Virtualized (12,300 nodes)"
-      subtitle="For huge trees, bind [totalCount] to switch ForTree to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to injectVirtualizer, and render only the visible slice — each [forTreeItem] gets its absolute [itemIndex] plus the level / setSize / posInSet from the flat model so ARIA stays correct. Expanding folders grows the flat list to thousands of nodes without rendering them all."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/tree/examples/virtualized.example.ts"
-    >
-      <div demo class="vtree-demo">
-        <ul
-          forTree
-          #scroll
-          class="vtree"
-          aria-label="Project files"
-          [(value)]="selected"
-          [(expanded)]="expanded"
-          [totalCount]="flat().length"
-          [visibleRange]="v.range()"
-          (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
-        >
-          <div class="vtree-track" [style.height.px]="v.totalSize()">
-            @for (vi of v.virtualItems(); track vi.key) {
-              @let node = flat()[vi.index]!;
-              <li
-                forTreeItem
-                class="vtree-item"
-                [value]="node.value"
-                [level]="node.level"
-                [setSize]="node.setSize"
-                [posInSet]="node.posInSet"
-                [itemIndex]="vi.index"
-                [style.transform]="'translateY(' + vi.start + 'px)'"
-              >
-                <span class="vtree-row" [style.padding-inline-start.rem]="0.5 + (node.level - 1)">
-                  @if (node.expandable) {
-                    <span forTreeItemToggle class="vtree-toggle">
-                      <app-icon name="chevron-right" />
-                    </span>
-                  } @else {
-                    <span class="vtree-spacer"></span>
-                  }
-                  <span forTreeItemLabel class="vtree-label">{{ node.label }}</span>
-                </span>
-              </li>
-            }
-          </div>
-        </ul>
+    <div class="vtree-stack">
+      <div class="vtree-actions">
+        <button type="button" class="btn" (click)="expandAll()">Expand all</button>
+        <button type="button" class="btn" (click)="collapseAll()">Collapse all</button>
       </div>
 
-      <div controls class="pg-controls">
-        <div class="pg-btn-row">
-          <button type="button" class="pg-btn" (click)="expandAll()">Expand all</button>
-          <button type="button" class="pg-btn" (click)="collapseAll()">Collapse all</button>
+      <ul
+        forTree
+        #scroll
+        class="vtree"
+        aria-label="Project files"
+        [(value)]="selected"
+        [(expanded)]="expanded"
+        [totalCount]="flat().length"
+        [visibleRange]="v.range()"
+        (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
+      >
+        <div class="vtree-track" [style.height.px]="v.totalSize()">
+          @for (vi of v.virtualItems(); track vi.key) {
+            @let node = flat()[vi.index]!;
+            <li
+              forTreeItem
+              class="vtree-item"
+              [value]="node.value"
+              [level]="node.level"
+              [setSize]="node.setSize"
+              [posInSet]="node.posInSet"
+              [itemIndex]="vi.index"
+              [style.transform]="'translateY(' + vi.start + 'px)'"
+            >
+              <span class="vtree-row" [style.padding-inline-start.rem]="0.5 + (node.level - 1)">
+                @if (node.expandable) {
+                  <span forTreeItemToggle class="vtree-toggle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </span>
+                } @else {
+                  <span class="vtree-spacer"></span>
+                }
+                <span forTreeItemLabel class="vtree-label">{{ node.label }}</span>
+              </span>
+            </li>
+          }
         </div>
-        <p class="pg-hint">
-          Expand folders, then arrow through the tree — navigation reaches collapsed-then-expanded
-          nodes far outside the rendered window via (scrollToIndex).
-        </p>
-        <p class="pg-state">
-          flattened: <b>{{ flat().length.toLocaleString() }}</b
-          ><br />
-          rendered: <b>{{ v.virtualItems().length }}</b
-          ><br />
-          selected: <b>{{ selected().at(0) ?? '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      </ul>
+    </div>
   `,
   styles: `
-    .vtree-demo {
+    :host {
+      display: contents;
+    }
+
+    .vtree-stack {
       display: flex;
-      justify-content: center;
-      padding: 1.5rem 0;
-      width: 100%;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: min(360px, 100%);
+    }
+
+    .vtree-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--pg-surface-2);
     }
 
     .vtree {
       position: relative;
-      width: min(360px, 100%);
+      width: 100%;
       max-height: 360px;
       overflow: auto;
       margin: 0;
@@ -201,11 +208,18 @@ function flatten(
       color: var(--pg-text-muted);
     }
 
-    .vtree-toggle app-icon {
+    .vtree-toggle svg {
+      width: 1em;
+      height: 1em;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
       transition: transform 0.15s ease;
     }
 
-    .vtree-toggle[data-state='open'] app-icon {
+    .vtree-toggle[data-state='open'] svg {
       transform: rotate(90deg);
     }
 
@@ -223,7 +237,7 @@ function flatten(
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .vtree-toggle app-icon {
+      .vtree-toggle svg {
         transition: none;
       }
     }

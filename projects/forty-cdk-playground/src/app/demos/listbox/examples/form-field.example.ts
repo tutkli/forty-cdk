@@ -2,9 +2,6 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
 import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface Prefs {
   readonly topics: readonly string[];
 }
@@ -12,58 +9,95 @@ interface Prefs {
 @Component({
   selector: 'app-listbox-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, FormField, ForListbox, ForListboxOption, ForListboxOptionIndicator, Icon],
+  imports: [FormField, ForListbox, ForListboxOption, ForListboxOptionIndicator],
   template: `
-    <playground-demo
-      title="Signal Forms"
-      subtitle="forListbox implements FormValueControl<readonly T[]> from @angular/forms/signals, so a multi-select binds to a form field with one [formField] directive — the readonly-array value model is exactly the multi-capable shape the form contract wants. The field below requires at least one topic; the listbox reflects data-invalid until then and flips touched once focus leaves it."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/form-field.example.ts"
-    >
-      <div demo class="listbox-demo">
-        <ul
-          forListbox
-          multiple
-          class="pg-listbox"
-          [formField]="prefsForm.topics"
-          aria-label="Topics"
-        >
-          @for (topic of topics; track topic.value) {
-            <li>
-              <button
-                type="button"
-                forListboxOption
-                class="pg-listbox-option"
-                [value]="topic.value"
-              >
-                {{ topic.label }}
-                <span forListboxOptionIndicator class="pg-listbox-indicator">
-                  <app-icon name="check" />
-                </span>
-              </button>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          value: <b>{{ prefsForm.topics().value().join(', ') || '—' }}</b
-          ><br />
-          valid: <b>{{ prefsForm.topics().valid() }}</b
-          ><br />
-          touched: <b>{{ prefsForm.topics().touched() }}</b
-          ><br />
-          errors: <b>{{ errorKinds() || '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <ul forListbox multiple class="listbox" [formField]="prefsForm.topics" aria-label="Topics">
+      @for (topic of topics; track topic.value) {
+        <li>
+          <button type="button" forListboxOption class="listbox-option" [value]="topic.value">
+            {{ topic.label }}
+            <span forListboxOptionIndicator class="listbox-indicator">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m4.5 12.75 6 6 9-13.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
   `,
   styles: `
-    .listbox-demo {
+    :host {
+      display: contents;
+    }
+
+    .listbox {
       display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: min(300px, 100%);
+      margin: 0;
+      padding: 5px;
+      list-style: none;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .listbox[data-invalid][data-touched] {
+      border-color: var(--pg-danger);
+    }
+
+    .listbox > li {
+      display: contents;
+    }
+
+    .listbox-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      padding: 0.5rem 0.65rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .listbox-option[data-highlighted] {
+      background: var(--pg-surface-2);
+    }
+
+    .listbox-option[data-state='checked'] {
+      color: var(--pg-primary);
+      font-weight: 600;
+    }
+
+    .listbox-indicator {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
-      padding: 1.5rem 0;
+      width: 1.1em;
+      height: 1.1em;
+      margin-left: auto;
+      color: var(--pg-primary);
+    }
+
+    .listbox-indicator svg {
       width: 100%;
+      height: 100%;
     }
   `,
 })
@@ -84,12 +118,4 @@ export class ListboxFormFieldExample {
         : undefined,
     );
   });
-
-  protected errorKinds(): string {
-    return this.prefsForm
-      .topics()
-      .errors()
-      .map((error) => error.kind)
-      .join(', ');
-  }
 }

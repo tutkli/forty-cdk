@@ -2,56 +2,40 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Checkout {
   readonly shipping: string;
+}
+
+interface RadioOption {
+  readonly value: string;
+  readonly label: string;
 }
 
 @Component({
   selector: 'app-radio-group-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, FormField, ForRadioGroup, ForRadio],
+  imports: [FormField, ForRadioGroup, ForRadio],
   template: `
-    <playground-demo
-      title="Signal Forms"
-      subtitle="forRadioGroup implements FormValueControl<string>, so [formField] binds the selected value into the form and surfaces validity back. The empty string is the canonical 'nothing selected'. This field is required: tab through without choosing and the group reflects data-invalid / data-touched once focus leaves it."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/form-field.example.ts"
-    >
-      <div demo class="rg-form">
-        <span id="rgf-label" class="rg-label">Shipping method</span>
-        <div
-          forRadioGroup
-          class="rg"
-          [formField]="checkoutForm.shipping"
-          aria-labelledby="rgf-label"
-        >
-          @for (opt of options; track opt.value) {
-            <button type="button" forRadio class="rg-option" [value]="opt.value">
-              <span class="rg-dot"></span>
-              {{ opt.label }}
-            </button>
-          }
-        </div>
-        @if (checkoutForm.shipping().touched() && !checkoutForm.shipping().valid()) {
-          <p class="rg-error">Choose a shipping method.</p>
+    <div class="rg-form">
+      <span id="rgf-label" class="rg-label">Shipping method</span>
+      <div forRadioGroup class="rg" [formField]="checkoutForm.shipping" aria-labelledby="rgf-label">
+        @for (opt of options; track opt.value) {
+          <button type="button" forRadio class="rg-option" [value]="opt.value">
+            <span class="rg-dot"></span>
+            {{ opt.label }}
+          </button>
         }
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          value: <b>{{ checkoutForm.shipping().value() || '—' }}</b
-          ><br />
-          valid: <b>{{ checkoutForm.shipping().valid() }}</b
-          ><br />
-          touched: <b>{{ checkoutForm.shipping().touched() }}</b
-          ><br />
-          errors: <b>{{ errorKinds() || '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      @if (checkoutForm.shipping().touched() && !checkoutForm.shipping().valid()) {
+        <p class="rg-error">Choose a shipping method.</p>
+      }
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .rg-form {
       display: flex;
       flex-direction: column;
@@ -116,10 +100,16 @@ interface Checkout {
       font-size: 0.85rem;
       color: #ef4444;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rg-dot {
+        transition: none;
+      }
+    }
   `,
 })
 export class RadioGroupFormFieldExample {
-  protected readonly options: readonly { value: string; label: string }[] = [
+  protected readonly options: readonly RadioOption[] = [
     { value: 'standard', label: 'Standard (3–5 days)' },
     { value: 'express', label: 'Express (next day)' },
     { value: 'pickup', label: 'Store pickup' },
@@ -131,12 +121,4 @@ export class RadioGroupFormFieldExample {
       ctx.value() === '' ? requiredError({ message: 'Choose a shipping method' }) : undefined,
     );
   });
-
-  protected errorKinds(): string {
-    return this.checkoutForm
-      .shipping()
-      .errors()
-      .map((error) => error.kind)
-      .join(', ');
-  }
 }

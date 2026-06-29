@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface Crumb {
   readonly label: string;
   readonly href: string;
@@ -13,87 +9,95 @@ interface Crumb {
 @Component({
   selector: 'app-breadcrumbs-collapsed-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForBreadcrumbs,
-    ForBreadcrumbItem,
-    ForBreadcrumbSeparator,
-    ControlSwitch,
-    Icon,
-  ],
+  imports: [ForBreadcrumbs, ForBreadcrumbItem, ForBreadcrumbSeparator],
   template: `
-    <playground-demo
-      title="Collapsing a long trail"
-      subtitle="The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/breadcrumbs/examples/collapsed.example.ts"
-    >
-      <div demo>
-        <nav forBreadcrumbs ariaLabel="Project files" class="bc">
-          <ol class="bc-list">
-            @for (crumb of visible(); track crumb.href; let last = $last; let first = $first) {
-              @if (!first) {
-                <li forBreadcrumbSeparator class="bc-sep">
-                  <app-icon name="chevron-right" />
-                </li>
-              }
+    <nav forBreadcrumbs ariaLabel="Project files" class="bc">
+      <ol class="bc-list">
+        @for (crumb of visible(); track crumb.href; let last = $last; let first = $first) {
+          @if (!first) {
+            <li forBreadcrumbSeparator class="bc-sep">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </li>
+          }
+          <li class="bc-li">
+            <a
+              forBreadcrumbItem
+              class="bc-link"
+              [href]="crumb.href"
+              [current]="last"
+              (click)="$event.preventDefault()"
+            >
+              {{ crumb.label }}
+            </a>
+          </li>
+
+          @if (first && expanded()) {
+            @for (hidden of middle(); track hidden.href) {
+              <li forBreadcrumbSeparator class="bc-sep">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </li>
               <li class="bc-li">
                 <a
                   forBreadcrumbItem
                   class="bc-link"
-                  [href]="crumb.href"
-                  [current]="last"
+                  [href]="hidden.href"
                   (click)="$event.preventDefault()"
                 >
-                  {{ crumb.label }}
+                  {{ hidden.label }}
                 </a>
               </li>
-
-              @if (first && collapsed() && expanded()) {
-                @for (hidden of middle(); track hidden.href) {
-                  <li forBreadcrumbSeparator class="bc-sep">
-                    <app-icon name="chevron-right" />
-                  </li>
-                  <li class="bc-li">
-                    <a
-                      forBreadcrumbItem
-                      class="bc-link"
-                      [href]="hidden.href"
-                      (click)="$event.preventDefault()"
-                    >
-                      {{ hidden.label }}
-                    </a>
-                  </li>
-                }
-              } @else if (first && collapsed()) {
-                <li forBreadcrumbSeparator class="bc-sep">
-                  <app-icon name="chevron-right" />
-                </li>
-                <li class="bc-li">
-                  <button
-                    type="button"
-                    class="bc-ellipsis"
-                    aria-label="Show hidden path segments"
-                    (click)="expanded.set(true)"
-                  >
-                    …
-                  </button>
-                </li>
-              }
             }
-          </ol>
-        </nav>
-      </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch label="Long path (collapse middle)" [(checked)]="collapsed" />
-
-        <p class="pg-hint">
-          Toggle a deep path on and off. When collapsed, click the … to reveal the folded crumbs.
-        </p>
-      </div>
-    </playground-demo>
+          } @else if (first) {
+            <li forBreadcrumbSeparator class="bc-sep">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </li>
+            <li class="bc-li">
+              <button
+                type="button"
+                class="bc-ellipsis"
+                aria-label="Show hidden path segments"
+                (click)="expanded.set(true)"
+              >
+                …
+              </button>
+            </li>
+          }
+        }
+      </ol>
+    </nav>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .bc {
       width: 100%;
     }
@@ -154,14 +158,14 @@ interface Crumb {
       user-select: none;
     }
 
-    .bc-sep app-icon {
+    .bc-sep svg {
       width: 14px;
       height: 14px;
+      display: block;
     }
   `,
 })
 export class BreadcrumbsCollapsedExample {
-  protected readonly collapsed = signal(true);
   protected readonly expanded = signal(false);
 
   protected readonly trail = signal<readonly Crumb[]>([
@@ -175,9 +179,6 @@ export class BreadcrumbsCollapsedExample {
 
   protected readonly visible = computed<readonly Crumb[]>(() => {
     const trail = this.trail();
-    if (!this.collapsed()) {
-      return trail;
-    }
     return [trail[0]!, ...trail.slice(-2)];
   });
 

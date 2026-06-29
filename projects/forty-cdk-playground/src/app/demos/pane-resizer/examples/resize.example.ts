@@ -1,52 +1,35 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-pane-resizer-resize-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForPaneResizer, ControlSwitch],
+  imports: [ForPaneResizer],
   template: `
-    <playground-demo
-      title="Resizable panes"
-      subtitle="A focusable Window Splitter between two panes. Drag the bar, or focus it and use the arrow keys, PageUp / PageDown and Home / End to resize. It reports aria-valuenow / aria-valuemin / aria-valuemax and commits the final size on release."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/pane-resizer/examples/resize.example.ts"
-    >
-      <div demo class="pr-split">
-        <div id="pr-pane-a" class="pr-pane pr-pane-a" [style.flex-basis.px]="size()">
-          {{ size() }}px
-        </div>
-        <div
-          forPaneResizer
-          orientation="vertical"
-          class="pr-resizer"
-          aria-label="Resize panes"
-          controls="pr-pane-a pr-pane-b"
-          [(value)]="size"
-          [min]="120"
-          [max]="520"
-          [step]="8"
-          [largeStep]="48"
-          [disabled]="disabled()"
-          (resizeCommit)="committed.set($event)"
-        ></div>
-        <div id="pr-pane-b" class="pr-pane pr-pane-b">flex: 1</div>
+    <div class="pr-split">
+      <div id="pr-pane-a" class="pr-pane pr-pane-a" [style.flex-basis.px]="size()">
+        {{ size() }}px
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch label="disabled" [(checked)]="disabled" />
-
-        <p class="pg-state">
-          size: <b>{{ size() }}</b
-          ><br />
-          committed: <b>{{ committed() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <div
+        forPaneResizer
+        orientation="vertical"
+        class="pr-resizer"
+        aria-label="Resize panes"
+        controls="pr-pane-a pr-pane-b"
+        [(value)]="size"
+        [min]="120"
+        [max]="520"
+        [step]="8"
+        [largeStep]="48"
+      ></div>
+      <div id="pr-pane-b" class="pr-pane pr-pane-b">flex: 1</div>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .pr-split {
       display: flex;
       align-items: stretch;
@@ -105,15 +88,8 @@ import { DemoLayout } from '../../../ui/demo-layout';
       outline: 2px solid var(--pg-primary);
       outline-offset: -2px;
     }
-
-    .pr-resizer[data-disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
   `,
 })
 export class PaneResizerResizeExample {
   protected readonly size = signal(240);
-  protected readonly committed = signal(240);
-  protected readonly disabled = signal(false);
 }

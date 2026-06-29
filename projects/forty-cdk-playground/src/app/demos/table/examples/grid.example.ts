@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
   ForTable,
   ForTableCell,
@@ -7,80 +7,50 @@ import {
   ForTableRow,
 } from 'forty-cdk/table';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { DemoLayout } from '../../../ui/demo-layout';
 import { PEOPLE } from './people';
 
 @Component({
   selector: 'app-table-grid-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForTable,
-    ForTableHeaderRow,
-    ForTableRow,
-    ForTableHeaderCell,
-    ForTableCell,
-    ControlSelect,
-  ],
+  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
   template: `
-    <playground-demo
-      title="Grid mode & keyboard navigation"
-      subtitle="mode='grid' turns a <div> CSS-grid into a single-tab-stop roving group with 2D arrow-key navigation. Home / End jump to the row edges, Ctrl+Home / Ctrl+End to the grid corners, and disabled cells are skipped. The header row sticks while the body scrolls. All horizontal movement mirrors under dir='rtl'."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/table/examples/grid.example.ts"
-    >
-      <div demo class="tbl-demo">
-        <div class="tbl-scroll">
-          <div forTable mode="grid" ariaLabel="Team members" class="tbl" [dir]="dir()">
-            <div role="rowgroup">
-              <div forTableHeaderRow class="tbl-row tbl-head">
-                <div forTableHeaderCell name="name" class="tbl-cell">Name</div>
-                <div forTableHeaderCell name="role" class="tbl-cell">Role</div>
-                <div forTableHeaderCell name="dept" class="tbl-cell">Department</div>
-                <div forTableHeaderCell name="location" class="tbl-cell">Location</div>
-              </div>
-            </div>
-            <div role="rowgroup">
-              @for (person of people; track person.id) {
-                <div forTableRow class="tbl-row">
-                  <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
-                  <div
-                    forTableCell
-                    name="role"
-                    [disabled]="person.role === 'Researcher'"
-                    class="tbl-cell"
-                  >
-                    {{ person.role }}
-                  </div>
-                  <div forTableCell name="dept" class="tbl-cell">{{ person.dept }}</div>
-                  <div forTableCell name="location" class="tbl-cell">{{ person.location }}</div>
-                </div>
-              }
-            </div>
+    <div class="tbl-scroll">
+      <div forTable mode="grid" ariaLabel="Team members" class="tbl">
+        <div role="rowgroup">
+          <div forTableHeaderRow class="tbl-row tbl-head">
+            <div forTableHeaderCell name="name" class="tbl-cell">Name</div>
+            <div forTableHeaderCell name="role" class="tbl-cell">Role</div>
+            <div forTableHeaderCell name="dept" class="tbl-cell">Department</div>
+            <div forTableHeaderCell name="location" class="tbl-cell">Location</div>
           </div>
         </div>
+        <div role="rowgroup">
+          @for (person of people; track person.id) {
+            <div forTableRow class="tbl-row">
+              <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
+              <div
+                forTableCell
+                name="role"
+                [disabled]="person.role === 'Researcher'"
+                class="tbl-cell"
+              >
+                {{ person.role }}
+              </div>
+              <div forTableCell name="dept" class="tbl-cell">{{ person.dept }}</div>
+              <div forTableCell name="location" class="tbl-cell">{{ person.location }}</div>
+            </div>
+          }
+        </div>
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-select
-          label="dir"
-          hint="Writing direction. Under rtl the arrow keys mirror (ArrowRight moves to the previous cell) and the columns flow right-to-left."
-          [options]="dirOptions"
-          [(value)]="dir"
-        />
-        <p class="pg-hint">
-          Tab into the grid, then use the arrow keys to move between cells. The Role cell of each
-          Researcher is disabled and skipped during navigation.
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .tbl-demo {
-      width: min(640px, 100%);
+    :host {
+      display: contents;
     }
 
     .tbl-scroll {
+      width: min(640px, 100%);
       max-height: 300px;
       overflow: auto;
       border: 1px solid var(--pg-border);
@@ -138,10 +108,4 @@ import { PEOPLE } from './people';
 })
 export class TableGridExample {
   protected readonly people = PEOPLE;
-
-  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
-  protected readonly dirOptions: readonly ControlOption<'ltr' | 'rtl'>[] = [
-    { value: 'ltr', label: 'ltr' },
-    { value: 'rtl', label: 'rtl' },
-  ];
 }

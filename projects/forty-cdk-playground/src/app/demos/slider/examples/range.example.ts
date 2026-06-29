@@ -1,64 +1,35 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
-
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
 
 @Component({
   selector: 'app-slider-range-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForSlider,
-    ForSliderTrack,
-    ForSliderRange,
-    ForSliderThumb,
-    ControlSwitch,
-    ControlSelect,
-  ],
+  imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
-    <playground-demo
-      title="Range (two thumbs)"
-      subtitle="The value model is a readonly number[]; two forSliderThumb pieces, one per index, make a range. Each thumb's aria-valuemin / aria-valuemax automatically squeeze to its neighbor, so the thumbs can't cross. minStepsBetweenThumbs keeps a minimum gap between them, in step units."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/slider/examples/range.example.ts"
-    >
-      <div demo class="sl-demo">
-        <div
-          forSlider
-          class="sl"
-          [(value)]="value"
-          [min]="0"
-          [max]="1000"
-          [step]="10"
-          [minStepsBetweenThumbs]="gap()"
-          [disabled]="disabled()"
-        >
-          <span forSliderTrack class="sl-track">
-            <span forSliderRange class="sl-range"></span>
-            <span forSliderThumb class="sl-thumb" [index]="0" label="Minimum price"></span>
-            <span forSliderThumb class="sl-thumb" [index]="1" label="Maximum price"></span>
-          </span>
-        </div>
-        <span class="sl-value">{{ value()[0] }}–{{ value()[1] }}</span>
+    <div class="sl-demo">
+      <div
+        forSlider
+        class="sl"
+        [(value)]="value"
+        [min]="0"
+        [max]="1000"
+        [step]="10"
+        [minStepsBetweenThumbs]="1"
+      >
+        <span forSliderTrack class="sl-track">
+          <span forSliderRange class="sl-range"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" label="Minimum price"></span>
+          <span forSliderThumb class="sl-thumb" [index]="1" label="Maximum price"></span>
+        </span>
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch label="disabled" [(checked)]="disabled" />
-        <app-control-select
-          label="minStepsBetweenThumbs"
-          hint="Minimum gap between adjacent thumbs, in step units. With step 10, a value of 2 forces the thumbs at least 20 apart."
-          [options]="gapOptions"
-          [(value)]="gapValue"
-        />
-
-        <p class="pg-state">
-          value: <b>{{ value().join(', ') }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <span class="sl-value">{{ value()[0] }}–{{ value()[1] }}</span>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .sl-demo {
       width: min(360px, 100%);
       display: flex;
@@ -71,10 +42,6 @@ import { DemoLayout } from '../../../ui/demo-layout';
       display: flex;
       align-items: center;
       min-height: 24px;
-    }
-
-    .sl[data-disabled] {
-      opacity: 0.5;
     }
 
     .sl-track {
@@ -127,14 +94,5 @@ import { DemoLayout } from '../../../ui/demo-layout';
   `,
 })
 export class SliderRangeExample {
-  protected readonly gapOptions: readonly ControlOption[] = [
-    { value: '0', label: '0' },
-    { value: '1', label: '1' },
-    { value: '2', label: '2' },
-  ];
-
   protected readonly value = signal<readonly number[]>([200, 800]);
-  protected readonly gapValue = signal('1');
-  protected readonly gap = computed(() => Number(this.gapValue()));
-  protected readonly disabled = signal(false);
 }

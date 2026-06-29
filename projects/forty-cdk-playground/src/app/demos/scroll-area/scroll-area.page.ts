@@ -1,21 +1,50 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { PrimitivePage } from '../../ui/primitive-page';
-import { ScrollAreaGeometryExample } from './examples/geometry.example';
-import { ScrollAreaExample } from './examples/scroll-area.example';
 import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { DemoLayout } from '../../ui/demo-layout';
+import { PrimitivePage } from '../../ui/primitive-page';
+import { ScrollAreaAlwaysExample } from './examples/always.example';
+import { ScrollAreaDefaultExample } from './examples/default.example';
+import { ScrollAreaGeometryExample } from './examples/geometry.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/scroll-area/README.md';
 
 @Component({
   selector: 'app-scroll-area-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, ScrollAreaExample, ScrollAreaGeometryExample],
+  imports: [
+    PrimitivePage,
+    DemoLayout,
+    ScrollAreaDefaultExample,
+    ScrollAreaAlwaysExample,
+    ScrollAreaGeometryExample,
+  ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="scroll-area" [readme]="readme">
-      <app-scroll-area-example />
-      <app-scroll-area-geometry-example />
+      <playground-demo
+        title="Custom scrollbars"
+        subtitle="Native scrolling with custom-styled scrollbars. The directive hides the platform bars and paints synthetic ones whose thumb size and position track the real scroll. With type='hover' the bars reveal on pointer enter or while scrolling, then fade. The content overflows on both axes, so the corner fills the gap."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/scroll-area/examples/default.example.ts"
+      >
+        <app-scroll-area-default-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Always-painted track"
+        subtitle="type='always' keeps both tracks (and the corner) mounted and visible regardless of overflow. Laying the scrollbars out in flow as grid columns reserves a stable gutter, so the viewport width never shifts as content crosses the overflow boundary."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/scroll-area/examples/always.example.ts"
+      >
+        <app-scroll-area-always-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Geometry signals"
+        subtitle="The root exposes its live scroll geometry as read-only signals via exportAs — scrollTop / scrollLeft, the client vs. scroll size on each axis, plus hovering and scrolling. Grab the reference with #sa='forScrollArea' and read them straight in the template; here they drive the readout and a scrolled-percentage bar without a single scroll listener of your own."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/scroll-area/examples/geometry.example.ts"
+      >
+        <app-scroll-area-geometry-example />
+      </playground-demo>
     </primitive-page>
   `,
 })

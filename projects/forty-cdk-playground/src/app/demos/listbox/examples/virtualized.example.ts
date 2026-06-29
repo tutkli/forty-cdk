@@ -9,67 +9,52 @@ import {
 import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 @Component({
   selector: 'app-listbox-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForListbox, ForListboxOption, ForListboxOptionIndicator, Icon],
+  imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator],
   template: `
-    <playground-demo
-      title="Virtualized (10,000 options)"
-      subtitle="Setting [totalCount] switches ForListbox from roving tabindex to the activedescendant model: the listbox container becomes the single Tab stop and the active option is tracked by aria-activedescendant, so options can recycle as you scroll. The listbox itself is the scroll container; we feed it the library's injectVirtualizer window, tag each option with its absolute [posInSet], and forward (scrollToIndex) so arrow / Home / End reach options outside the rendered window."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/virtualized.example.ts"
+    <div
+      forListbox
+      #scroll
+      class="vlb"
+      aria-label="Virtualized items"
+      [(value)]="value"
+      [totalCount]="items.length"
+      [visibleRange]="v.range()"
+      (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
     >
-      <div demo class="vlb-demo">
-        <div
-          forListbox
-          #scroll
-          class="vlb"
-          aria-label="Virtualized items"
-          [(value)]="value"
-          [totalCount]="items.length"
-          [visibleRange]="v.range()"
-          (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
-        >
-          <div class="vlb-track" [style.height.px]="v.totalSize()">
-            @for (vi of v.virtualItems(); track vi.key) {
-              <button
-                type="button"
-                forListboxOption
-                class="vlb-option"
-                [value]="items[vi.index]!"
-                [posInSet]="vi.index"
-                [style.transform]="'translateY(' + vi.start + 'px)'"
-              >
-                {{ items[vi.index]! }}
-                <span forListboxOptionIndicator class="pg-listbox-indicator">
-                  <app-icon name="check" />
-                </span>
-              </button>
-            }
-          </div>
-        </div>
+      <div class="vlb-track" [style.height.px]="v.totalSize()">
+        @for (vi of v.virtualItems(); track vi.key) {
+          <button
+            type="button"
+            forListboxOption
+            class="vlb-option"
+            [value]="items[vi.index]!"
+            [posInSet]="vi.index"
+            [style.transform]="'translateY(' + vi.start + 'px)'"
+          >
+            {{ items[vi.index]! }}
+            <span forListboxOptionIndicator class="vlb-indicator">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m4.5 12.75 6 6 9-13.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        }
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-hint">
-          Tab into the list, then arrow through it — Home / End jump to the very first / last option
-          even though they aren't rendered until you arrive.
-        </p>
-        <p class="pg-state">
-          value: <b>{{ value().at(0) ?? '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .vlb-demo {
-      display: flex;
-      justify-content: center;
-      padding: 1.5rem 0;
-      width: 100%;
+    :host {
+      display: contents;
     }
 
     .vlb {
@@ -122,6 +107,22 @@ import { Icon } from '../../../ui/icon';
     .vlb-option[data-state='checked'] {
       color: var(--pg-primary);
       font-weight: 600;
+    }
+
+    .vlb-indicator {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.1em;
+      height: 1.1em;
+      margin-left: auto;
+      color: var(--pg-primary);
+    }
+
+    .vlb-indicator svg {
+      width: 100%;
+      height: 100%;
     }
   `,
 })
