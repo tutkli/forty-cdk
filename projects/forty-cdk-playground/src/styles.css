@@ -672,7 +672,9 @@ a.pg-nav-link.active {
 }
 
 .pg-doc-anchor {
-  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
   color: var(--pg-text-muted);
   text-decoration: none;
   opacity: 0;
@@ -710,6 +712,7 @@ a.pg-nav-link.active {
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  scroll-margin-top: 4.5rem;
 }
 
 .pg-doc-prose h4 {
@@ -811,27 +814,6 @@ a.pg-nav-link.active {
   white-space: nowrap;
   font-weight: 700;
   background: var(--pg-surface-2);
-  cursor: pointer;
-  user-select: none;
-}
-
-.pg-doc-table thead th::after {
-  content: '↕';
-  margin-left: 0.4rem;
-  font-size: 0.78em;
-  opacity: 0.3;
-}
-
-.pg-doc-table thead th[data-sorted='ascending']::after {
-  content: '↑';
-  opacity: 1;
-  color: var(--pg-primary);
-}
-
-.pg-doc-table thead th[data-sorted='descending']::after {
-  content: '↓';
-  opacity: 1;
-  color: var(--pg-primary);
 }
 
 .pg-doc-table tbody tr:last-child td {
@@ -840,6 +822,206 @@ a.pg-nav-link.active {
 
 .pg-doc-table td code {
   white-space: nowrap;
+}
+
+/* API reference table (Property | Type | Description) */
+.api-type {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.api-type-kind {
+  white-space: nowrap;
+}
+
+.api-info {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font-size: 0.95rem;
+  color: var(--pg-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--pg-radius-sm);
+  cursor: pointer;
+}
+
+.api-info:hover {
+  color: var(--pg-text);
+  background: var(--pg-surface-2);
+}
+
+.api-info:focus-visible {
+  outline: 2px solid var(--pg-primary);
+  outline-offset: 2px;
+}
+
+.api-info[data-state='open'] {
+  color: var(--pg-primary);
+}
+
+/* Popover surface — portaled to <body>, so it must be styled globally. */
+.api-pop {
+  z-index: 60;
+  max-width: min(360px, calc(100vw - 1.5rem));
+  padding: 0.7rem 0.85rem;
+  background: var(--pg-surface);
+  color: var(--pg-text);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius);
+  box-shadow: var(--pg-shadow);
+}
+
+.api-pop-type {
+  display: block;
+  font-family: var(--pg-font-mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--pg-text);
+}
+
+.api-pop-desc {
+  display: none;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--pg-border);
+  font-size: 0.85rem;
+  color: var(--pg-text-muted);
+}
+
+.api-pop-desc > :first-child {
+  margin-top: 0;
+}
+
+.api-pop-arrow {
+  width: 11px;
+  height: 11px;
+  background: var(--pg-surface);
+  border-top: 1px solid var(--pg-border);
+  border-left: 1px solid var(--pg-border);
+  --for-arrow-offset: -6px;
+}
+
+.api-pop-arrow[data-side='bottom'] {
+  transform: rotate(45deg);
+}
+
+.api-pop-arrow[data-side='top'] {
+  transform: rotate(225deg);
+}
+
+.api-pop-arrow[data-side='left'] {
+  transform: rotate(135deg);
+}
+
+.api-pop-arrow[data-side='right'] {
+  transform: rotate(-45deg);
+}
+
+.api-pop-enter {
+  transform-origin: var(--for-content-transform-origin, center);
+  animation: api-pop-enter 0.16s var(--pg-ease-spring, ease) both;
+}
+
+@keyframes api-pop-enter {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .api-pop-enter {
+    animation-duration: 0.01ms;
+  }
+}
+
+/* Desktop: the info button only reveals the full generic type, so hide it when
+   the kind already is the whole type. */
+@media (min-width: 641px) {
+  .api-info[data-detail='false'] {
+    display: none;
+  }
+}
+
+/* Mobile: collapse each row to "Property … (i)". The Type kind chip and the
+   Description column both fold into the info popover. */
+@media (max-width: 640px) {
+  .api-table .api-col-desc {
+    display: none;
+  }
+
+  .api-table .api-col-type {
+    width: 1%;
+  }
+
+  /* Blank the "Type" header text (the cell stays for column alignment and keeps
+     its label for assistive tech) so the mobile header matches the compact
+     tables, where the detail column header disappears entirely. */
+  .api-table thead .api-col-type {
+    font-size: 0;
+  }
+
+  .api-type-kind {
+    display: none;
+  }
+
+  .api-type {
+    justify-content: flex-end;
+  }
+
+  .api-pop-desc {
+    display: block;
+  }
+}
+
+/* Compact reference table (Data attributes, Keyboard, …). Desktop shows every
+   column; mobile collapses each row to "label … (i)" with the rest in a popover. */
+.ct-info-col {
+  display: none;
+}
+
+.ct-info {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ct-pop-row + .ct-pop-row {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--pg-border);
+}
+
+.ct-pop-header {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pg-text-muted);
+}
+
+.ct-pop-value {
+  font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+  .compact-table .ct-detail {
+    display: none;
+  }
+
+  .compact-table .ct-info-col {
+    display: table-cell;
+    width: 1%;
+  }
 }
 
 .pg-toc {
@@ -884,6 +1066,20 @@ a.pg-nav-link.active {
   font-weight: 600;
   color: var(--pg-primary);
   border-left-color: var(--pg-primary);
+}
+
+.pg-toc-sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-toc-sublink {
+  padding-left: 1.5rem;
+  font-size: 0.78rem;
 }
 
 .pg-code {
@@ -1038,7 +1234,7 @@ a.pg-nav-link.active {
 }
 
 .pg-crumbs {
-  max-width: 980px;
+  max-width: 1180px;
   margin: 0 auto 1.25rem;
 }
 

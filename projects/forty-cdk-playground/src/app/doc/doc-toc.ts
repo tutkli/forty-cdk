@@ -3,6 +3,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   inject,
@@ -14,6 +15,7 @@ import { RouterLink } from '@angular/router';
 export interface TocItem {
   readonly title: string;
   readonly slug: string;
+  readonly children?: readonly TocItem[];
 }
 
 @Component({
@@ -33,6 +35,21 @@ export interface TocItem {
               [fragment]="item.slug"
               >{{ item.title }}</a
             >
+            @if (item.children?.length) {
+              <ul class="pg-toc-sublist">
+                @for (child of item.children; track child.slug) {
+                  <li>
+                    <a
+                      class="pg-toc-link pg-toc-sublink"
+                      [class.active]="child.slug === activeSlug()"
+                      [routerLink]="[]"
+                      [fragment]="child.slug"
+                      >{{ child.title }}</a
+                    >
+                  </li>
+                }
+              </ul>
+            }
           </li>
         }
       </ul>
@@ -48,41 +65,50 @@ export class DocToc {
 
   protected readonly activeSlug = signal<string | null>(null);
 
-  readonly #visible = new Set<string>();
+  readonly #flatItems = computed<readonly TocItem[]>(() =>
+    this.items().flatMap((item) => [item, ...(item.children ?? [])]),
+  );
 
   constructor() {
     afterNextRender(() => {
-      const root = this.#host.nativeElement.closest<HTMLElement>('.app-shell');
-      const targets = this.items()
-        .map((item) => this.#document.getElementById(item.slug))
-        .filter((element): element is HTMLElement => element !== null);
-
-      if (targets.length === 0) {
+      const scroller = this.#host.nativeElement.closest<HTMLElement>('.app-shell');
+      const target: HTMLElement | Window | null = scroller ?? this.#document.defaultView;
+      if (!target) {
         return;
       }
+      let frame = 0;
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              this.#visible.add(entry.target.id);
-            } else {
-              this.#visible.delete(entry.target.id);
-            }
+      const update = (): void => {
+        frame = 0;
+        const line = (scroller ? scroller.getBoundingClientRect().top : 0) + 96;
+        let active: string | null = null;
+        for (const item of this.#flatItems()) {
+          const element = this.#document.getElementById(item.slug);
+          if (!element) {
+            continue;
           }
-          const active = this.items().find((item) => this.#visible.has(item.slug));
-          if (active) {
-            this.activeSlug.set(active.slug);
+          if (element.getBoundingClientRect().top <= line) {
+            active = item.slug;
+          } else {
+            break;
           }
-        },
-        { root, rootMargin: '-80px 0px -70% 0px', threshold: 0 },
-      );
+        }
+        this.activeSlug.set(active);
+      };
 
-      for (const target of targets) {
-        observer.observe(target);
-      }
+      const onScroll = (): void => {
+        frame ||= requestAnimationFrame(update);
+      };
 
-      this.#destroyRef.onDestroy(() => observer.disconnect());
+      target.addEventListener('scroll', onScroll, { passive: true });
+      update();
+
+      this.#destroyRef.onDestroy(() => {
+        target.removeEventListener('scroll', onScroll);
+        if (frame) {
+          cancelAnimationFrame(frame);
+        }
+      });
     });
   }
 }

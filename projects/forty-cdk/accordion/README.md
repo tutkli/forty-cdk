@@ -5,12 +5,17 @@ A vertical stack of collapsible sections, each with a header button and a panel.
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                                 |
-| --------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ForAccordion`        | `[forAccordion]`        | Root. Owns the open `value`, the single/multiple mode, and the keyboard navigation between triggers. |
-| `ForAccordionItem`    | `[forAccordionItem]`    | One section. Requires a unique `value` string.                                                       |
-| `ForAccordionTrigger` | `[forAccordionTrigger]` | Header button. Wires ARIA + click + keyboard.                                                        |
-| `ForAccordionContent` | `[forAccordionContent]` | Panel. Adds `role="region"` + `aria-labelledby` automatically.                                       |
+```html
+<div forAccordion>
+  <div forAccordionItem value="item-1">
+    <h3>
+      <button type="button" forAccordionTrigger>Trigger</button>
+    </h3>
+    <div forAccordionContent>Panel content</div>
+  </div>
+  <!-- repeat forAccordionItem per section -->
+</div>
+```
 
 ## Examples
 
@@ -60,6 +65,10 @@ export class DemoFaq {
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                              |
 | `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.<br>**Default:** —                                                          |
 
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+
 ### `ForAccordionItem`
 
 | Property   | Type                     | Description                                                                                          |
@@ -67,7 +76,11 @@ export class DemoFaq {
 | `value`    | `input.required<string>` | Unique identifier within the accordion. Required.<br>**Default:** —                                  |
 | `disabled` | `input<boolean>`         | When true, the trigger ignores clicks and exposes the native `disabled` attribute.<br>**Default:** — |
 
-The host gets `data-state="open" \| "closed"` and `data-disabled` for CSS hooks.
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `open` \| `closed`         |
+| `data-disabled`    | present \| absent          |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ### `ForAccordionTrigger`
 
@@ -76,6 +89,11 @@ Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `aria-disabled` (w
 `aria-controls` is emitted only while the item is expanded — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (item.expanded())` mount pattern.
 
 Wrap it in a heading element (`<h2>`–`<h6>`) — APG requires that for landmark navigation. Use a real `<button type="button">` so Enter / Space activation comes for free.
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `open` \| `closed`         |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ### `ForAccordionContent`
 
@@ -86,18 +104,10 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 - **Mount/unmount with `@if (item.expanded())`** — the panel is absent from the DOM while closed, which is the cleanest path for `animate.enter` / `animate.leave`.
 - **Leave it mounted** — preserve internal state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
 
-### Data attributes
-
-| Piece                   | Attribute          | Values                     |
-| ----------------------- | ------------------ | -------------------------- |
-| `[forAccordion]`        | `data-orientation` | `horizontal` \| `vertical` |
-| `[forAccordionItem]`    | `data-state`       | `open` \| `closed`         |
-| `[forAccordionItem]`    | `data-disabled`    | present \| absent          |
-| `[forAccordionItem]`    | `data-orientation` | `horizontal` \| `vertical` |
-| `[forAccordionTrigger]` | `data-state`       | `open` \| `closed`         |
-| `[forAccordionTrigger]` | `data-orientation` | `horizontal` \| `vertical` |
-| `[forAccordionContent]` | `data-state`       | `open` \| `closed`         |
-| `[forAccordionContent]` | `data-orientation` | `horizontal` \| `vertical` |
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `open` \| `closed`         |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ## Keyboard
 
@@ -118,7 +128,7 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .trigger-chevron {

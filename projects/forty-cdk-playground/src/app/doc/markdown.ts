@@ -14,9 +14,15 @@ export type DocBlock =
   | { readonly kind: 'html'; readonly html: string }
   | { readonly kind: 'table'; readonly table: DocTableData };
 
+export interface DocSubsection {
+  readonly title: string;
+  readonly slug: string;
+}
+
 export interface DocSectionData {
   readonly title: string;
   readonly slug: string;
+  readonly subsections: readonly DocSubsection[];
   readonly blocks: readonly DocBlock[];
 }
 
@@ -149,6 +155,22 @@ function splitBlocks(body: string): DocBlock[] {
   return blocks;
 }
 
+function collectSubsections(bodyLines: readonly string[]): DocSubsection[] {
+  const subsections: DocSubsection[] = [];
+  let inFence = false;
+  for (const line of bodyLines) {
+    if (isFenceLine(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence && /^### /.test(line)) {
+      const raw = line.slice(4).trim();
+      subsections.push({ title: raw.replace(/`/g, ''), slug: slugify(raw) });
+    }
+  }
+  return subsections;
+}
+
 function stripLeadingHeading(lines: string[]): string[] {
   const result = [...lines];
   while (result.length > 0 && result[0].trim() === '') {
@@ -194,6 +216,7 @@ export function parseReadme(md: string): ParsedReadme {
   const sections = rawSections.map((section) => ({
     title: section.title,
     slug: section.slug,
+    subsections: collectSubsections(section.bodyLines),
     blocks: splitBlocks(section.bodyLines.join('\n')),
   }));
 

@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
   template: `
     <primitive-page slug="accordion" [readme]="readme">
       <playground-demo
-        title="Single (collapsible)"
-        subtitle="Exactly one section opens at a time. collapsible lets the open item collapse so nothing is shown. Move between headers with the arrow keys, Home and End."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/default.example.ts"
       >
         <app-accordion-default-example />

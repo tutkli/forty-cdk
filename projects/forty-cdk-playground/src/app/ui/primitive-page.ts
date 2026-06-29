@@ -4,6 +4,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  contentChildren,
   inject,
   input,
 } from '@angular/core';
@@ -14,9 +15,10 @@ import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty
 import { skip } from 'rxjs';
 
 import { DocSection } from '../doc/doc-section';
-import { parseReadme } from '../doc/markdown';
-import { DocToc } from '../doc/doc-toc';
+import { DocToc, type TocItem } from '../doc/doc-toc';
+import { type DocSectionData, parseReadme } from '../doc/markdown';
 import { groupLabelForSlug, primitiveBySlug } from '../primitives';
+import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
 
 @Component({
@@ -59,15 +61,12 @@ import { Icon } from './icon';
         <h1>{{ meta().title }}</h1>
         <p>{{ meta().description }}</p>
       </div>
-      @if (meta().apgUrl; as apgUrl) {
-        <a class="apg" [href]="apgUrl" target="_blank" rel="noreferrer noopener">
-          WAI-ARIA APG ↗
-        </a>
-      }
     </header>
 
     <div class="layout">
       <div class="main">
+        <ng-content select="[hero]" />
+
         @if (introHtml(); as intro) {
           <div class="pg-doc-prose pg-doc-intro" [innerHTML]="intro"></div>
         }
@@ -78,14 +77,15 @@ import { Icon } from './icon';
 
         <section class="pg-doc-section" [id]="examplesMeta().slug">
           <h2 class="pg-doc-h2">
+            {{ examplesMeta().title }}
             <a
               class="pg-doc-anchor"
               [routerLink]="[]"
               [fragment]="examplesMeta().slug"
               [attr.aria-label]="examplesMeta().title + ' permalink'"
-              >#</a
             >
-            {{ examplesMeta().title }}
+              <app-icon name="link" />
+            </a>
           </h2>
           <div class="examples">
             <ng-content />
@@ -108,11 +108,7 @@ import { Icon } from './icon';
     }
 
     .head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-      max-width: 980px;
+      max-width: 1180px;
       margin: 0 auto 2.5rem;
     }
 
@@ -126,19 +122,6 @@ import { Icon } from './icon';
       margin: 0.5rem 0 0;
       max-width: 65ch;
       color: var(--pg-text-muted);
-    }
-
-    .apg {
-      flex: none;
-      font-size: 0.82rem;
-      font-weight: 600;
-      white-space: nowrap;
-      color: var(--pg-primary);
-      text-decoration: none;
-    }
-
-    .apg:hover {
-      text-decoration: underline;
     }
 
     .layout {
@@ -178,8 +161,6 @@ import { Icon } from './icon';
 
     @media (max-width: 820px) {
       .head {
-        flex-direction: column;
-        gap: 0.5rem;
         margin-bottom: 1.75rem;
       }
 
@@ -200,6 +181,8 @@ export class PrimitivePage {
 
   readonly slug = input.required<string>();
   readonly readme = input.required<string>();
+
+  protected readonly demos = contentChildren(DemoLayout);
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
   protected readonly group = computed(() => groupLabelForSlug(this.slug()));
@@ -235,12 +218,26 @@ export class PrimitivePage {
     return { title: section.title, slug: section.slug };
   });
 
-  protected readonly tocItems = computed(() =>
-    [...this.sectionsBefore(), this.examplesMeta(), ...this.sectionsAfter()].map((section) => ({
+  protected readonly tocItems = computed<readonly TocItem[]>(() => {
+    const toToc = (section: DocSectionData): TocItem => ({
       title: section.title,
       slug: section.slug,
-    })),
-  );
+      children: section.subsections.length
+        ? section.subsections.map((sub) => ({ title: sub.title, slug: sub.slug }))
+        : undefined,
+    });
+
+    const exampleChildren = this.demos()
+      .filter((demo) => !demo.hero())
+      .map((demo) => ({ title: demo.title(), slug: demo.tocSlug() }));
+
+    const examples: TocItem = {
+      ...this.examplesMeta(),
+      children: exampleChildren.length ? exampleChildren : undefined,
+    };
+
+    return [...this.sectionsBefore().map(toToc), examples, ...this.sectionsAfter().map(toToc)];
+  });
 
   constructor() {
     afterNextRender(() => {

@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -13,6 +14,7 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { ForToastManager } from 'forty-cdk/toast';
 
 import { EXAMPLE_SOURCES } from '../doc/example-source';
+import { slugify } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
@@ -20,19 +22,22 @@ import { Icon } from './icon';
   selector: 'playground-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
+  host: { '[id]': 'hostId()', '[class.is-hero]': 'hero()' },
   template: `
-    <header class="head">
-      <div class="head-text">
-        <h2>{{ title() }}</h2>
-        @if (subtitle()) {
-          <p>{{ subtitle() }}</p>
-        }
-      </div>
-      <a class="source" [href]="sourceUrl()" target="_blank" rel="noreferrer noopener">
-        <app-icon name="github" />
-        Source
-      </a>
-    </header>
+    @if (!hero()) {
+      <header class="head">
+        <div class="head-text">
+          <h2>{{ title() }}</h2>
+          @if (subtitle()) {
+            <p>{{ subtitle() }}</p>
+          }
+        </div>
+        <a class="source" [href]="sourceUrl()" target="_blank" rel="noreferrer noopener">
+          <app-icon name="github" />
+          Source
+        </a>
+      </header>
+    }
 
     <div forTabs class="demo-tabs" [value]="tab()" (valueChange)="setTab($event)">
       <div forTabsList class="demo-tablist" aria-label="Example view">
@@ -66,6 +71,11 @@ import { Icon } from './icon';
   styles: `
     :host {
       display: block;
+      scroll-margin-top: 4.5rem;
+    }
+
+    :host(.is-hero) {
+      margin-bottom: 2.75rem;
     }
 
     .head {
@@ -221,12 +231,18 @@ export class DemoLayout {
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
 
-  readonly title = input.required<string>();
+  readonly title = input<string>('');
   readonly subtitle = input<string>('');
   readonly sourcePath = input.required<string>();
+  readonly hero = input(false, { transform: booleanAttribute });
 
   protected readonly tab = signal<string>('preview');
   protected readonly copied = signal(false);
+
+  readonly tocSlug = computed(() => `example-${slugify(this.title())}`);
+  protected readonly hostId = computed(() =>
+    this.hero() || !this.title() ? null : this.tocSlug(),
+  );
 
   protected readonly sourceUrl = computed(() => GITHUB_BLOB_BASE + this.sourcePath());
 
