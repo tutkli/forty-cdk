@@ -16,10 +16,18 @@ import { skip } from 'rxjs';
 
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import { type DocSectionData, parseReadme } from '../doc/markdown';
+import { type DocSectionData, parseReadme, stripText } from '../doc/markdown';
 import { groupLabelForSlug, primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
+
+function stripLeadingDescription(introHtml: string, description: string): string {
+  const lead = /^\s*<p>([\s\S]*?)<\/p>\s*/.exec(introHtml);
+  if (lead && stripText(lead[1]) === description.trim()) {
+    return introHtml.slice(lead[0].length);
+  }
+  return introHtml;
+}
 
 @Component({
   selector: 'primitive-page',
@@ -61,6 +69,11 @@ import { Icon } from './icon';
         <h1>{{ meta().title }}</h1>
         <p>{{ meta().description }}</p>
       </div>
+      @if (meta().apgUrl; as apgUrl) {
+        <a class="apg" [href]="apgUrl" target="_blank" rel="noreferrer noopener">
+          WAI-ARIA APG ↗
+        </a>
+      }
     </header>
 
     <div class="layout">
@@ -108,6 +121,10 @@ import { Icon } from './icon';
     }
 
     .head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
       max-width: 1180px;
       margin: 0 auto 2.5rem;
     }
@@ -122,6 +139,19 @@ import { Icon } from './icon';
       margin: 0.5rem 0 0;
       max-width: 65ch;
       color: var(--pg-text-muted);
+    }
+
+    .apg {
+      flex: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--pg-primary);
+      text-decoration: none;
+    }
+
+    .apg:hover {
+      text-decoration: underline;
     }
 
     .layout {
@@ -161,6 +191,8 @@ import { Icon } from './icon';
 
     @media (max-width: 820px) {
       .head {
+        flex-direction: column;
+        gap: 0.5rem;
         margin-bottom: 1.75rem;
       }
 
@@ -190,7 +222,7 @@ export class PrimitivePage {
   readonly #parsed = computed(() => parseReadme(this.readme()));
 
   protected readonly introHtml = computed(() => {
-    const intro = this.#parsed().intro;
+    const intro = stripLeadingDescription(this.#parsed().intro, this.meta().description);
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 

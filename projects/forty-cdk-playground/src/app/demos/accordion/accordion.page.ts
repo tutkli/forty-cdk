@@ -33,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
 
       <playground-demo
         title="Multiple"
-        subtitle="multiple lets several sections stay open at once, so value holds an array of every open item."
+        subtitle="<code>multiple</code> lets several sections stay open at once, so <code>value</code> holds an array of every open item."
         sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/multiple.example.ts"
       >
         <app-accordion-multiple-example />
@@ -41,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
 
       <playground-demo
         title="Horizontal"
-        subtitle="orientation='horizontal' lays the sections out in a row and switches roving navigation to ArrowLeft/ArrowRight. It is reflected as data-orientation for styling."
+        subtitle="<code>orientation='horizontal'</code> lays the sections out in a row and switches roving navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd>. It is reflected as <code>data-orientation</code> for styling."
         sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/horizontal.example.ts"
       >
         <app-accordion-horizontal-example />

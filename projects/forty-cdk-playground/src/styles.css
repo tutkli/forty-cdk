@@ -770,7 +770,8 @@ a.pg-nav-link.active {
   font-weight: 700;
 }
 
-.pg-doc-prose code {
+.pg-doc-prose code,
+.pg-doc-subtitle code {
   font-family: var(--pg-font-mono);
   font-size: 0.82em;
   font-weight: 700;
@@ -780,6 +781,20 @@ a.pg-nav-link.active {
   color: var(--pg-code-inline-fg);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+}
+
+.pg-doc-prose kbd,
+.pg-doc-subtitle kbd,
+.pg-doc-table kbd {
+  font-family: var(--pg-font-mono);
+  font-size: 0.78em;
+  font-weight: 600;
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
+  background: var(--pg-surface-2);
+  border: 1px solid var(--pg-border-strong);
+  color: var(--pg-text-muted);
+  white-space: nowrap;
 }
 
 .pg-doc-prose pre {

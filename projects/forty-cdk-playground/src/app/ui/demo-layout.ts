@@ -14,7 +14,7 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { ForToastManager } from 'forty-cdk/toast';
 
 import { EXAMPLE_SOURCES } from '../doc/example-source';
-import { slugify } from '../doc/markdown';
+import { renderInlineMarkdown, slugify } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
@@ -28,8 +28,8 @@ import { Icon } from './icon';
       <header class="head">
         <div class="head-text">
           <h2>{{ title() }}</h2>
-          @if (subtitle()) {
-            <p>{{ subtitle() }}</p>
+          @if (subtitleHtml(); as subtitle) {
+            <p class="pg-doc-subtitle" [innerHTML]="subtitle"></p>
           }
         </div>
         <a class="source" [href]="sourceUrl()" target="_blank" rel="noreferrer noopener">
@@ -251,6 +251,13 @@ export class DemoLayout {
   protected readonly highlighted = computed<SafeHtml | null>(() => {
     const source = this.#source();
     return source ? this.#sanitizer.bypassSecurityTrustHtml(source.highlighted) : null;
+  });
+
+  protected readonly subtitleHtml = computed<SafeHtml | null>(() => {
+    const subtitle = this.subtitle();
+    return subtitle
+      ? this.#sanitizer.bypassSecurityTrustHtml(renderInlineMarkdown(subtitle))
+      : null;
   });
 
   protected readonly copyLabel = computed(() =>

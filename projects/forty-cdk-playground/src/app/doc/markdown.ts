@@ -86,7 +86,11 @@ function renderInline(md: string): string {
   return marked.parseInline(md, { async: false });
 }
 
-function stripText(html: string): string {
+export function renderInlineMarkdown(md: string): string {
+  return renderInline(md);
+}
+
+export function stripText(html: string): string {
   return html
     .replace(/<[^>]+>/g, '')
     .replace(/&lt;/g, '<')
