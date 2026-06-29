@@ -202,66 +202,24 @@ h3 {
   gap: 0.15rem;
 }
 
-.nav-group-heading {
-  margin: 0;
+.nav-group + .nav-group {
+  margin-top: 0.85rem;
 }
 
-.nav-group-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.nav-group-heading {
+  margin: 0;
   padding: 0.5rem 0.75rem;
-  font: inherit;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--pg-text-muted);
-  background: transparent;
-  border: 0;
-  border-radius: var(--pg-radius-sm);
-  cursor: pointer;
-}
-
-.nav-group-trigger:hover {
-  background: var(--pg-surface-2);
-  color: var(--pg-text);
-}
-
-.nav-chevron {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
-}
-
-.nav-group-trigger[data-state='open'] .nav-chevron {
-  transform: rotate(180deg);
-}
-
-.nav-group-content {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease;
-}
-
-.nav-group-content[data-state='open'] {
-  grid-template-rows: 1fr;
 }
 
 .nav-list {
   margin: 0;
-  padding: 0 0 0.4rem;
+  padding: 0;
   list-style: none;
-  overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-group-content,
-  .nav-chevron {
-    transition: none;
-  }
 }
 
 .pg-nav-link {
