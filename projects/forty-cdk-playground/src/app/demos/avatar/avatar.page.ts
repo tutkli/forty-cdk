@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/avatar/README.md';
   template: `
     <primitive-page slug="avatar" [readme]="readme">
       <playground-demo
-        title="Image with fallback"
-        subtitle="An image that tracks its load lifecycle on data-status. The fallback is held back for fallbackDelayMs so a fast load never flashes initials."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/avatar/examples/default.example.ts"
       >
         <app-avatar-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/avatar/README.md';
 
       <playground-demo
         title="Failed load"
-        subtitle="When the image errors, the directive flips shouldShowFallback() and the initials render in its place — an error always shows the fallback at once."
+        subtitle="When the image errors, the directive flips <code>shouldShowFallback()</code> and the initials render in its place — an error shows the fallback at once, skipping the <code>fallbackDelayMs</code> wait."
         sourcePath="projects/forty-cdk-playground/src/app/demos/avatar/examples/fallback.example.ts"
       >
         <app-avatar-fallback-example />
