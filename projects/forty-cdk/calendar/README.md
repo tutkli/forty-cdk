@@ -1,6 +1,8 @@
 # Calendar
 
-Headless single-date calendar grid following the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) — the date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Roving-tabindex focus management, full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, `min` / `max` / per-date availability, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
+A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.
+
+Headless and styleless — the date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
 
 `ForCalendar` is the grid widget, **not a form value** — it exposes `[(value)]` as a `model<D | null>`. The form-control contract (`FormValueControl<D>`) arrives with the follow-up `ForDatePicker` / `ForDateField`.
 
@@ -26,15 +28,31 @@ bootstrapApplication(App, {
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ForCalendar`           | `[forCalendar]`           | Root. Owns `value`, the focused date, the visible month, and the shared context.                    |
-| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title and the grid's `aria-labelledby` target; its text is set to the visible period.    |
-| `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                                      |
-| `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                          |
-| `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`.        |
-| `ForCalendarGridHeader` | `[forCalendarGridHeader]` | Header rowgroup (`role="rowgroup"`) holding the weekday `columnheader`s. Also exposes `weekDays()`. |
-| `ForCalendarCell`       | `[forCalendarCell]`       | One day (`role="gridcell"`). Roving tab stop, ARIA state, and keyboard / click interaction.         |
+```html
+<div forCalendar [(value)]="date">
+  <header>
+    <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+    <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+    <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+  </header>
+
+  <table forCalendarGrid #grid="forCalendarGrid">
+    <thead forCalendarGridHeader>
+      <tr>
+        <!-- @for (day of grid.weekDays(); track day.key) -->
+        <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- @for (week of grid.weeks(); track week.key) -->
+      <tr>
+        <!-- @for (cell of week.days; track cell.key) -->
+        <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
 
 ## Examples
 
@@ -405,6 +423,8 @@ LTR (horizontal arrows mirror under `dir="rtl"`):
 Focus that crosses a month boundary re-pages the visible grid and keeps the focused cell in view. Day-of-month is constrained when paging (e.g. Jan 31 → Feb 28). Paging (the prev / next buttons and `PageUp` / `PageDown`) also clamps the focused date into the `[min, max]` range, so it never lands on a cell outside the selectable bounds; day / week arrows still move freely across unavailable dates so keyboard navigation is never trapped.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **`role="grid"`** on the table, `columnheader` weekday headers, `gridcell` days — the APG Date Picker Dialog technique over a real `<table>`.
 - **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.

@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
   template: `
     <primitive-page slug="date-field" [readme]="readme">
       <playground-demo
-        title="Stand-alone"
-        subtitle="Each part is a role=spinbutton: type to fill it and auto-advance, ↑ / ↓ step the focused segment, ← / → move between them, Backspace clears. The locale drives segment order, separators and month names. value() stays null until every segment is filled."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/date-field/examples/default.example.ts"
       >
         <app-date-field-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
       <playground-demo
         title="Date & time"
-        subtitle="With a time-capable adapter, a granularity coarser than 'day' appends hour / minute segments and the value becomes a CalendarDateTime. A 12-hour cycle adds an AM/PM segment you toggle with ↑ / ↓ or by typing a / p."
+        subtitle="With a time-capable adapter, a <code>granularity</code> coarser than <code>'day'</code> appends hour / minute segments and the value becomes a <code>CalendarDateTime</code>. A 12-hour cycle adds an AM/PM segment you toggle with <kbd>↑</kbd> / <kbd>↓</kbd> or by typing <kbd>a</kbd> / <kbd>p</kbd>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/date-field/examples/date-time.example.ts"
       >
         <app-date-field-date-time-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
       <playground-demo
         title="Localized segment labels"
-        subtitle="provideForDateFieldDefaults({ segmentLabels }) overrides the accessible name each segment announces, scoped to this injector. A screen reader reads the focused segment as 'día' / 'mes' / 'año' instead of the English default."
+        subtitle="<code>provideForDateFieldDefaults({ segmentLabels })</code> overrides the accessible name each segment announces, scoped to this injector. A screen reader reads the focused segment as 'día' / 'mes' / 'año' instead of the English default."
         sourcePath="projects/forty-cdk-playground/src/app/demos/date-field/examples/localized.example.ts"
       >
         <app-date-field-localized-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="ForDateField implements FormValueControl<CalendarDate | null>, so a single [formField] binding wires the committed value into the form and pulls validity and touched back out — no ControlValueAccessor."
+        subtitle="<code>ForDateField</code> implements <code>FormValueControl&lt;CalendarDate | null&gt;</code>, so a single <code>[formField]</code> binding wires the committed value into the form and pulls validity and touched back out — no <code>ControlValueAccessor</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/date-field/examples/form-field.example.ts"
       >
         <app-date-field-form-field-example />

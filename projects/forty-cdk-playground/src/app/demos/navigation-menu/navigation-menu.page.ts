@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
   template: `
     <primitive-page slug="navigation-menu" [readme]="readme">
       <playground-demo
-        title="Mega-menu with viewport & indicator"
-        subtitle="A site navigation built on the disclosure pattern: triggers are buttons with aria-expanded, panels hold links. Hover or focus opens a panel; the shared viewport hosts every panel and animates to each one's measured size via CSS custom properties, while the indicator tracks the active trigger."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/navigation-menu/examples/default.example.ts"
       >
         <app-navigation-menu-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
 
       <playground-demo
         title="Vertical orientation"
-        subtitle="orientation='vertical' stacks the triggers into a sidebar and swaps the keyboard axis: ArrowUp / ArrowDown move focus across triggers, ArrowRight opens the focused panel. Each panel flies out beside its trigger and the indicator becomes a vertical bar tracking the active row."
+        subtitle="<code>orientation='vertical'</code> stacks the triggers into a sidebar and swaps the keyboard axis: <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd> move focus across triggers, <kbd>ArrowRight</kbd> opens the focused panel. Each panel flies out beside its trigger and the indicator becomes a vertical bar tracking the active row."
         sourcePath="projects/forty-cdk-playground/src/app/demos/navigation-menu/examples/vertical.example.ts"
       >
         <app-navigation-menu-vertical-example />

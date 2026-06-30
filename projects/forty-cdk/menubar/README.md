@@ -1,13 +1,31 @@
 # Menubar
 
-Headless implementation of the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/): a horizontal (or vertical) bar of triggers, each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation, hover-after-first-open, and roving tabindex among triggers.
+A horizontal bar of menus, as in a desktop application, with roving tabindex across the triggers.
+
+A bar of triggers — horizontal or vertical — each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation and hover-after-first-open.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                                                                                                                |
-| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForMenubar`        | `[forMenubar]`        | Root. Owns `value` (the open trigger), orientation, dir, loop, disabled. Provides the `ForMenubarContext` and a multiplexed `ForMenuContext` to `[forMenuContent]`. |
-| `ForMenubarTrigger` | `[forMenubarTrigger]` | A trigger button. `role="menuitem"` with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`. Participates in roving tabindex and trigger-row keyboard.      |
+```html
+<div forMenubar [(value)]="openMenu" ariaLabel="Application">
+  <button forMenubarTrigger value="file">File</button>
+  <!-- mounted when openMenu() === 'file' -->
+  <div forMenuContent>
+    <button forMenuItem>New file</button>
+    <hr forMenuSeparator />
+    <button forMenuItem>Quit</button>
+  </div>
+
+  <button forMenubarTrigger value="edit">Edit</button>
+  <!-- mounted when openMenu() === 'edit' -->
+  <div forMenuContent>
+    <button forMenuItem>Undo</button>
+    <button forMenuItem>Redo</button>
+  </div>
+</div>
+```
+
+`ForMenubar` (`[forMenubar]`) is the root: it owns `value` (the open trigger), orientation, dir, loop and disabled, and provides a multiplexed `ForMenuContext` to the active `[forMenuContent]`. Each `ForMenubarTrigger` (`[forMenubarTrigger]`) is a `role="menuitem"` button with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`, participating in roving tabindex and trigger-row keyboard.
 
 The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / side / ids reflect the active trigger.
 

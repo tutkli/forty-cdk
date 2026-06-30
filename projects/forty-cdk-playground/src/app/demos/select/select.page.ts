@@ -29,8 +29,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
   template: `
     <primitive-page slug="select" [readme]="readme">
       <playground-demo
-        title="Single select with groups"
-        subtitle="A button trigger that opens a portaled listbox (role combobox + listbox + option), built on the select-only combobox APG pattern. Options are grouped with a separator, and the checkmark indicator mirrors each option's data-state. The surface portals to <body>, so its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/default.example.ts"
       >
         <app-select-default-example />
@@ -38,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="Multi select"
-        subtitle="Set multiple and bind [(value)] to a string[]. Clicking an option toggles it in or out and the listbox stays open; Tab, Escape or an outside pointer close it."
+        subtitle="Set <code>multiple</code> and bind <code>[(value)]</code> to a <code>string[]</code>. Clicking an option toggles it in or out and the listbox stays open; <kbd>Tab</kbd>, <kbd>Esc</kbd> or an outside pointer close it."
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/multiple.example.ts"
       >
         <app-select-multiple-example />
@@ -46,7 +45,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="macOS-style item alignment"
-        subtitle="position='item-aligned' overlays the listbox so the selected option's vertical center lines up with the trigger, the way native macOS menus open. collisionPadding clamps it inside the viewport and exposes the available height as a CSS variable."
+        subtitle='<code>position="item-aligned"</code> overlays the listbox so the selected option&apos;s vertical center lines up with the trigger, the way native macOS menus open. <code>[collisionPadding]</code> clamps it inside the viewport and exposes the available height as a CSS variable.'
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/item-aligned.example.ts"
       >
         <app-select-item-aligned-example />
@@ -54,7 +53,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="Object values & typeahead"
-        subtitle="forSelect is generic over T: bind whole objects to [forSelectOption][value], match them by a stable key with [isItemEqualToValue], and serialize what a native form submits with [itemToFormValue]. Typeahead mirrors native <select> — with the listbox open, printable keys jump to the first match."
+        subtitle="<code>forSelect</code> is generic over <code>T</code>: bind whole objects to <code>[forSelectOption][value]</code>, match them by a stable key with <code>[isItemEqualToValue]</code>, and serialize what a native form submits with <code>[itemToFormValue]</code>. Typeahead mirrors native <code>&lt;select&gt;</code> — with the listbox open, printable keys jump to the first match."
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/object-values.example.ts"
       >
         <app-select-object-values-example />
@@ -62,7 +61,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="forSelect implements FormValueControl<readonly T[]> from @angular/forms/signals, so a single [formField] binding wires the value, validation status and touched flag both ways — no ControlValueAccessor. The field is required and reflects data-invalid / data-touched after a blur without a choice."
+        subtitle="<code>forSelect</code> implements <code>FormValueControl&lt;readonly T[]&gt;</code> from <code>@angular/forms/signals</code>, so a single <code>[formField]</code> binding wires the value, validation status and touched flag both ways — no <code>ControlValueAccessor</code>. The field is required and reflects <code>data-invalid</code> / <code>data-touched</code> after a blur without a choice."
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/form-field.example.ts"
       >
         <app-select-form-field-example />
@@ -70,7 +69,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="Virtualized (5,000 options)"
-        subtitle="Setting [totalCount] switches ForSelect to the virtualized activedescendant model: [forSelectContent] becomes the single Tab stop and the active option is tracked by aria-activedescendant, so rows recycle as the listbox scrolls. The window is rendered with the library's injectVirtualizer core."
+        subtitle="Setting <code>[totalCount]</code> switches <code>ForSelect</code> to the virtualized activedescendant model: <code>[forSelectContent]</code> becomes the single <kbd>Tab</kbd> stop and the active option is tracked by <code>aria-activedescendant</code>, so rows recycle as the listbox scrolls. The window is rendered with the library's <code>injectVirtualizer</code> core."
         sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/virtualized.example.ts"
       >
         <app-select-virtualized-example />

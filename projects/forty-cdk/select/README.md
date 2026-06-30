@@ -1,25 +1,40 @@
 # Select
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+A custom select: a trigger that opens a portaled listbox popup to pick one or many options, with groups and separators.
 
-Headless select primitive — a button trigger that opens a portaled listbox of options. Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/) (`role="combobox"` on the trigger, `role="listbox"` on the surface, `role="option"` on items) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
+It implements the select-only combobox pattern (`role="combobox"` on the trigger, `role="listbox"` on the surface, `role="option"` on items) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
 `[forSelect]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forSelectOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                                                                                                                                        |
-| --------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForSelect`           | `[forSelect]`           | Root. Owns `[(value)]`, `[(open)]`, the option collection, ids, and the dismiss event surface.                                                                                                              |
-| `ForSelectTrigger`    | `[forSelectTrigger]`    | The `<button role="combobox">` that opens the listbox. Wires `aria-haspopup`, `aria-expanded`, `aria-controls`.                                                                                             |
-| `ForSelectAnchor`     | `[forSelectAnchor]`     | Optional. Positions the listbox against this element instead of the trigger — wrap a decorated field box so the panel matches the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
-| `ForSelectValue`      | `[forSelectValue]`      | Renders the selected option's text — or the placeholder — into its host via `textContent`. Optional.                                                                                                        |
-| `ForSelectContent`    | `[forSelectContent]`    | The listbox surface. Portaled, positioned by floating-ui, dismissable layer attached.                                                                                                                       |
-| `ForSelectOption`     | `[forSelectOption]`     | One option. `value: required<T>` (defaults to `string`).                                                                                                                                                    |
-| `ForSelectIndicator`  | `[forSelectIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`.                                                                            |
-| `ForSelectGroup`      | `[forSelectGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                                                                    |
-| `ForSelectGroupLabel` | `[forSelectGroupLabel]` | Label registered with the parent group.                                                                                                                                                                     |
-| `ForSelectSeparator`  | `[forSelectSeparator]`  | Decorative separator, `role="separator"`. Skipped by navigation.                                                                                                                                            |
+```html
+<div forSelect #select="forSelect" [(value)]="value" placeholder="Pick a fruit">
+  <button forSelectTrigger>
+    <span forSelectValue></span>
+  </button>
+
+  <!-- @if (select.open()) -->
+  <div forSelectContent>
+    <div forSelectGroup>
+      <div forSelectGroupLabel>Fruit</div>
+      <button forSelectOption value="apple">
+        <span forSelectIndicator>✓</span>
+        Apple
+      </button>
+      <button forSelectOption value="banana">Banana</button>
+    </div>
+
+    <hr forSelectSeparator />
+
+    <button forSelectOption value="other">Other</button>
+  </div>
+</div>
+```
+
+`[forSelectAnchor]` (optional) wraps a decorated field box so the listbox positions against it instead of the trigger — see [Anchoring to a field box](#anchoring-to-a-field-box).
 
 ## Examples
 
@@ -445,6 +460,8 @@ readonly v = injectVirtualizer({
 - **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
 
 ## Accessibility
+
+Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
 
 - Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior — the listbox doesn't intercept them.
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.

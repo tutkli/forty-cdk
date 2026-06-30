@@ -1,7 +1,6 @@
 # Drag & Drop
 
-Headless accessible drag-and-drop for sortable lists and cross-list item
-transfers. Supports both keyboard and pointer (mouse / touch / pen) dragging.
+Headless, accessible drag-and-drop for sortable lists and cross-list transfers, driven by both keyboard and pointer. Ships drag handles, custom preview / placeholder templates, live-sort, FLIP reorder animations, auto-scroll, and boundary / axis-lock constraints.
 
 For repositioning an arbitrary element (no list, no reorder) — e.g. dragging a
 whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).

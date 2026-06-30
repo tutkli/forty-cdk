@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/menubar/README.md';
   template: `
     <primitive-page slug="menubar" [readme]="readme">
       <playground-demo
-        title="Application menu bar"
-        subtitle="A persistent application menu bar (role menubar) driven by a single [(value)] model naming the open menu. A roving tabindex keeps one tab stop; arrows move between top-level triggers, and once one menu is open, hovering or arrowing to a sibling switches instantly. Each menu's content portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/menubar/examples/default.example.ts"
       >
         <app-menubar-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/menubar/README.md';
 
       <playground-demo
         title="Vertical & RTL"
-        subtitle="The same menubar laid out as a vertical sidebar (orientation='vertical' makes Up / Down move between triggers) with dir='rtl'. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you."
+        subtitle="The same menubar laid out as a vertical sidebar (<code>orientation='vertical'</code> makes <kbd>Up</kbd> / <kbd>Down</kbd> move between triggers) with <code>dir='rtl'</code>. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you."
         sourcePath="projects/forty-cdk-playground/src/app/demos/menubar/examples/vertical-rtl.example.ts"
       >
         <app-menubar-vertical-rtl-example />

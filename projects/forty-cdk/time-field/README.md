@@ -1,6 +1,8 @@
 # TimeField
 
-Headless, segmented, spin-editable **time-of-day** input — the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a labelled `role="group"`. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
+A segmented time-of-day input over a pluggable date adapter, with 12 / 24-hour cycles, optional seconds, and min / max time clamping.
+
+Headless, segmented, spin-editable — the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of spinbuttons inside a labelled `role="group"`. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
 
 `ForTimeField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every visible segment is filled.
 
@@ -28,11 +30,18 @@ When no value is bound yet, a composed value is anchored on a fixed, DST-stable 
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                               |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `ForTimeField`        | `[forTimeField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.       |
-| `ForTimeFieldSegment` | `[forTimeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing. |
-| `ForTimeFieldLiteral` | `[forTimeFieldLiteral]` | A decorative separator (`:`, a space). `aria-hidden`, out of the tab order.                        |
+The root iterates its computed `segments()` and renders each part as either an editable spinbutton segment or a decorative literal.
+
+```html
+<div forTimeField [(value)]="time" ariaLabel="Appointment time" #field="forTimeField">
+  <!-- for each segment in field.segments():
+       a literal separator (`:`, a space) -->
+  <span forTimeFieldLiteral>{{ seg.text }}</span>
+
+  <!-- or an editable part (hour / minute / second / AM·PM) -->
+  <span forTimeFieldSegment [segment]="seg.type">{{ seg.text }}</span>
+</div>
+```
 
 ## Examples
 
@@ -172,6 +181,8 @@ Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
 
 ## Accessibility
+
+Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — each segment is an independent spinbutton inside a labelled group.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label).
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the AM/PM segment also exposes a localized `aria-valuetext` ("AM" / "PM"), so screen readers read the period rather than `0` / `1`.

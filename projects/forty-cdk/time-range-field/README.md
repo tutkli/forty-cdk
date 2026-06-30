@@ -1,6 +1,8 @@
 # TimeRangeField
 
-Headless, segmented, spin-editable time-of-day **range** input — the keyboard-first, form-capable time analog of [DateRangeField](../date-range-field/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — the same machinery as [TimeField](../time-field/README.md) — nested inside one outer `role="group"`. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
+A segmented time-of-day range input over a time-capable date adapter: two labelled spinbutton endpoints (start / end) sharing the hour cycle and min / max bounds. Implements FormValueControl, so the committed range auto-wires with Signal Forms — null until both endpoints are filled and ordered.
+
+Headless, segmented, spin-editable — the keyboard-first, form-capable time analog of [DateRangeField](../date-range-field/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints, each holding a row of spinbuttons — the same machinery as [TimeField](../time-field/README.md) — nested inside one outer `role="group"`. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
 
 `ForTimeRangeField` implements `FormValueControl<CalendarDateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangeField` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
 
@@ -19,13 +21,23 @@ Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date (
 
 ## Anatomy
 
-| Class                      | Selector                     | Role                                                                                                         |
-| -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ForTimeRangeField`        | `[forTimeRangeField]`        | Root (`role="group"`). Owns both endpoint engines, composes the `CalendarDateRange`, the `FormValueControl`. |
-| `ForTimeRangeFieldStart`   | `[forTimeRangeFieldStart]`   | Start endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                               |
-| `ForTimeRangeFieldEnd`     | `[forTimeRangeFieldEnd]`     | End endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                                 |
-| `ForTimeRangeFieldSegment` | `[forTimeRangeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing.           |
-| `ForTimeRangeFieldLiteral` | `[forTimeRangeFieldLiteral]` | A decorative separator (`:`, a space). `aria-hidden`, out of the tab order.                                  |
+```html
+<div forTimeRangeField [(value)]="hours" ariaLabel="Opening hours">
+  <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+    <!-- @for (seg of start.segments(); track seg.id) -->
+    <span forTimeRangeFieldSegment [segment]="seg.type">09</span>
+    <span forTimeRangeFieldLiteral>:</span>
+    <span forTimeRangeFieldSegment [segment]="seg.type">00</span>
+  </div>
+  <span aria-hidden="true">–</span>
+  <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+    <!-- @for (seg of end.segments(); track seg.id) -->
+    <span forTimeRangeFieldSegment [segment]="seg.type">17</span>
+    <span forTimeRangeFieldLiteral>:</span>
+    <span forTimeRangeFieldSegment [segment]="seg.type">30</span>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -226,6 +238,8 @@ Key behavior applies per segment. Each endpoint is its own tab stop, so `Tab` mo
 Each composed endpoint is clamped into `[minTime, maxTime]` by time-of-day. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
 
 ## Accessibility
+
+Each editable segment implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/); there is no single APG pattern for a range field.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label); each endpoint is its own labelled `role="group"`.
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the AM/PM segment also exposes a localized `aria-valuetext` ("AM" / "PM").

@@ -15,8 +15,7 @@ import readmeContent from '../../../../../forty-cdk/menu/README.md';
   template: `
     <primitive-page slug="menu" [readme]="readme">
       <playground-demo
-        title="Groups, radio & submenu"
-        subtitle="The shared menu vocabulary, hosted here by a minimal Dropdown Menu trigger: grouped labels, checkbox items and a radio group (role menuitemcheckbox / menuitemradio), a nested submenu and decorative separators. Checkbox and radio items keep the menu open on activation so several options can be flipped before dismissing. The surface portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/menu/examples/default.example.ts"
       >
         <app-menu-default-example />

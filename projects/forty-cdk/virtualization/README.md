@@ -1,13 +1,8 @@
 # injectVirtualizer
 
-Headless windowing core: given a reactive item count, a size estimator, and a
-scroll container, returns the slice of items currently visible (plus overscan),
-the total scroll size, and imperative scroll/measure helpers. The consumer renders
-the items with their own `@for` and applies the position transform — this primitive
-owns no DOM.
+A headless windowing core (injectVirtualizer) plus an ergonomic [forVirtualViewport] + \*forVirtualFor layer that render only the visible slice of huge lists. Fixed or measured item sizes, horizontal lists, scroll-to-index, and an infinite-scroll detector. List primitives (Select, Combobox, Listbox, Tree, Table) compose it directly.
 
-Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns
-an empty window and the estimate-based total without touching `document`/`window`.
+Given a reactive item count, a size estimator, and a scroll container, the core returns the slice of items currently visible (plus overscan), the total scroll size, and imperative scroll/measure helpers. The consumer renders the items with their own `@for` and applies the position transform — this primitive owns no DOM. Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns an empty window and the estimate-based total without touching `document`/`window`.
 
 > Ships from the **`forty-cdk/virtualization`** secondary entry point — import every
 > symbol below (`injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`,

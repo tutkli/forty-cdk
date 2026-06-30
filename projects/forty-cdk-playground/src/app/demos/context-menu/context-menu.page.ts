@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/context-menu/README.md';
   template: `
     <primitive-page slug="context-menu" [readme]="readme">
       <playground-demo
-        title="Right-click region"
-        subtitle="A menu opened by right-click (or Shift+F10 / the Menu key when the region is focused), anchored to the pointer through a virtual element. It shares the menu vocabulary and keyboard model with the Dropdown Menu, dismissing on Escape, outside pointer-down and Tab. The surface portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/context-menu/examples/default.example.ts"
       >
         <app-context-menu-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/context-menu/README.md';
 
       <playground-demo
         title="Rich content"
-        subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain forMenuItem actions, a forMenuCheckboxItem toggle, a forMenuRadioGroup, a forMenuSub submenu, and grouped labels with separators. Checkbox and radio items preventDefault() on (activate) to stay open; plain items close the menu and bubble up through any open submenu."
+        subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain <code>forMenuItem</code> actions, a <code>forMenuCheckboxItem</code> toggle, a <code>forMenuRadioGroup</code>, a <code>forMenuSub</code> submenu, and grouped labels with separators. Checkbox and radio items call <code>preventDefault()</code> on <code>(activate)</code> to stay open; plain items close the menu and bubble up through any open submenu."
         sourcePath="projects/forty-cdk-playground/src/app/demos/context-menu/examples/rich-content.example.ts"
       >
         <app-context-menu-rich-content-example />

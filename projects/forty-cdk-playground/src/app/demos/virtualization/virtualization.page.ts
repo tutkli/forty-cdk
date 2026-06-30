@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
   template: `
     <primitive-page slug="virtualization" [readme]="readme">
       <playground-demo
-        title="Ergonomic viewport (10,000 rows)"
-        subtitle="The Shape A layer: [forVirtualViewport] owns the scroll container, the total-size sizer and the windowing core, while *forVirtualFor renders only the visible window plus overscan — positioning each row absolutely and binding aria-setsize / aria-posinset for you. scrollToIndex is exposed via exportAs; only a few dozen DOM nodes exist at any time."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/virtualization/examples/viewport.example.ts"
       >
         <app-virtualization-viewport-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
 
       <playground-demo
         title="Dynamic heights (measured)"
-        subtitle="When rows vary in height, drop to the headless injectVirtualizer core: it owns no DOM, so the consumer renders the spacer and the absolutely-positioned window. Each row carries [attr.data-index] and is fed to measureElement() in afterEveryRender, so estimates refine and jumping to the bottom lands precisely."
+        subtitle="When rows vary in height, drop to the headless <code>injectVirtualizer</code> core: it owns no DOM, so the consumer renders the spacer and the absolutely-positioned window. Each row carries <code>[attr.data-index]</code> and is fed to <code>measureElement()</code> in <code>afterEveryRender</code>, so estimates refine and jumping to the bottom lands precisely."
         sourcePath="projects/forty-cdk-playground/src/app/demos/virtualization/examples/dynamic.example.ts"
       >
         <app-virtualization-dynamic-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
 
       <playground-demo
         title="Infinite scroll (endReached)"
-        subtitle="The Shape A turnkey path: bind (endReached) on [forVirtualViewport] and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound count grows."
+        subtitle="The Shape A turnkey path: bind <code>(endReached)</code> on <code>[forVirtualViewport]</code> and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound <code>count</code> grows."
         sourcePath="projects/forty-cdk-playground/src/app/demos/virtualization/examples/infinite-scroll.example.ts"
       >
         <app-virtualization-infinite-scroll-example />

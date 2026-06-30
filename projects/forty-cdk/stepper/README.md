@@ -1,9 +1,8 @@
 # ForStepper
 
-A headless, accessible multi-step wizard primitive. Implements the
-[WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) in
-`mode="interactive"` (full roving tabindex, `role="tablist"`) and a progress
-list with `aria-current="step"` in `mode="progress"`.
+A multi-step wizard built on the Tabs pattern: a step list with indicators and separators, a content panel per step, Next / Previous navigation, linear gating with optional Signal Forms completion, a display-only progress mode and an optional progress bar.
+
+A headless, accessible primitive: `mode="interactive"` gives full roving tabindex and `role="tablist"`, while `mode="progress"` renders a progress list with `aria-current="step"`.
 
 See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
@@ -11,19 +10,36 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
 ## Anatomy
 
-| Directive                    | Selector                       | Role (interactive / progress)           |
-| ---------------------------- | ------------------------------ | --------------------------------------- |
-| `ForStepper`                 | `[forStepper]`                 | root                                    |
-| `ForStepperList`             | `[forStepperList]`             | `tablist` / `list`                      |
-| `ForStepperItem`             | `[forStepperItem]`             | item container (wraps trigger + panel)  |
-| `ForStepperTrigger`          | `[forStepperTrigger]`          | `tab` / static (aria-current)           |
-| `ForStepperIndicator`        | `[forStepperIndicator]`        | decorative icon (`aria-hidden`)         |
-| `ForStepperSeparator`        | `[forStepperSeparator]`        | decorative connector (`aria-hidden`)    |
-| `ForStepperContent`          | `[forStepperContent]`          | `tabpanel` / `group`                    |
-| `ForStepperNext`             | `button[forStepperNext]`       | next-step button                        |
-| `ForStepperPrevious`         | `button[forStepperPrevious]`   | previous-step button                    |
-| `ForStepperProgress`         | `[forStepperProgress]`         | `progressbar` (optional)                |
-| `ForStepperCompletedContent` | `[forStepperCompletedContent]` | `group` (terminal "all complete" panel) |
+```html
+<div forStepper [(selectedIndex)]="step" [linear]="true">
+  <ol forStepperList ariaLabel="Checkout">
+    <li forStepperItem [completed]="step() > 0">
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Shipping
+      </button>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem>
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Review
+      </button>
+    </li>
+  </ol>
+
+  <section forStepperContent>Shipping form</section>
+  <section forStepperContent>Order review</section>
+
+  <!-- terminal panel, shown once selectedIndex === count -->
+  <section forStepperCompletedContent>All steps complete</section>
+
+  <button forStepperPrevious>Back</button>
+  <button forStepperNext>Next</button>
+</div>
+```
+
+`[forStepperProgress]` is an optional `role="progressbar"` part you can place inside the root for a styleable fill.
 
 ---
 
@@ -274,6 +290,8 @@ In `activationMode="automatic"` arrow keys move focus AND select. In `activation
 In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. In `orientation="horizontal"` ArrowLeft/Right navigate; ArrowUp/Down are ignored. RTL inverts ArrowLeft and ArrowRight.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
 - **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`).
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger. No tab-stop manipulation is performed; triggers carry no `role`.

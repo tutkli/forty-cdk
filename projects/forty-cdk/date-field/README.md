@@ -1,6 +1,8 @@
 # DateField
 
-Headless, segmented, spin-editable date input — the keyboard-first counterpart to [Calendar](../calendar/README.md). There is **no single WAI-ARIA APG pattern** for a date field; it is a composition of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a labelled `role="group"`. Each day / month / year part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct — no free-text parsing, no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
+A segmented date (and optional time) input over a pluggable date adapter — each part a spinbutton with keyboard stepping, locale-driven segment order and min / max clamping.
+
+The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / month / year part is an independent `role="spinbutton"` segment inside a labelled `role="group"`, so entry is unambiguous and locale-correct — no free-text parsing, no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
 `ForDateField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every segment is filled.
 
@@ -24,11 +26,15 @@ bootstrapApplication(App, {
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                               |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `ForDateField`        | `[forDateField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.       |
-| `ForDateFieldSegment` | `[forDateFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing. |
-| `ForDateFieldLiteral` | `[forDateFieldLiteral]` | A decorative separator (`/`, `.`, `-`). `aria-hidden`, out of the tab order.                       |
+```html
+<div forDateField [(value)]="date" ariaLabel="Date" #field="forDateField">
+  <!-- field.segments() yields the locale-ordered parts; render each one: -->
+  <!-- literal separator (/, ., -) — aria-hidden, out of the tab order -->
+  <span forDateFieldLiteral>{{ seg.text }}</span>
+  <!-- editable part — role="spinbutton", one roving tab stop -->
+  <span forDateFieldSegment [segment]="seg.type">{{ seg.text }}</span>
+</div>
+```
 
 ## Examples
 
@@ -197,6 +203,8 @@ Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`.
 
 ## Accessibility
+
+Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — there is no single APG pattern for a date field, so each segment is an independent spinbutton inside a labelled `role="group"`.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label).
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March"), so screen readers read the name rather than the number.

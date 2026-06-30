@@ -1,6 +1,8 @@
 # DateRangeField
 
-Headless, segmented, spin-editable date **range** input — the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — the same machinery as [DateField](../date-field/README.md) — nested inside one outer `role="group"`. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
+A segmented date (and optional time) range input over a pluggable date adapter: two labelled spinbutton endpoints (start / end) sharing locale, granularity and bounds. Implements FormValueControl, so the committed range auto-wires with Signal Forms — null until both endpoints are filled and ordered.
+
+Headless, segmented, spin-editable — the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as [DateField](../date-field/README.md) — nested inside one outer `role="group"`. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
 `ForDateRangeField` implements `FormValueControl<CalendarDateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangePicker` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
 
@@ -15,13 +17,24 @@ Pick one (required). All date math goes through the same pluggable `DateAdapter<
 
 ## Anatomy
 
-| Class                      | Selector                     | Role                                                                                                         |
-| -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ForDateRangeField`        | `[forDateRangeField]`        | Root (`role="group"`). Owns both endpoint engines, composes the `CalendarDateRange`, the `FormValueControl`. |
-| `ForDateRangeFieldStart`   | `[forDateRangeFieldStart]`   | Start endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                               |
-| `ForDateRangeFieldEnd`     | `[forDateRangeFieldEnd]`     | End endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                                 |
-| `ForDateRangeFieldSegment` | `[forDateRangeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing.           |
-| `ForDateRangeFieldLiteral` | `[forDateRangeFieldLiteral]` | A decorative separator (`/`, `.`, `-`, `:`). `aria-hidden`, out of the tab order.                            |
+```html
+<div forDateRangeField [(value)]="stay" ariaLabel="Stay">
+  <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+    @for (seg of start.segments(); track seg.id) {
+    <!-- seg.isLiteral → a decorative separator, else an editable segment -->
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    }
+  </div>
+  <span aria-hidden="true">–</span>
+  <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+    @for (seg of end.segments(); track seg.id) {
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    }
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -220,6 +233,8 @@ Key behavior applies per segment. Each endpoint is its own tab stop, so `Tab` mo
 The day clamps to the current month's length (e.g. 31 → 28 in February), and each composed endpoint is clamped into `[minDate, maxDate]`.
 
 ## Accessibility
+
+Each segment implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/); there is no single APG pattern for a range field, so the field composes them inside nested labelled `role="group"` endpoints.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label); each endpoint is its own labelled `role="group"`.
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March").

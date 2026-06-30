@@ -1,21 +1,30 @@
 # NavigationMenu
 
-Headless implementation of the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/) — a `<nav>` of disclosures, **not** an ARIA `menu`.
+A site-navigation header built on the disclosure pattern: buttons that expand panels of links into a shared viewport.
 
-Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are landmarks with links, Tab moves through links, Escape closes and returns focus.
+A `<nav>` of disclosures, **not** an ARIA `menu`. Triggers are buttons with `aria-expanded` / `aria-controls`, content panels are landmarks with links, Tab moves through links, Escape closes and returns focus.
 
 ## Anatomy
 
-| Class                        | Selector                       | Role                                                                  |
-| ---------------------------- | ------------------------------ | --------------------------------------------------------------------- |
-| `ForNavigationMenu`          | `[forNavigationMenu]`          | Root. Owns open state, delays, dismiss layer.                         |
-| `ForNavigationMenuList`      | `[forNavigationMenuList]`      | Optional layout wrapper.                                              |
-| `ForNavigationMenuItem`      | `[forNavigationMenuItem]`      | Pairs one trigger with one content panel.                             |
-| `ForNavigationMenuTrigger`   | `[forNavigationMenuTrigger]`   | Button that toggles its panel.                                        |
-| `ForNavigationMenuContent`   | `[forNavigationMenuContent]`   | Panel mounted via `@if`. Carries `aria-labelledby`.                   |
-| `ForNavigationMenuLink`      | `[forNavigationMenuLink]`      | Decorative wrapper that reflects `aria-current` on active links.      |
-| `ForNavigationMenuIndicator` | `[forNavigationMenuIndicator]` | Optional follower (underline / pill) positioned via CSS custom props. |
-| `ForNavigationMenuViewport`  | `[forNavigationMenuViewport]`  | Optional shared surface for mega-menu animations.                     |
+```html
+<nav forNavigationMenu [(value)]="open" ariaLabel="Main">
+  <ul forNavigationMenuList>
+    <li forNavigationMenuItem value="products">
+      <button forNavigationMenuTrigger>Products</button>
+      <!-- mounted via @if (open() === 'products') -->
+      <div forNavigationMenuContent>
+        <a href="/p/web" forNavigationMenuLink>Web</a>
+        <a href="/p/mobile" forNavigationMenuLink active>Mobile</a>
+      </div>
+    </li>
+
+    <span forNavigationMenuIndicator></span>
+  </ul>
+
+  <!-- Optional shared surface for mega-menu animations -->
+  <div forNavigationMenuViewport></div>
+</nav>
+```
 
 ## Examples
 
@@ -208,6 +217,8 @@ Measurement always tracks the **active** panel. The Viewport's `--for-navigation
 | Escape                                         | Closes and returns focus to the trigger.                                   |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/).
 
 - **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.
 - **Focus alone does not open.** A trigger opens on hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
