@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
   template: `
     <primitive-page slug="otp-input" [readme]="readme">
       <playground-demo
-        title="Verification code"
-        subtitle="One real input carries the whole code; the slots are a styling surface that read their character from the group via context. The active slot paints a fake caret, the group reflects data-complete when full, and valueComplete fires on the last keystroke or a paste."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/default.example.ts"
       >
         <app-otp-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
 
       <playground-demo
         title="Masked PIN with paste transform"
-        subtitle="mask obscures the slots while value() stays raw, and a pasteTransformer strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. type still rejects anything outside the numeric character class as you type."
+        subtitle="<code>mask</code> obscures the slots while <code>value()</code> stays raw, and a <code>pasteTransformer</code> strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. <code>type</code> still rejects anything outside the numeric character class as you type."
         sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/masked.example.ts"
       >
         <app-otp-masked-example />

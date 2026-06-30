@@ -1,19 +1,22 @@
 # Toggle / ToggleGroup
 
-Two related primitives in a single folder:
+A two-state button that stays pressed or unpressed.
 
-- **`[forToggle]`** — a standalone two-state button implementing the [WAI-ARIA Toggle Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) (`<button aria-pressed>`).
-- **`[forToggleGroup]` + `[forToggleGroupItem]`** — a [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/) of toggle buttons with single / multiple selection, roving tabindex, and arrow-key navigation.
-
-For exclusive selection where one option is always required, use `[forRadioGroup]` instead — Radio guarantees one-of-N, ToggleGroup in single mode lets the user clear the selection.
+Two related primitives in a single folder: `[forToggle]` is a standalone two-state button (`<button aria-pressed>`); `[forToggleGroup]` + `[forToggleGroupItem]` compose a group of toggle buttons with single / multiple selection, roving tabindex, and arrow-key navigation. For exclusive selection where one option is always required, use `[forRadioGroup]` instead — Radio guarantees one-of-N, ToggleGroup in single mode lets the user clear the selection.
 
 ## Anatomy
 
-| Class                | Selector               | Role                                                                           |
-| -------------------- | ---------------------- | ------------------------------------------------------------------------------ |
-| `ForToggle`          | `[forToggle]`          | Standalone two-state button. `aria-pressed`. Implements `FormCheckboxControl`. |
-| `ForToggleGroup`     | `[forToggleGroup]`     | Root. Owns `value`, `multiple`, `disabled`, `orientation`, `dir`, `loop`.      |
-| `ForToggleGroupItem` | `[forToggleGroupItem]` | One toggle button. Pressed state derives from the group's `value`.             |
+```html
+<!-- Standalone two-state button -->
+<button forToggle [(checked)]="bold">B</button>
+
+<!-- Group of toggle buttons (single or multiple selection) -->
+<div forToggleGroup [(value)]="format" multiple>
+  <button forToggleGroupItem value="bold">B</button>
+  <button forToggleGroupItem value="italic">I</button>
+  <button forToggleGroupItem value="underline">U</button>
+</div>
+```
 
 ## Examples
 
@@ -150,6 +153,12 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors surfaced by Signal Forms.<br>**Default:** `[]`                                                                                                              |
 | `touched`  | `model<boolean>`                                          | Two-way bindable. Set to `true` on blur.<br>**Default:** `false`                                                                                                              |
 
+| Data attribute  | Values                   |
+| --------------- | ------------------------ |
+| `data-state`    | `checked` \| `unchecked` |
+| `data-disabled` | present \| absent        |
+| `data-readonly` | present \| absent        |
+
 ### `ForToggleGroup`
 
 | Property      | Type                                                      | Description                                                                                                                    |
@@ -169,6 +178,11 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `dir`         | `input<'ltr' \| 'rtl'>`                                   | Reading direction. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                   |
 | `loop`        | `input<boolean>`                                          | When `true`, arrow nav wraps at the ends. The default is read from `provideForToggleDefaults`.<br>**Default:** `true`          |
 
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
+
 ### `ForToggleGroupItem`
 
 | Property   | Type                     | Description                                                                       |
@@ -176,18 +190,11 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `value`    | `input.required<string>` | Identifier added to / removed from the group's `value`.<br>**Default:** —         |
 | `disabled` | `input<boolean>`         | Per-item disabled, in addition to the group's `disabled`.<br>**Default:** `false` |
 
-### Data attributes
-
-| Piece                  | Attribute          | Values                     |
-| ---------------------- | ------------------ | -------------------------- |
-| `[forToggle]`          | `data-state`       | `checked` \| `unchecked`   |
-| `[forToggle]`          | `data-disabled`    | present \| absent          |
-| `[forToggle]`          | `data-readonly`    | present \| absent          |
-| `[forToggleGroup]`     | `data-orientation` | `horizontal` \| `vertical` |
-| `[forToggleGroup]`     | `data-disabled`    | present \| absent          |
-| `[forToggleGroupItem]` | `data-state`       | `checked` \| `unchecked`   |
-| `[forToggleGroupItem]` | `data-disabled`    | present \| absent          |
-| `[forToggleGroupItem]` | `data-orientation` | `horizontal` \| `vertical` |
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `checked` \| `unchecked`   |
+| `data-disabled`    | present \| absent          |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ## Keyboard
 
@@ -200,6 +207,8 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 Arrow keys move focus only — selection requires an explicit click or Space / Enter. There is no selection-on-focus, unlike `[forRadioGroup]`.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) (toggle-button variant).
 
 - **`[forToggle]`** emits `role="button"` with `aria-pressed="true|false"` — announced as "toggle button" by screen readers.
 - **`[forToggleGroup]`** emits `role="toolbar"` with `aria-orientation`. Provide a label via `aria-label` or `aria-labelledby`.
@@ -214,7 +223,7 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .toggle {

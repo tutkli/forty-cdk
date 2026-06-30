@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
   template: `
     <primitive-page slug="field" [readme]="readme">
       <playground-demo
-        title="Anatomy"
-        subtitle="forField renders nothing — it ties the label, description and control together. forLabel adopts the field's generated id, the control gains aria-labelledby / aria-describedby / its own id, and clicking the label focuses the input. The host reflects data-required from the control for styling. A plain native input opts in with forFieldControl."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/default.example.ts"
       >
         <app-field-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="A disabled native control reflects data-disabled on the field host, so the whole block can dim in one rule. The control stays announced as disabled to assistive tech."
+        subtitle="A disabled native control reflects <code>data-disabled</code> on the <code>[forField]</code> host, so the whole block can dim in one rule. The control stays announced as disabled to assistive tech."
         sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/disabled.example.ts"
       >
         <app-field-disabled-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
 
       <playground-demo
         title="Validation with Signal Forms"
-        subtitle="forFieldError reads the control's Signal Forms errors automatically — you render err.messages(), the field wires aria-errormessage and folds the id into aria-describedby while invalid. The checkbox auto-associates because it extends the shared form base. Tick then untick to surface the required error."
+        subtitle="<code>[forFieldError]</code> reads the control's Signal Forms errors automatically — you render <code>err.messages()</code>, the field wires <code>aria-errormessage</code> and folds the id into <code>aria-describedby</code> while invalid. The <code>[forCheckbox]</code> auto-associates because it extends the shared form base. Tick then untick to surface the required error."
         sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/validation.example.ts"
       >
         <app-field-validation-example />

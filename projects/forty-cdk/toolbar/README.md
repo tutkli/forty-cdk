@@ -1,17 +1,24 @@
 # Toolbar
 
-Headless implementation of the [WAI-ARIA Toolbar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/). A toolbar is a single Tab stop that contains a set of buttons, links, and toggle groups; arrow keys move focus inside.
+A container that groups a set of controls under roving-tabindex navigation.
 
-Composes naturally with `[forToggleGroup]` — toggle items nested inside a toolbar register with the toolbar's roving tabindex automatically, so arrows move fluidly across the whole bar.
+The toolbar takes a single Tab stop and arrow keys move focus across its buttons, links, and toggle groups. Composes naturally with `[forToggleGroup]` — toggle items nested inside a toolbar register with the toolbar's roving tabindex automatically, so arrows move fluidly across the whole bar.
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                                                                       |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ForToolbar`          | `[forToolbar]`          | Root. `role="toolbar"`. Owns roving + nav.                                                                                                 |
-| `ForToolbarButton`    | `[forToolbarButton]`    | Plain push button. Apply on `<button>`.                                                                                                    |
-| `ForToolbarLink`      | `[forToolbarLink]`      | Hyperlink. Apply on `<a>`.                                                                                                                 |
-| `ForToolbarSeparator` | `[forToolbarSeparator]` | Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `role="separator"` + `aria-orientation` + `data-orientation`. |
+```html
+<div forToolbar aria-label="Formatting">
+  <button forToolbarButton>Undo</button>
+  <button forToolbarButton>Redo</button>
+  <span forToolbarSeparator></span>
+  <div forToggleGroup multiple>
+    <button forToggleGroupItem value="bold">B</button>
+    <button forToggleGroupItem value="italic">I</button>
+  </div>
+  <span forToolbarSeparator></span>
+  <a forToolbarLink href="/help">Help</a>
+</div>
+```
 
 ## Examples
 
@@ -71,17 +78,49 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 | `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends.<br>**Default:** `true`                                                                                                             |
 | `disabled`    | `input<boolean>`                    | Disables every item.<br>**Default:** —                                                                                                                                  |
 
-### Data attributes
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
 
-| Piece                   | Attribute          | Values                     |
-| ----------------------- | ------------------ | -------------------------- |
-| `[forToolbar]`          | `data-orientation` | `horizontal` \| `vertical` |
-| `[forToolbar]`          | `data-disabled`    | present \| absent          |
-| `[forToolbarButton]`    | `data-orientation` | `horizontal` \| `vertical` |
-| `[forToolbarButton]`    | `data-disabled`    | present \| absent          |
-| `[forToolbarLink]`      | `data-orientation` | `horizontal` \| `vertical` |
-| `[forToolbarLink]`      | `data-disabled`    | present \| absent          |
-| `[forToolbarSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
+### `ForToolbarButton`
+
+Plain push button. Apply on `<button>` so Enter / Space activate via native semantics.
+
+| Property   | Type             | Description                                                                   |
+| ---------- | ---------------- | ----------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`.<br>**Default:** — |
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
+
+### `ForToolbarLink`
+
+Hyperlink. Apply on `<a>`; `Enter` follows the link via native semantics.
+
+| Property   | Type             | Description                                                                                     |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | When true the link is announced as `aria-disabled` and clicks are suppressed.<br>**Default:** — |
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
+
+### `ForToolbarSeparator`
+
+Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `role="separator"` + `aria-orientation` + `data-orientation`.
+
+| Property      | Type                                             | Description                                                                                              |
+| ------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical' \| undefined>` | Axis the separator divides along. Falls back to the toolbar's cross-axis when omitted.<br>**Default:** — |
+| `decorative`  | `input<boolean>`                                 | When true, gets `role="none"` and no `aria-orientation`.<br>**Default:** —                               |
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ## Keyboard
 
@@ -94,6 +133,8 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
 ## Accessibility
 
+Implements the [WAI-ARIA Toolbar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/).
+
 - **Single Tab stop that follows focus.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Before any interaction the entry point is the first enabled item; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the toolbar restores it (matching APG and the Tabs / Tree primitives). Arrow keys move focus inside, Home / End jump to the first / last enabled item.
 - **Always label the toolbar.** Pass the reactive `[ariaLabel]` input (or a native `aria-labelledby` pointing at a visible label element) so screen-reader users know what the toolbar acts on. Not optional — APG requires it.
 - **Disabled items stay focusable on `<a forToolbarLink>`.** Native `<a>` has no `disabled` attribute; we expose `aria-disabled="true"` and suppress click. Removing the link from the focus order would deviate from APG; users can still hear "disabled".
@@ -102,7 +143,7 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .toolbar {

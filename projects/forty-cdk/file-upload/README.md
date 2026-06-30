@@ -1,14 +1,18 @@
 # FileUpload
 
-Headless drag-and-drop / dialog file-selection primitive. No ARIA role is imposed on the drop zone — it is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
+A headless drag-and-drop / dialog file-selection zone: a visually-hidden native <input type='file'> stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
+
+No ARIA role is imposed on the drop zone — it is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
 
 ## Anatomy
 
-| Class                  | Selector                 | Element               | Role                                                                          |
-| ---------------------- | ------------------------ | --------------------- | ----------------------------------------------------------------------------- |
-| `ForFileUpload`        | `[forFileUpload]`        | any wrapper           | Drop zone root. Owns the file list, drag state, and disabled flag.            |
-| `ForFileUploadInput`   | `[forFileUploadInput]`   | `<input type="file">` | The accessible file control. Keep it focusable (use a visually-hidden class). |
-| `ForFileUploadTrigger` | `[forFileUploadTrigger]` | `<button>`            | Opens the native file dialog on click / Enter / Space.                        |
+```html
+<div forFileUpload accept="image/*,.pdf" (filesChange)="onFiles($event)">
+  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
+  <button forFileUploadTrigger>Choose files</button>
+  <p>or drag and drop</p>
+</div>
+```
 
 ## Examples
 
@@ -77,12 +81,10 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 | `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`    |
 | `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                             |
 
-### Data attributes
-
-| Piece             | Attribute       | Values                                                                 |
-| ----------------- | --------------- | ---------------------------------------------------------------------- |
-| `[forFileUpload]` | `data-dragging` | present — files are actively being dragged over the drop zone / absent |
-| `[forFileUpload]` | `data-disabled` | present — the zone (and all its pieces) is disabled / absent           |
+| Data attribute  | Values                                                              |
+| --------------- | ------------------------------------------------------------------- |
+| `data-dragging` | present while files are dragged over the drop zone, else absent     |
+| `data-disabled` | present when the zone (and all its pieces) is disabled, else absent |
 
 ## Accessibility
 
@@ -92,4 +94,4 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.

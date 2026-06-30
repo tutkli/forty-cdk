@@ -2,18 +2,23 @@
 
 > New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
-Headless preview card that opens on hover or focus of a trigger. Use it for profile snapshots, link previews, definition cards — any **complementary** information that surfaces on dwell.
+A floating card that opens on hover to preview the content behind a link, with a pointer bridge keeping it open.
 
-There is no APG pattern for HoverCard. Treat it as a presentational layer: the trigger must already convey full meaning (it's a link, a name, a tag), so keyboard-only users miss nothing if they never see the card. Card content can be interactive — that's its main difference from `[forTooltip]`, where APG bans it.
+Use it for profile snapshots, link previews, definition cards — any complementary information that surfaces on dwell. There is no APG pattern for HoverCard. Treat it as a presentational layer: the trigger must already convey full meaning (it's a link, a name, a tag), so keyboard-only users miss nothing if they never see the card. Card content can be interactive — that's its main difference from `[forTooltip]`, where APG bans it.
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                                                     |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `ForHoverCard`        | `[forHoverCard]`        | Root. Owns open state and delays.                                                                                        |
-| `ForHoverCardTrigger` | `[forHoverCardTrigger]` | Element that opens the card on hover / focus.                                                                            |
-| `ForHoverCardContent` | `[forHoverCardContent]` | The card surface. Portaled and floating-positioned. Pointer-enter cancels close, so the user can move the cursor inside. |
-| `ForHoverCardArrow`   | `[forHoverCardArrow]`   | Optional arrow positioned by floating-ui.                                                                                |
+```html
+<span forHoverCard #card="forHoverCard" side="top">
+  <a forHoverCardTrigger href="/users/ada">Ada Lovelace</a>
+  <!-- rendered only when card.open() is true -->
+  <div forHoverCardContent animate.enter="card-in" animate.leave="card-out">
+    <h3>Ada Lovelace</h3>
+    <p>Mathematician — designed the first algorithm.</p>
+    <span forHoverCardArrow></span>
+  </div>
+</span>
+```
 
 ## Examples
 
@@ -80,15 +85,28 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `disabled`         | `input<boolean>`                                  | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync).<br>**Default:** —                                              |
 | `escapeKeyDown`    | `OutputEmitterRef<KeyboardEvent>`                 | Output. Fires when Escape is pressed while the card is open, regardless of where focus currently lives (trigger, portaled content, or an unrelated element). Call `preventDefault()` to keep open.<br>**Default:** — |
 
-### Data attributes
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
-| Piece                   | Attribute               | Values             |
-| ----------------------- | ----------------------- | ------------------ |
-| `[forHoverCard]`        | `data-state`            | `open` \| `closed` |
-| `[forHoverCard]`        | `data-disabled`         | present \| absent  |
-| `[forHoverCardTrigger]` | `data-state`            | `open` \| `closed` |
-| `[forHoverCardContent]` | `data-state`            | `open` \| `closed` |
-| `[forHoverCardArrow]`   | `data-hover-card-arrow` | present (always)   |
+### `ForHoverCardTrigger`
+
+| Data attribute | Values             |
+| -------------- | ------------------ |
+| `data-state`   | `open` \| `closed` |
+
+### `ForHoverCardContent`
+
+| Data attribute | Values             |
+| -------------- | ------------------ |
+| `data-state`   | `open` \| `closed` |
+
+### `ForHoverCardArrow`
+
+| Data attribute          | Values           |
+| ----------------------- | ---------------- |
+| `data-hover-card-arrow` | present (always) |
 
 ## Defaults
 
@@ -145,7 +163,7 @@ class ProfileList {}
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

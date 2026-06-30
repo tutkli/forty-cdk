@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/button/README.md';
   template: `
     <primitive-page slug="button" [readme]="readme">
       <playground-demo
-        title="Native and custom hosts"
-        subtitle="forButton turns any element into an accessible button. On a native <button> the platform owns Enter / Space; on a <span> the directive adds role='button', tabindex='0' and keyboard activation. Both fire a single (activate) output."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/button/examples/default.example.ts"
       >
         <app-button-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/button/README.md';
 
       <playground-demo
         title="Disabled stays focusable"
-        subtitle="Per the APG, a disabled button must stay reachable so assistive tech can announce it. forButton never sets the native disabled attribute — it reflects aria-disabled='true' + data-disabled and makes activation a no-op. The native disabled button is skipped entirely."
+        subtitle="Per the APG, a disabled button must stay reachable so assistive tech can announce it. <code>forButton</code> never sets the native <code>disabled</code> attribute — it reflects <code>aria-disabled='true'</code> + <code>data-disabled</code> and makes activation a no-op. The native disabled button is skipped entirely."
         sourcePath="projects/forty-cdk-playground/src/app/demos/button/examples/disabled.example.ts"
       >
         <app-button-disabled-example />

@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
   template: `
     <primitive-page slug="toggle" [readme]="readme">
       <playground-demo
-        title="Standalone Toggle"
-        subtitle="A standalone two-state button (aria-pressed). Toggle it with click, Enter or Space; data-state reflects the pressed state for styling."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/toggle/examples/default.example.ts"
       >
         <app-toggle-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="A disabled toggle stays focusable (per APG) — it reflects aria-disabled and data-disabled rather than the native disabled attribute, so assistive tech still announces it while interaction is a no-op."
+        subtitle="A disabled toggle stays focusable (per APG) — it reflects <code>aria-disabled</code> and <code>data-disabled</code> rather than the native <code>disabled</code> attribute, so assistive tech still announces it while interaction is a no-op."
         sourcePath="projects/forty-cdk-playground/src/app/demos/toggle/examples/disabled.example.ts"
       >
         <app-toggle-disabled-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
 
       <playground-demo
         title="ToggleGroup"
-        subtitle="A group of toggles with roving tabindex. In multiple mode each item toggles independently; arrows only move focus — selection needs Space / Enter or click."
+        subtitle="A group of toggles with roving tabindex. In <code>multiple</code> mode each item toggles independently; arrows only move focus — selection needs <kbd>Space</kbd> / <kbd>Enter</kbd> or click."
         sourcePath="projects/forty-cdk-playground/src/app/demos/toggle/examples/group.example.ts"
       >
         <app-toggle-group-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="ForToggleGroup implements FormValueControl<readonly string[]>, so [formField] binds the pressed-values array to a form field. This single-select alignment group is required: clearing the choice and blurring marks the group data-invalid / data-touched."
+        subtitle="<code>ForToggleGroup</code> implements <code>FormValueControl&lt;readonly string[]&gt;</code>, so <code>[formField]</code> binds the pressed-values array to a form field. This single-select alignment group is required: clearing the choice and blurring marks the group <code>data-invalid</code> / <code>data-touched</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/toggle/examples/form-field.example.ts"
       >
         <app-toggle-form-field-example />

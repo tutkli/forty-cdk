@@ -1,14 +1,28 @@
 # Pane Resizer
 
-Headless implementation of the [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/): the focusable divider between two resizable panes. It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arrow / Page / Home / End keys, and drives a pointer-drag resize with `setPointerCapture`.
+A focusable divider that resizes the panes on either side — draggable and keyboard-operable, with an optional collapse behaviour.
 
-It is essentially a 1-D slider wearing a separator role. The static visual divider lives in the separate [`ForSeparator`](../separator/README.md) primitive so a plain `<hr forSeparator>` never pulls the drag / keyboard-resize code in.
+It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arrow / Page / Home / End keys, and drives a pointer-drag resize with `setPointerCapture`. It is essentially a 1-D slider wearing a separator role; the static visual divider lives in the separate [`ForSeparator`](../separator/README.md) primitive so a plain `<hr forSeparator>` never pulls the drag / keyboard-resize code in.
 
 ## Anatomy
 
-| Class            | Selector           | Role                                                                                  |
-| ---------------- | ------------------ | ------------------------------------------------------------------------------------- |
-| `ForPaneResizer` | `[forPaneResizer]` | Single attribute directive. Focusable resizer: tabbable, exposes `aria-value*`, drag. |
+```html
+<div class="split">
+  <section id="pane-a">…</section>
+
+  <div
+    forPaneResizer
+    orientation="vertical"
+    [(value)]="size"
+    [min]="120"
+    [max]="640"
+    aria-controls="pane-a pane-b"
+    aria-label="Resize panes"
+  ></div>
+
+  <section id="pane-b">…</section>
+</div>
+```
 
 ## Examples
 
@@ -93,12 +107,10 @@ export class DemoSplitPane {
 | `resize`       | `output<number>`                    | Output. Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.<br>**Default:** —                            |
 | `resizeCommit` | `output<number>`                    | Output. Fires once at the end of a resize burst (key release, pointerup, or `pointercancel`). Persist final size here.<br>**Default:** — |
 
-### Data attributes
-
-| Piece              | Attribute          | Values                     |
-| ------------------ | ------------------ | -------------------------- |
-| `[forPaneResizer]` | `data-orientation` | `horizontal` \| `vertical` |
-| `[forPaneResizer]` | `data-disabled`    | present \| absent          |
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
 
 ## Keyboard
 
@@ -114,6 +126,8 @@ export class DemoSplitPane {
 
 ## Accessibility
 
+Implements the [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/).
+
 - **Follows the Window Splitter pattern verbatim.**
   - `aria-orientation` is reflected **explicitly** (both `'horizontal'` and `'vertical'`) so AT can announce the resize axis.
   - `aria-controls` is recommended: point it at the panes the resizer splits so AT can relate them.
@@ -123,7 +137,7 @@ export class DemoSplitPane {
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .resizer[data-orientation='vertical'] {

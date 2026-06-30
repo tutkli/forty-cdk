@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/search/README.md';
   template: `
     <primitive-page slug="search" [readme]="readme">
       <playground-demo
-        title="Search with a clear button"
-        subtitle="forSearch is a role='searchbox' input that mirrors its value to a signal. The companion [forSearchClear] takes the exported instance, self-hides while the field is empty, and refocuses the input after clearing — no extra @if needed."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/default.example.ts"
       >
         <app-search-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/search/README.md';
 
       <playground-demo
         title="Inside a Field with Signal Forms"
-        subtitle="forSearch implements FormValueControl<string>, so [formField] auto-wires it inside forField exactly like forInput: the label adopts the control id, validation flows into aria-errormessage, and aria-invalid / aria-required are reflected. Type one or two characters and blur to surface the error."
+        subtitle="<code>forSearch</code> implements <code>FormValueControl&lt;string&gt;</code>, so <code>[formField]</code> auto-wires it inside <code>forField</code> exactly like <code>forInput</code>: the label adopts the control id, validation flows into <code>aria-errormessage</code>, and <code>aria-invalid</code> / <code>aria-required</code> are reflected. Type one or two characters and blur to surface the error."
         sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/field.example.ts"
       >
         <app-search-field-example />

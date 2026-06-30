@@ -1,13 +1,24 @@
 # Radio Group
 
-Headless implementation of the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radio/) with selection-on-focus, wrap-around arrow navigation, and `FormValueControl<string>` integration for Angular Signal Forms.
+A set of radio buttons where only one option can be selected, with arrow-key navigation.
+
+Headless implementation with selection-on-focus, wrap-around arrow navigation, and `FormValueControl<string>` integration for Angular Signal Forms.
 
 ## Anatomy
 
-| Class           | Selector          | Role                                                                                                            |
-| --------------- | ----------------- | --------------------------------------------------------------------------------------------------------------- |
-| `ForRadioGroup` | `[forRadioGroup]` | Container. Owns the selected value, orientation, disabled / readonly / form state. Provides the shared context. |
-| `ForRadio`      | `[forRadio]`      | One radio. Apply on a `<button type="button">`.                                                                 |
+```html
+<div forRadioGroup [(value)]="value" orientation="vertical" aria-labelledby="rg-label">
+  <span id="rg-label">Shipping method</span>
+  <button type="button" forRadio value="standard">
+    <span forRadioIndicator></span>
+    Standard
+  </button>
+  <button type="button" forRadio value="express">
+    <span forRadioIndicator></span>
+    Express
+  </button>
+</div>
+```
 
 ## Examples
 
@@ -74,7 +85,11 @@ export class DemoShipping {
 | `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                           |
 | `touched`                                                    | `model<boolean>`                                          | Set to `true` when focus leaves the group entirely.<br>**Default:** —                                                                                               |
 
-The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for CSS hooks.
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
+| `data-readonly`    | present \| absent          |
 
 ### `ForRadio`
 
@@ -83,20 +98,22 @@ The group host gets `data-orientation`, `data-disabled`, and `data-readonly` for
 | `value`    | `input.required<string>` | This radio's identifier. Must be unique within the group and non-empty.<br>**Default:** —                              |
 | `disabled` | `input<boolean>`         | Disables this radio independently of the group. Disabled radios are skipped during arrow navigation.<br>**Default:** — |
 
-The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, and `data-disabled`. A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `checked` \| `unchecked`   |
+| `data-disabled`    | present \| absent          |
+| `data-orientation` | `horizontal` \| `vertical` |
 
-### Data attributes
+A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
 
-| Piece                 | Attribute          | Values                     |
-| --------------------- | ------------------ | -------------------------- |
-| `[forRadioGroup]`     | `data-orientation` | `horizontal` \| `vertical` |
-| `[forRadioGroup]`     | `data-disabled`    | present \| absent          |
-| `[forRadioGroup]`     | `data-readonly`    | present \| absent          |
-| `[forRadio]`          | `data-state`       | `checked` \| `unchecked`   |
-| `[forRadio]`          | `data-disabled`    | present \| absent          |
-| `[forRadio]`          | `data-orientation` | `horizontal` \| `vertical` |
-| `[forRadioIndicator]` | `data-state`       | `checked` \| `unchecked`   |
-| `[forRadioIndicator]` | `data-orientation` | `horizontal` \| `vertical` |
+### `ForRadioIndicator`
+
+Optional slot inside a `ForRadio`. Apply on the element you want to show only while the radio is selected (typically a filled dot). Mirrors the parent radio's `data-state` so you can hide the unchecked state with `[data-state="unchecked"] { display: none }`.
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-state`       | `checked` \| `unchecked`   |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ## Keyboard
 
@@ -108,13 +125,15 @@ The radio host gets `aria-checked`, `aria-disabled`, `tabindex`, `data-state`, a
 
 ## Accessibility
 
+Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radio/).
+
 - **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
 - **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
 - **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .radio-group-indicator[data-state='unchecked'] {

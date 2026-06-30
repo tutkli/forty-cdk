@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
   template: `
     <primitive-page slug="fieldset" [readme]="readme">
       <playground-demo
-        title="Native fieldset group"
-        subtitle="On a native <fieldset>, forFieldset leans on the browser's implicit grouping — no role is added because the element already groups its controls. Each forField inside still reflects its own state for styling."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/default.example.ts"
       >
         <app-fieldset-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
 
       <playground-demo
         title="Disable a group"
-        subtitle="disabled emits the native disabled attribute, which disables every control inside in one move. The data-disabled hook flows to the fieldset and to each forField so the whole block can dim together."
+        subtitle="<code>disabled</code> emits the native <code>disabled</code> attribute, which disables every control inside in one move. The <code>data-disabled</code> hook flows to the fieldset and to each <code>forField</code> so the whole block can dim together."
         sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/disabled.example.ts"
       >
         <app-fieldset-disabled-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
 
       <playground-demo
         title="Group on any element"
-        subtitle="On non-fieldset markup forFieldset synthesizes the grouping: it emits role=group and points aria-labelledby at the [forFieldsetLegend]'s generated id, so a plain <div> + <span> reads to assistive tech exactly like a native fieldset / legend."
+        subtitle='On non-fieldset markup <code>forFieldset</code> synthesizes the grouping: it emits <code>role="group"</code> and points <code>aria-labelledby</code> at the <code>[forFieldsetLegend]</code>&apos;s generated id, so a plain <code>&lt;div&gt;</code> + <code>&lt;span&gt;</code> reads to assistive tech exactly like a native fieldset / legend.'
         sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/role-group.example.ts"
       >
         <app-fieldset-role-group-example />

@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/number-input/README.md';
   template: `
     <primitive-page slug="number-input" [readme]="readme">
       <playground-demo
-        title="Stepper"
-        subtitle="The input is a role=spinbutton with aria-valuenow / valuemin / valuemax. ArrowUp / ArrowDown step by [step], PageUp / PageDown step by the multiplier, and Home / End jump to the bounds. The group wires the +/− buttons, which auto-disable (data-disabled) at min or max."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/number-input/examples/default.example.ts"
       >
         <app-number-input-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/number-input/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="disabled reflects data-disabled on the spinbutton and both stepper buttons, removes the control from the tab order, and ignores the keyboard."
+        subtitle="<code>disabled</code> reflects <code>data-disabled</code> on the spinbutton and both stepper buttons, removes the control from the tab order, and ignores the keyboard."
         sourcePath="projects/forty-cdk-playground/src/app/demos/number-input/examples/disabled.example.ts"
       >
         <app-number-input-disabled-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/number-input/README.md';
 
       <playground-demo
         title="Formatting & precision"
-        subtitle="formatOptions feeds an Intl.NumberFormat that renders the displayed text and aria-valuetext, while value() stays a raw number. The locale drives both formatting and parsing; a hidden input submits the raw number, not the formatted string."
+        subtitle="<code>formatOptions</code> feeds an <code>Intl.NumberFormat</code> that renders the displayed text and <code>aria-valuetext</code>, while <code>value()</code> stays a raw number. The <code>locale</code> drives both formatting and parsing; a hidden input submits the raw number, not the formatted string."
         sourcePath="projects/forty-cdk-playground/src/app/demos/number-input/examples/formatting.example.ts"
       >
         <app-number-input-formatting-example />

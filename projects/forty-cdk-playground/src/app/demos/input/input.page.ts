@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
   template: `
     <primitive-page slug="input" [readme]="readme">
       <playground-demo
-        title="Text & textarea"
-        subtitle="forInput and forTextarea are plain attribute directives that own a string value() and reflect form state as aria-* / data-*. They ship no styles — the data-empty / data-disabled / data-readonly / data-invalid hooks drive the look."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/input/examples/default.example.ts"
       >
         <app-input-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
 
       <playground-demo
         title="Disabled & read-only"
-        subtitle="disabled reflects native disabled plus data-disabled and drops out of submission; readonly keeps the field focusable but blocks edits and reflects data-readonly."
+        subtitle="<code>disabled</code> reflects native <code>disabled</code> plus <code>data-disabled</code> and drops out of submission; <code>readonly</code> keeps the field focusable but blocks edits and reflects <code>data-readonly</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/input/examples/states.example.ts"
       >
         <app-input-states-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
 
       <playground-demo
         title="Auto-sizing textarea"
-        subtitle="autosize tracks the textarea's content height — growing as you type and shrinking as you delete, recomputed on every edit and on width reflow. Pair it with the reflected data-autosize and resize: none; overflow: hidden. The measurement is browser-only, so it stays inert under SSR."
+        subtitle="<code>autosize</code> tracks the textarea's content height — growing as you type and shrinking as you delete, recomputed on every edit and on width reflow. Pair it with the reflected <code>data-autosize</code> and <code>resize: none; overflow: hidden</code>. The measurement is browser-only, so it stays inert under SSR."
         sourcePath="projects/forty-cdk-playground/src/app/demos/input/examples/autosize.example.ts"
       >
         <app-input-autosize-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
 
       <playground-demo
         title="Signal Forms validation"
-        subtitle="Bound through [formField], forInput auto-associates inside forField — the label adopts the control id, errors flow into aria-errormessage, and touched / invalid are reflected with no manual id plumbing. Type an invalid address and blur to surface the error."
+        subtitle="Bound through <code>[formField]</code>, <code>forInput</code> auto-associates inside <code>forField</code> — the label adopts the control id, errors flow into <code>aria-errormessage</code>, and <code>touched</code> / <code>invalid</code> are reflected with no manual id plumbing. Type an invalid address and blur to surface the error."
         sourcePath="projects/forty-cdk-playground/src/app/demos/input/examples/validation.example.ts"
       >
         <app-input-validation-example />

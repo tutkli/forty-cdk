@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
   template: `
     <primitive-page slug="checkbox" [readme]="readme">
       <playground-demo
-        title="Stand-alone"
-        subtitle="Toggle it with click, Space or Enter. data-state reflects the checked state for styling."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/checkbox/examples/default.example.ts"
       >
         <app-checkbox-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
 
       <playground-demo
         title="Tri-state (select all)"
-        subtitle="A parent checkbox reflects indeterminate when only some children are selected. Activating it selects or clears them all at once, matching native inputs."
+        subtitle="A parent checkbox reflects <code>indeterminate</code> when only some children are selected. Activating it selects or clears them all at once, matching native inputs."
         sourcePath="projects/forty-cdk-playground/src/app/demos/checkbox/examples/select-all.example.ts"
       >
         <app-checkbox-select-all-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="disabled keeps the checkbox focusable and announced (per APG) but makes click a no-op, and reflects data-disabled."
+        subtitle="<code>disabled</code> keeps the checkbox focusable and announced (per APG) but makes click a no-op, and reflects <code>data-disabled</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/checkbox/examples/disabled.example.ts"
       >
         <app-checkbox-disabled-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="forCheckbox implements FormCheckboxControl, so a single [formField] binding wires the binary checked value into the form and pulls validity back out. The box is required: blur it unchecked and it reflects data-invalid / data-touched."
+        subtitle="<code>forCheckbox</code> implements <code>FormCheckboxControl</code>, so a single <code>[formField]</code> binding wires the binary <code>checked</code> value into the form and pulls validity back out. The box is required: blur it unchecked and it reflects <code>data-invalid</code> / <code>data-touched</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/checkbox/examples/form-field.example.ts"
       >
         <app-checkbox-form-field-example />

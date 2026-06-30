@@ -1,8 +1,8 @@
 # Breakpoints
 
-A signal-first, zoneless, SSR-safe viewport breakpoint observer. Configure the breakpoint map **once** via a provider; read it anywhere with `injectBreakpoints()` — no need to repeat the breakpoint set at every call site.
+A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpoints — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.
 
-It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Each query method returns a `Signal<boolean>`.
+It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Configure the breakpoint map **once** via a provider; read it anywhere with `injectBreakpoints()` — no need to repeat the breakpoint set at every call site.
 
 ## Setup
 

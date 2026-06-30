@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
   template: `
     <primitive-page slug="tooltip" [readme]="readme">
       <playground-demo
-        title="Hover & focus trigger"
-        subtitle="A short label shown on hover or focus and hidden on leave, blur or Escape. It never steals focus and its content is pointer-events: none, so the pointer falls through. The bubble portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/tooltip/examples/default.example.ts"
       >
         <app-tooltip-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
 
       <playground-demo
         title="Overflow-only"
-        subtitle="With showOnOverflow the tooltip opens only when the trigger's own text is actually truncated — ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears."
+        subtitle="With <code>showOnOverflow</code> the tooltip opens only when the trigger's own text is actually truncated — ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears."
         sourcePath="projects/forty-cdk-playground/src/app/demos/tooltip/examples/overflow.example.ts"
       >
         <app-tooltip-overflow-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
 
       <playground-demo
         title="Hoverable content"
-        subtitle="With hoverableContent the bubble keeps pointer-events, so the pointer can rest on it to read or select long text without dismissing it. A pointer-grace safe triangle bridges the trigger-to-content gap. The content must still stay non-interactive per APG."
+        subtitle="With <code>hoverableContent</code> the bubble keeps <code>pointer-events</code>, so the pointer can rest on it to read or select long text without dismissing it. A pointer-grace safe triangle bridges the trigger-to-content gap. The content must still stay non-interactive per APG."
         sourcePath="projects/forty-cdk-playground/src/app/demos/tooltip/examples/hoverable.example.ts"
       >
         <app-tooltip-hoverable-example />

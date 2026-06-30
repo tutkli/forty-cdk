@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
   template: `
     <primitive-page slug="switch" [readme]="readme">
       <playground-demo
-        title="Stand-alone"
-        subtitle="Toggle it with click, Enter or Space. data-state reflects the checked state for styling."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/default.example.ts"
       >
         <app-switch-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="disabled removes the switch from the tab order and reflects data-disabled."
+        subtitle="<code>disabled</code> ignores clicks and keyboard activation but keeps the switch focusable (per APG); it reflects <code>aria-disabled</code> and <code>data-disabled</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/disabled.example.ts"
       >
         <app-switch-disabled-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
 
       <playground-demo
         title="Read-only"
-        subtitle="readonly keeps the switch focusable and announced, but blocks toggling. It reflects data-readonly."
+        subtitle="<code>readonly</code> keeps the switch focusable and announced but blocks toggling; it reflects <code>aria-readonly</code> and <code>data-readonly</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/read-only.example.ts"
       >
         <app-switch-read-only-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="forSwitch implements FormCheckboxControl, so a single [formField] binding wires checked state, validity and touched both ways — no ControlValueAccessor."
+        subtitle="<code>forSwitch</code> implements <code>FormCheckboxControl</code>, so a single <code>[formField]</code> binding wires checked state, validity and touched both ways — no <code>ControlValueAccessor</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/form-field.example.ts"
       >
         <app-switch-form-field-example />

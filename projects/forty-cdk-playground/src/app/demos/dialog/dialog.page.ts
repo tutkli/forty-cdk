@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/dialog/README.md';
   template: `
     <primitive-page slug="dialog" [readme]="readme">
       <playground-demo
-        title="Anatomy"
-        subtitle="A modal confirm dialog composed from trigger, backdrop, title, description and close button. The surface portals to <body>, so its styles are colocated here via ViewEncapsulation.None; animate.enter / animate.leave play on real mount and unmount."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/anatomy.example.ts"
       >
         <app-dialog-anatomy-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/dialog/README.md';
 
       <playground-demo
         title="Guarded close"
-        subtitle="(escapeKeyDown) and (interactOutside) fire before (dismiss); calling preventDefault() on them keeps the dialog open. Escape and click-outside are vetoed, so only Discard or Save close it. Modal with no backdrop, so the page behind is inert but undimmed."
+        subtitle="<code>(escapeKeyDown)</code> and <code>(interactOutside)</code> fire before <code>(dismiss)</code>; calling <code>preventDefault()</code> on them keeps the dialog open. <kbd>Escape</kbd> and click-outside are vetoed, so only Discard or Save close it. Modal with no backdrop, so the page behind is inert but undimmed."
         sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/guarded-close.example.ts"
       >
         <app-dialog-guarded-close-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/dialog/README.md';
 
       <playground-demo
         title="Non-modal & keep focus"
-        subtitle="[modal]=false drops the focus trap, scroll lock and inert siblings. autoFocusOnOpen vetoes the initial focus move so the search field keeps focus while you type, and autoFocusOnClose returns focus to it on close. With no visible title, ariaLabel names the panel."
+        subtitle='<code>[modal]="false"</code> drops the focus trap, scroll lock and inert siblings. <code>autoFocusOnOpen</code> vetoes the initial focus move so the search field keeps focus while you type, and <code>autoFocusOnClose</code> returns focus to it on close. With no visible title, <code>ariaLabel</code> names the panel.'
         sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/non-modal.example.ts"
       >
         <app-dialog-non-modal-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/dialog/README.md';
 
       <playground-demo
         title="Programmatic (ForDialogManager)"
-        subtitle="Open a component imperatively and await its result. The manager mounts it under the same [forDialog] engine, so [forDialogClose] [closeWith] propagates straight to ForDialogRef.close(value). Here as a non-dismissible alertdialog; class / animateLeave / backdropAnimateLeave style and fade out the manager-created host."
+        subtitle="Open a component imperatively and await its result. The manager mounts it under the same <code>[forDialog]</code> engine, so <code>[forDialogClose]</code> <code>[closeWith]</code> propagates straight to <code>ForDialogRef.close(value)</code>. Here as a non-dismissible <code>alertdialog</code>; <code>class</code> / <code>animateLeave</code> / <code>backdropAnimateLeave</code> style and fade out the manager-created host."
         sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/programmatic.example.ts"
       >
         <app-dialog-programmatic-example />

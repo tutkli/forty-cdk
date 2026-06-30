@@ -15,8 +15,7 @@ import readmeContent from '../../../../../forty-cdk/separator/README.md';
   template: `
     <primitive-page slug="separator" [readme]="readme">
       <playground-demo
-        title="Dividers"
-        subtitle="A static divider between groups of content or controls. Horizontal by default; set orientation='vertical' for an inline divider. Mark it decorative to drop the separator role when it carries no structural meaning."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/separator/examples/default.example.ts"
       >
         <app-separator-default-example />

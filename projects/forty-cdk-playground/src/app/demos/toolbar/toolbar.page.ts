@@ -15,8 +15,7 @@ import readmeContent from '../../../../../forty-cdk/toolbar/README.md';
   template: `
     <primitive-page slug="toolbar" [readme]="readme">
       <playground-demo
-        title="Grouped controls"
-        subtitle="A container for grouped controls that shares one tab stop. Tab in, then move across every button, toggle and link with the arrow keys, Home and End — nested ToggleGroups join the same roving sequence automatically."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/toolbar/examples/default.example.ts"
       >
         <app-toolbar-default-example />

@@ -25,8 +25,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
   template: `
     <primitive-page slug="carousel" [readme]="readme">
       <playground-demo
-        title="Basic"
-        subtitle="Prev / next buttons, an indicator group, and wrap-around looping. The track translates by --for-carousel-offset; the active indicator is marked with aria-current."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/default.example.ts"
       >
         <app-carousel-default-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
       <playground-demo
         title="Multiple slides per view"
-        subtitle="Set slidesPerView > 1 to show several slides at once. Each slide is flex: 0 0 calc(100% / slidesPerView) with a gap; loop wraps once the last visible set is reached."
+        subtitle="Set <code>slidesPerView</code> above <code>1</code> to show several slides at once. Each slide is <code>flex: 0 0 calc(100% / var(--for-carousel-slides-per-view))</code>; <code>loop</code> wraps once the last visible set is reached."
         sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/multiple-slides.example.ts"
       >
         <app-carousel-multiple-slides-example />
@@ -42,7 +41,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
       <playground-demo
         title="Autoplay with pause control"
-        subtitle="The rotation control is the first focusable child (APG / WCAG 2.2.2). Rotation pauses on hover, on keyboard focus inside the carousel, and while the tab is backgrounded; an explicit stop is sticky. Under prefers-reduced-motion it does not auto-start."
+        subtitle="<code>[forCarouselRotationControl]</code> is the first focusable child (APG / WCAG 2.2.2). Rotation pauses on hover, on keyboard focus inside the carousel, and while the tab is backgrounded; an explicit stop is sticky. Under <code>prefers-reduced-motion</code> it does not auto-start."
         sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/autoplay.example.ts"
       >
         <app-carousel-autoplay-example />
@@ -50,7 +49,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
       <playground-demo
         title="Drag / swipe"
-        subtitle="Add the opt-in forCarouselDrag directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via --for-carousel-drag, then snaps to the nearest slide on release."
+        subtitle="Add the opt-in <code>[forCarouselDrag]</code> directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via <code>--for-carousel-drag</code>, then snaps to the nearest slide on release."
         sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/drag.example.ts"
       >
         <app-carousel-drag-example />

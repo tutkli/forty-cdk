@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
   template: `
     <primitive-page slug="tabs" [readme]="readme">
       <playground-demo
-        title="Stand-alone"
-        subtitle="A tablist with roving tabindex. Focus a tab and move with the arrow keys, Home and End. In the default automatic mode, the focused tab is selected in one step."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/default.example.ts"
       >
         <app-tabs-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
 
       <playground-demo
         title="Manual activation"
-        subtitle="activationMode='manual' lets the arrow keys move focus without selecting; the user presses Space or Enter to activate — better when panel content is expensive."
+        subtitle="<code>activationMode='manual'</code> lets the arrow keys move focus without selecting; the user presses <kbd>Space</kbd> or <kbd>Enter</kbd> to activate — better when panel content is expensive."
         sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/manual-activation.example.ts"
       >
         <app-tabs-manual-activation-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
 
       <playground-demo
         title="Vertical"
-        subtitle="orientation='vertical' stacks the tablist beside the panel and switches roving navigation to ArrowUp/ArrowDown. It is reflected as data-orientation for styling."
+        subtitle="<code>orientation='vertical'</code> stacks the tablist beside the panel and switches roving navigation to <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd>. It is reflected as <code>data-orientation</code> for styling."
         sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/vertical.example.ts"
       >
         <app-tabs-vertical-example />

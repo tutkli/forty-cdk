@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/popover/README.md';
   template: `
     <primitive-page slug="popover" [readme]="readme">
       <playground-demo
-        title="Anchored panel & dismiss"
-        subtitle="A non-modal floating panel anchored to its trigger by floating-ui, expressed with the minimal #popover='forPopover' template-reference pattern. The surface portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/popover/examples/default.example.ts"
       >
         <app-popover-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/popover/README.md';
 
       <playground-demo
         title="Anchor & arrow"
-        subtitle="The element that opens the popover and the element it points at can differ: the button is the trigger, but [forPopoverAnchor] on the highlighted phrase is what floating-ui positions against."
+        subtitle="The element that opens the popover and the element it points at can differ: the button is the trigger, but <code>[forPopoverAnchor]</code> on the highlighted phrase is what floating-ui positions against."
         sourcePath="projects/forty-cdk-playground/src/app/demos/popover/examples/anchor.example.ts"
       >
         <app-popover-anchor-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/popover/README.md';
 
       <playground-demo
         title="Positioning & collisions"
-        subtitle="The trigger sits in a tight, scrollable frame. sideOffset nudges the surface off the trigger and collisionPadding reserves a margin from the edge before flip / shift kick in — scroll the frame to see it react."
+        subtitle="The trigger sits in a tight, scrollable frame. <code>sideOffset</code> nudges the surface off the trigger and <code>collisionPadding</code> reserves a margin from the edge before <code>flip</code> / <code>shift</code> kick in — scroll the frame to see it react."
         sourcePath="projects/forty-cdk-playground/src/app/demos/popover/examples/positioning.example.ts"
       >
         <app-popover-positioning-example />

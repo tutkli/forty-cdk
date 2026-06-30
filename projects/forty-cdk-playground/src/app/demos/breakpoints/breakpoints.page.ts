@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
   template: `
     <primitive-page slug="breakpoints" [readme]="readme">
       <playground-demo
-        title="Active breakpoint"
-        subtitle="injectBreakpoints() reads the breakpoint map from the ambient provider (the Tailwind scale by default). Every query method returns a Signal<boolean>; active() is the largest breakpoint whose min-width currently matches, or null below the smallest. Resize the window to watch them update live."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/breakpoints/examples/active.example.ts"
       >
         <app-breakpoints-active-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
 
       <playground-demo
         title="Responsive layout"
-        subtitle="Derive UI from the breakpoint inside computed() and @if instead of repeating media queries in the template. The card grid picks its column count from up('md') / up('lg') / up('xl'), and the sidebar is only mounted at lg and wider."
+        subtitle="Derive UI from the breakpoint inside <code>computed()</code> and <code>@if</code> instead of repeating media queries in the template. The card grid picks its column count from <code>up('md')</code> / <code>up('lg')</code> / <code>up('xl')</code>, and the sidebar is only mounted at <code>lg</code> and wider."
         sourcePath="projects/forty-cdk-playground/src/app/demos/breakpoints/examples/responsive-layout.example.ts"
       >
         <app-breakpoints-responsive-layout-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
 
       <playground-demo
         title="Arbitrary media queries"
-        subtitle="matches(query) is the escape hatch for any media feature the named width helpers don't cover — orientation, pointer, hover, and the prefers-* user settings. Each call returns a live Signal<boolean> from the same cached MediaQueryList layer."
+        subtitle="<code>matches(query)</code> is the escape hatch for any media feature the named width helpers don't cover — orientation, pointer, hover, and the <code>prefers-*</code> user settings. Each call returns a live <code>Signal&amp;lt;boolean&amp;gt;</code> from the same cached <code>MediaQueryList</code> layer."
         sourcePath="projects/forty-cdk-playground/src/app/demos/breakpoints/examples/media-queries.example.ts"
       >
         <app-breakpoints-media-queries-example />

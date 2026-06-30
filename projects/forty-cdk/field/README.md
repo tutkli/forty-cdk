@@ -1,18 +1,20 @@
 # Field
 
-Headless form-field wiring. It renders **nothing** and imposes no layout: it only associates a label, a description, and an error region with a single control (via `id` / `aria-labelledby` / `aria-describedby` / `aria-errormessage`) and reflects the control's validation state as `data-*` styling hooks.
+Headless wiring that ties a label, description and error region to a control, and reflects validation state as data-\* for styling. Any forty-cdk form control auto-associates; native inputs opt in with forFieldControl.
 
-There is no rendered chrome, no appearance variants, and **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs, so wrapping one in a `[forField]` auto-associates it with zero extra markup.
+It renders **nothing** and imposes no layout, and there is **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs (`id` / `aria-labelledby` / `aria-describedby` / `aria-errormessage` association plus `data-*` validation hooks), so wrapping one in a `[forField]` auto-associates it with zero extra markup.
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                                           |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `ForField`            | `[forField]`            | Root. Owns the generated ids and reflects `data-invalid` / `data-disabled` / `data-required` / `data-touched`. |
-| `ForLabel`            | `[forLabel]`            | Accessible label. Inside a field it wires `aria-labelledby` (and `for` on a `<label>`); usable standalone.     |
-| `ForFieldDescription` | `[forFieldDescription]` | Hint / description. Wires `aria-describedby`.                                                                  |
-| `ForFieldError`       | `[forFieldError]`       | Error region (`role="alert"`). Reads the control's Signal Forms errors automatically.                          |
-| `ForFieldControl`     | `[forFieldControl]`     | Opt-in marker for a **native** `<input>` / `<textarea>` (forty-cdk controls don't need it).                    |
+```html
+<div forField>
+  <label forLabel>Email address</label>
+  <input forFieldControl type="email" required />
+  <p forFieldDescription>We'll only use this to send receipts.</p>
+  <!-- rendered only while err.shown() is true -->
+  <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
+</div>
+```
 
 ## How the control connects
 
@@ -77,16 +79,46 @@ Clicking the label activates the control on both host shapes, not just focuses i
 
 ## API
 
-### Data attributes
+### `ForField`
 
-| Piece        | Attribute       | Values           |
-| ------------ | --------------- | ---------------- |
-| `[forField]` | `data-invalid`  | present / absent |
-| `[forField]` | `data-disabled` | present / absent |
-| `[forField]` | `data-required` | present / absent |
-| `[forField]` | `data-touched`  | present / absent |
+Root container (`[forField]`). Owns the generated ids and reflects the registered control's validation state. The reflected state mirrors the registered control: `data-invalid` while it is invalid, `data-required` while it is required, `data-touched` once it has been touched, and `data-disabled` from the control's own disabled state OR a surrounding `[forFieldset]`'s `disabled`.
 
-The reflected state mirrors the registered control: `data-invalid` while it is invalid, `data-required` while it is required, `data-touched` once it has been touched, and `data-disabled` from the control's own disabled state OR a surrounding `[forFieldset]`'s `disabled`. (`[forFieldControl]` additionally reflects `aria-invalid` on its own host, but that is an ARIA hook, not a styling one.)
+| Data attribute  | Values           |
+| --------------- | ---------------- |
+| `data-invalid`  | present / absent |
+| `data-disabled` | present / absent |
+| `data-required` | present / absent |
+| `data-touched`  | present / absent |
+
+### `ForLabel`
+
+Accessible label (`[forLabel]`). Inside a field it adopts the field's `labelId` and wires `aria-labelledby` (and `for` on a native `<label>`); usable standalone.
+
+### `ForFieldDescription`
+
+Hint / description (`[forFieldDescription]`). Adopts the field's `descriptionId` and wires `aria-describedby`.
+
+### `ForFieldError`
+
+Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal Forms errors automatically and exposes them as signals.
+
+| Property    | Type                        | Description                                                      |
+| ----------- | --------------------------- | ---------------------------------------------------------------- |
+| `errors`    | `Signal<ValidationError[]>` | The control's current raw validation errors.                     |
+| `messages`  | `Signal<readonly string[]>` | Human-readable messages derived from `errors`.                   |
+| `hasErrors` | `Signal<boolean>`           | `true` when the control has at least one error.                  |
+| `shown`     | `Signal<boolean>`           | `true` when the control is invalid and has errors. Drives `@if`. |
+
+### `ForFieldControl`
+
+Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one).
+
+| Property   | Type             | Description                                                                                     |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `invalid`  | `input<boolean>` | Marks the control invalid — drives the error region and `aria-invalid`.<br>**Default:** `false` |
+| `required` | `input<boolean>` | Marks the control required — reflected by the field as `data-required`.<br>**Default:** `false` |
+| `disabled` | `input<boolean>` | Marks the control disabled — reflected by the field as `data-disabled`.<br>**Default:** `false` |
+| `touched`  | `input<boolean>` | Marks the control touched — reflected by the field as `data-touched`.<br>**Default:** `false`   |
 
 ## Accessibility
 
@@ -97,7 +129,7 @@ The reflected state mirrors the registered control: `data-invalid` while it is i
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .field[data-invalid] .field-label {

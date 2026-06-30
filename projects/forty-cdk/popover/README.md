@@ -2,22 +2,25 @@
 
 > New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
-Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), positioned against an internal trigger via [`@floating-ui/dom`](https://floating-ui.com/).
+A non-modal floating panel anchored to its trigger by floating-ui, dismissed on Escape, pointer-down outside or focus outside.
 
 A popover is a non-modal dialog: focus moves into the surface on open and returns to the trigger on close, but Tab is allowed to leave (no focus trap). For a modal version, use `[forDialog]`. For a non-interactive label that follows the cursor / focus, use `[forTooltip]`.
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                                                                                                                                                                        |
-| ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForPopover`            | `[forPopover]`            | Root. Owns `open`, side / align positioning, dismissible, returnFocus, initialFocus.                                                                                                                                                                        |
-| `ForPopoverTrigger`     | `[forPopoverTrigger]`     | Toggles `open` on click. Wires `aria-haspopup` / `aria-expanded` / `aria-controls`. Used as the floating-ui anchor unless a `[forPopoverAnchor]` is registered.                                                                                             |
-| `ForPopoverAnchor`      | `[forPopoverAnchor]`      | Optional. When present, the popover is positioned against this element instead of the trigger — useful when "what opens it" and "where it appears" differ (cursor follower, contextual help anchored to a row, popover anchored to a text-selection range). |
-| `ForPopoverContent`     | `[forPopoverContent]`     | The popover surface. `role="dialog"`, portaled to body, positioned, dismissable.                                                                                                                                                                            |
-| `ForPopoverTitle`       | `[forPopoverTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                                                                                                                                                                      |
-| `ForPopoverDescription` | `[forPopoverDescription]` | Same, for `aria-describedby`.                                                                                                                                                                                                                               |
-| `ForPopoverClose`       | `[forPopoverClose]`       | Button that sets `open` to `false`. Bypasses `dismissible`.                                                                                                                                                                                                 |
-| `ForPopoverArrow`       | `[forPopoverArrow]`       | Optional decorative arrow positioned by floating-ui.                                                                                                                                                                                                        |
+```html
+<div forPopover #popover="forPopover" side="bottom" align="center">
+  <button forPopoverTrigger>Settings</button>
+
+  <!-- rendered only when popover.open() is true -->
+  <div forPopoverContent>
+    <h3 forPopoverTitle>Display</h3>
+    <p forPopoverDescription>Adjust theme and density.</p>
+    <button forPopoverClose>Done</button>
+    <span forPopoverArrow></span>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -122,6 +125,12 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `autoFocusOnClose`   | `OutputEmitterRef<VetoableEvent>`                                   | Output. Fires just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.<br>**Default:** —           |
 | `openChange`         | `OutputEmitterRef<boolean>`                                         | Output. Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`.<br>**Default:** —             |
 
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-disabled`       | present \| absent  |
+| `data-reduced-motion` | present \| absent  |
+
 The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
 `(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
@@ -153,18 +162,23 @@ The popover opens / closes alongside the input but never steals focus from it �
 | ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard.<br>**Default:** `false` |
 
-### Data attributes
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
-| Piece                 | Attribute             | Values             |
-| --------------------- | --------------------- | ------------------ |
-| `[forPopover]`        | `data-state`          | `open` \| `closed` |
-| `[forPopover]`        | `data-disabled`       | present \| absent  |
-| `[forPopover]`        | `data-reduced-motion` | present \| absent  |
-| `[forPopoverTrigger]` | `data-state`          | `open` \| `closed` |
-| `[forPopoverTrigger]` | `data-disabled`       | present \| absent  |
-| `[forPopoverContent]` | `data-state`          | `open` \| `closed` |
-| `[forPopoverContent]` | `data-reduced-motion` | present \| absent  |
-| `[forPopoverArrow]`   | `data-popover-arrow`  | present            |
+### `ForPopoverContent`
+
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-reduced-motion` | present \| absent  |
+
+### `ForPopoverArrow`
+
+| Data attribute       | Values  |
+| -------------------- | ------- |
+| `data-popover-arrow` | present |
 
 ## Scoped defaults
 
@@ -203,6 +217,8 @@ class Toolbar {}
 
 ## Accessibility
 
+Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+
 - Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`.
 - `[forPopoverDescription]` is optional — use it for explanatory copy beyond the title.
 - `aria-haspopup="dialog"` advertises the popover as a dialog (matches `role="dialog"` on the content). For menus or listboxes, build a different primitive.
@@ -210,7 +226,7 @@ class Toolbar {}
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

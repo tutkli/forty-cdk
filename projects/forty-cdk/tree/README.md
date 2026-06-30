@@ -1,20 +1,42 @@
 # Tree
 
-Headless implementation of the [WAI-ARIA Tree View pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/) — a nested `role="tree"` → `treeitem` → `group` → `treeitem` widget for hierarchical data (file explorers, nav trees, category pickers). Roving-tabindex focus management (APG Approach A — DOM focus rides the `treeitem`), single / multi select, full keyboard interaction, typeahead, RTL arrow mirroring, and `aria-level` / `aria-setsize` / `aria-posinset` wiring.
+A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, single or multi selection, and typeahead.
+
+A nested `role="tree"` → `treeitem` → `group` → `treeitem` widget (file explorers, nav trees, category pickers). Roving-tabindex focus management (DOM focus rides the `treeitem`), full keyboard interaction, RTL arrow mirroring, and `aria-level` / `aria-setsize` / `aria-posinset` wiring.
 
 Selection and expansion are two independent models: `value` (selected nodes) and `expanded` (open nodes). Expansion is always multi; only `value` honours `multiple`.
 
 ## Anatomy
 
-| Class                          | Selector                         | Role                                                                                                                                                      |
-| ------------------------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForTree`                      | `[forTree]`                      | Root container (`role="tree"`). Owns selection + expansion, navigation, and the shared context.                                                           |
-| `ForTreeItem`                  | `[forTreeItem]`                  | One node (`role="treeitem"`). Carries ARIA state, the roving tab stop, and the keyboard interaction.                                                      |
-| `ForTreeItemLabel`             | `[forTreeItemLabel]`             | Pointer target inside an item (click selects + focuses) and the default typeahead text source.                                                            |
-| `ForTreeItemToggle`            | `[forTreeItemToggle]`            | Optional expand / collapse control. Its presence marks the item a **parent** (emits `aria-expanded`).                                                     |
-| `ForTreeGroup`                 | `[forTreeGroup]`                 | Nested container (`role="group"`) holding a parent's child items. Rendered behind `@if`.                                                                  |
-| `ForTreeItemCheckbox`          | `[forTreeItemCheckbox]`          | Visible checkbox surface inside `[forTreeItemLabel]`, used in `selectionMode="checkbox"`. Decorative (`aria-hidden`); the `treeitem` owns `aria-checked`. |
-| `ForTreeItemCheckboxIndicator` | `[forTreeItemCheckboxIndicator]` | Optional glyph slot inside `[forTreeItemCheckbox]`. Self-hides while the node is unchecked.                                                               |
+```html
+<ul forTree [(value)]="selected" [(expanded)]="expanded" aria-label="Files">
+  <li forTreeItem value="src">
+    <div forTreeItemLabel>
+      <span forTreeItemToggle>▸</span>
+      src
+    </div>
+
+    <!-- rendered only while the node is expanded -->
+    <ul forTreeGroup>
+      <li forTreeItem value="main.ts">
+        <div forTreeItemLabel>main.ts</div>
+      </li>
+    </ul>
+  </li>
+</ul>
+```
+
+In `selectionMode="checkbox"`, place a checkbox surface inside the label:
+
+```html
+<div forTreeItemLabel>
+  <span forTreeItemToggle>▸</span>
+  <span forTreeItemCheckbox>
+    <span forTreeItemCheckboxIndicator>✓</span>
+  </span>
+  src
+</div>
+```
 
 ## Examples
 
@@ -291,6 +313,11 @@ ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the pat
 | `cascade`               | `input<boolean>`                              | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`.<br>**Default:** `false` |
 | `descendantsOf`         | `input<(value: string) => readonly string[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.<br>**Default:** —                                                                 |
 
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `vertical` \| `horizontal` |
+| `data-disabled`    | present \| absent          |
+
 ### `ForTreeItem`
 
 | Property    | Type                     | Description                                                                                                |
@@ -299,22 +326,33 @@ ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the pat
 | `disabled`  | `input<boolean>`         | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
 | `textValue` | `input<string>`          | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
 
-### Data attributes
-
-| Piece                            | Attribute          | Values                                                  |
-| -------------------------------- | ------------------ | ------------------------------------------------------- |
-| `[forTree]`                      | `data-orientation` | `vertical` \| `horizontal`                              |
-| `[forTree]`                      | `data-disabled`    | present \| absent                                       |
-| `[forTreeItem]`                  | `data-state`       | `open` \| `closed` (parent items only)                  |
-| `[forTreeItem]`                  | `data-selected`    | present \| absent                                       |
-| `[forTreeItem]`                  | `data-highlighted` | present \| absent                                       |
-| `[forTreeItem]`                  | `data-disabled`    | present \| absent                                       |
-| `[forTreeItem]`                  | `data-checked`     | `"true"` \| `"false"` \| `"mixed"` (checkbox mode only) |
-| `[forTreeItemToggle]`            | `data-state`       | `open` \| `closed`                                      |
-| `[forTreeItemCheckbox]`          | `data-state`       | `checked` \| `unchecked` \| `indeterminate`             |
-| `[forTreeItemCheckboxIndicator]` | `data-state`       | `checked` \| `unchecked` \| `indeterminate`             |
+| Data attribute     | Values                                                  |
+| ------------------ | ------------------------------------------------------- |
+| `data-state`       | `open` \| `closed` (parent items only)                  |
+| `data-selected`    | present \| absent                                       |
+| `data-highlighted` | present \| absent                                       |
+| `data-disabled`    | present \| absent                                       |
+| `data-checked`     | `"true"` \| `"false"` \| `"mixed"` (checkbox mode only) |
 
 A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemToggle]` is registered inside it); leaves carry neither `data-state` nor `aria-expanded`. Expansion (`data-state`) and selection (`data-selected`) are independent hooks because a node can be both expandable and selected at once.
+
+### `ForTreeItemToggle`
+
+| Data attribute | Values             |
+| -------------- | ------------------ |
+| `data-state`   | `open` \| `closed` |
+
+### `ForTreeItemCheckbox`
+
+| Data attribute | Values                                      |
+| -------------- | ------------------------------------------- |
+| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
+
+### `ForTreeItemCheckboxIndicator`
+
+| Data attribute | Values                                      |
+| -------------- | ------------------------------------------- |
+| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
 
 ## Keyboard
 
@@ -710,6 +748,8 @@ provideForTreeDefaults({
 
 ## Accessibility
 
+Implements the [WAI-ARIA Tree View pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/) (APG Approach A — DOM focus rides the `treeitem`).
+
 - **Label the tree** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible heading.
 - **`data-state="open" | "closed"`** is reflected on parent nodes only (and on the toggle); leaves carry neither, matching `aria-expanded`.
 - **`data-selected`** (present / absent) reflects selection on every node — a node is simultaneously expandable and selectable, so expansion (`data-state`) and selection (`data-selected`) get separate hooks.
@@ -719,7 +759,7 @@ provideForTreeDefaults({
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .tree-toggle {

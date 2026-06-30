@@ -1,15 +1,21 @@
 # Fieldset
 
-Headless grouping wiring — the styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It gives a set of related fields (an address block, a preferences group) a **shared accessible name** and an optional shared `disabled` state. It renders nothing and imposes no layout.
+Headless grouping that gives a set of related fields a shared accessible name — a native <fieldset> / legend, or role=group + aria-labelledby on any element — plus an optional shared disabled state that reaches custom-role controls.
 
-Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
+The styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It renders nothing and imposes no layout. Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                                                       |
-| ------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `ForFieldset`       | `[forFieldset]`       | Group container. Emits `role="group"` + `aria-labelledby` on a non-`<fieldset>`; reflects `data-disabled`. |
-| `ForFieldsetLegend` | `[forFieldsetLegend]` | Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves. Usable standalone (inert).    |
+```html
+<fieldset forFieldset [disabled]="locked()">
+  <legend forFieldsetLegend>Shipping address</legend>
+
+  <div forField>
+    <label forLabel>Street</label>
+    <input forFieldControl />
+  </div>
+</fieldset>
+```
 
 ## How grouping connects
 
@@ -69,13 +75,19 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 
 ## API
 
-### Data attributes
+### `ForFieldset`
 
-| Piece           | Attribute       | Values           |
-| --------------- | --------------- | ---------------- |
-| `[forFieldset]` | `data-disabled` | present / absent |
+| Property   | Type             | Description                                                                                                                                                                                                                      |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables the group. Emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` elsewhere) and propagates to every descendant control via context, reaching custom-role controls.<br>**Default:** `false` |
 
-`[forFieldsetLegend]` reflects no data-\* attributes (it only carries the generated `id` that the group's `aria-labelledby` resolves to).
+| Data attribute  | Values           |
+| --------------- | ---------------- |
+| `data-disabled` | present / absent |
+
+### `ForFieldsetLegend`
+
+Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes — it carries only the generated `id` that the group's `aria-labelledby` resolves to.
 
 ## Accessibility
 
@@ -85,7 +97,7 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .fieldset[data-disabled] {

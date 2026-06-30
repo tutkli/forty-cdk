@@ -1,17 +1,21 @@
 # Number Input
 
-Headless numeric spinbutton implementing the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) and Angular's `FormValueControl<number | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup.
+A numeric spinbutton with keyboard stepping, optional +/− buttons, min / max / step clamping and Intl number formatting for the displayed text and aria-valuetext.
 
-It owns parsing, clamping to `[min, max]`, the full Spinbutton keyboard map, and optional `Intl.NumberFormat`-based display formatting. The directive sits on a `<input type="text">` (not `type="number"`, whose native UI is unstylable and locale-quirky); the focusable spinbutton input itself is the `FormValueControl`, mirroring `<button forSwitch>`.
+Headless and implementing Angular's `FormValueControl<number | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup. It owns parsing, clamping to `[min, max]`, the full Spinbutton keyboard map, and optional `Intl.NumberFormat`-based display formatting. The directive sits on a `<input type="text">` (not `type="number"`, whose native UI is unstylable and locale-quirky); the focusable spinbutton input itself is the `FormValueControl`, mirroring `<button forSwitch>`.
 
 ## Anatomy
 
-| Class                     | Selector                    | Element     | Role                                                                 |
-| ------------------------- | --------------------------- | ----------- | -------------------------------------------------------------------- |
-| `ForNumberInput`          | `[forNumberInput]`          | `<input>`   | The spinbutton. Owns value, parsing, clamping, keyboard.             |
-| `ForNumberInputGroup`     | `[forNumberInputGroup]`     | any wrapper | Coordination wrapper — only needed when you use the stepper buttons. |
-| `ForNumberInputIncrement` | `[forNumberInputIncrement]` | `<button>`  | "Step up" affordance (`tabindex="-1"`).                              |
-| `ForNumberInputDecrement` | `[forNumberInputDecrement]` | `<button>`  | "Step down" affordance (`tabindex="-1"`).                            |
+```html
+<div forNumberInputGroup>
+  <button forNumberInputDecrement ariaLabel="Decrease">−</button>
+  <input forNumberInput [(value)]="qty" [min]="0" [max]="10" [step]="1" />
+  <button forNumberInputIncrement ariaLabel="Increase">+</button>
+</div>
+
+<!-- Keyboard-only — no buttons, no group: -->
+<input forNumberInput [(value)]="qty" [min]="0" [max]="100" />
+```
 
 > **Why the group?** A `<input>` is a void element, so the stepper buttons can't be its DOM descendants and therefore can't inject its context directly. `[forNumberInputGroup]` provides that context and forwards it to the `[forNumberInput]` registered beneath it. A standalone spinbutton (keyboard / `[(value)]` only) needs no group.
 
@@ -114,7 +118,15 @@ export class DemoOrder {
 | `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.<br>**Default:** —                   |
 | `touched`                                                              | `model<boolean>`                          | Set to `true` on blur.<br>**Default:** —                                                                              |
 
-The host carries `data-empty` (while the value is `null`), `data-disabled`, and `data-readonly`, plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid` from the shared form-control reflection.
+| Data attribute  | Values                                       |
+| --------------- | -------------------------------------------- |
+| `data-empty`    | present (while `value()` is `null`) / absent |
+| `data-disabled` | present / absent                             |
+| `data-readonly` | present / absent                             |
+| `data-touched`  | present / absent                             |
+| `data-dirty`    | present / absent                             |
+| `data-pending`  | present / absent                             |
+| `data-invalid`  | present / absent                             |
 
 ### Stepper buttons
 
@@ -122,19 +134,17 @@ Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform 
 
 > Set the accessible name with the `ariaLabel` **input** (`ariaLabel="Increase"`), not the native `aria-label` attribute — like every forty-cdk primitive, the directive host-binds `aria-label` from that input and clears it when empty.
 
-### Data attributes
+`[forNumberInputIncrement]`:
 
-| Piece                       | Attribute       | Values                                               |
-| --------------------------- | --------------- | ---------------------------------------------------- |
-| `[forNumberInput]`          | `data-empty`    | present (while `value()` is `null`) / absent         |
-| `[forNumberInput]`          | `data-disabled` | present / absent                                     |
-| `[forNumberInput]`          | `data-readonly` | present / absent                                     |
-| `[forNumberInput]`          | `data-touched`  | present / absent                                     |
-| `[forNumberInput]`          | `data-dirty`    | present / absent                                     |
-| `[forNumberInput]`          | `data-pending`  | present / absent                                     |
-| `[forNumberInput]`          | `data-invalid`  | present / absent                                     |
-| `[forNumberInputIncrement]` | `data-disabled` | present (at `max`, or disabled / read-only) / absent |
-| `[forNumberInputDecrement]` | `data-disabled` | present (at `min`, or disabled / read-only) / absent |
+| Data attribute  | Values                                               |
+| --------------- | ---------------------------------------------------- |
+| `data-disabled` | present (at `max`, or disabled / read-only) / absent |
+
+`[forNumberInputDecrement]`:
+
+| Data attribute  | Values                                               |
+| --------------- | ---------------------------------------------------- |
+| `data-disabled` | present (at `min`, or disabled / read-only) / absent |
 
 `[forNumberInputGroup]` carries no styling attributes — it is a behavior-only coordination wrapper.
 
@@ -154,6 +164,8 @@ Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
 
 ## Accessibility
 
+Implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/).
+
 - **`role="spinbutton"` on a text input.** `aria-valuenow` / `aria-valuemin` / `aria-valuemax` reflect the value and bounds; `aria-valuetext` is emitted only when `formatOptions` is set (so the formatted text — "$1,234.50" — is announced instead of the bare number). `inputmode` is `numeric`, or `decimal` when fractional values are possible.
 - **Clamp on commit, validate on input.** Keystrokes update the parsed value live so you can type transient out-of-range text without fighting the caret; clamping to `[min, max]` happens on blur / Enter / step actions.
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
@@ -162,7 +174,7 @@ Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .number-input-increment[data-disabled],

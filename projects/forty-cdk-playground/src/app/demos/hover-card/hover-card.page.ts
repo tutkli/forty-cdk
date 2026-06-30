@@ -15,8 +15,7 @@ import readmeContent from '../../../../../forty-cdk/hover-card/README.md';
   template: `
     <primitive-page slug="hover-card" [readme]="readme">
       <playground-demo
-        title="Interactive preview card"
-        subtitle="A rich preview that opens when the pointer rests on the trigger and stays open while the pointer is inside the card, so its content can be interactive. Keyboard focus opens it too and Escape closes it. The card portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/hover-card/examples/default.example.ts"
       >
         <app-hover-card-default-example />

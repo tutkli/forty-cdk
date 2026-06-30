@@ -1,17 +1,26 @@
 # Listbox
 
-Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) with single / multi select, roving tabindex, typeahead, and `FormValueControl<readonly T[]>` integration.
+A scrollable list of selectable options with roving-tabindex navigation, single or multi selection.
 
-`[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
+It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## Anatomy
 
-| Class                       | Selector                      | Role                                                                                                                                                                          |
-| --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForListbox`                | `[forListbox]`                | Container. Owns selected values, mode, orientation. Provides the shared context.                                                                                              |
-| `ForListboxOption`          | `[forListboxOption]`          | One option. Apply on a `<button type="button">`.                                                                                                                              |
-| `ForListboxOptionIndicator` | `[forListboxOptionIndicator]` | Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)).                           |
-| `ForListboxReorder`         | `[forListboxReorder]`         | Optional. Apply on the same element as `[forListbox]` to make the options pointer- and keyboard-sortable while keeping selection + typeahead (see [Reordering](#reordering)). |
+```html
+<ul forListbox [(value)]="picked" aria-label="Fruit">
+  <li>
+    <button type="button" forListboxOption value="apple">
+      Apple
+      <span forListboxOptionIndicator>✓</span>
+    </button>
+  </li>
+  <li>
+    <button type="button" forListboxOption value="banana">Banana</button>
+  </li>
+</ul>
+```
+
+Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for advisory grouping, or add `[forListboxReorder]` on the same element as `[forListbox]` to make the options pointer- and keyboard-sortable (see [Reordering](#reordering)).
 
 ## Examples
 
@@ -215,12 +224,12 @@ Drag an option past a small threshold to reorder; a short press without movement
 
 > **Scope:** `[forListboxReorder]` targets the standard roving-tabindex listbox. A virtualized listbox (`[totalCount]` set) is left untouched, since reordering a windowed subset is ill-defined.
 
-### Data attributes
+While a reorder is in flight, `data-dragging` is reflected on two pieces:
 
-| Piece                 | Attribute       | Values            | Notes                                                               |
-| --------------------- | --------------- | ----------------- | ------------------------------------------------------------------- |
-| `[forListboxReorder]` | `data-dragging` | present \| absent | On the container while any drag (pointer or keyboard) is in flight. |
-| `[forListboxOption]`  | `data-dragging` | present \| absent | On the lifted option for the duration of the drag.                  |
+| Data attribute            | Values            | Notes                                                          |
+| ------------------------- | ----------------- | -------------------------------------------------------------- |
+| `data-dragging` (reorder) | present \| absent | On `[forListboxReorder]` while any drag is in flight.          |
+| `data-dragging` (option)  | present \| absent | On the lifted `[forListboxOption]` for the duration of a drag. |
 
 ### Localizing reorder announcements
 
@@ -374,6 +383,11 @@ export class DemoVirtualizedListbox {
 | `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                                                                 |
 | `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox.<br>**Default:** —                                                                                                                                                    |
 
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
+
 ### `ForListboxOption`
 
 | Property   | Type                | Description                                                                                                              |
@@ -381,16 +395,19 @@ export class DemoVirtualizedListbox {
 | `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `isItemEqualToValue`.<br>**Default:** — |
 | `disabled` | `input<boolean>`    | Disables this option independently of the group.<br>**Default:** —                                                       |
 
-### Data attributes
+| Data attribute     | Values                   | Notes                                                     |
+| ------------------ | ------------------------ | --------------------------------------------------------- |
+| `data-state`       | `checked` \| `unchecked` |                                                           |
+| `data-highlighted` | present \| absent        | Works in both roving-tabindex and activedescendant paths. |
+| `data-disabled`    | present \| absent        |                                                           |
 
-| Piece                         | Attribute          | Values                     | Notes                                                     |
-| ----------------------------- | ------------------ | -------------------------- | --------------------------------------------------------- |
-| `[forListbox]`                | `data-orientation` | `horizontal` \| `vertical` |                                                           |
-| `[forListbox]`                | `data-disabled`    | present \| absent          |                                                           |
-| `[forListboxOption]`          | `data-state`       | `checked` \| `unchecked`   |                                                           |
-| `[forListboxOption]`          | `data-highlighted` | present \| absent          | Works in both roving-tabindex and activedescendant paths. |
-| `[forListboxOption]`          | `data-disabled`    | present \| absent          |                                                           |
-| `[forListboxOptionIndicator]` | `data-state`       | `checked` \| `unchecked`   |                                                           |
+### `ForListboxOptionIndicator`
+
+Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)).
+
+| Data attribute | Values                   |
+| -------------- | ------------------------ |
+| `data-state`   | `checked` \| `unchecked` |
 
 ## Keyboard
 
@@ -424,6 +441,8 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 
 ## Accessibility
 
+Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
+
 - **Label the listbox** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible label element.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
@@ -433,7 +452,7 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .listbox-option[data-highlighted] {

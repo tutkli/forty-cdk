@@ -1,24 +1,30 @@
 # ForCarousel
 
-Headless, styleless carousel primitive implementing the
-[WAI-ARIA APG Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
-It ships slide tracking, keyboard navigation, focus management, and ARIA; you
-supply the markup and CSS.
+A slideshow of content panels with previous / next controls, an indicator group, optional looping and multi-slide views, and an accessible autoplay mode with a pause control.
+
+Headless and styleless: it ships slide tracking, keyboard navigation, focus management, and ARIA; you supply the markup and CSS.
 
 ## Anatomy
 
-| Class                        | Selector                       | Role                                                                   |
-| ---------------------------- | ------------------------------ | ---------------------------------------------------------------------- |
-| `ForCarousel`                | `[forCarousel]`                | Root. Owns `activeIndex`, orientation, loop, autoplay.                 |
-| `ForCarouselViewport`        | `[forCarouselViewport]`        | Clipping window. Carries `aria-live`.                                  |
-| `ForCarouselTrack`           | `[forCarouselTrack]`           | Scrolling container. Receives the CSS offset custom property.          |
-| `ForCarouselSlide`           | `[forCarouselSlide]`           | One slide. `role="group"`, `aria-roledescription="slide"`.             |
-| `ForCarouselPrevious`        | `[forCarouselPrevious]`        | Previous-slide button.                                                 |
-| `ForCarouselNext`            | `[forCarouselNext]`            | Next-slide button.                                                     |
-| `ForCarouselIndicators`      | `[forCarouselIndicators]`      | Indicator group. Owns roving tabindex across indicators.               |
-| `ForCarouselIndicator`       | `[forCarouselIndicator]`       | One indicator button. Maps 1:1 to a slide by DOM index.                |
-| `ForCarouselRotationControl` | `[forCarouselRotationControl]` | Play/pause button. Required when `autoplay` is enabled.                |
-| `ForCarouselDrag`            | `[forCarouselDrag]`            | Opt-in pointer drag / touch swipe. Applied to `[forCarouselViewport]`. |
+```html
+<div forCarousel [(activeIndex)]="index" loop ariaLabel="Featured products">
+  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+
+  <div forCarouselViewport>
+    <div forCarouselTrack>
+      <!-- one [forCarouselSlide] per item -->
+      <div forCarouselSlide>Slide content</div>
+    </div>
+  </div>
+
+  <button forCarouselNext aria-label="Next slide">›</button>
+
+  <div forCarouselIndicators ariaLabel="Choose slide to display">
+    <!-- one [forCarouselIndicator] per slide, same order -->
+    <button forCarouselIndicator></button>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -226,6 +232,15 @@ All inputs are on `[forCarousel]` unless noted.
 | `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | Accessible name while rotation is stopped.<br>**Default:** `'Start automatic slide show'`                                                                  |
 | `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | Accessible name while rotation is playing.<br>**Default:** `'Stop automatic slide show'`                                                                   |
 
+Reflected on the `[forCarousel]` host:
+
+| Data attribute     | Values                            |
+| ------------------ | --------------------------------- |
+| `data-orientation` | `horizontal` \| `vertical`        |
+| `data-align`       | `start` \| `center` \| `end`      |
+| `data-autoplay`    | present when `autoplay` is `true` |
+| `data-rotating`    | present while actively rotating   |
+
 ### Contain scroll
 
 With `slidesPerView > 1`, `align="start"`, and no `loop`, advancing to the last
@@ -249,6 +264,12 @@ when `loop` is enabled (the entire range is valid when wrapping) or when
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------- |
 | `disabled` | `boolean` | Disable pointer drag without removing the directive. Removes `touch-action`.<br>**Default:** `false` |
 
+Reflected on the `[forCarouselViewport]` host this directive is applied to:
+
+| Data attribute  | Values                                |
+| --------------- | ------------------------------------- |
+| `data-dragging` | present while a drag gesture is armed |
+
 ## Keyboard
 
 Keyboard navigation lives on the indicator group. Only the current
@@ -264,6 +285,8 @@ automatically.
 | `Enter` / `Space`          | Activate the focused indicator (via native button).                   |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
 
 - The root carries `role="group"` and `aria-roledescription="carousel"`. The `ariaLabel` input
   should describe the carousel's purpose without using the word "carousel" (APG guidance).

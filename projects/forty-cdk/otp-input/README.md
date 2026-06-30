@@ -1,8 +1,8 @@
 # OTP Input
 
-Headless OTP / PIN input on the **single-input** model: one real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP — this approach gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection.
+A one-time-code / PIN field on the single-input model: typed and pasted characters fill styled slots, with masking, character filtering and a complete event.
 
-It implements Angular's `FormValueControl<string>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup.
+Headless and styleless. One real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP — this approach gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection. It implements Angular's `FormValueControl<string>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup.
 
 ## How it works
 
@@ -12,10 +12,23 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ## Anatomy
 
-| Class             | Selector            | Element | Role                                                                                 |
-| ----------------- | ------------------- | ------- | ------------------------------------------------------------------------------------ |
-| `ForOtpInput`     | `[forOtpInput]`     | wrapper | `role="group"`. Owns the value, injects the real input, parsing / filtering / paste. |
-| `ForOtpInputSlot` | `[forOtpInputSlot]` | any     | One styling surface per index. Exposes `char()` / `active()` / `hasFakeCaret()`.     |
+```html
+<div
+  forOtpInput
+  [(value)]="code"
+  [length]="6"
+  type="numeric"
+  ariaLabel="Verification code"
+  #otp="forOtpInput"
+>
+  <!-- one [forOtpInputSlot] per index in otp.slots() -->
+  <div forOtpInputSlot [index]="i" #s="forOtpInputSlot">
+    {{ s.char() }}
+    <!-- rendered only when s.hasFakeCaret() is true -->
+    <span class="caret"></span>
+  </div>
+</div>
+```
 
 ## Exported pattern constants
 
@@ -146,6 +159,13 @@ export class DemoOtpField {
 | `valueComplete`                                                        | `output<string>`                                     | Output. Fires when every slot is filled, by typing or paste.<br>**Default:** —                                                                        |
 | `valueInvalid`                                                         | `output<{ value: string }>`                          | Output. Fires when an entered / pasted character is rejected by `type` / `allowedPattern`.<br>**Default:** —                                          |
 
+| Data attribute  | Values           |
+| --------------- | ---------------- |
+| `data-complete` | present / absent |
+| `data-disabled` | present / absent |
+
+The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
+
 `ForOtpInput` also exposes a `slots()` signal (`readonly number[]`) for the `@for`, a `complete()` signal, and a `focus()` method.
 
 > **Why `allowedPattern`, not `pattern`?** `FormUiControl.pattern` is reserved by Signal Forms for an array of validation patterns the `[formField]` directive binds in. Reusing the name would break the `FormValueControl` contract and let the field overwrite your character filter, so the custom char-class RegExp is `allowedPattern`.
@@ -159,18 +179,10 @@ export class DemoOtpField {
 | `active()`       | `Signal<boolean>`        | Whether this slot is the active caret position.<br>**Default:** —                  |
 | `hasFakeCaret()` | `Signal<boolean>`        | Whether to render a fake caret here (active + empty + focused).<br>**Default:** —  |
 
-The slot host reflects boolean `data-active` (current caret slot) and `data-empty` (no character) for CSS.
-
-### Data attributes
-
-| Piece               | Attribute       | Values           |
-| ------------------- | --------------- | ---------------- |
-| `[forOtpInput]`     | `data-complete` | present / absent |
-| `[forOtpInput]`     | `data-disabled` | present / absent |
-| `[forOtpInputSlot]` | `data-active`   | present / absent |
-| `[forOtpInputSlot]` | `data-empty`    | present / absent |
-
-The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
+| Data attribute | Values                                |
+| -------------- | ------------------------------------- |
+| `data-active`  | present / absent (current caret slot) |
+| `data-empty`   | present / absent (no character)       |
 
 ## Accessibility
 
@@ -183,7 +195,7 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .otp-input-slot[data-active] {

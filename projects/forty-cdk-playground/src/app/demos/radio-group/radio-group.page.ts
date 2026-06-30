@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
   template: `
     <primitive-page slug="radio-group" [readme]="readme">
       <playground-demo
-        title="Stand-alone"
-        subtitle="Arrow keys move focus and change the value at once, wrapping at the ends. Home / End jump to the first / last enabled radio; disabled radios are skipped."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/default.example.ts"
       >
         <app-radio-group-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
 
       <playground-demo
         title="Horizontal orientation"
-        subtitle="orientation='horizontal' reflects data-orientation and switches arrow navigation to ArrowLeft / ArrowRight (swapped in RTL)."
+        subtitle="<code>orientation='horizontal'</code> reflects <code>data-orientation</code> and switches arrow navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> (swapped in RTL)."
         sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/horizontal.example.ts"
       >
         <app-radio-group-horizontal-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="forRadioGroup implements FormValueControl<string>, so [formField] binds the selected value into the form and surfaces validity back. This field is required: tab through without choosing and the group reflects data-invalid / data-touched once focus leaves it."
+        subtitle="<code>forRadioGroup</code> implements <code>FormValueControl&lt;string&gt;</code>, so <code>[formField]</code> binds the selected value into the form and surfaces validity back. This field is required: <kbd>Tab</kbd> through without choosing and the group reflects <code>data-invalid</code> / <code>data-touched</code> once focus leaves it."
         sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/form-field.example.ts"
       >
         <app-radio-group-form-field-example />

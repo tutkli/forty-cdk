@@ -17,8 +17,7 @@ import readmeContent from '../../../../../forty-cdk/toast/README.md';
   template: `
     <primitive-page slug="toast" [readme]="readme">
       <playground-demo
-        title="Variants"
-        subtitle="The programmatic path: inject ForToastManager and call show({ title, … }) from anywhere, while a single <for-toast-viewport> renders the queue and owns the F6 focus hotkey. Each variant maps to role status/alert + aria-live so screen readers announce it without stealing focus, and reflects data-variant so the [forToast] attribute selectors can paint a per-variant accent."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/toast/examples/default.example.ts"
       >
         <app-toast-default-example />
@@ -26,7 +25,7 @@ import readmeContent from '../../../../../forty-cdk/toast/README.md';
 
       <playground-demo
         title="Action & live update"
-        subtitle="An action toast carries a [forToastAction] button that runs your handler and closes with reason 'action'. The save flow shows ref.update() mutating a toast in place — 'Saving…' becomes 'Saved' with a new variant and duration, re-announced automatically when the text changes."
+        subtitle="An action toast carries a <code>[forToastAction]</code> button that runs your handler and closes with reason <code>'action'</code>. The save flow shows <code>ref.update()</code> mutating a toast in place — 'Saving…' becomes 'Saved' with a new <code>variant</code> and <code>duration</code>, re-announced automatically when the text changes."
         sourcePath="projects/forty-cdk-playground/src/app/demos/toast/examples/action.example.ts"
       >
         <app-toast-action-example />
@@ -34,7 +33,7 @@ import readmeContent from '../../../../../forty-cdk/toast/README.md';
 
       <playground-demo
         title="Swipe to dismiss"
-        subtitle="Opt in with swipeDirection on the viewport. Drag a toast with mouse or touch: the directive clamps pointer travel to the active half-line and exposes it as the --for-toast-swipe-movement-x/y variables, which the CSS turns into a live translate3d. Release past swipeThreshold to dismiss with reason 'swipe'; release short and data-swipe='cancel' springs it back."
+        subtitle="Opt in with <code>swipeDirection</code> on the viewport. Drag a toast with mouse or touch: the directive clamps pointer travel to the active half-line and exposes it as the <code>--for-toast-swipe-movement-x/y</code> variables, which the CSS turns into a live <code>translate3d</code>. Release past <code>swipeThreshold</code> to dismiss with reason <code>'swipe'</code>; release short and <code>data-swipe='cancel'</code> springs it back."
         sourcePath="projects/forty-cdk-playground/src/app/demos/toast/examples/swipe-to-dismiss.example.ts"
       >
         <app-toast-swipe-example />

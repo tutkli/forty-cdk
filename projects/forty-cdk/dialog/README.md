@@ -1,8 +1,8 @@
 # Dialog
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+A modal window overlaid on the page, with a focus trap, scroll lock and Escape / dismiss handling. Also openable imperatively through ForDialogManager.
 
-Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) with focus trap, body scroll lock, Escape-to-close, portal rendering, and a programmatic `ForDialogManager.open()` API.
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Two flows, one engine
 
@@ -176,14 +176,18 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 
 ## Anatomy
 
-| Class                  | Selector                 | Role                                                                                                                                                                      |
-| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForDialog`            | `[forDialog]`            | The dialog box. Owns `dismissible`, `modal`, `alert`, focus, scroll lock.                                                                                                 |
-| `ForDialogTrigger`     | `[forDialogTrigger]`     | Optional. Button that toggles `[(open)]` and reflects `aria-haspopup`/`aria-expanded`/`aria-controls`/`data-state`.                                                       |
-| `ForDialogTitle`       | `[forDialogTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                                                                                    |
-| `ForDialogDescription` | `[forDialogDescription]` | Same, for `aria-describedby`.                                                                                                                                             |
-| `ForDialogClose`       | `[forDialogClose]`       | Button that requests close with reason `'closeButton'`. Accepts `[closeWith]` for programmatic mode.                                                                      |
-| `ForDialogBackdrop`    | `[forDialogBackdrop]`    | Optional overlay portaled alongside the surface (to `container`, or `document.body` by default). Direct click requests close with reason `'backdrop'` when `dismissible`. |
+```html
+<button forDialogTrigger [(open)]="open" controls="my-dialog">Open</button>
+
+<!-- rendered only while open() is true, so animate.enter / animate.leave fire on real mount -->
+<div forDialog id="my-dialog" (dismiss)="open.set(false)" animate.leave="fade-out">
+  <div forDialogBackdrop class="my-backdrop"></div>
+  <h2 forDialogTitle>Delete account?</h2>
+  <p forDialogDescription>This action is permanent.</p>
+  <button forDialogClose>Cancel</button>
+  <button (click)="confirm()">Delete</button>
+</div>
+```
 
 ## API
 
@@ -204,6 +208,10 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 | `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down outside the dialog.<br>**Default:** —                                                                                                              |
 | `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                               |
 | `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                   |
+
+| Data attribute | Values                                                                         |
+| -------------- | ------------------------------------------------------------------------------ |
+| `data-state`   | `open` (always — the host is only mounted while open, so it is never `closed`) |
 
 ### Per-channel dismissal (Escape-only dialogs)
 
@@ -270,16 +278,25 @@ readonly keepSearchFocused = (event: VetoableEvent): void => {
 
 The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
 
-### Data attributes
+### `ForDialogTrigger`
 
-| Piece                 | Attribute                  | Values                                                                                   |
-| --------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
-| `[forDialog]`         | `data-state`               | `open` (always — the host is only mounted while open, so it is never `closed`)           |
-| `[forDialogTrigger]`  | `data-state`               | `open` \| `closed`                                                                       |
-| `[forDialogTrigger]`  | `data-disabled`            | present / absent                                                                         |
-| `[forDialogBackdrop]` | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
-| `[forDialogBackdrop]` | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
-| `[forDialogClose]`    | `data-state`               | `open` (always — mounted alongside the dialog)                                           |
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present / absent   |
+
+### `ForDialogBackdrop`
+
+| Data attribute             | Values                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| `data-state`               | `open` (always — mounted alongside the dialog)                                           |
+| `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
+
+### `ForDialogClose`
+
+| Data attribute | Values                                         |
+| -------------- | ---------------------------------------------- |
+| `data-state`   | `open` (always — mounted alongside the dialog) |
 
 `[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
 
@@ -325,6 +342,8 @@ The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerD
 
 ## Accessibility
 
+Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+
 - Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`.
 - `[forDialogDescription]` is optional — use it for non-title supporting copy (the question of a confirm, the rationale of an alert).
 - `alert: true` interrupts assistive tech aggressively — only for genuine alerts (lost connection, unsaved changes warning), not for general confirms.
@@ -332,7 +351,7 @@ The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerD
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 > **This dialog portals to `document.body`.** CSS scoped to ancestors of `[forDialog]` (or `[forDialogBackdrop]`) will not apply once the surface is moved to the body. Style it with **global CSS** or a class. Declaratively you write the surface yourself, so add the class directly (`<div forDialog class="my-dialog">`); for programmatically opened instances pass `class` / `classList` on the `ForDialogManager.open()` config — they land on the same `[forDialog]` host that carries `data-state` / `role` / `aria-modal`, merged and never clobbering them.
 

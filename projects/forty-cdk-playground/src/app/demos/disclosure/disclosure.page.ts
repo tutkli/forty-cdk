@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
   template: `
     <primitive-page slug="disclosure" [readme]="readme">
       <playground-demo
-        title="Show / hide a section"
-        subtitle="A single show/hide section — the building block behind Accordion. The panel stays mounted while closed (the directive marks it aria-hidden + inert), so it can animate open with pure CSS instead of being unmounted."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/disclosure/examples/default.example.ts"
       >
         <app-disclosure-default-example />
@@ -25,7 +24,7 @@ import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
 
       <playground-demo
         title="Disabled"
-        subtitle="disabled drops the trigger from the tab order and blocks toggling, so the panel stays in its current state."
+        subtitle="<code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays in its current state."
         sourcePath="projects/forty-cdk-playground/src/app/demos/disclosure/examples/disabled.example.ts"
       >
         <app-disclosure-disabled-example />

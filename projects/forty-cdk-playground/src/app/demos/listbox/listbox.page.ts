@@ -29,8 +29,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
   template: `
     <primitive-page slug="listbox" [readme]="readme">
       <playground-demo
-        title="Single select"
-        subtitle="An inline, roving-tabindex listbox (no popup). Tab moves focus into the list; arrows roam and wrap, Home/End jump to the ends, and typeahead matches visible text. The trailing checkmark self-hides while an option is unselected."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/default.example.ts"
       >
         <app-listbox-default-example />
@@ -38,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
       <playground-demo
         title="Multi select"
-        subtitle="multiple lets several options be selected and enables the APG range model: Shift+Arrow extends the selection, Shift+Space fills a range, and Ctrl+A toggles all."
+        subtitle="<code>multiple</code> lets several options be selected and enables the APG range model: <kbd>Shift</kbd>+<kbd>Arrow</kbd> extends the selection, <kbd>Shift</kbd>+<kbd>Space</kbd> fills a range, and <kbd>Ctrl</kbd>+<kbd>A</kbd> toggles all."
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/multi-select.example.ts"
       >
         <app-listbox-multi-select-example />
@@ -46,7 +45,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
       <playground-demo
         title="Option groups"
-        subtitle="forListboxGroup wraps options in a role=group labelled by forListboxGroupLabel. Grouping is advisory: arrow navigation, Home/End, and typeahead traverse across group boundaries in DOM order."
+        subtitle='<code>forListboxGroup</code> wraps options in a <code>role="group"</code> labelled by <code>forListboxGroupLabel</code>. Grouping is advisory: arrow navigation, <kbd>Home</kbd>/<kbd>End</kbd>, and typeahead traverse across group boundaries in DOM order.'
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/groups.example.ts"
       >
         <app-listbox-groups-example />
@@ -54,7 +53,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
       <playground-demo
         title="Sortable (reorder)"
-        subtitle="Add [forListboxReorder] for a selectable AND sortable list, with no @angular/cdk/drag-drop. Drag a chip to move it, or focus one and press Ctrl+Space to lift, arrows to position, Space/Enter to drop. (optionReorder) emits { from, to }; you apply moveItemInArray."
+        subtitle="Add <code>[forListboxReorder]</code> for a selectable AND sortable list, with no <code>@angular/cdk/drag-drop</code>. Drag a chip to move it, or focus one and press <kbd>Ctrl</kbd>+<kbd>Space</kbd> to lift, arrows to position, <kbd>Space</kbd>/<kbd>Enter</kbd> to drop. <code>(optionReorder)</code> emits <code>{ from, to }</code>; you apply <code>moveItemInArray</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/reorder.example.ts"
       >
         <app-listbox-reorder-example />
@@ -62,7 +61,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="forListbox implements FormValueControl<readonly T[]>, so a multi-select binds to a form field with one [formField] directive. The field requires at least one topic and reflects data-invalid until then, flipping touched once focus leaves it."
+        subtitle="<code>ForListbox</code> implements <code>FormValueControl&lt;readonly T[]&gt;</code>, so a multi-select binds to a form field with one <code>[formField]</code> directive. The field requires at least one topic and reflects <code>data-invalid</code> until then, flipping <code>touched</code> once focus leaves it."
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/form-field.example.ts"
       >
         <app-listbox-form-field-example />
@@ -70,7 +69,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
 
       <playground-demo
         title="Virtualized (10,000 options)"
-        subtitle="Setting [totalCount] switches ForListbox to the activedescendant model: the container becomes the single Tab stop and the active option is tracked by aria-activedescendant, so options recycle as you scroll. Arrow / Home / End reach options outside the rendered window via (scrollToIndex)."
+        subtitle="Setting <code>[totalCount]</code> switches <code>ForListbox</code> to the activedescendant model: the container becomes the single <kbd>Tab</kbd> stop and the active option is tracked by <code>aria-activedescendant</code>, so options recycle as you scroll. <kbd>Arrow</kbd> / <kbd>Home</kbd> / <kbd>End</kbd> reach options outside the rendered window via <code>(scrollToIndex)</code>."
         sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/virtualized.example.ts"
       >
         <app-listbox-virtualized-example />

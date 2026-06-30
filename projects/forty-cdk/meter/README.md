@@ -1,15 +1,16 @@
 # Meter
 
-Headless implementation of the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/), mirroring the HTML5 `<meter>` element.
+A gauge that shows a scalar value within a known range, bucketed into quality bands.
 
-A meter represents a **measurement** within a known range — battery, disk space, score, queue depth — _not_ progress on a task. Use [Progress](../progress) for the latter.
+Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, score, queue depth — _not_ progress on a task. Use [Progress](../progress) for the latter.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                                   |
-| ------------------- | --------------------- | -------------------------------------------------------------------------------------- |
-| `ForMeter`          | `[forMeter]`          | Root. Reflects `role="meter"`, ARIA value attributes, and the computed `data-quality`. |
-| `ForMeterIndicator` | `[forMeterIndicator]` | Visual fill. Reflects `data-quality`, `data-percentage`, and `--for-meter-percentage`. |
+```html
+<div forMeter [value]="diskUsed()" [min]="0" [max]="100" [low]="20" [high]="80" [optimum]="40">
+  <div forMeterIndicator></div>
+</div>
+```
 
 ## Examples
 
@@ -73,20 +74,25 @@ export class DemoDisk {
 | `optimum`       | `input<number \| null>`                    | Ideal point. Drives the quality classification.<br>**Default:** `null` (= midpoint)                                     |
 | `getValueLabel` | `input<((v, min, max) => string) \| null>` | Override for `aria-valuetext`.<br>**Default:** —                                                                        |
 
-### Data attributes
+| Data attribute    | Values                                         |
+| ----------------- | ---------------------------------------------- |
+| `data-quality`    | `optimum` \| `sub-optimum` \| `even-less-good` |
+| `data-value`      | current value, clamped to `[min, max]`         |
+| `data-min`        | lower bound                                    |
+| `data-max`        | upper bound                                    |
+| `data-percentage` | `value` as a number in `0`–`100`               |
 
-| Piece                 | Attribute         | Values                                         |
-| --------------------- | ----------------- | ---------------------------------------------- |
-| `[forMeter]`          | `data-quality`    | `optimum` \| `sub-optimum` \| `even-less-good` |
-| `[forMeter]`          | `data-value`      | current value, clamped to `[min, max]`         |
-| `[forMeter]`          | `data-min`        | lower bound                                    |
-| `[forMeter]`          | `data-max`        | upper bound                                    |
-| `[forMeter]`          | `data-percentage` | `value` as a number in `0`–`100`               |
-| `[forMeterIndicator]` | `data-quality`    | `optimum` \| `sub-optimum` \| `even-less-good` |
-| `[forMeterIndicator]` | `data-value`      | current value, clamped to `[min, max]`         |
-| `[forMeterIndicator]` | `data-min`        | lower bound                                    |
-| `[forMeterIndicator]` | `data-max`        | upper bound                                    |
-| `[forMeterIndicator]` | `data-percentage` | `value` as a number in `0`–`100`               |
+### `ForMeterIndicator`
+
+Visual fill paired with `[forMeter]`. Mirrors the root's `data-*` reflections and exposes the `--for-meter-percentage` custom property so the consumer can drive `width` / `transform` from CSS.
+
+| Data attribute    | Values                                         |
+| ----------------- | ---------------------------------------------- |
+| `data-quality`    | `optimum` \| `sub-optimum` \| `even-less-good` |
+| `data-value`      | current value, clamped to `[min, max]`         |
+| `data-min`        | lower bound                                    |
+| `data-max`        | upper bound                                    |
+| `data-percentage` | `value` as a number in `0`–`100`               |
 
 ## Quality algorithm
 
@@ -105,6 +111,8 @@ The `data-quality` reflection follows the HTML5 spec:
 
 ## Accessibility
 
+Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/).
+
 - **`role="meter"`** announces the current value as a fraction of the range. Pair with a visible label and `aria-labelledby` (or `aria-label`) for context — "Disk usage 72 of 100".
 - **Always determinate.** Unlike `<progress>`, a meter must always have a known value. There is no indeterminate mode in HTML5 / ARIA.
 - **Don't use Meter as Progress.** Screen readers announce the two roles differently (and assistive guidance differs); pick the right primitive for the meaning.
@@ -112,7 +120,7 @@ The `data-quality` reflection follows the HTML5 spec:
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

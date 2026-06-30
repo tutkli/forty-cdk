@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/progress/README.md';
   template: `
     <primitive-page slug="progress" [readme]="readme">
       <playground-demo
-        title="Determinate"
-        subtitle="A numeric value drives the fill via --for-progress-percentage. data-state moves from loading to complete, and announceCompletion announces the finish once."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/progress/examples/default.example.ts"
       >
         <app-progress-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/progress/README.md';
 
       <playground-demo
         title="Indeterminate"
-        subtitle="A null value puts the bar in indeterminate mode — aria-valuenow is omitted and data-state reflects indeterminate, for loading states whose duration cannot be predicted."
+        subtitle="A <code>null</code> value puts the bar in indeterminate mode — <code>aria-valuenow</code> is omitted and <code>data-state</code> reflects <code>indeterminate</code>, for loading states whose duration cannot be predicted."
         sourcePath="projects/forty-cdk-playground/src/app/demos/progress/examples/indeterminate.example.ts"
       >
         <app-progress-indeterminate-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/progress/README.md';
 
       <playground-demo
         title="Custom value label"
-        subtitle="getValueLabel maps value and max to a human string used for aria-valuetext, so screen readers announce '84 MB of 200 MB' instead of a bare number. The same function feeds the visible caption."
+        subtitle="<code>getValueLabel</code> maps value and max to a human string used for <code>aria-valuetext</code>, so screen readers announce '84 MB of 200 MB' instead of a bare number. The same function feeds the visible caption."
         sourcePath="projects/forty-cdk-playground/src/app/demos/progress/examples/value-label.example.ts"
       >
         <app-progress-value-label-example />
