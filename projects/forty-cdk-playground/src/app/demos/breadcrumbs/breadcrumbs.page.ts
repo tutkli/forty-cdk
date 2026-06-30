@@ -16,8 +16,7 @@ import readmeContent from '../../../../../forty-cdk/breadcrumbs/README.md';
   template: `
     <primitive-page slug="breadcrumbs" [readme]="readme">
       <playground-demo
-        title="A breadcrumb trail"
-        subtitle="A labelled navigation landmark wrapping a set of links. The last crumb carries current, which reflects aria-current='page' so assistive tech announces it as the current location; the separators are aria-hidden, so screen readers skip them."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/breadcrumbs/examples/default.example.ts"
       >
         <app-breadcrumbs-default-example />
