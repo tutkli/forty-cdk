@@ -23,8 +23,7 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
   template: `
     <primitive-page slug="dropdown-menu" [readme]="readme">
       <playground-demo
-        title="Button-triggered menu"
-        subtitle="A button-triggered menu positioned by floating-ui, with full keyboard support: arrows move between items, typeahead jumps to a label, Home/End reach the ends. It dismisses on Escape, outside pointer-down and Tab, returning focus to the trigger. The surface portals to <body>; its styles are colocated here via ViewEncapsulation.None."
+        hero
         sourcePath="projects/forty-cdk-playground/src/app/demos/dropdown-menu/examples/default.example.ts"
       >
         <app-dropdown-menu-default-example />
@@ -32,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
 
       <playground-demo
         title="Checkbox & radio items"
-        subtitle="A settings-style dropdown built from the full menu vocabulary: forMenuGroup with a forMenuGroupLabel header, forMenuCheckboxItem toggles (role menuitemcheckbox) and a forMenuRadioGroup of forMenuRadioItem options (role menuitemradio). Each item carries a forMenuItemIndicator that paints its checkmark / dot from the item's checked state. Calling preventDefault() on (activate) keeps the menu open so several options can be flipped in one pass — try Space to toggle without closing."
+        subtitle="A settings-style dropdown built from the full menu vocabulary: <code>forMenuGroup</code> with a <code>forMenuGroupLabel</code> header, <code>forMenuCheckboxItem</code> toggles (role <code>menuitemcheckbox</code>) and a <code>forMenuRadioGroup</code> of <code>forMenuRadioItem</code> options (role <code>menuitemradio</code>). Each item carries a <code>forMenuItemIndicator</code> that paints its checkmark / dot from the item's checked state. Calling <code>preventDefault()</code> on <code>(activate)</code> keeps the menu open so several options can be flipped in one pass — try <kbd>Space</kbd> to toggle without closing."
         sourcePath="projects/forty-cdk-playground/src/app/demos/dropdown-menu/examples/checkbox-radio.example.ts"
       >
         <app-dropdown-menu-checkbox-radio-example />
@@ -40,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
 
       <playground-demo
         title="Submenus"
-        subtitle="forMenuSub nests a second menu under a forMenuSubTrigger item (role menuitem, aria-haspopup=menu). The submenu owns its own open model and item collection, and its forMenuSubContent reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily — here a third level sits inside the second. ArrowRight opens a submenu and focuses its first item; ArrowLeft collapses back to the parent; Escape closes one level at a time."
+        subtitle="<code>forMenuSub</code> nests a second menu under a <code>forMenuSubTrigger</code> item (role <code>menuitem</code>, <code>aria-haspopup=menu</code>). The submenu owns its own open model and item collection, and its <code>forMenuSubContent</code> reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily — here a third level sits inside the second. <kbd>ArrowRight</kbd> opens a submenu and focuses its first item; <kbd>ArrowLeft</kbd> collapses back to the parent; <kbd>Escape</kbd> closes one level at a time."
         sourcePath="projects/forty-cdk-playground/src/app/demos/dropdown-menu/examples/submenus.example.ts"
       >
         <app-dropdown-menu-submenus-example />

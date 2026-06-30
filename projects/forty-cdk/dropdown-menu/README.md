@@ -1,17 +1,29 @@
 # DropdownMenu
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+A button that opens a menu of actions, with full keyboard navigation, typeahead and submenus.
 
-Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/): a button that opens a menu of actions on click, ArrowDown, or ArrowUp.
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Anatomy
 
-| Class                    | Selector                   | Role                                                                                |
-| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------- |
-| `ForDropdownMenu`        | `[forDropdownMenu]`        | Root. Owns open state, ids, item collection, navigate / typeahead / open semantics. |
-| `ForDropdownMenuTrigger` | `[forDropdownMenuTrigger]` | The button. Wires `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`.         |
+```html
+<div forDropdownMenu #menu="forDropdownMenu" side="bottom" align="start">
+  <button forDropdownMenuTrigger>Options</button>
+  <!-- @if (menu.open()) { -->
+  <div forMenuContent>
+    <button forMenuItem (activate)="cut()">Cut</button>
+    <button forMenuItem (activate)="copy()">Copy</button>
+    <hr forMenuSeparator />
+    <div forMenuRadioGroup [(value)]="alignment">
+      <button forMenuRadioItem value="left">Left</button>
+      <button forMenuRadioItem value="center">Center</button>
+    </div>
+  </div>
+  <!-- } -->
+</div>
+```
 
-The actual menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — same primitives are used by `[forContextMenu]`.
+The menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — the same primitives are used by `[forContextMenu]`.
 
 ## Examples
 

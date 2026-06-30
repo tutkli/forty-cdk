@@ -1,8 +1,10 @@
 # Combobox
 
+An editable input paired with a filterable listbox popup, supporting single or multi selection with chips.
+
 > New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
-Headless combobox with editable input + portaled listbox popup. Implements the [WAI-ARIA combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) (`role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
+Headless: `role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input. Implements the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
 Supports both single (default) and multi-select. Multi mode renders the selected values as chips next to the input.
 
@@ -15,25 +17,26 @@ Two anatomies share the same core:
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                                                                                                                                            |
-| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForCombobox`           | `[forCombobox]`           | Root. Owns `[(query)]`, `[(value)]`, `[(open)]`, the option / chip collections, ids, and the dismiss event surface.                                                                                                             |
-| `ForComboboxInput`      | `[forComboboxInput]`      | The `<input role="combobox">`. Handles keyboard, inline autocomplete, `aria-activedescendant`, multi-mode Backspace heuristic.                                                                                                  |
-| `ForComboboxTrigger`    | `[forComboboxTrigger]`    | _(picker anatomy)_ A `<button>` that opens the panel and keeps showing the committed selection while the input lives inside. Becomes the default anchor; focus hands off to the input. See [Picker anatomy](#picker-anatomy).   |
-| `ForComboboxAnchor`     | `[forComboboxAnchor]`     | Optional. Positions the listbox against this element instead of the input — wrap a decorated field box (or the chip cluster) so the panel matches the visible field. See [Anchoring to a field box](#anchoring-to-a-field-box). |
-| `ForComboboxContent`    | `[forComboboxContent]`    | The floating surface. Portaled, positioned by floating-ui, dismissable layer attached. Carries `role="listbox"` itself in the editable anatomy; becomes a neutral popup surface when a `[forComboboxList]` is present.          |
-| `ForComboboxList`       | `[forComboboxList]`       | _(picker anatomy)_ The `role="listbox"` element nested inside content next to the input. Owns the options and the labelled role. See [Picker anatomy](#picker-anatomy).                                                         |
-| `ForComboboxOption`     | `[forComboboxOption]`     | One option. `value: required<string>`, optional `[label]`.                                                                                                                                                                      |
-| `ForComboboxIndicator`  | `[forComboboxIndicator]`  | Optional. Self-hides (inline `display:none` + `hidden`) when the parent option is unselected. Mirrors the option's `data-state`.                                                                                                |
-| `ForComboboxEmpty`      | `[forComboboxEmpty]`      | Optional empty-state slot. Self-hides when there are registered options (see [Self-hiding pieces](#self-hiding-pieces)).                                                                                                        |
-| `ForComboboxStatus`     | `[forComboboxStatus]`     | Optional `aria-live="polite"` slot for async-filtering feedback (loading, result count, errors). Exposes a `count` signal.                                                                                                      |
-| `ForComboboxClear`      | `[forComboboxClear]`      | Optional clear `<button>`. Self-hides when there's nothing to clear (see [Self-hiding pieces](#self-hiding-pieces)).                                                                                                            |
-| `ForComboboxChips`      | `[forComboboxChips]`      | _(multi only)_ Wrapper around the chips + the input. `role="group"`.                                                                                                                                                            |
-| `ForComboboxChip`       | `[forComboboxChip]`       | _(multi only)_ One chip per entry in `value()`. `value: required<string>`.                                                                                                                                                      |
-| `ForComboboxChipRemove` | `[forComboboxChipRemove]` | _(multi only)_ Remove `<button>` inside a chip with auto-generated `aria-label`.                                                                                                                                                |
-| `ForComboboxGroup`      | `[forComboboxGroup]`      | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                                                                                        |
-| `ForComboboxGroupLabel` | `[forComboboxGroupLabel]` | Label registered with the parent group.                                                                                                                                                                                         |
-| `ForComboboxSeparator`  | `[forComboboxSeparator]`  | Decorative separator, `role="separator"`.                                                                                                                                                                                       |
+The editable (default) anatomy — an `<input>` that filters a portaled listbox in place:
+
+```html
+<div forCombobox [(query)]="query" [(value)]="value">
+  <input forComboboxInput placeholder="Search…" />
+  <button forComboboxClear aria-label="Clear">×</button>
+
+  <!-- @if (open()) { -->
+  <div forComboboxContent>
+    <div forComboboxOption [value]="item.id" [label]="item.label">
+      <span forComboboxIndicator>✓</span>
+      {{ item.label }}
+    </div>
+    <div forComboboxEmpty>No matches.</div>
+  </div>
+  <!-- } -->
+</div>
+```
+
+The picker anatomy adds a `[forComboboxTrigger]` `<button>` showing the committed selection, with the search input and a `[forComboboxList]` (`role="listbox"`) nested inside the popup — see [Picker anatomy](#picker-anatomy). Multi mode wraps the chips + input in `[forComboboxChips]` — see [Multi mode](#multi-mode). Optional `[forComboboxAnchor]`, `[forComboboxStatus]`, `[forComboboxGroup]` / `[forComboboxGroupLabel]`, and `[forComboboxSeparator]` pieces are covered in their own sections below.
 
 ## Examples
 
@@ -494,6 +497,8 @@ Focus stays in the input throughout — arrow keys move the listbox's _active de
 Hovering an option also makes it the activedescendant, so mouse and keyboard intent stay synchronized.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
 
 - Apply the input directive to an actual `<input>` — the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.
 - `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is role-less so it can hold the input next to the list without an `aria-required-owned-elements` violation.

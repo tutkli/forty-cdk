@@ -1,26 +1,35 @@
 # ForTable
 
-Headless table primitive that decorates either a native `<table>` or a `<div role>` CSS-grid structure with correct WAI-ARIA table semantics. Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
+A headless data table that decorates a native &lt;table&gt; or a &lt;div&gt; CSS grid with WAI-ARIA table / grid semantics: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and column / row reordering.
 
 The library sets roles, `aria-label`, writing direction, `data-column`, sticky hooks, and (in grid mode) `aria-rowcount` / `aria-colcount` / `aria-rowindex` / `aria-colindex` and roving keyboard navigation. The consumer owns all styles.
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                      |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ForTable`              | `[forTable]`              | Root container. Sets `role="table"`, `"grid"`, or `"treegrid"` via `mode`.                                |
-| `ForTableHeaderRow`     | `[forTableHeaderRow]`     | Header row (`role="row"` inside the header `rowgroup`).                                                   |
-| `ForTableHeaderCell`    | `[forTableHeaderCell]`    | Header cell (`role="columnheader"`). Carries the column `name` and sticky state.                          |
-| `ForTableRow`           | `[forTableRow]`           | Data row (`role="row"`). Carries selection, expansion (treegrid), and virtualized-index state.            |
-| `ForTableCell`          | `[forTableCell]`          | Data cell (`role="gridcell"` in grid/treegrid; `role="cell"` in table). Roving focus target in grid mode. |
-| `ForTableRowSelector`   | `[forTableRowSelector]`   | Decorative per-row selection affordance (`aria-hidden`). Click toggles the enclosing row's selection.     |
-| `ForTableSelectAll`     | `[forTableSelectAll]`     | Interactive tri-state select-all checkbox in the header. Reflects `aria-checked`.                         |
-| `ForTableSortHeader`    | `[forTableSortHeader]`    | Companion on a `[forTableHeaderCell]` for sortable columns. Emits `aria-sort` and `sortChange`.           |
-| `ForTableColumnResizer` | `[forTableColumnResizer]` | Focusable resize handle inside a header cell. Publishes `--for-table-col-<name>-width` on the root.       |
-| `ForTableColumnLabel`   | `[forTableColumnLabel]`   | Marks the label text inside a header cell for auto-fit measurement (used with `[fitIncludesHeader]`).     |
-| `ForTableColumnReorder` | `[forTableColumnReorder]` | Opt-in companion on `[forTableHeaderRow]` that wraps `[forDropList]` for column drag reordering.          |
-| `ForTableRowReorder`    | `[forTableRowReorder]`    | Opt-in companion on the data rowgroup that wraps `[forDropList]` for row drag reordering.                 |
-| `ForTableVirtualized`   | `[forTableVirtualized]`   | Opt-in companion on `[forTable]` that activates windowed row virtualization (requires `<div>` grid mode). |
+```html
+<div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
+  <div role="rowgroup">
+    <div forTableHeaderRow>
+      <div forTableHeaderCell name="sel">
+        <span forTableSelectAll ariaLabel="Select all rows"></span>
+      </div>
+      <div forTableHeaderCell name="name" forTableSortHeader column="name">
+        Name
+        <button forTableColumnResizer column="name" aria-label="Resize Name column"></button>
+      </div>
+    </div>
+  </div>
+  <div role="rowgroup">
+    <!-- one [forTableRow] per data row -->
+    <div forTableRow [value]="row.id">
+      <div forTableCell name="sel"><span forTableRowSelector></span></div>
+      <div forTableCell name="name">{{ row.name }}</div>
+    </div>
+  </div>
+</div>
+```
+
+Opt-in companions compose on the same elements: `[forTableVirtualized]` on `[forTable]` for windowed rows, and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
 
 ## Native `<table>` mode
 
@@ -871,6 +880,8 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 | `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                              |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **Label the table** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible caption / heading.
 - **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.
