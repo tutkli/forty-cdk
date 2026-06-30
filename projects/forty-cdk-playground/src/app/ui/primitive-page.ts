@@ -11,13 +11,12 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 import { skip } from 'rxjs';
 
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
 import { type DocSectionData, parseReadme, stripText } from '../doc/markdown';
-import { groupLabelForSlug, primitiveBySlug } from '../primitives';
+import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
 
@@ -32,38 +31,8 @@ function stripLeadingDescription(introHtml: string, description: string): string
 @Component({
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DocSection,
-    DocToc,
-    ForBreadcrumbs,
-    ForBreadcrumbItem,
-    ForBreadcrumbSeparator,
-    RouterLink,
-    Icon,
-  ],
+  imports: [DocSection, DocToc, RouterLink, Icon],
   template: `
-    <nav forBreadcrumbs class="pg-crumbs" aria-label="Breadcrumb">
-      <ol class="pg-crumbs-list">
-        <li class="pg-crumb">
-          <a forBreadcrumbItem class="pg-crumb-link" [routerLink]="['/']">Home</a>
-        </li>
-        <li forBreadcrumbSeparator class="pg-crumb-sep">
-          <app-icon name="chevron-right" />
-        </li>
-        <li class="pg-crumb">
-          <span class="pg-crumb-group">{{ group() }}</span>
-        </li>
-        <li forBreadcrumbSeparator class="pg-crumb-sep">
-          <app-icon name="chevron-right" />
-        </li>
-        <li class="pg-crumb">
-          <a forBreadcrumbItem class="pg-crumb-link" [routerLink]="['/', slug()]" [current]="true">
-            {{ meta().title }}
-          </a>
-        </li>
-      </ol>
-    </nav>
-
     <header class="head">
       <div class="head-text">
         <h1>{{ meta().title }}</h1>
@@ -217,7 +186,6 @@ export class PrimitivePage {
   protected readonly demos = contentChildren(DemoLayout);
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
-  protected readonly group = computed(() => groupLabelForSlug(this.slug()));
 
   readonly #parsed = computed(() => parseReadme(this.readme()));
 
